@@ -13,9 +13,25 @@
  * unsigned by any static key.
  */
 
-import { RemovalPolicy } from 'aws-cdk-lib';
-import { BlockPublicAccess, Bucket, BucketEncryption, type IBucket } from 'aws-cdk-lib/aws-s3';
+import { Duration, RemovalPolicy } from 'aws-cdk-lib';
+import {
+  BlockPublicAccess,
+  Bucket,
+  BucketEncryption,
+  HttpMethods,
+  type IBucket,
+} from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
+
+/**
+ * How long a browser may cache the upload preflight.
+ *
+ * Every direct upload costs an `OPTIONS` round trip before the `PUT` unless the answer
+ * is still cached, and the answer does not change between uploads. An hour is long
+ * enough that a user cropping several pictures pays for one preflight, and short enough
+ * that a change to the allowed origin takes effect within a session.
+ */
+const UPLOAD_PREFLIGHT_MAX_AGE = Duration.hours(1);
 
 export interface StorageBucketProps {
   /**
@@ -24,6 +40,10 @@ export interface StorageBucketProps {
    * CDK does not own an imported bucket's resource policy, but nothing here needs
    * one — the grant is on the function's role, which CDK does own. So unlike the
    * docs bucket, an imported uploads bucket needs no out-of-band policy.
+   *
+   * It does need an out-of-band **CORS** rule. `IBucket` exposes no way to add one, so
+   * an operator bringing their own bucket has to allow `PUT` from `appUrl` themselves
+   * or direct uploads will fail the browser preflight. See `uploadOrigin`.
    */
   readonly bucket?: IBucket;
 
@@ -35,6 +55,20 @@ export interface StorageBucketProps {
    * that empties it — which must never be created for a bucket holding real uploads.
    */
   readonly destroyOnRemoval?: boolean;
+
+  /**
+   * Origin permitted to upload directly to this bucket, normally `appUrl`.
+   *
+   * A presigned `PUT` from a browser is cross-origin and `PUT` is never a simple
+   * method, so the browser sends an `OPTIONS` preflight first and S3 answers it from
+   * the bucket's CORS configuration — not from the signature. Without a rule here the
+   * preflight fails and **no direct upload works on this target at all**, which no
+   * amount of correct signing changes. ADR 0007's minting is the API's half; this is
+   * the bucket's.
+   *
+   * Omit only where the browser never talks to the bucket.
+   */
+  readonly uploadOrigin?: string;
 }
 
 export class StorageBucket extends Construct {
@@ -63,6 +97,22 @@ export class StorageBucket extends Construct {
         publicReadAccess: false,
         removalPolicy: destroy ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
         autoDeleteObjects: destroy,
+        // One method and one header, because that is the whole of what a minted URL
+        // permits: the API signs a `PUT` whose only client-set header is `Content-Type`
+        // (`Content-Length` is the browser's to set and cannot be set by hand). Reads
+        // are not here — objects are served through the API, and an `<img>` load is not
+        // a CORS request. `GET` in this list would widen the bucket's browser surface
+        // for a case that does not exist.
+        cors: props.uploadOrigin
+          ? [
+              {
+                allowedMethods: [HttpMethods.PUT],
+                allowedOrigins: [props.uploadOrigin],
+                allowedHeaders: ['content-type'],
+                maxAge: UPLOAD_PREFLIGHT_MAX_AGE.toSeconds(),
+              },
+            ]
+          : undefined,
       });
   }
 }

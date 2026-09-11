@@ -120,6 +120,16 @@
       "uploading": "Uploading...",
       "refresh": "Refresh"
     },
+    "upload": {
+      "errors": {
+        "expired": "The upload link expired before the image was sent. Please try again.",
+        "cancelled": "Upload cancelled.",
+        "network": "The image could not reach storage. Check your connection and try again.",
+        "rejected": "Storage refused the image. Please try again.",
+        "unclaimed": "The image was stored but could not be saved. Upload it again to finish.",
+        "unknown": "Failed to upload the image. Please try again."
+      }
+    },
     "fields": {
       "name": "Name",
       "description": "Description"

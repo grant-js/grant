@@ -21,6 +21,7 @@ import {
   TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import type { DirectUploadBody } from '@/lib/direct-upload';
 import { formatLocalizedDateTime } from '@/lib/utils';
 
 import { projectMembershipProfileSchema } from './setting-schemas';
@@ -33,7 +34,7 @@ function detailInfoTableIcon(Icon: LucideIcon): ReactNode {
 export interface SettingProjectMembershipDetailProps {
   membership: MyProjectMembership;
   onSubmit: (values: SettingProjectMembershipProfileFormValues) => Promise<void>;
-  onUploadPicture: (file: string, filename: string, contentType: string) => Promise<void>;
+  onUploadPicture: (file: DirectUploadBody, options: { signal: AbortSignal }) => Promise<void>;
 }
 
 export function SettingProjectMembershipDetail({

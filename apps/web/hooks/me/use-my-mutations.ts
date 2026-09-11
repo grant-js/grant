@@ -5,6 +5,10 @@ import {
   ChangeMyPasswordDocument,
   ChangeMyPasswordInput,
   ChangeMyPasswordResult,
+  ConfirmMyProjectMembershipPictureUploadDocument,
+  ConfirmMyProjectMembershipPictureUploadMutation,
+  ConfirmMyUserPictureUploadDocument,
+  ConfirmMyUserPictureUploadMutation,
   CreateMySecondaryAccountDocument,
   CreateMySecondaryAccountResult,
   CreateMyUserAuthenticationMethodDocument,
@@ -14,6 +18,10 @@ import {
   DeleteMyUserAuthenticationMethodDocument,
   LogoutMyUserDocument,
   MyProjectMembership,
+  RequestMyProjectMembershipPictureUploadUrlDocument,
+  RequestMyProjectMembershipPictureUploadUrlMutation,
+  RequestMyUserPictureUploadUrlDocument,
+  RequestMyUserPictureUploadUrlMutation,
   RevokeMyUserSessionDocument,
   RevokeMyUserSessionResult,
   SetMyPrimaryAuthenticationMethodDocument,
@@ -32,6 +40,7 @@ import {
 import { toast } from 'sonner';
 
 import { useRouter } from '@/i18n/navigation';
+import { type DirectUploadBody, runDirectUpload } from '@/lib/direct-upload';
 import { useAuthStore } from '@/stores/auth.store';
 
 import { evictMeCache } from './cache';
@@ -63,6 +72,19 @@ export function useMyMutations() {
     }
   );
 
+  // Minting changes nothing, so it carries no cache update; the confirm is what makes
+  // the new picture the current one.
+  const [requestMyUserPictureUploadUrl] = useMutation<RequestMyUserPictureUploadUrlMutation>(
+    RequestMyUserPictureUploadUrlDocument
+  );
+
+  const [confirmMyUserPictureUpload] = useMutation<ConfirmMyUserPictureUploadMutation>(
+    ConfirmMyUserPictureUploadDocument,
+    {
+      update,
+    }
+  );
+
   const [updateMyUser] = useMutation<{ updateMyUser: User }>(UpdateMyUserDocument, {
     update,
   });
@@ -78,6 +100,19 @@ export function useMyMutations() {
   }>(UploadMyProjectMembershipPictureDocument, {
     update,
   });
+
+  const [requestMyProjectMembershipPictureUploadUrl] =
+    useMutation<RequestMyProjectMembershipPictureUploadUrlMutation>(
+      RequestMyProjectMembershipPictureUploadUrlDocument
+    );
+
+  const [confirmMyProjectMembershipPictureUpload] =
+    useMutation<ConfirmMyProjectMembershipPictureUploadMutation>(
+      ConfirmMyProjectMembershipPictureUploadDocument,
+      {
+        update,
+      }
+    );
 
   const [changeMyPassword] = useMutation<{ changeMyPassword: ChangeMyPasswordResult }>(
     ChangeMyPasswordDocument,
@@ -172,6 +207,36 @@ export function useMyMutations() {
     }
   };
 
+  /**
+   * The direct-upload sibling of `uploadMyUserPicture`: the bytes go to the store, not
+   * through this API. Both remain — the base64 mutation is the only path a client
+   * without `fetch` access to the store can take, and the API still serves it.
+   *
+   * No toast on the failure paths here. Every caller of this already renders the
+   * failure where the user is looking (the upload dialog), and a toast on top of an
+   * inline error reads as two separate problems.
+   */
+  const handleUploadMyUserPictureDirect = async (
+    file: DirectUploadBody,
+    options?: { signal?: AbortSignal }
+  ) => {
+    const result = await runDirectUpload(
+      {
+        mint: async (descriptor) =>
+          (await requestMyUserPictureUploadUrl({ variables: { input: descriptor } })).data
+            ?.requestMyUserPictureUploadUrl,
+        confirm: async ({ filename }) =>
+          (await confirmMyUserPictureUpload({ variables: { input: { filename } } })).data
+            ?.confirmMyUserPictureUpload,
+      },
+      file,
+      options
+    );
+
+    toast.success(t('profile.notifications.uploadPictureSuccess'));
+    return result;
+  };
+
   const handleUpdateMyUser = async (input: UpdateMyUserInput) => {
     try {
       const result = await updateMyUser({
@@ -219,6 +284,34 @@ export function useMyMutations() {
       });
       throw error;
     }
+  };
+
+  const handleUploadMyProjectMembershipPictureDirect = async (
+    projectId: string,
+    file: DirectUploadBody,
+    options?: { signal?: AbortSignal }
+  ) => {
+    const result = await runDirectUpload(
+      {
+        mint: async (descriptor) =>
+          (
+            await requestMyProjectMembershipPictureUploadUrl({
+              variables: { input: { ...descriptor, projectId } },
+            })
+          ).data?.requestMyProjectMembershipPictureUploadUrl,
+        confirm: async ({ filename }) =>
+          (
+            await confirmMyProjectMembershipPictureUpload({
+              variables: { input: { filename, projectId } },
+            })
+          ).data?.confirmMyProjectMembershipPictureUpload,
+      },
+      file,
+      options
+    );
+
+    toast.success(t('projectMemberships.notifications.uploadPictureSuccess'));
+    return result;
   };
 
   const handleChangeMyPassword = async (input: ChangeMyPasswordInput) => {
@@ -333,9 +426,11 @@ export function useMyMutations() {
     createMySecondaryAccount: handleCreateMySecondaryAccount,
     deleteMyAccounts: handleDeleteMyAccounts,
     uploadMyUserPicture: handleUploadMyUserPicture,
+    uploadMyUserPictureDirect: handleUploadMyUserPictureDirect,
     updateMyUser: handleUpdateMyUser,
     updateMyProjectMembership: handleUpdateMyProjectMembership,
     uploadMyProjectMembershipPicture: handleUploadMyProjectMembershipPicture,
+    uploadMyProjectMembershipPictureDirect: handleUploadMyProjectMembershipPictureDirect,
     changeMyPassword: handleChangeMyPassword,
     revokeMyUserSession: handleRevokeMyUserSession,
     createMyUserAuthenticationMethod: handleCreateMyUserAuthenticationMethod,

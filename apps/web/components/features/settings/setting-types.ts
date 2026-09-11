@@ -6,6 +6,8 @@ import {
 import type { ReactNode } from 'react';
 import { z } from 'zod';
 
+import type { DirectUploadBody } from '@/lib/direct-upload';
+
 import {
   addEmailAuthMethodSchema,
   changePasswordSchema,
@@ -56,7 +58,7 @@ export interface SettingAuthenticationMethodsListProps {
 export interface SettingProfileInformationFormProps {
   defaultValues: SettingProfileFormValues;
   onSubmit: (values: SettingProfileFormValues) => Promise<void>;
-  onUploadPicture: (file: string, filename: string, contentType: string) => Promise<void>;
+  onUploadPicture: (file: DirectUploadBody, options: { signal: AbortSignal }) => Promise<void>;
   currentPictureUrl?: string;
   currentPictureUpdatedAt?: string;
 }
@@ -64,7 +66,12 @@ export interface SettingProfileInformationFormProps {
 export interface SettingImageUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpload: (file: string, filename: string, contentType: string) => Promise<void>;
+  /**
+   * Receives the bytes and the signal that cancels their transfer. The dialog owns the
+   * `AbortController`, so a caller cannot forget to make closing the dialog stop the
+   * upload.
+   */
+  onUpload: (file: DirectUploadBody, options: { signal: AbortSignal }) => Promise<void>;
   currentImageUrl?: string;
 }
 
