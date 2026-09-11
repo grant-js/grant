@@ -12,6 +12,7 @@ import {
 import {
   changeMyPasswordRequestSchema,
   changeMyPasswordResponseSchema,
+  confirmMyUserPictureUploadRequestSchema,
   createMySecondaryAccountResponseSchema,
   createMyUserAuthenticationMethodRequestSchema,
   createMyUserAuthenticationMethodResponseSchema,
@@ -30,6 +31,8 @@ import {
   myProjectMembershipParamsSchema,
   myProjectMembershipSchema,
   myUserSessionSchema,
+  requestMyUserPictureUploadUrlRequestSchema,
+  requestMyUserPictureUploadUrlResponseSchema,
   revokeMyUserSessionParamsSchema,
   revokeMyUserSessionResponseSchema,
   setMyNotificationPreferenceRequestSchema,
@@ -52,6 +55,15 @@ export function registerMeEndpoints(registry: OpenAPIRegistry) {
   registry.register('RevokeMyUserSessionResponse', revokeMyUserSessionResponseSchema);
   registry.register('LogoutMyUserResponse', logoutMyUserResponseSchema);
   registry.register('ExportUserDataResponse', exportUserDataResponseSchema);
+  registry.register(
+    'RequestMyUserPictureUploadUrlRequest',
+    requestMyUserPictureUploadUrlRequestSchema
+  );
+  registry.register(
+    'RequestMyUserPictureUploadUrlResponse',
+    requestMyUserPictureUploadUrlResponseSchema
+  );
+  registry.register('ConfirmMyUserPictureUploadRequest', confirmMyUserPictureUploadRequestSchema);
   registry.register('UploadMyUserPictureRequest', uploadMyUserPictureRequestSchema);
   registry.register('UploadMyUserPictureResponse', uploadMyUserPictureResponseSchema);
   registry.register(
@@ -492,6 +504,150 @@ This endpoint supports the GDPR "Right to Data Portability" requirement, allowin
   /**
    * POST /api/me/picture
    */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/me/picture/upload-url',
+    tags: ['Me'],
+    summary: 'Request a direct-upload URL for the current user picture',
+    description: `
+Ask for a URL to upload your profile picture **directly to storage**, without the
+bytes passing through this API.
+
+### Why
+The base64 endpoint (\`POST /api/me/picture\`) sends the file inside the request
+body, paying a ~33% base64 expansion against the request size limit. A direct
+upload sends the raw bytes to the store instead.
+
+### What the URL permits
+Exactly what you declared, and nothing else. The URL commits to:
+- the **exact** \`contentLength\` — a body of any other length is refused
+- the **exact** \`contentType\`
+- a storage path derived from **your** identity, not from anything you send
+- an expiry, typically 5 minutes (\`STORAGE_UPLOAD_URL_EXPIRY_SECONDS\`)
+
+Content type, extension and size are validated **before** the URL is issued.
+
+### Then
+PUT the bytes to \`url\` using \`method\` and the headers in \`headers\`, verbatim.
+\`Content-Length\` is deliberately not listed: browsers set it from the body and
+forbid setting it by hand.
+
+Finally call \`POST /api/me/picture/confirm\`. Nothing is recorded against your
+account until you do — the URL is a permission to write an object, not a profile
+update.
+
+### Caveats
+The URL is a bearer capability: anyone holding it can write that object until it
+expires, and it cannot be revoked. It is also not single-use.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: requestMyUserPictureUploadUrlRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Upload URL issued',
+        content: {
+          'application/json': {
+            schema: requestMyUserPictureUploadUrlResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid content type, extension, or size',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/me/picture/confirm',
+    tags: ['Me'],
+    summary: 'Record a completed direct upload of the current user picture',
+    description: `
+Call this after the PUT from \`POST /api/me/picture/upload-url\` succeeds.
+
+The object is read back from storage and checked against the upload policy before
+anything is recorded — what you declared when you asked for the URL is not evidence
+that you sent it. If the PUT never landed, or the store refused it for the wrong
+length, the wrong content type or an expired URL, this answers **400** and your
+profile is untouched.
+
+The storage path is re-derived from your identity, exactly as it was when the URL
+was issued. \`filename\` is repeated only so the extension matches; it cannot point
+this at another user's object.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: confirmMyUserPictureUploadRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Upload recorded; the user pictureUrl now points at it',
+        content: {
+          'application/json': {
+            schema: uploadMyUserPictureResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'No uploaded file found, or it exceeds the size policy',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
   registry.registerPath({
     method: 'post',
     path: '/api/me/picture',

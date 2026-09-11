@@ -482,6 +482,15 @@ export type ChangeMyPasswordResult = {
   success: Scalars['Boolean']['output'];
 };
 
+/**
+ * `filename` is repeated from the request step rather than carried in a token: the
+ * storage path is re-derived server-side from the caller's identity both times, so
+ * nothing the client sends can point the confirmation at another user's object.
+ */
+export type ConfirmMyUserPictureUploadInput = {
+  filename: Scalars['String']['input'];
+};
+
 export type CreateAccountInput = {
   ownerId: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
@@ -975,6 +984,13 @@ export type Mutation = {
    */
   cancelProjectSync: ProjectSyncJob;
   changeMyPassword: ChangeMyPasswordResult;
+  /**
+   * Record a direct upload that has completed. Reads the object back from storage
+   * to confirm it exists and is within the size policy — what the client claimed
+   * when it asked for the URL is not evidence — then points the user's picture at
+   * it.
+   */
+  confirmMyUserPictureUpload: UploadUserPictureResult;
   createApiKey: CreateApiKeyResult;
   createGroup: Group;
   createMyMfaEnrollment: MfaEnrollment;
@@ -1019,6 +1035,16 @@ export type Mutation = {
   renewInvitation: OrganizationInvitation;
   /** Re-queue a delivery attempt for another POST. */
   replayWebhookDelivery: WebhookDeliveryAttempt;
+  /**
+   * Ask for a URL to upload the signed-in user's picture directly to storage,
+   * without the bytes passing through this API.
+   *
+   * Validates content type, extension and size **before** issuing the URL, and
+   * binds the URL to a path derived from the caller's own identity. Call
+   * `confirmMyUserPictureUpload` once the PUT succeeds; until then nothing is
+   * recorded against the user.
+   */
+  requestMyUserPictureUploadUrl: UploadUrl;
   requestPasswordReset: RequestPasswordResetResponse;
   resendInvitationEmail: OrganizationInvitation;
   resendVerification: ResendVerificationResponse;
@@ -1113,6 +1139,10 @@ export type MutationCancelProjectSyncArgs = {
 
 export type MutationChangeMyPasswordArgs = {
   input: ChangeMyPasswordInput;
+};
+
+export type MutationConfirmMyUserPictureUploadArgs = {
+  input: ConfirmMyUserPictureUploadInput;
 };
 
 export type MutationCreateApiKeyArgs = {
@@ -1264,6 +1294,10 @@ export type MutationRenewInvitationArgs = {
 
 export type MutationReplayWebhookDeliveryArgs = {
   input: ReplayWebhookDeliveryInput;
+};
+
+export type MutationRequestMyUserPictureUploadUrlArgs = {
+  input: RequestMyUserPictureUploadUrlInput;
 };
 
 export type MutationRequestPasswordResetArgs = {
@@ -2754,6 +2788,17 @@ export type ReplayWebhookDeliveryInput = {
   scope: Scope;
 };
 
+export type RequestMyUserPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself — a body of any
+   * other length is refused by the store.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+};
+
 export type RequestPasswordResetInput = {
   email: Scalars['String']['input'];
 };
@@ -3434,6 +3479,39 @@ export type UploadMyUserPictureInput = {
   contentType: Scalars['String']['input'];
   file: Scalars['String']['input'];
   filename: Scalars['String']['input'];
+};
+
+/**
+ * A bounded, time-limited URL the client writes bytes to directly.
+ *
+ * The URL is a bearer capability: it permits exactly `contentLength` bytes of
+ * exactly `contentType` at exactly one server-derived path, until `expiresAt`.
+ * It is not single-use and cannot be revoked, so it is short-lived by design.
+ */
+export type UploadUrl = {
+  __typename?: 'UploadUrl';
+  /** Instant after which the store refuses the URL. */
+  expiresAt: Scalars['Date']['output'];
+  /**
+   * Headers the client must set verbatim. `Content-Length` is deliberately absent:
+   * browsers set it from the body and forbid setting it by hand, even though the
+   * URL commits to the value.
+   */
+  headers: Array<UploadUrlHeader>;
+  /** HTTP method the client must use. Always PUT today. */
+  method: Scalars['String']['output'];
+  /**
+   * Absolute for object stores; application-relative for targets this API serves
+   * itself. Resolve it against the API origin before using it.
+   */
+  url: Scalars['String']['output'];
+};
+
+/** A header the client must send with the direct upload. */
+export type UploadUrlHeader = {
+  __typename?: 'UploadUrlHeader';
+  name: Scalars['String']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type UploadUserPictureInput = {

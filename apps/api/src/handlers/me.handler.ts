@@ -21,6 +21,7 @@ import { GrantAuth } from '@grantjs/core';
 import { SupportedLocale } from '@grantjs/i18n';
 import {
   Account,
+  ConfirmMyUserPictureUploadInput,
   CreateMyUserAuthenticationMethodInput,
   DeleteMyAccountsInput,
   ListNotificationsInput,
@@ -29,12 +30,14 @@ import {
   MyUserSessionsInput,
   NotificationPage,
   NotificationPreference,
+  RequestMyUserPictureUploadUrlInput,
   SetNotificationPreferenceInput,
   SortOrder,
   UpdateMyProjectMembershipInput,
   UpdateMyUserInput,
   UploadMyProjectMembershipPictureInput,
   UploadMyUserPictureInput,
+  UploadUrl,
   User,
   UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
@@ -42,6 +45,7 @@ import {
   UserSessionSortableField,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
@@ -174,6 +178,62 @@ export class MeHandler extends CacheHandler {
     return await this.users.updateUser(userId, input);
   }
 
+  /**
+   * Where the signed-in user's picture lives.
+   *
+   * Derived from the authenticated id, never from input — a client-supplied path
+   * in a presigned URL is a cross-tenant write. Shared by the base64 mutation and
+   * both halves of the direct-upload pair so they cannot come to disagree about
+   * which object a confirmation is confirming.
+   */
+  private myUserPicturePath(userId: string, filename: string): string {
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(filename, `users/${userId}/picture`);
+  }
+
+  public async requestMyUserPictureUploadUrl(
+    params: RequestMyUserPictureUploadUrlInput
+  ): Promise<UploadUrl> {
+    const userId = this.getAuthenticatedUserId();
+    const { filename, contentType, contentLength } = params;
+
+    // Before the URL exists, not after the bytes arrive — with a direct upload
+    // there is no "after the bytes arrive" in this process.
+    this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
+
+    const minted = await this.fileStorage.getUploadUrl(this.myUserPicturePath(userId, filename), {
+      contentType,
+      contentLength,
+      expiresInSeconds: config.storage.upload.urlExpirySeconds,
+    });
+
+    return {
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  public async confirmMyUserPictureUpload(
+    params: ConfirmMyUserPictureUploadInput
+  ): Promise<{ url: string; path: string }> {
+    const userId = this.getAuthenticatedUserId();
+    const storagePath = this.myUserPicturePath(userId, params.filename);
+
+    // The store is the witness, not the client. An absent object means the PUT
+    // never landed — refused for the wrong length, the wrong type, or an expired
+    // URL — and nothing should be recorded against the user.
+    await this.fileStorage.assertStoredWithinPolicy(storagePath);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const url = await this.fileStorage.getUrl(storagePath);
+
+      await this.users.updateUser(userId, { pictureUrl: url }, tx);
+
+      return { url, path: storagePath };
+    });
+  }
+
   public async uploadMyUserPicture(
     params: UploadMyUserPictureInput
   ): Promise<{ url: string; path: string }> {
@@ -186,10 +246,7 @@ export class MeHandler extends CacheHandler {
       filename,
     });
 
-    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
-      filename,
-      `users/${userId}/picture`
-    );
+    const storagePath = this.myUserPicturePath(userId, filename);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
       const result = await this.fileStorage.upload(fileBuffer, storagePath, {

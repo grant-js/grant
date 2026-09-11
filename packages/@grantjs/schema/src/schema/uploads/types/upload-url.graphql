@@ -1,0 +1,33 @@
+"""
+A bounded, time-limited URL the client writes bytes to directly.
+
+The URL is a bearer capability: it permits exactly `contentLength` bytes of
+exactly `contentType` at exactly one server-derived path, until `expiresAt`.
+It is not single-use and cannot be revoked, so it is short-lived by design.
+"""
+type UploadUrl {
+  """
+  Absolute for object stores; application-relative for targets this API serves
+  itself. Resolve it against the API origin before using it.
+  """
+  url: String!
+
+  "HTTP method the client must use. Always PUT today."
+  method: String!
+
+  """
+  Headers the client must set verbatim. `Content-Length` is deliberately absent:
+  browsers set it from the body and forbid setting it by hand, even though the
+  URL commits to the value.
+  """
+  headers: [UploadUrlHeader!]!
+
+  "Instant after which the store refuses the URL."
+  expiresAt: Date!
+}
+
+"A header the client must send with the direct upload."
+type UploadUrlHeader {
+  name: String!
+  value: String!
+}

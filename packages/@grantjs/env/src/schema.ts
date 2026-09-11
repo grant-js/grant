@@ -325,6 +325,7 @@ export const envSchema = z.object({
   STORAGE_S3_ENDPOINT: optionalString(''),
   STORAGE_S3_PUBLIC_URL: optionalString(''),
   STORAGE_UPLOAD_MAX_FILE_SIZE: optionalNumber(5 * 1024 * 1024),
+  STORAGE_UPLOAD_URL_EXPIRY_SECONDS: optionalNumber(300),
 
   // Privacy / Jobs / Demo
   PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS: optionalNumber(30),
