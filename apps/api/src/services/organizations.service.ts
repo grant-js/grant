@@ -33,6 +33,7 @@ import {
   deleteOrganizationParamsSchema,
   getOrganizationsParamsSchema,
   organizationSchema,
+  setOrganizationPictureUrlParamsSchema,
   updateOrganizationParamsSchema,
 } from './organizations.schemas';
 
@@ -256,6 +257,46 @@ export class OrganizationService implements IOrganizationService {
     return validateOutput(
       createDynamicSingleSchema(organizationSchema),
       deletedOrganization,
+      context
+    );
+  }
+
+  public async setOrganizationPictureUrl(
+    organizationId: string,
+    pictureUrl: string,
+    transaction?: Transaction
+  ): Promise<Organization> {
+    const context = 'OrganizationService.setOrganizationPictureUrl';
+    const validatedParams = validateInput(
+      setOrganizationPictureUrlParamsSchema,
+      { organizationId, pictureUrl },
+      context
+    );
+
+    const oldOrganization = await this.getOrganization(validatedParams.organizationId, transaction);
+    const updatedOrganization = await this.organizationRepository.setOrganizationPictureUrl(
+      validatedParams.organizationId,
+      validatedParams.pictureUrl,
+      transaction
+    );
+
+    await this.audit.logUpdate(
+      updatedOrganization.id,
+      {
+        id: oldOrganization.id,
+        pictureUrl: oldOrganization.pictureUrl ?? null,
+      },
+      {
+        id: updatedOrganization.id,
+        pictureUrl: updatedOrganization.pictureUrl ?? null,
+      },
+      { context },
+      transaction
+    );
+
+    return validateOutput(
+      createDynamicSingleSchema(organizationSchema),
+      updatedOrganization,
       context
     );
   }

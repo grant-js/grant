@@ -1086,6 +1086,8 @@ export type Mutation = {
   updateWebhookSubscription: WebhookSubscription;
   uploadMyProjectMembershipPicture: UploadUserPictureResult;
   uploadMyUserPicture: UploadUserPictureResult;
+  /** Upload an organization logo and persist its public URL. */
+  uploadOrganizationPicture: UploadOrganizationPictureResult;
   uploadUserPicture: UploadUserPictureResult;
   verifyEmail: VerifyEmailResponse;
   verifyMfa: MfaVerifyResponse;
@@ -1411,6 +1413,10 @@ export type MutationUploadMyUserPictureArgs = {
   input: UploadMyUserPictureInput;
 };
 
+export type MutationUploadOrganizationPictureArgs = {
+  input: UploadOrganizationPictureInput;
+};
+
 export type MutationUploadUserPictureArgs = {
   input: UploadUserPictureInput;
 };
@@ -1526,6 +1532,7 @@ export type Organization = Auditable & {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   permissions?: Maybe<Array<Permission>>;
+  pictureUrl?: Maybe<Scalars['String']['output']>;
   projects?: Maybe<Array<Project>>;
   requireMfaForSensitiveActions: Scalars['Boolean']['output'];
   roles?: Maybe<Array<Role>>;
@@ -3434,6 +3441,20 @@ export type UploadMyUserPictureInput = {
   contentType: Scalars['String']['input'];
   file: Scalars['String']['input'];
   filename: Scalars['String']['input'];
+};
+
+export type UploadOrganizationPictureInput = {
+  contentType: Scalars['String']['input'];
+  file: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type UploadOrganizationPictureResult = {
+  __typename?: 'UploadOrganizationPictureResult';
+  path: Scalars['String']['output'];
+  url: Scalars['String']['output'];
 };
 
 export type UploadUserPictureInput = {

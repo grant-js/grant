@@ -3,6 +3,7 @@ mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
     id
     name
     slug
+    pictureUrl
     requireMfaForSensitiveActions
     createdAt
     updatedAt

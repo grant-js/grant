@@ -35,8 +35,9 @@ export function SettingImageUploadDialog({
   onOpenChange,
   onUpload,
   currentImageUrl: _currentImageUrl,
+  translationNamespace = 'settings.profile.upload',
 }: SettingImageUploadDialogProps) {
-  const t = useTranslations('settings.profile.upload');
+  const t = useTranslations(translationNamespace);
   const tCommon = useTranslations('common');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });

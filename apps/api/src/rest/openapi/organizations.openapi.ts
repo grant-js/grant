@@ -15,6 +15,8 @@ import {
   organizationWithRelationsSchema,
   updateOrganizationRequestSchema,
   updateOrganizationResponseSchema,
+  uploadOrganizationPictureRequestSchema,
+  uploadOrganizationPictureResponseSchema,
   validationErrorResponseSchema,
 } from '@/rest/schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
@@ -29,6 +31,8 @@ export function registerOrganizationsOpenApi(registry: OpenAPIRegistry) {
     createSuccessResponseSchema(organizationWithRelationsSchema)
   );
   registry.register('OrganizationParams', organizationParamsSchema);
+  registry.register('UploadOrganizationPictureRequest', uploadOrganizationPictureRequestSchema);
+  registry.register('UploadOrganizationPictureResponse', uploadOrganizationPictureResponseSchema);
 
   /**
    * GET /api/organizations
@@ -256,6 +260,87 @@ Example: \`?relations=projects,users\`
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'Organization not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/organizations/:id/picture
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/organizations/{id}/picture',
+    tags: ['Organizations'],
+    summary: 'Upload organization logo',
+    description: `
+Upload a logo for an organization. The organization's \`pictureUrl\` field is updated in the same request.
+
+### File Format
+- **Content Types**: \`image/jpeg\`, \`image/png\`, \`image/gif\`, \`image/webp\`
+- **File Extensions**: \`.jpg\`, \`.jpeg\`, \`.png\`, \`.gif\`, \`.webp\`
+- **Max Size**: 5MB (configurable via \`STORAGE_UPLOAD_MAX_FILE_SIZE\`)
+
+### File Encoding
+The file must be provided as a base64-encoded string (optional data URI prefix).
+    `.trim(),
+    request: {
+      params: organizationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: uploadOrganizationPictureRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Picture uploaded successfully',
+        content: {
+          'application/json': {
+            schema: uploadOrganizationPictureResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request body or file validation failed',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },

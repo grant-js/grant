@@ -39,8 +39,14 @@ export const deleteOrganizationParamsSchema = deleteSchema.extend({
   id: idSchema,
 });
 
+export const setOrganizationPictureUrlParamsSchema = z.object({
+  organizationId: idSchema,
+  pictureUrl: z.string().min(1).max(500),
+});
+
 export const organizationSchema = baseEntitySchema.extend({
   name: nameSchema,
   slug: slugSchema,
   requireMfaForSensitiveActions: z.boolean(),
+  pictureUrl: z.string().max(500).nullable().optional(),
 });

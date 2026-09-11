@@ -2307,7 +2307,8 @@
         "read": "Read Organization",
         "update": "Update Organization",
         "delete": "Delete Organization",
-        "query": "Query Organization"
+        "query": "Query Organization",
+        "uploadPicture": "Upload Picture Organization"
       },
       "project": {
         "create": "Create Project",
@@ -2423,7 +2424,8 @@
         "read": "Permission to read organization information",
         "update": "Permission to update an organization",
         "delete": "Permission to delete an organization",
-        "query": "Permission to query organizations"
+        "query": "Permission to query organizations",
+        "uploadPicture": "Permission to upload an organization logo"
       },
       "project": {
         "create": "Permission to create a project",
@@ -2605,7 +2607,9 @@
       "tagAddedSuccess": "Tag added to organization",
       "tagAddedError": "Failed to add tag to organization",
       "tagRemovedSuccess": "Tag removed from organization",
-      "tagRemovedError": "Failed to remove tag from organization"
+      "tagRemovedError": "Failed to remove tag from organization",
+      "uploadPictureSuccess": "Organization logo uploaded",
+      "uploadPictureError": "Failed to upload organization logo"
     },
     "view": {
       "card": "Card View",
@@ -2631,6 +2635,29 @@
         "selected": "{count} selected",
         "clearAll": "Clear all",
         "loading": "Loading tags..."
+      }
+    },
+    "avatar": {
+      "uploadButton": "Upload logo",
+      "changeButton": "Change logo"
+    },
+    "upload": {
+      "title": "Upload organization logo",
+      "description": "Select an image, crop it, and upload it as the organization logo",
+      "dropzone": {
+        "idle": "Drag and drop an image here, or click to browse",
+        "active": "Drop the image here",
+        "hint": "Supported formats: JPG, PNG, GIF, WebP (max 5MB)",
+        "browse": "Browse Files"
+      },
+      "zoom": "Zoom",
+      "changeImage": "Change Image",
+      "upload": "Upload",
+      "errors": {
+        "invalidType": "Invalid file type. Please use JPG, PNG, GIF, or WebP.",
+        "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
+        "readFailed": "Failed to read the file. Please try again.",
+        "uploadFailed": "Failed to upload the image. Please try again."
       }
     }
   },

@@ -11,6 +11,7 @@ import {
   getOrganizationsQuerySchema,
   organizationParamsSchema,
   updateOrganizationRequestSchema,
+  uploadOrganizationPictureRequestSchema,
 } from '@/rest/schemas/organizations.schemas';
 import { TypedRequest } from '@/rest/types';
 import { queryListCommons } from '@/rest/utils/list-query';
@@ -108,6 +109,40 @@ export function createOrganizationRoutes(context: RequestContext) {
       });
 
       sendSuccessResponse(res, organization);
+    }
+  );
+
+  router.post(
+    '/:id/picture',
+    validate({
+      params: organizationParamsSchema,
+      body: uploadOrganizationPictureRequestSchema,
+    }),
+    requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.UploadPicture,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof organizationParamsSchema;
+        body: typeof uploadOrganizationPictureRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { file, filename, contentType, scope } = req.body;
+
+      const result = await context.handlers.organizations.uploadOrganizationPicture({
+        organizationId: id,
+        file,
+        filename,
+        contentType,
+        scope,
+      });
+
+      sendSuccessResponse(res, result, 201);
     }
   );
 

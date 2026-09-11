@@ -1,5 +1,6 @@
 export * from './organization-actions';
 export * from './organization-audit';
+export * from './organization-avatar';
 export * from './organization-card-skeleton';
 export * from './organization-cards';
 export * from './organization-create-dialog';
@@ -8,6 +9,7 @@ export * from './organization-edit-dialog';
 export * from './organization-limit';
 export * from './organization-navigation-button';
 export * from './organization-pagination';
+export * from './organization-picture-upload-dialog';
 export * from './organization-search';
 export * from './organization-sorter';
 export * from './organization-switcher';

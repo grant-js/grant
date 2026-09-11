@@ -10,13 +10,14 @@ import { Avatar } from './avatar';
 import { AvatarProps } from './common-types';
 
 export interface CardHeaderProps {
-  avatar: {
+  avatar?: {
     initial: string;
     imageUrl?: string;
     cacheBuster?: string | Date | null;
     size?: AvatarProps['size'];
     icon?: AvatarProps['icon'];
   };
+  avatarContent?: ReactNode;
   title: string;
   description?: string;
   actions?: ReactNode;
@@ -28,6 +29,7 @@ export interface CardHeaderProps {
 
 export function CardHeader({
   avatar,
+  avatarContent,
   title,
   description,
   actions,
@@ -39,14 +41,17 @@ export function CardHeader({
   return (
     <div className={cn('flex items-center justify-between space-y-0 pb-1 w-full gap-2', className)}>
       <div className="flex items-center gap-4 min-w-0">
-        <Avatar
-          initial={avatar.initial}
-          imageUrl={avatar.imageUrl}
-          cacheBuster={avatar.cacheBuster}
-          size={avatar.size || 'lg'}
-          icon={avatar.icon}
-          className={color ? cn('border-2', getTagBorderClasses(color)) : undefined}
-        />
+        {avatarContent ??
+          (avatar ? (
+            <Avatar
+              initial={avatar.initial}
+              imageUrl={avatar.imageUrl}
+              cacheBuster={avatar.cacheBuster}
+              size={avatar.size || 'lg'}
+              icon={avatar.icon}
+              className={color ? cn('border-2', getTagBorderClasses(color)) : undefined}
+            />
+          ) : null)}
         <div className="min-w-0 flex-1">
           <CardTitle
             title={title}

@@ -178,6 +178,7 @@ export function createHandlers(
       services.organizationGroups,
       services.organizationPermissions,
       services.organizationTags,
+      services.fileStorage,
       cache,
       services,
       db

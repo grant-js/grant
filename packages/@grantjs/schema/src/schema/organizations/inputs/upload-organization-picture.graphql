@@ -1,0 +1,7 @@
+input UploadOrganizationPictureInput {
+  scope: Scope!
+  organizationId: ID!
+  file: String!
+  filename: String!
+  contentType: String!
+}

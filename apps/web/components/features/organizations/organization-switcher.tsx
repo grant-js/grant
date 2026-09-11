@@ -21,9 +21,10 @@ import {
 import { useAccountScope } from '@/hooks/common/use-account-scope';
 import { useOrganizations } from '@/hooks/organizations';
 import { usePathname, useRouter } from '@/i18n/navigation';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
+import { OrganizationAvatar } from './organization-avatar';
 import { OrganizationCreateDialog } from './organization-create-dialog';
 
 interface OrganizationSwitcherProps {
@@ -113,6 +114,7 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
                   currentOrganizationId === organization.id ? 'opacity-100' : 'opacity-0'
                 )}
               />
+              <OrganizationAvatar organization={organization} size="sm" />
               {organization.name}
             </CommandItem>
           ))}
@@ -137,6 +139,15 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
       {canCreate && isInsideOrg && <OrganizationCreateDialog hideTrigger />}
       <SidebarPopover
         icon={<Building2 />}
+        avatar={
+          selectedOrganization
+            ? {
+                initial: getInitials(selectedOrganization.name, 2, 'O'),
+                imageUrl: selectedOrganization.pictureUrl || undefined,
+                cacheBuster: selectedOrganization.updatedAt,
+              }
+            : undefined
+        }
         title={organizationName}
         label={t('organizations.organization')}
         content={popoverContent}
