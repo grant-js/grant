@@ -1,5 +1,21 @@
 # grant-web
 
+## 1.7.0
+
+### Minor Changes
+
+- 31399fc: Add organization logos that owners can upload and that replace initials in lists, the edit dialog, and the organization switcher.
+
+  The logo is stored as `pictureUrl`, written only through `uploadOrganizationPicture` / `POST /api/organizations/:id/picture` (MIME and size checks, public storage). `Organization:UploadPicture` is granted to Organization Owner. Existing deployments need `db:seed` so the new permission is inserted.
+
+### Patch Changes
+
+- Updated dependencies [31399fc]
+  - @grantjs/schema@1.7.0
+  - @grantjs/client@1.7.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.6.2
 
 ### Patch Changes
