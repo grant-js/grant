@@ -10,7 +10,7 @@ export interface AvatarProps {
   initial: string;
   imageUrl?: string;
   cacheBuster?: string | Date | null;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   shape?: 'circle' | 'squircle';
   className?: string;
   fallbackClassName?: string;
@@ -85,4 +85,6 @@ export interface DialogField {
   minDate?: Date;
   /** For type 'date': days after this are disabled; this day remains selectable (react-day-picker `after` matcher). */
   maxDate?: Date;
+  /** Optional content rendered to the left of this field's label and control. */
+  leading?: ReactNode;
 }

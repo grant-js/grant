@@ -12,6 +12,10 @@ export const organizationSchema = z.object({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
+  pictureUrl: z.string().max(500).nullable().optional().openapi({
+    description: 'Public URL of the organization logo',
+    example: '/storage/organizations/123e4567-e89b-12d3-a456-426614174000/picture.jpg',
+  }),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
@@ -112,3 +116,33 @@ export const deleteOrganizationQuerySchema = z.object({
 });
 
 export const deleteOrganizationResponseSchema = createSuccessResponseSchema(organizationSchema);
+
+export const uploadOrganizationPictureRequestSchema = z.object({
+  scope: scopeSchema,
+  file: z.string().min(1, 'errors.validation.fileRequired').openapi({
+    description: 'Base64-encoded file data (with optional data URI prefix)',
+    example: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
+  }),
+  filename: z.string().min(1, 'errors.validation.filenameRequired').openapi({
+    description: 'Original filename with extension',
+    example: 'logo.jpg',
+  }),
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired').openapi({
+    description: 'MIME type of the file',
+    example: 'image/jpeg',
+  }),
+});
+
+export const uploadOrganizationPictureResponseSchema = createSuccessResponseSchema(
+  z.object({
+    url: z.string().openapi({
+      description: 'Public URL of the uploaded file',
+      example: '/storage/organizations/123e4567-e89b-12d3-a456-426614174000/picture.jpg',
+    }),
+    path: z.string().openapi({
+      description: 'Storage path of the uploaded file',
+      example: 'organizations/123e4567-e89b-12d3-a456-426614174000/picture.jpg',
+    }),
+  }),
+  'Successfully uploaded organization picture'
+);

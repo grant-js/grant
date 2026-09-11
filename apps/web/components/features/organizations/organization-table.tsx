@@ -6,7 +6,6 @@ import { Organization } from '@grantjs/schema';
 import { Building2 } from 'lucide-react';
 
 import {
-  Avatar,
   DataTable,
   type DataTableColumnConfig,
   type TableSkeletonColumnConfig,
@@ -17,6 +16,7 @@ import { useOrganizationsStore } from '@/stores/organizations.store';
 
 import { OrganizationActions } from './organization-actions';
 import { OrganizationAudit } from './organization-audit';
+import { OrganizationAvatar } from './organization-avatar';
 import { OrganizationCreateDialog } from './organization-create-dialog';
 import { OrganizationNavigationButton } from './organization-navigation-button';
 
@@ -35,9 +35,10 @@ export function OrganizationTable() {
       width: '60px',
       className: 'pl-4',
       render: (organization: Organization) => (
-        <Avatar
-          initial={organization.name.charAt(0)}
+        <OrganizationAvatar
+          organization={organization}
           size="md"
+          interactive
           className={
             organization?.tags?.find((tag) => tag.isPrimary)?.color
               ? `border-2 ${getTagBorderClasses(organization.tags?.find((tag) => tag.isPrimary)?.color as TagColor)}`

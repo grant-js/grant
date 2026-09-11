@@ -40,9 +40,9 @@ describe('operation documents', () => {
 
   // Pinned, not a floor: pass 5 slice 5 removed one file and two query operations
   // that were superseded by list queries, and a floor would have absorbed that
-  // silently. 116 before that slice.
+  // silently. 116 before that slice, 115 after, 116 with upload-organization-picture.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(115);
+    expect(files).toHaveLength(116);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {

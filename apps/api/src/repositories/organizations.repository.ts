@@ -144,4 +144,17 @@ export class OrganizationRepository
 
     return this.hardDelete(baseParams, transaction);
   }
+
+  public async setOrganizationPictureUrl(
+    organizationId: string,
+    pictureUrl: string,
+    transaction?: Transaction
+  ): Promise<Organization> {
+    const baseParams: BaseUpdateArgs = {
+      id: organizationId,
+      input: { pictureUrl },
+    };
+
+    return this.update(baseParams, transaction);
+  }
 }

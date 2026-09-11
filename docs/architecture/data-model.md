@@ -54,6 +54,7 @@ erDiagram
         uuid id PK
         varchar name
         varchar slug
+        varchar picture_url
         timestamp deleted_at
     }
     PROJECT {

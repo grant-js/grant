@@ -935,7 +935,14 @@ export type CreateOrganizationMutationVariables = Exact<{
 }>;
 
 export type CreateOrganizationMutation = {
-  createOrganization: { id: string; name: string; slug: string; createdAt: Date; updatedAt: Date };
+  createOrganization: {
+    id: string;
+    name: string;
+    slug: string;
+    pictureUrl: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 };
 
 export type DeleteOrganizationMutationVariables = Exact<{
@@ -944,7 +951,14 @@ export type DeleteOrganizationMutationVariables = Exact<{
 }>;
 
 export type DeleteOrganizationMutation = {
-  deleteOrganization: { id: string; name: string; slug: string; createdAt: Date; updatedAt: Date };
+  deleteOrganization: {
+    id: string;
+    name: string;
+    slug: string;
+    pictureUrl: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 };
 
 export type GetOrganizationsQueryVariables = Exact<{
@@ -964,6 +978,7 @@ export type GetOrganizationsQuery = {
       id: string;
       name: string;
       slug: string;
+      pictureUrl: string | null;
       requireMfaForSensitiveActions: boolean;
       createdAt: Date;
       updatedAt: Date;
@@ -982,10 +997,19 @@ export type UpdateOrganizationMutation = {
     id: string;
     name: string;
     slug: string;
+    pictureUrl: string | null;
     requireMfaForSensitiveActions: boolean;
     createdAt: Date;
     updatedAt: Date;
   };
+};
+
+export type UploadOrganizationPictureMutationVariables = Exact<{
+  input: Types.UploadOrganizationPictureInput;
+}>;
+
+export type UploadOrganizationPictureMutation = {
+  uploadOrganizationPicture: { url: string; path: string };
 };
 
 export type CreatePermissionMutationVariables = Exact<{
@@ -5670,6 +5694,7 @@ export const CreateOrganizationDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
               ],
@@ -5729,6 +5754,7 @@ export const DeleteOrganizationDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
               ],
@@ -5837,6 +5863,7 @@ export const GetOrganizationsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'requireMfaForSensitiveActions' },
@@ -5918,6 +5945,7 @@ export const UpdateOrganizationDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'requireMfaForSensitiveActions' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
@@ -5929,6 +5957,55 @@ export const UpdateOrganizationDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateOrganizationMutation, UpdateOrganizationMutationVariables>;
+export const UploadOrganizationPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UploadOrganizationPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UploadOrganizationPictureInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'uploadOrganizationPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UploadOrganizationPictureMutation,
+  UploadOrganizationPictureMutationVariables
+>;
 export const CreatePermissionDocument = {
   kind: 'Document',
   definitions: [

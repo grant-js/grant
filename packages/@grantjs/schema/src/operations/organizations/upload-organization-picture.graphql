@@ -1,0 +1,6 @@
+mutation UploadOrganizationPicture($input: UploadOrganizationPictureInput!) {
+  uploadOrganizationPicture(input: $input) {
+    url
+    path
+  }
+}

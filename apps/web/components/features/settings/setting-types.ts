@@ -66,6 +66,7 @@ export interface SettingImageUploadDialogProps {
   onOpenChange: (open: boolean) => void;
   onUpload: (file: string, filename: string, contentType: string) => Promise<void>;
   currentImageUrl?: string;
+  translationNamespace?: string;
 }
 
 export type SettingEmailAuthMethodAddFormValues = z.infer<typeof addEmailAuthMethodSchema>;

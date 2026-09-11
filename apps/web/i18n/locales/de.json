@@ -2008,7 +2008,8 @@
         "read": "Organisation lesen",
         "update": "Organisation aktualisieren",
         "delete": "Organisation löschen",
-        "query": "Organisation abfragen"
+        "query": "Organisation abfragen",
+        "uploadPicture": "Organisationsbild hochladen"
       },
       "project": {
         "create": "Projekt erstellen",
@@ -2121,7 +2122,8 @@
         "read": "Berechtigung zum Lesen von Organisationsinformationen",
         "update": "Berechtigung zum Aktualisieren einer Organisation",
         "delete": "Berechtigung zum Löschen einer Organisation",
-        "query": "Berechtigung zum Abfragen von Organisationen"
+        "query": "Berechtigung zum Abfragen von Organisationen",
+        "uploadPicture": "Berechtigung zum Hochladen eines Organisationslogos"
       },
       "project": {
         "create": "Berechtigung zum Erstellen eines Projekts",
@@ -2303,7 +2305,9 @@
       "tagAddedSuccess": "Tag zur Organisation hinzugefügt",
       "tagAddedError": "Tag konnte nicht zur Organisation hinzugefügt werden",
       "tagRemovedSuccess": "Tag von der Organisation entfernt",
-      "tagRemovedError": "Tag konnte nicht von der Organisation entfernt werden"
+      "tagRemovedError": "Tag konnte nicht von der Organisation entfernt werden",
+      "uploadPictureSuccess": "Organisationslogo hochgeladen",
+      "uploadPictureError": "Organisationslogo konnte nicht hochgeladen werden"
     },
     "view": {
       "card": "Kartenansicht",
@@ -2329,6 +2333,29 @@
         "selected": "{count} ausgewählt",
         "clearAll": "Alle löschen",
         "loading": "Tags werden geladen..."
+      }
+    },
+    "avatar": {
+      "uploadButton": "Logo hochladen",
+      "changeButton": "Logo ändern"
+    },
+    "upload": {
+      "title": "Organisationslogo hochladen",
+      "description": "Wählen Sie ein Bild, schneiden Sie es zu und laden Sie es als Organisationslogo hoch",
+      "dropzone": {
+        "idle": "Ziehen Sie ein Bild hierher oder klicken Sie zum Durchsuchen",
+        "active": "Lassen Sie das Bild hier los",
+        "hint": "Unterstützte Formate: JPG, PNG, GIF, WebP (max. 5MB)",
+        "browse": "Dateien durchsuchen"
+      },
+      "zoom": "Zoom",
+      "changeImage": "Bild ändern",
+      "upload": "Hochladen",
+      "errors": {
+        "invalidType": "Ungültiger Dateityp. Bitte verwenden Sie JPG, PNG, GIF oder WebP.",
+        "fileTooLarge": "Datei ist zu groß. Maximale Größe ist {maxSize}MB.",
+        "readFailed": "Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut.",
+        "uploadFailed": "Bild konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
       }
     }
   },

@@ -29,19 +29,19 @@ Actions that require authorization: **read** (single resource by ID), **query** 
 
 ### Core Resources
 
-| Resource         | Actions                                                 | Description                        |
-| ---------------- | ------------------------------------------------------- | ---------------------------------- |
-| **User**         | `create` `read` `update` `delete` `query` `export-data` | Platform users                     |
-| **Account**      | `read` `delete` `query`                                 | Personal or organization workspace |
-| **Organization** | `create` `read` `update` `delete` `query`               | Container for projects and members |
-| **Project**      | `create` `update` `delete` `query`                      | Isolated environment (query only)  |
-| **Resource**     | `create` `update` `delete` `query`                      | Domain entities (query only)       |
-| **Role**         | `create` `update` `delete` `query`                      | Named permission sets (query only) |
-| **Group**        | `create` `update` `delete` `query`                      | Role–resource permission bundles   |
-| **Permission**   | `create` `update` `delete` `query`                      | Action on a resource               |
-| **Tag**          | `create` `update` `delete` `query`                      | Labels (query only)                |
-| **API Key**      | `create` `delete` `query` `revoke` `exchange`           | Programmatic credentials           |
-| **App**          | `create` `update` `query` `delete`                      | Consent-flow applications          |
+| Resource         | Actions                                                    | Description                        |
+| ---------------- | ---------------------------------------------------------- | ---------------------------------- |
+| **User**         | `create` `read` `update` `delete` `query` `export-data`    | Platform users                     |
+| **Account**      | `read` `delete` `query`                                    | Personal or organization workspace |
+| **Organization** | `create` `read` `update` `delete` `query` `upload-picture` | Container for projects and members |
+| **Project**      | `create` `update` `delete` `query`                         | Isolated environment (query only)  |
+| **Resource**     | `create` `update` `delete` `query`                         | Domain entities (query only)       |
+| **Role**         | `create` `update` `delete` `query`                         | Named permission sets (query only) |
+| **Group**        | `create` `update` `delete` `query`                         | Role–resource permission bundles   |
+| **Permission**   | `create` `update` `delete` `query`                         | Action on a resource               |
+| **Tag**          | `create` `update` `delete` `query`                         | Labels (query only)                |
+| **API Key**      | `create` `delete` `query` `revoke` `exchange`              | Programmatic credentials           |
+| **App**          | `create` `update` `query` `delete`                         | Consent-flow applications          |
 
 ### Relationship & Session Resources
 

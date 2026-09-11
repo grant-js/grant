@@ -60,6 +60,7 @@ export interface FormDialogProps<TFormValues extends Record<string, any>> {
   relationships?: DialogRelationship[];
   supplementaryContent?: ReactNode;
   translationNamespace: string;
+  bodyClassName?: string;
   onOpenChange?: (open: boolean) => void;
   onSubmit: (values: TFormValues) => Promise<void>;
   trigger?: ReactNode;
@@ -82,6 +83,7 @@ export function FormDialog<TFormValues extends Record<string, any>>({
   supplementaryContent,
   onSubmit,
   translationNamespace,
+  bodyClassName,
   trigger,
   onReset,
   resetValues,
@@ -190,14 +192,18 @@ export function FormDialog<TFormValues extends Record<string, any>>({
     }
   };
 
+  const hasStackedDialogs = () =>
+    typeof document !== 'undefined' &&
+    document.querySelectorAll('[data-slot="dialog-content"]').length > 1;
+
   const handleInteractionOutside = (event: Event) => {
-    if (isSubmitting) {
+    if (isSubmitting || hasStackedDialogs()) {
       event.preventDefault();
     }
   };
 
   const handleEscapeKeyDown = (event: KeyboardEvent) => {
-    if (isSubmitting) {
+    if (isSubmitting || hasStackedDialogs()) {
       event.preventDefault();
     }
   };
@@ -301,15 +307,20 @@ export function FormDialog<TFormValues extends Record<string, any>>({
       );
     }
 
-    return (
+    const fieldControl = (
       <FormField
         // @ts-expect-error - Zod v4 generic type compatibility with react-hook-form Control
         control={form.control}
         name={fieldName as any}
-        render={({ field: formField }) => (
-          <FormItem>
-            {fieldType !== 'collapsible-group' && !fromCollapsibleContent && (
-              <FormLabel className="flex items-center gap-2">
+        render={({ field: formField }) => {
+          const fieldLabel =
+            fieldType !== 'collapsible-group' && !fromCollapsibleContent ? (
+              <FormLabel
+                className={cn(
+                  'flex items-center gap-2',
+                  fieldType === 'switch' && 'cursor-pointer leading-snug'
+                )}
+              >
                 {t(field.label)}
                 {field.info && (
                   <Popover>
@@ -342,216 +353,237 @@ export function FormDialog<TFormValues extends Record<string, any>>({
                   </Popover>
                 )}
               </FormLabel>
-            )}
-            <FormControl>
-              {fieldType === 'textarea' ? (
-                <Textarea
-                  placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
-                  className="resize-none"
-                  disabled={isSubmitting}
-                  {...formField}
-                />
-              ) : fieldType === 'date' ? (
-                <DatePicker
-                  date={formField.value as Date | undefined}
-                  onDateChange={(date) => formField.onChange(date)}
-                  placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
-                  disabled={isSubmitting}
-                  className={hasError ? 'border-red-500' : ''}
-                  minDate={field.minDate}
-                  maxDate={field.maxDate}
-                />
-              ) : fieldType === 'collapsible-group' && field.contentField ? (
-                (() => {
-                  const contentFieldConfig = fields.find((f) => f.name === field.contentField);
-                  return (
-                    <Collapsible
-                      open={!!formField.value}
-                      onOpenChange={(open) => formField.onChange(open)}
-                    >
-                      <CollapsibleTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={isSubmitting}
-                          className="flex w-full items-center justify-between gap-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                          <span className="flex min-w-0 flex-1 items-center gap-2">
-                            {t(contentFieldConfig?.label ?? field.label)}
-                            {contentFieldConfig?.info && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="inline-flex shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                                    aria-label="Field information"
-                                  >
-                                    <Info className="w-4 h-4" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  className="w-80 z-[99999999]"
-                                  align="start"
-                                  onOpenAutoFocus={(e) => e.preventDefault()}
-                                >
-                                  <div className="space-y-2">
-                                    <p className="text-sm text-muted-foreground">
-                                      {t(contentFieldConfig.info)}
-                                    </p>
-                                    {contentFieldConfig.infoLink && (
-                                      <a
-                                        href={contentFieldConfig.infoLink.href}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm text-primary hover:underline"
-                                      >
-                                        {contentFieldConfig.infoLink.label
-                                          ? t(contentFieldConfig.infoLink.label)
-                                          : 'Full syntax reference'}
-                                      </a>
-                                    )}
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </span>
-                          {formField.value ? (
-                            <ChevronDown className="h-4 w-4 shrink-0" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 shrink-0" />
-                          )}
-                        </button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="pt-2">
-                        {contentFieldConfig ? renderField(contentFieldConfig, true) : null}
-                      </CollapsibleContent>
-                    </Collapsible>
-                  );
-                })()
-              ) : fieldType === 'switch' ? (
-                <Switch
-                  checked={formField.value as boolean}
-                  onCheckedChange={(checked) => formField.onChange(checked)}
-                  disabled={isSubmitting}
-                />
-              ) : fieldType === 'slug' ? (
-                <SlugInput
-                  value={formField.value as string}
-                  onChange={(value) => formField.onChange(value)}
-                  autoSlugifyFrom={autoSlugifySourceValue}
-                  onAutoSlugify={(slug) => formField.onChange(slug)}
-                  placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
-                  className={hasError ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                />
-              ) : fieldType === 'action-slug' ? (
-                <Input
-                  type="text"
-                  placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
-                  className={hasError ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                  value={formField.value ?? ''}
-                  onBlur={formField.onBlur}
-                  onChange={(e) => {
-                    const filtered = e.target.value.replace(/[^A-Za-z0-9+-]/g, '');
-                    formField.onChange(filtered);
-                  }}
-                />
-              ) : fieldType === 'select' ? (
-                <Select
-                  value={formField.value || ''}
-                  onValueChange={(value) => formField.onChange(value)}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger className={cn(hasError ? 'border-red-500' : '')}>
-                    {field.options?.some((o) => o.description) ? (
-                      <span className="min-w-0 flex-1 truncate text-left">
-                        {formField.value ? (
-                          (field.options.find((o) => o.value === formField.value)?.label ??
-                          formField.value)
-                        ) : (
-                          <span className="text-muted-foreground">
-                            {field.placeholder ? t(field.placeholder) : t('form.selectPlaceholder')}
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <SelectValue
-                        placeholder={
-                          field.placeholder ? t(field.placeholder) : t('form.selectPlaceholder')
-                        }
-                      />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.options && field.options.length > 0
-                      ? field.options.map((option) => (
-                          <SelectItem
-                            key={option.value}
-                            value={option.value}
-                            disabled={option.disabled}
+            ) : null;
+
+          return (
+            <FormItem
+              className={fieldType === 'switch' ? 'flex flex-row items-center gap-3' : undefined}
+            >
+              {fieldType !== 'switch' && fieldLabel}
+              <FormControl>
+                {fieldType === 'textarea' ? (
+                  <Textarea
+                    placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
+                    className="resize-none"
+                    disabled={isSubmitting}
+                    {...formField}
+                  />
+                ) : fieldType === 'date' ? (
+                  <DatePicker
+                    date={formField.value as Date | undefined}
+                    onDateChange={(date) => formField.onChange(date)}
+                    placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
+                    disabled={isSubmitting}
+                    className={hasError ? 'border-red-500' : ''}
+                    minDate={field.minDate}
+                    maxDate={field.maxDate}
+                  />
+                ) : fieldType === 'collapsible-group' && field.contentField ? (
+                  (() => {
+                    const contentFieldConfig = fields.find((f) => f.name === field.contentField);
+                    return (
+                      <Collapsible
+                        open={!!formField.value}
+                        onOpenChange={(open) => formField.onChange(open)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isSubmitting}
+                            className="flex w-full items-center justify-between gap-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                           >
-                            {option.description ? (
-                              <div className="flex flex-col">
-                                <span>{option.label}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {option.description}
-                                </span>
-                              </div>
+                            <span className="flex min-w-0 flex-1 items-center gap-2">
+                              {t(contentFieldConfig?.label ?? field.label)}
+                              {contentFieldConfig?.info && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex shrink-0 items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                      aria-label="Field information"
+                                    >
+                                      <Info className="w-4 h-4" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-80 z-[99999999]"
+                                    align="start"
+                                    onOpenAutoFocus={(e) => e.preventDefault()}
+                                  >
+                                    <div className="space-y-2">
+                                      <p className="text-sm text-muted-foreground">
+                                        {t(contentFieldConfig.info)}
+                                      </p>
+                                      {contentFieldConfig.infoLink && (
+                                        <a
+                                          href={contentFieldConfig.infoLink.href}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-sm text-primary hover:underline"
+                                        >
+                                          {contentFieldConfig.infoLink.label
+                                            ? t(contentFieldConfig.infoLink.label)
+                                            : 'Full syntax reference'}
+                                        </a>
+                                      )}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            </span>
+                            {formField.value ? (
+                              <ChevronDown className="h-4 w-4 shrink-0" />
                             ) : (
-                              option.label
+                              <ChevronRight className="h-4 w-4 shrink-0" />
                             )}
-                          </SelectItem>
-                        ))
-                      : field.dependsOn && field.getOptions
-                        ? (() => {
-                            const dependsOnValue = watchedValues[field.dependsOn] || '';
-                            const dynamicOptions = field.getOptions(dependsOnValue);
-                            return dynamicOptions.length > 0 ? (
-                              dynamicOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                {t('form.noOptionsAvailable')}
-                              </div>
-                            );
-                          })()
-                        : null}
-                  </SelectContent>
-                </Select>
-              ) : fieldType === 'json' ? (
-                <JsonEditor
-                  value={formField.value as object | string | undefined}
-                  onChange={(value) => {
-                    formField.onChange(value);
-                    // Don't trigger validation on change - validation happens on blur and submit
-                  }}
-                  onBlur={formField.onBlur}
-                  disabled={isSubmitting}
-                  className={hasError ? 'border-red-500' : ''}
-                  error={hasError ? (error?.message as string) : undefined}
-                />
-              ) : (
-                <Input
-                  type={fieldType === 'text' || fieldType === 'email' ? fieldType : 'text'}
-                  placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
-                  className={hasError ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                  {...formField}
-                />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-2">
+                          {contentFieldConfig ? renderField(contentFieldConfig, true) : null}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })()
+                ) : fieldType === 'switch' ? (
+                  <Switch
+                    checked={formField.value as boolean}
+                    onCheckedChange={(checked) => formField.onChange(checked)}
+                    disabled={isSubmitting}
+                  />
+                ) : fieldType === 'slug' ? (
+                  <SlugInput
+                    value={formField.value as string}
+                    onChange={(value) => formField.onChange(value)}
+                    autoSlugifyFrom={autoSlugifySourceValue}
+                    onAutoSlugify={(slug) => formField.onChange(slug)}
+                    placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
+                    className={hasError ? 'border-red-500' : ''}
+                    disabled={isSubmitting}
+                  />
+                ) : fieldType === 'action-slug' ? (
+                  <Input
+                    type="text"
+                    placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
+                    className={hasError ? 'border-red-500' : ''}
+                    disabled={isSubmitting}
+                    value={formField.value ?? ''}
+                    onBlur={formField.onBlur}
+                    onChange={(e) => {
+                      const filtered = e.target.value.replace(/[^A-Za-z0-9+-]/g, '');
+                      formField.onChange(filtered);
+                    }}
+                  />
+                ) : fieldType === 'select' ? (
+                  <Select
+                    value={formField.value || ''}
+                    onValueChange={(value) => formField.onChange(value)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className={cn(hasError ? 'border-red-500' : '')}>
+                      {field.options?.some((o) => o.description) ? (
+                        <span className="min-w-0 flex-1 truncate text-left">
+                          {formField.value ? (
+                            (field.options.find((o) => o.value === formField.value)?.label ??
+                            formField.value)
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {field.placeholder
+                                ? t(field.placeholder)
+                                : t('form.selectPlaceholder')}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <SelectValue
+                          placeholder={
+                            field.placeholder ? t(field.placeholder) : t('form.selectPlaceholder')
+                          }
+                        />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options && field.options.length > 0
+                        ? field.options.map((option) => (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value}
+                              disabled={option.disabled}
+                            >
+                              {option.description ? (
+                                <div className="flex flex-col">
+                                  <span>{option.label}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {option.description}
+                                  </span>
+                                </div>
+                              ) : (
+                                option.label
+                              )}
+                            </SelectItem>
+                          ))
+                        : field.dependsOn && field.getOptions
+                          ? (() => {
+                              const dependsOnValue = watchedValues[field.dependsOn] || '';
+                              const dynamicOptions = field.getOptions(dependsOnValue);
+                              return dynamicOptions.length > 0 ? (
+                                dynamicOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                  {t('form.noOptionsAvailable')}
+                                </div>
+                              );
+                            })()
+                          : null}
+                    </SelectContent>
+                  </Select>
+                ) : fieldType === 'json' ? (
+                  <JsonEditor
+                    value={formField.value as object | string | undefined}
+                    onChange={(value) => {
+                      formField.onChange(value);
+                      // Don't trigger validation on change - validation happens on blur and submit
+                    }}
+                    onBlur={formField.onBlur}
+                    disabled={isSubmitting}
+                    className={hasError ? 'border-red-500' : ''}
+                    error={hasError ? (error?.message as string) : undefined}
+                  />
+                ) : (
+                  <Input
+                    type={fieldType === 'text' || fieldType === 'email' ? fieldType : 'text'}
+                    placeholder={field.placeholder ? t(field.placeholder) : t(field.label)}
+                    className={hasError ? 'border-red-500' : ''}
+                    disabled={isSubmitting}
+                    {...formField}
+                  />
+                )}
+              </FormControl>
+              {fieldType === 'switch' && fieldLabel}
+              {hasError && (
+                <TranslatedFormMessage className="text-destructive text-sm mt-1">
+                  {String(error?.message || '')}
+                </TranslatedFormMessage>
               )}
-            </FormControl>
-            {hasError && (
-              <TranslatedFormMessage className="text-destructive text-sm mt-1">
-                {String(error?.message || '')}
-              </TranslatedFormMessage>
-            )}
-          </FormItem>
-        )}
+            </FormItem>
+          );
+        }}
       />
+    );
+
+    if (!field.leading) {
+      return fieldControl;
+    }
+
+    return (
+      <div className="flex items-center gap-6">
+        <div className="shrink-0">{field.leading}</div>
+        <div className="min-w-0 flex-1">{fieldControl}</div>
+      </div>
     );
   };
 
@@ -573,7 +605,9 @@ export function FormDialog<TFormValues extends Record<string, any>>({
             onSubmit={form.handleSubmit(handleSubmit as any)}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <div className="flex-1 space-y-4 overflow-y-auto pr-1 border-t py-4">
+            <div
+              className={cn('flex-1 space-y-4 overflow-y-auto pr-1 border-t py-4', bodyClassName)}
+            >
               {fields.map((f) => (
                 <Fragment key={f.name}>{renderField(f)}</Fragment>
               ))}

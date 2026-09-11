@@ -2,15 +2,16 @@ import { useTranslations } from 'next-intl';
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  CreateOrganizationDocument,
   CreateOrganizationInput,
+  DeleteOrganizationDocument,
   MutationDeleteOrganizationArgs,
   Organization,
-  UpdateOrganizationInput,
-} from '@grantjs/schema';
-import {
-  CreateOrganizationDocument,
-  DeleteOrganizationDocument,
   UpdateOrganizationDocument,
+  UpdateOrganizationInput,
+  UploadOrganizationPictureDocument,
+  UploadOrganizationPictureInput,
+  UploadOrganizationPictureResult,
 } from '@grantjs/schema';
 import { toast } from 'sonner';
 
@@ -43,6 +44,12 @@ export function useOrganizationMutations() {
       update,
     }
   );
+
+  const [uploadOrganizationPicture] = useMutation<{
+    uploadOrganizationPicture: UploadOrganizationPictureResult;
+  }>(UploadOrganizationPictureDocument, {
+    update,
+  });
 
   const handleCreateOrganization = async (input: CreateOrganizationInput) => {
     try {
@@ -98,9 +105,27 @@ export function useOrganizationMutations() {
     }
   };
 
+  const handleUploadOrganizationPicture = async (input: UploadOrganizationPictureInput) => {
+    try {
+      const result = await uploadOrganizationPicture({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.uploadPictureSuccess'));
+      return result.data?.uploadOrganizationPicture;
+    } catch (error) {
+      console.error('Error uploading organization picture:', error);
+      toast.error(t('notifications.uploadPictureError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   return {
     createOrganization: handleCreateOrganization,
     updateOrganization: handleUpdateOrganization,
     deleteOrganization: handleDeleteOrganization,
+    uploadOrganizationPicture: handleUploadOrganizationPicture,
   };
 }

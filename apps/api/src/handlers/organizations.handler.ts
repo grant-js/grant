@@ -1,5 +1,6 @@
 import { ORGANIZATION_ROLE_DEFINITIONS, RoleKey } from '@grantjs/constants';
 import type {
+  IFileStorageServicePort,
   IOrganizationGroupService,
   IOrganizationPermissionService,
   IOrganizationProjectService,
@@ -17,10 +18,12 @@ import {
   Organization,
   OrganizationPage,
   QueryOrganizationsArgs,
+  Tenant,
+  UploadOrganizationPictureInput,
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { ConfigurationError } from '@/lib/errors';
+import { BadRequestError, ConfigurationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -36,6 +39,7 @@ export class OrganizationHandler extends CacheHandler {
     private readonly organizationGroups: IOrganizationGroupService,
     private readonly organizationPermissions: IOrganizationPermissionService,
     private readonly organizationTags: IOrganizationTagService,
+    private readonly fileStorage: IFileStorageServicePort,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -154,6 +158,41 @@ export class OrganizationHandler extends CacheHandler {
       ]);
 
       return await this.organizations.deleteOrganization(params, tx);
+    });
+  }
+
+  public async uploadOrganizationPicture(
+    params: UploadOrganizationPictureInput
+  ): Promise<{ url: string; path: string }> {
+    const { organizationId, file, contentType, filename, scope } = params;
+
+    if (scope.tenant === Tenant.Organization && scope.id !== organizationId) {
+      throw new BadRequestError('Organization id must match scope');
+    }
+
+    const fileBuffer = this.fileStorage.validateAndDecodeUpload({
+      file,
+      contentType,
+      filename,
+    });
+
+    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `organizations/${organizationId}/picture`
+    );
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.fileStorage.upload(fileBuffer, storagePath, {
+        contentType,
+        public: true,
+      });
+
+      await this.organizations.setOrganizationPictureUrl(organizationId, result.url, tx);
+
+      return {
+        url: result.url,
+        path: result.path,
+      };
     });
   }
 }
