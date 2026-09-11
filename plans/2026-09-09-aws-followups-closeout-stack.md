@@ -44,8 +44,8 @@ Last updated **2026-09-11**.
 | 1–8 (parts A, B, C) | **merged to trunk**                  | [#400], [#401], [#403], [#404], [#405], [#407], [#408], and [#421] for slice 4 |
 | 9 (part D)          | **merged to trunk** 2026-09-11       | [#427]                                                                         |
 | 10a (part D)        | **merged to trunk** 2026-09-11       | [#428]                                                                         |
-| 10b (part D)        | **open, draft**                      | [#429]                                                                         |
-| 11 (part D)         | not started                          | —                                                                              |
+| 10b (part D)        | **merged to trunk** 2026-09-11       | [#429]                                                                         |
+| 11 (part D)         | **open, draft**                      | [#430]                                                                         |
 | 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
 | 16 (part F)         | not started                          | —                                                                              |
 | final → `main`      | not opened                           | —                                                                              |
@@ -77,6 +77,7 @@ should take `main` before slice 10 starts rather than after it discovers a drift
 [#427]: https://github.com/grant-js/grant/pull/427
 [#428]: https://github.com/grant-js/grant/pull/428
 [#429]: https://github.com/grant-js/grant/pull/429
+[#430]: https://github.com/grant-js/grant/pull/430
 
 ## Scope, and the objection to it
 
@@ -273,7 +274,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          | #427 |
 | 10a   | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service — my user picture   | Backend           | light             | #428 |
 | 10b   | `feat/aws-followups-upload-api-targets`    | 10a   | D    | The same pair for membership and admin pictures              | Backend           | light             | #429 |
-| 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |      |
+| 11    | `feat/aws-followups-web-upload`            | 10b   | D    | The web flow, and the bucket rule it needs                   | Frontend          | light             | #430 |
 | 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |      |
 | 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
 | 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
@@ -798,6 +799,84 @@ definition cannot drift, and that is better than a test that notices when copies
   succeeds while the confirm fails, a user who navigates away mid-upload. Each leaves
   either a complete object or nothing claimed.
 
+**Slice 11 outcome (#430).** Two commits, because two things are independently
+verifiable: the web flow (jsdom unit tests) and the bucket rule that lets it work on the
+deployed target (a CDK template assertion). They are one PR because splitting them would
+have shipped a client that provably cannot reach S3.
+
+The orchestration lives in `apps/web/lib/direct-upload.ts` rather than in the three
+components, and the reason is the plan's own requirement. What has to hold is a property
+of the _window_ between storing bytes and claiming them, and three copies of that window
+is three chances to treat it differently:
+
+- **Before the PUT** — an expired ticket or an abort means nothing was written and
+  nothing was claimed, and both stop without sending a byte. The expiry is checked
+  client-side deliberately: the local adapter answers a stale signature and a forged one
+  identically by design (slice 9), so before the request is the only place the difference
+  can be named.
+- **After the PUT** — the abort signal is deliberately _not_ honoured. Abandoning a
+  stored object is the orphan the sequence exists to avoid, so a cancelled upload that
+  already landed is finished rather than dropped. This asymmetry is the one design
+  decision in the slice, and it is pinned by a test that fails if the signal is checked
+  again after the transfer.
+- **A confirm that fails anyway** is reported as `unclaimed`, distinctly from a failed
+  upload. The path the server derives is deterministic, so a retry overwrites: the orphan
+  does not accumulate, and one successful retry resolves it.
+
+Also: the request carries the headers the API named and no others, and `credentials:
+'omit'` — a presigned URL authorizes itself, and the storage origin is not ours to hand a
+session cookie to. Both are asserted, both mutations die.
+
+25 web tests, 14 mutations killed; 5 deploy tests, 5 mutations killed.
+
+**Finding F-11-1 — a failed confirm is not always "nothing claimed".** The plan's
+acceptance ("each leaves either a complete object or nothing claimed") does not hold in
+one branch, and the reason is upstream of this slice.
+
+`sanitizeExtensionAndGeneratePath` derives `users/<id>/picture.<ext>` with nothing
+per-upload in it, and `confirmMyUserPictureUpload` records that same derived URL. So:
+
+- **Same extension as the current picture** — `pictureUrl` already equals what the
+  confirm would write, so the confirm is a no-op on the row and **the PUT alone made the
+  new bytes live**. A failed confirm means the picture changed while the user was told it
+  did not. (The cache-buster the row carries is also not bumped, so a cached copy may
+  still be displayed — which is, by luck, the less confusing of the two.)
+- **Different extension** — the row still points at the old object, so the new one is
+  orphaned and the old picture stays visible. This branch does satisfy the acceptance.
+
+Fixing it properly means minting to a staging path and having the confirm promote the
+object, which needs a copy/move on `IFileStorageService` — a port change, and out of
+scope for a frontend slice. What 11 does instead is refuse to hide it: the Apollo cache
+is evicted on the failure path as well as the success path, in both call sites that hold
+one, so the UI re-reads the server's answer rather than assuming nothing moved. Carried
+as a follow-up, not closed.
+
+**Finding F-11-2 — the content type was a lie, and slice 9 made it a signed one.** The
+crop pipeline always encoded JPEG (`canvas.toBlob(..., 'image/jpeg')`) while the content
+type came from the dropped file's extension, so a dropped `.png` was uploaded as JPEG
+bytes labelled `image/png`. Harmless while the API decoded a base64 blob it could
+inspect; not harmless once the content type is what a presigned URL commits to. Fixed
+in this slice: `chooseOutputFormat` decides the format, the extension, and the content
+type together, and GIF is re-labelled PNG because a canvas has no GIF encoder and
+`toBlob` substitutes one silently. Closed — the mutation that re-labels GIF as GIF now
+fails.
+
+**Deviation from the plan's scope: the second dialog was never a base64 reader.** The
+plan names `project-sync-job-start-dialog.tsx` as the other file that "moves to
+request-URL → PUT → confirm". It does not read a file into base64 and it does not touch
+storage: it parses a JSON file with `FileReader.readAsText`, validates its shape, and
+sends the **parsed object** as `SyncProjectInput` GraphQL variables to `startProjectSync`.
+There is no storage target for a CDM payload — slices 9–10b minted picture targets only —
+so moving it would need a new port-backed target, a handler pair, and a worker that reads
+the payload from the store instead of from the mutation. That is a backend slice, not a
+line in a frontend one. Left as it is, and carried as a follow-up.
+
+It is worth carrying, though, and not only for symmetry: that dialog accepts a 25 MB JSON
+file and posts it as a GraphQL variable, which is well past the 6 MB request ceiling part
+B established for the Lambda target (slices 5 and 6). A CDM import large enough to be
+worth doing is currently one the deployed target cannot accept. Part B made the ceiling
+honest; this is the first caller found standing on the wrong side of it.
+
 ### Part E — the decisions slice 4 unlocks (program items 8, 10, 9, 11)
 
 Tier 3, plus item 8's second half. **These are decision slices** (gate 1 decision 6):
@@ -1020,14 +1099,16 @@ gh stack add feat/aws-followups-ses-identity                  # before starting 
 
 Carried out even of this story, which is meant to be the one that carries everything.
 
-| #   | Item                                                                                                                                                                                                                                                 | Why it is not here                                                                                                                                                                                                                                                                                                 |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | **`DB_GRANT_ROLE_URL` through the resolver.** The one credential part C leaves refused, and the most valuable one in the list — a superuser URL.                                                                                                     | It is read outside any composition root, during a migration (`database/src/grant-rls-login-role.lib.ts`). Moving it changes the RLS grant path's shape, which is its own story.                                                                                                                                    |
-| 2   | **Bring-your-own Redis** (byo-database follow-on 1). Still "config only — no network wiring is generated".                                                                                                                                           | Unchanged by anything here.                                                                                                                                                                                                                                                                                        |
-| 3   | **F5 — a `"` inside a _referenced_ secret** (byo-database gate 4, M-4). Whether CloudFormation merely breaks or the quote can close `DB_URL` and open another key.                                                                                   | Still open, still needs a deploy. **Slice 16 is a deploy** — if it is cheap to fold in there, do it and close the finding; if not, it stays open and this row says so.                                                                                                                                             |
-| 4   | **GraphQL ingress payload sizes.** Phase B measured REST ingress only; a GraphQL client sending `searchable` pays more than the recorded table shows.                                                                                                | Slice 6 sets a limit informed by REST numbers. If GraphQL ingress turns out to bind first, that is a second measurement and a second decision.                                                                                                                                                                     |
-| 5   | **`errors.conflict.<resource>` resolves for no resource.** `mapDomainToHttp` derives the key from a runtime resource name; the catalogue defines only `duplicateEntry` and `duplicateAuthMethod`, so every `ConflictError` naming a resource misses. | Found by #404, which closed the _leak_ (`translateError` falls back to the message) but not the cause. Fixing it is a decision about whether the mapper should derive keys it cannot guarantee — a design call, not a slice's aside. `errors.notFound.<segment>` has the same shape with mostly-complete coverage. |
-| 6   | **A rotated `DB_URL` does not reach a warm container.** `createApp()` resolves it once and hands it to a pool; the resolver TTL cannot govern a pool built from an earlier value. `apps/api/src/lib/secrets/database-url.ts` documents the opposite. | Found by #421 and measured: polled 8 m 27 s against a 300 s TTL, still stale; one container replacement fixed it on the first request. Same shape as the caveat slice 7 records for overlaid credentials, so it is one rule rather than two exceptions — and the doc comment is currently wrong.                   |
-| 7   | **JWKS answers `200 {"keys":[]}` when the database is unreachable.** `getJwks()` swallows conversion failures and `sendJwksResponse` wires `onKeyError` only in development.                                                                         | Found by #421. Worse than a 500: a verifier receives a valid-looking empty key set, rejects every token, and gets no signal that the cause was an outage. Security-adjacent.                                                                                                                                       |
-| 8   | **Token `iss`/`aud` are the Function URL, not `APP_URL`.** The issuer is request-derived, and behind CloudFront the Host the Lambda sees is the origin.                                                                                              | Found by #421. An OIDC relying party following `iss` reaches an origin that refuses every unauthenticated request by design, and the value changes if the Function URL is ever recreated.                                                                                                                          |
-| 9   | **`project_sync_jobs` rows are not readable immediately after their own `202`.** Absent twice in five checks at 5 s; all present later.                                                                                                              | Found by #421. Read-after-write latency rather than loss, but a client that follows its own 202 with a GET can get a 404. A guide note, or a read-your-writes guarantee.                                                                                                                                           |
+| #   | Item                                                                                                                                                                                                                                                 | Why it is not here                                                                                                                                                                                                                                                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **`DB_GRANT_ROLE_URL` through the resolver.** The one credential part C leaves refused, and the most valuable one in the list — a superuser URL.                                                                                                     | It is read outside any composition root, during a migration (`database/src/grant-rls-login-role.lib.ts`). Moving it changes the RLS grant path's shape, which is its own story.                                                                                                                                        |
+| 2   | **Bring-your-own Redis** (byo-database follow-on 1). Still "config only — no network wiring is generated".                                                                                                                                           | Unchanged by anything here.                                                                                                                                                                                                                                                                                            |
+| 3   | **F5 — a `"` inside a _referenced_ secret** (byo-database gate 4, M-4). Whether CloudFormation merely breaks or the quote can close `DB_URL` and open another key.                                                                                   | Still open, still needs a deploy. **Slice 16 is a deploy** — if it is cheap to fold in there, do it and close the finding; if not, it stays open and this row says so.                                                                                                                                                 |
+| 4   | **GraphQL ingress payload sizes.** Phase B measured REST ingress only; a GraphQL client sending `searchable` pays more than the recorded table shows.                                                                                                | Slice 6 sets a limit informed by REST numbers. If GraphQL ingress turns out to bind first, that is a second measurement and a second decision.                                                                                                                                                                         |
+| 5   | **`errors.conflict.<resource>` resolves for no resource.** `mapDomainToHttp` derives the key from a runtime resource name; the catalogue defines only `duplicateEntry` and `duplicateAuthMethod`, so every `ConflictError` naming a resource misses. | Found by #404, which closed the _leak_ (`translateError` falls back to the message) but not the cause. Fixing it is a decision about whether the mapper should derive keys it cannot guarantee — a design call, not a slice's aside. `errors.notFound.<segment>` has the same shape with mostly-complete coverage.     |
+| 6   | **A rotated `DB_URL` does not reach a warm container.** `createApp()` resolves it once and hands it to a pool; the resolver TTL cannot govern a pool built from an earlier value. `apps/api/src/lib/secrets/database-url.ts` documents the opposite. | Found by #421 and measured: polled 8 m 27 s against a 300 s TTL, still stale; one container replacement fixed it on the first request. Same shape as the caveat slice 7 records for overlaid credentials, so it is one rule rather than two exceptions — and the doc comment is currently wrong.                       |
+| 7   | **JWKS answers `200 {"keys":[]}` when the database is unreachable.** `getJwks()` swallows conversion failures and `sendJwksResponse` wires `onKeyError` only in development.                                                                         | Found by #421. Worse than a 500: a verifier receives a valid-looking empty key set, rejects every token, and gets no signal that the cause was an outage. Security-adjacent.                                                                                                                                           |
+| 8   | **Token `iss`/`aud` are the Function URL, not `APP_URL`.** The issuer is request-derived, and behind CloudFront the Host the Lambda sees is the origin.                                                                                              | Found by #421. An OIDC relying party following `iss` reaches an origin that refuses every unauthenticated request by design, and the value changes if the Function URL is ever recreated.                                                                                                                              |
+| 9   | **`project_sync_jobs` rows are not readable immediately after their own `202`.** Absent twice in five checks at 5 s; all present later.                                                                                                              | Found by #421. Read-after-write latency rather than loss, but a client that follows its own 202 with a GET can get a 404. A guide note, or a read-your-writes guarantee.                                                                                                                                               |
+| 10  | **A confirm that fails can still have changed the picture.** F-11-1: the derived storage path has nothing per-upload in it, so a PUT to the extension already in use overwrites the live object before anything is recorded.                         | The fix is a staging path the confirm promotes, which needs copy/move on `IFileStorageService` — a port change, and #430 is a frontend slice. #430 evicts the cache on the failure path so the UI stops claiming the old state, which is mitigation, not closure.                                                      |
+| 11  | **A CDM payload has no direct-upload target.** The sync-job dialog posts a parsed 25 MB JSON file as GraphQL variables, well past the 6 MB ceiling parts B established for the Lambda target.                                                        | Found while doing #430, which the plan expected to move this dialog too — it was never a base64 reader (see the slice 11 deviation). Needs a port-backed payload target, a handler pair, and a worker that reads from the store: a backend slice. The first caller found on the wrong side of part B's honest ceiling. |
