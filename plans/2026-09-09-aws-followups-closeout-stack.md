@@ -43,8 +43,9 @@ Last updated **2026-09-11**.
 | ------------------- | ------------------------------------ | ------------------------------------------------------------------------------ |
 | 1–8 (parts A, B, C) | **merged to trunk**                  | [#400], [#401], [#403], [#404], [#405], [#407], [#408], and [#421] for slice 4 |
 | 9 (part D)          | **merged to trunk** 2026-09-11       | [#427]                                                                         |
-| 10a (part D)        | **open, draft**                      | [#428]                                                                         |
-| 10b, 11 (part D)    | not started                          | —                                                                              |
+| 10a (part D)        | **merged to trunk** 2026-09-11       | [#428]                                                                         |
+| 10b (part D)        | **open, draft**                      | [#429]                                                                         |
+| 11 (part D)         | not started                          | —                                                                              |
 | 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
 | 16 (part F)         | not started                          | —                                                                              |
 | final → `main`      | not opened                           | —                                                                              |
@@ -75,6 +76,7 @@ should take `main` before slice 10 starts rather than after it discovers a drift
 [#426]: https://github.com/grant-js/grant/pull/426
 [#427]: https://github.com/grant-js/grant/pull/427
 [#428]: https://github.com/grant-js/grant/pull/428
+[#429]: https://github.com/grant-js/grant/pull/429
 
 ## Scope, and the objection to it
 
@@ -270,7 +272,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** | #408 |
 | 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          | #427 |
 | 10a   | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service — my user picture   | Backend           | light             | #428 |
-| 10b   | `feat/aws-followups-upload-api-targets`    | 10a   | D    | The same pair for membership and admin pictures              | Backend           | light             |      |
+| 10b   | `feat/aws-followups-upload-api-targets`    | 10a   | D    | The same pair for membership and admin pictures              | Backend           | light             | #429 |
 | 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |      |
 | 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |      |
 | 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
@@ -766,6 +768,24 @@ repository cannot demonstrate for S3 until slice 16.
 `STORAGE_UPLOAD_URL_EXPIRY_SECONDS` (default 300) was added; the plan did not
 anticipate a config key, but a bearer capability no store revokes needs its lifetime
 to be an operator's decision.
+
+**Slice 10b outcome (#429).** GraphQL only: neither `uploadMyProjectMembershipPicture`
+nor `uploadUserPicture` has a REST route today, and each pair mirrors the transport
+surface of the mutation it replaces, so the boot-parity route table is untouched.
+
+The substance is that **authorization is checked twice per target**. The base64
+mutations check inside the transaction that writes, which is sound when bytes and
+write arrive together; a minted URL separates them by minutes. So each target checks
+before issuing the capability and again before recording it — and the re-check covers
+a gap the split creates that the base64 path never had: a membership revoked, or a
+target that became self-managed, while a legitimately issued URL was still live.
+
+The administrator target is the one to read closely. Its storage path is derived from
+the **target** user rather than the caller, so unlike the `me` mutations there is no
+structural backstop: the permission check is the entire tenancy boundary. That is also
+why the three administrator mutations now share one `guardUserPictureWrite` definition
+at the resolver layer rather than three copies of the same guard chain — a shared
+definition cannot drift, and that is better than a test that notices when copies do.
 
 #### Slice 11 — the web flow
 

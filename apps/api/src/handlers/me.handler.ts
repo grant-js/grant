@@ -21,6 +21,7 @@ import { GrantAuth } from '@grantjs/core';
 import { SupportedLocale } from '@grantjs/i18n';
 import {
   Account,
+  ConfirmMyProjectMembershipPictureUploadInput,
   ConfirmMyUserPictureUploadInput,
   CreateMyUserAuthenticationMethodInput,
   DeleteMyAccountsInput,
@@ -30,6 +31,7 @@ import {
   MyUserSessionsInput,
   NotificationPage,
   NotificationPreference,
+  RequestMyProjectMembershipPictureUploadUrlInput,
   RequestMyUserPictureUploadUrlInput,
   SetNotificationPreferenceInput,
   SortOrder,
@@ -623,6 +625,90 @@ export class MeHandler extends CacheHandler {
     });
   }
 
+  /**
+   * Where one project membership's picture lives. Derived from the authenticated
+   * id and the project, never from input beyond the extension — shared by the
+   * base64 mutation and both halves of the direct-upload pair.
+   */
+  private myProjectMembershipPicturePath(
+    userId: string,
+    projectId: string,
+    filename: string
+  ): string {
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `users/${userId}/projects/${projectId}/picture`
+    );
+  }
+
+  /**
+   * `projectId` is client-supplied and reaches the storage path, so membership is
+   * not something to check only when the upload is recorded.
+   *
+   * The base64 mutation can check inside its transaction because the bytes and the
+   * write arrive together. A minted URL separates them: it is a capability handed
+   * out minutes before anything is written, so issuing one for a project the caller
+   * does not belong to is the thing to prevent rather than to detect afterwards.
+   */
+  private async assertMyProjectMembership(
+    userId: string,
+    projectId: string,
+    tx?: Transaction
+  ): Promise<void> {
+    const memberships = await this.projectUsers.getUserProjectMemberships(userId, tx);
+    if (!memberships.some((m) => m.projectId === projectId)) {
+      throw new NotFoundError('ProjectUser');
+    }
+  }
+
+  public async requestMyProjectMembershipPictureUploadUrl(
+    input: RequestMyProjectMembershipPictureUploadUrlInput
+  ): Promise<UploadUrl> {
+    const userId = this.getAuthenticatedUserId();
+    const { projectId, filename, contentType, contentLength } = input;
+
+    await this.assertMyProjectMembership(userId, projectId);
+    this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
+
+    const minted = await this.fileStorage.getUploadUrl(
+      this.myProjectMembershipPicturePath(userId, projectId, filename),
+      {
+        contentType,
+        contentLength,
+        expiresInSeconds: config.storage.upload.urlExpirySeconds,
+      }
+    );
+
+    return {
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  public async confirmMyProjectMembershipPictureUpload(
+    input: ConfirmMyProjectMembershipPictureUploadInput
+  ): Promise<{ url: string; path: string }> {
+    const userId = this.getAuthenticatedUserId();
+    const { projectId, filename } = input;
+    const storagePath = this.myProjectMembershipPicturePath(userId, projectId, filename);
+
+    await this.fileStorage.assertStoredWithinPolicy(storagePath);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      // Re-checked inside the transaction, and not only at mint time: membership can
+      // be revoked while a URL is still live, and the write is what must not happen.
+      await this.assertMyProjectMembership(userId, projectId, tx);
+
+      const url = await this.fileStorage.getUrl(storagePath);
+
+      await this.projectUsers.updateProjectUserProfile({ projectId, userId, pictureUrl: url }, tx);
+
+      return { url, path: storagePath };
+    });
+  }
+
   public async uploadMyProjectMembershipPicture(
     input: UploadMyProjectMembershipPictureInput
   ): Promise<{ url: string; path: string }> {
@@ -635,16 +721,10 @@ export class MeHandler extends CacheHandler {
       filename,
     });
 
-    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
-      filename,
-      `users/${userId}/projects/${projectId}/picture`
-    );
+    const storagePath = this.myProjectMembershipPicturePath(userId, projectId, filename);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const memberships = await this.projectUsers.getUserProjectMemberships(userId, tx);
-      if (!memberships.some((m) => m.projectId === projectId)) {
-        throw new NotFoundError('ProjectUser');
-      }
+      await this.assertMyProjectMembership(userId, projectId, tx);
 
       const result = await this.fileStorage.upload(fileBuffer, storagePath, {
         contentType,
