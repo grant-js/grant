@@ -36,12 +36,7 @@ export class PermissionTagService implements IPermissionTagService {
   ) {}
 
   private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
-    const permissions = await this.permissionRepository.getPermissions(
-      { ids: [permissionId], limit: 1 },
-      transaction
-    );
-
-    if (permissions.permissions.length === 0) {
+    if (!(await this.permissionRepository.existsById(permissionId, transaction))) {
       throw new NotFoundError('Permission');
     }
   }

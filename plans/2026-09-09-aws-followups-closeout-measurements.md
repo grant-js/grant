@@ -545,3 +545,74 @@ statements per entity against growing tables. ADR 0002's pre-specified remedy is
 Fargate escape hatch, which would run the same 3 million statements somewhere without a
 15-minute wall — a correct escape valve and not a fix. Both are defensible; they are
 different slices, and the choice is recorded as gate work rather than settled here.
+
+## Attempting the fix, and the arithmetic that stopped it
+
+Gate 3 chose "reduce statements per entity and re-measure" over building the hatch. That
+was the right thing to try and the wrong thing to expect, and the number that settles it
+was cheap to get.
+
+### What was done
+
+`EntityRepository.existsById` — one statement, replacing the `query({ ids: [id], limit: 1
+})` idiom the `*Exists` validators were built on, which costs two (an unconditional
+`count(*)` for pagination metadata no existence check reads, plus a row fetch whose
+columns nobody looks at). `IEntityExistence` on the nine entity repository ports, and 27
+validators converted.
+
+34 further validators were **not** converted: their fetched row is used after the check,
+so the fetch is load-bearing. The guard that skips them matches the variable name anywhere
+in the file, so it over-skips — some of those 34 are safe conversions it declined to make.
+Left conservative deliberately; the arithmetic below is why chasing them is not worth it.
+
+### Measured, on `team` (620 entities)
+
+|        | Statements | Per entity |
+| ------ | ---------: | ---------: |
+| Before |     34,556 |       55.7 |
+| After  |     30,049 |       48.5 |
+|        | **−13.0%** |            |
+
+**No wall-clock claim is made, and that is deliberate.** `team` measured 18.22 s on a
+fresh database and 22.7–23.3 s on three later runs of the _same code_ — the harness's own
+earlier runs leave rows behind, and this import slows down as tables fill. A before/after
+timing comparison across runs measures accumulated data as much as the change. The
+statement count is the honest metric here; a timing comparison needs a fresh database on
+both sides.
+
+### Why 13% was the end of this road, not the start
+
+The remaining profile is still dominated by re-reading the same few rows — the single
+project being imported into is read 2,186 times, users 2,628, groups 1,515, roles 1,193,
+plus 3,008 surviving `count(*)`s. Suppose a perfect transaction-scoped memo eliminated
+**every one** of them:
+
+|                                          | Statements |   Speedup |
+| ---------------------------------------- | ---------: | --------: |
+| Now                                      |     30,049 |         — |
+| Perfect memo, every repeated lookup gone |     19,519 | **1.54×** |
+| Needed for 28,880 entities under 900 s   |          — | **4.15×** |
+| **Residual gap after a perfect memo**    |            | **2.70×** |
+
+So no amount of de-duplicating lookups reaches the ceiling. What is left after the memo is
+irreducible _per-entity_ work — an insert, an audit-log insert, and pivot reads for each
+entity, each its own round trip — because **the import applies entities one at a time
+through the single-entity service API, and every service call re-validates its inputs.**
+That is correct for one HTTP mutation and quadratic-ish for a batch of 28,880.
+
+Reaching 15 minutes means a batch apply path: multi-row inserts, set-based existence
+resolution, and no per-entity service round trip. That is an architectural change to the
+CDM import, and it is a story rather than a slice inside part E.
+
+### Which reverses the recommendation, and the reversal is the finding
+
+Before this attempt the case against ADR 0002's Fargate hatch was that it treats a symptom
+— run the same 3 million statements somewhere without a 15-minute wall. That is still
+true. What is now also true, and was not known, is that **removing the symptom is a
+project**, and 1.54× is the whole of what the cheap version buys.
+
+So the hatch is the correct near-term answer after all, and for a better reason than the
+one ADR 0002 originally gave: not "imports are slow" but "imports are slow for a
+structural reason with a measured cost to fix, and a 28,880-entity import is 4.15× over a
+wall that no configuration can raise." The 13% is kept because it is free, correct, and
+improves every caller of a `*Exists` validator — not because it moves the decision.
