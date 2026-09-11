@@ -1,0 +1,9 @@
+extend type Mutation {
+  """
+  Record a direct upload that has completed. Reads the object back from storage
+  to confirm it exists and is within the size policy — what the client claimed
+  when it asked for the URL is not evidence — then points the user's picture at
+  it.
+  """
+  confirmMyUserPictureUpload(input: ConfirmMyUserPictureUploadInput!): UploadUserPictureResult!
+}

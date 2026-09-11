@@ -66,6 +66,10 @@ export const Mutation = {
   removeMyMfaDevice: authenticateGraphQLResolver(meMutations.removeMyMfaDevice!),
   generateMyMfaRecoveryCodes: authenticateGraphQLResolver(meMutations.generateMyMfaRecoveryCodes!),
   uploadMyUserPicture: authenticateGraphQLResolver(meMutations.uploadMyUserPicture!),
+  requestMyUserPictureUploadUrl: authenticateGraphQLResolver(
+    meMutations.requestMyUserPictureUploadUrl!
+  ),
+  confirmMyUserPictureUpload: authenticateGraphQLResolver(meMutations.confirmMyUserPictureUpload!),
   updateMyUser: authenticateGraphQLResolver(meMutations.updateMyUser!),
   updateMyProjectMembership: authenticateGraphQLResolver(meMutations.updateMyProjectMembership!),
   uploadMyProjectMembershipPicture: authenticateGraphQLResolver(

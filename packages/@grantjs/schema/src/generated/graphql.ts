@@ -1749,6 +1749,27 @@ export type UpdateTagMutation = {
   updateTag: { id: string; name: string; color: string; createdAt: Date; updatedAt: Date };
 };
 
+export type ConfirmMyUserPictureUploadMutationVariables = Exact<{
+  input: Types.ConfirmMyUserPictureUploadInput;
+}>;
+
+export type ConfirmMyUserPictureUploadMutation = {
+  confirmMyUserPictureUpload: { url: string; path: string };
+};
+
+export type RequestMyUserPictureUploadUrlMutationVariables = Exact<{
+  input: Types.RequestMyUserPictureUploadUrlInput;
+}>;
+
+export type RequestMyUserPictureUploadUrlMutation = {
+  requestMyUserPictureUploadUrl: {
+    url: string;
+    method: string;
+    expiresAt: Date;
+    headers: Array<{ name: string; value: string }>;
+  };
+};
+
 export type AssignUserPermissionMutationVariables = Exact<{
   input: Types.AssignUserPermissionInput;
 }>;
@@ -9044,6 +9065,116 @@ export const UpdateTagDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateTagMutation, UpdateTagMutationVariables>;
+export const ConfirmMyUserPictureUploadDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ConfirmMyUserPictureUpload' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ConfirmMyUserPictureUploadInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'confirmMyUserPictureUpload' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ConfirmMyUserPictureUploadMutation,
+  ConfirmMyUserPictureUploadMutationVariables
+>;
+export const RequestMyUserPictureUploadUrlDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RequestMyUserPictureUploadUrl' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'RequestMyUserPictureUploadUrlInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'requestMyUserPictureUploadUrl' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'method' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'headers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'value' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RequestMyUserPictureUploadUrlMutation,
+  RequestMyUserPictureUploadUrlMutationVariables
+>;
 export const AssignUserPermissionDocument = {
   kind: 'Document',
   definitions: [

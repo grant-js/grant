@@ -691,6 +691,14 @@ const STORAGE_CONFIG = {
     allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const,
     /** Allowed file extensions */
     allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] as const,
+    /**
+     * Lifetime of a direct-upload URL, in seconds (default: 5 minutes).
+     *
+     * Short by design. A minted URL is a bearer capability that neither store
+     * revokes, so its lifetime is the only mitigation for one that leaks — and
+     * it only has to outlive a single PUT, not a user's session. See ADR 0007.
+     */
+    urlExpirySeconds: env.STORAGE_UPLOAD_URL_EXPIRY_SECONDS,
   },
 } as const;
 

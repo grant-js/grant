@@ -40,9 +40,12 @@ describe('operation documents', () => {
 
   // Pinned, not a floor: pass 5 slice 5 removed one file and two query operations
   // that were superseded by list queries, and a floor would have absorbed that
-  // silently. 116 before that slice.
+  // silently. 116 before that slice, 115 after it, 117 since the direct-upload
+  // pair (`requestMyUserPictureUploadUrl`, `confirmMyUserPictureUpload`) arrived
+  // with part D. Updating this number is the point of the pin, not a nuisance:
+  // every change to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(115);
+    expect(files).toHaveLength(117);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {

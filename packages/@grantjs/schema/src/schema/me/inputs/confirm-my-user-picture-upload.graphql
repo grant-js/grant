@@ -1,0 +1,8 @@
+"""
+`filename` is repeated from the request step rather than carried in a token: the
+storage path is re-derived server-side from the caller's identity both times, so
+nothing the client sends can point the confirmation at another user's object.
+"""
+input ConfirmMyUserPictureUploadInput {
+  filename: String!
+}

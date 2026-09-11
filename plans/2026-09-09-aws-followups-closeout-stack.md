@@ -43,7 +43,8 @@ Last updated **2026-09-11**.
 | ------------------- | ------------------------------------ | ------------------------------------------------------------------------------ |
 | 1–8 (parts A, B, C) | **merged to trunk**                  | [#400], [#401], [#403], [#404], [#405], [#407], [#408], and [#421] for slice 4 |
 | 9 (part D)          | **merged to trunk** 2026-09-11       | [#427]                                                                         |
-| 10–11 (part D)      | not started                          | —                                                                              |
+| 10a (part D)        | **open, draft**                      | [#428]                                                                         |
+| 10b, 11 (part D)    | not started                          | —                                                                              |
 | 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
 | 16 (part F)         | not started                          | —                                                                              |
 | final → `main`      | not opened                           | —                                                                              |
@@ -73,6 +74,7 @@ should take `main` before slice 10 starts rather than after it discovers a drift
 [#422]: https://github.com/grant-js/grant/pull/422
 [#426]: https://github.com/grant-js/grant/pull/426
 [#427]: https://github.com/grant-js/grant/pull/427
+[#428]: https://github.com/grant-js/grant/pull/428
 
 ## Scope, and the objection to it
 
@@ -267,7 +269,8 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 7     | `feat/aws-followups-credential-resolution` | 6     | C    | Credentials resolve through `ISecretResolver`, every target  | Backend + **Sec** | **security-full** | #407 |
 | 8     | `feat/aws-followups-credential-keys`       | 7     | C    | The AWS refusal becomes a route                              | Backend + **Sec** | **security-full** | #408 |
 | 9     | `feat/aws-followups-upload-port`           | 8     | D    | `getUploadUrl()` on the port, and both adapters              | Backend + Arch    | **deep**          | #427 |
-| 10    | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service                     | Backend           | light             |      |
+| 10a   | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service — my user picture   | Backend           | light             | #428 |
+| 10b   | `feat/aws-followups-upload-api-targets`    | 10a   | D    | The same pair for membership and admin pictures              | Backend           | light             |      |
 | 11    | `feat/aws-followups-upload-web`            | 10    | D    | The hook and the two dialogs                                 | Frontend          | light             |      |
 | 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |      |
 | 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
@@ -735,6 +738,34 @@ Twelve mutations killed. Template diff: none, as declared.
   client-supplied path in a presigned URL is a cross-tenant write.
 - The base64 path stays. Additive, per the program's governing constraint: existing
   callers keep working, and an adopter changes nothing to keep today's behaviour.
+
+**Slice 10 split into 10a and 10b (#428 is 10a).** Each existing upload mutation
+costs about nine touchpoints — schema, input, operation, resolver, resolver index,
+mutation map, REST route, REST schemas, OpenAPI path. Mirroring all three targets at
+once is ~30 changed files of which twenty are the same shape repeated, which is a
+worse review than two slices rather than a better one. 10a carries the whole mechanism
+and all of the argument on one target (my user picture); 10b replicates it for the
+project-membership and admin targets.
+
+**Mirrored per target, not collapsed into one generic mutation.** A single
+`requestUploadUrl(target: UploadTarget)` would be two mutations instead of six, but it
+would have to either reach across handlers — a resolver calls one handler — or
+re-implement each target's authorization in a new one. `users.handler.ts`'s
+`assertSelfManagedIdentityMutationAllowed` is the case that decides it: duplicating
+that check is how it comes to differ from the original.
+
+**Where the validation went**, since this is the item the plan flags as part D's
+security core. Content type and extension **move** to before the mint, delegating to
+the same two validators the base64 path calls — not a second copy, because a second
+copy is how two paths come to accept different things. Size **changes shape**: it is
+measured as a claim before minting, committed to exactly by the URL, and measured
+again against the store at confirm. The third is not redundant — it is the only one
+that does not depend on the store enforcing what the URL says, which per ADR 0007 this
+repository cannot demonstrate for S3 until slice 16.
+
+`STORAGE_UPLOAD_URL_EXPIRY_SECONDS` (default 300) was added; the plan did not
+anticipate a config key, but a bearer capability no store revokes needs its lifetime
+to be an operator's decision.
 
 #### Slice 11 — the web flow
 

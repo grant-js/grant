@@ -160,9 +160,27 @@ for (const topology of TOPOLOGIES) {
 
 if (!check) process.exit(0);
 
+/**
+ * `GIT_DIR` and `GIT_WORK_TREE` are stripped, and that is not defensive tidying.
+ *
+ * Git exports `GIT_DIR` to every hook it runs. In the main checkout it exports the
+ * relative `.git`, which fails to resolve from this subdirectory, so git falls back
+ * to its normal upward discovery and the status is correct by accident. In a **git
+ * worktree** it exports an absolute path — and git then honours it, takes the
+ * current directory as the top of the work tree, and reports `?? cdk.snapshot/`
+ * for a tree that is perfectly clean.
+ *
+ * The check fails closed, so the effect is that `synth:check` refuses every push
+ * made from a story worktree, which is the workflow AGENTS.md § Worktrees
+ * prescribes. Inheriting the ambient value is wrong here in any case: this asks
+ * "is *this* working tree clean", not "is whatever git handed the hook clean".
+ */
+const { GIT_DIR: _gitDir, GIT_WORK_TREE: _gitWorkTree, ...gitEnv } = process.env;
+
 const status = execFileSync('git', ['status', '--porcelain', '--', 'cdk.snapshot'], {
   cwd: packageRoot,
   encoding: 'utf8',
+  env: gitEnv,
 });
 
 /**
