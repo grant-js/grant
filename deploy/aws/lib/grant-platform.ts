@@ -436,6 +436,8 @@ export class GrantPlatform extends Construct {
       this.uploads = new StorageBucket(this, 'Uploads', {
         bucket: props.storage?.uploadsBucket,
         destroyOnRemoval: props.storage?.destroyOnRemoval,
+        // The browser PUTs straight to the bucket, from this origin and no other.
+        uploadOrigin: props.appUrl,
       });
 
       // Jobs are opt-out, and creating the queue before the serving function is what
