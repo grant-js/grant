@@ -1264,6 +1264,9 @@ importers:
       '@aws-sdk/client-secrets-manager':
         specifier: ^3.1127.0
         version: 3.1129.0
+      '@aws-sdk/rds-signer':
+        specifier: ^3.1127.0
+        version: 3.1131.0
       '@types/node':
         specifier: ^26.4.1
         version: 26.5.1
@@ -2222,6 +2225,17 @@ packages:
       bowser: 2.14.1
       tslib: 2.8.1
 
+  /@aws-sdk/credential-provider-cognito-identity@3.972.70:
+    resolution: {integrity: sha512-KlU89w6Hmb4oZB5zFz/MNIhPOBQGVE7KrDr3BTPCwC4W+q566YH8tGNsAML781LKATtqmNCGFry8XvsJ2XPusg==}
+    engines: {node: '>=20.0.0'}
+    dependencies:
+      '@aws-sdk/nested-clients': 3.997.45
+      '@aws-sdk/types': 3.974.5
+      '@smithy/core': 3.33.3
+      '@smithy/types': 4.17.2
+      tslib: 2.8.1
+    dev: true
+
   /@aws-sdk/credential-provider-env@3.972.70:
     resolution: {integrity: sha512-H404B7dJl2mCrBqahDEYsanB0xhdDp6tXnXcTUnXmmpy2Q3J0Ho0bUajZ2jr/RdwzCyS59Gi8xXIFwPLGBl6Uw==}
     engines: {node: '>=20.0.0'}
@@ -2430,6 +2444,28 @@ packages:
       '@smithy/types': 4.17.2
       tslib: 2.8.1
 
+  /@aws-sdk/credential-providers@3.1131.0:
+    resolution: {integrity: sha512-9AHwJuS5tmTUprvZcC5kQDsqiIp2N8Uu2vk9BlCM+koIn19/8VgKiZXVkResgbIvZ3nS0Km1T2wdpOA76Q7OYQ==}
+    engines: {node: '>=20.0.0'}
+    dependencies:
+      '@aws-sdk/core': 3.978.0
+      '@aws-sdk/credential-provider-cognito-identity': 3.972.70
+      '@aws-sdk/credential-provider-env': 3.972.71
+      '@aws-sdk/credential-provider-http': 3.972.73
+      '@aws-sdk/credential-provider-ini': 3.973.16
+      '@aws-sdk/credential-provider-login': 3.972.78
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@aws-sdk/credential-provider-process': 3.972.71
+      '@aws-sdk/credential-provider-sso': 3.973.15
+      '@aws-sdk/credential-provider-web-identity': 3.972.77
+      '@aws-sdk/nested-clients': 3.997.45
+      '@aws-sdk/types': 3.974.5
+      '@smithy/core': 3.33.3
+      '@smithy/credential-provider-imds': 4.5.2
+      '@smithy/types': 4.17.2
+      tslib: 2.8.1
+    dev: true
+
   /@aws-sdk/dynamodb-codec@3.973.45:
     resolution: {integrity: sha512-WMnbfe3igJy14RRzEnLDW9G2V0WbrXdnp2UYAGYJIgbB1wR33bBle0dmbVnejs6sHJWfP2N1cAAx/QxXnoyK8w==}
     engines: {node: '>=20.0.0'}
@@ -2502,6 +2538,18 @@ packages:
       '@smithy/node-http-handler': 4.11.3
       '@smithy/types': 4.17.2
       tslib: 2.8.1
+
+  /@aws-sdk/rds-signer@3.1131.0:
+    resolution: {integrity: sha512-7Sht+oaWNTWYj6uQcsNdZhy5PoyDnIDQRqLuqBwOew0XRKtROZleTuURETIr4APIQyY7qAXgcupCuavHnH2Wmw==}
+    engines: {node: '>=20.0.0'}
+    dependencies:
+      '@aws-sdk/core': 3.978.0
+      '@aws-sdk/credential-providers': 3.1131.0
+      '@smithy/core': 3.33.3
+      '@smithy/signature-v4': 5.7.3
+      '@smithy/types': 4.17.2
+      tslib: 2.8.1
+    dev: true
 
   /@aws-sdk/s3-request-presigner@3.1129.0:
     resolution: {integrity: sha512-4nm7ZcBJdGNGea/y/VQGE075luT7VNcBa16o7bj5Rqr3RHvkiPrO8IVXRu1fM4h3hTd1diwX/AHbi+3Yn1tLJA==}

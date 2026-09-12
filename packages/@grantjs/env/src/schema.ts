@@ -47,6 +47,26 @@ export const envSchema = z.object({
   POSTGRES_PASSWORD: optionalString('grant_password'),
   POSTGRES_DB: optionalString('grant_db'),
 
+  /**
+   * How the application authenticates to PostgreSQL.
+   *
+   * `password` is every existing deployment and the default: the credential lives in
+   * `DB_URL` (or is overlaid from a secret store per ADR 0004). `iam` signs a short-lived
+   * RDS IAM token per connection instead, so there is no database password anywhere —
+   * see `docs/deployment/aws-serverless.md` for the three conditions that must hold and
+   * which endpoint/proxy combinations work.
+   */
+  DB_AUTH_MODE: z.enum(['password', 'iam']).optional().default('password'),
+  /**
+   * Endpoint the IAM token is signed for, when `DB_AUTH_MODE=iam`. **Must be the endpoint
+   * actually connected to** — a token signed for the cluster is refused by the proxy and
+   * vice versa. Derived from `DB_URL` when unset.
+   */
+  DB_IAM_HOSTNAME: optionalString(''),
+  DB_IAM_PORT: optionalNumber(5432),
+  /** Database user, which must have been granted `rds_iam`. Derived from `DB_URL` when unset. */
+  DB_IAM_USERNAME: optionalString(''),
+  DB_IAM_REGION: optionalString(''),
   DB_POOL_MAX: optionalNumber(20),
   DB_POOL_MIN: optionalNumber(2),
   DB_CONNECTION_TIMEOUT: optionalNumber(30),

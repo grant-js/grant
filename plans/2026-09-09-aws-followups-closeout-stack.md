@@ -280,7 +280,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 12a   | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: the number, and the bound on fixing it     | Backend           | light             | #433 |
 | 12b   | `feat/aws-followups-sync-runtime`          | 12a   | E    | The Fargate hatch, opt-in; zero template diff by default     | Backend           | light             | #433 |
 | 13    | `feat/aws-followups-sync-runtime`          | 12b   | E    | Visibility window measured and left alone; redelivery pinned | Backend           | light             | #433 |
-| 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
+| 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             | #435 |
 | 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |      |
 | 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             |      |
 | final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal         | **deep**          |      |
@@ -998,6 +998,41 @@ Two things phase B and C both deferred (F14), and they are separable.
   table does.
 - **Template diff, declared: none by default.** If the diff shows the proxy appearing,
   the slice has flipped a default it decided not to flip.
+
+**Outcome: both halves delivered, and the declared diff held at exactly none — after one
+correction.** The proxy did not appear. What did appear, on the first synth, was
+`EnableIAMDatabaseAuthentication: false` on the cluster: writing the CDK property at all
+emits it even when false, which is inert to RDS and a one-line changeset on every existing
+deployment. Spread conditionally instead, so the default template is byte-identical. A test
+asserts the _absence_ of the property rather than its falsity, because those are different
+claims and only one of them is free.
+
+**IAM auth, the additive half.** `DatabaseConfig.password?: string | (() => Promise<string>)`
+on `@grantjs/database`, plus `AwsRdsIamTokenSigner` in `@grantjs/secrets` (lazy SDK, same
+optional-peer pattern the ECS client needed after CI caught it), `DB_AUTH_MODE=password|iam`
+in config, and an opt-in `database.iamAuthentication` that flips the cluster flag and grants
+`rds-db:connect`.
+
+The load-bearing claim was checked rather than inherited: **`postgres.js` calls the password
+resolver per connection, not per pool.** `Pass()` in `postgres/src/connection.js` is invoked
+from the authentication handlers, which run during each backend's handshake — so a 15-minute
+token works behind a pool whose connections live 30 minutes. Had that been false the whole
+option would have been unusable, and the plan asserted it without a citation.
+
+**Three conditions must hold and only two are the stack's**, which is why the default is off:
+the cluster flag (CDK), `rds-db:connect` (CDK), and `GRANT rds_iam TO <user>` inside Postgres
+— which no CloudFormation resource can issue. The flag without the grant is a deployment that
+cannot authenticate, and all three failures look identical from the client.
+
+**The combinations table is in the guide**, and it exists for one trap: a token is signed
+_for an endpoint_, so a token signed for the cluster is rejected by the proxy and vice versa.
+Proxy plus IAM needs `DB_IAM_HOSTNAME` pointed at the proxy, because the default derived from
+`DB_URL` is then wrong. Bring-your-own PostgreSQL not on RDS cannot use IAM auth at all.
+
+**The proxy stays off, and phase C had already recorded why properly** (`grant-platform.ts`,
+the 0.5-ACU / $58-per-month measurement). This slice re-decided rather than rediscovered:
+the number stands, so the default does. It is now in the adopter-facing guide too, where it
+was only in a code comment.
 
 #### Slice 15 — OpenNext, measured and then decided
 
