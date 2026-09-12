@@ -316,6 +316,62 @@ RDS proxy is **off** by default because it forfeits the cluster's ability to aut
 enable it (`database.proxy`) if you expect concurrency high enough to exhaust the
 cluster rather than the pool.
 
+### Database authentication: password, or an IAM token
+
+By default the application authenticates with a password, which lives in Secrets Manager
+and reaches the process through the secret resolver ([ADR 0004](https://github.com/grant-js/grant/blob/main/decisions/0004-secret-resolution-through-a-port.md)) — never in the
+template, never in an environment variable.
+
+`DB_AUTH_MODE=iam` replaces it with an RDS IAM token signed from the caller's own role.
+There is then no database password anywhere: nothing to rotate, leak, or store. The token
+expires in about 15 minutes, which is fine for a pool because it is signed **per
+connection** — `postgres.js` calls the password resolver during each backend's
+authentication handshake, so connections opened an hour from now get a token signed then.
+A connection already authenticated is unaffected by its token expiring.
+
+**Three conditions must all hold, and only the first two are the stack's.** Any one of them
+missing presents identically, as a password failure at connect time:
+
+| #   | Condition                                                                                 | Who does it                                                                      |
+| --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 1   | The database has IAM authentication enabled                                               | `database: { iamAuthentication: true }`                                          |
+| 2   | The caller's role holds `rds-db:connect` on `arn:aws:rds-db:…:dbuser:<resourceId>/<user>` | the stack, when (1) is set                                                       |
+| 3   | The Postgres user has been granted `rds_iam`                                              | **you**, with `GRANT rds_iam TO <user>` — no CloudFormation resource can do this |
+
+That third row is why the default is off. The flag without the grant is a deployment that
+cannot reach its database.
+
+#### Which combinations work
+
+**The token is signed for one endpoint.** A token signed for the cluster endpoint is
+rejected by the proxy and vice versa, because the endpoint is part of the signature. This is
+the trap worth knowing before you enable either:
+
+| Topology                               | `DB_AUTH_MODE=iam`? | What to set                                                                                                                                               |
+| -------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cluster this stack creates, no proxy   | yes                 | `database: { iamAuthentication: true }`; `DB_IAM_HOSTNAME` defaults from `DB_URL`, which is the cluster endpoint                                          |
+| Cluster this stack creates, with proxy | yes                 | as above, **and** point `DB_IAM_HOSTNAME` at the proxy endpoint — the default derived from `DB_URL` is then wrong unless `DB_URL` already names the proxy |
+| Bring-your-own PostgreSQL on RDS       | yes                 | you enable IAM auth and the `rds_iam` grant; set `DB_IAM_HOSTNAME`, `DB_IAM_USERNAME`, `DB_IAM_REGION`                                                    |
+| Bring-your-own PostgreSQL not on RDS   | **no**              | RDS IAM tokens are an RDS feature. Use a password from a secret store                                                                                     |
+| Any topology, `DB_AUTH_MODE=password`  | n/a                 | the default; nothing to configure                                                                                                                         |
+
+`DB_IAM_USERNAME` defaults to the user in `DB_URL`. If you create a least-privilege
+application user rather than using the generated master user, grant `rds_iam` to that user
+and name it here.
+
+### Why the proxy is still off by default
+
+Re-decided rather than inherited, and the number is the reason it did not change. A proxy
+holds a persistent pool, and **Aurora cannot auto-pause while any connection exists** — so
+enabling it forfeits the `serverlessV2MinCapacity: 0` this target's cost model rests on.
+Measured on a live deploy: **0.5 ACU and four held connections, flat across forty idle
+minutes**, against a cluster that otherwise pauses to zero. Roughly **$58/month** to keep
+connections warm for traffic a green-field deploy does not have yet.
+
+Turn it on when concurrency is real: without pooling each warm execution environment holds
+its own connections, and a burst exhausts `max_connections` rather than the pool. The trade
+is cheap idle against tolerance for concurrency and cannot be had both ways.
+
 ## Bring your own infrastructure
 
 `bin/grant.ts` is the layer you **replace**, not fork. The constructs in `deploy/aws/lib/` accept CDK resource interfaces — `IVpc`, `ICertificate`, `IBucket`, `IHostedZone` — so composing against infrastructure you already run means writing your own version of that one file while staying on upstream `lib/`. Forking the library means porting every later fix by hand. See [ADR 0005](https://github.com/grant-js/grant/blob/main/decisions/0005-aws-target-as-a-construct-library.md).

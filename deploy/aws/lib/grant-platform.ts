@@ -257,6 +257,7 @@ export class GrantPlatform extends Construct {
             minCapacity: props.database.minCapacity,
             maxCapacity: props.database.maxCapacity,
             destroyOnRemoval: props.database.destroyOnRemoval,
+            iamAuthentication: props.database.iamAuthentication,
           });
         }
 
@@ -535,6 +536,19 @@ export class GrantPlatform extends Construct {
         logGroup: this.api.logGroup,
         alarmTopic: props.observability?.alarmTopic,
       });
+
+      // RDS IAM authentication, when asked for. `grantConnect` writes an `rds-db:connect`
+      // statement scoped to one database user on one cluster resource id — not to the
+      // cluster as a whole — which is why the username has to be named here rather than
+      // left to configuration.
+      //
+      // `grant_admin` is the generated master user, and it is the right one *because* this
+      // grant is inert until someone runs `GRANT rds_iam TO <user>` inside Postgres. An
+      // adopter creating a least-privilege application user grants IAM to that user and
+      // points `DB_IAM_USERNAME` at it; the permission here follows whatever `DB_URL` says.
+      if (props.database?.iamAuthentication && this.database) {
+        this.database.cluster.grantConnect(this.api.function, 'grant_admin');
+      }
 
       if (this.jobQueue) {
         // The API may enqueue, and only enqueue: nothing on the request path consumes

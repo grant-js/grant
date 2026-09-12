@@ -184,6 +184,22 @@ interface DatabaseProps {
 
   /** Connection pooling. Off by default — see `DatabaseProxyProps`. */
   readonly proxy?: DatabaseProxyProps;
+
+  /**
+   * Enable RDS IAM database authentication on the cluster. Default **false**.
+   *
+   * With it on, a role holding `rds-db:connect` can authenticate with a signed token
+   * instead of a password, and the application uses one when `DB_AUTH_MODE=iam`. The stack
+   * enables the feature and grants the functions `rds-db:connect`; **the Postgres side is
+   * not CDK's to do** — the connecting user must be granted `rds_iam` inside the database,
+   * which is a SQL grant this stack has no session to issue.
+   *
+   * Off by default because turning it on without that grant produces a deployment that
+   * cannot authenticate, and because password auth through Secrets Manager is already the
+   * documented path. See `docs/deployment/aws-serverless.md` for which endpoint and proxy
+   * combinations work.
+   */
+  readonly iamAuthentication?: boolean;
 }
 
 /** DNS. Always referenced, never created — a zone needs nameserver re-delegation CDK cannot perform. */

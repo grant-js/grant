@@ -135,6 +135,8 @@ describe('createApp wires the two in that order', () => {
       resolveDatabaseConnectionString: vi.fn(
         async () => 'postgres://user:pass@localhost:5432/grant'
       ),
+      // `undefined` is password auth, which is what this test exercises.
+      resolveDatabasePassword: vi.fn(() => undefined),
       secretResolver: { resolve: vi.fn(async () => undefined) },
     }));
 

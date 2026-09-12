@@ -33,6 +33,8 @@ vi.mock('@grantjs/database', async (importOriginal) => ({
 
 vi.mock('@/lib/secrets', () => ({
   resolveDatabaseConnectionString: vi.fn(async () => 'postgres://user:pass@localhost:5432/grant'),
+  // `undefined` is password auth, which is what every test here exercises.
+  resolveDatabasePassword: vi.fn(() => undefined),
   secretResolver: { resolve: vi.fn(async () => undefined) },
 }));
 

@@ -51,7 +51,11 @@ import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
-import { resolveDatabaseConnectionString, secretResolver } from '@/lib/secrets';
+import {
+  resolveDatabaseConnectionString,
+  resolveDatabasePassword,
+  secretResolver,
+} from '@/lib/secrets';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
@@ -117,6 +121,10 @@ export async function createApp(): Promise<CreatedApp> {
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
+    // `undefined` under password auth, which is the default and every existing
+    // deployment; a token signer under `DB_AUTH_MODE=iam`. Resolved per connection, not
+    // here — an IAM token is valid about 15 minutes and this process outlives that.
+    password: resolveDatabasePassword(),
     logger: loggerFactory.createLogger('DatabaseConnection'),
   });
 

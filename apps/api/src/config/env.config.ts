@@ -74,6 +74,26 @@ const DB_CONFIG = {
   /** Minimum number of connections in the pool */
   poolMin: env.DB_POOL_MIN,
 
+  /**
+   * How the application authenticates to PostgreSQL (`password` or `iam`).
+   *
+   * Under `iam` the connection carries a signed RDS token instead of a password, refreshed
+   * per connection. The endpoint, port, user and region default to whatever `DB_URL`
+   * already says, because a token signed for a different endpoint than the one connected
+   * to is rejected — so deriving them is both convenient and the safer default.
+   */
+  auth: {
+    mode: env.DB_AUTH_MODE,
+    iam: {
+      hostname: env.DB_IAM_HOSTNAME || urlPart(resolveDatabaseUrl(env), 'hostname'),
+      port: env.DB_IAM_PORT,
+      username: env.DB_IAM_USERNAME || urlPart(resolveDatabaseUrl(env), 'username'),
+      // Falls back to the region the secret resolver already uses, so a target that
+      // configured one does not have to say it twice.
+      region: env.DB_IAM_REGION || env.SECRETS_AWS_REGION,
+    },
+  },
+
   /** Connection timeout in seconds */
   connectionTimeout: env.DB_CONNECTION_TIMEOUT,
 
@@ -869,6 +889,22 @@ const JOB_CONFIG = {
 // ============================================================================
 // Webhooks Configuration
 // ============================================================================
+
+/**
+ * One component of a connection string, or `''` when it has none or is unparseable.
+ *
+ * Used to default the IAM token's endpoint and user from `DB_URL`. Deliberately total
+ * rather than throwing: `DB_URL` is legitimately empty on a target that resolves it from a
+ * secret store at boot (ADR 0004), and config construction must not depend on it.
+ */
+function urlPart(rawUrl: string, part: 'hostname' | 'username'): string {
+  if (!rawUrl) return '';
+  try {
+    return new URL(rawUrl)[part] || '';
+  } catch {
+    return '';
+  }
+}
 
 function parseCsvList(raw: string): string[] {
   return raw
