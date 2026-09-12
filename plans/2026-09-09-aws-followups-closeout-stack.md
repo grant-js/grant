@@ -278,6 +278,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 10b   | `feat/aws-followups-upload-api-targets`    | 10a   | D    | The same pair for membership and admin pictures              | Backend           | light             | #429 |
 | 11    | `feat/aws-followups-web-upload`            | 10b   | D    | The web flow, and the bucket rule it needs                   | Frontend          | light             | #430 |
 | 12a   | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: the number, and the bound on fixing it     | Backend           | light             | #433 |
+| 12b   | `feat/aws-followups-sync-runtime`          | 12a   | E    | The Fargate hatch, opt-in; zero template diff by default     | Backend           | light             | #433 |
 | 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
 | 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
 | 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |      |
@@ -898,6 +899,11 @@ live one.
   is recorded as **≈10,700 entities** so the size-based split in _Consequences_ becomes
   specifiable. F6 and program blocker 3 close here.
 - **12b — the hatch.** Same job envelope, same public names, runtime by configuration.
+  **Opt-in and off by default**, on ADR 0002's own wording ("existing deployments keep
+  running the job in-process exactly as today") — so the declared template diff is
+  **none**, and two tests assert that rather than leaving it to the snapshot. Requires the
+  container tier: a Fargate task needs a VPC and shares the migrate task's cluster and
+  image, so `migration: { enabled: false }` or a vpcless topology has no hatch.
 
 **Two things the measurement added that the plan did not anticipate.** Per-entity cost
 _rises_ with scale (5.5× across the range), so the ceiling is crossed near 10,700 entities
