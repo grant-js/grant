@@ -75,6 +75,28 @@ export class JobQueue extends Construct {
     this.queue = new Queue(this, 'Queue', {
       // AWS's own guidance is six times the consumer's timeout, which leaves room for
       // the retries the event-source mapping performs inside one visibility window.
+      //
+      // **Phase C accepted this pending a measurement of real import durations, and the
+      // measurement did not license shortening it.** Slice 12 timed `project-sync` at
+      // four scales: 2.9 s at 124 entities, 62.3 minutes at 28,880
+      // (`plans/2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002). There is
+      // no p99 to derive a window from — durations span four orders of magnitude and the
+      // top of the range exceeds the consumer's own ceiling.
+      //
+      // Shortening it would be actively worse, and slice 13 established why: a window
+      // shorter than a healthy job's runtime redelivers the message, the second attempt
+      // is refused by `transitionToRunning` (the job is already RUNNING), and that
+      // refusal *consumes a receive*. Three of those park a job in the dead-letter queue
+      // while the first attempt is still working and may yet succeed. The 4.5 hours to
+      // reach the DLQ is the price of a consumer that may legitimately run 15 minutes,
+      // not a number nobody thought about.
+      //
+      // What *does* shorten it is `consumerTimeout`, which an adopter already controls
+      // through `jobs.timeout`. Enabling ADR 0002's hatch (`sync: { enabled: true }`)
+      // makes this consumer a dispatcher that returns in seconds rather than an importer,
+      // and a deployment that has done so can lower the job timeout and get a fast DLQ
+      // as a consequence. That is configuration reaching the right answer, which is why
+      // this derivation is left alone.
       visibilityTimeout: Duration.seconds(props.consumerTimeout.toSeconds() * 6),
       enforceSSL: true,
       deadLetterQueue: { queue: this.deadLetterQueue, maxReceiveCount: MAX_RECEIVE_COUNT },

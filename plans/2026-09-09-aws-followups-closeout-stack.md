@@ -929,6 +929,39 @@ batch apply path, carried as follow-on 12. The hatch is an escape valve, knowing
 
 #### Slice 13 — a failed queue message stops waiting 90 minutes
 
+**Outcome: the multiplier stands, and the measurement is why — plus the property the plan
+said to assert if it was not already.** Declared template diff: **none**, against the
+plan's "one property on the queue".
+
+The plan assumed a measured p99 would license a shorter window. There is no p99 to derive
+one from: `project-sync` spans **2.9 s at 124 entities to 62.3 minutes at 28,880**, four
+orders of magnitude, with the top of the range _past the consumer's own ceiling_.
+
+And shortening it would be actively worse, which slice 13 established rather than assumed.
+A window shorter than a healthy job's runtime redelivers the message; the second attempt
+is refused by `transitionToRunning` because the row is already `RUNNING`; **and that
+refusal consumes a receive.** Three of them park a job in the dead-letter queue while the
+first attempt is still working and may yet succeed. The 4.5 hours to reach the DLQ is the
+price of a consumer that may legitimately run 15 minutes.
+
+What does shorten it is `consumerTimeout`, already reachable through `jobs.timeout`.
+Enabling 12b's hatch makes the consumer a dispatcher that returns in seconds, so a
+deployment that has done so can lower the job timeout and get a fast DLQ as a consequence
+— configuration arriving at the right answer without a new knob.
+
+**The idempotency property is now asserted, and it holds.** `transitionToRunning` refuses
+from any status but `PENDING`, and three tests pin what that refusal prevents: no second
+import, no second rollback snapshot overwriting the first attempt's, and the claim
+happening _before_ any work rather than after. Deleting the claim fails them.
+
+**One corollary worth knowing, and it is ADR 0002's own point observed from a new angle:**
+the `RUNNING` transition commits in its own transaction, while the import commits in
+another. So a consumer killed at its ceiling rolls the import back but leaves the row
+`RUNNING` — and every redelivery is then refused. The work is lost and unretryable, which
+is exactly the ADR's "retrying does not converge". Carried as follow-on 13 rather than
+fixed here: making it converge means a lease with an expiry, which is a design, not a
+line.
+
 `visibilityTimeout` is `consumerTimeout * 6` (`job-queue.ts:78`), the AWS
 recommendation, against a consumer that may run Lambda's full 15 minutes — so three
 receives to reach the DLQ (`MAX_RECEIVE_COUNT = 3`, `:26`) takes about 4.5 hours. Phase
@@ -1140,3 +1173,4 @@ Carried out even of this story, which is meant to be the one that carries everyt
 | 10  | **A confirm that fails can still have changed the picture.** F-11-1: the derived storage path has nothing per-upload in it, so a PUT to the extension already in use overwrites the live object before anything is recorded.                         | The fix is a staging path the confirm promotes, which needs copy/move on `IFileStorageService` — a port change, and #430 is a frontend slice. #430 evicts the cache on the failure path so the UI stops claiming the old state, which is mitigation, not closure.                                                      |
 | 11  | **A CDM payload has no direct-upload target.** The sync-job dialog posts a parsed 25 MB JSON file as GraphQL variables, well past the 6 MB ceiling parts B established for the Lambda target.                                                        | Found while doing #430, which the plan expected to move this dialog too — it was never a base64 reader (see the slice 11 deviation). Needs a port-backed payload target, a handler pair, and a worker that reads from the store: a backend slice. The first caller found on the wrong side of part B's honest ceiling. |
 | 12  | **The CDM import issues ~48 SQL statements per entity, and its per-entity cost rises with scale.** ≈1.4 M statements for a 28,880-entity document; 62.3 min measured against a 15-min ceiling.                                                       | Found by slice 12's measurement. The cheap fix is bounded at 1.54× against the 4.15× needed (§ ADR 0002), so closing it means a batch apply path: multi-row inserts, set-based existence resolution, no per-entity service round trip. A story, not a slice — ADR 0002's hatch is the escape valve in the meantime.    |
+| 13  | **A `project-sync` job killed at its ceiling is stuck in `RUNNING` and unretryable.** The status commits in one transaction and the import in another, so a rollback leaves the claim behind and every redelivery is refused.                        | Found while asserting slice 13's redelivery property. ADR 0002 names the symptom ("retrying does not converge"); this is the mechanism. Converging means a lease with an expiry so an abandoned claim can be reclaimed — a design rather than a line, and less urgent now the hatch exists.                            |
