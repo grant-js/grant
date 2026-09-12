@@ -24,6 +24,7 @@ function buildService() {
       totalCount: 1,
       hasNextPage: false,
     }),
+    existsById: vi.fn().mockResolvedValue(true),
   } as unknown as IProjectRepository;
 
   const userRepository = {

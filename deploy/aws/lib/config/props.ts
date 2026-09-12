@@ -331,6 +331,37 @@ interface ApiProps {
  * carries one-off jobs. `JOBS_PROVIDER=aws` is what makes the application expect all
  * three — its `schedule()` registers a handler and creates no timer.
  */
+/**
+ * Where `project-sync` executes.
+ *
+ * **Off by default, and that is ADR 0002's wording rather than caution:** "Which runtime
+ * executes it is configuration... Existing deployments keep running the job in-process
+ * exactly as today." Enabling it adds a Fargate task definition and its two roles, and
+ * changes nothing about the job envelope — same `startProjectSync`, same
+ * `project_sync_jobs` row, same polling API.
+ *
+ * Worth enabling when imports approach the ceiling. A 28,880-entity import measures 62.3
+ * minutes and the ceiling is crossed near 10,700 entities
+ * (`plans/2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002), so a tenant
+ * importing a full directory needs this and a tenant importing one team does not.
+ *
+ * Requires the container tier: a Fargate task needs a VPC and shares the migrate task's
+ * cluster and image, so `migration: { enabled: false }` or a vpcless topology means no
+ * hatch regardless of this flag.
+ */
+interface SyncProps {
+  /** Default **false**. */
+  readonly enabled?: boolean;
+
+  /**
+   * Larger than the migrate task's defaults, and measured: the import holds one
+   * transaction open across ~1.4 M statements for a large document, with up to 17 MiB of
+   * parsed CDM in memory beside it.
+   */
+  readonly cpu?: number;
+  readonly memoryLimitMiB?: number;
+}
+
 interface JobsProps {
   /**
    * Whether to provision job execution. Defaults to **true** on every topology that
@@ -538,6 +569,9 @@ export interface GrantPlatformProps {
 
   /** Background jobs. Ignored only on the docs-only deploy. */
   readonly jobs?: JobsProps;
+
+  /** ADR 0002's escape hatch for CDM imports that exceed Lambda's 15-minute ceiling. */
+  readonly sync?: SyncProps;
 
   /** Passed through to the API container. */
   readonly env?: GrantEnv;

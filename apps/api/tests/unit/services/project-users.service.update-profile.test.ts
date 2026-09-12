@@ -11,6 +11,7 @@ describe('ProjectUserService.updateProjectUserProfile', () => {
   };
   const projectRepository = {
     getProjects: vi.fn().mockResolvedValue({ projects: [{ id: 'p1' }] }),
+    existsById: vi.fn().mockResolvedValue(true),
   };
   const userRepository = {
     getUsers: vi.fn().mockResolvedValue({ users: [{ id: 'u1' }] }),

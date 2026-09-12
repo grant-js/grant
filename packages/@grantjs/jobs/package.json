@@ -43,7 +43,8 @@
     "node-cron": "^3",
     "bullmq": "^5",
     "typescript": "^6.0.2",
-    "@aws-sdk/client-sqs": "^3"
+    "@aws-sdk/client-sqs": "^3",
+    "@aws-sdk/client-ecs": "^3"
   },
   "peerDependenciesMeta": {
     "node-cron": {
@@ -53,6 +54,9 @@
       "optional": true
     },
     "@aws-sdk/client-sqs": {
+      "optional": true
+    },
+    "@aws-sdk/client-ecs": {
       "optional": true
     }
   },
@@ -64,7 +68,8 @@
     "node-cron": "^4.6.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "@aws-sdk/client-ecs": "^3.1127.0"
   },
   "license": "MIT"
 }

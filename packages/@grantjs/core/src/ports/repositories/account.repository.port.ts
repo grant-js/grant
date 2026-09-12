@@ -31,9 +31,9 @@ import type {
   UpdateAccountTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { IEntityExistence, SelectedFields } from './common';
 
-export interface IAccountRepository {
+export interface IAccountRepository extends IEntityExistence {
   getAccounts(
     params: QueryAccountsInput & SelectedFields<Account>,
     transaction?: unknown

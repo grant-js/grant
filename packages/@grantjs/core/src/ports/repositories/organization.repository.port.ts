@@ -53,9 +53,9 @@ import type {
   UpdateOrganizationTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { IEntityExistence, SelectedFields } from './common';
 
-export interface IOrganizationRepository {
+export interface IOrganizationRepository extends IEntityExistence {
   getOrganizations(
     params: Omit<QueryOrganizationsArgs, 'scope'> & SelectedFields<Organization>,
     transaction?: unknown

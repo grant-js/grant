@@ -332,6 +332,34 @@ export const envSchema = z.object({
   PRIVACY_BACKUP_RETENTION_DAYS: optionalNumber(90),
   JOBS_ENABLED: optionalBoolean(true),
   JOBS_PROVIDER: z.enum(['node-cron', 'bullmq', 'aws']).optional().default('node-cron'),
+  /**
+   * Where `project-sync` executes. `inprocess` is every existing deployment and the
+   * default; `container` dispatches to a task with no 15-minute ceiling (ADR 0002).
+   *
+   * A 28,880-entity import measures 62.3 minutes, so on Lambda the in-process runtime
+   * is bounded well below the scale the CDM shape permits — the crossing is near
+   * 10,700 entities.
+   */
+  JOBS_SYNC_RUNTIME: z.enum(['inprocess', 'container']).optional().default('inprocess'),
+  /**
+   * Which `project_sync_jobs` row the container entrypoint applies, and under which
+   * tenant scope. Set per execution as ECS container overrides, never in a task
+   * definition — a task definition carrying a job id would make every task apply the
+   * same row, which is a cross-tenant write.
+   *
+   * Declared here rather than read from `process.env` in the entrypoint because every
+   * environment input goes through this schema; `run-sync-job.ts` still validates the
+   * scope's shape, since it is the RLS context the whole import runs under.
+   */
+  GRANT_SYNC_JOB_ID: optionalString(''),
+  GRANT_SYNC_JOB_SCOPE: optionalString(''),
+  /** ECS cluster, task definition and networking for `JOBS_SYNC_RUNTIME=container`. */
+  JOBS_SYNC_TASK_CLUSTER_ARN: optionalString(''),
+  JOBS_SYNC_TASK_DEFINITION_ARN: optionalString(''),
+  JOBS_SYNC_TASK_CONTAINER_NAME: optionalString('Sync'),
+  /** Comma-separated; the task runs in private-with-egress subnets, never public. */
+  JOBS_SYNC_TASK_SUBNET_IDS: optionalString(''),
+  JOBS_SYNC_TASK_SECURITY_GROUP_IDS: optionalString(''),
   JOBS_DATA_RETENTION_SCHEDULE: optionalString('0 2 * * *'),
   JOBS_DATA_RETENTION_ENABLED: optionalBoolean(true),
   JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE: optionalString('0 0 1 * *'),

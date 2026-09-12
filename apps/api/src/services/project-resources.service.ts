@@ -33,12 +33,7 @@ export class ProjectResourceService implements IProjectResourceService {
   ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.projectRepository.getProjects(
-      { ids: [projectId], limit: 1 },
-      transaction
-    );
-
-    if (projects.projects.length === 0) {
+    if (!(await this.projectRepository.existsById(projectId, transaction))) {
       throw new NotFoundError('Project');
     }
   }

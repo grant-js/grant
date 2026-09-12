@@ -35,20 +35,13 @@ export class ProjectRolePermissionService implements IProjectRolePermissionServi
   ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.projectRepository.getProjects(
-      { ids: [projectId], limit: 1 },
-      transaction
-    );
-
-    if (projects.projects.length === 0) {
+    if (!(await this.projectRepository.existsById(projectId, transaction))) {
       throw new NotFoundError('Project');
     }
   }
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
-
-    if (roles.roles.length === 0) {
+    if (!(await this.roleRepository.existsById(roleId, transaction))) {
       throw new NotFoundError('Role');
     }
   }
