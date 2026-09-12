@@ -36,9 +36,14 @@ export interface CacheConformanceOptions {
   serializes: boolean;
 }
 
-/** Wall-clock TTL tests need a real wait; Redis TTL granularity is whole seconds. */
-const TTL_SECONDS = 1;
-const TTL_WAIT_MS = 1_400;
+/**
+ * Wall-clock TTL tests need a real wait. Redis and DynamoDB TTLs are whole
+ * seconds; a 1s DynamoDB TTL can already be expired on the first get if PutItem
+ * crosses a second tick, so the suite uses 2s and waits past the extra second of
+ * rounding jitter.
+ */
+const TTL_SECONDS = 2;
+const TTL_WAIT_MS = 3_500;
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
