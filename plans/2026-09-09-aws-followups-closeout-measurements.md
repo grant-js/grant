@@ -680,3 +680,311 @@ Adding a route handler or a server action would **not** change this decision, bu
 break the Origin Access Control premise recorded in `web-function.ts` — the web Function
 URL is IAM-authorized on the grounds that the app serves GET only. That is a different and
 more urgent problem, and it is worth knowing the two checks look similar and are not.
+
+---
+
+# Cycle 2 — slice 16, deployed 2026-09-12
+
+The second and last account cycle. Deployed from the trunk at `7d91a256` (slices 1–15
+merged), hostname `proof.grantjs.org`.
+
+## Topology, and why this one differs from cycle 1
+
+**Green-field: the stack creates its own VPC, Aurora cluster and container tier.** Cycle 1
+used bring-your-own PostgreSQL with no VPC, because ADR 0002's measurement needed the
+`project_sync_jobs` row readable from outside and phase C's isolated cluster made that
+impossible.
+
+That reason is gone. **ADR 0002's number was obtained offline in slice 12a**, so no import
+needs timing here. What slice 16 needs instead is the thing cycle 1's topology could not
+host: ADR 0002's Fargate hatch requires a VPC and the container tier, so the green-field
+shape is now the necessary one rather than the expensive one.
+
+It is also the shape with no out-of-band database, which removes cycle 1's
+`0.0.0.0/0` ingress rule entirely. Job outcomes are read through the polling API — the
+supported path — rather than by connecting to the cluster, which sits in isolated subnets
+with no route to the internet.
+
+|                    | Cycle 1                                 | Cycle 2                                                   |
+| ------------------ | --------------------------------------- | --------------------------------------------------------- |
+| Database           | BYO RDS, publicly accessible            | Aurora Serverless v2 this stack creates, isolated subnets |
+| VPC                | none                                    | created, **1 NAT gateway**                                |
+| Container tier     | none                                    | migrate + sync tasks, one shared cluster                  |
+| Public DB ingress  | `0.0.0.0/0:5432`, authorised explicitly | **none**                                                  |
+| Job status read by | direct SQL                              | the polling API                                           |
+
+Synth before deploying: **121 resources**, 2 ECS task definitions (migrate + sync), 1 ECS
+cluster, 1 Aurora cluster, 1 NAT gateway, 8 Lambda functions.
+
+## Baseline before anything was created
+
+Taken 2026-09-12, immediately before the first `cdk deploy` of this cycle.
+
+| Check                                                       | `eu-central-1`    | `us-east-1`       |
+| ----------------------------------------------------------- | ----------------- | ----------------- |
+| CloudFormation stacks (`CREATE_COMPLETE`/`UPDATE_COMPLETE`) | `CDKToolkit` only | `CDKToolkit` only |
+| CDK bootstrap version                                       | 32                | 32                |
+| `rds describe-db-clusters` / `describe-db-instances`        | 0 / 0             | 0 / 0             |
+| ACM certificates                                            | none              | none              |
+| Log groups                                                  | **50**            | **15**            |
+
+**One pre-existing residue, recorded so this cycle is not blamed for it.** The hosted zone
+already contains an orphaned ACM validation CNAME,
+`_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org`, with **no certificate in either
+region**. It predates this cycle — cycle 1's teardown either left it or it belongs to an
+earlier story. `demo.grantjs.org` and `docs.grantjs.org` are live and unrelated; both must
+survive teardown.
+
+## Deviation declared before the run: the body limit
+
+`API_JSON_BODY_LIMIT_BYTES` is raised to **20 MiB** for this cycle only, in
+`deploy/aws/.env`. The AWS default is 5 MiB (slice 6), which refuses the 28,880-entity CDM
+document — 12.14 MiB decompressed — because `body-parser` applies its limit _after_
+inflating. That is the gzip asymmetry slice 6 documented deliberately, and it stands as the
+recommendation.
+
+Raised here because part E's proof requires an import that genuinely exceeds Lambda's
+15-minute ceiling, and the ingestible profiles do not. Recorded as a measurement deviation,
+not a recommendation, and the reason the number in the guide is unchanged.
+
+## Part C — a credential that never touches the template
+
+Proven at synth, before the deploy, which is worth stating because it needs no running
+infrastructure:
+
+- The stack **announces** it: `[grant] 1 secret(s) in .../deploy/aws/.env are not part of
+this template (AUTH_MFA_SECRET_ENCRYPTION_KEY). Apply with: pnpm --filter
+grant-aws-deploy put-secrets`
+- `grep -rl "<key value>" cdk.out/` → **no match**. The value is in neither template nor
+  any asset.
+- The non-secret `API_JSON_BODY_LIMIT_BYTES` _is_ in the template, 4 times — so the grep
+  above is discriminating rather than vacuously empty.
+
+`AUTH_MFA_SECRET_ENCRYPTION_KEY` was chosen over a mail credential deliberately: it is
+resolver-backed like the others, and it is observable **end to end without a third party**
+— if it has not resolved, MFA enrolment cannot encrypt a secret. Cycle 1 already proved SES
+delivery under the scoped policy, so nothing here needs to send mail to make its point.
+
+## The first deploy failed, and that is what part F is for
+
+Two findings, neither visible from a template and neither catchable by the 578 deploy tests
+that were already green.
+
+### F-1. `stopTimeout: 300` is invalid on Fargate, and CDK synthesises it anyway
+
+```
+Resource handler returned message: "Invalid request provided: Create TaskDefinition:
+Tasks using the Fargate launch type must have a container stop timeout of less than
+120 seconds. (Service: AmazonECS; Status Code: 400; Error Code: ClientException)"
+```
+
+Slice 12b set the sync container's `stopTimeout` to 300 s, and the reasoning was sound: a
+stop signal arriving mid-import has a transaction to roll back, and rolling back ~1.4 M
+statements is not instant. **Fargate caps it at 120.** `MigrateTask` uses exactly 120 and
+has deployed since phase C, so the boundary was already in the repository — just never
+stated.
+
+`aws-cdk-lib` does not validate the value. It synthesises, it passes every assertion, and
+`CreateTaskDefinition` refuses it — so the whole stack rolled back on the first create of
+the hatch.
+
+**Correctness never depended on it.** Past the timeout ECS sends `SIGKILL`, the connection
+drops, and PostgreSQL rolls the transaction back server-side; a hard-killed import still
+leaves no partial state. The timeout only decides whether the process exits cleanly.
+
+Fixed, and **pinned at synth** by a test asserting every Fargate container's `StopTimeout`
+is ≤ 120 — written against the launch type rather than this one task, because the
+constraint is Fargate's. Restoring 300 fails it. That assertion is what the deploy bought:
+the next person pays a test run instead of a rollback.
+
+### F-2. `autoDeleteObjects` does not protect a **failed first create**
+
+```
+DELETE_FAILED | AWS::S3::Bucket | Grant/Docs/Bucket
+  "The bucket you tried to delete is not empty"
+```
+
+The docs bucket already sets `removalPolicy: DESTROY` and `autoDeleteObjects: true`, which
+is why `cdk destroy` has always worked. It did not help here. `autoDeleteObjects` installs a
+custom resource that empties the bucket on delete, and in a rollback of a _partially
+created_ stack that provider is torn down in the same reverse dependency order — so the
+bucket outlived its emptier, with 307 objects (18 MiB) already uploaded by
+`BucketDeployment`.
+
+The stack landed in **`ROLLBACK_FAILED`**, which does not resolve itself: it needed the
+bucket emptied by hand and then `delete-stack`, before any retry was possible.
+
+**Adopter-visible, and on the least forgiving deploy there is — the first one.** Any create
+failure after the docs content uploads leaves a stack that cannot roll back or be retried
+without manual S3 work. Carried as a follow-on rather than fixed here: the candidates are
+ordering the deployment after everything that can fail, or accepting the manual step and
+documenting it, and choosing between them is not a line in a proof slice.
+
+## Deploy (second attempt, with F-1 fixed)
+
+|                    |                                                                            |
+| ------------------ | -------------------------------------------------------------------------- |
+| `cdk deploy --all` | ✅ `GrantCertificate` (no changes), ✅ `GrantPlatform`                     |
+| API Function URL   | `https://bfe2jz5mzemly4yqsg2mrimzoy0rwrhu.lambda-url.eu-central-1.on.aws/` |
+| Distribution       | `d1kixyyk52bchz.cloudfront.net` → `proof.grantjs.org`                      |
+| Smoke              | **13/13 checks, 10/10 behaviours**                                         |
+| DNS                | `proof.grantjs.org` A + AAAA created; `demo` and `docs` untouched          |
+
+## Part C — the credential, confirmed at runtime
+
+`pnpm --filter grant-aws-deploy put-secrets` → `Applied 1 key(s):
+AUTH_MFA_SECRET_ENCRYPTION_KEY`, `Preserved 2 existing key(s): DB_URL,
+ORIGIN_VERIFY_SECRET`. The script also warns that warm execution environments hold the
+previous payload until the resolver TTL expires, which is the kind of thing that otherwise
+reads as a failure.
+
+| Check                                     | Command                                 | Result                                                                                        |
+| ----------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Value in the live function configuration  | `aws lambda get-function-configuration` | **0 occurrences**; `AUTH_MFA_SECRET_ENCRYPTION_KEY` is not among its 26 environment variables |
+| Value in the deployed template            | `aws cloudformation get-template`       | **0 occurrences**                                                                             |
+| Value in the platform secret              | `aws secretsmanager get-secret-value`   | present, and an **exact match** for the env file                                              |
+| **Positive control** — a non-secret value | `grep 20971520`                         | **1** occurrence in the function configuration, **4** in the template                         |
+
+**The positive control is not decoration.** The first run of this check extracted the key
+with `grep AUTH_MFA .env`, which also matched a _comment_ mentioning the key — so the
+"0 occurrences" results were grepping for comment text and would have been zero whatever
+the template contained. Vacuous evidence that looked like proof. The control is what makes
+the negatives mean something: the same grep, on the same files, finds the non-secret 1 and 4
+times.
+
+The key is a 64-character hex value, verified as such before use.
+
+## Part D — the presigned path on real S3, and ADR 0007's six deferred assertions
+
+ADR 0007 deferred six enforcement assertions because LocalStack community does not verify
+SigV4 at all (divergence index entry 9). All six now have observations, against
+`grantplatform-grantuploadsbucketcefff261-…s3.eu-central-1.amazonaws.com`:
+
+| #   | Assertion                                           | Observed                                                  |
+| --- | --------------------------------------------------- | --------------------------------------------------------- |
+| 1   | The URL is the store's, not this API's              | absolute S3 host ✅                                       |
+| 2   | A body larger than the URL committed to is refused  | **403** ✅                                                |
+| 3   | The URL against another tenant's prefix is refused  | **403** ✅                                                |
+| 4   | A forged signature is refused                       | **403** ✅                                                |
+| 5   | A content type other than the signed one is refused | **403** ✅                                                |
+| 6   | An expired URL is refused                           | **403 `AccessDenied`** at 310 s against a 300 s window ✅ |
+
+Plus the mint-side refusal: a 50 MiB request is rejected before any URL exists — `File size
+exceeds maximum of 5MB`.
+
+**And the upload itself works: 4.50 MiB PUT straight to S3, `200`, object present in the
+bucket at `users/<id>/picture.jpg`, 4,718,592 bytes.** The base64 path would have needed
+6.00 MiB of JSON body against the AWS target's 5 MiB default — so this is the case that
+path could not carry, which is what part D existed to show.
+
+**The confirm step then failed, deterministically. See F-3.**
+
+### F-3. Picture uploads cannot complete on S3 — `getUrl()` returns 1275 characters into a 500-character column
+
+**The single most valuable thing this cycle produced, and it is not a slice 9–11 defect.**
+
+```
+Input validation failed in UserService.updateUser:
+  1. Field "input.pictureUrl": Too big: expected string to have <=500 characters
+```
+
+The upload succeeded. The object is in the bucket. The confirm then failed, and it will fail
+every time:
+
+|                                                 |                                                                       |
+| ----------------------------------------------- | --------------------------------------------------------------------- |
+| `users.picture_url`                             | `varchar(500)`, and `users.schemas.ts` enforces `z.string().max(500)` |
+| `S3StorageAdapter.getUrl()` with no `publicUrl` | a **presigned GET** URL, `expiresIn: 3600`                            |
+| Measured length                                 | **1275 characters** (`aws s3 presign`, same bucket and region)        |
+| `STORAGE_S3_PUBLIC_URL` on this deploy          | **unset**                                                             |
+
+**This is not the presigned-upload path's bug.** `uploadMyUserPicture` — the _base64_ path,
+which has shipped since long before this story — writes `getUrl()`'s result to the same
+column. Any picture upload against an S3 bucket without `publicUrl` fails the same way. It
+has been latent because no previous cycle uploaded a picture on the AWS target: cycle 1 was
+part A and ADR 0002.
+
+**The 500-character limit is the symptom; the design error is storing the URL at all.** A
+presigned GET expires in an hour, so even with a wider column the stored `pictureUrl` would
+be dead by the next request. The column wants the **path**, with presigning done on read.
+
+**There is no configuration workaround on this target.** `STORAGE_S3_PUBLIC_URL` would
+produce a short, non-expiring URL — but the uploads bucket blocks all public access and is
+deliberately _not_ a CloudFront origin (`storage-bucket.ts`: "objects are served through the
+API rather than from the edge"). So an adopter cannot set it without first giving the bucket
+a public front, which that construct exists to avoid.
+
+Carried as a follow-on and **not fixed here**: storing paths and presigning on read changes
+the user, project-user and membership services, three GraphQL result types, and the web
+app's image handling. That is a story. What slice 16 owed was to find it, and the only
+reason it was findable is that ADR 0007's assertions were run against real S3 instead of an
+emulator that cannot refuse anything.
+
+**It also validates slice 11's client design in an unwelcome way.** The web flow treats
+"bytes stored, confirm failed" as a distinct `unclaimed` failure precisely so a user is not
+told an upload succeeded when nothing was recorded. On this target that path is not an edge
+case — it is every upload.
+
+## Part E — ADR 0002's hatch, dispatched and running on Fargate
+
+The 28,880-entity document was submitted through the public API, gzipped:
+
+|         |                                                                         |
+| ------- | ----------------------------------------------------------------------- |
+| Payload | **12.14 MiB raw / 2.08 MiB gzipped**, `content-encoding: gzip`          |
+| Enqueue | **202** — so gzipped ingress works at this scale, with the raised limit |
+| Job     | `bcadf61c-c016-4eba-8831-99f6a28afdbd`                                  |
+
+**The jobs function dispatched rather than executed, which is the whole of what slice 12b
+built:**
+
+| Observation            | Value                                                                      |
+| ---------------------- | -------------------------------------------------------------------------- |
+| Task definition        | `GrantPlatformGrantSyncTaskDefinition…:1` — the **sync** task, not migrate |
+| Container              | `Sync`                                                                     |
+| Status                 | `RUNNING`                                                                  |
+| Container overrides    | exactly `GRANT_SYNC_JOB_ID`, `GRANT_SYNC_JOB_SCOPE`                        |
+| Job id in the override | `bcadf61c-…` — **the same row the API returned**                           |
+
+Cluster is the migrate task's, shared as designed: one `AWS::ECS::Cluster` in the account.
+
+An import Lambda could not have finished is therefore running somewhere without a
+15-minute wall, told which row to apply and reading the 12 MiB document from the database
+rather than being handed it. Nothing about the job envelope changed to achieve it.
+
+## Slice 15 — the deployed cold start
+
+`Init Duration` from CloudWatch, one hour window:
+
+| Function |   n |        min |     median |     max |
+| -------- | --: | ---------: | ---------: | ------: |
+| **Web**  |  10 | **584 ms** | **662 ms** | 2321 ms |
+| API      |   2 |    3961 ms |    3961 ms | 4948 ms |
+
+**No regression that would buy anything by switching to OpenNext.** Phase C measured
+526–630 ms; the median here is 662 ms and the minimum 584 ms — the same order, with the
+2321 ms outlier being a first init after deploy. Slice 15's local proxy measured the
+application's share at 180 ms, and these numbers are consistent with that plus image pull
+and runtime init. ADR 0003's decision stands on a deployed number as well as a local one.
+
+The API function's 4–5 s is not slice 15's subject and is recorded only because it is
+visible here: it builds the whole object graph, a database pool and Apollo at init, where
+the web function starts a Next server.
+
+### A tooling correction, recorded because it nearly became a finding
+
+`aws logs filter-log-events` **without `--start-time` returned zero events** from both
+function log groups, while `describe-log-streams` showed streams whose `storedBytes` was
+also `0`. Two independent signals agreeing on "nothing is logged", against a function
+CloudWatch metrics showed had been invoked **45 times**.
+
+It was about to be written up as an observability defect — _no application logs reach
+CloudWatch_ — which would have been false and alarming. `get-log-events` against a single
+named stream returned the events immediately (`▲ Next.js 16.3.4`, `EXTENSION Name:
+lambda-adapter State: Ready`). `filter-log-events` needs an explicit window, and
+`storedBytes` lags by hours.
+
+Both functions also use **explicit log groups** (`GrantPlatform-GrantWebLogs…`), not
+`/aws/lambda/<name>` — so the first query failed with `ResourceNotFoundException` on a log
+group that was never going to exist. Three wrong tools in a row, each of whose output was a
+plausible-looking zero.

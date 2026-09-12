@@ -116,6 +116,36 @@ describe('the sync task', () => {
     expect(runtime?.Value).toBe('inprocess');
   });
 
+  it('stops within the limit Fargate actually permits', () => {
+    // **This is the assertion whose absence cost a deploy.** `stopTimeout` above 120 s is
+    // rejected for the Fargate launch type at `CreateTaskDefinition` — CDK synthesises it
+    // without complaint, so the first deploy of the hatch failed with "Tasks using the
+    // Fargate launch type must have a container stop timeout of less than 120 seconds" and
+    // rolled the whole stack back.
+    //
+    // Asserted against every Fargate container in the template rather than just this one,
+    // because the constraint is the launch type's and not the sync task's.
+    const containers = Object.values(build().template.findResources('AWS::ECS::TaskDefinition'))
+      .filter((task) => (task.Properties?.RequiresCompatibilities ?? []).includes('FARGATE'))
+      .flatMap(
+        (task) =>
+          (task.Properties?.ContainerDefinitions ?? []) as Array<{
+            Name?: string;
+            StopTimeout?: number;
+          }>
+      );
+
+    expect(containers.length).toBeGreaterThan(0);
+    for (const container of containers) {
+      if (container.StopTimeout !== undefined) {
+        expect(
+          container.StopTimeout,
+          `${container.Name ?? 'container'} stopTimeout`
+        ).toBeLessThanOrEqual(120);
+      }
+    }
+  });
+
   it("shares the migrate task's cluster rather than creating a second one", () => {
     // A cluster is a namespace. The two tasks share no role and no security boundary, so
     // a second cluster buys nothing and is one more thing teardown has to remove.
