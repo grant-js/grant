@@ -1,4 +1,4 @@
-import type { Grant, GrantAuth, ILogger } from '@grantjs/core';
+import type { Grant, GrantAuth, ILogger, ISyncRuntime } from '@grantjs/core';
 import type { PooledDatabase } from '@grantjs/database';
 import type { SupportedLocale } from '@grantjs/i18n';
 
@@ -34,4 +34,13 @@ export interface AppContext {
    */
   db: PooledDatabase;
   grant: Grant;
+  /**
+   * Where `project-sync` executes when it is not this process (ADR 0002).
+   *
+   * Optional because it is absent on every target that runs the import in-process —
+   * which is the default, and every deployment before this one. Present only when
+   * `JOBS_SYNC_RUNTIME=container`, and `ProjectSyncJob` refuses to dispatch without it
+   * rather than falling back to a runtime with a ceiling it cannot meet.
+   */
+  syncRuntime?: ISyncRuntime;
 }

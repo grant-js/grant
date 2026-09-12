@@ -736,6 +736,34 @@ const JOB_CONFIG = {
       : undefined,
 
   /**
+   * Where `project-sync` executes, and how to reach the runtime that is not this
+   * process.
+   *
+   * `inprocess` is the historical behaviour and the default: the job runs wherever the
+   * consumer runs, bounded by that runtime's timeout. `container` makes the consumer a
+   * dispatcher — it starts a task and returns — which is what takes a 62-minute import
+   * off a 15-minute ceiling without touching the single-transaction guarantee (ADR 0002).
+   */
+  sync: {
+    runtime: env.JOBS_SYNC_RUNTIME,
+    /**
+     * Set per execution by the container runtime, absent everywhere else. Read only by
+     * `run-sync-job.ts`, which validates the scope before using it.
+     */
+    execution: {
+      jobId: env.GRANT_SYNC_JOB_ID,
+      scope: env.GRANT_SYNC_JOB_SCOPE,
+    },
+    task: {
+      clusterArn: env.JOBS_SYNC_TASK_CLUSTER_ARN,
+      definitionArn: env.JOBS_SYNC_TASK_DEFINITION_ARN,
+      containerName: env.JOBS_SYNC_TASK_CONTAINER_NAME,
+      subnetIds: parseCsvList(env.JOBS_SYNC_TASK_SUBNET_IDS),
+      securityGroupIds: parseCsvList(env.JOBS_SYNC_TASK_SECURITY_GROUP_IDS),
+    },
+  },
+
+  /**
    * AWS backing services (`JOBS_PROVIDER=aws`). SQS carries one-off jobs;
    * recurring schedules are EventBridge rules owned by infrastructure, so the
    * application registers handlers but never creates a schedule.

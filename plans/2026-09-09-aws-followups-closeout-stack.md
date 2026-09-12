@@ -45,7 +45,8 @@ Last updated **2026-09-11**.
 | 9 (part D)          | **merged to trunk** 2026-09-11       | [#427]                                                                         |
 | 10a (part D)        | **merged to trunk** 2026-09-11       | [#428]                                                                         |
 | 10b (part D)        | **merged to trunk** 2026-09-11       | [#429]                                                                         |
-| 11 (part D)         | **open, draft**                      | [#430]                                                                         |
+| 11 (part D)         | **merged to trunk** 2026-09-11       | [#430]                                                                         |
+| 12a (part E)        | **open, draft**                      | [#433]                                                                         |
 | 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
 | 16 (part F)         | not started                          | —                                                                              |
 | final → `main`      | not opened                           | —                                                                              |
@@ -78,6 +79,7 @@ should take `main` before slice 10 starts rather than after it discovers a drift
 [#428]: https://github.com/grant-js/grant/pull/428
 [#429]: https://github.com/grant-js/grant/pull/429
 [#430]: https://github.com/grant-js/grant/pull/430
+[#433]: https://github.com/grant-js/grant/pull/433
 
 ## Scope, and the objection to it
 
@@ -275,7 +277,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 10a   | `feat/aws-followups-upload-api`            | 9     | D    | Schema, resolver, REST, handler, service — my user picture   | Backend           | light             | #428 |
 | 10b   | `feat/aws-followups-upload-api-targets`    | 10a   | D    | The same pair for membership and admin pictures              | Backend           | light             | #429 |
 | 11    | `feat/aws-followups-web-upload`            | 10b   | D    | The web flow, and the bucket rule it needs                   | Frontend          | light             | #430 |
-| 12    | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: escape hatch, or closed as unneeded        | Backend           | light             |      |
+| 12a   | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: the number, and the bound on fixing it     | Backend           | light             | #433 |
 | 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
 | 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
 | 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |      |
