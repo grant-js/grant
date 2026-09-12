@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Check, GitBranch } from 'lucide-react';
+import { Check } from 'lucide-react';
 
+import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
 import { AuthLayoutStandalone } from '@/components/layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { getApiBaseUrl } from '@/lib/constants';
+import { getSocialOAuthProviders, type SocialOAuthProviderId } from '@/lib/oauth-providers';
 import {
   getProjectAppPublicInfo,
   ProjectAppInfoError,
@@ -27,6 +29,9 @@ const PROJECT_OAUTH_ERROR_CODES = [
   'oauthNotConfigured',
   'githubUserInfoFailed',
   'githubUnavailable',
+  'googleUserInfoFailed',
+  'googleUnavailable',
+  'emailUnverified',
   'oauthError',
 ] as const;
 
@@ -50,6 +55,7 @@ export default function ProjectOAuthEntryPage() {
   const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configuredSocial, setConfiguredSocial] = useState<SocialOAuthProviderId[]>([]);
 
   useEffect(() => {
     if (!clientId) return;
@@ -84,6 +90,20 @@ export default function ProjectOAuthEntryPage() {
     };
   }, [clientId, scopeParam, redirectUri, t, tAuth]);
 
+  useEffect(() => {
+    let cancelled = false;
+    getSocialOAuthProviders()
+      .then((list) => {
+        if (!cancelled) setConfiguredSocial(list.map((p) => p.id));
+      })
+      .catch(() => {
+        if (!cancelled) setConfiguredSocial([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const hasMissingParams = !clientId || !redirectUri;
   const displayError = hasMissingParams
     ? !clientId
@@ -117,12 +137,12 @@ export default function ProjectOAuthEntryPage() {
     return `/auth/project/email${q.toString() ? `?${q.toString()}` : ''}`;
   }, [clientId, redirectUri, state, scopeParam]);
 
-  const showGithub =
+  const appAllows = (provider: string) =>
     !appInfo?.enabledProviders?.length ||
-    appInfo.enabledProviders.some((p) => p.toLowerCase() === 'github');
-  const showEmail =
-    !appInfo?.enabledProviders?.length ||
-    appInfo.enabledProviders.some((p) => p.toLowerCase() === 'email');
+    appInfo.enabledProviders.some((p) => p.toLowerCase() === provider);
+  const showGithub = appAllows('github') && configuredSocial.includes('github');
+  const showGoogle = appAllows('google') && configuredSocial.includes('google');
+  const showEmail = appAllows('email');
 
   if (displayLoading) {
     const loadingContent = (
@@ -205,7 +225,7 @@ export default function ProjectOAuthEntryPage() {
         </div>
       </div>
 
-      <div className="grid gap-2">
+      <div className="grid gap-6">
         {showGithub && (
           <Button
             type="button"
@@ -215,8 +235,21 @@ export default function ProjectOAuthEntryPage() {
               window.location.href = authorizeUrl('github');
             }}
           >
-            <GitBranch className="size-4" />
+            <OAuthProviderIcon provider="github" />
             {t('github')}
+          </Button>
+        )}
+        {showGoogle && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              window.location.href = authorizeUrl('google');
+            }}
+          >
+            <OAuthProviderIcon provider="google" />
+            {t('google')}
           </Button>
         )}
         {showEmail && (

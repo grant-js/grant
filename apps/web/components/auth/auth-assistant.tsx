@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import {
   CheckCircle2,
   Clock,
-  GitBranch,
   HelpCircle,
   Inbox,
   KeyRound,
@@ -17,6 +16,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 
+import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
 import {
   Accordion,
   AccordionContent,
@@ -53,10 +53,14 @@ const ITEMS_BY_PAGE: Record<NonNullable<AuthPageId>, string[]> = {
   projectConsent: ['reviewPermissions', 'allowOrDeny', 'revokeLater'],
 };
 
+function GitHubHelpIcon({ className }: { className?: string }) {
+  return <OAuthProviderIcon provider="github" className={className} />;
+}
+
 /** Icon for each item key (shared across pages where key appears). */
-const ITEM_ICONS: Record<string, LucideIcon> = {
+const ITEM_ICONS: Record<string, LucideIcon | typeof GitHubHelpIcon> = {
   passwordPolicy: KeyRound,
-  githubSignIn: GitBranch,
+  githubSignIn: GitHubHelpIcon,
   forgotPassword: Mail,
   accountType: UserPlus,
   passwordStrength: ShieldCheck,

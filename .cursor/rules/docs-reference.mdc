@@ -26,6 +26,7 @@ When working on a topic below, read the linked doc for detailed patterns, conven
 | Tags, generic tagging, automatic query routing | `docs/core-concepts/tags-relationships.md` |
 | Organization invitations, member management | `docs/core-concepts/organization-invitations.md` |
 | MFA recovery codes, challenge elevation, self-service MFA disable | `docs/core-concepts/mfa-recovery.md` |
+| Sign-in providers, OAuth account linking, IdP profile pictures | `docs/core-concepts/sign-in-providers.md` |
 | CDM permission import/export, sync jobs, rollback snapshots | `docs/core-concepts/cdm-import-export.md` |
 | Domain events, webhooks, in-app notifications, event catalog | `docs/core-concepts/events-webhooks-notifications.md` |
 

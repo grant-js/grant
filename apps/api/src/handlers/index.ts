@@ -1,4 +1,5 @@
-import type { Grant, ITransactionalConnection } from '@grantjs/core';
+import type { Grant, IOAuthProviderService, ITransactionalConnection } from '@grantjs/core';
+import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { getJobAdapter } from '@/lib/jobs';
@@ -122,6 +123,7 @@ export function createHandlers(
       services.organizationUsers,
       authHandler,
       services.githubOAuth,
+      services.googleOAuth,
       grant,
       cache,
       services.email,
@@ -141,7 +143,10 @@ export function createHandlers(
       db
     ),
     oauth: new OAuthHandler(
-      services.githubOAuth,
+      new Map<UserAuthenticationMethodProvider, IOAuthProviderService>([
+        [UserAuthenticationMethodProvider.Github, services.githubOAuth],
+        [UserAuthenticationMethodProvider.Google, services.googleOAuth],
+      ]),
       services.oauthState,
       services.userAuthenticationMethods,
       cache,

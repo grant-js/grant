@@ -7,6 +7,10 @@ type UserAuthenticationMethod implements Auditable {
   providerData: JSON!
   isVerified: Boolean!
   isPrimary: Boolean!
+  """
+  True when this Email method has a password. Always false for social providers.
+  """
+  hasPassword: Boolean!
   lastUsedAt: Date
   createdAt: Date!
   updatedAt: Date!

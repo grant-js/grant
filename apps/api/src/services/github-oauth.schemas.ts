@@ -24,6 +24,7 @@ export const githubUserInfoSchema = z.object({
   id: githubUserIdSchema,
   login: z.string().min(1, 'errors.validation.githubLoginRequired'),
   email: z.string().email().nullable(),
+  emailVerified: z.boolean(),
   name: z.string().nullable(),
   avatar_url: z.string().url(),
   bio: z.string().nullable(),

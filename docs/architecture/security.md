@@ -11,15 +11,19 @@ Grant implements JWT-based authentication with JWKS (RS256), device-aware sessio
 
 ### Authentication Methods
 
-Users can sign in with multiple methods, each stored independently:
+Users can sign in with multiple methods, each stored independently. GitHub and Google are optional: leave their client credentials empty to hide those buttons.
 
-| Method               | Description                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| **Email / Password** | Traditional authentication with email verification and password policy enforcement |
-| **GitHub OAuth**     | OAuth 2.0 authorization code flow (login, register, or link to existing account)   |
-| **Additional OAuth** | Google, Microsoft, etc. can be added via the adapter pattern                       |
+| Method               | Description                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| **Email / Password** | Traditional authentication with email verification and password policy enforcement   |
+| **GitHub OAuth**     | OAuth 2.0 authorization code flow (login, register, or link to existing account)     |
+| **Google OAuth**     | Same authorization-code flow as GitHub; hidden on login/register when not configured |
 
-**Primary method rule:** Every user has exactly one primary method. The first method created during registration is automatically primary. Users can change their primary method at any time, but cannot delete the primary or their last remaining method.
+Operator setup, auto-link vs connect, passwordless Email bind, and IdP profile-picture inheritance are documented in [Sign-in providers](/core-concepts/sign-in-providers).
+
+**Email is the mailbox, not the password.** `provider = email` is the user’s verified contact address (`providerId`). A password (`providerData.hashedPassword`) is optional. GitHub/Google signup, link, connect, and later login bind that address as a **passwordless** Email method when the IdP marks it verified — they do not mint a password and do not overwrite an Email method that already exists. If another account already owns that Email address, OAuth still succeeds and the Email bind is skipped. Users can set a password later from Login & Security.
+
+**Primary method rule:** Every user has exactly one primary method. The first method created during registration is automatically primary (OAuth-first signup keeps the social method primary). Users can change their primary method at any time, but cannot delete the primary or their last remaining method.
 
 **Security constraints:** A provider can only be linked to one user account (no sharing), and a user can only have one method per provider (no duplicates).
 
@@ -193,7 +197,7 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 - **Enabled providers:** Each ProjectApp can restrict which providers are allowed (e.g. GitHub, email). If set, only those are allowed for authorize; if empty or null, all configured providers are allowed. Configure **PROJECT_OAUTH_EMAIL_ENTRY_URL** for the email entry page (default: `{SECURITY_FRONTEND_URL}/auth/project/email`).
 - **Email flow:** For provider=email, authorize redirects to the email entry URL; the app posts to `POST /api/auth/project/email/request` with client_id, redirect_uri, state, email; the API sends a magic link; callback validates the one-time token and resolves the user by email.
 - **Project-app token type:** When the app has scopes configured (resource:action strings), the issued token has type **projectApp** and a **scopes** claim (intersection of app scopes and user's project permissions). Authorization is capped to those scopes; session and API key tokens are not capped.
-- **Extensibility:** Providers are implemented via **IProjectOAuthProvider**; adding a new provider (e.g. Google) requires implementing the interface, registering in the handler, and adding callback handling.
+- **Extensibility:** Providers are implemented via **IProjectOAuthProvider**. GitHub and Google are built in; adding another provider requires implementing the interface, registering in the handler, and adding callback handling.
 
 **Related:** ProjectApp is created via GraphQL **createProjectApp** (scope: accountProject or organizationProject). Multi-provider flow (GitHub, email magic link), optional enabled providers per app, and project-app token type with scope capping are described above.
 
@@ -217,6 +221,27 @@ GitHub OAuth Apps allow only **one** Authorization callback URL. To support both
 Default API config values are `{APP_URL}/api/auth/github/callback` and `{APP_URL}/api/auth/project/callback` — both are subpaths of the base path above.
 
 No separate OAuth app is needed per project-app; one GitHub OAuth app serves both platform and project-app flows.
+
+#### Configuring the Google OAuth client
+
+Google requires **exact** Authorized redirect URIs (no prefix match). One Web client can list both platform and project callbacks.
+
+| Step | Action                                                                                                                                                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create or select a project.                                                                                                |
+| 2    | Configure the **OAuth consent screen** (Internal or External).                                                                                                                                          |
+| 3    | Create an OAuth client ID of type **Web application**.                                                                                                                                                  |
+| 4    | Add both redirect URIs from the table below (exact match).                                                                                                                                              |
+| 5    | Copy the client ID and secret into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (or the platform secret store). Restart the API. Login/register show Google only after the client is fully configured. |
+
+**Redirect URIs to set in Google Cloud Console:**
+
+| Environment | Platform callback                                     | Project App callback                                   |
+| ----------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| Local       | `http://localhost:4000/api/auth/google/callback`      | `http://localhost:4000/api/auth/project/callback`      |
+| Production  | `https://api.yourdomain.com/api/auth/google/callback` | `https://api.yourdomain.com/api/auth/project/callback` |
+
+Default API config values match those paths. One Google Web client serves both platform and project-app flows.
 
 ### Configuration
 

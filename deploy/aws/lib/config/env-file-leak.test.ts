@@ -67,6 +67,8 @@ describe('the env file cannot leak a secret into the template', () => {
       [
         `GITHUB_CLIENT_ID=${PUBLIC_SENTINEL}`,
         `GITHUB_CLIENT_SECRET=${SECRET_SENTINEL}`,
+        `GOOGLE_CLIENT_ID=${PUBLIC_SENTINEL}`,
+        `GOOGLE_CLIENT_SECRET=${SECRET_SENTINEL}`,
         `AUTH_MFA_SECRET_ENCRYPTION_KEY=${SECRET_SENTINEL}`,
       ].join('\n')
     );

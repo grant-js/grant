@@ -472,7 +472,8 @@ export enum CdmOnConflict {
 
 export type ChangeMyPasswordInput = {
   confirmPassword: Scalars['String']['input'];
-  currentPassword: Scalars['String']['input'];
+  /** Required when a password already exists; omit when setting the first password. */
+  currentPassword?: InputMaybe<Scalars['String']['input']>;
   newPassword: Scalars['String']['input'];
 };
 
@@ -3492,6 +3493,8 @@ export type UserAuthenticationMethod = Auditable & {
   __typename?: 'UserAuthenticationMethod';
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
+  /** True when this Email method has a password. Always false for social providers. */
+  hasPassword: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   isPrimary: Scalars['Boolean']['output'];
   isVerified: Scalars['Boolean']['output'];

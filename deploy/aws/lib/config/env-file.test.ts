@@ -58,12 +58,19 @@ describe('classifyConfig', () => {
       EMAIL_PROVIDER: 'ses',
       GITHUB_CLIENT_ID: 'public-id',
       GITHUB_CLIENT_SECRET: 'shhh',
+      GOOGLE_CLIENT_ID: 'google-public-id',
+      GOOGLE_CLIENT_SECRET: 'google-shhh',
       AUTH_MFA_SECRET_ENCRYPTION_KEY: 'also-shhh',
     });
 
-    expect(env).toEqual({ EMAIL_PROVIDER: 'ses', GITHUB_CLIENT_ID: 'public-id' });
+    expect(env).toEqual({
+      EMAIL_PROVIDER: 'ses',
+      GITHUB_CLIENT_ID: 'public-id',
+      GOOGLE_CLIENT_ID: 'google-public-id',
+    });
     expect(secrets).toEqual({
       GITHUB_CLIENT_SECRET: 'shhh',
+      GOOGLE_CLIENT_SECRET: 'google-shhh',
       AUTH_MFA_SECRET_ENCRYPTION_KEY: 'also-shhh',
     });
   });

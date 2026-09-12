@@ -187,7 +187,7 @@ export class UserAuthenticationMethodRepository
 
   /**
    * Find auth method by email (case-insensitive).
-   * Checks Email provider by providerId, then GitHub provider by providerData.email.
+   * Checks Email provider by providerId, then GitHub and Google by providerData.email.
    */
   async findByEmail(
     email: string,
@@ -209,23 +209,30 @@ export class UserAuthenticationMethodRepository
       return emailProviderResult.items[0];
     }
 
-    const githubProviderResult = await this.query(
-      {
-        filters: [
-          { field: 'provider', operator: 'eq', value: UserAuthenticationMethodProvider.Github },
-          {
-            field: 'providerData.email' as keyof UserAuthenticationMethodModel,
-            operator: 'ilike',
-            value: emailNorm,
-          },
-        ],
-        limit: 1,
-      },
-      transaction
-    );
+    const oauthProviders = [
+      UserAuthenticationMethodProvider.Github,
+      UserAuthenticationMethodProvider.Google,
+    ];
 
-    if (githubProviderResult.items.length > 0) {
-      return githubProviderResult.items[0];
+    for (const provider of oauthProviders) {
+      const oauthResult = await this.query(
+        {
+          filters: [
+            { field: 'provider', operator: 'eq', value: provider },
+            {
+              field: 'providerData.email' as keyof UserAuthenticationMethodModel,
+              operator: 'ilike',
+              value: emailNorm,
+            },
+          ],
+          limit: 1,
+        },
+        transaction
+      );
+
+      if (oauthResult.items.length > 0) {
+        return oauthResult.items[0];
+      }
     }
 
     return null;

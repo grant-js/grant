@@ -82,6 +82,11 @@ GITHUB_CLIENT_SECRET=...
 GITHUB_CALLBACK_URL=${APP_URL}/api/auth/github/callback
 GITHUB_PROJECT_CALLBACK_URL=${APP_URL}/api/auth/project/callback
 
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=${APP_URL}/api/auth/google/callback
+GOOGLE_PROJECT_CALLBACK_URL=${APP_URL}/api/auth/project/callback
+
 EMAIL_PROVIDER=ses
 EMAIL_FROM=noreply@yourdomain.com
 # ... EMAIL_SES_* or other provider vars
@@ -114,6 +119,7 @@ The API validates required env, database connectivity, and Redis when configured
 ## Related
 
 - [Configuration](/getting-started/configuration) — Full configuration reference
+- [Sign-in providers](/core-concepts/sign-in-providers) — GitHub/Google OAuth, account linking, profile pictures
 - [Deployment overview](/deployment/self-hosting)
 - [Docker deployment](/deployment/docker)
 - [Kubernetes (Helm)](/deployment/kubernetes)

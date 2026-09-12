@@ -6,6 +6,7 @@ query MyUserAuthenticationMethods {
     providerId
     isVerified
     isPrimary
+    hasPassword
     lastUsedAt
     createdAt
     updatedAt

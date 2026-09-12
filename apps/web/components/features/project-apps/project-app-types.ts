@@ -9,6 +9,7 @@ export enum ProjectAppView {
 export const PROJECT_OAUTH_PROVIDER_OPTIONS = [
   { id: UserAuthenticationMethodProvider.Email, nameKey: 'providers.email' },
   { id: UserAuthenticationMethodProvider.Github, nameKey: 'providers.github' },
+  { id: UserAuthenticationMethodProvider.Google, nameKey: 'providers.google' },
 ] as const;
 
 export const createProjectAppSchema = z

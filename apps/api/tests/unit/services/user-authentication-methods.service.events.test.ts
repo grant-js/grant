@@ -21,14 +21,14 @@ import { UserAuthenticationMethodService } from '@/services/user-authentication-
 const userId = '10000000-0000-4000-8000-0000000000a0';
 const methodId = '10000000-0000-4000-8000-0000000000a1';
 
-function buildService() {
+function buildService(providerData: Record<string, unknown> = { hashedPassword: 'hashed-old' }) {
   const userAuthenticationMethodRepository = {
     getUserAuthenticationMethods: vi.fn().mockResolvedValue([
       {
         id: methodId,
         userId,
         provider: UserAuthenticationMethodProvider.Email,
-        providerData: { hashedPassword: 'hashed-old' },
+        providerData,
       },
     ]),
     updateUserAuthenticationMethod: vi.fn().mockResolvedValue(undefined),
@@ -50,6 +50,7 @@ function buildService() {
       events
     ),
     events,
+    userAuthenticationMethodRepository,
   };
 }
 
@@ -71,6 +72,32 @@ describe('UserAuthenticationMethodService security events', () => {
         data: { after: { userId, reason: 'change' } },
       }),
       undefined
+    );
+  });
+
+  it('sets a first password without the current password', async () => {
+    const { service, events, userAuthenticationMethodRepository } = buildService({});
+
+    await service.changePassword(userId, undefined, 'NewPass1!');
+
+    expect(userAuthenticationMethodRepository.updateUserAuthenticationMethod).toHaveBeenCalledWith(
+      methodId,
+      { providerData: { hashedPassword: 'hashed-new' } },
+      undefined
+    );
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { after: { userId, reason: 'set' } },
+      }),
+      undefined
+    );
+  });
+
+  it('requires the current password when a hash already exists', async () => {
+    const { service } = buildService();
+
+    await expect(service.changePassword(userId, undefined, 'NewPass1!')).rejects.toThrow(
+      'Current password is required'
     );
   });
 });

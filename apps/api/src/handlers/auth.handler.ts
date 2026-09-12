@@ -43,6 +43,8 @@ import { translateStatic } from '@/i18n/helpers';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { contactEmailFromOAuthProviderData } from '@/lib/oauth-contact-email.lib';
+import { oauthPictureUrlFromProviderData, userPictureUrlIsEmpty } from '@/lib/oauth-picture.lib';
 import { verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { getVerificationExpirationMs, getVerificationExpiryDate } from '@/lib/verification.lib';
@@ -76,6 +78,71 @@ export class AuthHandler extends CacheHandler {
     const updatedProviderData = { ...providerData };
     delete updatedProviderData.otp;
     return updatedProviderData;
+  }
+
+  private async createUserFromOAuth(
+    name: string,
+    providerData: Record<string, unknown>,
+    tx: Transaction
+  ) {
+    const pictureUrl = oauthPictureUrlFromProviderData(providerData);
+    return this.users.createUser(pictureUrl ? { name, pictureUrl } : { name }, tx);
+  }
+
+  private async fillEmptyUserPictureFromOAuth(
+    userId: string,
+    providerData: Record<string, unknown>,
+    tx: Transaction
+  ): Promise<void> {
+    const pictureUrl = oauthPictureUrlFromProviderData(providerData);
+    if (!pictureUrl) {
+      return;
+    }
+
+    const usersResult = await this.users.getUsers(
+      {
+        ids: [userId],
+        limit: 1,
+        requestedFields: ['pictureUrl'],
+      },
+      tx
+    );
+    const existing = usersResult.users?.[0];
+    if (!userPictureUrlIsEmpty(existing?.pictureUrl)) {
+      return;
+    }
+
+    await this.users.updateUser(userId, { pictureUrl }, tx);
+  }
+
+  private isSocialOAuthProvider(provider: UserAuthenticationMethodProvider): boolean {
+    return (
+      provider === UserAuthenticationMethodProvider.Github ||
+      provider === UserAuthenticationMethodProvider.Google
+    );
+  }
+
+  private async bindVerifiedOauthContactEmail(
+    userId: string,
+    email: string | null | undefined,
+    emailVerified: boolean,
+    tx: Transaction
+  ): Promise<void> {
+    await this.userAuthenticationMethods.ensureVerifiedContactEmail(
+      userId,
+      email,
+      emailVerified,
+      tx
+    );
+  }
+
+  private async bindVerifiedOauthContactEmailFromProviderData(
+    userId: string,
+    providerData: Record<string, unknown>,
+    tx: Transaction
+  ): Promise<void> {
+    const { email, emailVerified } = contactEmailFromOAuthProviderData(providerData);
+    await this.bindVerifiedOauthContactEmail(userId, email || null, emailVerified, tx);
   }
 
   private async validatesInvitationEmailProof(
@@ -195,7 +262,7 @@ export class AuthHandler extends CacheHandler {
         ? this.removeEmailOtp(processedProviderData)
         : processedProviderData;
 
-      const user = await this.users.createUser({ name }, tx);
+      const user = await this.createUserFromOAuth(name, finalProviderData, tx);
 
       const userAuthenticationMethod =
         await this.userAuthenticationMethods.createUserAuthenticationMethod(
@@ -208,6 +275,10 @@ export class AuthHandler extends CacheHandler {
           },
           tx
         );
+
+      if (this.isSocialOAuthProvider(provider)) {
+        await this.bindVerifiedOauthContactEmailFromProviderData(user.id, finalProviderData, tx);
+      }
 
       const account = await this.accounts.createAccount(
         {
@@ -358,6 +429,14 @@ export class AuthHandler extends CacheHandler {
       }
 
       let user = usersResult.users[0];
+
+      if (this.isSocialOAuthProvider(provider)) {
+        await this.bindVerifiedOauthContactEmailFromProviderData(
+          user.id,
+          processedProviderData,
+          tx
+        );
+      }
 
       if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
         // User has auth method but no account (e.g. created via project OAuth). Create default Personal account on first platform login.
@@ -714,9 +793,10 @@ export class AuthHandler extends CacheHandler {
     return result;
   }
 
-  public async linkGithubAuthToExistingUser(
+  public async linkOAuthAuthToExistingUser(
     params: {
       userId: string;
+      provider: UserAuthenticationMethodProvider;
       providerId: string;
       providerData: Record<string, unknown>;
     },
@@ -725,26 +805,25 @@ export class AuthHandler extends CacheHandler {
     requestBaseUrl?: string
   ): Promise<LoginResponse> {
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const { userId, providerId, providerData } = params;
+      const { userId, provider, providerId, providerData } = params;
 
       const { providerData: processedProviderData, isVerified } =
-        await this.userAuthenticationMethods.processProvider(
-          UserAuthenticationMethodProvider.Github,
-          providerId,
-          providerData
-        );
+        await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
 
       const userAuthenticationMethod =
         await this.userAuthenticationMethods.createUserAuthenticationMethod(
           {
             userId,
-            provider: UserAuthenticationMethodProvider.Github,
+            provider,
             providerId,
             providerData: processedProviderData,
             isVerified,
           },
           tx
         );
+
+      await this.fillEmptyUserPictureFromOAuth(userId, processedProviderData, tx);
+      await this.bindVerifiedOauthContactEmailFromProviderData(userId, processedProviderData, tx);
 
       const usersResult = await this.users.getUsers(
         {
@@ -775,7 +854,7 @@ export class AuthHandler extends CacheHandler {
           userAuthenticationMethodId: userAuthenticationMethod.id,
           userAgent: userAgent || null,
           ipAddress: ipAddress || null,
-          isVerified: true, // GitHub OAuth users are always verified
+          isVerified: true,
         },
         tx,
         requestBaseUrl
@@ -796,55 +875,98 @@ export class AuthHandler extends CacheHandler {
     });
   }
 
-  /**
-   * Resolve global user id from GitHub OAuth callback for project OAuth flow.
-   * Finds existing user by provider or email, links GitHub if needed, or creates user + auth method (no account/session).
-   * When options.allowSignUp is false and no user exists, throws BadRequestError with sign_up_disabled.
-   */
-  public async resolveUserIdFromGithubForProject(
-    githubUser: {
-      id: number;
-      login: string;
-      email: string | null;
-      name: string | null;
-      avatar_url: string;
+  /** @deprecated Use linkOAuthAuthToExistingUser */
+  public async linkGithubAuthToExistingUser(
+    params: {
+      userId: string;
+      providerId: string;
+      providerData: Record<string, unknown>;
     },
-    providerId: string,
-    providerData: Record<string, unknown>,
+    userAgent?: string | null,
+    ipAddress?: string | null,
+    requestBaseUrl?: string
+  ): Promise<LoginResponse> {
+    return this.linkOAuthAuthToExistingUser(
+      {
+        userId: params.userId,
+        provider: UserAuthenticationMethodProvider.Github,
+        providerId: params.providerId,
+        providerData: params.providerData,
+      },
+      userAgent,
+      ipAddress,
+      requestBaseUrl
+    );
+  }
+
+  /**
+   * Resolve global user id from an OAuth callback for project OAuth.
+   * Finds existing user by provider or verified email, links if needed, or creates user + auth method.
+   */
+  public async resolveUserIdFromOAuthForProject(
+    params: {
+      provider: UserAuthenticationMethodProvider;
+      providerId: string;
+      email: string | null;
+      emailVerified: boolean;
+      name: string;
+      providerData: Record<string, unknown>;
+    },
     transaction?: Transaction,
     options?: { allowSignUp?: boolean }
   ): Promise<string> {
     const run = async (tx: Transaction) => {
       const existingAuthMethod =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
-          UserAuthenticationMethodProvider.Github,
-          providerId,
+          params.provider,
+          params.providerId,
           undefined,
           tx
         );
-      if (existingAuthMethod) return existingAuthMethod.userId;
+      if (existingAuthMethod) {
+        await this.bindVerifiedOauthContactEmail(
+          existingAuthMethod.userId,
+          params.email,
+          params.emailVerified,
+          tx
+        );
+        return existingAuthMethod.userId;
+      }
 
-      if (githubUser.email) {
+      if (params.email) {
         const existingEmailAuthMethod =
-          await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
-            githubUser.email,
-            tx
-          );
+          await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(params.email, tx);
         if (existingEmailAuthMethod) {
+          const cannotAutoLink =
+            !params.emailVerified || existingEmailAuthMethod.isVerified !== true;
+          if (cannotAutoLink) {
+            throw new BadRequestError('Email is not verified');
+          }
           const { providerData: processedProviderData, isVerified } =
             await this.userAuthenticationMethods.processProvider(
-              UserAuthenticationMethodProvider.Github,
-              providerId,
-              { ...providerData, action: UserAuthenticationEmailProviderAction.Login }
+              params.provider,
+              params.providerId,
+              { ...params.providerData, action: UserAuthenticationEmailProviderAction.Login }
             );
           await this.userAuthenticationMethods.createUserAuthenticationMethod(
             {
               userId: existingEmailAuthMethod.userId,
-              provider: UserAuthenticationMethodProvider.Github,
-              providerId,
+              provider: params.provider,
+              providerId: params.providerId,
               providerData: processedProviderData,
               isVerified,
             },
+            tx
+          );
+          await this.fillEmptyUserPictureFromOAuth(
+            existingEmailAuthMethod.userId,
+            processedProviderData,
+            tx
+          );
+          await this.bindVerifiedOauthContactEmail(
+            existingEmailAuthMethod.userId,
+            params.email,
+            params.emailVerified,
             tx
           );
           return existingEmailAuthMethod.userId;
@@ -855,40 +977,76 @@ export class AuthHandler extends CacheHandler {
         throw new BadRequestError('Sign-up is disabled for this app');
       }
 
-      // Re-check by provider so we never create a duplicate when (github, providerId) already exists
-      // (e.g. first lookup missed due to timing or providerId format).
       const existingByProviderAgain =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
-          UserAuthenticationMethodProvider.Github,
-          providerId,
+          params.provider,
+          params.providerId,
           undefined,
           tx
         );
-      if (existingByProviderAgain) return existingByProviderAgain.userId;
-
-      const name = githubUser.name ?? githubUser.login ?? 'User';
-      const { providerData: processedProviderData, isVerified } =
-        await this.userAuthenticationMethods.processProvider(
-          UserAuthenticationMethodProvider.Github,
-          providerId,
-          { ...providerData, action: UserAuthenticationEmailProviderAction.Register }
+      if (existingByProviderAgain) {
+        await this.bindVerifiedOauthContactEmail(
+          existingByProviderAgain.userId,
+          params.email,
+          params.emailVerified,
+          tx
         );
-      const user = await this.users.createUser({ name }, tx);
+        return existingByProviderAgain.userId;
+      }
+
+      const { providerData: processedProviderData, isVerified } =
+        await this.userAuthenticationMethods.processProvider(params.provider, params.providerId, {
+          ...params.providerData,
+          action: UserAuthenticationEmailProviderAction.Register,
+        });
+      const user = await this.createUserFromOAuth(params.name, processedProviderData, tx);
       await this.userAuthenticationMethods.createUserAuthenticationMethod(
         {
           userId: user.id,
-          provider: UserAuthenticationMethodProvider.Github,
-          providerId,
+          provider: params.provider,
+          providerId: params.providerId,
           providerData: processedProviderData,
           isVerified,
         },
         tx
       );
+      await this.bindVerifiedOauthContactEmail(user.id, params.email, params.emailVerified, tx);
       return user.id;
     };
 
     if (transaction) return run(transaction);
     return this.db.withTransaction(run);
+  }
+
+  /**
+   * Resolve global user id from GitHub OAuth callback for project OAuth flow.
+   */
+  public async resolveUserIdFromGithubForProject(
+    githubUser: {
+      id: number;
+      login: string;
+      email: string | null;
+      name: string | null;
+      avatar_url: string;
+      emailVerified?: boolean;
+    },
+    providerId: string,
+    providerData: Record<string, unknown>,
+    transaction?: Transaction,
+    options?: { allowSignUp?: boolean }
+  ): Promise<string> {
+    return this.resolveUserIdFromOAuthForProject(
+      {
+        provider: UserAuthenticationMethodProvider.Github,
+        providerId,
+        email: githubUser.email,
+        emailVerified: githubUser.emailVerified ?? true,
+        name: githubUser.name ?? githubUser.login ?? 'User',
+        providerData,
+      },
+      transaction,
+      options
+    );
   }
 
   /**

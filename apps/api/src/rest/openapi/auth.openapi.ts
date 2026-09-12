@@ -8,6 +8,7 @@ import {
   errorResponseSchema,
   isAuthorizedRequestSchema,
   isAuthorizedResponseSchema,
+  listAuthProvidersResponseSchema,
   loginRequestSchema,
   loginResultSchema,
   logoutRequestSchema,
@@ -50,7 +51,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
     tags: ['Authentication'],
     summary: 'Login user',
     description:
-      'Authenticate a user using provider credentials (email, Google, GitHub, Microsoft)',
+      'Authenticate with email and password. GitHub and Google must use `GET /api/auth/{provider}` (OAuth authorize), not this endpoint.',
     request: {
       body: {
         content: {
@@ -132,7 +133,8 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
     path: '/api/auth/register',
     tags: ['Authentication'],
     summary: 'Register new user',
-    description: 'Create a new user account with provider authentication',
+    description:
+      'Create a new user account with email and password. GitHub and Google must use `GET /api/auth/{provider}` (OAuth authorize), not this endpoint.',
     request: {
       body: {
         content: {
@@ -458,6 +460,32 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   });
 
   /**
+   * GET /api/auth/providers
+   * List social OAuth providers and whether each is configured
+   */
+  registry.registerPath({
+    method: 'get',
+    path: '/api/auth/providers',
+    tags: ['Authentication'],
+    summary: 'List OAuth providers',
+    description:
+      'Public list of social OAuth providers. Frontends should only render providers with `configured: true`.',
+    responses: {
+      200: {
+        description: 'Social OAuth providers and configuration status',
+        content: {
+          'application/json': {
+            schema: z.object({
+              success: z.literal(true),
+              data: listAuthProvidersResponseSchema,
+            }),
+          },
+        },
+      },
+    },
+  });
+
+  /**
    * GET /api/auth/github
    * Initiate GitHub OAuth flow
    */
@@ -620,6 +648,49 @@ and either logs in an existing user or creates a new account.
           },
         },
       },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/auth/google',
+    tags: ['Authentication'],
+    summary: 'Initiate Google OAuth',
+    description:
+      'Same query parameters and connect/login/register flow as `/api/auth/github`. Redirects to Google; callback is `/api/auth/google/callback`.',
+    request: {
+      query: z.object({
+        redirect: z.string().url().optional(),
+        accountType: z.enum(['personal', 'organization']).optional(),
+        action: z.enum(['login', 'register', 'connect']).optional(),
+      }),
+    },
+    responses: {
+      302: { description: 'Redirect to Google authorization page' },
+      400: {
+        description: 'Invalid redirect URL',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'get',
+    path: '/api/auth/google/callback',
+    tags: ['Authentication'],
+    summary: 'Google OAuth callback',
+    description:
+      'Handles the Google OAuth callback. Login, verified-email link, register, or connect — same branching as GitHub.',
+    request: {
+      query: z.object({
+        code: z.string().optional(),
+        state: z.string().optional(),
+        error: z.string().optional(),
+        error_description: z.string().optional(),
+      }),
+    },
+    responses: {
+      302: { description: 'Redirect to frontend with authentication result' },
     },
   });
 

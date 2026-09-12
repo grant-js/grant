@@ -224,6 +224,10 @@ export const userAuthenticationMethodSchema = z.object({
     description: 'Whether this is the primary authentication method',
     example: true,
   }),
+  hasPassword: z.boolean().openapi({
+    description: 'True when this Email method has a password. Always false for social providers.',
+    example: true,
+  }),
   lastUsedAt: z.string().nullable().optional().openapi({
     description: 'Last time this authentication method was used',
     example: '2024-01-01T00:00:00Z',

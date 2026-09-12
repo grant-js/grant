@@ -339,8 +339,15 @@ export interface IUserAuthenticationMethodService {
 
   changePassword(
     userId: string,
-    currentPassword: string,
+    currentPassword: string | undefined,
     newPassword: string,
     transaction?: unknown
   ): Promise<void>;
+
+  ensureVerifiedContactEmail(
+    userId: string,
+    email: string | null | undefined,
+    emailVerified: boolean,
+    transaction?: unknown
+  ): Promise<UserAuthenticationMethod | null>;
 }

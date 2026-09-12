@@ -119,6 +119,11 @@ export const githubOAuthTestParamsSchema = z.object({
   clientSecret: z.string().trim().min(1, 'GITHUB_CLIENT_SECRET is required'),
 });
 
+export const googleOAuthTestParamsSchema = z.object({
+  clientId: z.string().trim().min(1, 'GOOGLE_CLIENT_ID is required'),
+  clientSecret: z.string().trim().min(1, 'GOOGLE_CLIENT_SECRET is required'),
+});
+
 const emailSchema = z
   .string()
   .trim()
@@ -202,6 +207,8 @@ const schemas: Record<string, z.ZodType<string>> = {
   REDIS_HOST: optionalString,
   GITHUB_CLIENT_ID: optionalString,
   GITHUB_CLIENT_SECRET: optionalString,
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalString,
   SECURITY_ADDITIONAL_ORIGINS: optionalString,
   SECURITY_ENABLE_HELMET: booleanSchema,
   SECURITY_ENABLE_RATE_LIMIT: booleanSchema,

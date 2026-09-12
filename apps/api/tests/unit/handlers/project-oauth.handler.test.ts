@@ -60,13 +60,32 @@ const mockAccounts = { getAccounts: vi.fn() };
 const mockOrganizationUsers = { getOrganizationUsers: vi.fn() };
 const mockAuthHandler = {
   resolveUserIdFromGithubForProject: vi.fn(),
+  resolveUserIdFromOAuthForProject: vi.fn(),
   resolveUserIdFromEmailForProject: vi.fn(),
 };
 const mockGithubOAuth = {
   isConfigured: vi.fn(),
   getProjectAuthorizationUrl: vi.fn(),
+  getProjectCallbackUrl: vi
+    .fn()
+    .mockReturnValue('https://api.example.com/api/auth/project/callback'),
   exchangeCodeForTokenWithRedirect: vi.fn(),
-  getUserInfo: vi.fn(),
+  getOAuthUserInfo: vi.fn(),
+  buildProviderData: vi.fn().mockReturnValue({
+    accessToken: 'gh-token',
+    githubId: '1',
+    email: 'user@example.com',
+  }),
+};
+const mockGoogleOAuth = {
+  isConfigured: vi.fn().mockResolvedValue(false),
+  getProjectAuthorizationUrl: vi.fn(),
+  getProjectCallbackUrl: vi
+    .fn()
+    .mockReturnValue('https://api.example.com/api/auth/project/callback'),
+  exchangeCodeForTokenWithRedirect: vi.fn(),
+  getOAuthUserInfo: vi.fn(),
+  buildProviderData: vi.fn(),
 };
 const mockGrant = {
   signApiKeyToken: vi.fn(),
@@ -103,6 +122,7 @@ function createHandler(): ProjectOAuthHandler {
     mockOrganizationUsers as never,
     mockAuthHandler as never,
     mockGithubOAuth as never,
+    mockGoogleOAuth as never,
     mockGrant as never,
     mockCache as never,
     mockEmail as never,
@@ -190,6 +210,32 @@ describe('ProjectOAuthHandler', () => {
           projectAppId: validApp.id,
           redirectUri: 'https://example.com/callback',
           provider: UserAuthenticationMethodProvider.Github,
+        }),
+        expect.any(Number)
+      );
+    });
+
+    it('returns Google authorization URL when provider=google and Google is configured', async () => {
+      mockGoogleOAuth.isConfigured.mockResolvedValue(true);
+      mockGoogleOAuth.getProjectAuthorizationUrl.mockReturnValue(
+        'https://accounts.google.com/o/oauth2/v2/auth?state=abc'
+      );
+      const handler = createHandler();
+      const result = await handler.initiateProjectAuthorize(
+        validApp.clientId,
+        'https://example.com/callback',
+        undefined,
+        UserAuthenticationMethodProvider.Google
+      );
+      expect(result.authorizationUrl).toBe(
+        'https://accounts.google.com/o/oauth2/v2/auth?state=abc'
+      );
+      expect(mockCacheOauth.set).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${PROJECT_OAUTH_STATE_KEY_PREFIX}`)),
+        expect.objectContaining({
+          projectAppId: validApp.id,
+          redirectUri: 'https://example.com/callback',
+          provider: UserAuthenticationMethodProvider.Google,
         }),
         expect.any(Number)
       );
@@ -712,14 +758,15 @@ describe('ProjectOAuthHandler', () => {
     beforeEach(() => {
       mockCacheOauth.get.mockResolvedValue(statePayload);
       mockGithubOAuth.exchangeCodeForTokenWithRedirect.mockResolvedValue('gh-token');
-      mockGithubOAuth.getUserInfo.mockResolvedValue({
-        id: 1,
-        login: 'user',
+      mockGithubOAuth.getOAuthUserInfo.mockResolvedValue({
+        id: '1',
         email: 'user@example.com',
+        emailVerified: true,
         name: 'User',
-        avatar_url: 'https://avatars.github.com/1',
+        avatarUrl: 'https://avatars.github.com/1',
+        username: 'user',
       });
-      mockAuthHandler.resolveUserIdFromGithubForProject.mockResolvedValue('user-id');
+      mockAuthHandler.resolveUserIdFromOAuthForProject.mockResolvedValue('user-id');
       mockProjectUsers.getProjectUsers.mockResolvedValue([
         { userId: 'user-id', projectId: validApp.projectId },
       ]);
@@ -811,8 +858,70 @@ describe('ProjectOAuthHandler', () => {
         }),
         expect.any(Number)
       );
-      expect(mockAuthHandler.resolveUserIdFromGithubForProject).toHaveBeenCalled();
+      expect(mockAuthHandler.resolveUserIdFromOAuthForProject).toHaveBeenCalled();
       expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleProjectCallback (Google)', () => {
+    const stateId = 'state-google';
+    const statePayload = {
+      projectAppId: validApp.id,
+      redirectUri: 'https://example.com/callback',
+      clientState: 'client-state',
+      provider: UserAuthenticationMethodProvider.Google,
+    };
+
+    beforeEach(() => {
+      mockCacheOauth.get.mockResolvedValue(statePayload);
+      mockGoogleOAuth.isConfigured.mockResolvedValue(true);
+      mockGoogleOAuth.exchangeCodeForTokenWithRedirect.mockResolvedValue('ya29.token');
+      mockGoogleOAuth.getOAuthUserInfo.mockResolvedValue({
+        id: 'google-sub-1',
+        email: 'user@example.com',
+        emailVerified: true,
+        name: 'Ada',
+        avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+      });
+      mockGoogleOAuth.buildProviderData.mockReturnValue({
+        accessToken: 'ya29.token',
+        googleId: 'google-sub-1',
+        email: 'user@example.com',
+      });
+      mockAuthHandler.resolveUserIdFromOAuthForProject.mockResolvedValue('user-id');
+      mockProjectUsers.getProjectUsers.mockResolvedValue([
+        { userId: 'user-id', projectId: validApp.projectId },
+      ]);
+      mockAccountProjects.getAccountProject.mockRejectedValue(new Error('not account project'));
+      mockOrganizationProjects.getOrganizationProject.mockResolvedValue({
+        organizationId: 'org-id',
+      });
+      mockOrganizationUsers.getOrganizationUsers.mockResolvedValue([
+        { userId: 'user-id', roleId: 'role-1' },
+      ]);
+    });
+
+    it('exchanges the code with the Google project callback URL', async () => {
+      const handler = createHandler();
+      const result = await handler.handleProjectCallback('code', stateId);
+      expect(result).toMatchObject({
+        redirectToConsent: true,
+        consentUrl: expect.stringContaining('consent_token='),
+      });
+      expect(mockGoogleOAuth.exchangeCodeForTokenWithRedirect).toHaveBeenCalledWith(
+        'code',
+        'https://api.example.com/api/auth/project/callback'
+      );
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).not.toHaveBeenCalled();
+      expect(mockAuthHandler.resolveUserIdFromOAuthForProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          emailVerified: true,
+        }),
+        undefined,
+        expect.anything()
+      );
     });
   });
 
