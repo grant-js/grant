@@ -68,20 +68,6 @@ export async function handleOAuthConnectFlow(
   return result.authorizationUrl;
 }
 
-/** @deprecated Use handleOAuthConnectFlow */
-export async function handleGithubConnectFlow(
-  context: RequestContext,
-  redirectUrl: string | undefined,
-  authenticatedUserId: string
-): Promise<string> {
-  return handleOAuthConnectFlow(
-    context,
-    UserAuthenticationMethodProvider.Github,
-    redirectUrl,
-    authenticatedUserId
-  );
-}
-
 async function connectOAuthToUser(
   context: RequestContext,
   oauthResult: HandleOAuthCallbackResult
@@ -145,15 +131,6 @@ export async function handleOAuthCallbackConnect(
   }
 }
 
-/** @deprecated Use handleOAuthCallbackConnect */
-export async function handleGithubCallbackConnect(
-  context: RequestContext,
-  res: Response,
-  oauthResult: HandleOAuthCallbackResult
-): Promise<boolean> {
-  return handleOAuthCallbackConnect(context, res, oauthResult);
-}
-
 /** Result of OAuth auth flow (login/register/link); includes accounts for CLI callback. */
 export interface OAuthCallbackAuthResult {
   accessToken: string;
@@ -161,9 +138,6 @@ export interface OAuthCallbackAuthResult {
   accounts: Array<{ id: string; type: string; ownerId?: string | null; [key: string]: unknown }>;
   requiresMfaStepUp: boolean;
 }
-
-/** @deprecated Use OAuthCallbackAuthResult */
-export type GithubCallbackAuthResult = OAuthCallbackAuthResult;
 
 export async function handleOAuthCallbackAuth(
   context: RequestContext,
@@ -236,14 +210,6 @@ export async function handleOAuthCallbackAuth(
     accounts: [result.account],
     requiresMfaStepUp: false,
   };
-}
-
-/** @deprecated Use handleOAuthCallbackAuth */
-export async function handleGithubCallbackAuth(
-  context: RequestContext,
-  oauthResult: HandleOAuthCallbackResult
-): Promise<OAuthCallbackAuthResult> {
-  return handleOAuthCallbackAuth(context, oauthResult);
 }
 
 export function buildAuthRedirectUrl(
@@ -349,15 +315,4 @@ export function handleOAuthError(
 
   const frontendUrl = config.security.frontendUrl;
   res.redirect(`${frontendUrl}/${locale}/auth/login?error=oauthError`);
-}
-
-/** @deprecated Use handleOAuthError */
-export function handleGithubOAuthError(
-  requestLogger: ILogger,
-  res: Response,
-  error: string | undefined,
-  errorDescription: string | undefined,
-  locale: string
-): void {
-  handleOAuthError(requestLogger, res, error, errorDescription, locale, 'github');
 }

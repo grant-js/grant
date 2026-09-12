@@ -55,13 +55,6 @@ export interface HandleOAuthCallbackResult {
   action?: UserAuthenticationEmailProviderAction;
 }
 
-/** @deprecated Use InitiateOAuthAuthParams */
-export type InitiateGithubAuthParams = InitiateOAuthAuthParams;
-/** @deprecated Use InitiateOAuthAuthResult */
-export type InitiateGithubAuthResult = InitiateOAuthAuthResult;
-/** @deprecated Use HandleOAuthCallbackResult */
-export type HandleGithubCallbackResult = HandleOAuthCallbackResult;
-
 export class OAuthHandler extends CacheHandler {
   protected readonly logger = createLogger('OAuthHandler');
 
@@ -94,12 +87,6 @@ export class OAuthHandler extends CacheHandler {
     return providers;
   }
 
-  public async initiateGithubAuth(
-    params: InitiateOAuthAuthParams
-  ): Promise<InitiateOAuthAuthResult> {
-    return this.initiateAuth(UserAuthenticationMethodProvider.Github, params);
-  }
-
   public async initiateAuth(
     provider: UserAuthenticationMethodProvider,
     params: InitiateOAuthAuthParams
@@ -116,13 +103,6 @@ export class OAuthHandler extends CacheHandler {
     const authorizationUrl = oauth.getAuthorizationUrl(state.state, params.redirectUrl);
 
     return { authorizationUrl };
-  }
-
-  public async handleGithubCallback(
-    code: string | undefined,
-    stateToken: string | undefined
-  ): Promise<HandleOAuthCallbackResult> {
-    return this.handleCallback(UserAuthenticationMethodProvider.Github, code, stateToken);
   }
 
   public async handleCallback(

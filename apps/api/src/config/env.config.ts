@@ -238,7 +238,6 @@ export const SOCIAL_OAUTH_PROVIDERS = [
   UserAuthenticationMethodProvider.Github,
   UserAuthenticationMethodProvider.Google,
 ] as const;
-export type SocialOAuthProvider = (typeof SOCIAL_OAUTH_PROVIDERS)[number];
 
 /**
  * Subset of UserAuthenticationMethodProvider (schema) that is supported in the project OAuth flow.
