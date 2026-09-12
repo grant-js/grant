@@ -34,6 +34,9 @@ export interface VarRowProps {
   testGithubOAuthStatus: 'idle' | 'loading' | 'success' | 'error';
   testGithubOAuthMessage: string;
   onTestGithubOAuth: () => void;
+  testGoogleOAuthStatus: 'idle' | 'loading' | 'success' | 'error';
+  testGoogleOAuthMessage: string;
+  onTestGoogleOAuth: () => void;
   isSelectOpen: boolean;
   onEdit: (key: string, value: string) => void;
   onReset: (key: string) => void;
@@ -74,6 +77,9 @@ export function VarRow({
   testGithubOAuthStatus,
   testGithubOAuthMessage,
   onTestGithubOAuth,
+  testGoogleOAuthStatus,
+  testGoogleOAuthMessage,
+  onTestGoogleOAuth,
   isSelectOpen,
   onEdit,
   onReset,
@@ -91,6 +97,7 @@ export function VarRow({
   const isAppUrl = v.key === 'APP_URL';
   const isRedisHost = v.key === 'REDIS_HOST';
   const isGithubClientSecret = v.key === 'GITHUB_CLIENT_SECRET';
+  const isGoogleClientSecret = v.key === 'GOOGLE_CLIENT_SECRET';
   const isSystemUserId = v.key === 'SYSTEM_USER_ID';
   const bound = boundToDocker || boundToAppUrl;
   const statusSet =
@@ -443,6 +450,34 @@ export function VarRow({
                   }
                 >
                   {testGithubOAuthMessage}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+        {isGoogleClientSecret && (
+          <>
+            <div className="test-db-row">
+              <button
+                type="button"
+                className="test-db-btn"
+                disabled={testGoogleOAuthStatus === 'loading' || !currentValue?.trim()}
+                onClick={onTestGoogleOAuth}
+              >
+                <Zap size={14} className="test-db-btn-icon" />
+                {testGoogleOAuthStatus === 'loading' ? 'Testing…' : 'Test connection'}
+              </button>
+            </div>
+            {(testGoogleOAuthStatus === 'success' || testGoogleOAuthStatus === 'error') && (
+              <div className="test-db-msg-row">
+                <span
+                  className={
+                    testGoogleOAuthStatus === 'success'
+                      ? 'test-db-msg test-db-msg-success'
+                      : 'test-db-msg test-db-msg-error'
+                  }
+                >
+                  {testGoogleOAuthMessage}
                 </span>
               </div>
             )}

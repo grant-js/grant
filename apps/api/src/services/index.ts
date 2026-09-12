@@ -79,6 +79,7 @@ import { EmailService } from './email.service';
 import { EventRelayService } from './event-relay.service';
 import { FileStorageService } from './file-storage.service';
 import { GitHubOAuthService } from './github-oauth.service';
+import { GoogleOAuthService } from './google-oauth.service';
 import { GroupPermissionService } from './group-permissions.service';
 import { GroupTagService } from './group-tags.service';
 import { GroupService } from './groups.service';
@@ -260,6 +261,7 @@ export function createServices(
     ),
     fileStorage: new FileStorageService(),
     githubOAuth: new GitHubOAuthService(secrets),
+    googleOAuth: new GoogleOAuthService(secrets),
     oauthState: new OAuthStateService(cache.oauth),
     users: new UserService(
       repositories.userRepository,

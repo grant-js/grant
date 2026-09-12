@@ -81,7 +81,7 @@ The defaults ([`deploy/aws/lib/config/defaults.ts`](https://github.com/grant-js/
 Two kinds of value are handled differently, and the difference is deliberate:
 
 - **Configuration** goes in `.env` and is synthesized into the template.
-- **Secrets** — `GITHUB_CLIENT_SECRET` and `AUTH_MFA_SECRET_ENCRYPTION_KEY` — also go in `.env`, but are **never** written to the template. CloudFormation cannot hold a literal secret without it being readable by anyone who can describe the stack. They are written to the platform secret out of band, after the deploy, by a separate command.
+- **Secrets** — `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET`, and `AUTH_MFA_SECRET_ENCRYPTION_KEY` — also go in `.env`, but are **never** written to the template. CloudFormation cannot hold a literal secret without it being readable by anyone who can describe the stack. They are written to the platform secret out of band, after the deploy, by a separate command.
 
 `cdk deploy` prints a reminder naming the keys it did not carry.
 
@@ -193,6 +193,7 @@ Pass **`-c appUrl=`** as the HTTPS URL users type in the browser, with no traili
 - `APP_URL`, `SECURITY_FRONTEND_URL`, `OPENAPI_PRODUCTION_URL`
 - `DOCS_URL` as `{APP_URL}/docs`
 - `GITHUB_CALLBACK_URL` / `GITHUB_PROJECT_CALLBACK_URL` under `/api/auth/…`, **when** `GITHUB_CLIENT_ID` is set
+- `GOOGLE_CALLBACK_URL` / `GOOGLE_PROJECT_CALLBACK_URL` under `/api/auth/…`, **when** `GOOGLE_CLIENT_ID` is set
 
 This is the single-host model documented in [Environment setup](/deployment/environment), and the paths are the same ones [`deploy/gateway.conf.template`](https://github.com/grant-js/grant/blob/main/deploy/gateway.conf.template) serves on the other targets — a parity test asserts the three implementations agree.
 

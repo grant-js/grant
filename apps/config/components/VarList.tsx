@@ -44,6 +44,9 @@ export interface VarListProps {
   onTestGithubOAuth: () => void;
   testGithubOAuthStatus: 'idle' | 'loading' | 'success' | 'error';
   testGithubOAuthMessage: string;
+  onTestGoogleOAuth: () => void;
+  testGoogleOAuthStatus: 'idle' | 'loading' | 'success' | 'error';
+  testGoogleOAuthMessage: string;
   onTestEmail: (toEmail: string) => void;
   testEmailStatus: 'idle' | 'loading' | 'success' | 'error';
   testEmailMessage: string;
@@ -143,6 +146,9 @@ export function VarList({
   onTestGithubOAuth,
   testGithubOAuthStatus,
   testGithubOAuthMessage,
+  onTestGoogleOAuth,
+  testGoogleOAuthStatus,
+  testGoogleOAuthMessage,
   onTestEmail,
   testEmailStatus,
   testEmailMessage,
@@ -234,6 +240,9 @@ export function VarList({
           testGithubOAuthStatus={testGithubOAuthStatus}
           testGithubOAuthMessage={testGithubOAuthMessage}
           onTestGithubOAuth={onTestGithubOAuth}
+          testGoogleOAuthStatus={testGoogleOAuthStatus}
+          testGoogleOAuthMessage={testGoogleOAuthMessage}
+          onTestGoogleOAuth={onTestGoogleOAuth}
           isSelectOpen={openSelectKey === v.key}
           onEdit={onEdit}
           onReset={onReset}

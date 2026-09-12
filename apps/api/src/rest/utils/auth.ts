@@ -7,7 +7,7 @@ import {
 import { Response } from 'express';
 
 import { config } from '@/config';
-import { HandleGithubCallbackResult } from '@/handlers/oauth.handler';
+import { HandleOAuthCallbackResult } from '@/handlers/oauth.handler';
 import { RequestContext } from '@/types';
 
 /**
@@ -44,38 +44,23 @@ export function isCliRedirectUrl(redirectUrl: string | undefined, frontendUrl: s
 }
 
 /**
- * Builds provider data object from GitHub user information
+ * Builds provider data object from OAuth user information
  */
-function buildGithubProviderData(
-  githubUser: HandleGithubCallbackResult['githubUser'],
-  accessToken: string,
-  includeUsername = false
-): Record<string, unknown> {
-  const providerData: Record<string, unknown> = {
-    accessToken,
-    githubId: githubUser.id.toString(),
-    email: githubUser.email,
-    name: githubUser.name,
-    avatarUrl: githubUser.avatar_url,
-  };
-
-  if (includeUsername) {
-    providerData.username = githubUser.login;
-  }
-
-  return providerData;
+function buildOAuthProviderData(oauthResult: HandleOAuthCallbackResult): Record<string, unknown> {
+  return oauthResult.providerData;
 }
 
 /**
- * Handles the GitHub OAuth connect flow (linking GitHub to existing authenticated user)
+ * Handles the OAuth connect flow (linking a provider to an existing authenticated user)
  */
-export async function handleGithubConnectFlow(
+export async function handleOAuthConnectFlow(
   context: RequestContext,
+  provider: UserAuthenticationMethodProvider,
   redirectUrl: string | undefined,
   authenticatedUserId: string
 ): Promise<string> {
   const defaultRedirectUrl = `${config.security.frontendUrl}/dashboard/settings/security`;
-  const result = await context.handlers.oauth.initiateGithubAuth({
+  const result = await context.handlers.oauth.initiateAuth(provider, {
     redirectUrl: redirectUrl || defaultRedirectUrl,
     userId: authenticatedUserId,
     action: UserAuthenticationEmailProviderAction.Connect,
@@ -83,18 +68,16 @@ export async function handleGithubConnectFlow(
   return result.authorizationUrl;
 }
 
-/**
- * Handles connecting GitHub account to an existing user
- */
-async function connectGithubToUser(
+async function connectOAuthToUser(
   context: RequestContext,
-  oauthResult: HandleGithubCallbackResult
+  oauthResult: HandleOAuthCallbackResult
 ): Promise<void> {
-  await context.handlers.auth.linkGithubAuthToExistingUser(
+  await context.handlers.auth.linkOAuthAuthToExistingUser(
     {
       userId: oauthResult.userId!,
+      provider: oauthResult.provider,
       providerId: oauthResult.providerId,
-      providerData: buildGithubProviderData(oauthResult.githubUser, oauthResult.accessToken, true),
+      providerData: buildOAuthProviderData(oauthResult),
     },
     context.userAgent,
     context.ipAddress,
@@ -102,80 +85,71 @@ async function connectGithubToUser(
   );
 }
 
-/**
- * Builds redirect URL for GitHub connect flow
- */
 function buildConnectRedirectUrl(
-  oauthResult: HandleGithubCallbackResult,
+  oauthResult: HandleOAuthCallbackResult,
   success: boolean,
   error?: string
 ): string {
   const frontendUrl = config.security.frontendUrl;
-  const locale = 'en'; // Default locale for settings redirect
+  const locale = 'en';
   const baseUrl = oauthResult.redirectUrl || `${frontendUrl}/${locale}/dashboard/settings/security`;
+  const connected = oauthResult.provider;
 
   if (success) {
-    return `${baseUrl}?connected=github&success=true`;
+    return `${baseUrl}?connected=${connected}&success=true`;
   }
 
   const errorParam = error ? `&error=${encodeURIComponent(error)}` : '';
-  return `${baseUrl}?connected=github${errorParam}`;
+  return `${baseUrl}?connected=${connected}${errorParam}`;
 }
 
-/**
- * Handles GitHub OAuth callback for connect flow
- */
-export async function handleGithubCallbackConnect(
+export async function handleOAuthCallbackConnect(
   context: RequestContext,
   res: Response,
-  oauthResult: HandleGithubCallbackResult
+  oauthResult: HandleOAuthCallbackResult
 ): Promise<boolean> {
   if (!oauthResult.userId || oauthResult.action !== UserAuthenticationEmailProviderAction.Connect) {
     return false;
   }
 
   try {
-    await connectGithubToUser(context, oauthResult);
+    await connectOAuthToUser(context, oauthResult);
     const redirectUrl = buildConnectRedirectUrl(oauthResult, true);
     res.redirect(redirectUrl);
     return true;
   } catch (error) {
     context.requestLogger.error({
-      msg: 'Error connecting GitHub account',
+      msg: 'Error connecting OAuth account',
+      provider: oauthResult.provider,
       err: error,
     });
 
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to connect GitHub account';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to connect OAuth account';
     const redirectUrl = buildConnectRedirectUrl(oauthResult, false, errorMessage);
     res.redirect(redirectUrl);
     return true;
   }
 }
 
-/** Result of GitHub OAuth auth flow (login/register/link); includes accounts for CLI callback. */
-export interface GithubCallbackAuthResult {
+/** Result of OAuth auth flow (login/register/link); includes accounts for CLI callback. */
+export interface OAuthCallbackAuthResult {
   accessToken: string;
   refreshToken: string;
   accounts: Array<{ id: string; type: string; ownerId?: string | null; [key: string]: unknown }>;
   requiresMfaStepUp: boolean;
 }
 
-/**
- * Handles GitHub OAuth callback for authentication flow (login/register)
- */
-export async function handleGithubCallbackAuth(
+export async function handleOAuthCallbackAuth(
   context: RequestContext,
-  oauthResult: HandleGithubCallbackResult
-): Promise<GithubCallbackAuthResult> {
-  const providerData = buildGithubProviderData(oauthResult.githubUser, oauthResult.accessToken);
+  oauthResult: HandleOAuthCallbackResult
+): Promise<OAuthCallbackAuthResult> {
+  const providerData = buildOAuthProviderData(oauthResult);
 
   if (oauthResult.existingAuthMethod) {
-    // User has existing GitHub auth method - login
     const result = await context.handlers.auth.login(
       {
         input: {
-          provider: UserAuthenticationMethodProvider.Github,
+          provider: oauthResult.provider,
           providerId: oauthResult.providerId,
           providerData,
         },
@@ -193,16 +167,12 @@ export async function handleGithubCallbackAuth(
   }
 
   if (oauthResult.existingUserByEmail) {
-    // User exists by email - link GitHub and login
-    const result = await context.handlers.auth.linkGithubAuthToExistingUser(
+    const result = await context.handlers.auth.linkOAuthAuthToExistingUser(
       {
         userId: oauthResult.existingUserByEmail.userId,
+        provider: oauthResult.provider,
         providerId: oauthResult.providerId,
-        providerData: buildGithubProviderData(
-          oauthResult.githubUser,
-          oauthResult.accessToken,
-          true
-        ),
+        providerData,
       },
       context.userAgent,
       context.ipAddress,
@@ -216,7 +186,6 @@ export async function handleGithubCallbackAuth(
     };
   }
 
-  // New user - register (new users cannot have MFA enrolled)
   const accountType =
     oauthResult.accountType === AccountType.Organization
       ? AccountType.Organization
@@ -225,9 +194,9 @@ export async function handleGithubCallbackAuth(
   const result = await context.handlers.auth.register(
     {
       type: accountType,
-      provider: UserAuthenticationMethodProvider.Github,
+      provider: oauthResult.provider,
       providerId: oauthResult.providerId,
-      providerData: buildGithubProviderData(oauthResult.githubUser, oauthResult.accessToken, true),
+      providerData,
     },
     context.locale,
     context.userAgent,
@@ -243,11 +212,8 @@ export async function handleGithubCallbackAuth(
   };
 }
 
-/**
- * Builds final redirect URL after successful authentication
- */
 export function buildAuthRedirectUrl(
-  oauthResult: HandleGithubCallbackResult,
+  oauthResult: HandleOAuthCallbackResult,
   locale: string
 ): string {
   if (oauthResult.redirectUrl) {
@@ -300,8 +266,19 @@ export function determineErrorCode(error: unknown): string {
     return 'redirectUriInvalid';
   }
 
+  if (message.includes('email is not verified') || message.includes('emailunverified')) {
+    return 'emailUnverified';
+  }
+
   if (message.includes('not configured')) {
     return 'oauthNotConfigured';
+  }
+
+  if (
+    message.includes('fetch user information from google') ||
+    (message.includes('google') && message.includes('bad credentials'))
+  ) {
+    return 'googleUserInfoFailed';
   }
 
   if (
@@ -311,28 +288,27 @@ export function determineErrorCode(error: unknown): string {
     return 'githubUserInfoFailed';
   }
 
-  if (
-    message.includes('temporarily unavailable') ||
-    (message.includes('github') && message.includes('503'))
-  ) {
+  if (message.includes('temporarily unavailable') || message.includes('503')) {
+    if (message.includes('google')) {
+      return 'googleUnavailable';
+    }
     return 'githubUnavailable';
   }
 
   return 'accountCreationFailed';
 }
 
-/**
- * Handles GitHub OAuth error and redirects to login page
- */
-export function handleGithubOAuthError(
+export function handleOAuthError(
   requestLogger: ILogger,
   res: Response,
   error: string | undefined,
   errorDescription: string | undefined,
-  locale: string
+  locale: string,
+  provider?: string
 ): void {
   requestLogger.warn({
-    msg: 'GitHub OAuth error',
+    msg: 'OAuth error',
+    provider: provider || 'unknown',
     error: error || 'unknown',
     description: errorDescription,
   });

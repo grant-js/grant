@@ -6,9 +6,10 @@ import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
-import { GitBranch, Mail, Shield } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
 import {
   SettingAuthenticationMethodActions,
   SettingCard,
@@ -18,12 +19,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMyMutations, useMyUserAuthenticationMethods } from '@/hooks/me';
 import { getApiBaseUrl } from '@/lib/constants';
+import { getSocialOAuthProviders, type SocialOAuthProviderId } from '@/lib/oauth-providers';
 
 import { SettingAuthenticationMethodsListProps } from './setting-types';
 
 export function SettingAuthenticationMethodsList({
   loading: externalLoading,
   onChangePassword,
+  onSetPassword,
 }: SettingAuthenticationMethodsListProps) {
   const t = useTranslations('settings.security.authenticationMethods');
   const {
@@ -38,11 +41,26 @@ export function SettingAuthenticationMethodsList({
   } = useMyMutations();
   const loading = externalLoading || methodsLoading;
   const [showAddEmailForm, setShowAddEmailForm] = useState(false);
+  const [configuredSocial, setConfiguredSocial] = useState<SocialOAuthProviderId[]>([]);
 
-  // Available providers
+  useEffect(() => {
+    let cancelled = false;
+    getSocialOAuthProviders()
+      .then((list) => {
+        if (!cancelled) setConfiguredSocial(list.map((p) => p.id));
+      })
+      .catch(() => {
+        if (!cancelled) setConfiguredSocial([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const availableProviders: UserAuthenticationMethodProvider[] = [
     UserAuthenticationMethodProvider.Email,
-    UserAuthenticationMethodProvider.Github,
+    ...(configuredSocial.includes('github') ? [UserAuthenticationMethodProvider.Github] : []),
+    ...(configuredSocial.includes('google') ? [UserAuthenticationMethodProvider.Google] : []),
   ];
 
   // Show all providers, mark which ones are connected
@@ -63,11 +81,11 @@ export function SettingAuthenticationMethodsList({
     const success = params.get('success');
     const error = params.get('error');
 
-    if (connected === 'github') {
+    if (connected === 'github' || connected === 'google') {
       if (success === 'true') {
-        toast.success(t('githubConnected'));
+        toast.success(t(`${connected}Connected`));
       } else if (error) {
-        toast.error(t('githubConnectError'), {
+        toast.error(t(`${connected}ConnectError`), {
           description: decodeURIComponent(error),
         });
       }
@@ -79,8 +97,10 @@ export function SettingAuthenticationMethodsList({
   }, [refetch, t]);
 
   const handleConnect = (provider: UserAuthenticationMethodProvider) => {
-    if (provider === UserAuthenticationMethodProvider.Github) {
-      // Redirect to OAuth initiation endpoint with connect=true
+    if (
+      provider === UserAuthenticationMethodProvider.Github ||
+      provider === UserAuthenticationMethodProvider.Google
+    ) {
       const apiBaseUrl = getApiBaseUrl();
       const urlParams = new URLSearchParams();
 
@@ -91,9 +111,9 @@ export function SettingAuthenticationMethodsList({
       urlParams.set('action', 'connect');
       urlParams.set('redirect', redirectUrl);
 
-      const githubAuthUrl = `${apiBaseUrl}/api/auth/github?${urlParams.toString()}`;
+      const authUrl = `${apiBaseUrl}/api/auth/${provider}?${urlParams.toString()}`;
       if (typeof window !== 'undefined') {
-        window.location.assign(githubAuthUrl);
+        window.location.assign(authUrl);
       }
     } else if (provider === UserAuthenticationMethodProvider.Email) {
       setShowAddEmailForm(true);
@@ -142,11 +162,11 @@ export function SettingAuthenticationMethodsList({
       case UserAuthenticationMethodProvider.Email:
         return <Mail className="h-4 w-4" />;
       case UserAuthenticationMethodProvider.Google:
-        return <Shield className="h-4 w-4" />;
+        return <OAuthProviderIcon provider="google" className="h-4 w-4" />;
       case UserAuthenticationMethodProvider.Github:
-        return <GitBranch className="h-4 w-4" />;
+        return <OAuthProviderIcon provider="github" className="h-4 w-4" />;
       default:
-        return <Shield className="h-4 w-4" />;
+        return <Mail className="h-4 w-4" />;
     }
   };
 
@@ -242,6 +262,11 @@ export function SettingAuthenticationMethodsList({
                 onChangePassword={
                   provider === UserAuthenticationMethodProvider.Email && onChangePassword
                     ? onChangePassword
+                    : undefined
+                }
+                onSetPassword={
+                  provider === UserAuthenticationMethodProvider.Email && onSetPassword
+                    ? onSetPassword
                     : undefined
                 }
               />

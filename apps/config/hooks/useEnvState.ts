@@ -47,6 +47,10 @@ export function useEnvState() {
     'idle' | 'loading' | 'success' | 'error'
   >('idle');
   const [testGithubOAuthMessage, setTestGithubOAuthMessage] = useState<string>('');
+  const [testGoogleOAuthStatus, setTestGoogleOAuthStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
+  const [testGoogleOAuthMessage, setTestGoogleOAuthMessage] = useState<string>('');
   const [testEmailStatus, setTestEmailStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
     'idle'
   );
@@ -292,6 +296,36 @@ export function useEnvState() {
     } catch (e) {
       setTestGithubOAuthStatus('error');
       setTestGithubOAuthMessage(e instanceof Error ? e.message : 'Request failed');
+    }
+  }, []);
+
+  const handleTestGoogleOAuth = useCallback(async (clientId: string, clientSecret: string) => {
+    const idTrim = clientId?.trim() ?? '';
+    const secretTrim = clientSecret?.trim() ?? '';
+    if (!idTrim || !secretTrim) {
+      setTestGoogleOAuthStatus('error');
+      setTestGoogleOAuthMessage('Client ID and Client Secret are required');
+      return;
+    }
+    setTestGoogleOAuthStatus('loading');
+    setTestGoogleOAuthMessage('');
+    try {
+      const res = await fetch('/api/env/test-google-oauth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: idTrim, clientSecret: secretTrim }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setTestGoogleOAuthStatus('success');
+        setTestGoogleOAuthMessage('Credentials accepted by Google');
+      } else {
+        setTestGoogleOAuthStatus('error');
+        setTestGoogleOAuthMessage(json.error ?? 'Google OAuth check failed');
+      }
+    } catch (e) {
+      setTestGoogleOAuthStatus('error');
+      setTestGoogleOAuthMessage(e instanceof Error ? e.message : 'Request failed');
     }
   }, []);
 
@@ -589,6 +623,8 @@ export function useEnvState() {
     testRedisMessage,
     testGithubOAuthStatus,
     testGithubOAuthMessage,
+    testGoogleOAuthStatus,
+    testGoogleOAuthMessage,
     testEmailStatus,
     testEmailMessage,
     openSelectKey,
@@ -607,6 +643,7 @@ export function useEnvState() {
     handleTestHealth,
     handleTestRedis,
     handleTestGithubOAuth,
+    handleTestGoogleOAuth,
     handleTestEmail,
     handleUseDockerDbChange,
     handleSave,

@@ -42,9 +42,11 @@ import {
   UserSessionSortableField,
 } from '@grantjs/schema';
 
+import { authMethodHasPassword } from '@/lib/auth-method-public.lib';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { assertEmailProviderForDirectAuth } from '@/lib/oauth-direct-auth.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Otp } from '@/types';
 
@@ -207,7 +209,7 @@ export class MeHandler extends CacheHandler {
   }
 
   public async changeMyPassword(params: {
-    currentPassword: string;
+    currentPassword?: string;
     newPassword: string;
   }): Promise<void> {
     const userId = this.getAuthenticatedUserId();
@@ -223,19 +225,29 @@ export class MeHandler extends CacheHandler {
 
   public async myUserAuthenticationMethods(): Promise<UserAuthenticationMethod[]> {
     const userId = this.getAuthenticatedUserId();
-    return await this.userAuthenticationMethods.getUserAuthenticationMethods({
+    const methods = await this.userAuthenticationMethods.getUserAuthenticationMethods({
       userId,
       requestedFields: [
         'id',
         'userId',
         'provider',
         'providerId',
+        'providerData',
         'isVerified',
         'isPrimary',
         'lastUsedAt',
         'createdAt',
         'updatedAt',
       ],
+    });
+
+    return methods.map((method) => {
+      const { providerData: _providerData, ...rest } = method;
+      return {
+        ...rest,
+        hasPassword: authMethodHasPassword(method),
+        providerData: {},
+      };
     });
   }
 
@@ -445,6 +457,7 @@ export class MeHandler extends CacheHandler {
     requestLogger?: ILogger
   ): Promise<UserAuthenticationMethod> {
     const userId = this.getAuthenticatedUserId();
+    assertEmailProviderForDirectAuth(input.provider);
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { providerData: processedProviderData, isVerified } =
         await this.userAuthenticationMethods.processProvider(

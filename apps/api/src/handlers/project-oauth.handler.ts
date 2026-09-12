@@ -13,7 +13,7 @@ import type {
   IUserService,
 } from '@grantjs/core';
 import type { Grant } from '@grantjs/core';
-import type { IGitHubOAuthService } from '@grantjs/core';
+import type { IGitHubOAuthService, IGoogleOAuthService } from '@grantjs/core';
 import {
   type ProjectAppPublicInfo,
   type ProjectConsentInfo,
@@ -38,6 +38,7 @@ import {
 } from '@/lib/errors';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { createLogger } from '@/lib/logger';
+import { oauthPictureUrlFromProviderData } from '@/lib/oauth-picture.lib';
 import type { IProjectOAuthProvider } from '@/lib/project-oauth';
 import { generateSecureToken } from '@/lib/token.lib';
 
@@ -112,6 +113,7 @@ export class ProjectOAuthHandler {
     private readonly organizationUsers: IOrganizationUserService,
     private readonly authHandler: AuthHandler,
     private readonly githubOAuth: IGitHubOAuthService,
+    private readonly googleOAuth: IGoogleOAuthService,
     private readonly grant: Grant,
     private readonly cache: IEntityCacheAdapter,
     private readonly email: IEmailService,
@@ -273,6 +275,14 @@ export class ProjectOAuthHandler {
           return this.githubOAuth.getProjectAuthorizationUrl(params.stateId);
         },
       },
+      google: {
+        getAuthorizeUrl: async (params) => {
+          if (!(await this.googleOAuth.isConfigured())) {
+            throw new ConfigurationError('Google OAuth is not configured');
+          }
+          return this.googleOAuth.getProjectAuthorizationUrl(params.stateId);
+        },
+      },
       email: {
         getAuthorizeUrl: (params) => {
           const baseUrl = this.buildFrontendUrlWithLocale(
@@ -393,15 +403,27 @@ export class ProjectOAuthHandler {
     code: string,
     stateId: string
   ): Promise<HandleProjectCallbackResult | HandleProjectCallbackConsentRedirectResult> {
-    if (!(await this.githubOAuth.isConfigured())) {
-      throw new ConfigurationError('GitHub OAuth is not configured');
-    }
-
     const key = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey;
     const state = await this.cache.oauth.get<ProjectOAuthState>(key);
     if (!state) {
       throw new AuthenticationError('Invalid or expired state');
     }
+    const provider = state.provider ?? UserAuthenticationMethodProvider.Github;
+    if (
+      provider !== UserAuthenticationMethodProvider.Github &&
+      provider !== UserAuthenticationMethodProvider.Google
+    ) {
+      throw new BadRequestError(`Unknown provider: ${provider}`);
+    }
+
+    const oauth =
+      provider === UserAuthenticationMethodProvider.Google ? this.googleOAuth : this.githubOAuth;
+    if (!(await oauth.isConfigured())) {
+      throw new ConfigurationError(
+        `${provider === UserAuthenticationMethodProvider.Google ? 'Google' : 'GitHub'} OAuth is not configured`
+      );
+    }
+
     const app = await this.projectApps.getProjectAppById(state.projectAppId);
     if (!app) {
       throw new NotFoundError('ProjectApp');
@@ -412,27 +434,21 @@ export class ProjectOAuthHandler {
       throw new BadRequestError('redirect_uri mismatch');
     }
 
-    const projectCallbackUrl =
-      config.githubOAuth.projectCallbackUrl ?? config.githubOAuth.callbackUrl;
-    const githubAccessToken = await this.githubOAuth.exchangeCodeForTokenWithRedirect(
-      code,
-      projectCallbackUrl
-    );
-    const githubUser = await this.githubOAuth.getUserInfo(githubAccessToken);
-    const providerId = githubUser.id.toString();
-    const providerData = {
-      accessToken: githubAccessToken,
-      githubId: githubUser.id,
-      avatarUrl: githubUser.avatar_url,
-      login: githubUser.login,
-      email: githubUser.email,
-      name: githubUser.name,
-    };
+    const projectCallbackUrl = oauth.getProjectCallbackUrl();
+    const accessToken = await oauth.exchangeCodeForTokenWithRedirect(code, projectCallbackUrl);
+    const user = await oauth.getOAuthUserInfo(accessToken);
+    const providerId = user.id;
+    const providerData = oauth.buildProviderData(user, accessToken, true);
 
-    const userId = await this.authHandler.resolveUserIdFromGithubForProject(
-      githubUser,
-      providerId,
-      providerData,
+    const userId = await this.authHandler.resolveUserIdFromOAuthForProject(
+      {
+        provider,
+        providerId,
+        email: user.email,
+        emailVerified: user.emailVerified,
+        name: user.name ?? user.username ?? 'User',
+        providerData,
+      },
       undefined,
       { allowSignUp: app.allowSignUp ?? true }
     );
@@ -622,27 +638,28 @@ export class ProjectOAuthHandler {
         const emailMethod = methods?.find(
           (m) => m.provider === UserAuthenticationMethodProvider.Email
         );
-        const githubMethod = methods?.find(
-          (m) => m.provider === UserAuthenticationMethodProvider.Github
+        const socialMethods = (methods ?? []).filter(
+          (m) =>
+            m.provider === UserAuthenticationMethodProvider.Github ||
+            m.provider === UserAuthenticationMethodProvider.Google
         );
-        const githubData = githubMethod?.providerData as
-          { name?: string; email?: string; avatarUrl?: string } | undefined;
+        const oauthMethod =
+          socialMethods.find((m) =>
+            oauthPictureUrlFromProviderData((m.providerData ?? {}) as Record<string, unknown>)
+          ) ?? socialMethods[0];
+        const oauthData = (oauthMethod?.providerData ?? {}) as Record<string, unknown>;
 
         const email =
           (emailMethod?.providerId as string | undefined)?.trim() ||
-          (typeof githubData?.email === 'string' ? githubData.email : null) ||
+          (typeof oauthData.email === 'string' ? oauthData.email : null) ||
           null;
         const displayName =
           (u.name ?? '')?.trim() ||
-          (typeof githubData?.name === 'string' ? githubData.name : '') ||
+          (typeof oauthData.name === 'string' ? oauthData.name : '') ||
           email ||
           '';
         const pictureUrl =
-          (u.pictureUrl ?? '')?.trim() ||
-          (typeof githubData?.avatarUrl === 'string' && githubData.avatarUrl.startsWith('http')
-            ? githubData.avatarUrl
-            : null) ||
-          null;
+          (u.pictureUrl ?? '')?.trim() || oauthPictureUrlFromProviderData(oauthData) || null;
 
         user = {
           displayName: displayName || '—',

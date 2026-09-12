@@ -471,6 +471,9 @@
         "oauthNotConfigured": "Anmeldung ist nicht konfiguriert. Bitte wenden Sie sich an den Support.",
         "githubUserInfoFailed": "GitHub-Informationen konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.",
         "githubUnavailable": "GitHub ist vorübergehend nicht erreichbar. Bitte versuchen Sie es später erneut.",
+        "googleUserInfoFailed": "Google-Informationen konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.",
+        "googleUnavailable": "Google ist vorübergehend nicht erreichbar. Bitte versuchen Sie es später erneut.",
+        "emailUnverified": "Bestätigen Sie die E-Mail Ihres bestehenden Kontos, bevor Sie sich mit GitHub oder Google anmelden.",
         "oauthError": "Anmeldung wurde abgebrochen oder ist fehlgeschlagen. Bitte versuchen Sie es erneut."
       }
     },
@@ -664,6 +667,16 @@
         "errorDescription": "Bei der GitHub-Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
       }
     },
+    "google": {
+      "signIn": "Mit Google anmelden",
+      "signUp": "Mit Google registrieren",
+      "continue": "Mit Google fortfahren"
+    },
+    "oauth": {
+      "signInWith": "Anmelden mit",
+      "signUpWith": "Registrieren mit",
+      "or": "Oder"
+    },
     "projectOAuth": {
       "entry": {
         "loading": "Laden…",
@@ -678,6 +691,7 @@
         "signInWith": "Anmelden mit",
         "email": "E-Mail",
         "github": "GitHub",
+        "google": "Google",
         "failedToLoad": "App konnte nicht geladen werden"
       },
       "email": {
@@ -1364,7 +1378,8 @@
     },
     "providers": {
       "email": "E-Mail",
-      "github": "GitHub"
+      "github": "GitHub",
+      "google": "Google"
     },
     "createDialog": {
       "title": "App erstellen",
@@ -3013,6 +3028,7 @@
         "unverified": "Nicht verifiziert",
         "lastUsed": "Zuletzt verwendet",
         "changePassword": "Passwort ändern",
+        "setPassword": "Passwort festlegen",
         "connect": "Verbinden",
         "disconnect": "Trennen",
         "setAsPrimary": "Als primär festlegen",
@@ -3020,6 +3036,8 @@
         "cannotDisconnectLastMethod": "Ihre letzte Authentifizierungsmethode kann nicht getrennt werden. Bitte fügen Sie zuerst eine andere Methode hinzu.",
         "githubConnected": "GitHub-Konto erfolgreich verbunden",
         "githubConnectError": "GitHub-Konto konnte nicht verbunden werden",
+        "googleConnected": "Google-Konto erfolgreich verbunden",
+        "googleConnectError": "Google-Konto konnte nicht verbunden werden",
         "emailConnected": "E-Mail-Authentifizierungsmethode erfolgreich hinzugefügt",
         "emailConnectError": "E-Mail-Authentifizierungsmethode konnte nicht hinzugefügt werden",
         "disconnected": "{provider} Konto erfolgreich getrennt",
@@ -3044,6 +3062,13 @@
         "confirmPassword": "Passwort bestätigen",
         "submit": "Passwort ändern"
       },
+      "setPassword": {
+        "title": "Passwort festlegen",
+        "description": "Legen Sie ein Passwort fest, um sich auch per E-Mail anzumelden",
+        "newPassword": "Neues Passwort",
+        "confirmPassword": "Passwort bestätigen",
+        "submit": "Passwort festlegen"
+      },
       "activeSessions": {
         "title": "Aktive Sitzungen",
         "description": "Verwalten Sie Ihre aktiven Anmeldesitzungen auf allen Geräten",
@@ -3067,6 +3092,8 @@
       "notifications": {
         "changePasswordSuccess": "Passwort erfolgreich geändert",
         "changePasswordError": "Passwort konnte nicht geändert werden",
+        "setPasswordSuccess": "Passwort erfolgreich festgelegt",
+        "setPasswordError": "Passwort konnte nicht festgelegt werden",
         "revokeSessionSuccess": "Sitzung erfolgreich widerrufen",
         "revokeSessionError": "Sitzung konnte nicht widerrufen werden"
       },

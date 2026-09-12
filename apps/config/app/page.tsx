@@ -35,6 +35,9 @@ function ConfigPageContent() {
     testGithubOAuthStatus,
     testGithubOAuthMessage,
     handleTestGithubOAuth,
+    testGoogleOAuthStatus,
+    testGoogleOAuthMessage,
+    handleTestGoogleOAuth,
     testEmailStatus,
     testEmailMessage,
     handleTestEmail,
@@ -217,6 +220,14 @@ function ConfigPageContent() {
                       }
                       testGithubOAuthStatus={testGithubOAuthStatus}
                       testGithubOAuthMessage={testGithubOAuthMessage}
+                      onTestGoogleOAuth={() =>
+                        handleTestGoogleOAuth(
+                          getVar('GOOGLE_CLIENT_ID'),
+                          getVar('GOOGLE_CLIENT_SECRET')
+                        )
+                      }
+                      testGoogleOAuthStatus={testGoogleOAuthStatus}
+                      testGoogleOAuthMessage={testGoogleOAuthMessage}
                       onTestEmail={(to) => handleTestEmail(to, getEmailVars)}
                       testEmailStatus={testEmailStatus}
                       testEmailMessage={testEmailMessage}

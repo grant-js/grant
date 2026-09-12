@@ -24,7 +24,7 @@ export default function SecuritySettingsPage() {
 
   const { accessToken, clearAuth } = useAuthStore();
   const { changeMyPassword, revokeMyUserSession } = useMyMutations();
-  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordFormMode, setPasswordFormMode] = useState<'set' | 'change' | null>(null);
 
   const { authenticationMethods, loading: authMethodsLoading } = useMyUserAuthenticationMethods();
 
@@ -40,18 +40,19 @@ export default function SecuritySettingsPage() {
   const currentSessionId = useMemo(() => getCurrentSessionId(accessToken!), [accessToken]);
 
   const emailMethod = authenticationMethods.find((method) => method.provider === 'email');
+  const hasPassword = emailMethod?.hasPassword === true;
 
-  const handleChangePassword = async (values: {
-    currentPassword: string;
+  const handlePasswordSubmit = async (values: {
+    currentPassword?: string;
     newPassword: string;
     confirmPassword: string;
   }) => {
     await changeMyPassword({
-      currentPassword: values.currentPassword,
+      currentPassword: hasPassword ? values.currentPassword : undefined,
       newPassword: values.newPassword,
       confirmPassword: values.confirmPassword,
     });
-    setShowChangePassword(false);
+    setPasswordFormMode(null);
   };
 
   const handleRevokeSession = async (sessionId: string) => {
@@ -68,15 +69,19 @@ export default function SecuritySettingsPage() {
       <div className="space-y-6">
         <SettingAuthenticationMethodsList
           loading={authMethodsLoading}
-          onChangePassword={emailMethod ? () => setShowChangePassword(true) : undefined}
+          onChangePassword={
+            emailMethod && hasPassword ? () => setPasswordFormMode('change') : undefined
+          }
+          onSetPassword={emailMethod && !hasPassword ? () => setPasswordFormMode('set') : undefined}
         />
         <SettingMfaDevicesCard />
         <SettingMfaRecoveryCodesCard />
 
-        {showChangePassword && (
+        {passwordFormMode && (
           <SettingPasswordChangeForm
-            onSubmit={handleChangePassword}
-            onCancel={() => setShowChangePassword(false)}
+            mode={passwordFormMode}
+            onSubmit={handlePasswordSubmit}
+            onCancel={() => setPasswordFormMode(null)}
           />
         )}
 

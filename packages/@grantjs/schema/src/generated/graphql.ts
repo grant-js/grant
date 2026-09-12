@@ -554,6 +554,7 @@ export type MyUserAuthenticationMethodsQuery = {
     providerId: string;
     isVerified: boolean;
     isPrimary: boolean;
+    hasPassword: boolean;
     lastUsedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
@@ -4172,6 +4173,7 @@ export const MyUserAuthenticationMethodsDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'isVerified' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasPassword' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },

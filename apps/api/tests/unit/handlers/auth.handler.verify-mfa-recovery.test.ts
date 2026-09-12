@@ -13,6 +13,7 @@ const mockUserAuthenticationMethods = {
   requestPasswordReset: vi.fn(),
   resetPassword: vi.fn(),
   invalidateAllUserSessions: vi.fn(),
+  ensureVerifiedContactEmail: vi.fn(),
 };
 const mockUsers = { createUser: vi.fn(), getUsers: vi.fn(), deleteOwnUser: vi.fn() };
 const mockAccounts = { createAccount: vi.fn(), getOwnerAccounts: vi.fn(), deleteAccount: vi.fn() };

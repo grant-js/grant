@@ -16,6 +16,7 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { authMethodHasPassword } from '@/lib/auth-method-public.lib';
 import {
   AuthenticationError,
   BadRequestError,
@@ -24,6 +25,8 @@ import {
   NotFoundError,
   ValidationError,
 } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
+import { normalizeVerifiedContactEmail } from '@/lib/oauth-contact-email.lib';
 import { generateSecureToken, hashSecret, isTokenValid, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { Otp } from '@/types';
@@ -35,6 +38,7 @@ import {
   deleteUserAuthenticationMethodArgsSchema,
   emailProviderDataSchema,
   githubProviderDataSchema,
+  googleProviderDataSchema,
   parseProviderDataSchema,
   passwordPolicySchema,
   queryUserAuthenticationMethodsArgsSchema,
@@ -48,7 +52,16 @@ interface ProcessedProvider {
   name: string;
 }
 
+function withHasPassword(method: UserAuthenticationMethod): UserAuthenticationMethod {
+  return {
+    ...method,
+    hasPassword: authMethodHasPassword(method),
+  };
+}
+
 export class UserAuthenticationMethodService implements IUserAuthenticationMethodService {
+  private readonly logger = createLogger('UserAuthenticationMethodService');
+
   constructor(
     private readonly userAuthenticationMethodRepository: IUserAuthenticationMethodRepository,
     private readonly userSessionRepository: IUserSessionRepository,
@@ -69,7 +82,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       throw new NotFoundError('UserAuthenticationMethod');
     }
 
-    return method;
+    return withHasPassword(method);
   }
 
   public async getUserAuthenticationMethodByProvider(
@@ -86,7 +99,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     );
 
     if (method) {
-      return method;
+      return withHasPassword(method);
     }
 
     return null;
@@ -98,7 +111,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
   ): Promise<UserAuthenticationMethod | null> {
     const method = await this.userAuthenticationMethodRepository.findByEmail(email, transaction);
 
-    return method || null;
+    return method ? withHasPassword(method) : null;
   }
 
   public async getUserAuthenticationMethods(
@@ -113,7 +126,13 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     );
 
     return result.map((method: UserAuthenticationMethod) => {
-      return validateOutput(userAuthenticationMethodSchema, method, context);
+      return validateOutput(
+        userAuthenticationMethodSchema,
+        {
+          ...withHasPassword(method),
+        },
+        context
+      );
     });
   }
 
@@ -178,7 +197,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     return validateOutput(
       createDynamicSingleSchema(userAuthenticationMethodSchema),
-      userAuthenticationMethod,
+      withHasPassword(userAuthenticationMethod),
       context
     );
   }
@@ -237,7 +256,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     return validateOutput(
       createDynamicSingleSchema(userAuthenticationMethodSchema),
-      updatedUserAuthenticationMethod,
+      withHasPassword(updatedUserAuthenticationMethod),
       context
     );
   }
@@ -337,7 +356,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     return validateOutput(
       createDynamicSingleSchema(userAuthenticationMethodSchema),
-      deletedUserAuthenticationMethod,
+      withHasPassword(deletedUserAuthenticationMethod),
       context
     );
   }
@@ -398,17 +417,48 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     }
 
     const name = validatedProviderData.name || providerId || 'User';
+    const emailVerified = validatedProviderData.emailVerified === true;
 
     return {
       providerData: {
         accessToken: validatedProviderData.accessToken,
         githubId: validatedProviderData.githubId,
-        email: validatedProviderData.email || null,
+        email: emailVerified ? validatedProviderData.email || null : null,
+        emailVerified,
         name: validatedProviderData.name || null,
         avatarUrl: validatedProviderData.avatarUrl || null,
         verifiedAt: new Date().toISOString(),
       },
       isVerified: true,
+      name,
+    };
+  }
+
+  private processGoogleProvider(
+    providerId: string,
+    providerData: Record<string, unknown>,
+    context: string
+  ): ProcessedProvider {
+    const validatedProviderData = validateInput(googleProviderDataSchema, providerData, context);
+
+    if (providerId !== validatedProviderData.googleId) {
+      throw new ValidationError('Provider ID must match Google user ID');
+    }
+
+    const name = validatedProviderData.name || providerId || 'User';
+    const emailVerified = validatedProviderData.emailVerified === true;
+
+    return {
+      providerData: {
+        accessToken: validatedProviderData.accessToken,
+        googleId: validatedProviderData.googleId,
+        email: emailVerified ? validatedProviderData.email || null : null,
+        emailVerified,
+        name: validatedProviderData.name || null,
+        avatarUrl: validatedProviderData.avatarUrl || null,
+        verifiedAt: new Date().toISOString(),
+      },
+      isVerified: emailVerified,
       name,
     };
   }
@@ -436,7 +486,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     if (result) {
       return validateOutput(
         createDynamicSingleSchema(userAuthenticationMethodSchema),
-        result,
+        withHasPassword(result),
         context
       );
     }
@@ -479,6 +529,8 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
         return this.processEmailProvider(providerId, providerData, context);
       case UserAuthenticationMethodProvider.Github:
         return this.processGithubProvider(providerId, providerData, context);
+      case UserAuthenticationMethodProvider.Google:
+        return this.processGoogleProvider(providerId, providerData, context);
       default:
         throw new BadRequestError('Invalid provider');
     }
@@ -512,7 +564,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     if (targetMethod.isVerified) {
       return validateOutput(
         createDynamicSingleSchema(userAuthenticationMethodSchema),
-        targetMethod,
+        withHasPassword(targetMethod),
         context
       );
     }
@@ -543,7 +595,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     return validateOutput(
       createDynamicSingleSchema(userAuthenticationMethodSchema),
-      updatedMethod,
+      withHasPassword(updatedMethod),
       context
     );
   }
@@ -704,9 +756,44 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     }
   }
 
+  public async ensureVerifiedContactEmail(
+    userId: string,
+    email: string | null | undefined,
+    emailVerified: boolean,
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod | null> {
+    const emailNorm = normalizeVerifiedContactEmail(email, emailVerified);
+    if (!emailNorm) {
+      return null;
+    }
+
+    try {
+      return await this.createUserAuthenticationMethod(
+        {
+          userId,
+          provider: UserAuthenticationMethodProvider.Email,
+          providerId: emailNorm,
+          providerData: {},
+          isVerified: true,
+        },
+        transaction
+      );
+    } catch (error) {
+      if (error instanceof BadRequestError || error instanceof ConflictError) {
+        this.logger.debug({
+          msg: 'Skipped verified contact email bind',
+          userId,
+          reason: error.message,
+        });
+        return null;
+      }
+      throw error;
+    }
+  }
+
   public async changePassword(
     userId: string,
-    currentPassword: string,
+    currentPassword: string | undefined,
     newPassword: string,
     transaction?: Transaction
   ): Promise<void> {
@@ -729,18 +816,21 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     const emailMethod = methods[0];
     const providerData = (emailMethod.providerData as Record<string, unknown>) || {};
-    const hashedPassword = providerData.hashedPassword as string | undefined;
+    const hashedPassword =
+      typeof providerData.hashedPassword === 'string' ? providerData.hashedPassword : undefined;
 
-    if (!hashedPassword) {
-      throw new BadRequestError('Password not set for this account');
+    if (hashedPassword) {
+      if (!currentPassword) {
+        throw new BadRequestError('Current password is required');
+      }
+      if (!verifySecret(currentPassword, hashedPassword)) {
+        throw new AuthenticationError('Current password is incorrect');
+      }
     }
 
-    if (!verifySecret(currentPassword, hashedPassword)) {
-      throw new AuthenticationError('Current password is incorrect');
-    }
+    const reason = hashedPassword ? 'change' : 'set';
 
-    const newHashedPassword = hashSecret(newPassword);
-    providerData.hashedPassword = newHashedPassword;
+    providerData.hashedPassword = hashSecret(newPassword);
 
     await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       emailMethod.id,
@@ -755,7 +845,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
         type: 'user.password_changed',
         subjectUserId: userId,
         aggregate: { kind: 'userAuthenticationMethod', id: emailMethod.id },
-        data: { after: { userId, reason: 'change' } },
+        data: { after: { userId, reason } },
       },
       transaction
     );

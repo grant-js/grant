@@ -98,6 +98,10 @@ export default withMermaid({
               link: '/core-concepts/mfa-recovery',
             },
             {
+              text: 'Sign-in Providers',
+              link: '/core-concepts/sign-in-providers',
+            },
+            {
               text: 'Members & Invitations',
               link: '/core-concepts/organization-invitations',
             },
@@ -280,6 +284,18 @@ export default withMermaid({
     ssr: {
       noExternal: ['vitepress-plugin-mermaid'], // Ensure Mermaid plugin is processed by Vite
     },
+    resolve: {
+      alias: [
+        {
+          find: /^fastdom$/,
+          replacement: resolve(__dirname, 'fastdom-shim.js'),
+        },
+        {
+          find: /^fastdom\/extensions\/fastdom-promised\.js$/,
+          replacement: resolve(__dirname, 'fastdom-promised-shim.js'),
+        },
+      ],
+    },
     plugins: [
       // Workaround: Vite import-analysis misparses Vue SFC style blocks containing calc(X / N).
       // Rewrite those to equivalent calc(N%) so the parser does not see division.
@@ -316,16 +332,40 @@ export default withMermaid({
       {
         name: 'fix-debug-esm',
         enforce: 'pre',
-        resolveId(id, importer) {
+        resolveId(id) {
+          const bareId = id.split('?')[0];
+          const normalized = bareId.replace(/\\/g, '/');
           // Intercept any import that resolves to debug/src/browser.js
-          if (id.includes('debug/src/browser') || id.endsWith('debug/src/browser.js')) {
+          if (
+            normalized.includes('debug/src/browser') ||
+            normalized.endsWith('debug/src/browser.js')
+          ) {
             return resolve(__dirname, 'debug-shim.js');
+          }
+          if (
+            bareId === 'fastdom/extensions/fastdom-promised.js' ||
+            normalized.endsWith('/fastdom/extensions/fastdom-promised.js')
+          ) {
+            return resolve(__dirname, 'fastdom-promised-shim.js');
+          }
+          // Force a new module URL so the browser does not reuse a cached
+          // SyntaxError from before the CJS default-export transform existed.
+          if (
+            (bareId === 'fastdom' ||
+              (normalized.endsWith('/fastdom/fastdom.js') &&
+                !normalized.includes('/extensions/'))) &&
+            !normalized.endsWith('fastdom-shim.js')
+          ) {
+            return resolve(__dirname, 'fastdom-shim.js');
           }
         },
         load(id) {
           // Also catch if Vite tries to load the file directly from node_modules
           if (id.includes('node_modules') && id.includes('debug') && id.includes('browser.js')) {
             return `export { default } from '${resolve(__dirname, 'debug-shim.js')}';`;
+          }
+          if (id.includes('node_modules') && id.includes('fastdom/extensions/fastdom-promised')) {
+            return `export { default } from '${resolve(__dirname, 'fastdom-promised-shim.js')}';`;
           }
         },
       },

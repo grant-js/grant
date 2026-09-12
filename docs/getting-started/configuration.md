@@ -20,7 +20,7 @@ pnpm --filter grant-config dev
 Then open [http://localhost:3005](http://localhost:3005).
 
 - **Environment selector** (header): Choose **Default** (`.env`), **Demo** (`.env.demo`), or **Test** (`.env.test`). All vars and schema defaults are shown; unset vars show the default as placeholder.
-- **Sidebar:** Categories (App, Database, Cache, Auth, GitHub OAuth, Security, Advanced) with Set/Default/Missing status. Hamburger menu on small screens.
+- **Sidebar:** Categories (App, Database, Cache, Auth, GitHub OAuth, Google OAuth, Security, Advanced) with Set/Default/Missing status. Hamburger menu on small screens.
 - **Content:** Variables for the selected category in collapsible sections. Critical settings first; optional sections collapsed by default. Edit in place, generate passwords; optional **Use app URL** and **Use docker database** to derive `SECURITY_FRONTEND_URL` and `DB_URL` from `APP_URL` and Postgres vars.
 
 <div class="config-app-screenshots">
@@ -69,6 +69,17 @@ To avoid regressions, follow these rules:
 
 Full list, descriptions, and defaults: Config app (all categories) or root **`.env.example`** (and `.env.demo.example` / `.env.test.example` for demo/E2E). Variables use prefixes (`DB_*`, `JWT_*`, `SECURITY_*`, etc.) for grouping.
 
+### Sign-in providers (optional)
+
+Leave client ID and secret empty to hide that provider on login and register. If either value is set, both are required.
+
+| Variable                                    | Purpose                 |
+| ------------------------------------------- | ----------------------- |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App        |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Web client |
+
+Callback URLs default from `APP_URL`. Register them with the IdP as described in [Sign-in providers](/core-concepts/sign-in-providers) and [Security](/architecture/security#configuring-the-github-oauth-app).
+
 ### Authentication assurance (AAL)
 
 | Variable                           | Default | Purpose                                                                                                                                                                                           |
@@ -105,7 +116,8 @@ Implementation: `apps/api/src/config/env.config.ts`. Validated on startup; inval
 
 - [Quick Start](/getting-started/quick-start) — Get running locally
 - [Docker Deployment](/deployment/docker) — Infrastructure and env
-- [Security](/architecture/security) — Auth, CORS, GitHub OAuth
+- [Security](/architecture/security) — Auth, CORS, OAuth callback URLs
+- [Sign-in providers](/core-concepts/sign-in-providers) — GitHub/Google env, account linking, profile pictures
 - [Caching](/advanced-topics/caching) — Cache strategy and Redis
 
 ---

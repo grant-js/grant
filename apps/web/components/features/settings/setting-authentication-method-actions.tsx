@@ -18,6 +18,7 @@ export function SettingAuthenticationMethodActions({
   onDisconnect,
   onSetPrimary,
   onChangePassword,
+  onSetPassword,
 }: SettingAuthenticationMethodActionsProps) {
   const t = useTranslations('settings.security.authenticationMethods');
 
@@ -40,12 +41,29 @@ export function SettingAuthenticationMethodActions({
       });
     }
 
-    if (provider === UserAuthenticationMethodProvider.Email && onChangePassword) {
+    if (
+      provider === UserAuthenticationMethodProvider.Email &&
+      method.hasPassword &&
+      onChangePassword
+    ) {
       actions.push({
         key: 'changePassword',
         label: t('changePassword'),
         icon: <Lock className="mr-2 h-4 w-4" />,
         onClick: onChangePassword,
+      });
+    }
+
+    if (
+      provider === UserAuthenticationMethodProvider.Email &&
+      !method.hasPassword &&
+      onSetPassword
+    ) {
+      actions.push({
+        key: 'setPassword',
+        label: t('setPassword'),
+        icon: <Lock className="mr-2 h-4 w-4" />,
+        onClick: onSetPassword,
       });
     }
 

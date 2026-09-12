@@ -17,6 +17,16 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   });
 
+export const setPasswordSchema = z
+  .object({
+    newPassword: passwordPolicySchema,
+    confirmPassword: z.string().min(1, 'errors.validation.confirmPasswordRequired'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'errors.validation.passwordMismatch',
+    path: ['confirmPassword'],
+  });
+
 export const addEmailAuthMethodSchema = z
   .object({
     email: z.email('errors.validation.invalidEmail'),

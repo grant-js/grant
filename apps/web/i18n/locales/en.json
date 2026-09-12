@@ -473,6 +473,9 @@
         "oauthNotConfigured": "Sign-in is not configured. Please contact support.",
         "githubUserInfoFailed": "We couldn't get your GitHub information. Please try again.",
         "githubUnavailable": "GitHub is temporarily unavailable. Please try again later.",
+        "googleUserInfoFailed": "We couldn't get your Google information. Please try again.",
+        "googleUnavailable": "Google is temporarily unavailable. Please try again later.",
+        "emailUnverified": "Verify the email on your existing account before signing in with GitHub or Google.",
         "oauthError": "Sign-in was cancelled or failed. Please try again."
       }
     },
@@ -666,6 +669,16 @@
         "errorDescription": "An error occurred during GitHub authentication. Please try again."
       }
     },
+    "google": {
+      "signIn": "Sign in with Google",
+      "signUp": "Sign up with Google",
+      "continue": "Continue with Google"
+    },
+    "oauth": {
+      "signInWith": "Sign in with",
+      "signUpWith": "Sign up with",
+      "or": "Or"
+    },
     "projectOAuth": {
       "entry": {
         "loading": "Loading…",
@@ -680,6 +693,7 @@
         "signInWith": "Sign in with",
         "email": "Email",
         "github": "GitHub",
+        "google": "Google",
         "failedToLoad": "Failed to load app"
       },
       "email": {
@@ -1646,7 +1660,8 @@
     },
     "providers": {
       "email": "Email",
-      "github": "GitHub"
+      "github": "GitHub",
+      "google": "Google"
     },
     "createDialog": {
       "title": "Create app",
@@ -3316,6 +3331,7 @@
         "notConnected": "Not connected",
         "lastUsed": "Last used",
         "changePassword": "Change Password",
+        "setPassword": "Set Password",
         "connect": "Connect",
         "disconnect": "Disconnect",
         "setAsPrimary": "Set as Primary",
@@ -3323,6 +3339,8 @@
         "cannotDisconnectLastMethod": "Cannot disconnect your last authentication method. Please add another method first.",
         "githubConnected": "GitHub account connected successfully",
         "githubConnectError": "Failed to connect GitHub account",
+        "googleConnected": "Google account connected successfully",
+        "googleConnectError": "Failed to connect Google account",
         "emailConnected": "Email authentication method added successfully",
         "emailConnectError": "Failed to add email authentication method",
         "disconnected": "{provider} account disconnected successfully",
@@ -3347,6 +3365,13 @@
         "confirmPassword": "Confirm Password",
         "submit": "Change Password"
       },
+      "setPassword": {
+        "title": "Set Password",
+        "description": "Add a password so you can also sign in with email",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "submit": "Set Password"
+      },
       "activeSessions": {
         "title": "Active Sessions",
         "description": "Manage your active login sessions across all devices",
@@ -3370,6 +3395,8 @@
       "notifications": {
         "changePasswordSuccess": "Password changed successfully",
         "changePasswordError": "Failed to change password",
+        "setPasswordSuccess": "Password set successfully",
+        "setPasswordError": "Failed to set password",
         "revokeSessionSuccess": "Session revoked successfully",
         "revokeSessionError": "Failed to revoke session"
       },

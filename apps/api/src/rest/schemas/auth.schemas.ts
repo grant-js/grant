@@ -289,7 +289,7 @@ export const initiateGithubAuthQuerySchema = z.object({
 
 export const handleGithubCallbackQuerySchema = z.object({
   code: z.string().optional().openapi({
-    description: 'Authorization code from GitHub',
+    description: 'Authorization code from the OAuth provider',
     example: 'abc123def456...',
   }),
   state: z.string().optional().openapi({
@@ -297,13 +297,22 @@ export const handleGithubCallbackQuerySchema = z.object({
     example: 'state-token-123',
   }),
   error: z.string().optional().openapi({
-    description: 'Error code from GitHub OAuth',
+    description: 'Error code from the OAuth provider',
     example: 'access_denied',
   }),
   error_description: z.string().optional().openapi({
-    description: 'Error description from GitHub OAuth',
+    description: 'Error description from the OAuth provider',
     example: 'The user denied the request',
   }),
+});
+
+export const listAuthProvidersResponseSchema = z.object({
+  providers: z.array(
+    z.object({
+      id: z.enum(['github', 'google']),
+      configured: z.boolean(),
+    })
+  ),
 });
 
 export const cliCallbackRequestSchema = z.object({
