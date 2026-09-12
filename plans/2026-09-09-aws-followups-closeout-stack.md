@@ -886,6 +886,25 @@ wrote down.
 
 #### Slice 12 — ADR 0002, settled
 
+**Outcome: the measurement went the second way, and slice 12 split.** A 28,880-entity
+import takes **62.3 minutes — 415% of the ceiling** (measured offline, no deploy needed;
+see the measurements file § ADR 0002). So the branch below that builds the hatch is the
+live one.
+
+- **12a — ADR 0002 amended, no code.** The open question is answered, "phase C wires this"
+  is corrected to what phase C actually did, and the size at which sync must leave Lambda
+  is recorded as **≈10,700 entities** so the size-based split in _Consequences_ becomes
+  specifiable. F6 and program blocker 3 close here.
+- **12b — the hatch.** Same job envelope, same public names, runtime by configuration.
+
+**Two things the measurement added that the plan did not anticipate.** Per-entity cost
+_rises_ with scale (5.5× across the range), so the ceiling is crossed near 10,700 entities
+rather than at 28,880 — the plan's linear framing would have put the crossing at 29,170 and
+called it a near miss. And gate 3 chose to try fixing the cause first, which produced a
+bound rather than a fix: `existsById` took −13% of statements, and a perfect memory of
+every repeated lookup would reach 1.54× against the 4.15× needed. The structural fix is a
+batch apply path, carried as follow-on 12. The hatch is an escape valve, knowingly.
+
 - Read slice 4's three-point measurement. Fit fixed cost against per-entity cost and
   state the extrapolated duration for a 28,880-entity import with a stated confidence,
   not a point estimate dressed as one.
@@ -1112,3 +1131,4 @@ Carried out even of this story, which is meant to be the one that carries everyt
 | 9   | **`project_sync_jobs` rows are not readable immediately after their own `202`.** Absent twice in five checks at 5 s; all present later.                                                                                                              | Found by #421. Read-after-write latency rather than loss, but a client that follows its own 202 with a GET can get a 404. A guide note, or a read-your-writes guarantee.                                                                                                                                               |
 | 10  | **A confirm that fails can still have changed the picture.** F-11-1: the derived storage path has nothing per-upload in it, so a PUT to the extension already in use overwrites the live object before anything is recorded.                         | The fix is a staging path the confirm promotes, which needs copy/move on `IFileStorageService` — a port change, and #430 is a frontend slice. #430 evicts the cache on the failure path so the UI stops claiming the old state, which is mitigation, not closure.                                                      |
 | 11  | **A CDM payload has no direct-upload target.** The sync-job dialog posts a parsed 25 MB JSON file as GraphQL variables, well past the 6 MB ceiling parts B established for the Lambda target.                                                        | Found while doing #430, which the plan expected to move this dialog too — it was never a base64 reader (see the slice 11 deviation). Needs a port-backed payload target, a handler pair, and a worker that reads from the store: a backend slice. The first caller found on the wrong side of part B's honest ceiling. |
+| 12  | **The CDM import issues ~48 SQL statements per entity, and its per-entity cost rises with scale.** ≈1.4 M statements for a 28,880-entity document; 62.3 min measured against a 15-min ceiling.                                                       | Found by slice 12's measurement. The cheap fix is bounded at 1.54× against the 4.15× needed (§ ADR 0002), so closing it means a batch apply path: multi-row inserts, set-based existence resolution, no per-entity service round trip. A story, not a slice — ADR 0002's hatch is the escape valve in the meantime.    |
