@@ -85,6 +85,14 @@ export class DynamoDbCacheAdapter implements ICacheAdapter {
   }
 
   /**
+   * DynamoDB TTL is whole unix seconds. `ceil` so a 1s TTL cannot already be
+   * `<= nowSeconds()` after the PutItem round-trip crosses a second boundary.
+   */
+  private expiresAtSeconds(ttlSeconds: number): number {
+    return Math.ceil(Date.now() / 1000) + ttlSeconds;
+  }
+
+  /**
    * Serialise exactly as `RedisCacheAdapter` does: a `Set` becomes its member
    * array, everything else is plain JSON.
    */
@@ -156,7 +164,7 @@ export class DynamoDbCacheAdapter implements ICacheAdapter {
         Item: {
           ...this.itemKey(key),
           value: { S: this.serialize(value) },
-          expiresAt: { N: String(this.nowSeconds() + ttl) },
+          expiresAt: { N: String(this.expiresAtSeconds(ttl)) },
         },
       })
     );
