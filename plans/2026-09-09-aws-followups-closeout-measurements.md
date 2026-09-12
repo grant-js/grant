@@ -616,3 +616,67 @@ one ADR 0002 originally gave: not "imports are slow" but "imports are slow for a
 structural reason with a measured cost to fix, and a 28,880-entity import is 4.15× over a
 wall that no configuration can raise." The 13% is kept because it is free, correct, and
 improves every caller of a `*Exists` validator — not because it moves the decision.
+
+---
+
+# Slice 15 — ADR 0003's OpenNext decision, re-checked 2026-09-12
+
+The plan pre-committed to "expected outcome: no code", so that an empty diff would read as
+the plan working rather than as work skipped. It is nearly that: two doc comments, an ADR
+section, and one measurement tool.
+
+## The conditions, verified rather than inherited
+
+ADR 0003 declines OpenNext _conditionally_ — it exists for ISR cache persistence and image
+optimization, and this app uses neither. A conditional decision is only as good as the last
+time someone checked the condition, which is what this slice is for.
+
+| Condition                      | Checked by                                                                     | Result                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| No ISR                         | `export const revalidate`, `revalidatePath`, `revalidateTag`, `unstable_cache` | none in app code; the only hits are generated `.next/types` declarations                                       |
+| No image optimization          | `next/image` imports, `<Image>` usage, `images` in `next.config.ts`            | none. The single `next/image` reference is the generated `next-env.d.ts` boilerplate; images are plain `<img>` |
+| Still GET-only (OAC's premise) | `'use server'`, `app/**/route.ts`                                              | none of either                                                                                                 |
+
+Both conditions hold, so **the decision stands**.
+
+## Boot time — 180 ms median
+
+| Metric | Value                                                          |
+| ------ | -------------------------------------------------------------- |
+| Runs   | 180, 180, 180, 185, 185 ms (and 175–184 on a seven-run sample) |
+| Median | **180 ms**                                                     |
+| Next   | 16.3.4                                                         |
+
+By `pnpm --filter grant-web measure:boot`, added in this slice so the next re-check costs
+one command.
+
+**This is not a cold-start number and the tool refuses to present it as one.** It measures
+time from `node server.js` to the first accepted TCP connection, which is the application's
+share of init duration — and it is measurable precisely because
+`AWS_LWA_READINESS_CHECK_PROTOCOL=tcp` makes "listening on `AWS_LWA_PORT`" the adapter's
+readiness criterion. Phase C's **526–630 ms** was a deployed CloudWatch `Init Duration`
+including image pull, runtime init and the adapter itself. Comparing the two directly would
+be wrong in both directions; each is a regression signal against its own history. A
+deployed re-measurement rides along with slice 16's cycle.
+
+## Two notes on method, because the first two attempts were wrong
+
+**`/dev/tcp` is a bash builtin and this repository's shell is zsh.** A readiness probe
+written with it fails on every attempt, and a polling loop around it exhausts its
+iterations — producing a suspiciously uniform "7983–8008 ms boot time" that is really the
+loop's own duration. The server had in fact been ready in milliseconds and said so in its
+log. Recorded because the failure mode looks like data.
+
+**The port is not free the instant the process is killed.** Without a pause between runs,
+a connect against a lingering socket is recorded as the next run's boot time. The tool
+waits 300 ms.
+
+## What would change the decision
+
+Adopting ISR, or `next/image` optimization becoming load-bearing. Stated in ADR 0003 so a
+future reader tests the condition instead of re-arguing the conclusion.
+
+Adding a route handler or a server action would **not** change this decision, but it would
+break the Origin Access Control premise recorded in `web-function.ts` — the web Function
+URL is IAM-authorized on the grounds that the app serves GET only. That is a different and
+more urgent problem, and it is worth knowing the two checks look similar and are not.
