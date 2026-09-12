@@ -1,4 +1,4 @@
-import { ECSClient, RunTaskCommand } from '@aws-sdk/client-ecs';
+import type { ECSClient } from '@aws-sdk/client-ecs';
 import type { ILogger, ISyncRuntime, SyncRuntimeDispatch, SyncRuntimeStarted } from '@grantjs/core';
 import { ConfigurationError } from '@grantjs/core';
 
@@ -30,7 +30,8 @@ export interface AwsSyncRuntimeConfig {
  * outcome.
  */
 export class AwsSyncRuntime implements ISyncRuntime {
-  private readonly client: ECSClient;
+  /** Created on first use; see `resolveClient()`. */
+  private client?: ECSClient;
 
   constructor(
     private readonly config: AwsSyncRuntimeConfig,
@@ -50,15 +51,49 @@ export class AwsSyncRuntime implements ISyncRuntime {
           'at boot — so this is checked here, where it fails once and loudly.'
       );
     }
+  }
 
-    this.client = new ECSClient({
-      region: config.region,
-      ...(config.endpoint ? { endpoint: config.endpoint } : {}),
+  /**
+   * Loads `@aws-sdk/client-ecs` on first dispatch, not at import.
+   *
+   * The SDK is an **optional** peer dependency, and this module is reachable from
+   * `@grantjs/jobs`' barrel — so a static import would make merely loading the package
+   * crash any deployment that has not installed it. It did: the API failed to boot in CI
+   * with `ERR_MODULE_NOT_FOUND` before this was made lazy, because the hatch is off by
+   * default and nothing else pulls the ECS client in.
+   *
+   * Keeping it lazy is what lets the default deployment stay exactly as heavy as it was,
+   * which is the same principle as the hatch itself being opt-in.
+   */
+  private async resolveClient(): Promise<ECSClient> {
+    if (this.client) {
+      return this.client;
+    }
+
+    let sdk: typeof import('@aws-sdk/client-ecs');
+    try {
+      sdk = await import('@aws-sdk/client-ecs');
+    } catch (error) {
+      throw new ConfigurationError(
+        'JOBS_SYNC_RUNTIME=container requires the optional peer dependency ' +
+          '`@aws-sdk/client-ecs`, which is not installed. Add it to the deployment that ' +
+          'runs the jobs consumer.',
+        error instanceof Error ? error : undefined
+      );
+    }
+
+    this.client = new sdk.ECSClient({
+      region: this.config.region,
+      ...(this.config.endpoint ? { endpoint: this.config.endpoint } : {}),
     });
+    return this.client;
   }
 
   public async start(dispatch: SyncRuntimeDispatch): Promise<SyncRuntimeStarted> {
-    const result = await this.client.send(
+    const client = await this.resolveClient();
+    const { RunTaskCommand } = await import('@aws-sdk/client-ecs');
+
+    const result = await client.send(
       new RunTaskCommand({
         cluster: this.config.clusterArn,
         taskDefinition: this.config.taskDefinitionArn,
