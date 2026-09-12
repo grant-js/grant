@@ -46,7 +46,8 @@ Last updated **2026-09-11**.
 | 10a (part D)        | **merged to trunk** 2026-09-11       | [#428]                                                                         |
 | 10b (part D)        | **merged to trunk** 2026-09-11       | [#429]                                                                         |
 | 11 (part D)         | **merged to trunk** 2026-09-11       | [#430]                                                                         |
-| 12a, 12b, 13 (E)    | **open, draft** — one PR, 66 files   | [#433]                                                                         |
+| 12a, 12b, 13 (E)    | **merged to trunk** 2026-09-12       | [#433]                                                                         |
+| 15 (part E)         | **open, draft**                      | [#434]                                                                         |
 | 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
 | 16 (part F)         | not started                          | —                                                                              |
 | final → `main`      | not opened                           | —                                                                              |
@@ -80,6 +81,7 @@ should take `main` before slice 10 starts rather than after it discovers a drift
 [#429]: https://github.com/grant-js/grant/pull/429
 [#430]: https://github.com/grant-js/grant/pull/430
 [#433]: https://github.com/grant-js/grant/pull/433
+[#434]: https://github.com/grant-js/grant/pull/434
 
 ## Scope, and the objection to it
 
@@ -281,7 +283,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 12b   | `feat/aws-followups-sync-runtime`          | 12a   | E    | The Fargate hatch, opt-in; zero template diff by default     | Backend           | light             | #433 |
 | 13    | `feat/aws-followups-sync-runtime`          | 12b   | E    | Visibility window measured and left alone; redelivery pinned | Backend           | light             | #433 |
 | 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
-| 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |      |
+| 15    | `feat/aws-followups-opennext`              | 13    | E    | Re-checked: decision stands, 180 ms boot, tool added         | Backend           | light             | #434 |
 | 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             |      |
 | final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal         | **deep**          |      |
 
@@ -1013,6 +1015,26 @@ this app uses neither. Phase C measured cold start at 526–630 ms.
   adoption, or Next image optimization becoming load-bearing.
 - **Expected outcome: no code.** Recorded in advance so a closing slice with an empty
   diff reads as the plan working rather than as work skipped.
+
+**Outcome: the decision stands, and it came within one file of the predicted empty diff.**
+Two doc comments, an ADR section, and one measurement tool.
+
+Both conditions were verified against the source rather than inherited: **no ISR** (only
+generated `.next/types` mention `revalidate`) and **no image optimization** (`next/image`
+appears once, in generated `next-env.d.ts`; images are plain `<img>`). Still GET-only too,
+which is not this decision's condition but is Origin Access Control's.
+
+**Boot to first accepted connection: 180 ms median** on Next 16.3.4, by a new
+`pnpm --filter grant-web measure:boot`. Deliberately _not_ presented as a cold start —
+it is the application's share of init duration, measurable only because the adapter's
+readiness check is "listening on `AWS_LWA_PORT`". Phase C's 526–630 ms was a deployed
+CloudWatch `Init Duration`; the two are not comparable and the tool says so. A deployed
+re-measurement rides along with slice 16.
+
+The tool is the one deviation from "no code", and it earns its place: this slice
+reconstructed the method from scratch and got it wrong twice — `/dev/tcp` is a bash builtin
+against a zsh shell, which fails on every probe and turns a polling loop into a uniform
+"8000 ms boot time" that looks exactly like data. One command now replaces that.
 
 ### Part F — the second deployed proof
 
