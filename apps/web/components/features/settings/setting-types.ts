@@ -28,7 +28,7 @@ export interface SettingActiveSessionsListProps {
   limit: number;
 }
 
-export type PasswordFormMode = 'set' | 'change';
+type PasswordFormMode = 'set' | 'change';
 
 export type PasswordChangeFormValues = {
   currentPassword?: string;

@@ -32,7 +32,6 @@ export * from './feature-module-card';
 export * from './field-info-popover';
 export * from './form-dialog';
 export * from './full-page-loader';
-export * from './github-oauth-button';
 export * from './info-panel';
 export * from './json-editor';
 export * from './json-file-dropzone';
