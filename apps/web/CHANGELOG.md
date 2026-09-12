@@ -1,5 +1,18 @@
 # grant-web
 
+## 1.8.0
+
+### Minor Changes
+
+- f8d52ec: Add Google as a platform and project OAuth sign-in provider, with account linking, verified contact-email bind, and IdP profile picture inheritance.
+
+### Patch Changes
+
+- @grantjs/schema@1.8.0
+- @grantjs/client@1.8.0
+- @grantjs/core@1.0.0
+- @grantjs/constants@1.0.0
+
 ## 1.7.0
 
 ### Minor Changes
