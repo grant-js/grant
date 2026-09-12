@@ -46,7 +46,7 @@ Last updated **2026-09-11**.
 | 10a (part D)        | **merged to trunk** 2026-09-11       | [#428]                                                                         |
 | 10b (part D)        | **merged to trunk** 2026-09-11       | [#429]                                                                         |
 | 11 (part D)         | **merged to trunk** 2026-09-11       | [#430]                                                                         |
-| 12a (part E)        | **open, draft**                      | [#433]                                                                         |
+| 12a, 12b, 13 (E)    | **open, draft** — one PR, 66 files   | [#433]                                                                         |
 | 12–15 (part E)      | not started; input unblocked by #422 | —                                                                              |
 | 16 (part F)         | not started                          | —                                                                              |
 | final → `main`      | not opened                           | —                                                                              |
@@ -279,7 +279,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 11    | `feat/aws-followups-web-upload`            | 10b   | D    | The web flow, and the bucket rule it needs                   | Frontend          | light             | #430 |
 | 12a   | `feat/aws-followups-sync-runtime`          | 11    | E    | ADR 0002 settled: the number, and the bound on fixing it     | Backend           | light             | #433 |
 | 12b   | `feat/aws-followups-sync-runtime`          | 12a   | E    | The Fargate hatch, opt-in; zero template diff by default     | Backend           | light             | #433 |
-| 13    | `feat/aws-followups-queue-redelivery`      | 12    | E    | Visibility timeout from a measured duration                  | Backend           | light             |      |
+| 13    | `feat/aws-followups-sync-runtime`          | 12b   | E    | Visibility window measured and left alone; redelivery pinned | Backend           | light             | #433 |
 | 14    | `feat/aws-followups-rds-iam`               | 13    | E    | RDS IAM auth as an option; the proxy default re-decided      | Backend           | light             |      |
 | 15    | `feat/aws-followups-opennext`              | 14    | E    | Measured, then decided                                       | Backend           | light             |      |
 | 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             |      |
