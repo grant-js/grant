@@ -1,5 +1,11 @@
 # grant-docs
 
+## 1.8.0
+
+### Minor Changes
+
+- f8d52ec: Add Google as a platform and project OAuth sign-in provider, with account linking, verified contact-email bind, and IdP profile picture inheritance.
+
 ## 1.7.0
 
 ### Minor Changes
