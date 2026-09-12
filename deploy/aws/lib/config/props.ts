@@ -207,6 +207,15 @@ interface DnsProps {
  * exists for ISR cache persistence and image optimization on serverless, and this app
  * uses neither — so it would add a build toolchain and a Next-16 support risk to buy
  * features nothing consumes. Recorded in the stack plan; revisit if ISR is adopted.
+ *
+ * **Re-checked 2026-09-12 and the decision stands.** Both conditions that would change
+ * it were verified against the source rather than assumed: no ISR (`export const
+ * revalidate`, `revalidatePath`, `revalidateTag`, `unstable_cache` — none outside
+ * generated `.next` types) and no Next image optimization (`next/image` appears only in
+ * the generated `next-env.d.ts` reference; images are plain `<img>`). Also still GET-only:
+ * no server actions, no route handlers. Boot to first accepted connection measured at a
+ * **180 ms median** on Next 16.3.4 (`pnpm --filter grant-web measure:boot`), against phase
+ * C's 526–630 ms deployed cold start — no regression that would buy anything by switching.
  */
 interface WebProps {
   /**

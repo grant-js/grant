@@ -10,6 +10,7 @@
     "lint:fix": "eslint --fix .",
     "type-check": "tsc --noEmit",
     "test": "NODE_ENV=test vitest",
+    "measure:boot": "node tools/measure-boot.mjs",
     "test:ui": "NODE_ENV=test vitest --ui",
     "test:coverage": "NODE_ENV=test vitest run --coverage",
     "clean": "rm -rf .next dist"
