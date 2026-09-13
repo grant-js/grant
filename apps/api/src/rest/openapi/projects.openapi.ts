@@ -60,10 +60,7 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
     'RequestProjectPictureUploadUrlResponse',
     requestProjectPictureUploadUrlResponseSchema
   );
-  registry.register(
-    'ConfirmProjectPictureUploadRequest',
-    confirmProjectPictureUploadRequestSchema
-  );
+  registry.register('ConfirmProjectPictureUploadRequest', confirmProjectPictureUploadRequestSchema);
 
   /**
    * GET /api/projects

@@ -534,8 +534,7 @@ export class ProjectOAuthHandler {
     locale?: string | null;
     provider: ProjectOAuthProvider;
   }): Promise<HandleProjectCallbackConsentRedirectResult> {
-    const { userId, app, redirectUri, clientState, requestedScopeSlugs, locale, provider } =
-      params;
+    const { userId, app, redirectUri, clientState, requestedScopeSlugs, locale, provider } = params;
 
     const projectUsers = await this.projectUsers.getProjectUsers({
       projectId: app.projectId,

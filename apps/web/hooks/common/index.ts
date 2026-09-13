@@ -10,4 +10,3 @@ export * from './use-project-scope';
 export * from './use-project-tags';
 export * from './use-project-user-scope';
 export * from './use-scope-from-params';
-

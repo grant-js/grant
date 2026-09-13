@@ -332,7 +332,7 @@ Delete a project app. Scope is provided via query parameters.
     tags: ['Project Apps'],
     summary: 'Upload a project-app picture',
     description:
-      'Upload an app logo (jpeg/png/gif/webp, max 5MB). Requires ProjectApp:Update on the app\'s project scope.',
+      "Upload an app logo (jpeg/png/gif/webp, max 5MB). Requires ProjectApp:Update on the app's project scope.",
     request: {
       params: projectAppIdParamsSchema,
       body: {

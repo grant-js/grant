@@ -9,11 +9,11 @@ Projects can register **OAuth apps** (ProjectApp) so a tenant product can send u
 
 ## Hosted pages
 
-| Page | Route | Purpose |
-| ---- | ----- | ------- |
-| Sign-in | `/auth/project` | Choose a provider (GitHub, Google, email) and see requested permissions |
-| Email | `/auth/project/email` | Request a magic-link when email is enabled |
-| Authorize | `/auth/project/consent` | Confirm the signed-in account and allow or deny access |
+| Page      | Route                   | Purpose                                                                 |
+| --------- | ----------------------- | ----------------------------------------------------------------------- |
+| Sign-in   | `/auth/project`         | Choose a provider (GitHub, Google, email) and see requested permissions |
+| Email     | `/auth/project/email`   | Request a magic-link when email is enabled                              |
+| Authorize | `/auth/project/consent` | Confirm the signed-in account and allow or deny access                  |
 
 Grant’s header stays visible. The client brand is the page subject: app mark, title, and theme. Use **Test OAuth** on the app to check the live pages.
 
@@ -28,12 +28,12 @@ Both return **resolved** branding only. They never expose storage keys, inherit-
 
 Project owners set a default logo and OAuth theme on the project **Branding** page (`…/projects/{projectId}/branding`). Each app can override those values on its **Branding** card.
 
-| Field | Project | Project app | Resolved default |
-| ----- | ------- | ----------- | ---------------- |
-| Picture | Logo / initials | Override or inherit | App → project → initials |
-| `primaryColor` | `#RRGGBB` | Override or inherit | App → project → Grant blue |
-| `showHelpPanel` | On / off | App sets the value used on hosted pages | App → project → on |
-| `themeMode` | — | `light` / `dark` / `system` / Grant default | App only; `null` keeps the visitor’s Grant theme |
+| Field           | Project         | Project app                                 | Resolved default                                 |
+| --------------- | --------------- | ------------------------------------------- | ------------------------------------------------ |
+| Picture         | Logo / initials | Override or inherit                         | App → project → initials                         |
+| `primaryColor`  | `#RRGGBB`       | Override or inherit                         | App → project → Grant blue                       |
+| `showHelpPanel` | On / off        | App sets the value used on hosted pages     | App → project → on                               |
+| `themeMode`     | —               | `light` / `dark` / `system` / Grant default | App only; `null` keeps the visitor’s Grant theme |
 
 Organization logos are **not** in the fallback.
 

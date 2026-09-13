@@ -21,13 +21,13 @@
 
 ## Ordered slices (PRs)
 
-| #     | Branch                        | Base                     | Concern        | Owner role | Review bar    | PR  |
-| ----- | ----------------------------- | ------------------------ | -------------- | ---------- | ------------- | --- |
-| 1     | `feat/project-branding-db`    | `feat/project-branding`  | database       | Backend    | light         |     |
-| 2     | `feat/project-branding-schema`| prior slice              | schema/codegen | Backend    | light         |     |
-| 3     | `feat/project-branding-api`   | prior slice              | API            | Backend    | security-full |     |
-| 4     | `feat/project-branding-web`   | prior slice              | web/i18n       | Frontend   | light         |     |
-| final | `feat/project-branding`       | `main`                   | integration    | Principal  | deep          |     |
+| #     | Branch                         | Base                    | Concern        | Owner role | Review bar    | PR  |
+| ----- | ------------------------------ | ----------------------- | -------------- | ---------- | ------------- | --- |
+| 1     | `feat/project-branding-db`     | `feat/project-branding` | database       | Backend    | light         |     |
+| 2     | `feat/project-branding-schema` | prior slice             | schema/codegen | Backend    | light         |     |
+| 3     | `feat/project-branding-api`    | prior slice             | API            | Backend    | security-full |     |
+| 4     | `feat/project-branding-web`    | prior slice             | web/i18n       | Frontend   | light         |     |
+| final | `feat/project-branding`        | `main`                  | integration    | Principal  | deep          |     |
 
 Tests live in the API and web slices (no separate tests PR).
 

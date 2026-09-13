@@ -162,7 +162,11 @@ export function ProjectBrandingViewer() {
               >
                 {t('theme.reset')}
               </Button>
-              <Button type="button" onClick={handleSave} disabled={!isDirty || !colorValid || isSaving}>
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={!isDirty || !colorValid || isSaving}
+              >
                 {isSaving ? tCommon('actions.saving') : tCommon('actions.save')}
               </Button>
             </div>

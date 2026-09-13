@@ -13,11 +13,7 @@ interface ProjectAppAvatarProps {
   className?: string;
 }
 
-export function ProjectAppAvatar({
-  projectApp,
-  size = 'md',
-  className,
-}: ProjectAppAvatarProps) {
+export function ProjectAppAvatar({ projectApp, size = 'md', className }: ProjectAppAvatarProps) {
   return (
     <Avatar
       initial={getInitials(projectApp.name || projectApp.clientId, 2, 'A')}

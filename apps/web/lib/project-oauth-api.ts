@@ -7,7 +7,11 @@ import type {
 import { getApiBaseUrl } from '@/lib/constants';
 
 // Re-export for consumers that need the types
-export type { ProjectAppPublicInfo, ProjectAppScopeInfo, ProjectConsentInfo } from '@grantjs/schema';
+export type {
+  ProjectAppPublicInfo,
+  ProjectAppScopeInfo,
+  ProjectConsentInfo,
+} from '@grantjs/schema';
 
 /** Response body shape from project OAuth API error responses. */
 interface ProjectOAuthApiErrorBody {

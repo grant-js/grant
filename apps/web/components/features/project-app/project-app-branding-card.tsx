@@ -109,7 +109,11 @@ export function ProjectAppBrandingCard({
       footer={
         canEdit ? (
           <div className="flex justify-end gap-3 w-full">
-            <Button type="button" onClick={handleSave} disabled={!isDirty || !colorValid || isSaving}>
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={!isDirty || !colorValid || isSaving}
+            >
               {isSaving ? tCommon('actions.saving') : tCommon('actions.save')}
             </Button>
           </div>
@@ -164,7 +168,11 @@ export function ProjectAppBrandingCard({
               <input
                 type="color"
                 className="h-10 w-12 cursor-pointer rounded-md border bg-transparent"
-                value={primaryColor && HEX_PATTERN.test(primaryColor) ? primaryColor : GRANT_PRIMARY_COLOR}
+                value={
+                  primaryColor && HEX_PATTERN.test(primaryColor)
+                    ? primaryColor
+                    : GRANT_PRIMARY_COLOR
+                }
                 disabled={!canEdit}
                 onChange={(event) => setPrimaryColor(event.target.value.toUpperCase())}
               />
@@ -180,7 +188,9 @@ export function ProjectAppBrandingCard({
               {t('theme.inheritsColor', { color: inheritedColor ?? GRANT_PRIMARY_COLOR })}
             </p>
           )}
-          {!colorValid ? <p className="text-sm text-destructive">{t('theme.invalidColor')}</p> : null}
+          {!colorValid ? (
+            <p className="text-sm text-destructive">{t('theme.invalidColor')}</p>
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between gap-4">

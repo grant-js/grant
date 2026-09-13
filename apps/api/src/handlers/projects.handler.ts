@@ -705,15 +705,22 @@ export class ProjectHandler extends CacheHandler {
 
   private assertProjectPictureScope(projectId: string, scope: UploadProjectPictureInput['scope']) {
     if (scope.tenant !== Tenant.AccountProject && scope.tenant !== Tenant.OrganizationProject) {
-      throw new ValidationError('project pictures require accountProject or organizationProject scope');
+      throw new ValidationError(
+        'project pictures require accountProject or organizationProject scope'
+      );
     }
     if (this.extractProjectIdFromScope(scope) !== projectId) {
-      throw new ValidationError('scope id must contain the same projectId as the projectId argument');
+      throw new ValidationError(
+        'scope id must contain the same projectId as the projectId argument'
+      );
     }
   }
 
   private projectPicturePath(projectId: string, filename: string): string {
-    return this.fileStorage.sanitizeExtensionAndGeneratePath(filename, `projects/${projectId}/picture`);
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `projects/${projectId}/picture`
+    );
   }
 
   public async requestProjectPictureUploadUrl(
@@ -722,11 +729,14 @@ export class ProjectHandler extends CacheHandler {
     const { projectId, filename, contentType, contentLength, scope } = params;
     this.assertProjectPictureScope(projectId, scope);
     this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
-    const minted = await this.fileStorage.getUploadUrl(this.projectPicturePath(projectId, filename), {
-      contentType,
-      contentLength,
-      expiresInSeconds: config.storage.upload.urlExpirySeconds,
-    });
+    const minted = await this.fileStorage.getUploadUrl(
+      this.projectPicturePath(projectId, filename),
+      {
+        contentType,
+        contentLength,
+        expiresInSeconds: config.storage.upload.urlExpirySeconds,
+      }
+    );
     return {
       url: minted.url,
       method: minted.method,

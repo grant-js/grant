@@ -219,7 +219,10 @@ export function createProjectAppsRouter(context: RequestContext): Router {
 
   router.post(
     '/:id/picture/confirm',
-    validate({ params: projectAppIdParamsSchema, body: confirmProjectAppPictureUploadRequestSchema }),
+    validate({
+      params: projectAppIdParamsSchema,
+      body: confirmProjectAppPictureUploadRequestSchema,
+    }),
     requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
     authorizeRestRoute({
       resource: ResourceSlug.ProjectApp,

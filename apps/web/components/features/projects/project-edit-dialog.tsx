@@ -60,7 +60,9 @@ export function ProjectEditDialog() {
       placeholder: 'form.namePlaceholder',
       type: 'text',
       required: true,
-      leading: projectToEdit ? <ProjectAvatar project={projectToEdit} size="xl" interactive /> : null,
+      leading: projectToEdit ? (
+        <ProjectAvatar project={projectToEdit} size="xl" interactive />
+      ) : null,
     },
     {
       name: 'description',
