@@ -42,12 +42,12 @@ a configuration-selected secrets path, and a push-based telemetry route.
   through an `ISecretResolver` port, which dissolves the ordering problem instead
   of scheduling around it — and makes rotation a TTL rather than a container
   lifetime. [ADR 0004](../decisions/0004-secret-resolution-through-a-port.md). _(#330.)_
-- [ ] The API holds no database password: RDS Proxy holds the credential, Lambda
-      authenticates via IAM. **Deferred to phase C** — it needs CDK to exist. Groundwork
-      confirmed in phase B: postgres.js already invokes a `password` callback per
-      connection (`postgres/src/connection.js:750-752`), so this needs one additive
-      optional `password?: () => Promise<string>` on `DatabaseConfig`. Rotation
-      (blocker 6) was resolved separately by ADR 0004.
+- [x] The API holds no database password: RDS Proxy holds the credential, Lambda
+      authenticates via IAM. **Closed as a decision** by aws-followups-closeout
+      slice 14 (#435): IAM auth is an option; the proxy default was re-decided
+      rather than flipped on. Groundwork from phase B still holds: postgres.js
+      already invokes a `password` callback per connection. Rotation (blocker 6)
+      was resolved separately by ADR 0004.
 - [x] **An ECR publish path exists.** Separate `docker-lambda` job, gated on two AWS
       repo variables so it is inert until phase C sets them. GHCR path untouched.
       **Never executed** — no AWS role or ECR repository exists yet. _(#334.)_
