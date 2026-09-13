@@ -270,11 +270,10 @@ AWS_PROFILE=grant-cdk pnpm exec cdk deploy --all \
 - [x] 17a: every mutation in § Verification standard named and failing
 - [ ] 17a: migration idempotent; `pnpm codegen:check` clean; full gauntlet green
 - [x] 17a: PR based on `feat/aws-followups-closeout`, links this plan, **deep** review bar (#440)
-- [x] 17b: organizations have `request`/`confirm`; `toDataUrl` deleted
-- [x] Parent stack plan updated: status table row, ordered-slices row, and follow-on 14
-      given a disposition (still "slice 17a" until #440 merges)
-- [x] Measurements file: F-3 closed on unit/e2e; deploy authorized 2026-09-13,
-      blocked on this Cloud Agent VM (no `grant-cdk`); run on `logusgraphics-ubuntu`
+- [x] 17b: organizations have `request`/`confirm`; `toDataUrl` deleted (#441)
+- [x] F-3b: do not cache-bust SigV4 `pictureUrl` (#442)
+- [x] Parent stack plan updated: 17a/17b/F-3b **merged to trunk**; follow-on 14 closed
+- [x] Measurements file: F-3 closed on unit/e2e; Cycle 3 deploy proved confirm + display
 - [x] Cacheability consequence stated in the 17a PR body
 
 ## Open questions for whoever picks this up

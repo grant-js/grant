@@ -50,17 +50,18 @@ Last updated **2026-09-13**.
 | 15 (part E)         | **merged to trunk** 2026-09-12 | [#434]                                                                         |
 | 14 (part E)         | **merged to trunk** 2026-09-13 | [#435]                                                                         |
 | 16 (part F)         | **merged to trunk** 2026-09-13 | [#439]                                                                         |
-| 17a (F-3)           | **open into trunk**            | [#440]                                                                         |
-| 17b (F-3)           | **open, stacked on 17a**       | [#441]                                                                         |
-| final → `main`      | **blocked on 17a**             | —                                                                              |
+| 17a (F-3)           | **merged to trunk** 2026-09-13 | [#440]                                                                         |
+| 17b (F-3)           | **merged to trunk** 2026-09-13 | [#441]                                                                         |
+| F-3b                | **merged to trunk** 2026-09-13 | [#442]                                                                         |
+| final → `main`      | **unblocked** — not opened     | —                                                                              |
 
 **Out of band.** [#422] is not a slice. Slice 4's deployed import failed on a defect in
 `cdm-scale-fixtures.ts` rather than on anything the deployment did, and the fix had to
 land before part E could consume slice 4's measurement — so it went to the trunk as its
 own PR rather than being smuggled into a slice that was not about it.
 
-**Trunk against `main`:** 28 commits ahead, **0 behind** as of 2026-09-13 (`a09f1d07`
-already merged `main`). The 2026-09-11 "15 ahead, 5 behind" count is stale.
+**Trunk against `main`:** 31 commits ahead, **0 behind** as of 2026-09-13 (`7ffb935b`
+is #442). The earlier "28 ahead" count predates the F-3 stack merge.
 
 [#400]: https://github.com/grant-js/grant/pull/400
 [#401]: https://github.com/grant-js/grant/pull/401
@@ -86,6 +87,7 @@ already merged `main`). The 2026-09-11 "15 ahead, 5 behind" count is stale.
 [#439]: https://github.com/grant-js/grant/pull/439
 [#440]: https://github.com/grant-js/grant/pull/440
 [#441]: https://github.com/grant-js/grant/pull/441
+[#442]: https://github.com/grant-js/grant/pull/442
 
 ## Scope, and the objection to it
 
@@ -291,6 +293,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             | #439 |
 | 17a   | `cursor/picture-storage-keys-7203`         | trunk | F-3  | Store `picture_path`, derive `pictureUrl` on read            | Backend           | **deep**          | #440 |
 | 17b   | `cursor/organization-direct-upload-7203`   | 17a   | F-3  | Org `request`/`confirm`; delete web `toDataUrl`              | Frontend + Backend | light             | #441 |
+| F-3b  | `cursor/picture-presign-cache-buster-7203` | 17b   | F-3  | Do not cache-bust SigV4 `pictureUrl`                         | Frontend          | light             | #442 |
 | final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal         | **deep**          |      |
 
 ### Part A — the edge trust model (program items 2, 3, 4)
@@ -1189,9 +1192,8 @@ gh stack add feat/aws-followups-ses-identity                  # before starting 
       and had to be redone. Slice 9 is deep (a `@grantjs/core` port). Everything else is
       light.
 - [ ] **Gate 4: story → `main` deep review.** Blocking items, known in advance:
-  - [ ] **Slice 17a merged.** F-3 makes picture upload unusable on S3 across three tables,
-        and `organizations` is broken on `main` today via #431. Opening gate 4 with it open
-        would ship a known-dead feature. See
+  - [x] **Slice 17a merged.** #440, #441, and #442 are on the trunk (2026-09-13).
+        Cycle 3 proved confirm + display on real S3. See
         `plans/2026-09-13-picture-storage-keys-slice-17.md`.
   - [x] The scratch account measured in **both** regions after slice 16 — **done, and the
         criterion as written is not met.** Every billed _service_ is at zero (stacks,
@@ -1225,7 +1227,10 @@ gh stack add feat/aws-followups-ses-identity                  # before starting 
       four where this was done before the tick rather than after.
 - [ ] Local **and remote** slice branches deleted, verified with `git ls-remote` rather
       than ticked. Phases A and C both ticked this without doing it; byo-database was the
-      first to actually verify it
+      first to actually verify it. **F-3 cursor branches are done:**
+      `cursor/picture-storage-keys-7203`, `cursor/organization-direct-upload-7203`, and
+      `cursor/picture-presign-cache-buster-7203` — local delete + `git push --delete` +
+      `git ls-remote` empty, 2026-09-13. Earlier `feat/aws-followups-*` remotes remain.
 - [ ] The five `feat/aws-adapters*` and eighteen `*aws-edge-infra*` remote refs from
       phases A and C deleted (program brief § Housekeeping — one command, still not run)
 - [ ] Stack plan status → `merged-to-main`
@@ -1253,6 +1258,6 @@ Carried out even of this story, which is meant to be the one that carries everyt
 | 11  | **A CDM payload has no direct-upload target.** The sync-job dialog posts a parsed 25 MB JSON file as GraphQL variables, well past the 6 MB ceiling parts B established for the Lambda target.                                                                         | Found while doing #430, which the plan expected to move this dialog too — it was never a base64 reader (see the slice 11 deviation). Needs a port-backed payload target, a handler pair, and a worker that reads from the store: a backend slice. The first caller found on the wrong side of part B's honest ceiling.                                                                                                     |
 | 12  | **The CDM import issues ~48 SQL statements per entity, and its per-entity cost rises with scale.** ≈1.4 M statements for a 28,880-entity document; 62.3 min measured against a 15-min ceiling.                                                                        | Found by slice 12's measurement. The cheap fix is bounded at 1.54× against the 4.15× needed (§ ADR 0002), so closing it means a batch apply path: multi-row inserts, set-based existence resolution, no per-entity service round trip. A story, not a slice — ADR 0002's hatch is the escape valve in the meantime.                                                                                                        |
 | 13  | **A `project-sync` job killed at its ceiling is stuck in `RUNNING` and unretryable.** The status commits in one transaction and the import in another, so a rollback leaves the claim behind and every redelivery is refused.                                         | Found while asserting slice 13's redelivery property. ADR 0002 names the symptom ("retrying does not converge"); this is the mechanism. Converging means a lease with an expiry so an abandoned claim can be reclaimed — a design rather than a line, and less urgent now the hatch exists.                                                                                                                                |
-| 14  | **Picture uploads cannot complete on the S3 adapter: `getUrl()` returns a 1275-character presigned GET into a `varchar(500)` column.** Latent since before this story; the base64 path is affected identically, so it is not caused by part D.                        | **Disposition: slice 17a**, `plans/2026-09-13-picture-storage-keys-slice-17.md`. Found by slice 16's deploy (F-3). No configuration workaround — the uploads bucket is deliberately not a CloudFront origin, so there is no short public URL to store. Needs either a stored key with the URL derived at read time, or a widened column. The first defect this program found that makes a shipped feature unusable on AWS. |
+| 14  | **Picture uploads cannot complete on the S3 adapter: `getUrl()` returns a 1275-character presigned GET into a `varchar(500)` column.** Latent since before this story; the base64 path is affected identically, so it is not caused by part D.                        | **Closed.** #440 stores the key; #441 adds org request/confirm; #442 stops cache-busting the derived SigV4 URL. Cycle 3 on AWS: objects in the bucket and pictures display. |
 | 15  | **A stack that fails its _first_ create cannot be rolled back if a bucket has objects.** `autoDeleteObjects` attaches its custom resource in the same deploy, so a `DELETE_FAILED` on the docs bucket takes the stack to `ROLLBACK_FAILED` and needs manual emptying. | Found by slice 16's first deploy (F-2). Not a template bug so much as a CDK ordering property worth documenting in the deployment guide, since the recovery is manual and non-obvious: empty the bucket by hand, then delete the stack.                                                                                                                                                                                    |
 | 16  | **`cdk destroy` leaves 2.40 GB of container images and 132 MB of assets in the CDKToolkit bootstrap repo and bucket.** 38 ECR images for an account that has run ~15–20 cycles; neither is part of `GrantPlatform`, so `--all` never touches them.                    | Found by slice 16's teardown. Unlike F7's log groups this one bills (ECR $0.10/GB-month) and grows by an image set per deploy. Bootstrap hygiene, not a construct defect — belongs in the deployment guide plus a prune command, not in `deploy/aws/lib`.                                                                                                                                                                  |
