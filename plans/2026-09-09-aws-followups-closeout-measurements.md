@@ -988,3 +988,169 @@ Both functions also use **explicit log groups** (`GrantPlatform-GrantWebLogs…`
 `/aws/lambda/<name>` — so the first query failed with `ResourceNotFoundException` on a log
 group that was never going to exist. Three wrong tools in a row, each of whose output was a
 plausible-looking zero.
+
+### Part E completed — 220.4 minutes on Fargate, exit code 0
+
+```
+STOPPED  EssentialContainerExited  exitCode: 0
+started 2026-09-12T23:22:07+02:00 -> stopped 2026-09-13T03:02:31+02:00
+```
+
+The container's own closing lines:
+
+```
+{"module":"AwsSecretsManagerResolver","msg":"Loaded secrets from AWS Secrets Manager",
+ "secretId":"GrantPlatformSecretCBEA56FA-…",
+ "keys":["AUTH_MFA_SECRET_ENCRYPTION_KEY","DB_URL","ORIGIN_VERIFY_SECRET"]}
+{"module":"DatabaseConnection","msg":"Database connection initialized"}
+{"msg":"Running project-sync in a container runtime","jobRecordId":"bcadf61c-…"}
+{"msg":"project-sync complete","jobRecordId":"bcadf61c-…"}
+{"module":"DatabaseConnection","msg":"Database connection closed"}
+```
+
+|                                         |                        |
+| --------------------------------------- | ---------------------- |
+| Deployed                                | **220.4 min** (3.67 h) |
+| Local (slice 12a, same 28,880 entities) | 62.3 min               |
+| **Deployed ÷ local**                    | **3.54×**              |
+| **Deployed ÷ Lambda's ceiling**         | **14.7×**              |
+
+**ADR 0002's hatch is proven end to end**: an import that would have died at 15 minutes ran
+to completion in 3 hours 40 minutes on a runtime with no wall, through the unchanged job
+envelope, and the process exited 0.
+
+**And the deployed number settles the argument slice 12a used to avoid spending a cycle on
+it.** That slice declined a deploy on the reasoning that Lambda→RDS is latency-bound and
+could only be _worse_ than local — so 415% of the ceiling would become a larger number and
+change no decision. It is **3.54× worse**: 1470% of the ceiling. The reasoning was right, and
+is now measured rather than asserted.
+
+Aurora capacity was also watched through the run: **1.5 ACU at minute 60, 2.0 ACU at minute
+157**, rising rather than flat. That is slice 12a's superlinearity observed from the database
+side — per-entity cost grows as the tables fill, so the back half of an import is heavier
+than the front. It is why the deployed multiple is 3.54× rather than the ~1.5× a pure
+round-trip model predicts.
+
+### Part C, confirmed at runtime as well
+
+The line above is the observation part C asked for and the synth-time checks could not give:
+`AwsSecretsManagerResolver` **loaded `AUTH_MFA_SECRET_ENCRYPTION_KEY` from Secrets Manager**
+at container start, in a process whose environment does not contain it. The credential
+travelled the resolver and nothing else — absent from the template, absent from the function
+configuration, present in the secret, and read through `ISecretResolver` at boot.
+
+## Cycle 2 teardown — both regions, measured
+
+Timings from CloudFormation's own stack events, not from the CLI's wall clock:
+
+| Stack              | Region         | `DELETE_IN_PROGRESS` → `DELETE_COMPLETE` |              |
+| ------------------ | -------------- | ---------------------------------------- | ------------ |
+| `GrantPlatform`    | `eu-central-1` | 06:26:35 → 06:50:53                      | **24.3 min** |
+| `GrantCertificate` | `us-east-1`    | 06:50:58 → 06:51:19                      | **0.35 min** |
+| **Total**          | —              | 06:26:35 → 06:51:19                      | **24.7 min** |
+
+**Cycle 1 tore down in ~7 minutes; this one took 24.7.** The difference is not a
+regression — cycle 1 used an out-of-band database and deleted it separately, so its
+7 minutes excluded the slowest resource in the stack. Cycle 2 created Aurora in-stack,
+and Aurora deletion dominates the 24.3.
+
+For the record, the same events give the create side: `GrantPlatform` 20:59:30 → 21:09:36
+(**10.1 min**), `GrantCertificate` 20:46:51 → 20:49:34 (**2.7 min**).
+
+| Check                                   |   Baseline | After teardown |     |
+| --------------------------------------- | ---------: | -------------: | --- |
+| Stacks, `eu-central-1`                  | CDKToolkit |     CDKToolkit | ✓   |
+| Stacks, `us-east-1`                     | CDKToolkit |     CDKToolkit | ✓   |
+| RDS clusters / instances                |      0 / 0 |          0 / 0 | ✓   |
+| ACM certificates, both regions          |      0 / 0 |          0 / 0 | ✓   |
+| Secrets Manager, incl. planned deletion |          0 |              0 | ✓   |
+| ECS clusters                            |          0 |              0 | ✓   |
+| SQS queues                              |          0 |              0 | ✓   |
+| `grantjs.org` records                   |         20 |             20 | ✓   |
+| Log groups, `eu-central-1`              |        119 |        **135** | ✗   |
+| Log groups, `us-east-1`                 |         15 |         **16** | ✗   |
+
+**Secrets Manager was checked with `--include-planned-deletion`**, which the cycle-1 table
+did not do. A secret in its recovery window is invisible to a plain `list-secrets` while
+still holding its name against re-creation, so "0" from the default call would not have
+been evidence. It is genuinely 0.
+
+`demo.grantjs.org` and `docs.grantjs.org` survived untouched — both still plain `A`
+records to `87.171.69.148`, both still resolving. Worth stating precisely: all three
+unrelated `A` records are **plain** records, not aliases, so no deleted distribution
+could have left them dangling.
+
+### F-1, again, exactly as predicted
+
+`_0bd02f69964fcd504b89a5509e330b22.proof.grantjs.org` survived `cdk destroy` and was
+**removed by hand**, returning the zone to 20 records. That is now two cycles out of two,
+which retires the "assume it recurs" hedge in the slice spec — it recurs.
+
+Phase C's `_17d199c9b8df2cc1e725d5274f58c2bf.aws.grantjs.org` was **left in place**, the
+same call cycle 1 made. One note against that decision, since the account now contradicts
+its stated reason: cycle 1 justified keeping it because "that domain may be redeployed",
+but there are **zero ACM certificates in either region**, so the record currently validates
+nothing. It is inert either way; removing another story's artefact is not this slice's call.
+
+### F7 — the cycle-1 model was wrong, and the correction is larger than the delta
+
+Cycle 1 recorded "+7 this cycle … one per function per cycle" and projected that
+`eu-central-1` "doubles roughly every sixteen cycles". Cycle 2 adds **+16 retained**
+(119 → 136 during the cycle, 136 → 135 after teardown), which is not +7, and the
+per-cycle figure is not a constant — it tracks how many log-group-bearing constructs the
+template has, and this cycle added Fargate sync on top of everything cycle 1 had.
+
+Two sharper facts the cycle-1 framing missed:
+
+**`cdk destroy` reclaims essentially nothing.** 136 → 135. One group out of seventeen.
+The residue is not a rounding error around teardown; teardown is simply not a factor.
+
+**The account has no clean floor to return to.** Of 135 groups in `eu-central-1`,
+**134 are Grant-owned**; the only unrelated one is `/aws/rds/proxy/proxy`. In `us-east-1`
+it is 15 of 16, the exception being an unrelated `/aws/lambda/scrape`. So the "baseline"
+both cycles measured against — 119 and 15 — was itself pure residue from earlier cycles,
+not a floor. The true floor is **1 per region**.
+
+Grouping the survivors by construct recovers the account's whole deploy history, because
+each cycle leaves one group per construct under a fresh physical suffix:
+
+| Construct (logical)                          | Distinct physical names |
+| -------------------------------------------- | ----------------------: |
+| `CustomCrossRegionExportReader`              |                      20 |
+| `CustomS3AutoDeleteObjects`                  |                      19 |
+| `CustomCDKBucketDeployment`                  |                      19 |
+| `GrantMigrateTaskDefinition/MigrateLogGroup` |                      15 |
+| `GrantApiLogs`                               |                      15 |
+| `AWSCDKTriggerCustomResourceProvider`        |                      14 |
+| `GrantWebLogs`                               |                      12 |
+| `GrantJobsLogs`                              |                       8 |
+| `LogRetention`                               |                       5 |
+| `GrantMigrateTriggerRunner`                  |                       5 |
+| **`GrantSyncTaskDefinition/SyncLogGroup`**   |                   **2** |
+
+**The sync row is the control that makes the rest of the table trustworthy.** Sync exists
+only in this story, and the platform stack was deployed exactly twice this cycle — the
+F-1 failure and the successful retry. It shows exactly 2. The one-group-per-construct-per-deploy
+reading therefore is not inferred from the naming convention alone; it is confirmed against
+a construct whose deploy count is known independently.
+
+Still cosmetic, still unbounded, still nobody's job — but now with a measured growth
+mechanism rather than a projected rate.
+
+### F-4. `cdk destroy` leaves 2.40 GB of container images, which cycle 1 never counted
+
+A residue class absent from the cycle-1 table entirely:
+
+| Residue                                |           `eu-central-1` |  `us-east-1` |
+| -------------------------------------- | -----------------------: | -----------: |
+| ECR images in the bootstrap repo       | **38 / 2,404,779,047 B** |      0 / 0 B |
+| Objects in the bootstrap assets bucket |       46 / 132,456,755 B | 6 / 25,987 B |
+
+These live in the **CDKToolkit bootstrap** repo and bucket, not in `GrantPlatform`, which
+is exactly why `cdk destroy --all` does not touch them and why a stacks-and-services
+checklist reports a clean account while 2.4 GB accumulates. Unlike log groups this one has
+a non-trivial bill (ECR at $0.10/GB-month) and grows by roughly a full image set per
+deploy — 38 images for an account that has run ~15–20 platform cycles.
+
+It is a bootstrap-hygiene gap rather than a template defect, so it does not belong to any
+construct in `deploy/aws`. Raised as follow-on 16.
