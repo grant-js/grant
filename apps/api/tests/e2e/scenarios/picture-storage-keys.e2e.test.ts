@@ -90,7 +90,7 @@ describe('picture storage keys (F-3)', () => {
 
     const orgs = await apiClient()
       .get('/api/organizations')
-      .query({ scopeId: org.id, tenant: 'organization' })
+      .query({ scopeId: owner.orgAccountId, tenant: 'account' })
       .set('Authorization', owner.authHeader);
     expect(orgs.status).toBe(200);
     const listed = (orgs.body.data.items as Array<{ id: string; pictureUrl: string | null }>).find(
