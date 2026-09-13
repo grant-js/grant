@@ -14,8 +14,13 @@ that produced it**. Everything needed is here or at a named `file:line`.
 - **Measurements / evidence**: `plans/2026-09-09-aws-followups-closeout-measurements.md`
   § "F-3. Picture uploads cannot complete on S3"
 - **Story trunk / base branch**: `feat/aws-followups-closeout`
-- **Slice branches**: `feat/picture-storage-keys` (17a), `feat/organization-direct-upload` (17b)
-- **worktree_path**: `/home/logus/Sites/logusgraphics/grant-aws-followups`
+- **Slice branches**: `cursor/picture-storage-keys-7203` (17a, #440),
+  `cursor/organization-direct-upload-7203` (17b). Grant names
+  `feat/picture-storage-keys` / `feat/organization-direct-upload` remain the
+  intended stack identity.
+- **Pickup**: `origin/feat/aws-followups-closeout` — the Ale worktree
+  `/home/logus/Sites/logusgraphics/grant-aws-followups` is **not** on the
+  executing VM.
 - **Owner role**: Backend (17a), Frontend + Backend (17b)
 - **Review bar**: **deep** for 17a — it changes a persisted column's meaning on three
   tables and both transports. Light for 17b.
@@ -102,29 +107,38 @@ cacheability, accepted because the alternative is a feature that does not work.
 
 | #   | Site                                                                                      | Target column                        |
 | --- | ----------------------------------------------------------------------------------------- | ------------------------------------ |
-| 1   | `apps/api/src/handlers/me.handler.ts:233` `confirmMyUserPictureUpload`                    | `users`                              |
+| 1   | `apps/api/src/handlers/me.handler.ts:235` `confirmMyUserPictureUpload`                    | `users`                              |
 | 2   | `apps/api/src/handlers/me.handler.ts:261` `uploadMyUserPicture` (base64)                  | `users`                              |
-| 3   | `apps/api/src/handlers/me.handler.ts:717` `confirmMyProjectMembershipPictureUpload`       | `project_users`                      |
-| 4   | `apps/api/src/handlers/me.handler.ts:748` `uploadMyProjectMembershipPicture` (base64)     | `project_users`                      |
-| 5   | `apps/api/src/handlers/users.handler.ts:954` `confirmUserPictureUpload`                   | `project_users` or `users`, by scope |
+| 3   | `apps/api/src/handlers/me.handler.ts:720` `confirmMyProjectMembershipPictureUpload`       | `project_users`                      |
+| 4   | `apps/api/src/handlers/me.handler.ts:751` `uploadMyProjectMembershipPicture` (base64)     | `project_users`                      |
+| 5   | `apps/api/src/handlers/users.handler.ts:959`–`:964` `confirmUserPictureUpload`            | `project_users` or `users`, by scope |
 | 6   | `apps/api/src/handlers/users.handler.ts:995`–`:1000` `uploadUserPicture` (base64)         | `project_users` or `users`, by scope |
-| 7   | `apps/api/src/handlers/organizations.handler.ts:190` `uploadOrganizationPicture` (base64) | `organizations`                      |
+| 7   | `apps/api/src/handlers/organizations.handler.ts:255` `uploadOrganizationPicture` (base64) | `organizations`                      |
 
 All seven still **return** a URL to the caller (`{ url, path }`) — that is a response
 field, not a stored one, and should keep working. Derive it for the response from the key.
 
 ### Read sites
 
-The projection is already centralised further than it looks. Start here:
+`mergeEffectiveUserProfileForProject` is the pivot-over-global rule, but it is **not**
+a sufficient single hydrate point. These paths bypass it and must call
+`effectivePictureUrl` / `hydratePictureUrl` themselves:
 
-- `apps/api/src/lib/effective-project-user-metadata.lib.ts:25`–`:28` — the pivot-over-global
-  precedence for name and picture. **This is the natural single place** for the
-  users/project-users derivation.
-- `apps/api/src/handlers/users.handler.ts:160` `wantsPicture`, and the merge at `:181`–`:189`.
-- `apps/api/src/handlers/me.handler.ts:764`–`:776` — a row projection with its own
-  `pictureUrl`.
-- `apps/api/src/repositories/project-users.repository.ts:210`, `:274` — two projections.
-- Organizations' read path — **not yet traced. Trace it before writing code.**
+- `apps/api/src/services/me.service.ts` `getMe` → `userRepository.getUsers` →
+  `accounts.owner.pictureUrl` (Me query)
+- `apps/api/src/handlers/project-oauth.handler.ts` consent display (via
+  `UserService.getUsers`)
+- `apps/api/src/services/organizations.service.ts` `getOrganizations` /
+  `validatedOrganization` — hydrate **after** `validatePage` / `validateOutput`
+  of the stored row
+- `apps/api/src/handlers/me.handler.ts` `toMyProjectMembership` — memberships
+  are hydrated in `ProjectUserService.getUserProjectMemberships`
+
+**Output-schema trap:** `organizationSchema.pictureUrl` is `z.string().max(500)`
+for the **stored** column. Hydrate after that check. REST **response**
+`pictureUrl` is `max(2048)` (`DERIVED_PICTURE_URL_MAX_LENGTH`). Request/stored
+URL stays 500. `userSchema` does not include `pictureUrl`; do not add
+`max(500)` to user output after derivation.
 
 `FileStorageService` is constructed in the services factory at
 `apps/api/src/services/index.ts:262`, so the storage port is already available to the
@@ -145,7 +159,9 @@ on `wantsPicture`, and that gate should be preserved.
 - `@grantjs/schema`: `pictureUrl` **stays the public field name** so no client changes are
   needed. Only add a field if the plan reviewer asks for one. If any `.graphql` document
   changes, the pinned document count in
-  `packages/@grantjs/schema/src/sdl-contract.test.ts` must be updated — it is **122** now.
+  `packages/@grantjs/schema/src/sdl-contract.test.ts` must be updated — it is **124**
+  after 17b (`request`/`confirm` organization operations). 17a preferred zero document
+  changes.
 - REST schemas and OpenAPI: shape unchanged if `pictureUrl` keeps its name. Verify, don't assume.
 
 ### Out of scope for 17a
@@ -246,17 +262,16 @@ AWS_PROFILE=grant-cdk pnpm exec cdk deploy --all \
 
 ## Done when
 
-- [ ] 17a: all seven write sites store the key; derivation covers users, project_users and
+- [x] 17a: all seven write sites store the key; derivation covers users, project_users and
       organizations on **both** GraphQL and REST
-- [ ] 17a: every mutation in § Verification standard named and failing
+- [x] 17a: every mutation in § Verification standard named and failing
 - [ ] 17a: migration idempotent; `pnpm codegen:check` clean; full gauntlet green
-- [ ] 17a: PR based on `feat/aws-followups-closeout`, links this plan, **deep** review bar
-- [ ] 17b: organizations have `request`/`confirm`; `toDataUrl` deleted
-- [ ] Parent stack plan updated: status table row, ordered-slices row, and follow-on 14
-      given a disposition
-- [ ] Measurements file: F-3 closed with the deploy observation, or explicitly recorded as
-      closed on unit/e2e evidence with the deploy deferred and why
-- [ ] Cacheability consequence stated in the PR body
+- [x] 17a: PR based on `feat/aws-followups-closeout`, links this plan, **deep** review bar (#440)
+- [x] 17b: organizations have `request`/`confirm`; `toDataUrl` deleted
+- [x] Parent stack plan updated: status table row, ordered-slices row, and follow-on 14
+      given a disposition (still "slice 17a" until #440 merges)
+- [x] Measurements file: F-3 closed on unit/e2e; deploy deferred until Ale re-confirms
+- [x] Cacheability consequence stated in the 17a PR body
 
 ## Open questions for whoever picks this up
 

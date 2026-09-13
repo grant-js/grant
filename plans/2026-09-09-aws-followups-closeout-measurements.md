@@ -914,10 +914,17 @@ deliberately _not_ a CloudFront origin (`storage-bucket.ts`: "objects are served
 API rather than from the edge"). So an adopter cannot set it without first giving the bucket
 a public front, which that construct exists to avoid.
 
-Carried as a follow-on and **not fixed here**: storing paths and presigning on read changes
-the user, project-user and membership services, three GraphQL result types, and the web
-app's image handling. That is a story. What slice 16 owed was to find it, and the only
-reason it was findable is that ADR 0007's assertions were run against real S3 instead of an
+**Closed on unit/e2e (slice 17a, #440); AWS deploy deferred.** Additive `picture_path`
+on `users`, `project_users`, and `organizations`. Upload writes store the key;
+`effectivePictureUrl` derives `pictureUrl` on read. Explicit `pictureUrl` updates
+clear the path. REST org response max is 2048. Length >500 is proven with a stubbed
+`getUrl` — LocalStack community does not verify SigV4 (ADR 0007), so a local
+presign does not prove length. Re-confirm before a deploy; slice 16 authorization
+does not automatically cover 17a.
+
+Carried as a follow-on from slice 16 and **fixed in 17a**: storing paths and
+presigning on read. What slice 16 owed was to find it, and the only reason it was
+findable is that ADR 0007's assertions were run against real S3 instead of an
 emulator that cannot refuse anything.
 
 **It also validates slice 11's client design in an unwelcome way.** The web flow treats

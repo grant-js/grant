@@ -10,7 +10,9 @@ import {
   deleteOrganizationQuerySchema,
   getOrganizationsQuerySchema,
   organizationParamsSchema,
+  confirmOrganizationPictureUploadRequestSchema,
   updateOrganizationRequestSchema,
+  requestOrganizationPictureUploadUrlRequestSchema,
   uploadOrganizationPictureRequestSchema,
 } from '@/rest/schemas/organizations.schemas';
 import { TypedRequest } from '@/rest/types';
@@ -142,6 +144,68 @@ export function createOrganizationRoutes(context: RequestContext) {
         scope,
       });
 
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.post(
+    '/:id/picture/upload-url',
+    validate({
+      params: organizationParamsSchema,
+      body: requestOrganizationPictureUploadUrlRequestSchema,
+    }),
+    requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.UploadPicture,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof organizationParamsSchema;
+        body: typeof requestOrganizationPictureUploadUrlRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { filename, contentType, contentLength, scope } = req.body;
+      const result = await context.handlers.organizations.requestOrganizationPictureUploadUrl({
+        organizationId: id,
+        filename,
+        contentType,
+        contentLength,
+        scope,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
+    '/:id/picture/confirm',
+    validate({
+      params: organizationParamsSchema,
+      body: confirmOrganizationPictureUploadRequestSchema,
+    }),
+    requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.UploadPicture,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof organizationParamsSchema;
+        body: typeof confirmOrganizationPictureUploadRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { filename, scope } = req.body;
+      const result = await context.handlers.organizations.confirmOrganizationPictureUpload({
+        organizationId: id,
+        filename,
+        scope,
+      });
       sendSuccessResponse(res, result, 201);
     }
   );

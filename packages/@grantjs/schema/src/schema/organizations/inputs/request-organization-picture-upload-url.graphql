@@ -1,0 +1,12 @@
+input RequestOrganizationPictureUploadUrlInput {
+  scope: Scope!
+  organizationId: ID!
+  filename: String!
+  contentType: String!
+
+  """
+  Exact byte length the client will send. Validated against the upload policy
+  before a URL is issued, and committed to by the URL itself.
+  """
+  contentLength: Int!
+}
