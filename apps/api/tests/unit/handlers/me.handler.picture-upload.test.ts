@@ -214,11 +214,7 @@ describe('confirmMyUserPictureUpload — the store is the witness', () => {
     const result = await handler.confirmMyUserPictureUpload({ filename: 'profile.jpg' });
 
     expect(result.path).toBe(storedPath);
-    expect(updateUser).toHaveBeenCalledWith(
-      userId,
-      { picturePath: storedPath },
-      expect.anything()
-    );
+    expect(updateUser).toHaveBeenCalledWith(userId, { picturePath: storedPath }, expect.anything());
     expect(updateUser).not.toHaveBeenCalledWith(
       userId,
       expect.objectContaining({ pictureUrl: result.url }),

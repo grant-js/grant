@@ -72,7 +72,9 @@ describe('UserService picturePath', () => {
       user({ pictureUrl: 'https://idp.example/avatar.png', picturePath: null })
     );
 
-    const updated = await svc().updateUser(userId, { pictureUrl: 'https://idp.example/avatar.png' });
+    const updated = await svc().updateUser(userId, {
+      pictureUrl: 'https://idp.example/avatar.png',
+    });
 
     expect(userRepository.updateUser.mock.calls[0][1].picturePath).toBeNull();
     expect(updated.pictureUrl).toBe('https://idp.example/avatar.png');

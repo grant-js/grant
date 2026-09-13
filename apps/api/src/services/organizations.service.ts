@@ -19,7 +19,11 @@ import {
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { hydratePictureUrl, hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
+import {
+  hydratePictureUrl,
+  hydratePictureUrls,
+  picturePathWhenSettingUrl,
+} from '@/lib/picture-url.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 

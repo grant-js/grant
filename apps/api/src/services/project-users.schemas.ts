@@ -39,8 +39,7 @@ export const updateProjectUserProfileParamsSchema = z
     picturePath: z.string().max(STORED_PICTURE_PATH_MAX_LENGTH).nullable().optional(),
   })
   .refine(
-    (v) =>
-      v.displayName !== undefined || v.pictureUrl !== undefined || v.picturePath !== undefined,
+    (v) => v.displayName !== undefined || v.pictureUrl !== undefined || v.picturePath !== undefined,
     'At least one of displayName, pictureUrl, or picturePath must be provided'
   );
 

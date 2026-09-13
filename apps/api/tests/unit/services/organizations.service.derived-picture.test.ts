@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DERIVED_PICTURE_URL_MAX_LENGTH, STORED_PICTURE_URL_MAX_LENGTH } from '@/lib/picture-url.lib';
+import {
+  DERIVED_PICTURE_URL_MAX_LENGTH,
+  STORED_PICTURE_URL_MAX_LENGTH,
+} from '@/lib/picture-url.lib';
 import { organizationSchema as restOrganizationSchema } from '@/rest/schemas/organizations.schemas';
 import { OrganizationService } from '@/services/organizations.service';
 

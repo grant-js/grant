@@ -10,9 +10,9 @@ describe('addImageCacheBuster', () => {
   });
 
   it('appends to an existing query string on a local path', () => {
-    expect(addImageCacheBuster('/storage/users/1/picture.jpg?x=1', new Date(1_700_000_000_000))).toBe(
-      '/storage/users/1/picture.jpg?x=1&v=1700000000000'
-    );
+    expect(
+      addImageCacheBuster('/storage/users/1/picture.jpg?x=1', new Date(1_700_000_000_000))
+    ).toBe('/storage/users/1/picture.jpg?x=1&v=1700000000000');
   });
 
   it('leaves a SigV4 URL untouched, because an extra parameter breaks the signature', () => {

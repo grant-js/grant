@@ -36,9 +36,9 @@ describe('effectivePictureUrl', () => {
   });
 
   it('returns null when both are empty', async () => {
-    await expect(effectivePictureUrl(storage(), { picturePath: null, pictureUrl: null })).resolves.toBe(
-      null
-    );
+    await expect(
+      effectivePictureUrl(storage(), { picturePath: null, pictureUrl: null })
+    ).resolves.toBe(null);
   });
 
   it('does not depend on presign expiry', async () => {
