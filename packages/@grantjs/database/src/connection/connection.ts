@@ -32,6 +32,28 @@ export interface DatabaseConfig {
   connectTimeout?: number;
   /** Max seconds a connection can live before being recycled (0 = unlimited). */
   maxLifetime?: number;
+  /**
+   * Password, when it is not already in `connectionString`.
+   *
+   * **A function is the point, not a convenience.** An RDS IAM auth token is valid for
+   * about 15 minutes while a pooled connection's `max_lifetime` defaults to 30, and a
+   * long-running process outlives both — so a password captured once is a process that
+   * authenticates until its first token expires and then cannot open another connection.
+   *
+   * `postgres.js` resolves this per connection, not per pool: `Pass()` in
+   * `postgres/src/connection.js` is called from the authentication handlers
+   * (`AuthenticationCleartextPassword`, `AuthenticationMD5Password`, `SASL`), which run
+   * during each backend's handshake. Verified against the vendored source at 3.4.9 rather
+   * than inferred from the type, because the whole option depends on it.
+   *
+   * Note what this does *not* need to solve: a token only has to be valid when a
+   * connection is established. Connections already authenticated survive its expiry, so
+   * `maxLifetime` need not be shortened to match the token.
+   *
+   * Omit for password auth, which is every existing caller.
+   */
+  password?: string | (() => Promise<string>);
+
   /** Optional structured logger. When omitted, logging is silently skipped. */
   logger?: ILogger;
 }
@@ -60,6 +82,11 @@ export function initializeDBConnection(config: DatabaseConfig): PooledDatabase {
     idle_timeout: config?.idleTimeout ?? 20,
     connect_timeout: config?.connectTimeout ?? 10,
     max_lifetime: config?.maxLifetime ?? 60 * 30,
+    // Spread rather than set unconditionally: `postgres.js` reads `pass || password ||
+    // url.password || env.PGPASSWORD`, so passing `password: undefined` is harmless today
+    // but writing the key at all makes this function part of that precedence chain. Every
+    // existing caller keeps the password in `connectionString` and must stay unaffected.
+    ...(config.password === undefined ? {} : { password: config.password }),
   });
 
   const db = drizzle(client, { schema });

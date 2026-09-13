@@ -1,5 +1,6 @@
 export * from './use-debounce';
 export * from './use-detail-table-column-visibility';
+export * from './use-direct-upload-message';
 export * from './use-infinite-scroll';
 export * from './use-mobile';
 export * from './use-page-title';

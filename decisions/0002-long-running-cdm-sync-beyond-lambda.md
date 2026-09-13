@@ -1,6 +1,6 @@
 # 0002 — CDM sync jobs that exceed 15 minutes run off-Lambda
 
-- **Status**: Accepted
+- **Status**: Accepted; **amended 2026-09-11** with the measurement it was waiting for
 - **Date**: 2026-08-25
 - **Context**: phase B of the AWS serverless target
   (`plans/2026-08-21-aws-lambda-runtime-brief.md`)
@@ -36,10 +36,9 @@ A 15-minute cutoff mid-import is therefore _safe_ — the transaction rolls back
 no partial state survives — but the work is entirely lost, and a retry meets the same
 wall. Retrying does not converge.
 
-**What is not known.** Nobody has measured how long a 28,880-entity import actually
-takes. It may be two minutes; it may be forty. This ADR decides what to do about
-imports that exceed the ceiling; it does not claim to know which tenants do. See
-_Open question_ below — that measurement should land before phase C wires anything.
+**What was not known, and now is.** When this ADR was written nobody had measured how
+long a 28,880-entity import takes. The guess offered was "two minutes; it may be forty".
+It is **62.3 minutes** — 415% of the ceiling. See _The measurement_ below.
 
 ## Decision
 
@@ -54,7 +53,11 @@ configuration. The transaction is not broken to fit the runtime.**
 - Which runtime executes it is configuration, in keeping with the program's guiding
   constraint. Existing deployments keep running the job in-process exactly as today.
 
-Phase C wires this. Phase B only records the decision.
+**Phase C did not wire this, and said so** (phase C's F6: "program blocker 3 is wired —
+the job runs — but not closed: the Fargate escape hatch is not"). It measured one point,
+283 entities at 208.25 s, and declined to build a runtime on a single data point. The
+measurement this ADR was waiting for landed in the AWS follow-ups closeout story, slice
+12, and that story builds the hatch.
 
 ## Consequences
 
@@ -98,11 +101,48 @@ _duration_ cap rather than a size cap, and duration is not knowable at ingress.
 this decision — they address cold start, not execution duration. (SnapStart also does
 not support Node.js.)
 
-## Open question, owned by phase C
+## The measurement — 2026-09-11
 
-**How long does a 28,880-entity import take against RDS?** Until that is measured,
-the size at which sync must leave Lambda is unknown, and so is whether a size-based
-split would ever be worth building. Slice 1 built the fixtures that would make this
-measurable — `apps/api/tests/helpers/cdm-scale-fixtures.ts` generates documents at
-that scale, and `generateCdmAtScale` is deterministic, so a timing run is
-reproducible. Measure before optimizing.
+Four real imports through `ProjectImportService` against PostgreSQL, by
+`pnpm --filter grant-api measure:cdm-import`. Full record and method in
+`plans/2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002.
+
+|   Entities |    Duration | ms/entity | vs 15 min |
+| ---------: | ----------: | --------: | --------: |
+|        124 |      2.90 s |      23.4 |      0.3% |
+|        620 |     18.22 s |      29.4 |      2.0% |
+|      3,650 |    191.49 s |      52.5 |     21.3% |
+| **28,880** | **3,738 s** | **129.4** |  **415%** |
+
+**The answer is 62.3 minutes, and the ADR's premise holds — but not for the reason it
+assumed.** It expected a long import. What it did not anticipate is that per-entity cost
+_rises with scale_ — 5.5× across this range — so the ceiling is crossed far below 28,880.
+
+**The size at which sync must leave Lambda: ≈10,700 entities.** That is the open
+question's real answer, and it makes the "size-based split" in _Consequences_ specifiable
+rather than speculative. Treat it as an order of magnitude, not a threshold: the four
+points were taken in ascending order against a database that kept filling, so the exponent
+is partly confounded by accumulated rows. A split built on this number should re-measure
+per point on a fresh database first.
+
+**The cause is structural, and it is not Lambda.** The import applies entities one at a
+time through the single-entity service API, and every service call re-validates its
+inputs: ~48 SQL statements per entity after slice 12's optimisation, ≈1.4 million for a
+28,880-entity document, against tables that grow as the import proceeds. Statement latency
+nearly doubles between 620 and 3,650 entities. That is the superlinearity.
+
+**Which is why the hatch is still the right decision, on better grounds than originally
+given.** Not "imports are slow" but: a 28,880-entity import is 4.15× over a wall no
+configuration can raise, and the structural fix has a measured price. Slice 12 tried the
+cheap version — `existsById`, one statement instead of two, −13% — and then bounded it:
+even a _perfect_ memo eliminating every repeated lookup reaches 1.54×, leaving a 2.70×
+gap. Reducing round trips per entity cannot close it. Only a batch apply path can, and
+that is a story of its own (raised as a follow-on, with this profile as its brief).
+
+So the hatch is an escape valve for a slow import, knowingly, rather than a fix for one.
+Recorded that way so nobody later reads it as having made the import fast.
+
+**Also learned: the hatch cannot exist on every topology.** A Fargate task needs a VPC,
+and the bring-your-own-database vpcless shape has none. On that topology sync stays on
+Lambda and stays bounded by 15 minutes, which is a documented limit of that shape rather
+than a defect.

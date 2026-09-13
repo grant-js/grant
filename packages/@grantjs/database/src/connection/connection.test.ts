@@ -38,6 +38,12 @@ function fakeLogger(): ILogger {
   } as unknown as ILogger;
 }
 
+/** The options object the pool was built with. */
+function postgresOptions(): Record<string, unknown> {
+  const call = postgresFactory.mock.calls[0] as unknown as [string, Record<string, unknown>];
+  return call[1];
+}
+
 async function freshModule() {
   vi.resetModules();
   return import('./connection');
@@ -108,6 +114,40 @@ describe('initializeDBConnection — first call', () => {
     expect(() =>
       second.initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' })
     ).not.toThrow();
+  });
+});
+
+describe('initializeDBConnection — a rotating password', () => {
+  it('passes the resolver through untouched, rather than resolving it once', async () => {
+    // The whole point of the option. Awaiting it here and handing `postgres.js` a string
+    // would authenticate every future connection with the first token — which works for
+    // about fifteen minutes and then cannot open another connection.
+    const { initializeDBConnection } = await freshModule();
+    const password = vi.fn(async () => 'token-1');
+
+    initializeDBConnection({ connectionString: 'postgresql://u@h:5432/d', password });
+
+    expect(postgresOptions().password).toBe(password);
+    expect(password).not.toHaveBeenCalled();
+  });
+
+  it('accepts a static password too, for a caller that has one', async () => {
+    const { initializeDBConnection } = await freshModule();
+
+    initializeDBConnection({ connectionString: 'postgresql://u@h:5432/d', password: 'static' });
+
+    expect(postgresOptions().password).toBe('static');
+  });
+
+  it('writes no `password` key at all when none is given', async () => {
+    // `postgres.js` resolves `pass || password || url.password || env.PGPASSWORD`. Setting
+    // the key to `undefined` is harmless today, but writing it puts this option into that
+    // precedence chain — and every existing caller keeps its password in the URL.
+    const { initializeDBConnection } = await freshModule();
+
+    initializeDBConnection({ connectionString: 'postgresql://u:p@h:5432/d' });
+
+    expect('password' in postgresOptions()).toBe(false);
   });
 });
 

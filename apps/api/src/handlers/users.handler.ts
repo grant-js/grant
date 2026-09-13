@@ -16,16 +16,19 @@ import type {
 } from '@grantjs/core';
 import {
   AssignUserPermissionInput,
+  ConfirmUserPictureUploadInput,
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
   MutationUpdateUserArgs,
   QueryUsersArgs,
+  RequestUserPictureUploadUrlInput,
   RevokeUserPermissionInput,
   Role,
   Scope,
   Tag,
   Tenant,
   UpdateUserInput,
+  UploadUrl,
   UploadUserPictureInput,
   User,
   UserGroup,
@@ -33,6 +36,7 @@ import {
   UserPermission,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { type UserListHydrationContext, userListHydrators } from '@/hydrators/users.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import {
@@ -55,6 +59,14 @@ import { CacheHandler, type ScopeServices } from './base/cache-handler';
 export type UpdateUserHandlerParams = MutationUpdateUserArgs & { actorUserId: string };
 
 export type UploadUserPictureHandlerParams = UploadUserPictureInput & { actorUserId: string };
+
+export type RequestUserPictureUploadUrlHandlerParams = RequestUserPictureUploadUrlInput & {
+  actorUserId: string;
+};
+
+export type ConfirmUserPictureUploadHandlerParams = ConfirmUserPictureUploadInput & {
+  actorUserId: string;
+};
 
 export class UserHandler extends CacheHandler {
   constructor(
@@ -860,11 +872,31 @@ export class UserHandler extends CacheHandler {
     });
   }
 
-  public async uploadUserPicture(
-    params: UploadUserPictureHandlerParams
-  ): Promise<{ url: string; path: string }> {
-    const { userId, file, contentType, filename, scope, actorUserId } = params;
+  /**
+   * Where a user's picture lives. The same path `MeHandler` derives for that user's
+   * own upload — an administrator setting someone's picture writes to exactly the
+   * object that user would write themselves, which is the intent.
+   */
+  private userPicturePath(userId: string, filename: string): string {
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(filename, `users/${userId}/picture`);
+  }
 
+  /**
+   * Everything that decides whether this caller may write this user's picture.
+   *
+   * **This is the tenancy boundary for the admin path, and it is the only one.**
+   * Unlike the `me` mutations, the storage path here is derived from the *target*
+   * `userId`, not from the caller — so nothing about the path constrains who may
+   * write it, and these two checks are the whole of the protection. Extracted so
+   * the base64 mutation, the mint and the confirmation cannot come to apply
+   * different rules; a minted URL that skipped them would be a write capability for
+   * an arbitrary user's picture.
+   */
+  private async assertMayWriteUserPicture(
+    actorUserId: string,
+    userId: string,
+    scope: UploadUserPictureInput['scope']
+  ): Promise<void> {
     if (isUnsupportedProjectUserMutationLeafTenant(scope.tenant)) {
       throw new BadRequestError(
         'Picture upload requires an OrganizationProject or AccountProject scope'
@@ -880,6 +912,68 @@ export class UserHandler extends CacheHandler {
       userId,
       targetHasAuthenticationMethods
     );
+  }
+
+  public async requestUserPictureUploadUrl(
+    params: RequestUserPictureUploadUrlHandlerParams
+  ): Promise<UploadUrl> {
+    const { userId, filename, contentType, contentLength, scope, actorUserId } = params;
+
+    await this.assertMayWriteUserPicture(actorUserId, userId, scope);
+    this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
+
+    const minted = await this.fileStorage.getUploadUrl(this.userPicturePath(userId, filename), {
+      contentType,
+      contentLength,
+      expiresInSeconds: config.storage.upload.urlExpirySeconds,
+    });
+
+    return {
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  public async confirmUserPictureUpload(
+    params: ConfirmUserPictureUploadHandlerParams
+  ): Promise<{ url: string; path: string }> {
+    const { userId, filename, scope, actorUserId } = params;
+
+    // Re-run in full, not skipped because the mint already ran them: a permission
+    // can be revoked while a URL is still live, and the write is what must not
+    // happen. The mint check prevents handing out the capability; this one prevents
+    // using it.
+    await this.assertMayWriteUserPicture(actorUserId, userId, scope);
+
+    const storagePath = this.userPicturePath(userId, filename);
+    await this.fileStorage.assertStoredWithinPolicy(storagePath);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const url = await this.fileStorage.getUrl(storagePath);
+
+      if (isParentProjectScopeForPivotWrites(scope.tenant)) {
+        const projectId = this.extractProjectIdFromScope(scope);
+        await this.projectUsers.updateProjectUserProfile(
+          { projectId, userId, picturePath: storagePath },
+          tx
+        );
+        await this.invalidateAuthorizationResultsForUser(userId);
+      } else {
+        await this.users.updateUser(userId, { picturePath: storagePath }, tx);
+      }
+
+      return { url, path: storagePath };
+    });
+  }
+
+  public async uploadUserPicture(
+    params: UploadUserPictureHandlerParams
+  ): Promise<{ url: string; path: string }> {
+    const { userId, file, contentType, filename, scope, actorUserId } = params;
+
+    await this.assertMayWriteUserPicture(actorUserId, userId, scope);
 
     const fileBuffer = this.fileStorage.validateAndDecodeUpload({
       file,
@@ -887,10 +981,7 @@ export class UserHandler extends CacheHandler {
       filename,
     });
 
-    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
-      filename,
-      `users/${userId}/picture`
-    );
+    const storagePath = this.userPicturePath(userId, filename);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
       const result = await this.fileStorage.upload(fileBuffer, storagePath, {
@@ -901,12 +992,12 @@ export class UserHandler extends CacheHandler {
       if (isParentProjectScopeForPivotWrites(scope.tenant)) {
         const projectId = this.extractProjectIdFromScope(scope);
         await this.projectUsers.updateProjectUserProfile(
-          { projectId, userId, pictureUrl: result.url },
+          { projectId, userId, picturePath: result.path },
           tx
         );
         await this.invalidateAuthorizationResultsForUser(userId);
       } else {
-        await this.users.updateUser(userId, { pictureUrl: result.url }, tx);
+        await this.users.updateUser(userId, { picturePath: result.path }, tx);
       }
 
       return {

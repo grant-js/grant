@@ -2,6 +2,7 @@ import type {
   IAccountProjectRepository,
   IAuditLogger,
   IEventPublisher,
+  IFileStorageService,
   IOrganizationProjectRepository,
   IProjectRepository,
   IProjectUserRepository,
@@ -24,6 +25,7 @@ import {
 } from '@/lib/effective-project-user-metadata.lib';
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { buildDelta } from '@/lib/events';
+import { hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
 import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
@@ -48,6 +50,7 @@ export class ProjectUserService implements IProjectUserService {
     private readonly accountProjectRepository: IAccountProjectRepository,
     private readonly audit: IAuditLogger,
     private readonly events: IEventPublisher,
+    private readonly fileStorage: IFileStorageService,
     private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
 
@@ -81,12 +84,7 @@ export class ProjectUserService implements IProjectUserService {
   }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.projectRepository.getProjects(
-      { ids: [projectId], limit: 1 },
-      transaction
-    );
-
-    if (projects.projects.length === 0) {
+    if (!(await this.projectRepository.existsById(projectId, transaction))) {
       throw new NotFoundError('Project');
     }
   }
@@ -128,6 +126,7 @@ export class ProjectUserService implements IProjectUserService {
     }
 
     const result = await this.projectUserRepository.getProjectUsers(validatedParams, transaction);
+    await hydratePictureUrls(this.fileStorage, result);
     return validateOutput(createDynamicSingleSchema(projectUserSchema).array(), result, context);
   }
 
@@ -328,11 +327,16 @@ export class ProjectUserService implements IProjectUserService {
       userId: string;
       displayName?: string | null;
       pictureUrl?: string | null;
+      picturePath?: string | null;
     },
     transaction?: Transaction
   ): Promise<ProjectUser> {
     const context = 'ProjectUserService.updateProjectUserProfile';
-    const validatedParams = validateInput(updateProjectUserProfileParamsSchema, params, context);
+    const validatedParams = validateInput(
+      updateProjectUserProfileParamsSchema,
+      picturePathWhenSettingUrl(params),
+      context
+    );
 
     await this.projectExists(validatedParams.projectId, transaction);
     await this.userExists(validatedParams.userId, transaction);
@@ -482,6 +486,7 @@ export class ProjectUserService implements IProjectUserService {
       userId,
       transaction
     );
+    await hydratePictureUrls(this.fileStorage, memberships);
 
     return memberships.map((m) => ({
       projectId: m.projectId,

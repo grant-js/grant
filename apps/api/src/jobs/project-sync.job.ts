@@ -13,9 +13,10 @@ import {
   type SyncProjectResult,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
-import { ConflictError, ValidationError } from '@/lib/errors';
+import { ConfigurationError, ConflictError, ValidationError } from '@/lib/errors';
 import {
   assertTenantActive,
   type JobExecutionContext,
@@ -35,6 +36,18 @@ export default class ProjectSyncJob extends Job {
     enqueueOnly: true,
   };
 
+  /**
+   * Entry point for the queue consumer.
+   *
+   * Two runtimes, chosen by configuration (ADR 0002). `inprocess` runs the import here
+   * and is bounded by whatever timeout this process has; `container` hands the row to a
+   * runtime with no 15-minute ceiling and returns as soon as it is accepted.
+   *
+   * **`apply()` is what does the work, and the container calls it directly.** That is the
+   * reason for the split rather than a flag: a container that re-entered `execute()` would
+   * read the same configuration, dispatch again, and fan out one task per attempt
+   * forever. Structuring it this way makes that unreachable instead of guarded against.
+   */
   async execute(context: JobExecutionContext): Promise<JobResult> {
     validateTenantJobContext(context, true);
     const enqueueScope = context.scope as Scope;
@@ -42,6 +55,58 @@ export default class ProjectSyncJob extends Job {
 
     const jobRecordId = this.extractJobRecordId(context.payload);
 
+    if (config.jobs.sync.runtime === 'container') {
+      return this.dispatchToContainer(enqueueScope, jobRecordId);
+    }
+
+    return this.apply(enqueueScope, jobRecordId);
+  }
+
+  /**
+   * Hand the execution to another runtime and report that, not its result.
+   *
+   * The job row stays `PENDING`/`RUNNING` and the started execution owns every later
+   * transition, exactly as it would if this process had run it — the envelope is
+   * unchanged, which is ADR 0002's requirement. A dispatch failure is *not* swallowed:
+   * if no task started, something must mark the row failed, or a caller polls a job that
+   * will never move.
+   */
+  private async dispatchToContainer(scope: Scope, jobRecordId: string): Promise<JobResult> {
+    const runtime = this.appContext.syncRuntime;
+    if (!runtime) {
+      throw new ConfigurationError(
+        'JOBS_SYNC_RUNTIME=container but no sync runtime adapter is wired. ' +
+          'Refusing rather than silently running a 62-minute import under a 15-minute ceiling.'
+      );
+    }
+
+    try {
+      const { reference } = await runtime.start({ jobRecordId, scope });
+      return {
+        success: true,
+        message: `Dispatched to container runtime (${reference})`,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.withEnqueueScopeRls(scope, (tx) =>
+        this.appContext.services.projectSyncJobs.markFailed(
+          {
+            jobId: jobRecordId,
+            errorMessage: `Could not start the sync runtime: ${message}`,
+            errorDetails: this.serializeErrorDetails(error),
+          },
+          tx
+        )
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * The import itself. Called by `execute()` on the in-process runtime, and directly by
+   * `run-sync-job.ts` inside the container.
+   */
+  public async apply(enqueueScope: Scope, jobRecordId: string): Promise<JobResult> {
     const { projectSyncJobs: jobService, projectImport, projectExport } = this.appContext.services;
 
     const execData = await this.withEnqueueScopeRls(enqueueScope, (tx) =>

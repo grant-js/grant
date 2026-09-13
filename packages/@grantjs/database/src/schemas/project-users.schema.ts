@@ -29,6 +29,8 @@ export const projectUsers = pgTable(
     displayName: varchar('display_name', { length: 255 }),
     /** Project-visible picture URL override; null means use global users.picture_url */
     pictureUrl: varchar('picture_url', { length: 500 }),
+    /** Stored object key; when set, pictureUrl is derived at read time */
+    picturePath: varchar('picture_path', { length: 1024 }),
     /** Denormalized search tokens (name, displayName, CDM searchable, allowlisted metadata). */
     searchDocument: text('search_document').default('').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),

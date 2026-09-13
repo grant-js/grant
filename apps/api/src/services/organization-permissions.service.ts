@@ -36,12 +36,7 @@ export class OrganizationPermissionService implements IOrganizationPermissionSer
     organizationId: string,
     transaction?: Transaction
   ): Promise<void> {
-    const organizations = await this.organizationRepository.getOrganizations(
-      { ids: [organizationId], limit: 1 },
-      transaction
-    );
-
-    if (organizations.organizations.length === 0) {
+    if (!(await this.organizationRepository.existsById(organizationId, transaction))) {
       throw new NotFoundError('Organization');
     }
   }

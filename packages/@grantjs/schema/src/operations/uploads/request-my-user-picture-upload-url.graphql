@@ -1,0 +1,11 @@
+mutation RequestMyUserPictureUploadUrl($input: RequestMyUserPictureUploadUrlInput!) {
+  requestMyUserPictureUploadUrl(input: $input) {
+    url
+    method
+    expiresAt
+    headers {
+      name
+      value
+    }
+  }
+}

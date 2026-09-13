@@ -30,6 +30,7 @@ function rolePermission(overrides: Partial<RolePermission> = {}): RolePermission
 
 function buildService() {
   const roleRepository = {
+    existsById: vi.fn().mockResolvedValue(true),
     getRoles: vi.fn().mockResolvedValue({
       roles: [{ id: roleId }],
       totalCount: 1,
@@ -38,6 +39,7 @@ function buildService() {
   } as unknown as IRoleRepository;
 
   const permissionRepository = {
+    existsById: vi.fn().mockResolvedValue(true),
     getPermissions: vi.fn().mockResolvedValue({
       permissions: [{ id: permissionId }],
       totalCount: 1,

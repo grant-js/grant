@@ -1,0 +1,13 @@
+extend type Mutation {
+  """
+  Ask for a URL to upload the signed-in user's picture for one project
+  membership, directly to storage.
+
+  Membership is checked before a URL exists, not only when the upload is
+  recorded: a URL is a write capability, so issuing one for a project you do not
+  belong to is the thing to prevent, not to detect afterwards.
+  """
+  requestMyProjectMembershipPictureUploadUrl(
+    input: RequestMyProjectMembershipPictureUploadUrlInput!
+  ): UploadUrl!
+}

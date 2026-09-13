@@ -26,20 +26,13 @@ export class ProjectUserApiKeyService implements IProjectUserApiKeyService {
   ) {}
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {
-    const projects = await this.projectRepository.getProjects(
-      { ids: [projectId], limit: 1 },
-      transaction
-    );
-
-    if (projects.projects.length === 0) {
+    if (!(await this.projectRepository.existsById(projectId, transaction))) {
       throw new NotFoundError('Project');
     }
   }
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
-
-    if (users.users.length === 0) {
+    if (!(await this.userRepository.existsById(userId, transaction))) {
       throw new NotFoundError('User');
     }
   }

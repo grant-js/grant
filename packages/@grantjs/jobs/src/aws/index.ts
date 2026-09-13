@@ -203,3 +203,5 @@ export class AwsJobAdapter implements IJobAdapter {
     this.logger.info('AWS job adapter shut down');
   }
 }
+
+export * from './sync-runtime';

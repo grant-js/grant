@@ -91,6 +91,13 @@ export class HttpConflictError extends HttpException {
   }
 }
 
+export class HttpPayloadTooLargeError extends HttpException {
+  constructor(message: string, options: HttpExceptionOptions = {}) {
+    super(message, 413, 'PAYLOAD_TOO_LARGE', options);
+    this.name = 'HttpPayloadTooLargeError';
+  }
+}
+
 export class HttpInternalError extends HttpException {
   constructor(message: string, options: HttpExceptionOptions = {}) {
     super(message, 500, 'INTERNAL_SERVER_ERROR', options);

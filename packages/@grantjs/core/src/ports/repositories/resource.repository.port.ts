@@ -16,9 +16,9 @@ import type {
   UpdateResourceTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { IEntityExistence, SelectedFields } from './common';
 
-export interface IResourceRepository {
+export interface IResourceRepository extends IEntityExistence {
   getResources(
     params: Omit<QueryResourcesArgs, 'scope' | 'tagIds'> & SelectedFields<Resource>,
     transaction?: unknown

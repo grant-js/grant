@@ -19,6 +19,8 @@ import { fileURLToPath } from 'node:url';
 
 import { CfnOutput, Stack } from 'aws-cdk-lib';
 import { Port, SecurityGroup } from 'aws-cdk-lib/aws-ec2';
+import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import { AaaaRecord, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
@@ -30,6 +32,7 @@ import { ApiImage } from './compute/api-image';
 import { DEFAULT_JOB_TIMEOUT, EVENT_DISPATCH_PATH, JobsFunction } from './compute/jobs-function';
 import { MigrateTask } from './compute/migrate-task';
 import { MigrateTrigger } from './compute/migrate-trigger';
+import { SYNC_CONTAINER_NAME, SyncTask } from './compute/sync-task';
 import { WebFunction } from './compute/web-function';
 import { WebImage } from './compute/web-image';
 import { AWS_TARGET_ENV_DEFAULTS } from './config/defaults';
@@ -41,6 +44,7 @@ import {
   assertDatabaseSelection,
   assertMigrationIsRunnable,
   assertNetworkSelection,
+  assertSesSendingIdentity,
   validateAppUrl,
   validateHostnameInZone,
 } from './config/validate';
@@ -55,6 +59,7 @@ import { EdgeCertificate } from './edge/certificate';
 import { EdgeDistribution } from './edge/distribution';
 import { DocsSite } from './edge/docs-site';
 import { JobSchedules } from './jobs/job-schedules';
+import { OriginVerifyAlarm } from './observability/origin-verify-alarm';
 
 /**
  * Port opened on an adopter's database security group. PostgreSQL's default, and this
@@ -111,6 +116,9 @@ export class GrantPlatform extends Construct {
    */
   public readonly migrateTask?: MigrateTask;
 
+  /** ADR 0002's escape hatch. Present only on a VPC-bearing topology. */
+  public readonly syncTask?: SyncTask;
+
   /** Present whenever the platform serves an API. */
   public readonly cacheTable?: CacheTable;
   public readonly uploads?: StorageBucket;
@@ -128,6 +136,12 @@ export class GrantPlatform extends Construct {
   /** Present only when the platform serves an API and jobs are enabled. */
   public readonly jobQueue?: JobQueue;
   public readonly jobsFunction?: JobsFunction;
+
+  /**
+   * The compensating control for the publicly reachable Function URL. Present wherever
+   * the API is — a serving deployment without it is the state phase C left behind.
+   */
+  public readonly originVerifyAlarm?: OriginVerifyAlarm;
   public readonly jobSchedules?: JobSchedules;
 
   constructor(scope: Construct, id: string, props: GrantPlatformProps) {
@@ -161,6 +175,16 @@ export class GrantPlatform extends Construct {
       DOCS_URL: `${props.appUrl}/docs`,
       ...props.env,
     };
+
+    // After the merge, not before: `EMAIL_PROVIDER` and `EMAIL_FROM` can arrive from
+    // `AWS_TARGET_ENV_DEFAULTS` or from the caller, and it is the resolved value the
+    // functions will actually boot with that decides whether a send grant is issued.
+    assertSesSendingIdentity(this.env, props.email);
+    const ses =
+      this.env.EMAIL_PROVIDER === 'ses' && props.email
+        ? { identityArn: props.email.sesIdentityArn, fromAddress: this.env.EMAIL_FROM }
+        : undefined;
+
     this.behaviours = [...toCloudFrontBehaviours(), ...ASSET_BEHAVIOURS];
 
     // CloudFront is global; only the certificate it serves is pinned to us-east-1.
@@ -208,6 +232,16 @@ export class GrantPlatform extends Construct {
     // is set.
     let network: Network | undefined;
     let databaseClients: SecurityGroup | undefined;
+    /**
+     * The container tier, when this deploy has one.
+     *
+     * `migration: { enabled: false }` means an adopter migrates some other way and wants
+     * no Fargate tasks — so it also means no sync hatch. The two are the same tier: same
+     * cluster, same image, same security group. Tying them is why disabling migration does
+     * not silently leave an ECS task definition behind, and why `SyncTask` needs no image
+     * of its own.
+     */
+    let containerTier: { cluster: ICluster; image: ContainerImage } | undefined;
 
     if (servesApi) {
       if (hasVpc) {
@@ -223,6 +257,7 @@ export class GrantPlatform extends Construct {
             minCapacity: props.database.minCapacity,
             maxCapacity: props.database.maxCapacity,
             destroyOnRemoval: props.database.destroyOnRemoval,
+            iamAuthentication: props.database.iamAuthentication,
           });
         }
 
@@ -338,7 +373,7 @@ export class GrantPlatform extends Construct {
           imageIdentifier = built.imageIdentifier;
         }
 
-        this.migrateTask = new MigrateTask(this, 'Migrate', {
+        const migrateTask = new MigrateTask(this, 'Migrate', {
           vpc: network.vpc,
           image,
           securityGroups: [databaseClients],
@@ -360,10 +395,12 @@ export class GrantPlatform extends Construct {
           },
           cluster: props.migration?.cluster,
         });
+        this.migrateTask = migrateTask;
+        containerTier = { cluster: migrateTask.cluster, image };
 
         migrateTrigger = new MigrateTrigger(this, 'MigrateTrigger', {
           vpc: network.vpc,
-          task: this.migrateTask,
+          task: migrateTask,
           securityGroups: [databaseClients],
           timeout: props.migration?.timeout,
           imageIdentifier,
@@ -418,6 +455,8 @@ export class GrantPlatform extends Construct {
       this.uploads = new StorageBucket(this, 'Uploads', {
         bucket: props.storage?.uploadsBucket,
         destroyOnRemoval: props.storage?.destroyOnRemoval,
+        // The browser PUTs straight to the bucket, from this origin and no other.
+        uploadOrigin: props.appUrl,
       });
 
       // Jobs are opt-out, and creating the queue before the serving function is what
@@ -482,15 +521,84 @@ export class GrantPlatform extends Construct {
           // false would leave the Function URL answering anyone, silently.
           SECURITY_ORIGIN_VERIFY_REQUIRED: 'true',
         },
+        ses,
         memorySize: props.api?.memorySize,
         timeout: props.api?.timeout,
         reservedConcurrency: props.api?.reservedConcurrency,
       });
 
+      // Unconditional, and only its *action* depends on configuration. Phase C's
+      // security review asked for a control, not a mailbox: an alarm sitting in OK
+      // with no subscribers is still queryable, still has a history, and is still the
+      // thing that was promised when "the Function URL is publicly reachable" was
+      // accepted as a risk.
+      this.originVerifyAlarm = new OriginVerifyAlarm(this, 'OriginVerifyAlarm', {
+        logGroup: this.api.logGroup,
+        alarmTopic: props.observability?.alarmTopic,
+      });
+
+      // RDS IAM authentication, when asked for. `grantConnect` writes an `rds-db:connect`
+      // statement scoped to one database user on one cluster resource id — not to the
+      // cluster as a whole — which is why the username has to be named here rather than
+      // left to configuration.
+      //
+      // `grant_admin` is the generated master user, and it is the right one *because* this
+      // grant is inert until someone runs `GRANT rds_iam TO <user>` inside Postgres. An
+      // adopter creating a least-privilege application user grants IAM to that user and
+      // points `DB_IAM_USERNAME` at it; the permission here follows whatever `DB_URL` says.
+      if (props.database?.iamAuthentication && this.database) {
+        this.database.cluster.grantConnect(this.api.function, 'grant_admin');
+      }
+
       if (this.jobQueue) {
         // The API may enqueue, and only enqueue: nothing on the request path consumes
         // the queue, which is the separation the whole arrangement exists for.
         this.jobQueue.queue.grantSendMessages(this.api.function);
+
+        // ADR 0002's escape hatch, created here rather than beside the migrate task
+        // because it needs the uploads bucket — which does not exist yet at that point.
+        //
+        // Requires a VPC, which is what makes the hatch unavailable on the vpcless
+        // bring-your-own-database shape. There, sync stays on Lambda and stays bounded by
+        // 15 minutes: a documented limit of that topology rather than a defect.
+        // Opt-in, per ADR 0002: "existing deployments keep running the job in-process
+        // exactly as today". Default-on would add a task definition to every VPC-bearing
+        // deploy that never imports anything large enough to need it.
+        //
+        // `containerTier` already implies a VPC — it is only ever set inside the migrate
+        // block, which a vpcless topology never enters. The `network?.vpc` clause is here
+        // to narrow the type for the props below, not as a second runtime check, so
+        // deleting it changes no behaviour.
+        if (props.sync?.enabled && containerTier && network?.vpc && databaseClients) {
+          this.syncTask = new SyncTask(this, 'Sync', {
+            vpc: network.vpc,
+            image: containerTier.image,
+            securityGroups: [databaseClients],
+            platformSecret: this.platformSecret.secret,
+            environment: {
+              ...this.env,
+              SECRETS_AWS_SECRET_ID: this.platformSecret.secret.secretName,
+              SECRETS_AWS_REGION: Stack.of(this).region,
+              STORAGE_S3_BUCKET: this.uploads.bucket.bucketName,
+              STORAGE_S3_REGION: Stack.of(this).region,
+              CACHE_DYNAMODB_TABLE: this.cacheTable.table.tableName,
+              CACHE_DYNAMODB_REGION: Stack.of(this).region,
+              // The task *is* the sync runtime; it must never dispatch to itself. The
+              // entrypoint calls the job body directly so this is belt-and-braces, but a
+              // task definition that said `container` would be a loaded gun.
+              JOBS_SYNC_RUNTIME: 'inprocess',
+            },
+            // The migrate task's cluster. A cluster is a namespace; the two tasks share
+            // neither a role nor a security boundary, so a second one is a second thing to
+            // tear down for no isolation gained.
+            cluster: containerTier.cluster,
+            cpu: props.sync.cpu,
+            memoryLimitMiB: props.sync.memoryLimitMiB,
+          });
+          // The import reaches storage through the same services the API does.
+          this.uploads.bucket.grantReadWrite(this.syncTask.taskDefinition.taskRole);
+          this.cacheTable.table.grantReadWriteData(this.syncTask.taskDefinition.taskRole);
+        }
 
         this.jobsFunction = new JobsFunction(this, 'Jobs', {
           vpc: network?.vpc,
@@ -516,11 +624,56 @@ export class GrantPlatform extends Construct {
             // only by a principal holding `lambda:InvokeFunction`.
             JOBS_EVENT_DISPATCH_ENABLED: 'true',
             JOBS_EVENT_DISPATCH_PATH: EVENT_DISPATCH_PATH,
+            // ADR 0002. Only when a runtime exists to dispatch to — on the vpcless shape
+            // these are absent and the job runs in-process, bounded by this function's
+            // timeout, which is the documented limit of that topology.
+            ...(this.syncTask
+              ? {
+                  JOBS_SYNC_RUNTIME: 'container',
+                  JOBS_SYNC_TASK_CLUSTER_ARN: this.syncTask.cluster.clusterArn,
+                  JOBS_SYNC_TASK_DEFINITION_ARN: this.syncTask.taskDefinition.taskDefinitionArn,
+                  JOBS_SYNC_TASK_CONTAINER_NAME: SYNC_CONTAINER_NAME,
+                  JOBS_SYNC_TASK_SUBNET_IDS: network!.vpc
+                    .selectSubnets(this.syncTask.subnetSelection)
+                    .subnetIds.join(','),
+                  JOBS_SYNC_TASK_SECURITY_GROUP_IDS: databaseClients!.securityGroupId,
+                }
+              : {}),
           },
+          ses,
           memorySize: props.jobs?.memorySize,
           timeout: jobTimeout,
           reservedConcurrency: props.jobs?.reservedConcurrency,
         });
+
+        // Starting the sync task, and nothing else. `ecs:RunTask` is scoped to the one
+        // task definition; `iam:PassRole` is scoped to the two roles that task definition
+        // names, because RunTask passes them to ECS and an unscoped PassRole is a
+        // privilege-escalation primitive — it would let this function launch a task as any
+        // role in the account.
+        if (this.syncTask) {
+          this.jobsFunction.function.addToRolePolicy(
+            new PolicyStatement({
+              actions: ['ecs:RunTask'],
+              resources: [this.syncTask.taskDefinition.taskDefinitionArn],
+              conditions: {
+                ArnEquals: { 'ecs:cluster': this.syncTask.cluster.clusterArn },
+              },
+            })
+          );
+          this.jobsFunction.function.addToRolePolicy(
+            new PolicyStatement({
+              actions: ['iam:PassRole'],
+              resources: [
+                this.syncTask.taskDefinition.taskRole.roleArn,
+                this.syncTask.taskDefinition.executionRole!.roleArn,
+              ],
+              conditions: {
+                StringEquals: { 'iam:PassedToService': 'ecs-tasks.amazonaws.com' },
+              },
+            })
+          );
+        }
 
         // Nothing job-shaped may exist before the migration has finished, and the
         // first deploy is what proved it necessary: the rules were armed while the

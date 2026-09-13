@@ -188,9 +188,15 @@ export function createServices(
     repositories.organizationUserRepository,
     repositories.projectUserRepository
   );
+  const fileStorage = new FileStorageService();
   const servicesBase = {
     events,
-    me: new MeService(repositories.userRepository, repositories.accountRepository, grant),
+    me: new MeService(
+      repositories.userRepository,
+      repositories.accountRepository,
+      grant,
+      fileStorage
+    ),
     accounts: new AccountService(
       repositories.accountRepository,
       user,
@@ -259,14 +265,15 @@ export function createServices(
       webhookAdapters.delivery,
       db
     ),
-    fileStorage: new FileStorageService(),
+    fileStorage,
     githubOAuth: new GitHubOAuthService(secrets),
     googleOAuth: new GoogleOAuthService(secrets),
     oauthState: new OAuthStateService(cache.oauth),
     users: new UserService(
       repositories.userRepository,
       user,
-      audit(userAuditLogs, 'userId', user, db)
+      audit(userAuditLogs, 'userId', user, db),
+      fileStorage
     ),
     userAuthenticationMethods: new UserAuthenticationMethodService(
       repositories.userAuthenticationMethodRepository,
@@ -420,6 +427,7 @@ export function createServices(
       repositories.accountProjectRepository,
       audit(projectUserAuditLogs, 'projectUserId', user, db),
       events,
+      fileStorage,
       repositories.userAuthenticationMethodRepository
     ),
     projectUserPermissions: new ProjectUserPermissionService(
@@ -441,7 +449,8 @@ export function createServices(
       repositories.organizationUserRepository,
       user,
       audit(organizationAuditLogs, 'organizationId', user, db),
-      events
+      events,
+      fileStorage
     ),
     organizationInvitations: new OrganizationInvitationService(
       repositories.organizationMemberRepository,

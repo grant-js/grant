@@ -1,0 +1,11 @@
+mutation RequestOrganizationPictureUploadUrl($input: RequestOrganizationPictureUploadUrlInput!) {
+  requestOrganizationPictureUploadUrl(input: $input) {
+    url
+    method
+    expiresAt
+    headers {
+      name
+      value
+    }
+  }
+}

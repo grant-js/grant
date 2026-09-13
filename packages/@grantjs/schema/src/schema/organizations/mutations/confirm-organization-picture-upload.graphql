@@ -1,0 +1,10 @@
+extend type Mutation {
+  """
+  Record a direct organization-logo upload that has completed. Reads the object
+  back from storage to confirm it exists and is within the size policy, then
+  stores the object key on the organization (`picture_path`).
+  """
+  confirmOrganizationPictureUpload(
+    input: ConfirmOrganizationPictureUploadInput!
+  ): UploadOrganizationPictureResult!
+}

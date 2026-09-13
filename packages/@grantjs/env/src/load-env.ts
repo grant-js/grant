@@ -33,6 +33,16 @@ export function findWorkspaceRoot(start: string): string {
  * Uses dotenv-expand so values like DB_URL=${POSTGRES_USER} are expanded.
  */
 export function loadEnv(rootArg?: string): void {
+  // Every file below is loaded with `override: true`, so a value in a developer's
+  // `.env` beats one already in `process.env` — including one a test set. That is
+  // right at runtime (a container's env_file should beat a stale shell export) and
+  // wrong under test, where it makes the suite's result depend on a gitignored file
+  // CI does not have. Opt out with this flag rather than by weakening `override`,
+  // which is load-bearing everywhere else.
+  if (process.env.GRANT_ENV_SKIP_FILES === 'true') {
+    return;
+  }
+
   const root = rootArg ?? findWorkspaceRoot(process.cwd());
   const env = process.env.NODE_ENV ?? 'development';
   const files = ['.env', '.env.local', `.env.${env}`, `.env.${env}.local`];

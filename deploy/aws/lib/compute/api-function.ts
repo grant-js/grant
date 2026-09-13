@@ -36,7 +36,7 @@ import type { IBucket } from 'aws-cdk-lib/aws-s3';
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
-import type { GrantEnv } from '../config/props';
+import type { GrantEnv, SesSendGrant } from '../config/props';
 
 /**
  * Ceiling on concurrent execution environments.
@@ -109,10 +109,25 @@ export interface ApiFunctionProps {
 
   /** See `DEFAULT_RESERVED_CONCURRENCY`. Pass `0` to leave concurrency unbounded. */
   readonly reservedConcurrency?: number;
+
+  /**
+   * The SES identity and From address this function may send as. Omit — the default,
+   * and the case for every deployment on `EMAIL_PROVIDER=console` — and no SES
+   * statement is attached to the role.
+   */
+  readonly ses?: SesSendGrant;
 }
 
 export class ApiFunction extends Construct {
   public readonly function: DockerImageFunction;
+
+  /**
+   * Exposed rather than reached through `function.logGroup`, because this is the one
+   * thing outside the construct that needs it: `OriginVerifyAlarm` puts a metric filter
+   * on the refusal line `originVerifyMiddleware` writes here. A concrete `LogGroup` also
+   * says it is stack-owned — nothing has to import or look one up.
+   */
+  public readonly logGroup: LogGroup;
 
   /**
    * The invocation endpoint.
@@ -126,6 +141,12 @@ export class ApiFunction extends Construct {
     super(scope, id);
 
     const reserved = props.reservedConcurrency ?? DEFAULT_RESERVED_CONCURRENCY;
+
+    this.logGroup = new LogGroup(this, 'Logs', {
+      // Long enough to investigate an incident reported a week late, short of
+      // paying to store request logs indefinitely.
+      retention: RetentionDays.TWO_WEEKS,
+    });
 
     this.function = new DockerImageFunction(this, 'Function', {
       code: props.code,
@@ -162,11 +183,7 @@ export class ApiFunction extends Construct {
       timeout: props.timeout ?? Duration.seconds(30),
       environment: { ...props.environment },
       ...(reserved > 0 ? { reservedConcurrentExecutions: reserved } : {}),
-      logGroup: new LogGroup(this, 'Logs', {
-        // Long enough to investigate an incident reported a week late, short of
-        // paying to store request logs indefinitely.
-        retention: RetentionDays.TWO_WEEKS,
-      }),
+      logGroup: this.logGroup,
     });
 
     // Least privilege, and each grant is the narrowest CDK offers: read on one secret,
@@ -181,15 +198,33 @@ export class ApiFunction extends Construct {
     // role is what signs. Scoped to sending — the function has no reason to manage
     // identities, verify domains or read the account's sending statistics.
     //
-    // `ses:SendEmail` and `ses:SendRawEmail` do not support resource-level permissions
-    // in the classic API, so the resource is `*`; the identity restriction is that only
-    // verified identities can be used as the From address, enforced by SES itself.
-    this.function.addToRolePolicy(
-      new PolicyStatement({
-        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-        resources: ['*'],
-      })
-    );
+    // Granted only where mail is actually sent. `EMAIL_PROVIDER` defaults to `console`
+    // (`@grantjs/env/src/schema.ts:256-259`), so the common deployment used to hold a
+    // send-as-anyone permission for a function that never calls SES at all.
+    //
+    // Scoped two ways, because SES narrows two different things and supports each for
+    // `SendEmail`/`SendRawEmail` (SES developer guide, "Identity and access management
+    // in Amazon SES", checked 2026-09-09):
+    //
+    //   - `Resource` set to identity ARNs, which the guide gives as the alternative to
+    //     `*` in as many words: "To restrict the identities that a user is allowed to
+    //     send from, set Resource to the ARNs of the identities". **The comment that
+    //     used to stand here said the opposite** — that these actions "do not support
+    //     resource-level permissions in the classic API" — and that was simply wrong.
+    //   - `ses:FromAddress`, which bounds the address within that identity. A domain
+    //     identity otherwise permits every mailbox at the domain, and the adapter only
+    //     ever sends as one address. SES parses `Source`, matching a display name
+    //     against the separate `ses:FromDisplayName` key, so `"Grant" <a@b.com>` is
+    //     compared here as `a@b.com`.
+    if (props.ses) {
+      this.function.addToRolePolicy(
+        new PolicyStatement({
+          actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+          resources: [props.ses.identityArn],
+          conditions: { StringEquals: { 'ses:FromAddress': props.ses.fromAddress } },
+        })
+      );
+    }
 
     this.functionUrl = this.function.addFunctionUrl({
       // `AWS_IAM` would be the better answer and is not available to this API. Slice

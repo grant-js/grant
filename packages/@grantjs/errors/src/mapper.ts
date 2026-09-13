@@ -11,6 +11,7 @@
  *   AuthorizationError                         → 'errors.auth.forbidden'
  *   ValidationError                            → 'errors.validation.invalid'
  *   BadRequestError                            → 'errors.validation.badRequest'
+ *   PayloadTooLargeError                       → 'errors.common.payloadTooLarge'
  *   ConfigurationError                         → 'errors.common.internalError'
  */
 import {
@@ -23,6 +24,7 @@ import {
   InvalidOrUsedVerificationTokenError,
   NoSessionSigningKeyError,
   NotFoundError,
+  PayloadTooLargeError,
   TokenExpiredError,
   TokenInvalidError,
   TokenValidationError,
@@ -36,6 +38,7 @@ import {
   HttpForbiddenError,
   HttpInternalError,
   HttpNotFoundError,
+  HttpPayloadTooLargeError,
   HttpUnauthorizedError,
   HttpValidationError,
 } from './http-exception';
@@ -138,6 +141,24 @@ export function mapDomainToHttp(error: GrantException): HttpException {
       translationKey: error.resource
         ? `errors.conflict.${toTranslationSegment(error.resource)}`
         : 'errors.conflict.duplicateEntry',
+      extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
+    });
+  }
+
+  // Payload too large
+  if (error instanceof PayloadTooLargeError) {
+    // The limit is in the extensions rather than only in the sentence, so a client can
+    // act on it without parsing prose. Omitted when unknown — `body-parser` does not
+    // always report the received size, and an extension whose value is `undefined`
+    // reads as "zero bytes" to anyone consuming it.
+    const extensions: Record<string, unknown> = {};
+    if (error.limitBytes !== undefined) extensions.limitBytes = error.limitBytes;
+    if (error.receivedBytes !== undefined) extensions.receivedBytes = error.receivedBytes;
+
+    return new HttpPayloadTooLargeError(error.message, {
+      translationKey: 'errors.common.payloadTooLarge',
+      translationParams:
+        error.limitBytes !== undefined ? { limitBytes: error.limitBytes } : undefined,
       extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
     });
   }

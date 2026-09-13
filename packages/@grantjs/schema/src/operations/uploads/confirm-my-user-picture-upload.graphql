@@ -1,0 +1,6 @@
+mutation ConfirmMyUserPictureUpload($input: ConfirmMyUserPictureUploadInput!) {
+  confirmMyUserPictureUpload(input: $input) {
+    url
+    path
+  }
+}

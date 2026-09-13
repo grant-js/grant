@@ -81,19 +81,49 @@ The defaults ([`deploy/aws/lib/config/defaults.ts`](https://github.com/grant-js/
 Two kinds of value are handled differently, and the difference is deliberate:
 
 - **Configuration** goes in `.env` and is synthesized into the template.
-- **Secrets** — `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET`, and `AUTH_MFA_SECRET_ENCRYPTION_KEY` — also go in `.env`, but are **never** written to the template. CloudFormation cannot hold a literal secret without it being readable by anyone who can describe the stack. They are written to the platform secret out of band, after the deploy, by a separate command.
+- **Secrets** also go in `.env`, but are **never** written to the template. CloudFormation cannot hold a literal secret without it being readable by anyone who can describe the stack. They are written to the platform secret out of band, after the deploy, by a separate command.
 
 `cdk deploy` prints a reminder naming the keys it did not carry.
 
-**Credential-shaped keys are refused, not deployed.** Anything else in the file becomes
-a Lambda environment variable, and those are plaintext in the CloudFormation template
-and in the function configuration — Lambda has no equivalent of the ECS task's
-`Secrets`/`ValueFrom`, where the template carries only an ARN. So `SMTP_PASSWORD`,
-`MAILGUN_API_KEY`, `REDIS_PASSWORD`, the `*_SECRET_ACCESS_KEY` pairs and their kin fail
-at synth with a sentence explaining why. They cannot simply be routed to the platform
-secret instead: the adapters read them from `process.env`, so a value placed in the
-secret is one the application never sees. Making them resolver-backed is tracked
-separately and benefits every target.
+**Credentials go to the platform secret, not to the function.** Anything not on that
+list becomes a Lambda environment variable, and those are plaintext in the
+CloudFormation template, in the function configuration and in `cdk.out` on disk —
+Lambda has no equivalent of the ECS task's `Secrets`/`ValueFrom`, where the template
+carries only an ARN. So the sixteen keys below are routed instead: put them in `.env`,
+run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
+
+| Provider                          | Keys                                                              |
+| --------------------------------- | ----------------------------------------------------------------- |
+| GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                            |
+| Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                            |
+| MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                  |
+| Mailgun                           | `MAILGUN_API_KEY`                                                 |
+| Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                           |
+| SMTP                              | `SMTP_PASSWORD`                                                   |
+| SES (static keys)                 | `EMAIL_SES_CLIENT_SECRET`                                         |
+| Redis                             | `REDIS_PASSWORD`                                                  |
+| S3 / DynamoDB / SQS (static keys) | `STORAGE_S3_*`, `CACHE_DYNAMODB_*`, `JOBS_AWS_*` access-key pairs |
+| API                               | `SECURITY_API_KEY`                                                |
+
+The AWS access-key pairs are usually the wrong choice here: leave them blank and the
+SDK's default credential chain uses the function's execution role, which the stack has
+already granted exactly the access each function needs. Fill them in only to reach a
+bucket, table or queue in an account the role cannot assume.
+
+**Rotation works differently for these than for the origin secret.** They are resolved
+once at boot and captured by the adapter that uses them, so a rotation reaches a running
+function when it is **replaced**, not within `SECRETS_CACHE_TTL_SECONDS`. Rotate, then
+roll the functions. `ORIGIN_VERIFY_SECRET` is the exception — the middleware resolves it
+per request, so it does track the TTL.
+
+**Four keys are still refused at synth**, each for its own reason, and the error says
+which:
+
+| Key                                | Why                                                                                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DB_GRANT_ROLE_URL`                | A superuser URL read by `@grantjs/database` during a migration, outside the composition root where credentials are resolved. Run `db:grant-rls-role` out of band. |
+| `POSTGRES_PASSWORD`                | It already has a safe path — `DB_URL` arrives through the platform secret. Use `-c dbUrlSecretArn=…` and drop the discrete parts.                                 |
+| `E2E_DB_URL`, `E2E_REDIS_PASSWORD` | Test-only keys. Nothing outside `apps/api/tests` reads them, so a deployed stack has no use for them.                                                             |
 
 ## Deploy
 
@@ -288,6 +318,62 @@ RDS proxy is **off** by default because it forfeits the cluster's ability to aut
 enable it (`database.proxy`) if you expect concurrency high enough to exhaust the
 cluster rather than the pool.
 
+### Database authentication: password, or an IAM token
+
+By default the application authenticates with a password, which lives in Secrets Manager
+and reaches the process through the secret resolver ([ADR 0004](https://github.com/grant-js/grant/blob/main/decisions/0004-secret-resolution-through-a-port.md)) — never in the
+template, never in an environment variable.
+
+`DB_AUTH_MODE=iam` replaces it with an RDS IAM token signed from the caller's own role.
+There is then no database password anywhere: nothing to rotate, leak, or store. The token
+expires in about 15 minutes, which is fine for a pool because it is signed **per
+connection** — `postgres.js` calls the password resolver during each backend's
+authentication handshake, so connections opened an hour from now get a token signed then.
+A connection already authenticated is unaffected by its token expiring.
+
+**Three conditions must all hold, and only the first two are the stack's.** Any one of them
+missing presents identically, as a password failure at connect time:
+
+| #   | Condition                                                                                 | Who does it                                                                      |
+| --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 1   | The database has IAM authentication enabled                                               | `database: { iamAuthentication: true }`                                          |
+| 2   | The caller's role holds `rds-db:connect` on `arn:aws:rds-db:…:dbuser:<resourceId>/<user>` | the stack, when (1) is set                                                       |
+| 3   | The Postgres user has been granted `rds_iam`                                              | **you**, with `GRANT rds_iam TO <user>` — no CloudFormation resource can do this |
+
+That third row is why the default is off. The flag without the grant is a deployment that
+cannot reach its database.
+
+#### Which combinations work
+
+**The token is signed for one endpoint.** A token signed for the cluster endpoint is
+rejected by the proxy and vice versa, because the endpoint is part of the signature. This is
+the trap worth knowing before you enable either:
+
+| Topology                               | `DB_AUTH_MODE=iam`? | What to set                                                                                                                                               |
+| -------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cluster this stack creates, no proxy   | yes                 | `database: { iamAuthentication: true }`; `DB_IAM_HOSTNAME` defaults from `DB_URL`, which is the cluster endpoint                                          |
+| Cluster this stack creates, with proxy | yes                 | as above, **and** point `DB_IAM_HOSTNAME` at the proxy endpoint — the default derived from `DB_URL` is then wrong unless `DB_URL` already names the proxy |
+| Bring-your-own PostgreSQL on RDS       | yes                 | you enable IAM auth and the `rds_iam` grant; set `DB_IAM_HOSTNAME`, `DB_IAM_USERNAME`, `DB_IAM_REGION`                                                    |
+| Bring-your-own PostgreSQL not on RDS   | **no**              | RDS IAM tokens are an RDS feature. Use a password from a secret store                                                                                     |
+| Any topology, `DB_AUTH_MODE=password`  | n/a                 | the default; nothing to configure                                                                                                                         |
+
+`DB_IAM_USERNAME` defaults to the user in `DB_URL`. If you create a least-privilege
+application user rather than using the generated master user, grant `rds_iam` to that user
+and name it here.
+
+### Why the proxy is still off by default
+
+Re-decided rather than inherited, and the number is the reason it did not change. A proxy
+holds a persistent pool, and **Aurora cannot auto-pause while any connection exists** — so
+enabling it forfeits the `serverlessV2MinCapacity: 0` this target's cost model rests on.
+Measured on a live deploy: **0.5 ACU and four held connections, flat across forty idle
+minutes**, against a cluster that otherwise pauses to zero. Roughly **$58/month** to keep
+connections warm for traffic a green-field deploy does not have yet.
+
+Turn it on when concurrency is real: without pooling each warm execution environment holds
+its own connections, and a burst exhausts `max_connections` rather than the pool. The trade
+is cheap idle against tolerance for concurrency and cannot be had both ways.
+
 ## Bring your own infrastructure
 
 `bin/grant.ts` is the layer you **replace**, not fork. The constructs in `deploy/aws/lib/` accept CDK resource interfaces — `IVpc`, `ICertificate`, `IBucket`, `IHostedZone` — so composing against infrastructure you already run means writing your own version of that one file while staying on upstream `lib/`. Forking the library means porting every later fix by hand. See [ADR 0005](https://github.com/grant-js/grant/blob/main/decisions/0005-aws-target-as-a-construct-library.md).
@@ -296,17 +382,145 @@ If you only need to reuse an **existing certificate**, pass `-c certificateArn=�
 
 What each resource supports today, so you can tell a supported path from a plausible-looking one:
 
-| Resource           | How                                            | Status                                                                  |
-| ------------------ | ---------------------------------------------- | ----------------------------------------------------------------------- |
-| **VPC**            | `vpc?: IVpc`                                   | supported — prefer `fromVpcAttributes()` over a lookup                  |
-| **Certificate**    | `-c certificateArn=…`, or `ICertificate`       | supported                                                               |
-| **Hosted zone**    | `IHostedZone`                                  | supported                                                               |
-| **Uploads bucket** | `storage.uploadsBucket?: IBucket`              | supported                                                               |
-| **Cache table**    | `cache.table?: ITable`                         | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt`           |
-| **PostgreSQL**     | omit `database`, pass `-c dbUrlSecretArn=…`    | supported — see [Bring your own PostgreSQL](#bring-your-own-postgresql) |
-| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env` | config only — no network wiring is generated                            |
+| Resource           | How                                              | Status                                                                  |
+| ------------------ | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| **VPC**            | `vpc?: IVpc`                                     | supported — prefer `fromVpcAttributes()` over a lookup                  |
+| **Certificate**    | `-c certificateArn=…`, or `ICertificate`         | supported                                                               |
+| **Hosted zone**    | `IHostedZone`                                    | supported                                                               |
+| **Uploads bucket** | `storage.uploadsBucket?: IBucket`                | supported                                                               |
+| **Cache table**    | `cache.table?: ITable`                           | supported — needs a `pk`/`sk` schema and a TTL on `expiresAt`           |
+| **PostgreSQL**     | omit `database`, pass `-c dbUrlSecretArn=…`      | supported — see [Bring your own PostgreSQL](#bring-your-own-postgresql) |
+| **SES identity**   | `-c sesIdentityArn=…`, or `email.sesIdentityArn` | supported — see [Sending mail](#sending-mail)                           |
+| **Redis**          | `CACHE_STRATEGY=redis` plus `REDIS_*` in `env`   | config only — no network wiring is generated                            |
 
 Redis is a weaker case than it looks: the keys are honoured by the application, but nothing in the stack opens a path to a cluster it did not create. You would be bringing the VPC, the security-group rule and the cluster yourself, and the DynamoDB table would still be created unless you also pass `cache.table`.
+
+## Request body size
+
+This target lowers `API_JSON_BODY_LIMIT_BYTES` to **5 MiB**, from the 10 MiB
+`@grantjs/env` defaults to everywhere else. The reason is honesty rather than caution:
+Lambda's invocation payload cap sits at a measured **5.32 MiB of raw CDM** for an
+uncompressed body, so at 10 MiB the API advertised a ceiling AWS would not honour.
+Between the two numbers a request was rejected by the runtime before any code ran —
+**no `413`, no domain error, no audit entry, and nothing in the request log.** The
+caller got an opaque failure from infrastructure the application never saw.
+
+At 5 MiB the application refuses first, with the `413` it should always have returned.
+
+### Gzip buys you more, and the limit does not know it
+
+`body-parser` inflates `Content-Encoding: gzip` bodies **before** applying the limit. So
+compression spends fewer bytes against Lambda's cap but not against this one:
+
+| Client       | Bounded by                  | Effective ceiling                                            |
+| ------------ | --------------------------- | ------------------------------------------------------------ |
+| Uncompressed | `API_JSON_BODY_LIMIT_BYTES` | 5 MiB of CDM, roughly where Lambda would have refused anyway |
+| Gzipped      | `API_JSON_BODY_LIMIT_BYTES` | 5 MiB of CDM — **earlier than Lambda would have refused**    |
+
+That asymmetry is documented rather than engineered around. One number that is honest
+about the worst case beats two that are each right half the time, and the alternative —
+a route that requires `Content-Encoding: gzip` and applies a different ceiling — is
+per-route behaviour for a problem one config value solves.
+
+**Gzip large CDM anyway.** Measured over the CDM scale fixtures, the compression ratio
+is **17.7% mean and 22.8% worst case**, so a gzipped body of 5 MiB carries roughly 22–28
+MiB of raw CDM against Lambda's cap even though this limit stops it at 5 MiB decompressed.
+The cap is not what you will hit; the pipe is much wider than the raw path.
+
+| Profile         | Entities |  Raw JSON |  Gzipped | Ratio |
+| --------------- | -------: | --------: | -------: | ----: |
+| `department`    |    3,650 |  1.39 MiB | 0.23 MiB | 16.5% |
+| `enterprise`    |   28,880 | 12.16 MiB | 2.22 MiB | 18.2% |
+| `entropy-bound` |   28,880 | 16.99 MiB | 3.87 MiB | 22.8% |
+
+`entropy-bound` is not a tenant — it is the least compressible document the CDM shape
+permits, included so the worst case is a measurement rather than a guess.
+
+### Raising it
+
+If you have measured your own CDM and 5 MiB is wrong for you, override it like any other
+setting — this is a default, not a ceiling:
+
+```sh
+# deploy/aws/.env
+API_JSON_BODY_LIMIT_BYTES=8388608
+```
+
+Above ~5.32 MiB you are back to relying on Lambda to refuse, which it does silently.
+Raise it only if your clients gzip, where the runtime cap is nowhere near binding.
+
+Full numbers and method: `plans/2026-08-21-aws-lambda-runtime-measurements.md`
+(`pnpm --filter grant-api measure:cdm-gzip` reproduces them).
+
+## The alarm on direct origin requests
+
+The API's Function URL answers the internet. It has to: CloudFront's Origin Access
+Control cannot carry this API — `SigningBehavior: always` overwrites the viewer's
+`Authorization` header, and `POST` through OAC requires the viewer to send
+`x-amz-content-sha256`, which a browser doing GraphQL cannot. So the URL is public and
+`originVerifyMiddleware` refuses anything arriving without the secret CloudFront attaches
+as an origin custom header.
+
+That is an accepted risk, and this alarm is its compensating control. Every deploy gets
+it — a metric filter on the API log group counting refusals, and an alarm on the rate:
+
+|          |                                                      |
+| -------- | ---------------------------------------------------- |
+| Metric   | `Grant/Edge` / `DirectOriginRequests`                |
+| Fires at | 20 refusals in 5 minutes, sustained across 2 periods |
+| Action   | none, unless `-c alarmEmail` is passed               |
+
+Without `-c alarmEmail` the alarm still exists and still evaluates; it notifies nobody.
+That is a control with a queryable history rather than no control. To be notified:
+
+```sh
+cdk deploy --all \
+  -c appUrl=https://grant.example.com \
+  -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG \
+  -c alarmEmail=oncall@example.com
+```
+
+AWS emails a confirmation link on the first deploy. **Until it is clicked the
+subscription is `PendingConfirmation` and delivers nothing** — no template can take that
+step for you, so check it before treating the alarm as wired.
+
+The threshold is a starting point, not a measurement: nothing has yet counted how much
+unsolicited traffic a deployed Function URL receives. Pass your own through
+`observability` if 20 in five minutes is wrong for your hostname.
+
+## Sending mail
+
+`EMAIL_PROVIDER` defaults to `console`, and on that default **neither function is given
+`ses:SendEmail` at all**. The permission appears only when the resolved environment says
+`ses`, and it is scoped when it does:
+
+- `Resource` is the identity ARN, not `*`. Without this a compromised function could
+  send as any identity verified anywhere in the account.
+- A `ses:FromAddress` condition pins the exact address in `EMAIL_FROM`, because a domain
+  identity otherwise covers every mailbox at that domain and the application only ever
+  sends as one.
+
+```sh
+cdk deploy --all \
+  -c appUrl=https://grant.example.com \
+  -c zoneName=example.com -c hostedZoneId=Z123456ABCDEFG \
+  -c emailFrom=no-reply@example.com
+```
+
+`-c emailFrom` sets `EMAIL_PROVIDER=ses` and `EMAIL_FROM`, and composes the ARN of the
+**domain** identity — `arn:aws:ses:<stack region>:<account>:identity/example.com` — which
+is what a real deployment usually verifies. If you verified the address itself, name the
+identity outright and it is used as given:
+
+```sh
+  -c sesIdentityArn=arn:aws:ses:eu-central-1:123456789012:identity/no-reply@example.com
+```
+
+Synth refuses `EMAIL_PROVIDER=ses` without `EMAIL_FROM`, without an identity ARN, or with
+an ARN that is not an SES identity. Each of those would otherwise deploy cleanly and fail
+on the first email — a path nobody is watching. What synth cannot check is whether the
+identity is _verified_, or verified **in this region**: SES verifies per region, and an
+unverified identity fails at send time whatever the policy says.
 
 ## Bring your own PostgreSQL
 

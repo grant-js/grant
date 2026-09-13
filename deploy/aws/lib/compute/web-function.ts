@@ -7,6 +7,15 @@
  * neither, so it would add a build toolchain and a Next-16 support risk to buy
  * nothing. See `apps/web/Dockerfile`.
  *
+ * **Re-checked 2026-09-12 and the decision stands.** Both conditions that would change
+ * it were verified against the source rather than assumed: no ISR (`export const
+ * revalidate`, `revalidatePath`, `revalidateTag`, `unstable_cache` — none outside
+ * generated `.next` types) and no Next image optimization (`next/image` appears only in
+ * the generated `next-env.d.ts` reference; images are plain `<img>`). Also still GET-only:
+ * no server actions, no route handlers. Boot to first accepted connection measured at a
+ * **180 ms median** on Next 16.3.4 (`pnpm --filter grant-web measure:boot`), against phase
+ * C's 526–630 ms deployed cold start — no regression that would buy anything by switching.
+ *
  * **Unlike the API, this URL is IAM-authorized**, and the difference is worth stating
  * because it looks inconsistent until you see why. Origin Access Control was ruled out
  * for the API by two things: its recommended signing mode overwrites the viewer's

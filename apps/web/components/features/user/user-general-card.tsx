@@ -19,7 +19,10 @@ import {
 } from '@/components/common';
 import { DataTableColGroup } from '@/components/common/data-table-colgroup';
 import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
-import { SettingImageUploadDialog } from '@/components/features/settings';
+import {
+  SettingImageUploadDialog,
+  type SettingImageUploadDialogProps,
+} from '@/components/features/settings';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -120,7 +123,7 @@ export function UserGeneralCard({
   const scope = useScopeFromParams();
   const projectScope = useProjectUserScope();
   const mutationScope = projectScope ?? scope;
-  const { uploadUserPicture, updateUser } = useUserMutations();
+  const { uploadUserPictureDirect, updateUser } = useUserMutations();
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -165,16 +168,16 @@ export function UserGeneralCard({
   const createdFormatted = formatLocalizedDateTime(user.createdAt);
   const updatedFormatted = formatLocalizedDateTime(user.updatedAt);
 
-  const handleUploadPicture = async (file: string, filename: string, contentType: string) => {
-    await uploadUserPicture({
-      scope: mutationScope!,
-      userId: user.id,
-      file,
-      filename,
-      contentType,
-    });
-    onPictureUpdate?.();
-    await onAfterUserMutation?.();
+  const handleUploadPicture: SettingImageUploadDialogProps['onUpload'] = async (file, options) => {
+    try {
+      await uploadUserPictureDirect({ scope: mutationScope!, userId: user.id }, file, options);
+    } finally {
+      // Refreshed whether or not the upload was recorded: the object may already be at
+      // the path this user's picture is served from, so the view has to be re-read rather
+      // than assumed unchanged.
+      onPictureUpdate?.();
+      await onAfterUserMutation?.();
+    }
   };
 
   const handleSubmit = async (values: UserGeneralFormValues) => {

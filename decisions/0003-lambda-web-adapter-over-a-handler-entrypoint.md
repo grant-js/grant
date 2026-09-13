@@ -103,6 +103,37 @@ lines, `migrate.ts` is a real second (non-HTTP) entrypoint over the same code, a
 extraction was a provable no-op. Had this decision come first, that slice would have
 been argued differently, not skipped.
 
+## Re-checked 2026-09-12 — the decision stands
+
+Slice 15 of the AWS follow-ups closeout story, whose whole purpose was to re-test this
+rather than inherit it.
+
+**The OpenNext question is conditional, and both conditions still hold.** OpenNext exists
+for ISR cache persistence and image optimization on serverless. Verified against the
+source, not assumed:
+
+| Condition                      | Check                                                                          | Result                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| No ISR                         | `export const revalidate`, `revalidatePath`, `revalidateTag`, `unstable_cache` | none in app code (only generated `.next` types)                              |
+| No image optimization          | `next/image` imports, `<Image>` usage, `images` config                         | none; only the generated `next-env.d.ts` reference. Images are plain `<img>` |
+| Still GET-only (OAC's premise) | `'use server'`, `app/**/route.ts`                                              | none                                                                         |
+
+**Cold start has not regressed.** Boot to first accepted connection: **180 ms median**
+(min 180, max 185, seven runs, Next 16.3.4), by `pnpm --filter grant-web measure:boot`.
+
+That number is the _application's_ share of init duration and nothing more, which is
+measurable only because `AWS_LWA_READINESS_CHECK_PROTOCOL=tcp` makes "listening on
+`AWS_LWA_PORT`" the readiness criterion. Phase C's 526–630 ms was a deployed `Init
+Duration` from CloudWatch and includes image pull, runtime init, and the adapter itself.
+**The two are not comparable and the tool says so**; each is a regression signal against
+its own history. A deployed re-measurement rides along with the next account cycle.
+
+**What would change the decision**, stated so a future reader can test it rather than
+re-litigate it: adopting ISR, or `next/image` optimization becoming load-bearing. Adding a
+route handler or a server action would not change _this_ decision but would break the
+Origin Access Control premise recorded in `web-function.ts`, which is a different and more
+urgent problem.
+
 ## Operating requirements
 
 Configuration only; no application code depends on them.

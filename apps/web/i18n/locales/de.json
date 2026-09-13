@@ -118,6 +118,16 @@
       "uploading": "Wird hochgeladen...",
       "refresh": "Aktualisieren"
     },
+    "upload": {
+      "errors": {
+        "expired": "Der Upload-Link ist abgelaufen, bevor das Bild gesendet wurde. Bitte versuchen Sie es erneut.",
+        "cancelled": "Upload abgebrochen.",
+        "network": "Das Bild konnte den Speicher nicht erreichen. Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+        "rejected": "Der Speicher hat das Bild abgelehnt. Bitte versuchen Sie es erneut.",
+        "unclaimed": "Das Bild wurde gespeichert, konnte aber nicht übernommen werden. Laden Sie es erneut hoch, um den Vorgang abzuschließen.",
+        "unknown": "Bild konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      }
+    },
     "fields": {
       "name": "Name",
       "description": "Beschreibung"

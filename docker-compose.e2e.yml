@@ -62,15 +62,16 @@ services:
       - e2e-network
 
   # Local AWS emulation for the adapter integration suites (@grantjs/cache,
-  # @grantjs/jobs). Only the services those adapters use are enabled, so the e2e
-  # stack does not get slower for everyone else. Extend SERVICES as adapters arrive.
+  # @grantjs/jobs, @grantjs/storage). Only the services those adapters use are
+  # enabled, so the e2e stack does not get slower for everyone else. Extend
+  # SERVICES as adapters arrive.
   localstack:
     image: localstack/localstack:3.8
     container_name: grant-e2e-localstack
     ports:
       - '4567:4566'
     environment:
-      SERVICES: dynamodb,sqs,events
+      SERVICES: dynamodb,sqs,events,s3
       DEBUG: '0'
       PERSISTENCE: '0'
     # Every service must be up, not just dynamodb: a suite that starts while SQS
@@ -86,7 +87,8 @@ services:
           h=$$(curl -sf http://localhost:4566/_localstack/health) &&
           echo "$$h" | grep -qE '"dynamodb": "(available|running)"' &&
           echo "$$h" | grep -qE '"sqs": "(available|running)"' &&
-          echo "$$h" | grep -qE '"events": "(available|running)"'
+          echo "$$h" | grep -qE '"events": "(available|running)"' &&
+          echo "$$h" | grep -qE '"s3": "(available|running)"'
       interval: 5s
       timeout: 5s
       retries: 30

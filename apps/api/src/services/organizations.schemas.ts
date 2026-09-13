@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 import {
+  STORED_PICTURE_PATH_MAX_LENGTH,
+  STORED_PICTURE_URL_MAX_LENGTH,
+} from '@/lib/picture-url.lib';
+
+import {
   baseEntitySchema,
   deleteSchema,
   idSchema,
@@ -39,14 +44,20 @@ export const deleteOrganizationParamsSchema = deleteSchema.extend({
   id: idSchema,
 });
 
-export const setOrganizationPictureUrlParamsSchema = z.object({
-  organizationId: idSchema,
-  pictureUrl: z.string().min(1).max(500),
-});
+export const setOrganizationPictureParamsSchema = z
+  .object({
+    organizationId: idSchema,
+    pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
+    picturePath: z.string().max(STORED_PICTURE_PATH_MAX_LENGTH).nullable().optional(),
+  })
+  .refine(
+    (v) => v.pictureUrl !== undefined || v.picturePath !== undefined,
+    'At least one of pictureUrl or picturePath must be provided'
+  );
 
 export const organizationSchema = baseEntitySchema.extend({
   name: nameSchema,
   slug: slugSchema,
   requireMfaForSensitiveActions: z.boolean(),
-  pictureUrl: z.string().max(500).nullable().optional(),
+  pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
 });

@@ -2,7 +2,10 @@
 
 import { Tenant } from '@grantjs/schema';
 
-import { SettingImageUploadDialog } from '@/components/features/settings';
+import {
+  SettingImageUploadDialog,
+  type SettingImageUploadDialogProps,
+} from '@/components/features/settings';
 import { useOrganizationMutations } from '@/hooks/organizations';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
@@ -14,7 +17,7 @@ export function OrganizationPictureUploadDialog() {
   const setOrganizationToEdit = useOrganizationsStore((state) => state.setOrganizationToEdit);
   const setOrganizations = useOrganizationsStore((state) => state.setOrganizations);
   const setCurrentOrganization = useOrganizationsStore((state) => state.setCurrentOrganization);
-  const { uploadOrganizationPicture } = useOrganizationMutations();
+  const { uploadOrganizationPictureDirect } = useOrganizationMutations();
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -22,15 +25,15 @@ export function OrganizationPictureUploadDialog() {
     }
   };
 
-  const handleUpload = async (file: string, filename: string, contentType: string) => {
+  const handleUpload: SettingImageUploadDialogProps['onUpload'] = async (file) => {
     if (!organization) return;
-    const result = await uploadOrganizationPicture({
-      scope: { tenant: Tenant.Organization, id: organization.id },
-      organizationId: organization.id,
-      file,
-      filename,
-      contentType,
-    });
+    const result = await uploadOrganizationPictureDirect(
+      {
+        scope: { tenant: Tenant.Organization, id: organization.id },
+        organizationId: organization.id,
+      },
+      file
+    );
 
     if (!result?.url) return;
 

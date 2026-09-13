@@ -35,9 +35,7 @@ export class RolePermissionService implements IRolePermissionService {
   ) {}
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
-    const roles = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
-
-    if (roles.roles.length === 0) {
+    if (!(await this.roleRepository.existsById(roleId, transaction))) {
       throw new NotFoundError('Role');
     }
   }

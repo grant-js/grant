@@ -18,6 +18,7 @@
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
     "test:e2e:report": "vitest run --config vitest.config.e2e.ts --reporter=json --reporter=verbose --outputFile=tests/e2e/compliance-report.json",
     "measure:cdm-gzip": "tsx tests/tools/measure-cdm-gzip.ts",
+    "measure:cdm-import": "tsx tests/tools/measure-cdm-import.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

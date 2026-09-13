@@ -24,9 +24,9 @@ import type {
   UpdateRoleTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { IEntityExistence, SelectedFields } from './common';
 
-export interface IRoleRepository {
+export interface IRoleRepository extends IEntityExistence {
   getRoles(
     params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>,
     transaction?: unknown

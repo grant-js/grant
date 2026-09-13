@@ -10,6 +10,7 @@ export * from './scoped-id-provider.port';
 export * from './secret.port';
 export * from './services';
 export * from './storage.port';
+export * from './sync-runtime.port';
 export * from './telemetry.port';
 export * from './token.port';
 export * from './transaction.port';

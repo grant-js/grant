@@ -238,6 +238,29 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       : [desc(this.table[sort.field])];
   }
 
+  /**
+   * Whether a row with this id exists and is not soft-deleted.
+   *
+   * One statement. `query({ ids: [id], limit: 1 })` answers the same question in **two**
+   * — an unconditional `count(*)` for pagination metadata no existence check reads, plus
+   * a row fetch whose columns nobody looks at — and the services' `*Exists` validators
+   * were built on it. At CDM import scale that dominated: a 620-entity import issued
+   * 9,210 `count(*)` statements and a matching 9,210 row selects, 53% of all 34,556
+   * statements it ran, to answer questions whose whole answer is a boolean. The single
+   * project being imported into was verified 2,185 times.
+   *
+   * Measured in `2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002.
+   */
+  public async existsById(id: string, transaction?: Transaction): Promise<boolean> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ one: sql`1` })
+      .from(this.table)
+      .where(and(eq(this.table.id, id), isNull(this.table.deletedAt)))
+      .limit(1);
+    return rows.length > 0;
+  }
+
   private async getTotalCount(where: any, transaction?: Transaction): Promise<number> {
     try {
       const dbInstance = transaction ?? this.db;

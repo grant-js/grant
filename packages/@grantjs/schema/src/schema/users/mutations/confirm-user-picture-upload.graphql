@@ -1,0 +1,8 @@
+extend type Mutation {
+  """
+  Record a completed direct upload of another user's picture. Re-runs the scope
+  and permission checks, then reads the object back from storage before writing
+  the picture to the user or to their project membership, as scope dictates.
+  """
+  confirmUserPictureUpload(input: ConfirmUserPictureUploadInput!): UploadUserPictureResult!
+}

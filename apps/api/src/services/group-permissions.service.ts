@@ -35,9 +35,7 @@ export class GroupPermissionService implements IGroupPermissionService {
   ) {}
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
-    const groups = await this.groupRepository.getGroups({ ids: [groupId], limit: 1 }, transaction);
-
-    if (groups.groups.length === 0) {
+    if (!(await this.groupRepository.existsById(groupId, transaction))) {
       throw new NotFoundError('Group');
     }
   }

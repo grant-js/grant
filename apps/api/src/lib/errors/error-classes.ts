@@ -9,6 +9,7 @@ export {
   InvalidOrUsedVerificationTokenError,
   NoSessionSigningKeyError,
   NotFoundError,
+  PayloadTooLargeError,
   TokenExpiredError,
   TokenInvalidError,
   TokenValidationError,

@@ -116,6 +116,7 @@ export interface IProjectUserService {
       userId: string;
       displayName?: string | null;
       pictureUrl?: string | null;
+      picturePath?: string | null;
     },
     transaction?: unknown
   ): Promise<ProjectUser>;

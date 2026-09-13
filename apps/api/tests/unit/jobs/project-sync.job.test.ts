@@ -248,6 +248,95 @@ describe('ProjectSyncJob worker', () => {
     };
   });
 
+  /**
+   * Redelivery, which slice 13 had to establish before touching the queue's visibility
+   * timeout.
+   *
+   * SQS delivers at least once. A visibility window shorter than the consumer's runtime
+   * means a second consumer receives a message the first is still working on — and every
+   * path here mutates a tenant's permission model, so applying an import twice is a
+   * security outcome rather than a duplicate row.
+   *
+   * The guard is `transitionToRunning`, which refuses from any status but `PENDING`. These
+   * assert that the refusal actually prevents the second apply, because an unasserted
+   * guard is how a later refactor moves the transition after the import.
+   */
+  describe('a redelivered message', () => {
+    it('does not apply the import a second time', async () => {
+      mocks.loadForExecution.mockResolvedValue(buildExecData());
+      // What the real service does when the row is already RUNNING or terminal.
+      mocks.transitionToRunning.mockRejectedValue(
+        new ConflictError('Cannot transition job to RUNNING from status RUNNING')
+      );
+
+      const job = buildJobInstance(mocks);
+      const ctx = {
+        jobId: 'queue-job-redelivered',
+        scheduledAt: new Date(),
+        startedAt: new Date(),
+        scope: enqueueScope,
+        payload: { jobRecordId },
+      };
+
+      await expect(job.execute(ctx)).rejects.toThrow(ConflictError);
+
+      expect(mocks.importProjectCdm).not.toHaveBeenCalled();
+      expect(mocks.markCompleted).not.toHaveBeenCalled();
+    });
+
+    it("takes no rollback snapshot either, so the first attempt's snapshot survives", async () => {
+      // The snapshot is the only way back from a bad import. A second attempt overwriting
+      // it with the half-applied state of the first would destroy exactly the thing it
+      // exists for.
+      mocks.loadForExecution.mockResolvedValue(buildExecData());
+      mocks.transitionToRunning.mockRejectedValue(
+        new ConflictError('Cannot transition job to RUNNING from status COMPLETED')
+      );
+
+      const job = buildJobInstance(mocks);
+
+      await expect(
+        job.execute({
+          jobId: 'queue-job-redelivered-2',
+          scheduledAt: new Date(),
+          startedAt: new Date(),
+          scope: enqueueScope,
+          payload: { jobRecordId },
+        })
+      ).rejects.toThrow(ConflictError);
+
+      expect(mocks.saveSnapshot).not.toHaveBeenCalled();
+      expect(mocks.exportProjectCdm).not.toHaveBeenCalled();
+    });
+
+    it('claims RUNNING before doing any work, not after', async () => {
+      // The ordering *is* the guarantee. If the import ran first and the status moved
+      // afterwards, two concurrent consumers would both pass the guard and both apply.
+      mocks.loadForExecution.mockResolvedValue(buildExecData());
+      mocks.importProjectCdm.mockResolvedValue(buildSyncResult());
+
+      const order: string[] = [];
+      mocks.transitionToRunning.mockImplementation(async () => {
+        order.push('transitionToRunning');
+      });
+      mocks.importProjectCdm.mockImplementation(async () => {
+        order.push('importProjectCdm');
+        return buildSyncResult();
+      });
+
+      const job = buildJobInstance(mocks);
+      await job.execute({
+        jobId: 'queue-job-ordering',
+        scheduledAt: new Date(),
+        startedAt: new Date(),
+        scope: enqueueScope,
+        payload: { jobRecordId },
+      });
+
+      expect(order).toEqual(['transitionToRunning', 'importProjectCdm']);
+    });
+  });
+
   it('runs the full happy path: pending → running → completed and invalidates caches', async () => {
     mocks.loadForExecution.mockResolvedValue(buildExecData());
     const result = buildSyncResult();

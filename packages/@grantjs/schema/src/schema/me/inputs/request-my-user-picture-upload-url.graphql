@@ -1,0 +1,11 @@
+input RequestMyUserPictureUploadUrlInput {
+  filename: String!
+  contentType: String!
+
+  """
+  Exact byte length the client will send. Validated against the upload policy
+  before a URL is issued, and committed to by the URL itself — a body of any
+  other length is refused by the store.
+  """
+  contentLength: Int!
+}

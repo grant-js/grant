@@ -36,12 +36,7 @@ export class ResourceTagService implements IResourceTagService {
   ) {}
 
   private async resourceExists(resourceId: string, transaction?: Transaction): Promise<void> {
-    const resources = await this.resourceRepository.getResources(
-      { ids: [resourceId], limit: 1 },
-      transaction
-    );
-
-    if (resources.resources.length === 0) {
+    if (!(await this.resourceRepository.existsById(resourceId, transaction))) {
       throw new NotFoundError('Resource');
     }
   }

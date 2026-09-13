@@ -31,15 +31,18 @@ import { App, SecretValue, Stack } from 'aws-cdk-lib';
 import { Certificate, type ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { SecurityGroup, Vpc } from 'aws-cdk-lib/aws-ec2';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 
 import { loadTargetConfig } from '../lib/config/env-file';
 import { ConfigurationError } from '../lib/config/errors';
-import type { GrantEnv, GrantPlatformProps } from '../lib/config/props';
+import type { GrantEnv, GrantPlatformProps, ObservabilityProps } from '../lib/config/props';
 import {
   assertConcreteEnv,
   validateAppUrl,
   validateCertificateArn,
   validateSecretArn,
+  validateSesIdentityArn,
 } from '../lib/config/validate';
 import { EdgeCertificate } from '../lib/edge/certificate';
 import { GrantPlatform } from '../lib/grant-platform';
@@ -79,6 +82,33 @@ const certificateArn = optional('certificateArn');
  *   cdk deploy --all -c ephemeral=true ...
  */
 const ephemeral = optional('ephemeral') === 'true';
+
+/**
+ * ADR 0002's escape hatch: run `project-sync` on Fargate instead of the jobs function.
+ *
+ *   cdk deploy --all -c syncRuntime=container ...
+ *
+ * Off by default, because "existing deployments keep running the job in-process exactly
+ * as today" is the ADR's own wording. Worth enabling when imports approach Lambda's
+ * 15-minute ceiling — measured at 62.3 minutes for 28,880 entities, crossing the ceiling
+ * near 10,700 (`plans/2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002).
+ *
+ * Requires the container tier, so it is inert with `migration: { enabled: false }` or on a
+ * vpcless topology.
+ */
+const syncRuntime = optional('syncRuntime') === 'container';
+
+/**
+ * RDS IAM database authentication on the cluster this stack creates.
+ *
+ *   cdk deploy --all -c dbIamAuth=true ...
+ *
+ * Enables the cluster flag and grants the API `rds-db:connect`. **It does not make the
+ * application use it** — that is `DB_AUTH_MODE=iam` in the env file — and it cannot grant
+ * `rds_iam` to a Postgres user, which is a SQL statement no CloudFormation resource can
+ * issue. All three are required; see `docs/deployment/aws-serverless.md`.
+ */
+const dbIamAuth = optional('dbIamAuth') === 'true';
 
 /**
  * Configuration file for this target — the AWS analogue of the Helm chart's
@@ -301,6 +331,48 @@ function buildEnv(): GrantEnv {
 }
 
 /**
+ * The SES identity the platform is permitted to send as.
+ *
+ * `-c sesIdentityArn` wins; otherwise the domain-identity ARN is composed from
+ * `-c emailFrom`. Composing it *here* rather than in `lib/` is ADR 0005: an ARN
+ * derived from a mail address is a guess about how an adopter verified their identity,
+ * and the reference app is the layer allowed to make convenient guesses.
+ *
+ * The guess is the domain, because that is what a real deployment verifies —
+ * `no-reply@example.com` sends from a verified `example.com` far more often than from
+ * a mailbox identity of its own. An adopter who verified the address instead passes
+ * `-c sesIdentityArn=...:identity/no-reply@example.com` and this composition is
+ * skipped entirely.
+ *
+ * The region is the stack's, matching the `EMAIL_SES_REGION` derived in `buildEnv` —
+ * SES identities are verified per region, and an ARN naming another one produces a
+ * grant for an identity that does not exist there.
+ */
+function buildEmail(env: GrantEnv): Pick<GrantPlatformProps, 'email'> {
+  const explicit = optional('sesIdentityArn');
+  if (explicit) {
+    // Lexical, and for the same reason certificateArn is: it lands in a policy
+    // `Resource`, where a wrong one deploys cleanly and fails on the first send.
+    validateSesIdentityArn(explicit);
+    return { email: { sesIdentityArn: explicit } };
+  }
+
+  const from = env.EMAIL_FROM;
+  if (env.EMAIL_PROVIDER !== 'ses' || !from) return {};
+
+  const domain = from.split('@')[1];
+  if (!domain) {
+    throw new Error(
+      `EMAIL_FROM is not an email address: ${from}\n` +
+        'The SES identity ARN is composed from its domain. Pass a full address, or ' +
+        'name the identity outright with -c sesIdentityArn=...'
+    );
+  }
+
+  return { email: { sesIdentityArn: `arn:aws:ses:${region}:${account}:identity/${domain}` } };
+}
+
+/**
  * The database, and the network that follows from it.
  *
  * `database` is spread conditionally rather than passed unconditionally, and that is
@@ -311,7 +383,9 @@ function buildEnv(): GrantEnv {
 function buildDatabase(
   stack: Stack
 ): Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'network'> {
-  if (!dbUrlSecretArn) return { database: { destroyOnRemoval: ephemeral } };
+  if (!dbUrlSecretArn) {
+    return { database: { destroyOnRemoval: ephemeral, iamAuthentication: dbIamAuth } };
+  }
 
   // Rendered as a {{resolve:secretsmanager:...}} dynamic reference inside the platform
   // secret: present at deploy time, absent from the template. Never `unsafePlainText`,
@@ -345,7 +419,35 @@ function buildDatabase(
   };
 }
 
+/**
+ * Where the origin-verify alarm sends a breach.
+ *
+ * The topic and its subscription are composed here, never in `lib/` (ADR 0005): a
+ * construct library that created a mailbox would be one an adopter has to fork to
+ * change the destination. Omit `-c alarmEmail` and the alarm is still created and still
+ * evaluates — it notifies nobody, which is a control with a history rather than no
+ * control.
+ *
+ * An email subscription needs confirming: AWS sends a confirmation link on first
+ * deploy, and until it is clicked the subscription is `PendingConfirmation` and
+ * delivers nothing. That is a manual step no template can take, and worth knowing
+ * before treating the alarm as wired.
+ */
+function buildObservability(stack: Stack): { observability?: ObservabilityProps } {
+  const alarmEmail = optional('alarmEmail');
+  if (!alarmEmail) return {};
+
+  const topic = new Topic(stack, 'Alarms', {
+    displayName: 'Grant platform alarms',
+  });
+  topic.addSubscription(new EmailSubscription(alarmEmail));
+
+  return { observability: { alarmTopic: topic } };
+}
+
 function buildPlatform(stack: Stack, cert: ICertificate): void {
+  const env = buildEnv();
+
   new GrantPlatform(stack, 'Grant', {
     appUrl,
     ...buildDatabase(stack),
@@ -354,11 +456,14 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     // property `ephemeral` exists to provide. The cache table already defaults to
     // Delete, so only this one needs saying.
     storage: { destroyOnRemoval: ephemeral },
+    sync: { enabled: syncRuntime },
     // The web app is what makes the deployment a platform rather than docs plus an
     // API. Built from source; `apps/web/.next/static` must exist, so run
     // `pnpm --filter grant-web build` first — the same contract the docs site has.
     web: {},
-    env: buildEnv(),
+    env,
+    ...buildEmail(env),
+    ...buildObservability(stack),
     dns: {
       // fromHostedZoneAttributes, not fromLookup: a lookup resolves against live
       // account state at synth time and would make the committed template a function

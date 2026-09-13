@@ -23,7 +23,8 @@ describe('ProjectUserService.getUserProjectMemberships', () => {
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       audit as never,
-      { publish: vi.fn() } as never
+      { publish: vi.fn() } as never,
+      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never
     );
   }
 
@@ -38,6 +39,7 @@ describe('ProjectUserService.getUserProjectMemberships', () => {
         projectName: 'Alpha',
         displayName: 'Ali',
         pictureUrl: null,
+        picturePath: 'users/u1/projects/p1/picture.png',
         metadata: { locale: 'en' },
         role: null,
         joinedAt: new Date('2024-01-01T00:00:00.000Z'),
@@ -55,6 +57,7 @@ describe('ProjectUserService.getUserProjectMemberships', () => {
         projectId: 'p1',
         projectName: 'Alpha',
         displayName: 'Ali',
+        pictureUrl: '/storage/users/u1/projects/p1/picture.png',
         role: null,
         organizationName: 'Acme',
         metadata: { locale: 'en' },

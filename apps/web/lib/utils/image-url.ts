@@ -1,8 +1,11 @@
 /**
- * Adds a cache-busting query parameter to an image URL based on a timestamp
- * @param url - The image URL
- * @param timestamp - Optional timestamp to use for cache-busting (defaults to current time)
- * @returns The URL with a cache-busting query parameter
+ * Adds a cache-busting query parameter to a stable image URL.
+ *
+ * Presigned object-store URLs are left alone: SigV4 signs the exact query
+ * string, so `&v=` turns a working GET into `403 SignatureDoesNotMatch`. The
+ * browser then receives `application/xml` for an `<img>` and Chrome reports
+ * OpaqueResponseBlocking. Local `/storage/...` paths stay cache-busted —
+ * those URLs do not change when the bytes do.
  */
 export function addImageCacheBuster(
   url: string | null | undefined,
@@ -10,6 +13,10 @@ export function addImageCacheBuster(
 ): string | undefined {
   if (!url) {
     return undefined;
+  }
+
+  if (/[?&]x-amz-signature=/i.test(url)) {
+    return url;
   }
 
   const cacheBuster = timestamp

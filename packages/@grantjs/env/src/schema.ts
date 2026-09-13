@@ -47,6 +47,26 @@ export const envSchema = z.object({
   POSTGRES_PASSWORD: optionalString('grant_password'),
   POSTGRES_DB: optionalString('grant_db'),
 
+  /**
+   * How the application authenticates to PostgreSQL.
+   *
+   * `password` is every existing deployment and the default: the credential lives in
+   * `DB_URL` (or is overlaid from a secret store per ADR 0004). `iam` signs a short-lived
+   * RDS IAM token per connection instead, so there is no database password anywhere —
+   * see `docs/deployment/aws-serverless.md` for the three conditions that must hold and
+   * which endpoint/proxy combinations work.
+   */
+  DB_AUTH_MODE: z.enum(['password', 'iam']).optional().default('password'),
+  /**
+   * Endpoint the IAM token is signed for, when `DB_AUTH_MODE=iam`. **Must be the endpoint
+   * actually connected to** — a token signed for the cluster is refused by the proxy and
+   * vice versa. Derived from `DB_URL` when unset.
+   */
+  DB_IAM_HOSTNAME: optionalString(''),
+  DB_IAM_PORT: optionalNumber(5432),
+  /** Database user, which must have been granted `rds_iam`. Derived from `DB_URL` when unset. */
+  DB_IAM_USERNAME: optionalString(''),
+  DB_IAM_REGION: optionalString(''),
   DB_POOL_MAX: optionalNumber(20),
   DB_POOL_MIN: optionalNumber(2),
   DB_CONNECTION_TIMEOUT: optionalNumber(30),
@@ -332,12 +352,41 @@ export const envSchema = z.object({
   STORAGE_S3_ENDPOINT: optionalString(''),
   STORAGE_S3_PUBLIC_URL: optionalString(''),
   STORAGE_UPLOAD_MAX_FILE_SIZE: optionalNumber(5 * 1024 * 1024),
+  STORAGE_UPLOAD_URL_EXPIRY_SECONDS: optionalNumber(300),
 
   // Privacy / Jobs / Demo
   PRIVACY_ACCOUNT_DELETION_RETENTION_DAYS: optionalNumber(30),
   PRIVACY_BACKUP_RETENTION_DAYS: optionalNumber(90),
   JOBS_ENABLED: optionalBoolean(true),
   JOBS_PROVIDER: z.enum(['node-cron', 'bullmq', 'aws']).optional().default('node-cron'),
+  /**
+   * Where `project-sync` executes. `inprocess` is every existing deployment and the
+   * default; `container` dispatches to a task with no 15-minute ceiling (ADR 0002).
+   *
+   * A 28,880-entity import measures 62.3 minutes, so on Lambda the in-process runtime
+   * is bounded well below the scale the CDM shape permits — the crossing is near
+   * 10,700 entities.
+   */
+  JOBS_SYNC_RUNTIME: z.enum(['inprocess', 'container']).optional().default('inprocess'),
+  /**
+   * Which `project_sync_jobs` row the container entrypoint applies, and under which
+   * tenant scope. Set per execution as ECS container overrides, never in a task
+   * definition — a task definition carrying a job id would make every task apply the
+   * same row, which is a cross-tenant write.
+   *
+   * Declared here rather than read from `process.env` in the entrypoint because every
+   * environment input goes through this schema; `run-sync-job.ts` still validates the
+   * scope's shape, since it is the RLS context the whole import runs under.
+   */
+  GRANT_SYNC_JOB_ID: optionalString(''),
+  GRANT_SYNC_JOB_SCOPE: optionalString(''),
+  /** ECS cluster, task definition and networking for `JOBS_SYNC_RUNTIME=container`. */
+  JOBS_SYNC_TASK_CLUSTER_ARN: optionalString(''),
+  JOBS_SYNC_TASK_DEFINITION_ARN: optionalString(''),
+  JOBS_SYNC_TASK_CONTAINER_NAME: optionalString('Sync'),
+  /** Comma-separated; the task runs in private-with-egress subnets, never public. */
+  JOBS_SYNC_TASK_SUBNET_IDS: optionalString(''),
+  JOBS_SYNC_TASK_SECURITY_GROUP_IDS: optionalString(''),
   JOBS_DATA_RETENTION_SCHEDULE: optionalString('0 2 * * *'),
   JOBS_DATA_RETENTION_ENABLED: optionalBoolean(true),
   JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE: optionalString('0 0 1 * *'),

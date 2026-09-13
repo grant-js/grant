@@ -11,6 +11,7 @@ import { RequestContext } from '@/types';
 
 import {
   changeMyPasswordRequestSchema,
+  confirmMyUserPictureUploadRequestSchema,
   createMyUserAuthenticationMethodRequestSchema,
   deleteMyAccountsBodySchema,
   getMyUserSessionsQuerySchema,
@@ -18,6 +19,7 @@ import {
   listMyNotificationsQuerySchema,
   myNotificationParamsSchema,
   myProjectMembershipParamsSchema,
+  requestMyUserPictureUploadUrlRequestSchema,
   revokeMyUserSessionParamsSchema,
   setMyNotificationPreferenceRequestSchema,
   updateMyProjectMembershipRequestSchema,
@@ -65,6 +67,40 @@ export function createMeRouter(context: RequestContext): Router {
         file: req.body.file,
         filename: req.body.filename,
         contentType: req.body.contentType,
+      });
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.post(
+    '/picture/upload-url',
+    validate({ body: requestMyUserPictureUploadUrlRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{ body: typeof requestMyUserPictureUploadUrlRequestSchema }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.requestMyUserPictureUploadUrl({
+        filename: req.body.filename,
+        contentType: req.body.contentType,
+        contentLength: req.body.contentLength,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
+    '/picture/confirm',
+    validate({ body: confirmMyUserPictureUploadRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authenticateRestRoute,
+    async (
+      req: TypedRequest<{ body: typeof confirmMyUserPictureUploadRequestSchema }>,
+      res: Response
+    ) => {
+      const result = await context.handlers.me.confirmMyUserPictureUpload({
+        filename: req.body.filename,
       });
       sendSuccessResponse(res, result, 201);
     }

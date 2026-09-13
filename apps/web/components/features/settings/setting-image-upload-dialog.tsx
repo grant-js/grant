@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Upload } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
@@ -15,12 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  getContentTypeFromExtension,
-  getCroppedImg,
-  getFileExtension,
-  resizeImage,
-} from '@/lib/utils/image-processing';
+import { useDirectUploadMessage } from '@/hooks/common';
+import { DirectUploadError } from '@/lib/direct-upload';
+import { chooseOutputFormat, getCroppedImg, resizeImage } from '@/lib/utils/image-processing';
 
 import { SettingImageUploadDialogProps } from './setting-types';
 
@@ -39,13 +36,23 @@ export function SettingImageUploadDialog({
 }: SettingImageUploadDialogProps) {
   const t = useTranslations(translationNamespace);
   const tCommon = useTranslations('common');
+  const uploadFailureMessage = useDirectUploadMessage();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [originalFilename, setOriginalFilename] = useState<string>('profile.jpg');
+  // The dropped file's type, not its name. The output format is decided from it, and
+  // the filename sent to the API is derived from that decision — the user's own
+  // filename never reaches the storage path, which the server derives itself.
+  const [sourceContentType, setSourceContentType] = useState<string>('image/jpeg');
+
+  // Closing the dialog mid-transfer has to stop the transfer. Without this, a user who
+  // pressed Escape would still overwrite their picture some seconds later.
+  const transferRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => transferRef.current?.abort(), []);
 
   const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -67,7 +74,7 @@ export function SettingImageUploadDialog({
         return;
       }
 
-      setOriginalFilename(file.name);
+      setSourceContentType(file.type);
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setImageSrc(reader.result as string);
@@ -90,12 +97,13 @@ export function SettingImageUploadDialog({
   });
 
   const handleCancel = () => {
+    transferRef.current?.abort();
     setImageSrc(null);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
     setError(null);
-    setOriginalFilename('profile.jpg');
+    setSourceContentType('image/jpeg');
     onOpenChange(false);
   };
 
@@ -105,18 +113,33 @@ export function SettingImageUploadDialog({
     setIsUploading(true);
     setError(null);
 
+    const transfer = new AbortController();
+    transferRef.current = transfer;
+
     try {
-      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const resizedImage = await resizeImage(croppedImage, 600, 600, 0.85);
+      // One format decision, used for the bytes the canvas encodes, the content type the
+      // URL is minted for, and the extension the server derives the path from. Deciding
+      // any of the three separately is how they come to disagree.
+      const format = chooseOutputFormat(sourceContentType);
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels, format.contentType);
+      const resizedImage = await resizeImage(croppedImage, 600, 600, 0.85, format.contentType);
 
-      const extension = getFileExtension(originalFilename);
-      const contentType = getContentTypeFromExtension(extension);
-
-      await onUpload(resizedImage, `profile.${extension}`, contentType);
+      await onUpload(
+        {
+          body: resizedImage,
+          filename: `profile.${format.extension}`,
+          contentType: format.contentType,
+        },
+        { signal: transfer.signal }
+      );
 
       handleCancel();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.uploadFailed'));
+      // A cancelled transfer is the dialog closing, not a problem to report back into a
+      // dialog that is on its way out.
+      if (!(err instanceof DirectUploadError && err.failure === 'aborted')) {
+        setError(uploadFailureMessage(err));
+      }
     } finally {
       setIsUploading(false);
     }
@@ -199,7 +222,7 @@ export function SettingImageUploadDialog({
                   setZoom(1);
                   setCroppedAreaPixels(null);
                   setError(null);
-                  setOriginalFilename('profile.jpg');
+                  setSourceContentType('image/jpeg');
                 }}
                 disabled={isUploading}
               >

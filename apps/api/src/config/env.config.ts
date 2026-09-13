@@ -74,6 +74,26 @@ const DB_CONFIG = {
   /** Minimum number of connections in the pool */
   poolMin: env.DB_POOL_MIN,
 
+  /**
+   * How the application authenticates to PostgreSQL (`password` or `iam`).
+   *
+   * Under `iam` the connection carries a signed RDS token instead of a password, refreshed
+   * per connection. The endpoint, port, user and region default to whatever `DB_URL`
+   * already says, because a token signed for a different endpoint than the one connected
+   * to is rejected — so deriving them is both convenient and the safer default.
+   */
+  auth: {
+    mode: env.DB_AUTH_MODE,
+    iam: {
+      hostname: env.DB_IAM_HOSTNAME || urlPart(resolveDatabaseUrl(env), 'hostname'),
+      port: env.DB_IAM_PORT,
+      username: env.DB_IAM_USERNAME || urlPart(resolveDatabaseUrl(env), 'username'),
+      // Falls back to the region the secret resolver already uses, so a target that
+      // configured one does not have to say it twice.
+      region: env.DB_IAM_REGION || env.SECRETS_AWS_REGION,
+    },
+  },
+
   /** Connection timeout in seconds */
   connectionTimeout: env.DB_CONNECTION_TIMEOUT,
 
@@ -711,6 +731,14 @@ const STORAGE_CONFIG = {
     allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const,
     /** Allowed file extensions */
     allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] as const,
+    /**
+     * Lifetime of a direct-upload URL, in seconds (default: 5 minutes).
+     *
+     * Short by design. A minted URL is a bearer capability that neither store
+     * revokes, so its lifetime is the only mitigation for one that leaks — and
+     * it only has to outlive a single PUT, not a user's session. See ADR 0007.
+     */
+    urlExpirySeconds: env.STORAGE_UPLOAD_URL_EXPIRY_SECONDS,
   },
 } as const;
 
@@ -746,6 +774,34 @@ const JOB_CONFIG = {
           password: REDIS_CONFIG.password,
         }
       : undefined,
+
+  /**
+   * Where `project-sync` executes, and how to reach the runtime that is not this
+   * process.
+   *
+   * `inprocess` is the historical behaviour and the default: the job runs wherever the
+   * consumer runs, bounded by that runtime's timeout. `container` makes the consumer a
+   * dispatcher — it starts a task and returns — which is what takes a 62-minute import
+   * off a 15-minute ceiling without touching the single-transaction guarantee (ADR 0002).
+   */
+  sync: {
+    runtime: env.JOBS_SYNC_RUNTIME,
+    /**
+     * Set per execution by the container runtime, absent everywhere else. Read only by
+     * `run-sync-job.ts`, which validates the scope before using it.
+     */
+    execution: {
+      jobId: env.GRANT_SYNC_JOB_ID,
+      scope: env.GRANT_SYNC_JOB_SCOPE,
+    },
+    task: {
+      clusterArn: env.JOBS_SYNC_TASK_CLUSTER_ARN,
+      definitionArn: env.JOBS_SYNC_TASK_DEFINITION_ARN,
+      containerName: env.JOBS_SYNC_TASK_CONTAINER_NAME,
+      subnetIds: parseCsvList(env.JOBS_SYNC_TASK_SUBNET_IDS),
+      securityGroupIds: parseCsvList(env.JOBS_SYNC_TASK_SECURITY_GROUP_IDS),
+    },
+  },
 
   /**
    * AWS backing services (`JOBS_PROVIDER=aws`). SQS carries one-off jobs;
@@ -853,6 +909,22 @@ const JOB_CONFIG = {
 // ============================================================================
 // Webhooks Configuration
 // ============================================================================
+
+/**
+ * One component of a connection string, or `''` when it has none or is unparseable.
+ *
+ * Used to default the IAM token's endpoint and user from `DB_URL`. Deliberately total
+ * rather than throwing: `DB_URL` is legitimately empty on a target that resolves it from a
+ * secret store at boot (ADR 0004), and config construction must not depend on it.
+ */
+function urlPart(rawUrl: string, part: 'hostname' | 'username'): string {
+  if (!rawUrl) return '';
+  try {
+    return new URL(rawUrl)[part] || '';
+  } catch {
+    return '';
+  }
+}
 
 function parseCsvList(raw: string): string[] {
   return raw

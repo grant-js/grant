@@ -7,6 +7,7 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }).notNull(),
     pictureUrl: varchar('picture_url', { length: 500 }),
+    picturePath: varchar('picture_path', { length: 1024 }),
     metadata: jsonb('metadata').default({}).notNull(),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

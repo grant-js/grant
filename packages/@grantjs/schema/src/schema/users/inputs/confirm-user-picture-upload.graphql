@@ -1,0 +1,5 @@
+input ConfirmUserPictureUploadInput {
+  scope: Scope!
+  userId: ID!
+  filename: String!
+}
