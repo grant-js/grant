@@ -49,7 +49,7 @@ Last updated **2026-09-13**.
 | 12a, 12b, 13 (E)    | **merged to trunk** 2026-09-12 | [#433]                                                                         |
 | 15 (part E)         | **merged to trunk** 2026-09-12 | [#434]                                                                         |
 | 14 (part E)         | **merged to trunk** 2026-09-13 | [#435]                                                                         |
-| 16 (part F)         | **open, draft**                | _pending_                                                                      |
+| 16 (part F)         | **open, draft**                | [#439]                                                                         |
 | final → `main`      | not opened                     | —                                                                              |
 
 **Out of band.** [#422] is not a slice. Slice 4's deployed import failed on a defect in
@@ -83,6 +83,7 @@ should take `main` before slice 10 starts rather than after it discovers a drift
 [#433]: https://github.com/grant-js/grant/pull/433
 [#434]: https://github.com/grant-js/grant/pull/434
 [#435]: https://github.com/grant-js/grant/pull/435
+[#439]: https://github.com/grant-js/grant/pull/439
 
 ## Scope, and the objection to it
 
