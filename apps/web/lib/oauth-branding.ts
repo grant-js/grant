@@ -39,7 +39,7 @@ function relativeLuminance(rgb: Rgb): number {
   );
 }
 
-export function contrastingForeground(hex: string): '#000000' | '#FFFFFF' {
+function contrastingForeground(hex: string): '#000000' | '#FFFFFF' {
   const rgb = hexToRgb(hex);
   if (!rgb) return '#FFFFFF';
   return relativeLuminance(rgb) > 0.4 ? '#000000' : '#FFFFFF';
