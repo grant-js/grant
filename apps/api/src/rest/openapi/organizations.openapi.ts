@@ -2,6 +2,7 @@ import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
 import {
   authenticationErrorResponseSchema,
+  confirmOrganizationPictureUploadRequestSchema,
   createOrganizationRequestSchema,
   createOrganizationResponseSchema,
   deleteOrganizationQuerySchema,
@@ -13,7 +14,6 @@ import {
   organizationParamsSchema,
   organizationSchema,
   organizationWithRelationsSchema,
-  confirmOrganizationPictureUploadRequestSchema,
   requestOrganizationPictureUploadUrlRequestSchema,
   requestOrganizationPictureUploadUrlResponseSchema,
   updateOrganizationRequestSchema,

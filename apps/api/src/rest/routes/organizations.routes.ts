@@ -6,13 +6,13 @@ import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization
 import { AuthenticationError } from '@/lib/errors';
 import { validate } from '@/middleware/validation.middleware';
 import {
+  confirmOrganizationPictureUploadRequestSchema,
   createOrganizationRequestSchema,
   deleteOrganizationQuerySchema,
   getOrganizationsQuerySchema,
   organizationParamsSchema,
-  confirmOrganizationPictureUploadRequestSchema,
-  updateOrganizationRequestSchema,
   requestOrganizationPictureUploadUrlRequestSchema,
+  updateOrganizationRequestSchema,
   uploadOrganizationPictureRequestSchema,
 } from '@/rest/schemas/organizations.schemas';
 import { TypedRequest } from '@/rest/types';

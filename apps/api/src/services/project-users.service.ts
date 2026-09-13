@@ -24,8 +24,8 @@ import {
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
 import { ConflictError, NotFoundError } from '@/lib/errors';
-import { hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
 import { buildDelta } from '@/lib/events';
+import { hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
 import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
