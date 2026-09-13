@@ -79,25 +79,24 @@ export function uploadMiddleware(): express.RequestHandler {
       }
 
       const storagePath = decodeURIComponent(req.path.replace(/^\//, ''));
-      const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+      const body = Buffer.isBuffer(req.body) ? Buffer.from(req.body) : Buffer.alloc(0);
+      const contentLength = Buffer.byteLength(body);
+      const contentTypeHeader = req.headers['content-type'];
+      const contentType = typeof contentTypeHeader === 'string' ? contentTypeHeader : undefined;
+
+      const exp = queryParamString(req.query.exp);
+      const len = queryParamString(req.query.len);
+      const ct = queryParamString(req.query.ct);
+      const sig = queryParamString(req.query.sig);
 
       void adapter
-        .verifyUploadUrl(
-          storagePath,
-          {
-            exp: queryParamString(req.query.exp),
-            len: queryParamString(req.query.len),
-            ct: queryParamString(req.query.ct),
-            sig: queryParamString(req.query.sig),
-          },
-          { contentType: req.headers['content-type'], contentLength: body.length }
-        )
-        .then(async ({ contentType }) => {
-          await adapter.upload(body, storagePath, { contentType });
+        .verifyUploadUrl(storagePath, { exp, len, ct, sig }, { contentType, contentLength })
+        .then(async ({ contentType: storedContentType }) => {
+          await adapter.upload(body, storagePath, { contentType: storedContentType });
           getRequestLogger(req).info({
             msg: 'Direct upload stored',
             path: storagePath,
-            size: body.length,
+            size: contentLength,
           });
           res.status(204).end();
         })

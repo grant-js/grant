@@ -85,10 +85,22 @@ export class LocalStorageAdapter implements IFileStorageService {
   }
 
   async upload(file: Buffer, filePath: string, options?: UploadOptions): Promise<UploadResult> {
-    const fullPath = this.resolveUnderBase(filePath);
-    const dirPath = path.dirname(fullPath);
+    assertUploadPath(filePath);
+    const root = path.resolve(this.config.basePath);
+    const fullPath = path.resolve(root, filePath);
+    if (!fullPath.startsWith(root)) {
+      throw new ValidationError(`Storage path escapes the storage root: ${filePath}`);
+    }
+    if (fullPath !== root && !fullPath.startsWith(root + path.sep)) {
+      throw new ValidationError(`Storage path escapes the storage root: ${filePath}`);
+    }
 
-    await this.ensureDirectoryExists(dirPath);
+    const dirPath = path.dirname(fullPath);
+    if (!dirPath.startsWith(root)) {
+      throw new ValidationError(`Storage path escapes the storage root: ${filePath}`);
+    }
+
+    await fs.mkdir(dirPath, { recursive: true });
 
     try {
       await fs.writeFile(fullPath, file);
