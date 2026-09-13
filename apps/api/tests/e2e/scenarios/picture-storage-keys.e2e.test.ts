@@ -193,7 +193,7 @@ describe('picture storage keys (F-3)', () => {
       .set('Authorization', owner.authHeader);
     expect(listedProjects.status).toBe(200);
     const listedProject = (
-      listedProjects.body.data.items as Array<{ id: string; pictureUrl: string | null }>
+      listedProjects.body.data.projects as Array<{ id: string; pictureUrl: string | null }>
     ).find((item) => item.id === project.id);
     expect(listedProject?.pictureUrl).toBe(`/storage/${uploadProject.body.data.path}`);
 
