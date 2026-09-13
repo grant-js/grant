@@ -2,6 +2,11 @@ import { UserSortableField } from '@grantjs/schema';
 import { z } from 'zod';
 
 import {
+  STORED_PICTURE_PATH_MAX_LENGTH,
+  STORED_PICTURE_URL_MAX_LENGTH,
+} from '@/lib/picture-url.lib';
+
+import {
   baseEntitySchema,
   deleteSchema,
   idSchema,
@@ -22,13 +27,15 @@ const userSortInputSchema = z.object({
 
 export const createUserInputSchema = z.object({
   name: nonEmptyNameSchema,
-  pictureUrl: z.string().max(500).nullable().optional(),
+  pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
+  picturePath: z.string().max(STORED_PICTURE_PATH_MAX_LENGTH).nullable().optional(),
   metadata: metadataSchema.nullable().optional(),
 });
 
 const updateUserInputSchema = z.object({
   name: nonEmptyNameSchema.nullable().optional(),
-  pictureUrl: z.string().max(500).nullable().optional(),
+  pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
+  picturePath: z.string().max(STORED_PICTURE_PATH_MAX_LENGTH).nullable().optional(),
   metadata: metadataSchema.nullable().optional(),
 });
 

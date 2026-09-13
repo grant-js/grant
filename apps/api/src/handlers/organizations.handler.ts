@@ -187,7 +187,11 @@ export class OrganizationHandler extends CacheHandler {
         public: true,
       });
 
-      await this.organizations.setOrganizationPictureUrl(organizationId, result.url, tx);
+      await this.organizations.setOrganizationPicture(
+        organizationId,
+        { picturePath: result.path },
+        tx
+      );
 
       return {
         url: result.url,

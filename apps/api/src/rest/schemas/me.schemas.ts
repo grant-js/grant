@@ -1,5 +1,6 @@
 import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
+import { STORED_PICTURE_URL_MAX_LENGTH } from '@/lib/picture-url.lib';
 import { z } from '@/lib/zod-openapi.lib';
 import { createComplementaryAccountResponseSchema } from '@/rest/schemas/accounts.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
@@ -410,7 +411,7 @@ export const myProjectMembershipParamsSchema = z.object({
 export const updateMyProjectMembershipRequestSchema = z
   .object({
     displayName: z.string().max(255).nullable().optional(),
-    pictureUrl: z.string().max(2048).nullable().optional(),
+    pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
   })
   .refine((v) => v.displayName !== undefined || v.pictureUrl !== undefined, {
     message: 'At least one of displayName or pictureUrl must be provided',

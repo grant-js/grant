@@ -956,12 +956,12 @@ export class UserHandler extends CacheHandler {
       if (isParentProjectScopeForPivotWrites(scope.tenant)) {
         const projectId = this.extractProjectIdFromScope(scope);
         await this.projectUsers.updateProjectUserProfile(
-          { projectId, userId, pictureUrl: url },
+          { projectId, userId, picturePath: storagePath },
           tx
         );
         await this.invalidateAuthorizationResultsForUser(userId);
       } else {
-        await this.users.updateUser(userId, { pictureUrl: url }, tx);
+        await this.users.updateUser(userId, { picturePath: storagePath }, tx);
       }
 
       return { url, path: storagePath };
@@ -992,12 +992,12 @@ export class UserHandler extends CacheHandler {
       if (isParentProjectScopeForPivotWrites(scope.tenant)) {
         const projectId = this.extractProjectIdFromScope(scope);
         await this.projectUsers.updateProjectUserProfile(
-          { projectId, userId, pictureUrl: result.url },
+          { projectId, userId, picturePath: result.path },
           tx
         );
         await this.invalidateAuthorizationResultsForUser(userId);
       } else {
-        await this.users.updateUser(userId, { pictureUrl: result.url }, tx);
+        await this.users.updateUser(userId, { picturePath: result.path }, tx);
       }
 
       return {

@@ -1,6 +1,7 @@
 import {
   GrantAuth,
   type IAuditLogger,
+  type IFileStorageService,
   type IUserRepository,
   type IUserService,
 } from '@grantjs/core';
@@ -15,6 +16,7 @@ import {
 } from '@grantjs/schema';
 
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
+import { hydratePictureUrl, hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -38,7 +40,8 @@ export class UserService implements IUserService {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly user: GrantAuth | null,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly fileStorage: IFileStorageService
   ) {}
 
   private async getUser(userId: string): Promise<User> {
@@ -68,6 +71,19 @@ export class UserService implements IUserService {
       result,
       context
     );
+
+    await hydratePictureUrls(this.fileStorage, result.users);
+    for (const listed of result.users) {
+      const accounts = listed.accounts;
+      if (!Array.isArray(accounts)) {
+        continue;
+      }
+      for (const account of accounts) {
+        if (account.owner) {
+          await hydratePictureUrl(this.fileStorage, account.owner);
+        }
+      }
+    }
 
     return result;
   }
@@ -99,11 +115,15 @@ export class UserService implements IUserService {
 
   public async updateUser(
     id: string,
-    input: Omit<UpdateUserInput, 'scope'>,
+    input: Omit<UpdateUserInput, 'scope'> & { picturePath?: string | null },
     transaction?: Transaction
   ): Promise<User> {
     const context = 'UserService.updateUser';
-    const validatedParams = validateInput(updateUserArgsSchema, { id, input }, context);
+    const validatedParams = validateInput(
+      updateUserArgsSchema,
+      { id, input: picturePathWhenSettingUrl(input) },
+      context
+    );
 
     const oldUser = await this.getUser(validatedParams.id);
     const updatedUser = await this.userRepository.updateUser(
@@ -134,7 +154,9 @@ export class UserService implements IUserService {
 
     await this.audit.logUpdate(updatedUser.id, oldValues, newValues, metadata, transaction);
 
-    return validateOutput(createDynamicSingleSchema(userSchema), updatedUser, context);
+    validateOutput(createDynamicSingleSchema(userSchema), updatedUser, context);
+    await hydratePictureUrl(this.fileStorage, updatedUser);
+    return updatedUser;
   }
 
   public async deleteUser(

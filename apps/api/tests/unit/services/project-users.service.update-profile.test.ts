@@ -30,7 +30,8 @@ describe('ProjectUserService.updateProjectUserProfile', () => {
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       audit as never,
-      { publish: vi.fn() } as never
+      { publish: vi.fn() } as never,
+      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never
     );
   }
 
@@ -77,6 +78,7 @@ describe('ProjectUserService.updateProjectUserProfile', () => {
         userId: 'u1',
         displayName: 'Ali',
         pictureUrl: 'https://cdn.example/p.png',
+        picturePath: null,
       }),
       undefined
     );

@@ -1,5 +1,6 @@
 import { OrganizationSortableField, SortOrder } from '@grantjs/schema';
 
+import { DERIVED_PICTURE_URL_MAX_LENGTH } from '@/lib/picture-url.lib';
 import { z } from '@/lib/zod-openapi.lib';
 import {
   createSuccessResponseSchema,
@@ -12,7 +13,7 @@ export const organizationSchema = z.object({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
-  pictureUrl: z.string().max(500).nullable().optional().openapi({
+  pictureUrl: z.string().max(DERIVED_PICTURE_URL_MAX_LENGTH).nullable().optional().openapi({
     description: 'Public URL of the organization logo',
     example: '/storage/organizations/123e4567-e89b-12d3-a456-426614174000/picture.jpg',
   }),

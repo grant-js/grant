@@ -232,7 +232,7 @@ export class MeHandler extends CacheHandler {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const url = await this.fileStorage.getUrl(storagePath);
 
-      await this.users.updateUser(userId, { pictureUrl: url }, tx);
+      await this.users.updateUser(userId, { picturePath: storagePath }, tx);
 
       return { url, path: storagePath };
     });
@@ -258,7 +258,7 @@ export class MeHandler extends CacheHandler {
         public: true,
       });
 
-      await this.users.updateUser(userId, { pictureUrl: result.url }, tx);
+      await this.users.updateUser(userId, { picturePath: result.path }, tx);
 
       return {
         url: result.url,
@@ -716,7 +716,10 @@ export class MeHandler extends CacheHandler {
 
       const url = await this.fileStorage.getUrl(storagePath);
 
-      await this.projectUsers.updateProjectUserProfile({ projectId, userId, pictureUrl: url }, tx);
+      await this.projectUsers.updateProjectUserProfile(
+        { projectId, userId, picturePath: storagePath },
+        tx
+      );
 
       return { url, path: storagePath };
     });
@@ -745,7 +748,7 @@ export class MeHandler extends CacheHandler {
       });
 
       await this.projectUsers.updateProjectUserProfile(
-        { projectId, userId, pictureUrl: result.url },
+        { projectId, userId, picturePath: result.path },
         tx
       );
 

@@ -78,7 +78,8 @@ function buildService() {
       organizationProjectRepository,
       accountProjectRepository,
       audit,
-      events
+      events,
+      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never
     ),
     events,
   };

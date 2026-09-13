@@ -81,9 +81,9 @@ export interface IOrganizationRepository extends IEntityExistence {
     transaction?: unknown
   ): Promise<Organization>;
 
-  setOrganizationPictureUrl(
+  setOrganizationPicture(
     organizationId: string,
-    pictureUrl: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
     transaction?: unknown
   ): Promise<Organization>;
 }

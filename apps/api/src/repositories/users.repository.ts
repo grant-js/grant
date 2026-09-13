@@ -97,7 +97,7 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
 
   public async updateUser(
     id: string,
-    input: Omit<UpdateUserInput, 'scope'>,
+    input: Omit<UpdateUserInput, 'scope'> & { picturePath?: string | null },
     transaction?: Transaction
   ): Promise<User> {
     return this.update(

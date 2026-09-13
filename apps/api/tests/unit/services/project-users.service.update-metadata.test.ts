@@ -31,7 +31,8 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       audit as never,
-      { publish: vi.fn() } as never
+      { publish: vi.fn() } as never,
+      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never
     );
   }
 

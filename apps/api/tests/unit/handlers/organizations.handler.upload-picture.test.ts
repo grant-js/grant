@@ -7,11 +7,11 @@ import { BadRequestError } from '@/lib/errors';
 const organizationId = '11111111-1111-4111-8111-111111111111';
 
 function createHandler(opts?: {
-  setOrganizationPictureUrl?: ReturnType<typeof vi.fn>;
+  setOrganizationPicture?: ReturnType<typeof vi.fn>;
   upload?: ReturnType<typeof vi.fn>;
 }) {
-  const setOrganizationPictureUrl =
-    opts?.setOrganizationPictureUrl ?? vi.fn().mockResolvedValue({ id: organizationId });
+  const setOrganizationPicture =
+    opts?.setOrganizationPicture ?? vi.fn().mockResolvedValue({ id: organizationId });
   const upload =
     opts?.upload ??
     vi.fn().mockResolvedValue({
@@ -19,7 +19,7 @@ function createHandler(opts?: {
       path: `organizations/${organizationId}/picture.jpg`,
     });
 
-  const organizations = { setOrganizationPictureUrl };
+  const organizations = { setOrganizationPicture };
   const fileStorage = {
     validateAndDecodeUpload: vi.fn().mockReturnValue(Buffer.from('img')),
     sanitizeExtensionAndGeneratePath: vi
@@ -56,7 +56,7 @@ describe('OrganizationHandler.uploadOrganizationPicture', () => {
     vi.clearAllMocks();
   });
 
-  it('uploads a public file and persists pictureUrl', async () => {
+  it('uploads a public file and persists picturePath', async () => {
     const { handler, organizations, fileStorage } = createHandler();
 
     const result = await handler.uploadOrganizationPicture({
@@ -76,10 +76,17 @@ describe('OrganizationHandler.uploadOrganizationPicture', () => {
       contentType: 'image/jpeg',
       public: true,
     });
-    expect(organizations.setOrganizationPictureUrl).toHaveBeenCalledWith(
+    expect(organizations.setOrganizationPicture).toHaveBeenCalledWith(
       organizationId,
-      `/storage/organizations/${organizationId}/picture.jpg`,
+      { picturePath: `organizations/${organizationId}/picture.jpg` },
       {}
+    );
+    expect(organizations.setOrganizationPicture).not.toHaveBeenCalledWith(
+      organizationId,
+      expect.objectContaining({
+        pictureUrl: `/storage/organizations/${organizationId}/picture.jpg`,
+      }),
+      expect.anything()
     );
     expect(result).toEqual({
       url: `/storage/organizations/${organizationId}/picture.jpg`,
@@ -101,13 +108,13 @@ describe('OrganizationHandler.uploadOrganizationPicture', () => {
     ).rejects.toBeInstanceOf(BadRequestError);
 
     expect(fileStorage.upload).not.toHaveBeenCalled();
-    expect(organizations.setOrganizationPictureUrl).not.toHaveBeenCalled();
+    expect(organizations.setOrganizationPicture).not.toHaveBeenCalled();
   });
 
-  it('does not persist pictureUrl when storage upload fails', async () => {
-    const setOrganizationPictureUrl = vi.fn();
+  it('does not persist picturePath when storage upload fails', async () => {
+    const setOrganizationPicture = vi.fn();
     const { handler, organizations } = createHandler({
-      setOrganizationPictureUrl,
+      setOrganizationPicture,
       upload: vi.fn().mockRejectedValue(new Error('storage down')),
     });
 
@@ -121,6 +128,6 @@ describe('OrganizationHandler.uploadOrganizationPicture', () => {
       })
     ).rejects.toThrow('storage down');
 
-    expect(organizations.setOrganizationPictureUrl).not.toHaveBeenCalled();
+    expect(organizations.setOrganizationPicture).not.toHaveBeenCalled();
   });
 });

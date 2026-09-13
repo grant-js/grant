@@ -56,7 +56,7 @@ export interface IUserService {
 
   updateUser(
     id: string,
-    input: Omit<UpdateUserInput, 'scope'>,
+    input: Omit<UpdateUserInput, 'scope'> & { picturePath?: string | null },
     transaction?: unknown
   ): Promise<User>;
 
