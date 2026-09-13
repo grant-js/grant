@@ -22,6 +22,10 @@ import { describe, expect, it } from 'vitest';
 import { CACHE_PARTITION_KEY, CACHE_SORT_KEY, CACHE_TTL_ATTRIBUTE } from '../data/cache-table';
 import { GrantPlatform } from '../grant-platform';
 
+/** The two settings that turn mail on. `EMAIL_PROVIDER` defaults to `console`. */
+const SES_ENV = { EMAIL_PROVIDER: 'ses', EMAIL_FROM: 'no-reply@example.com' };
+const SES_EMAIL = { sesIdentityArn: 'arn:aws:ses:eu-central-1:123456789012:identity/example.com' };
+
 /**
  * Both images are caller-supplied, and that is not incidental. Constructing a
  * `DockerImageAsset` fingerprints the whole build context — 282 s in one measured run
@@ -36,6 +40,7 @@ function build(
     cache?: { destroyOnRemoval?: boolean };
     storage?: { destroyOnRemoval?: boolean };
     env?: Record<string, string>;
+    email?: { sesIdentityArn: string };
   } = {}
 ) {
   const app = new App();
@@ -70,6 +75,7 @@ function build(
     storage: overrides.storage,
     secrets: overrides.secrets,
     env: overrides.env,
+    email: overrides.email ?? (overrides.env?.EMAIL_PROVIDER === 'ses' ? SES_EMAIL : undefined),
   });
   return { template: Template.fromStack(stack), platform };
 }
@@ -126,17 +132,12 @@ describe('no credential reaches the serving function', () => {
     expect(credentialShaped).toEqual([]);
   });
 
-  it('grants send-only SES, with no static credentials anywhere', () => {
+  it('sets no static SES credentials, so the function role is what signs', () => {
     // The adapter falls through to the default credential chain when no static keys
-    // are set, so this role is what signs. Send-only: the function has no reason to
-    // manage identities, verify domains or read sending statistics.
-    const { template } = build();
-    const policies = JSON.stringify(template.findResources('AWS::IAM::Policy'));
-    const env = apiEnvironment(template);
+    // are set. What the role may *do* with that is `ses-grant.test.ts`; this is only
+    // the half that belongs with the other no-credential-in-the-environment cases.
+    const env = apiEnvironment(build({ env: SES_ENV }).template);
 
-    expect(policies).toMatch(/ses:SendEmail/);
-    expect(policies).not.toMatch(/ses:VerifyEmailIdentity/);
-    expect(policies).not.toMatch(/ses:DeleteIdentity/);
     expect(env.EMAIL_SES_CLIENT_ID).toBeUndefined();
     expect(env.EMAIL_SES_CLIENT_SECRET).toBeUndefined();
   });

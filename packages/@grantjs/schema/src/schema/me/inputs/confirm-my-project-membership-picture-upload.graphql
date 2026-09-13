@@ -1,0 +1,4 @@
+input ConfirmMyProjectMembershipPictureUploadInput {
+  projectId: ID!
+  filename: String!
+}

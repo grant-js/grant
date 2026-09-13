@@ -561,6 +561,13 @@
       "when": 1789141598260,
       "tag": "0079_panoramic_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1789289785087,
+      "tag": "0080_abnormal_moonstone",
+      "breakpoints": true
     }
   ]
 }

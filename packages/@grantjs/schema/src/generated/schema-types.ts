@@ -483,6 +483,36 @@ export type ChangeMyPasswordResult = {
   success: Scalars['Boolean']['output'];
 };
 
+export type ConfirmMyProjectMembershipPictureUploadInput = {
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
+/**
+ * `filename` is repeated from the request step rather than carried in a token: the
+ * storage path is re-derived server-side from the caller's identity both times, so
+ * nothing the client sends can point the confirmation at another user's object.
+ */
+export type ConfirmMyUserPictureUploadInput = {
+  filename: Scalars['String']['input'];
+};
+
+/**
+ * `filename` is repeated from the request step rather than carried in a token: the
+ * storage path is re-derived server-side from the organization id both times.
+ */
+export type ConfirmOrganizationPictureUploadInput = {
+  filename: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type ConfirmUserPictureUploadInput = {
+  filename: Scalars['String']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
+};
+
 export type CreateAccountInput = {
   ownerId: Scalars['String']['input'];
   provider: UserAuthenticationMethodProvider;
@@ -976,6 +1006,31 @@ export type Mutation = {
    */
   cancelProjectSync: ProjectSyncJob;
   changeMyPassword: ChangeMyPasswordResult;
+  /**
+   * Record a direct upload of a project-membership picture that has completed.
+   * Re-checks membership and reads the object back from storage before anything is
+   * written to the membership.
+   */
+  confirmMyProjectMembershipPictureUpload: UploadUserPictureResult;
+  /**
+   * Record a direct upload that has completed. Reads the object back from storage
+   * to confirm it exists and is within the size policy — what the client claimed
+   * when it asked for the URL is not evidence — then points the user's picture at
+   * it.
+   */
+  confirmMyUserPictureUpload: UploadUserPictureResult;
+  /**
+   * Record a direct organization-logo upload that has completed. Reads the object
+   * back from storage to confirm it exists and is within the size policy, then
+   * stores the object key on the organization (`picture_path`).
+   */
+  confirmOrganizationPictureUpload: UploadOrganizationPictureResult;
+  /**
+   * Record a completed direct upload of another user's picture. Re-runs the scope
+   * and permission checks, then reads the object back from storage before writing
+   * the picture to the user or to their project membership, as scope dictates.
+   */
+  confirmUserPictureUpload: UploadUserPictureResult;
   createApiKey: CreateApiKeyResult;
   createGroup: Group;
   createMyMfaEnrollment: MfaEnrollment;
@@ -1020,7 +1075,46 @@ export type Mutation = {
   renewInvitation: OrganizationInvitation;
   /** Re-queue a delivery attempt for another POST. */
   replayWebhookDelivery: WebhookDeliveryAttempt;
+  /**
+   * Ask for a URL to upload the signed-in user's picture for one project
+   * membership, directly to storage.
+   *
+   * Membership is checked before a URL exists, not only when the upload is
+   * recorded: a URL is a write capability, so issuing one for a project you do not
+   * belong to is the thing to prevent, not to detect afterwards.
+   */
+  requestMyProjectMembershipPictureUploadUrl: UploadUrl;
+  /**
+   * Ask for a URL to upload the signed-in user's picture directly to storage,
+   * without the bytes passing through this API.
+   *
+   * Validates content type, extension and size **before** issuing the URL, and
+   * binds the URL to a path derived from the caller's own identity. Call
+   * `confirmMyUserPictureUpload` once the PUT succeeds; until then nothing is
+   * recorded against the user.
+   */
+  requestMyUserPictureUploadUrl: UploadUrl;
+  /**
+   * Ask for a URL to upload an organization logo directly to storage, without the
+   * bytes passing through this API.
+   *
+   * Validates content type, extension and size **before** issuing the URL, and
+   * binds the URL to a path derived from the organization id. Call
+   * `confirmOrganizationPictureUpload` once the PUT succeeds; until then nothing
+   * is recorded against the organization.
+   */
+  requestOrganizationPictureUploadUrl: UploadUrl;
   requestPasswordReset: RequestPasswordResetResponse;
+  /**
+   * Ask for a URL to upload another user's picture directly to storage.
+   *
+   * Unlike the `me` variants, the storage path here is derived from the **target**
+   * user rather than the caller, so the permission check is the only thing standing
+   * between a caller and another user's picture. It therefore runs before a URL is
+   * issued — the same scope and self-managed-identity rules `uploadUserPicture`
+   * applies — and again when the upload is confirmed.
+   */
+  requestUserPictureUploadUrl: UploadUrl;
   resendInvitationEmail: OrganizationInvitation;
   resendVerification: ResendVerificationResponse;
   resetPassword: ResetPasswordResponse;
@@ -1116,6 +1210,22 @@ export type MutationCancelProjectSyncArgs = {
 
 export type MutationChangeMyPasswordArgs = {
   input: ChangeMyPasswordInput;
+};
+
+export type MutationConfirmMyProjectMembershipPictureUploadArgs = {
+  input: ConfirmMyProjectMembershipPictureUploadInput;
+};
+
+export type MutationConfirmMyUserPictureUploadArgs = {
+  input: ConfirmMyUserPictureUploadInput;
+};
+
+export type MutationConfirmOrganizationPictureUploadArgs = {
+  input: ConfirmOrganizationPictureUploadInput;
+};
+
+export type MutationConfirmUserPictureUploadArgs = {
+  input: ConfirmUserPictureUploadInput;
 };
 
 export type MutationCreateApiKeyArgs = {
@@ -1269,8 +1379,24 @@ export type MutationReplayWebhookDeliveryArgs = {
   input: ReplayWebhookDeliveryInput;
 };
 
+export type MutationRequestMyProjectMembershipPictureUploadUrlArgs = {
+  input: RequestMyProjectMembershipPictureUploadUrlInput;
+};
+
+export type MutationRequestMyUserPictureUploadUrlArgs = {
+  input: RequestMyUserPictureUploadUrlInput;
+};
+
+export type MutationRequestOrganizationPictureUploadUrlArgs = {
+  input: RequestOrganizationPictureUploadUrlInput;
+};
+
 export type MutationRequestPasswordResetArgs = {
   input: RequestPasswordResetInput;
+};
+
+export type MutationRequestUserPictureUploadUrlArgs = {
+  input: RequestUserPictureUploadUrlInput;
 };
 
 export type MutationResendInvitationEmailArgs = {
@@ -2762,6 +2888,40 @@ export type ReplayWebhookDeliveryInput = {
   scope: Scope;
 };
 
+export type RequestMyProjectMembershipPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+};
+
+export type RequestMyUserPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself — a body of any
+   * other length is refused by the store.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+};
+
+export type RequestOrganizationPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
 export type RequestPasswordResetInput = {
   email: Scalars['String']['input'];
 };
@@ -2771,6 +2931,18 @@ export type RequestPasswordResetResponse = {
   message: Scalars['String']['output'];
   messageKey: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type RequestUserPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
 };
 
 export type ResendVerificationInput = {
@@ -3456,6 +3628,39 @@ export type UploadOrganizationPictureResult = {
   __typename?: 'UploadOrganizationPictureResult';
   path: Scalars['String']['output'];
   url: Scalars['String']['output'];
+};
+
+/**
+ * A bounded, time-limited URL the client writes bytes to directly.
+ *
+ * The URL is a bearer capability: it permits exactly `contentLength` bytes of
+ * exactly `contentType` at exactly one server-derived path, until `expiresAt`.
+ * It is not single-use and cannot be revoked, so it is short-lived by design.
+ */
+export type UploadUrl = {
+  __typename?: 'UploadUrl';
+  /** Instant after which the store refuses the URL. */
+  expiresAt: Scalars['Date']['output'];
+  /**
+   * Headers the client must set verbatim. `Content-Length` is deliberately absent:
+   * browsers set it from the body and forbid setting it by hand, even though the
+   * URL commits to the value.
+   */
+  headers: Array<UploadUrlHeader>;
+  /** HTTP method the client must use. Always PUT today. */
+  method: Scalars['String']['output'];
+  /**
+   * Absolute for object stores; application-relative for targets this API serves
+   * itself. Resolve it against the API origin before using it.
+   */
+  url: Scalars['String']['output'];
+};
+
+/** A header the client must send with the direct upload. */
+export type UploadUrlHeader = {
+  __typename?: 'UploadUrlHeader';
+  name: Scalars['String']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type UploadUserPictureInput = {

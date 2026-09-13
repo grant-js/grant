@@ -12,16 +12,20 @@ import type {
   IUserRoleService,
 } from '@grantjs/core';
 import {
+  ConfirmOrganizationPictureUploadInput,
   MutationCreateOrganizationArgs,
   MutationDeleteOrganizationArgs,
   MutationUpdateOrganizationArgs,
   Organization,
   OrganizationPage,
   QueryOrganizationsArgs,
+  RequestOrganizationPictureUploadUrlInput,
   Tenant,
   UploadOrganizationPictureInput,
+  UploadUrl,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, ConfigurationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -161,14 +165,76 @@ export class OrganizationHandler extends CacheHandler {
     });
   }
 
+  private assertOrganizationPictureScope(
+    organizationId: string,
+    scope: UploadOrganizationPictureInput['scope']
+  ): void {
+    if (scope.tenant === Tenant.Organization && scope.id !== organizationId) {
+      throw new BadRequestError('Organization id must match scope');
+    }
+  }
+
+  private organizationPicturePath(organizationId: string, filename: string): string {
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `organizations/${organizationId}/picture`
+    );
+  }
+
+  public async requestOrganizationPictureUploadUrl(
+    params: RequestOrganizationPictureUploadUrlInput
+  ): Promise<UploadUrl> {
+    const { organizationId, filename, contentType, contentLength, scope } = params;
+
+    this.assertOrganizationPictureScope(organizationId, scope);
+    this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
+
+    const minted = await this.fileStorage.getUploadUrl(
+      this.organizationPicturePath(organizationId, filename),
+      {
+        contentType,
+        contentLength,
+        expiresInSeconds: config.storage.upload.urlExpirySeconds,
+      }
+    );
+
+    return {
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  public async confirmOrganizationPictureUpload(
+    params: ConfirmOrganizationPictureUploadInput
+  ): Promise<{ url: string; path: string }> {
+    const { organizationId, filename, scope } = params;
+
+    this.assertOrganizationPictureScope(organizationId, scope);
+
+    const storagePath = this.organizationPicturePath(organizationId, filename);
+    await this.fileStorage.assertStoredWithinPolicy(storagePath);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const url = await this.fileStorage.getUrl(storagePath);
+
+      await this.organizations.setOrganizationPicture(
+        organizationId,
+        { picturePath: storagePath },
+        tx
+      );
+
+      return { url, path: storagePath };
+    });
+  }
+
   public async uploadOrganizationPicture(
     params: UploadOrganizationPictureInput
   ): Promise<{ url: string; path: string }> {
     const { organizationId, file, contentType, filename, scope } = params;
 
-    if (scope.tenant === Tenant.Organization && scope.id !== organizationId) {
-      throw new BadRequestError('Organization id must match scope');
-    }
+    this.assertOrganizationPictureScope(organizationId, scope);
 
     const fileBuffer = this.fileStorage.validateAndDecodeUpload({
       file,
@@ -176,10 +242,7 @@ export class OrganizationHandler extends CacheHandler {
       filename,
     });
 
-    const storagePath = this.fileStorage.sanitizeExtensionAndGeneratePath(
-      filename,
-      `organizations/${organizationId}/picture`
-    );
+    const storagePath = this.organizationPicturePath(organizationId, filename);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
       const result = await this.fileStorage.upload(fileBuffer, storagePath, {
@@ -187,7 +250,11 @@ export class OrganizationHandler extends CacheHandler {
         public: true,
       });
 
-      await this.organizations.setOrganizationPictureUrl(organizationId, result.url, tx);
+      await this.organizations.setOrganizationPicture(
+        organizationId,
+        { picturePath: result.path },
+        tx
+      );
 
       return {
         url: result.url,

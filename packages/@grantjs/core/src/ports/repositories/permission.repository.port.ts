@@ -16,9 +16,9 @@ import type {
   UpdatePermissionTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { IEntityExistence, SelectedFields } from './common';
 
-export interface IPermissionRepository {
+export interface IPermissionRepository extends IEntityExistence {
   getPermissions(
     params: Omit<QueryPermissionsArgs, 'scope' | 'tagIds'> & SelectedFields<Permission>,
     transaction?: unknown

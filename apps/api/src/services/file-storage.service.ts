@@ -1,4 +1,10 @@
-import type { IFileStorageService, IFileStorageServicePort } from '@grantjs/core';
+import type {
+  IFileStorageService,
+  IFileStorageServicePort,
+  StoredObjectMetadata,
+  UploadUrlOptions,
+  UploadUrlResult,
+} from '@grantjs/core';
 
 import { config } from '@/config';
 import { BadRequestError } from '@/lib/errors';
@@ -48,6 +54,14 @@ export class FileStorageService implements IFileStorageServicePort {
 
   public async getUrl(path: string): Promise<string> {
     return this.storageAdapter.getUrl(path);
+  }
+
+  public async getUploadUrl(path: string, options: UploadUrlOptions): Promise<UploadUrlResult> {
+    return this.storageAdapter.getUploadUrl(path, options);
+  }
+
+  public async getMetadata(path: string): Promise<StoredObjectMetadata | null> {
+    return this.storageAdapter.getMetadata(path);
   }
 
   public async exists(path: string): Promise<boolean> {
@@ -109,6 +123,68 @@ export class FileStorageService implements IFileStorageServicePort {
     const ext = filename.split('.').pop()?.toLowerCase() || defaultExt;
     const sanitizedExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : defaultExt;
     return `${basePath}.${sanitizedExt}`;
+  }
+
+  /**
+   * The pre-mint half of `validateAndDecodeUpload`.
+   *
+   * With a direct upload the bytes never reach this process, so the checks that
+   * run *after* decoding today have to run *before* a URL exists, against what
+   * the client says it is about to send. Deliberately delegates to the same three
+   * validators the base64 path uses — the two paths must not be able to drift on
+   * what they accept, and a second copy of the rules is how they would.
+   *
+   * Size is the one that changes shape rather than moving: `validateFileSize`
+   * measures a decoded buffer, this measures a claim. The claim is then made
+   * binding by the URL, which commits to that exact length, and checked again
+   * against the store at the confirm step. See ADR 0007.
+   */
+  public validateUploadRequest(params: {
+    contentType: string;
+    filename: string;
+    contentLength: number;
+  }): void {
+    const { contentType, filename, contentLength } = params;
+
+    this.validateFileType(contentType);
+    this.validateFileExtension(filename);
+
+    if (!Number.isInteger(contentLength) || contentLength <= 0) {
+      throw new BadRequestError('File size must be a positive whole number of bytes');
+    }
+
+    if (contentLength > config.storage.upload.maxFileSize) {
+      throw new BadRequestError(
+        `File size exceeds maximum of ${config.storage.upload.maxFileSize / 1024 / 1024}MB`
+      );
+    }
+  }
+
+  /**
+   * Read back what the store actually holds, and refuse anything the upload
+   * policy would not have accepted.
+   *
+   * The confirm step's whole job. What a client claimed when it asked for the URL
+   * is not evidence that it sent that; only the store is. Absent means either the
+   * PUT never happened or it was refused, and both are the caller's problem to
+   * retry rather than something to record against a user.
+   */
+  public async assertStoredWithinPolicy(path: string): Promise<StoredObjectMetadata> {
+    const metadata = await this.getMetadata(path);
+
+    if (!metadata) {
+      throw new BadRequestError(
+        'No uploaded file found for this request. Complete the upload before confirming it.'
+      );
+    }
+
+    if (metadata.size > config.storage.upload.maxFileSize) {
+      throw new BadRequestError(
+        `File size exceeds maximum of ${config.storage.upload.maxFileSize / 1024 / 1024}MB`
+      );
+    }
+
+    return metadata;
   }
 
   public validateAndDecodeUpload(params: {

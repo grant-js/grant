@@ -2,11 +2,16 @@ import { useTranslations } from 'next-intl';
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import {
+  ConfirmOrganizationPictureUploadDocument,
+  ConfirmOrganizationPictureUploadMutation,
   CreateOrganizationDocument,
   CreateOrganizationInput,
   DeleteOrganizationDocument,
   MutationDeleteOrganizationArgs,
   Organization,
+  RequestOrganizationPictureUploadUrlDocument,
+  RequestOrganizationPictureUploadUrlMutation,
+  Scope,
   UpdateOrganizationDocument,
   UpdateOrganizationInput,
   UploadOrganizationPictureDocument,
@@ -14,6 +19,8 @@ import {
   UploadOrganizationPictureResult,
 } from '@grantjs/schema';
 import { toast } from 'sonner';
+
+import { type DirectUploadBody, runDirectUpload } from '@/lib/direct-upload';
 
 import { evictOrganizationsCache } from './cache';
 
@@ -50,6 +57,16 @@ export function useOrganizationMutations() {
   }>(UploadOrganizationPictureDocument, {
     update,
   });
+
+  const [requestOrganizationPictureUploadUrl] =
+    useMutation<RequestOrganizationPictureUploadUrlMutation>(
+      RequestOrganizationPictureUploadUrlDocument
+    );
+
+  const [confirmOrganizationPictureUpload] = useMutation<ConfirmOrganizationPictureUploadMutation>(
+    ConfirmOrganizationPictureUploadDocument,
+    { update }
+  );
 
   const handleCreateOrganization = async (input: CreateOrganizationInput) => {
     try {
@@ -105,6 +122,34 @@ export function useOrganizationMutations() {
     }
   };
 
+  const handleUploadOrganizationPictureDirect = async (
+    target: { organizationId: string; scope: Scope },
+    file: DirectUploadBody,
+    options?: { signal?: AbortSignal }
+  ) => {
+    const result = await runDirectUpload(
+      {
+        mint: async (descriptor) =>
+          (
+            await requestOrganizationPictureUploadUrl({
+              variables: { input: { ...descriptor, ...target } },
+            })
+          ).data?.requestOrganizationPictureUploadUrl,
+        confirm: async ({ filename }) =>
+          (
+            await confirmOrganizationPictureUpload({
+              variables: { input: { filename, ...target } },
+            })
+          ).data?.confirmOrganizationPictureUpload,
+      },
+      file,
+      options
+    );
+
+    toast.success(t('notifications.uploadPictureSuccess'));
+    return result;
+  };
+
   const handleUploadOrganizationPicture = async (input: UploadOrganizationPictureInput) => {
     try {
       const result = await uploadOrganizationPicture({
@@ -127,5 +172,6 @@ export function useOrganizationMutations() {
     updateOrganization: handleUpdateOrganization,
     deleteOrganization: handleDeleteOrganization,
     uploadOrganizationPicture: handleUploadOrganizationPicture,
+    uploadOrganizationPictureDirect: handleUploadOrganizationPictureDirect,
   };
 }

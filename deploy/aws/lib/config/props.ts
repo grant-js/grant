@@ -25,6 +25,7 @@ import type { ContainerImage, ICluster } from 'aws-cdk-lib/aws-ecs';
 import type { DockerImageCode } from 'aws-cdk-lib/aws-lambda';
 import type { IHostedZone } from 'aws-cdk-lib/aws-route53';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
+import type { ITopic } from 'aws-cdk-lib/aws-sns';
 import type { IQueue } from 'aws-cdk-lib/aws-sqs';
 
 /**
@@ -183,6 +184,22 @@ interface DatabaseProps {
 
   /** Connection pooling. Off by default — see `DatabaseProxyProps`. */
   readonly proxy?: DatabaseProxyProps;
+
+  /**
+   * Enable RDS IAM database authentication on the cluster. Default **false**.
+   *
+   * With it on, a role holding `rds-db:connect` can authenticate with a signed token
+   * instead of a password, and the application uses one when `DB_AUTH_MODE=iam`. The stack
+   * enables the feature and grants the functions `rds-db:connect`; **the Postgres side is
+   * not CDK's to do** — the connecting user must be granted `rds_iam` inside the database,
+   * which is a SQL grant this stack has no session to issue.
+   *
+   * Off by default because turning it on without that grant produces a deployment that
+   * cannot authenticate, and because password auth through Secrets Manager is already the
+   * documented path. See `docs/deployment/aws-serverless.md` for which endpoint and proxy
+   * combinations work.
+   */
+  readonly iamAuthentication?: boolean;
 }
 
 /** DNS. Always referenced, never created — a zone needs nameserver re-delegation CDK cannot perform. */
@@ -206,6 +223,15 @@ interface DnsProps {
  * exists for ISR cache persistence and image optimization on serverless, and this app
  * uses neither — so it would add a build toolchain and a Next-16 support risk to buy
  * features nothing consumes. Recorded in the stack plan; revisit if ISR is adopted.
+ *
+ * **Re-checked 2026-09-12 and the decision stands.** Both conditions that would change
+ * it were verified against the source rather than assumed: no ISR (`export const
+ * revalidate`, `revalidatePath`, `revalidateTag`, `unstable_cache` — none outside
+ * generated `.next` types) and no Next image optimization (`next/image` appears only in
+ * the generated `next-env.d.ts` reference; images are plain `<img>`). Also still GET-only:
+ * no server actions, no route handlers. Boot to first accepted connection measured at a
+ * **180 ms median** on Next 16.3.4 (`pnpm --filter grant-web measure:boot`), against phase
+ * C's 526–630 ms deployed cold start — no regression that would buy anything by switching.
  */
 interface WebProps {
   /**
@@ -330,6 +356,37 @@ interface ApiProps {
  * carries one-off jobs. `JOBS_PROVIDER=aws` is what makes the application expect all
  * three — its `schedule()` registers a handler and creates no timer.
  */
+/**
+ * Where `project-sync` executes.
+ *
+ * **Off by default, and that is ADR 0002's wording rather than caution:** "Which runtime
+ * executes it is configuration... Existing deployments keep running the job in-process
+ * exactly as today." Enabling it adds a Fargate task definition and its two roles, and
+ * changes nothing about the job envelope — same `startProjectSync`, same
+ * `project_sync_jobs` row, same polling API.
+ *
+ * Worth enabling when imports approach the ceiling. A 28,880-entity import measures 62.3
+ * minutes and the ceiling is crossed near 10,700 entities
+ * (`plans/2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002), so a tenant
+ * importing a full directory needs this and a tenant importing one team does not.
+ *
+ * Requires the container tier: a Fargate task needs a VPC and shares the migrate task's
+ * cluster and image, so `migration: { enabled: false }` or a vpcless topology means no
+ * hatch regardless of this flag.
+ */
+interface SyncProps {
+  /** Default **false**. */
+  readonly enabled?: boolean;
+
+  /**
+   * Larger than the migrate task's defaults, and measured: the import holds one
+   * transaction open across ~1.4 M statements for a large document, with up to 17 MiB of
+   * parsed CDM in memory beside it.
+   */
+  readonly cpu?: number;
+  readonly memoryLimitMiB?: number;
+}
+
 interface JobsProps {
   /**
    * Whether to provision job execution. Defaults to **true** on every topology that
@@ -368,6 +425,76 @@ interface JobsProps {
    * Pass `0` to leave concurrency unbounded.
    */
   readonly reservedConcurrency?: number;
+}
+
+/**
+ * The SES sending identity a function is permitted to send from.
+ *
+ * Composed by `GrantPlatform` from `EmailProps.sesIdentityArn` and the resolved
+ * `EMAIL_FROM`, and passed only to functions in a deployment that actually sends mail.
+ * Absent, and the function gets no SES statement at all — which is the common case,
+ * because `EMAIL_PROVIDER` defaults to `console`.
+ *
+ * Both fields, because the two IAM mechanisms narrow different things and SES supports
+ * each independently for `SendEmail`/`SendRawEmail`:
+ *
+ *   - `identityArn` in `Resource` bounds *which verified identity* may be used.
+ *   - `fromAddress` in a `ses:FromAddress` condition bounds *which address within it*.
+ *
+ * The ARN alone leaves a domain identity able to send as every mailbox at that domain,
+ * so the pair is what makes the grant match the one address the adapter ever sets as
+ * `Source` (`@grantjs/email/src/ses/index.ts:52`).
+ */
+export interface SesSendGrant {
+  /**
+   * e.g. `arn:aws:ses:eu-central-1:123456789012:identity/example.com`, or one naming a
+   * single verified address.
+   */
+  readonly identityArn: string;
+
+  /**
+   * The bare address, without a display name. SES parses `Source` and matches the
+   * display name against the separate `ses:FromDisplayName` key, so `"Grant"
+   * <no-reply@example.com>` is evaluated here as `no-reply@example.com`.
+   */
+  readonly fromAddress: string;
+}
+
+/**
+ * Outbound mail.
+ *
+ * Only the identity ARN, and only an ARN: `EMAIL_PROVIDER`, `EMAIL_FROM` and
+ * `EMAIL_SES_REGION` are ordinary environment and belong in `env`, where the
+ * application reads them. This prop exists because an ARN is the one thing the
+ * *policy* needs and the environment cannot supply — an address is not an identity,
+ * and a domain address does not tell this library whether the verified identity is the
+ * domain or the mailbox.
+ *
+ * ADR 0005: interface-typed, and `bin/` composes it. The reference app derives the
+ * domain-identity ARN from `-c emailFrom` and accepts `-c sesIdentityArn` to override,
+ * so an adopter can point at an identity they already own.
+ */
+export interface EmailProps {
+  readonly sesIdentityArn: string;
+}
+
+/**
+ * Where the platform's alarms send a breach.
+ *
+ * A group with one member today, and a group rather than a bare `alarmTopic` because
+ * the next observability construct will want the same destination — this is the seam
+ * that keeps that from being a second top-level prop.
+ */
+export interface ObservabilityProps {
+  /**
+   * SNS topic for alarm actions. Omit and alarms are still created and still evaluate;
+   * they notify nobody.
+   *
+   * `ITopic`, and composed in `bin/` (ADR 0005). The reference app's `-c alarmEmail`
+   * builds a topic with an email subscription; a construct library that created a
+   * mailbox would be one an adopter has to fork to change.
+   */
+  readonly alarmTopic?: ITopic;
 }
 
 /** Top-level props for the whole platform. */
@@ -468,8 +595,24 @@ export interface GrantPlatformProps {
   /** Background jobs. Ignored only on the docs-only deploy. */
   readonly jobs?: JobsProps;
 
+  /** ADR 0002's escape hatch for CDM imports that exceed Lambda's 15-minute ceiling. */
+  readonly sync?: SyncProps;
+
   /** Passed through to the API container. */
   readonly env?: GrantEnv;
+
+  /**
+   * Outbound mail. Required when `env.EMAIL_PROVIDER` is `ses`, ignored otherwise, and
+   * refused at synth if the provider says `ses` without it — see
+   * `assertSesSendingIdentity`.
+   */
+  readonly email?: EmailProps;
+
+  /**
+   * Alarm destinations. The alarms themselves are unconditional — see
+   * `ObservabilityProps.alarmTopic`.
+   */
+  readonly observability?: ObservabilityProps;
 
   /**
    * Secret `ENV_NAME: value` pairs, merged into the platform secret rather than into

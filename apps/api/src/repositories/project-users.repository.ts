@@ -28,6 +28,7 @@ export type ProjectUserMembershipRow = {
   projectName: string;
   displayName: string | null;
   pictureUrl: string | null;
+  picturePath: string | null;
   metadata: Record<string, unknown>;
   role: string | null;
   joinedAt: Date;
@@ -127,6 +128,7 @@ export class ProjectUserRepository
       userId: string;
       displayName?: string | null;
       pictureUrl?: string | null;
+      picturePath?: string | null;
     },
     transaction?: Transaction
   ): Promise<ProjectUser> {
@@ -136,6 +138,9 @@ export class ProjectUserRepository
     }
     if (params.pictureUrl !== undefined) {
       update.pictureUrl = params.pictureUrl;
+    }
+    if (params.picturePath !== undefined) {
+      update.picturePath = params.picturePath;
     }
     return this.update({ projectId: params.projectId, userId: params.userId }, update, transaction);
   }
@@ -208,6 +213,7 @@ export class ProjectUserRepository
         projectName: projects.name,
         displayName: projectUsers.displayName,
         pictureUrl: projectUsers.pictureUrl,
+        picturePath: projectUsers.picturePath,
         metadata: projectUsers.metadata,
         roleName: roles.name,
         joinedAt: projectUsers.createdAt,
@@ -272,6 +278,7 @@ export class ProjectUserRepository
           projectName: row.projectName,
           displayName: row.displayName ?? null,
           pictureUrl: row.pictureUrl ?? null,
+          picturePath: row.picturePath ?? null,
           metadata,
           role: row.hasProjectRole && row.roleName ? row.roleName : null,
           joinedAt: row.joinedAt,

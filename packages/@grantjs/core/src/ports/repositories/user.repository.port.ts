@@ -39,9 +39,9 @@ import type {
   UserTag,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { IEntityExistence, SelectedFields } from './common';
 
-export interface IUserRepository {
+export interface IUserRepository extends IEntityExistence {
   getUsers(
     params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
     transaction?: unknown
@@ -62,7 +62,7 @@ export interface IUserRepository {
 
   updateUser(
     id: string,
-    input: Omit<UpdateUserInput, 'scope'>,
+    input: Omit<UpdateUserInput, 'scope'> & { picturePath?: string | null },
     transaction?: unknown
   ): Promise<User>;
 
@@ -173,7 +173,7 @@ export interface IUserSessionRepository {
   ): Promise<UserSession>;
 }
 
-export interface IUserAuthenticationMethodRepository {
+export interface IUserAuthenticationMethodRepository extends IEntityExistence {
   getUserAuthenticationMethods(
     params: GetUserAuthenticationMethodsInput & SelectedFields<UserAuthenticationMethod>,
     transaction?: unknown

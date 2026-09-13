@@ -2,6 +2,7 @@ import {
   GrantAuth,
   type IAuditLogger,
   type IEventPublisher,
+  type IFileStorageService,
   type IOrganizationRepository,
   type IOrganizationService,
   type IOrganizationUserRepository,
@@ -18,6 +19,11 @@ import {
 
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import {
+  hydratePictureUrl,
+  hydratePictureUrls,
+  picturePathWhenSettingUrl,
+} from '@/lib/picture-url.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -33,7 +39,7 @@ import {
   deleteOrganizationParamsSchema,
   getOrganizationsParamsSchema,
   organizationSchema,
-  setOrganizationPictureUrlParamsSchema,
+  setOrganizationPictureParamsSchema,
   updateOrganizationParamsSchema,
 } from './organizations.schemas';
 
@@ -44,7 +50,8 @@ export class OrganizationService implements IOrganizationService {
     private readonly organizationUserRepository: IOrganizationUserRepository,
     readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
-    private readonly events: IEventPublisher
+    private readonly events: IEventPublisher,
+    private readonly fileStorage: IFileStorageService
   ) {}
 
   private async getOrganization(
@@ -64,6 +71,15 @@ export class OrganizationService implements IOrganizationService {
     }
 
     return existingOrganizations.organizations[0];
+  }
+
+  private async validatedOrganization(
+    organization: Organization,
+    context: string
+  ): Promise<Organization> {
+    validateOutput(createDynamicSingleSchema(organizationSchema), organization, context);
+    await hydratePictureUrl(this.fileStorage, organization);
+    return organization;
   }
 
   public async getOrganizations(
@@ -106,6 +122,7 @@ export class OrganizationService implements IOrganizationService {
       context
     );
 
+    await hydratePictureUrls(this.fileStorage, result.organizations);
     return result;
   }
 
@@ -136,7 +153,7 @@ export class OrganizationService implements IOrganizationService {
 
     await this.audit.logCreate(organization.id, newValues, metadata, transaction);
 
-    return validateOutput(createDynamicSingleSchema(organizationSchema), organization, context);
+    return this.validatedOrganization(organization, context);
   }
 
   public async updateOrganization(
@@ -202,11 +219,7 @@ export class OrganizationService implements IOrganizationService {
       );
     }
 
-    return validateOutput(
-      createDynamicSingleSchema(organizationSchema),
-      updatedOrganization,
-      context
-    );
+    return this.validatedOrganization(updatedOrganization, context);
   }
 
   public async deleteOrganization(
@@ -254,29 +267,32 @@ export class OrganizationService implements IOrganizationService {
       );
     }
 
-    return validateOutput(
-      createDynamicSingleSchema(organizationSchema),
-      deletedOrganization,
-      context
-    );
+    return this.validatedOrganization(deletedOrganization, context);
   }
 
-  public async setOrganizationPictureUrl(
+  public async setOrganizationPicture(
     organizationId: string,
-    pictureUrl: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
     transaction?: Transaction
   ): Promise<Organization> {
-    const context = 'OrganizationService.setOrganizationPictureUrl';
+    const context = 'OrganizationService.setOrganizationPicture';
     const validatedParams = validateInput(
-      setOrganizationPictureUrlParamsSchema,
-      { organizationId, pictureUrl },
+      setOrganizationPictureParamsSchema,
+      { organizationId, ...picturePathWhenSettingUrl(input) },
       context
     );
 
     const oldOrganization = await this.getOrganization(validatedParams.organizationId, transaction);
-    const updatedOrganization = await this.organizationRepository.setOrganizationPictureUrl(
+    const updatedOrganization = await this.organizationRepository.setOrganizationPicture(
       validatedParams.organizationId,
-      validatedParams.pictureUrl,
+      {
+        ...(validatedParams.pictureUrl !== undefined
+          ? { pictureUrl: validatedParams.pictureUrl }
+          : {}),
+        ...(validatedParams.picturePath !== undefined
+          ? { picturePath: validatedParams.picturePath }
+          : {}),
+      },
       transaction
     );
 
@@ -294,10 +310,8 @@ export class OrganizationService implements IOrganizationService {
       transaction
     );
 
-    return validateOutput(
-      createDynamicSingleSchema(organizationSchema),
-      updatedOrganization,
-      context
-    );
+    validateOutput(createDynamicSingleSchema(organizationSchema), updatedOrganization, context);
+    await hydratePictureUrl(this.fileStorage, updatedOrganization);
+    return updatedOrganization;
   }
 }

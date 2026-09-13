@@ -17,7 +17,7 @@ export default function ProjectMembershipDetailSettingsPage() {
   const params = useParams();
   const projectId = typeof params.projectId === 'string' ? params.projectId : '';
   const { membership, loading } = useMyProjectMembership(projectId);
-  const { updateMyProjectMembership, uploadMyProjectMembershipPicture } = useMyMutations();
+  const { updateMyProjectMembership, uploadMyProjectMembershipPictureDirect } = useMyMutations();
 
   if (loading && !membership) {
     return (
@@ -50,13 +50,8 @@ export default function ProjectMembershipDetailSettingsPage() {
             displayName: values.displayName,
           });
         }}
-        onUploadPicture={async (file, filename, contentType) => {
-          await uploadMyProjectMembershipPicture({
-            projectId,
-            file,
-            filename,
-            contentType,
-          });
+        onUploadPicture={async (file, options) => {
+          await uploadMyProjectMembershipPictureDirect(projectId, file, options);
         }}
       />
     </DashboardLayout>

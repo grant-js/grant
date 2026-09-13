@@ -4,6 +4,8 @@ export {
   setMyNotificationPreferenceResolver as setMyNotificationPreference,
 } from '../notification.resolvers';
 export { changeMyPasswordResolver as changeMyPassword } from './change-my-password.resolver';
+export { confirmMyProjectMembershipPictureUploadResolver as confirmMyProjectMembershipPictureUpload } from './confirm-my-project-membership-picture-upload.resolver';
+export { confirmMyUserPictureUploadResolver as confirmMyUserPictureUpload } from './confirm-my-user-picture-upload.resolver';
 export { createMyMfaEnrollmentResolver as createMyMfaEnrollment } from './create-my-mfa-enrollment.resolver';
 export { createMySecondaryAccountResolver as createMySecondaryAccount } from './create-my-secondary-account.resolver';
 export { createMyUserAuthenticationMethodResolver as createMyUserAuthenticationMethod } from './create-my-user-authentication-method.resolver';
@@ -12,6 +14,8 @@ export { deleteMyUserAuthenticationMethodResolver as deleteMyUserAuthenticationM
 export { generateMyMfaRecoveryCodesResolver as generateMyMfaRecoveryCodes } from './generate-my-mfa-recovery-codes.resolver';
 export { logoutMyUserResolver as logoutMyUser } from './logout-my-user.resolver';
 export { removeMyMfaDeviceResolver as removeMyMfaDevice } from './remove-my-mfa-device.resolver';
+export { requestMyProjectMembershipPictureUploadUrlResolver as requestMyProjectMembershipPictureUploadUrl } from './request-my-project-membership-picture-upload-url.resolver';
+export { requestMyUserPictureUploadUrlResolver as requestMyUserPictureUploadUrl } from './request-my-user-picture-upload-url.resolver';
 export { revokeMyUserSessionResolver as revokeMyUserSession } from './revoke-my-user-session.resolver';
 export { setMyPrimaryAuthenticationMethodResolver as setMyPrimaryAuthenticationMethod } from './set-my-primary-authentication-method.resolver';
 export { setMyPrimaryMfaDeviceResolver as setMyPrimaryMfaDevice } from './set-my-primary-mfa-device.resolver';

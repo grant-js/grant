@@ -28,6 +28,14 @@ import { Construct } from 'constructs';
 import { validateDatabaseName } from '../config/validate';
 
 export interface DatabaseProps {
+  /**
+   * Enable RDS IAM authentication on the cluster. Default false.
+   *
+   * Only flips the cluster flag. Granting `rds-db:connect` to a caller is the stack's job
+   * and granting `rds_iam` to a Postgres user is the operator's — see `GrantPlatformProps`.
+   */
+  readonly iamAuthentication?: boolean;
+
   readonly vpc: IVpc;
 
   /**
@@ -98,6 +106,16 @@ export class Database extends Construct {
       credentials: Credentials.fromGeneratedSecret('grant_admin', {
         secretName: `${id}-db-credentials`,
       }),
+      // Off unless asked for. The flag alone is inert — a token is only accepted once a
+      // Postgres user has been granted `rds_iam`, which no CloudFormation resource can do —
+      // so defaulting it on would advertise an auth mode that does not yet work.
+      //
+      // Spread rather than `?? false`, and not as a style preference: writing the property
+      // emits `EnableIAMDatabaseAuthentication: false` into the template where nothing
+      // stood before. That is a no-op to RDS and a one-line diff on every existing
+      // deployment's changeset, against a slice that declared none. Omitting it keeps the
+      // default template byte-identical.
+      ...(props.iamAuthentication ? { iamAuthentication: true } : {}),
       storageEncrypted: true,
       backup: { retention: Duration.days(destroy ? 1 : 7) },
       // Always explicit. See destroyOnRemoval above: CDK's SNAPSHOT default is what

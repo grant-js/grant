@@ -42,7 +42,7 @@ import helmet from 'helmet';
 import http from 'http';
 import swaggerUi from 'swagger-ui-express';
 
-import { config, printConfigSummary, validateConfig } from '@/config';
+import { config, printConfigSummary, resolveCredentials, validateConfig } from '@/config';
 import { schema } from '@/graphql/resolvers';
 import { GraphqlContext } from '@/graphql/types';
 import { i18nMiddleware, initializeI18n } from '@/i18n';
@@ -51,13 +51,17 @@ import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
-import { resolveDatabaseConnectionString, secretResolver } from '@/lib/secrets';
+import {
+  resolveDatabaseConnectionString,
+  resolveDatabasePassword,
+  secretResolver,
+} from '@/lib/secrets';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
-import { storageMiddleware } from '@/middleware/storage.middleware';
+import { storageMiddleware, uploadMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
 import { getOpenApiDocument } from '@/rest/openapi';
 import { createEventDispatchRouter } from '@/rest/routes/event-dispatch.routes';
@@ -88,8 +92,23 @@ export interface CreatedApp {
 }
 
 export async function createApp(): Promise<CreatedApp> {
+  // Before `validateConfig()`, and the order is the guarantee rather than a preference.
+  // The overlay writes resolver-provided credentials into `config`, so the validator's
+  // existing "required when this provider is selected" checks see them: a deployment
+  // keeping MAILGUN_API_KEY in Secrets Manager boots, and one whose secret is missing
+  // or misnamed fails here with a configuration error instead of building an adapter
+  // around an empty string. Validate first and every resolver-backed credential looks
+  // absent. See `config/credentials.ts`.
+  const credentials = await resolveCredentials(secretResolver);
+
   validateConfig();
   await printConfigSummary();
+  logger.info({
+    msg: 'Credentials resolved through the secret port',
+    // Key names only. Never the values, and never their lengths — a length is a hint.
+    keys: credentials.resolved,
+    provider: config.secrets.provider,
+  });
 
   await initializeI18n();
   logger.info({
@@ -102,6 +121,10 @@ export async function createApp(): Promise<CreatedApp> {
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
+    // `undefined` under password auth, which is the default and every existing
+    // deployment; a token signer under `DB_AUTH_MODE=iam`. Resolved per connection, not
+    // here — an IAM token is valid about 15 minutes and this process outlives that.
+    password: resolveDatabasePassword(),
     logger: loggerFactory.createLogger('DatabaseConnection'),
   });
 
@@ -178,6 +201,9 @@ export async function createApp(): Promise<CreatedApp> {
   app.use(express.json({ limit: config.app.jsonBodyLimitBytes }));
   app.use(i18nMiddleware);
   if (config.storage.provider === 'local') {
+    // Write before read: `storageMiddleware` is `express.static`, which answers
+    // 404 for a PUT rather than passing it on.
+    app.use('/storage', uploadMiddleware());
     app.use('/storage', storageMiddleware());
   }
 

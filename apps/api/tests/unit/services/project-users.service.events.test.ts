@@ -24,6 +24,7 @@ function buildService() {
       totalCount: 1,
       hasNextPage: false,
     }),
+    existsById: vi.fn().mockResolvedValue(true),
   } as unknown as IProjectRepository;
 
   const userRepository = {
@@ -77,7 +78,8 @@ function buildService() {
       organizationProjectRepository,
       accountProjectRepository,
       audit,
-      events
+      events,
+      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never
     ),
     events,
   };

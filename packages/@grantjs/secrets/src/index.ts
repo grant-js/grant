@@ -1,3 +1,5 @@
+export type { AwsRdsIamTokenConfig } from './aws-rds-iam';
+export { AwsRdsIamTokenSigner } from './aws-rds-iam';
 export type { AwsSecretsManagerResolverConfig } from './aws-secrets-manager';
 export { AwsSecretsManagerResolver } from './aws-secrets-manager';
 export { EnvSecretResolver } from './env';

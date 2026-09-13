@@ -35,9 +35,7 @@ export class UserPermissionService implements IUserPermissionService {
   ) {}
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
-    const users = await this.userRepository.getUsers({ ids: [userId], limit: 1 }, transaction);
-
-    if (users.users.length === 0) {
+    if (!(await this.userRepository.existsById(userId, transaction))) {
       throw new NotFoundError('User');
     }
   }

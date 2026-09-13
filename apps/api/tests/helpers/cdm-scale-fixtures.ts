@@ -17,6 +17,7 @@
  * that sends it pays more than the numbers here.
  */
 
+import { TAG_COLORS } from '@grantjs/constants';
 import { CdmFindBy, CdmModeStrategy, type SyncProjectInput } from '@grantjs/schema';
 
 export interface CdmScaleProfile {
@@ -241,7 +242,15 @@ const PROSE = [
 ];
 
 const DEPARTMENTS = ['finance', 'programmes', 'compliance', 'operations', 'research', 'legal'];
-const COLORS = ['blue', 'green', 'amber', 'red', 'violet', 'slate', 'teal', 'rose'];
+/**
+ * The platform's own list, not a copy of it. The hand-written version carried `slate`,
+ * which `TAG_COLORS` does not — so `TagService.createTag` rejected every tag that drew
+ * it with `errors.validation.colorInvalid`, and whether a profile failed depended on
+ * how many tags it generated. Third instance of the same defect family as the
+ * permission-condition shape and the `findBy: Id` user resolver: a value the request
+ * schema never looks at, checked by a service the fixture was never run through.
+ */
+const COLORS: readonly string[] = TAG_COLORS;
 
 function pick<T>(rand: () => number, pool: readonly T[]): T {
   return pool[Math.floor(rand() * pool.length)] as T;
@@ -324,10 +333,15 @@ export function generateCdmAtScale(profile: CdmScaleProfile, seed = 0x5ea1): Syn
       action,
       name: `${resource.name}: ${action}`,
       description: rand() < profile.descriptionRatio ? sentence(rand, 10) : null,
+      // IAM-shaped, because that is what `permissionConditionSchema` accepts:
+      // `{ <ComparisonOperator>: { <fieldPath>: <value> } }`. The earlier
+      // `{ field, operator, value }` shape was accepted by
+      // `startProjectSyncRequestSchema` — which does not look inside a condition — and
+      // then rejected by `PermissionService.createPermission` on the first entity of
+      // every import. See `cdm-scale-fixtures.test.ts` for the assertion that now holds
+      // the two apart.
       condition:
-        rand() < 0.15
-          ? { field: 'metadata.department', operator: 'eq', value: pick(rand, DEPARTMENTS) }
-          : null,
+        rand() < 0.15 ? { StringEquals: { 'metadata.department': pick(rand, DEPARTMENTS) } } : null,
       groups: [],
       tags: [],
       primaryTag: null,
@@ -369,11 +383,22 @@ export function generateCdmAtScale(profile: CdmScaleProfile, seed = 0x5ea1): Syn
   const users = Array.from({ length: profile.users }, (_, i) => {
     const first = pick(rand, FIRST_NAMES);
     const last = pick(rand, LAST_NAMES);
-    // Real imports mix both: an IdP feed carries stable ids, a CSV carries emails.
-    const byId = rand() < 0.35;
-    const key = byId
-      ? { value: uuid(rand), findBy: CdmFindBy.Id }
-      : { value: `${first}.${last}${i}@${pick(rand, DOMAINS)}`, findBy: CdmFindBy.Email };
+    // Always `Email`, and the reason is not stylistic. In CDM, `findBy: Id` is a
+    // *lookup* against a user that already exists: `expand-cdm-sync-input.lib.ts`
+    // pushes no `provisionedUsers` entry for it and passes the id straight to the
+    // assignment step. A self-contained fixture has no such user, so every
+    // id-resolved entry failed with `NotFoundError: User not found` the moment the
+    // import tried to link a group to it. `Email` (or `Key`) is the only resolver
+    // that provisions.
+    //
+    // The earlier version emitted 35% by id, on the reasoning that "an IdP feed
+    // carries stable ids" — true of an IdP feed, and false of a document that has to
+    // create the users it assigns. Second instance of the same defect family as the
+    // permission-condition shape; see the header of `cdm-scale-fixtures.test.ts`.
+    const key = {
+      value: `${first}.${last}${i}@${pick(rand, DOMAINS)}`,
+      findBy: CdmFindBy.Email,
+    };
 
     const apiKeys =
       rand() < profile.apiKeyRatio

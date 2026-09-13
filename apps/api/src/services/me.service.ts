@@ -2,6 +2,7 @@ import { MILLISECONDS_PER_DAY } from '@grantjs/constants';
 import {
   Grant,
   type IAccountRepository,
+  type IFileStorageService,
   type IMeService,
   type IUserRepository,
 } from '@grantjs/core';
@@ -14,13 +15,15 @@ import {
 
 import { config } from '@/config';
 import { AuthenticationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { hydratePictureUrl } from '@/lib/picture-url.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 export class MeService implements IMeService {
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly accountRepository: IAccountRepository,
-    private readonly grant: Grant
+    private readonly grant: Grant,
+    private readonly fileStorage: IFileStorageService
   ) {}
 
   private getVerificationExpirationMs(): number {
@@ -55,6 +58,15 @@ export class MeService implements IMeService {
 
     if (!user) {
       throw new AuthenticationError('User not found');
+    }
+
+    await hydratePictureUrl(this.fileStorage, user);
+    if (Array.isArray(user.accounts)) {
+      for (const account of user.accounts) {
+        if (account.owner) {
+          await hydratePictureUrl(this.fileStorage, account.owner);
+        }
+      }
     }
 
     const allAuthMethods = Array.isArray(user.authenticationMethods)

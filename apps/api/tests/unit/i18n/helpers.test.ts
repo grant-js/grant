@@ -74,6 +74,38 @@ describe('i18n helpers', () => {
       const error = { message: 'No i18n', translationKey: 'errors.auth.forbidden' };
       expect(translateError(req, error as unknown as HttpException)).toBe('No i18n');
     });
+
+    it('returns error.message when the key is not defined in the catalogue', async () => {
+      // i18next answers an unresolvable key with the key itself, so without this the API
+      // sends `errors.conflict.organization` to a user as if it were a sentence.
+      // `mapDomainToHttp` derives that family from a runtime resource name, so the key
+      // set is unbounded and cannot be closed by adding entries.
+      const { translateError } = await import('@/i18n/helpers');
+      const req = { i18n: { t: vi.fn((key: string) => key) } } as unknown as Request;
+      const error = {
+        message: 'Organization already exists',
+        translationKey: 'errors.conflict.organization',
+      };
+
+      expect(translateError(req, error as unknown as HttpException)).toBe(
+        'Organization already exists'
+      );
+    });
+
+    it('needs nothing of req.i18n beyond t', async () => {
+      // This runs inside the error handler. An `i18n.exists()` check — the obvious way
+      // to detect a miss — makes the handler throw when `req.i18n` does not carry that
+      // method, and Express then answers 500 with no body for *every* error. Caught by
+      // the integration suite, whose i18n mock has only `t` and `language`.
+      const { translateError } = await import('@/i18n/helpers');
+      const req = { i18n: { t: (key: string) => `Localized: ${key}` } } as unknown as Request;
+      const error = { message: 'Fallback', translationKey: 'errors.auth.forbidden' };
+
+      expect(() => translateError(req, error as unknown as HttpException)).not.toThrow();
+      expect(translateError(req, error as unknown as HttpException)).toBe(
+        'Localized: errors.auth.forbidden'
+      );
+    });
   });
 
   describe('t', () => {

@@ -237,6 +237,10 @@ export type ResolversTypes = ResolversObject<{
   CdmOnConflict: Types.CdmOnConflict;
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: ResolverTypeWrapper<Types.ChangeMyPasswordResult>;
+  ConfirmMyProjectMembershipPictureUploadInput: Types.ConfirmMyProjectMembershipPictureUploadInput;
+  ConfirmMyUserPictureUploadInput: Types.ConfirmMyUserPictureUploadInput;
+  ConfirmOrganizationPictureUploadInput: Types.ConfirmOrganizationPictureUploadInput;
+  ConfirmUserPictureUploadInput: Types.ConfirmUserPictureUploadInput;
   CreateAccountInput: Types.CreateAccountInput;
   CreateAccountResult: ResolverTypeWrapper<Types.CreateAccountResult>;
   CreateApiKeyInput: Types.CreateApiKeyInput;
@@ -444,8 +448,12 @@ export type ResolversTypes = ResolversObject<{
   RemoveUserRoleInput: Types.RemoveUserRoleInput;
   RemoveUserTagInput: Types.RemoveUserTagInput;
   ReplayWebhookDeliveryInput: Types.ReplayWebhookDeliveryInput;
+  RequestMyProjectMembershipPictureUploadUrlInput: Types.RequestMyProjectMembershipPictureUploadUrlInput;
+  RequestMyUserPictureUploadUrlInput: Types.RequestMyUserPictureUploadUrlInput;
+  RequestOrganizationPictureUploadUrlInput: Types.RequestOrganizationPictureUploadUrlInput;
   RequestPasswordResetInput: Types.RequestPasswordResetInput;
   RequestPasswordResetResponse: ResolverTypeWrapper<Types.RequestPasswordResetResponse>;
+  RequestUserPictureUploadUrlInput: Types.RequestUserPictureUploadUrlInput;
   ResendVerificationInput: Types.ResendVerificationInput;
   ResendVerificationResponse: ResolverTypeWrapper<Types.ResendVerificationResponse>;
   ResetPasswordInput: Types.ResetPasswordInput;
@@ -523,6 +531,8 @@ export type ResolversTypes = ResolversObject<{
   UploadMyUserPictureInput: Types.UploadMyUserPictureInput;
   UploadOrganizationPictureInput: Types.UploadOrganizationPictureInput;
   UploadOrganizationPictureResult: ResolverTypeWrapper<Types.UploadOrganizationPictureResult>;
+  UploadUrl: ResolverTypeWrapper<Types.UploadUrl>;
+  UploadUrlHeader: ResolverTypeWrapper<Types.UploadUrlHeader>;
   UploadUserPictureInput: Types.UploadUserPictureInput;
   UploadUserPictureResult: ResolverTypeWrapper<Types.UploadUserPictureResult>;
   User: ResolverTypeWrapper<Types.User>;
@@ -618,6 +628,10 @@ export type ResolversParentTypes = ResolversObject<{
   CdmModeInput: Types.CdmModeInput;
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: Types.ChangeMyPasswordResult;
+  ConfirmMyProjectMembershipPictureUploadInput: Types.ConfirmMyProjectMembershipPictureUploadInput;
+  ConfirmMyUserPictureUploadInput: Types.ConfirmMyUserPictureUploadInput;
+  ConfirmOrganizationPictureUploadInput: Types.ConfirmOrganizationPictureUploadInput;
+  ConfirmUserPictureUploadInput: Types.ConfirmUserPictureUploadInput;
   CreateAccountInput: Types.CreateAccountInput;
   CreateAccountResult: Types.CreateAccountResult;
   CreateApiKeyInput: Types.CreateApiKeyInput;
@@ -801,8 +815,12 @@ export type ResolversParentTypes = ResolversObject<{
   RemoveUserRoleInput: Types.RemoveUserRoleInput;
   RemoveUserTagInput: Types.RemoveUserTagInput;
   ReplayWebhookDeliveryInput: Types.ReplayWebhookDeliveryInput;
+  RequestMyProjectMembershipPictureUploadUrlInput: Types.RequestMyProjectMembershipPictureUploadUrlInput;
+  RequestMyUserPictureUploadUrlInput: Types.RequestMyUserPictureUploadUrlInput;
+  RequestOrganizationPictureUploadUrlInput: Types.RequestOrganizationPictureUploadUrlInput;
   RequestPasswordResetInput: Types.RequestPasswordResetInput;
   RequestPasswordResetResponse: Types.RequestPasswordResetResponse;
+  RequestUserPictureUploadUrlInput: Types.RequestUserPictureUploadUrlInput;
   ResendVerificationInput: Types.ResendVerificationInput;
   ResendVerificationResponse: Types.ResendVerificationResponse;
   ResetPasswordInput: Types.ResetPasswordInput;
@@ -871,6 +889,8 @@ export type ResolversParentTypes = ResolversObject<{
   UploadMyUserPictureInput: Types.UploadMyUserPictureInput;
   UploadOrganizationPictureInput: Types.UploadOrganizationPictureInput;
   UploadOrganizationPictureResult: Types.UploadOrganizationPictureResult;
+  UploadUrl: Types.UploadUrl;
+  UploadUrlHeader: Types.UploadUrlHeader;
   UploadUserPictureInput: Types.UploadUserPictureInput;
   UploadUserPictureResult: Types.UploadUserPictureResult;
   User: Types.User;
@@ -1466,6 +1486,30 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationChangeMyPasswordArgs, 'input'>
   >;
+  confirmMyProjectMembershipPictureUpload?: Resolver<
+    ResolversTypes['UploadUserPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationConfirmMyProjectMembershipPictureUploadArgs, 'input'>
+  >;
+  confirmMyUserPictureUpload?: Resolver<
+    ResolversTypes['UploadUserPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationConfirmMyUserPictureUploadArgs, 'input'>
+  >;
+  confirmOrganizationPictureUpload?: Resolver<
+    ResolversTypes['UploadOrganizationPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationConfirmOrganizationPictureUploadArgs, 'input'>
+  >;
+  confirmUserPictureUpload?: Resolver<
+    ResolversTypes['UploadUserPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationConfirmUserPictureUploadArgs, 'input'>
+  >;
   createApiKey?: Resolver<
     ResolversTypes['CreateApiKeyResult'],
     ParentType,
@@ -1689,11 +1733,35 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationReplayWebhookDeliveryArgs, 'input'>
   >;
+  requestMyProjectMembershipPictureUploadUrl?: Resolver<
+    ResolversTypes['UploadUrl'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationRequestMyProjectMembershipPictureUploadUrlArgs, 'input'>
+  >;
+  requestMyUserPictureUploadUrl?: Resolver<
+    ResolversTypes['UploadUrl'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationRequestMyUserPictureUploadUrlArgs, 'input'>
+  >;
+  requestOrganizationPictureUploadUrl?: Resolver<
+    ResolversTypes['UploadUrl'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationRequestOrganizationPictureUploadUrlArgs, 'input'>
+  >;
   requestPasswordReset?: Resolver<
     ResolversTypes['RequestPasswordResetResponse'],
     ParentType,
     ContextType,
     RequireFields<Types.MutationRequestPasswordResetArgs, 'input'>
+  >;
+  requestUserPictureUploadUrl?: Resolver<
+    ResolversTypes['UploadUrl'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationRequestUserPictureUploadUrlArgs, 'input'>
   >;
   resendInvitationEmail?: Resolver<
     ResolversTypes['OrganizationInvitation'],
@@ -3128,6 +3196,25 @@ export type UploadOrganizationPictureResultResolvers<
   url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type UploadUrlResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UploadUrl'] = ResolversParentTypes['UploadUrl'],
+> = ResolversObject<{
+  expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  headers?: Resolver<Array<ResolversTypes['UploadUrlHeader']>, ParentType, ContextType>;
+  method?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type UploadUrlHeaderResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UploadUrlHeader'] =
+    ResolversParentTypes['UploadUrlHeader'],
+> = ResolversObject<{
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  value?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type UploadUserPictureResultResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['UploadUserPictureResult'] =
@@ -3550,6 +3637,8 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   TagPage?: TagPageResolvers<ContextType>;
   UnreadNotificationCount?: UnreadNotificationCountResolvers<ContextType>;
   UploadOrganizationPictureResult?: UploadOrganizationPictureResultResolvers<ContextType>;
+  UploadUrl?: UploadUrlResolvers<ContextType>;
+  UploadUrlHeader?: UploadUrlHeaderResolvers<ContextType>;
   UploadUserPictureResult?: UploadUserPictureResultResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   UserAuthenticationMethod?: UserAuthenticationMethodResolvers<ContextType>;

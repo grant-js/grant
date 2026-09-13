@@ -1,0 +1,10 @@
+extend type Mutation {
+  """
+  Record a direct upload of a project-membership picture that has completed.
+  Re-checks membership and reads the object back from storage before anything is
+  written to the membership.
+  """
+  confirmMyProjectMembershipPictureUpload(
+    input: ConfirmMyProjectMembershipPictureUploadInput!
+  ): UploadUserPictureResult!
+}

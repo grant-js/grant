@@ -26,7 +26,10 @@
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@grantjs/core": "workspace:*"
@@ -49,7 +52,8 @@
     "@aws-sdk/s3-request-presigner": "^3.1127.0",
     "@types/node": "^26.4.1",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "typescript": "npm:@typescript/typescript6@^6.0.2"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vitest": "^4.1.10"
   },
   "license": "MIT"
 }

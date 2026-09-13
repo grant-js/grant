@@ -74,6 +74,22 @@
             }
           ]
         },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "content-type"
+              ],
+              "AllowedMethods": [
+                "PUT"
+              ],
+              "AllowedOrigins": [
+                "https://grant.example.com"
+              ],
+              "MaxAge": 3600
+            }
+          ]
+        },
         "PublicAccessBlockConfiguration": {
           "BlockPublicAcls": true,
           "BlockPublicPolicy": true,
@@ -373,14 +389,6 @@
             },
             {
               "Action": [
-                "ses:SendEmail",
-                "ses:SendRawEmail"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
                 "sqs:SendMessage",
                 "sqs:GetQueueAttributes",
                 "sqs:GetQueueUrl"
@@ -438,6 +446,7 @@
             "DB_POOL_MAX": "2",
             "JOBS_PROVIDER": "aws",
             "SECURITY_ORIGIN_VERIFY_REQUIRED": "true",
+            "API_JSON_BODY_LIMIT_BYTES": "5242880",
             "APP_URL": "https://grant.example.com",
             "SECURITY_FRONTEND_URL": "https://grant.example.com",
             "DOCS_URL": "https://grant.example.com/docs",
@@ -584,6 +593,43 @@
         "aws:cdk:path": "GrantPlatform/Grant/Api/Function/invoke-function"
       }
     },
+    "GrantOriginVerifyAlarmFilterD2CE028B": {
+      "Type": "AWS::Logs::MetricFilter",
+      "Properties": {
+        "FilterPattern": "\"\\\"module\\\":\\\"OriginVerify\\\"\" \"\\\"level\\\":\\\"warn\\\"\"",
+        "LogGroupName": {
+          "Ref": "GrantApiLogs7DBA426F"
+        },
+        "MetricTransformations": [
+          {
+            "DefaultValue": 0,
+            "MetricName": "DirectOriginRequests",
+            "MetricNamespace": "Grant/Edge",
+            "MetricValue": "1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/OriginVerifyAlarm/Filter/Resource"
+      }
+    },
+    "GrantOriginVerifyAlarm4857E4E3": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Requests reached the API Function URL without CloudFront's origin-verify secret. The URL is publicly reachable by design — Origin Access Control cannot carry this API — so this is the compensating control for that accepted risk. A sustained rate means someone is working the origin directly.",
+        "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+        "EvaluationPeriods": 2,
+        "MetricName": "DirectOriginRequests",
+        "Namespace": "Grant/Edge",
+        "Period": 300,
+        "Statistic": "Sum",
+        "Threshold": 20,
+        "TreatMissingData": "notBreaching"
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/OriginVerifyAlarm/Alarm/Resource"
+      }
+    },
     "GrantJobsLogsF2529BC2": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
@@ -717,14 +763,6 @@
             },
             {
               "Action": [
-                "ses:SendEmail",
-                "ses:SendRawEmail"
-              ],
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
                 "sqs:SendMessage",
                 "sqs:GetQueueAttributes",
                 "sqs:GetQueueUrl"
@@ -798,6 +836,7 @@
             "DB_POOL_MAX": "2",
             "JOBS_PROVIDER": "aws",
             "SECURITY_ORIGIN_VERIFY_REQUIRED": "true",
+            "API_JSON_BODY_LIMIT_BYTES": "5242880",
             "APP_URL": "https://grant.example.com",
             "SECURITY_FRONTEND_URL": "https://grant.example.com",
             "DOCS_URL": "https://grant.example.com/docs",
@@ -2280,7 +2319,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VSwW7bMAz9lt4VrUu6YdfU2YoBHZrZW68BLTOeGln0RClBIPjfB8luErTZRXx84qPAR83l/PMXeXsDB56pZjczupax8qB2okSm4BQKOPAmMiqHnjuw0KKTscq5KLZ2RINojhY6amoZf0Ft8HmeLh8M1WAyMQheyHgf1G7UTWgMazJaHc/0lI/JPXBS/2UZfwYMmMpGkM+z9iIdBCq3AWb0LFekdui+d9DiMjHpTpbYE2tP7pj6C0Mty/hI7YOj0Kdur3gQBrq6ARkv+nwLVnlNNhWe8Cv47Uzip7BG12nmVPB1j9ZX2dYf0PfatqngOvsIR3TP6LKw0rY16On9W4PQ0MlYksm+5Hh25GRGeoJlLMNUFsaFbGKDvaFjh9bL0e3ViRCTfdmzQShDodk6sl7Gq+MXoP5cbOMyXWn2TtfhrU1PTrfaLpVC5oKsd5Qtu0ZXi/8UX/YehKPg8dNCxmWJilyTp82oQi+WADBmwyDyXJWHdnL8Kfg+eFEE9tSdvn/WT3j8CBuTVrOBAyuj5fLAhdF5W2+ka0d73aDL/6vY2mm5g7DUoHzhD/v5nfx4J29vXljrmQvW6w5lOcZ/ppCd0psDAAA="
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VTy27bMBD8ltxpNrXTolfFboICCeJKba7GitoojCnS3SVtGIT+vSCl2ELqXrQz+yI4Q83l/Os3eX0FB56pZjszupax8qC2okR2gRQKOPAmMipCzx1YaJFkrDIXyxc7oF40Rwuda2oZf0Ft8HmeivfG1WByohe8kPE2qO0wN6IhrJ3R6nhOj3wgt8Bp+g/L+DNgwNQ2gPw9z05oL1DRBpjRs1w5tUX60UGLRcqkmixx51h7R8e0XxjXsowPrr0nF3Zp2wk/oiet7rTxSKkw5b0w0NUNyDg55C5Y5bWzqfmE38FvMik/hjVSp5lTw/c9Wl9lzR9ht9O2TQ2Xsw9wRHpGyoOVtq1B7/49qxcaOhlLZ7JoOZ7leldKGReaA3j1KmNhgLpUzKAXmI5nGcswrgiDk5vY4M64Y4fWy8Gm1SkhRt2z2OP+F3LWy3hRmiWo14mNU7rS7EnX4aOET6RbbQulkHnprCeX5byUrhb/aZ7u7gW54PHLQsaiROWoybfNqEIvCgAYWN+LfK/KQzu68RT8LnixDOxdd/pv8vyIh0eyMcm2DRxYGS2LAy+Nzk5+GF2T2+sGKT/M9OAG43thXYPyjT/t5zfy8428vnpjrWcUrNcdynKIfwEXYGjS1AMAAA=="
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

@@ -5,20 +5,21 @@ import { OrganizationService } from '@/services/organizations.service';
 const organizationId = '11111111-1111-4111-8111-111111111111';
 const now = new Date('2026-09-11T12:00:00.000Z');
 
-function org(pictureUrl: string | null) {
+function org(pictureUrl: string | null, picturePath: string | null = null) {
   return {
     id: organizationId,
     name: 'Acme',
     slug: 'acme',
     requireMfaForSensitiveActions: false,
     pictureUrl,
+    picturePath,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
   };
 }
 
-describe('OrganizationService.setOrganizationPictureUrl', () => {
+describe('OrganizationService.setOrganizationPicture', () => {
   const audit = {
     logUpdate: vi.fn(),
     logCreate: vi.fn(),
@@ -27,10 +28,13 @@ describe('OrganizationService.setOrganizationPictureUrl', () => {
   };
   const organizationRepository = {
     getOrganizations: vi.fn(),
-    setOrganizationPictureUrl: vi.fn(),
+    setOrganizationPicture: vi.fn(),
   };
   const organizationUserRepository = {
     getUserOrganizationMemberships: vi.fn(),
+  };
+  const fileStorage = {
+    getUrl: vi.fn(async (path: string) => `/storage/${path}`),
   };
 
   function svc() {
@@ -39,7 +43,8 @@ describe('OrganizationService.setOrganizationPictureUrl', () => {
       organizationUserRepository as never,
       { userId: 'u1' } as never,
       audit as never,
-      { publish: vi.fn() } as never
+      { publish: vi.fn() } as never,
+      fileStorage as never
     );
   }
 
@@ -50,28 +55,27 @@ describe('OrganizationService.setOrganizationPictureUrl', () => {
       totalCount: 1,
       hasNextPage: false,
     });
-    organizationRepository.setOrganizationPictureUrl.mockResolvedValue(
-      org('/storage/organizations/org/picture.jpg')
+    organizationRepository.setOrganizationPicture.mockResolvedValue(
+      org(null, 'organizations/org/picture.jpg')
     );
   });
 
-  it('updates pictureUrl and writes an audit log', async () => {
+  it('stores picturePath and derives pictureUrl on the way out', async () => {
     const service = svc();
-    const updated = await service.setOrganizationPictureUrl(
-      organizationId,
-      '/storage/organizations/org/picture.jpg'
-    );
+    const updated = await service.setOrganizationPicture(organizationId, {
+      picturePath: 'organizations/org/picture.jpg',
+    });
 
-    expect(organizationRepository.setOrganizationPictureUrl).toHaveBeenCalledWith(
+    expect(organizationRepository.setOrganizationPicture).toHaveBeenCalledWith(
       organizationId,
-      '/storage/organizations/org/picture.jpg',
+      { picturePath: 'organizations/org/picture.jpg' },
       undefined
     );
     expect(audit.logUpdate).toHaveBeenCalledWith(
       organizationId,
       { id: organizationId, pictureUrl: null },
-      { id: organizationId, pictureUrl: '/storage/organizations/org/picture.jpg' },
-      { context: 'OrganizationService.setOrganizationPictureUrl' },
+      { id: organizationId, pictureUrl: null },
+      { context: 'OrganizationService.setOrganizationPicture' },
       undefined
     );
     expect(updated.pictureUrl).toBe('/storage/organizations/org/picture.jpg');

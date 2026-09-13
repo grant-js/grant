@@ -40,9 +40,16 @@ describe('operation documents', () => {
 
   // Pinned, not a floor: pass 5 slice 5 removed one file and two query operations
   // that were superseded by list queries, and a floor would have absorbed that
-  // silently. 116 before that slice, 115 after, 116 with upload-organization-picture.
+  // silently. 116 before that slice, 115 after it, 117 once part D's first
+  // direct-upload pair (`requestMyUserPictureUploadUrl`,
+  // `confirmMyUserPictureUpload`) arrived, and 121 with the two remaining targets —
+  // project membership and the administrator route — each another request/confirm
+  // pair. 122 after `main` merged in, which added `upload-organization-picture`.
+  // 124 after slice 17b: organization request/confirm (the last upload target).
+  // Updating this number is the point of the pin, not a nuisance: every change
+  // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(116);
+    expect(files).toHaveLength(124);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {

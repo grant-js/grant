@@ -4,7 +4,10 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useApolloClient } from '@apollo/client/react';
 
-import { SettingProfileInformationForm } from '@/components/features/settings';
+import {
+  SettingProfileInformationForm,
+  type SettingProfileInformationFormProps,
+} from '@/components/features/settings';
 import { DashboardLayout } from '@/components/layout';
 import { SettingsSidebar } from '@/components/navigation';
 import { evictAuthCache } from '@/hooks/auth';
@@ -16,7 +19,7 @@ export default function ProfileSettingsPage() {
   const t = useTranslations('settings.profile');
   usePageTitle('settings.profile');
 
-  const { uploadMyUserPicture, updateMyUser } = useMyMutations();
+  const { uploadMyUserPictureDirect, updateMyUser } = useMyMutations();
   const { getCurrentAccount } = useAuthStore();
   const currentAccount = getCurrentAccount();
   const apolloClient = useApolloClient();
@@ -43,17 +46,23 @@ export default function ProfileSettingsPage() {
     evictAuthCache(apolloClient.cache);
   };
 
-  const handleUploadPicture = async (file: string, filename: string, contentType: string) => {
+  const handleUploadPicture: SettingProfileInformationFormProps['onUploadPicture'] = async (
+    file,
+    options
+  ) => {
     if (!userData) {
       return;
     }
 
-    await uploadMyUserPicture({
-      file,
-      filename,
-      contentType,
-    });
-    evictAuthCache(apolloClient.cache);
+    try {
+      await uploadMyUserPictureDirect(file, options);
+    } finally {
+      // Evicted even when the upload failed. The bytes may already be at the path the
+      // picture is served from, so the cached copy of "what my picture is" is no longer
+      // trustworthy either way — re-reading the server's answer is the only honest state
+      // to leave the UI in.
+      evictAuthCache(apolloClient.cache);
+    }
   };
 
   if (!userData) {
