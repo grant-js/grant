@@ -914,13 +914,25 @@ deliberately _not_ a CloudFront origin (`storage-bucket.ts`: "objects are served
 API rather than from the edge"). So an adopter cannot set it without first giving the bucket
 a public front, which that construct exists to avoid.
 
-**Closed on unit/e2e (slice 17a, #440); AWS deploy deferred.** Additive `picture_path`
-on `users`, `project_users`, and `organizations`. Upload writes store the key;
-`effectivePictureUrl` derives `pictureUrl` on read. Explicit `pictureUrl` updates
-clear the path. REST org response max is 2048. Length >500 is proven with a stubbed
-`getUrl` — LocalStack community does not verify SigV4 (ADR 0007), so a local
-presign does not prove length. Re-confirm before a deploy; slice 16 authorization
-does not automatically cover 17a.
+**Closed on unit/e2e (slice 17a, #440). AWS deploy authorized 2026-09-13, not
+executed.** Additive `picture_path` on `users`, `project_users`, and
+`organizations`. Upload writes store the key; `effectivePictureUrl` derives
+`pictureUrl` on read. Explicit `pictureUrl` updates clear the path. REST org
+response max is 2048. Length >500 is proven with a stubbed `getUrl` — LocalStack
+community does not verify SigV4 (ADR 0007), so a local presign does not prove
+length.
+
+Ale re-confirmed spend on 2026-09-13 ("Let's now deploy the AWS stack and prove
+it works"). The Cloud Agent that received that turn
+(`bc-adf9fd7a-9fe7-41af-8114-88ee70587203`) is a Cursor-managed VM: no AWS CLI,
+no `~/.aws`, no `deploy/aws/.env`, no `grant-cdk` profile. Ale's My Machines
+worker `810af35c-302b-57ff-90cc-8f0fee28dee5` (`logusgraphics-ubuntu`) was
+connected, idle, and `eligibleForSubagent`, but this parent's Task tool only
+exposes `environment: local | cloud` — `cloud` boots another managed VM
+(`usePrivateWorker: false`), not that machine. Cycle 3 therefore did not start.
+Pick the same recipe up **on that worker** (or inject `grant-cdk` into this
+environment); do not treat this paragraph as a stack teardown or a failed
+deploy.
 
 Carried as a follow-on from slice 16 and **fixed in 17a**: storing paths and
 presigning on read. What slice 16 owed was to find it, and the only reason it was

@@ -228,7 +228,10 @@ proves nothing about length or expiry. The account is at baseline and the deploy
 known-good; a single cycle confirming one upload completing end to end is the closing
 evidence. Deploy authorisation for this account was given for this story on 2026-09-11
 ("If we need to deploy to AWS via CDK that's perfectly fine in order to measure and gather
-evidence") — **re-confirm before spending money**, since that was scoped to slice 16.
+evidence") — **re-confirmed 2026-09-13** ("Let's now deploy the AWS stack and prove it
+works"). The confirming Cloud Agent run had no `grant-cdk` credentials and could not
+place onto `logusgraphics-ubuntu`; see measurements F-3. Run the recipe below on that
+worker.
 
 Deploy recipe that worked, from `deploy/aws/`:
 
@@ -270,7 +273,8 @@ AWS_PROFILE=grant-cdk pnpm exec cdk deploy --all \
 - [x] 17b: organizations have `request`/`confirm`; `toDataUrl` deleted
 - [x] Parent stack plan updated: status table row, ordered-slices row, and follow-on 14
       given a disposition (still "slice 17a" until #440 merges)
-- [x] Measurements file: F-3 closed on unit/e2e; deploy deferred until Ale re-confirms
+- [x] Measurements file: F-3 closed on unit/e2e; deploy authorized 2026-09-13,
+      blocked on this Cloud Agent VM (no `grant-cdk`); run on `logusgraphics-ubuntu`
 - [x] Cacheability consequence stated in the 17a PR body
 
 ## Open questions for whoever picks this up
