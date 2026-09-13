@@ -922,17 +922,13 @@ response max is 2048. Length >500 is proven with a stubbed `getUrl` — LocalSta
 community does not verify SigV4 (ADR 0007), so a local presign does not prove
 length.
 
-Ale re-confirmed spend on 2026-09-13 ("Let's now deploy the AWS stack and prove
-it works"). The Cloud Agent that received that turn
-(`bc-adf9fd7a-9fe7-41af-8114-88ee70587203`) is a Cursor-managed VM: no AWS CLI,
-no `~/.aws`, no `deploy/aws/.env`, no `grant-cdk` profile. Ale's My Machines
-worker `810af35c-302b-57ff-90cc-8f0fee28dee5` (`logusgraphics-ubuntu`) was
-connected, idle, and `eligibleForSubagent`, but this parent's Task tool only
-exposes `environment: local | cloud` — `cloud` boots another managed VM
-(`usePrivateWorker: false`), not that machine. Cycle 3 therefore did not start.
-Pick the same recipe up **on that worker** (or inject `grant-cdk` into this
-environment); do not treat this paragraph as a stack teardown or a failed
-deploy.
+Ale re-confirmed spend on 2026-09-13 and **deployed from `logusgraphics-ubuntu`**.
+Confirm writes the key: objects are in the uploads bucket at
+`users/<id>/picture.jpg` and the organization key. Cycle 3 then found the next
+defect: the web avatar helper appended `&v=<ms>` to the derived presigned GET,
+S3 answered `403` `application/xml`, and Chrome reported OpaqueResponseBlocking.
+Fixed in `addImageCacheBuster` (leave SigV4 URLs untouched). No re-upload
+needed; redeploy the web asset.
 
 Carried as a follow-on from slice 16 and **fixed in 17a**: storing paths and
 presigning on read. What slice 16 owed was to find it, and the only reason it was
@@ -1173,3 +1169,25 @@ deploy — 38 images for an account that has run ~15–20 platform cycles.
 
 It is a bootstrap-hygiene gap rather than a template defect, so it does not belong to any
 construct in `deploy/aws`. Raised as follow-on 16.
+
+---
+
+# Cycle 3 — slice 17a on real S3, deployed 2026-09-13
+
+Ale deployed from `logusgraphics-ubuntu` after the Cloud Agent VM could not.
+Confirm succeeded: profile and organization pictures are in the uploads bucket.
+They do not display in the web app.
+
+**F-3b. `addImageCacheBuster` breaks a derived presigned GET.** The avatar
+component always appends `&v=<ms>` (`apps/web/lib/utils/image-url.ts`). That is
+correct for a stable `/storage/...` path. After 17a, `pictureUrl` is a SigV4
+query string. The extra parameter invalidates the signature. S3 returns
+`403 SignatureDoesNotMatch` as `application/xml`. Chrome's OpaqueResponseBlocking
+then hides the XML from an `<img>` destination — the console warning matches
+that MIME, not a missing object.
+
+The report URL ended with `&x-id=GetObject&v=1789293346793`. `v` is not an AWS
+parameter.
+
+Fix: leave URLs that already carry `X-Amz-Signature` unchanged. Local paths
+still get `?v=`. Redeploy web; do not re-upload.
