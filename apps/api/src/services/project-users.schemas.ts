@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import {
+  STORED_PICTURE_PATH_MAX_LENGTH,
+  STORED_PICTURE_URL_MAX_LENGTH,
+} from '@/lib/picture-url.lib';
+
 import { deleteSchema, idSchema } from './common/schemas';
 
 export const getProjectUsersParamsSchema = z.object({
@@ -30,11 +35,13 @@ export const updateProjectUserProfileParamsSchema = z
     projectId: idSchema,
     userId: idSchema,
     displayName: z.string().max(255).nullable().optional(),
-    pictureUrl: z.string().max(500).nullable().optional(),
+    pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
+    picturePath: z.string().max(STORED_PICTURE_PATH_MAX_LENGTH).nullable().optional(),
   })
   .refine(
-    (v) => v.displayName !== undefined || v.pictureUrl !== undefined,
-    'At least one of displayName or pictureUrl must be provided'
+    (v) =>
+      v.displayName !== undefined || v.pictureUrl !== undefined || v.picturePath !== undefined,
+    'At least one of displayName, pictureUrl, or picturePath must be provided'
   );
 
 export const removeProjectUserParamsSchema = deleteSchema.extend({

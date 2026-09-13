@@ -204,7 +204,12 @@ describe('confirmUserPictureUpload — authorization again, before the write', (
     expect(result.path).toBe(storedPath);
     expect(updateUser).toHaveBeenCalledWith(
       targetUserId,
-      { pictureUrl: result.url },
+      { picturePath: storedPath },
+      expect.anything()
+    );
+    expect(updateUser).not.toHaveBeenCalledWith(
+      targetUserId,
+      expect.objectContaining({ pictureUrl: result.url }),
       expect.anything()
     );
     expect(updateProjectUserProfile).not.toHaveBeenCalled();
@@ -219,7 +224,11 @@ describe('confirmUserPictureUpload — authorization again, before the write', (
     const result = await handler.confirmUserPictureUpload({ ...confirmInput, scope: projectScope });
 
     expect(updateProjectUserProfile).toHaveBeenCalledWith(
-      { projectId, userId: targetUserId, pictureUrl: result.url },
+      { projectId, userId: targetUserId, picturePath: storedPath },
+      expect.anything()
+    );
+    expect(updateProjectUserProfile).not.toHaveBeenCalledWith(
+      expect.objectContaining({ pictureUrl: result.url }),
       expect.anything()
     );
     expect(updateUser).not.toHaveBeenCalled();
@@ -233,5 +242,46 @@ describe('confirmUserPictureUpload — authorization again, before the write', (
     const result = await handler.confirmUserPictureUpload(confirmInput);
 
     expect(minted.url).toContain(result.path);
+  });
+});
+
+describe('uploadUserPicture — stores the object key', () => {
+  it('writes picturePath on the user in a non-pivot scope', async () => {
+    const { handler } = createHandler();
+    const file = `data:image/png;base64,${Buffer.from('png-bytes').toString('base64')}`;
+
+    const result = await handler.uploadUserPicture({
+      ...validRequest,
+      file,
+    });
+
+    expect(result.path).toBe(storedPath);
+    expect(updateUser).toHaveBeenCalledWith(
+      targetUserId,
+      { picturePath: result.path },
+      expect.anything()
+    );
+    expect(updateUser).not.toHaveBeenCalledWith(
+      targetUserId,
+      expect.objectContaining({ pictureUrl: result.url }),
+      expect.anything()
+    );
+  });
+
+  it('writes picturePath on the membership in a parent project scope', async () => {
+    const { handler } = createHandler();
+    const file = `data:image/png;base64,${Buffer.from('png-bytes').toString('base64')}`;
+
+    const result = await handler.uploadUserPicture({
+      ...validRequest,
+      scope: projectScope,
+      file,
+    });
+
+    expect(updateProjectUserProfile).toHaveBeenCalledWith(
+      { projectId, userId: targetUserId, picturePath: result.path },
+      expect.anything()
+    );
+    expect(updateUser).not.toHaveBeenCalled();
   });
 });

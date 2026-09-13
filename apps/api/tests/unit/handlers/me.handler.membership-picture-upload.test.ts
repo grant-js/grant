@@ -151,7 +151,11 @@ describe('confirmMyProjectMembershipPictureUpload', () => {
 
     expect(result.path).toBe(storedPath);
     expect(updateProjectUserProfile).toHaveBeenCalledWith(
-      { projectId, userId, pictureUrl: result.url },
+      { projectId, userId, picturePath: storedPath },
+      expect.anything()
+    );
+    expect(updateProjectUserProfile).not.toHaveBeenCalledWith(
+      expect.objectContaining({ pictureUrl: result.url }),
       expect.anything()
     );
   });
@@ -167,5 +171,29 @@ describe('confirmMyProjectMembershipPictureUpload', () => {
     });
 
     expect(minted.url).toContain(result.path);
+  });
+});
+
+describe('uploadMyProjectMembershipPicture — stores the object key', () => {
+  it('writes picturePath, not the derived URL', async () => {
+    const { handler } = createHandler();
+    const file = `data:image/png;base64,${Buffer.from('png-bytes').toString('base64')}`;
+
+    const result = await handler.uploadMyProjectMembershipPicture({
+      projectId,
+      file,
+      filename: 'badge.png',
+      contentType: 'image/png',
+    });
+
+    expect(result.path).toBe(storedPath);
+    expect(updateProjectUserProfile).toHaveBeenCalledWith(
+      { projectId, userId, picturePath: result.path },
+      expect.anything()
+    );
+    expect(updateProjectUserProfile).not.toHaveBeenCalledWith(
+      expect.objectContaining({ pictureUrl: result.url }),
+      expect.anything()
+    );
   });
 });

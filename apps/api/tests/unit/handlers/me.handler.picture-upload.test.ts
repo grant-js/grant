@@ -214,7 +214,16 @@ describe('confirmMyUserPictureUpload — the store is the witness', () => {
     const result = await handler.confirmMyUserPictureUpload({ filename: 'profile.jpg' });
 
     expect(result.path).toBe(storedPath);
-    expect(updateUser).toHaveBeenCalledWith(userId, { pictureUrl: result.url }, expect.anything());
+    expect(updateUser).toHaveBeenCalledWith(
+      userId,
+      { picturePath: storedPath },
+      expect.anything()
+    );
+    expect(updateUser).not.toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({ pictureUrl: result.url }),
+      expect.anything()
+    );
   });
 
   it('confirms the same path the request minted', async () => {
@@ -237,6 +246,31 @@ describe('confirmMyUserPictureUpload — the store is the witness', () => {
 
     await expect(handler.confirmMyUserPictureUpload({ filename: 'profile.jpg' })).rejects.toThrow(
       /Not authenticated/
+    );
+  });
+});
+
+describe('uploadMyUserPicture — stores the object key', () => {
+  it('writes picturePath, not the derived URL', async () => {
+    const { handler } = createHandler();
+    const file = `data:image/jpeg;base64,${Buffer.from('jpeg-bytes').toString('base64')}`;
+
+    const result = await handler.uploadMyUserPicture({
+      file,
+      filename: 'profile.jpg',
+      contentType: 'image/jpeg',
+    });
+
+    expect(result.path).toBe(`users/${userId}/picture.jpg`);
+    expect(updateUser).toHaveBeenCalledWith(
+      userId,
+      { picturePath: result.path },
+      expect.anything()
+    );
+    expect(updateUser).not.toHaveBeenCalledWith(
+      userId,
+      expect.objectContaining({ pictureUrl: result.url }),
+      expect.anything()
     );
   });
 });

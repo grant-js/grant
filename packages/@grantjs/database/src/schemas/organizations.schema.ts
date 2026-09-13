@@ -8,6 +8,7 @@ export const organizations = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     slug: varchar('slug', { length: 255 }).notNull(),
     pictureUrl: varchar('picture_url', { length: 500 }),
+    picturePath: varchar('picture_path', { length: 1024 }),
     requireMfaForSensitiveActions: boolean('require_mfa_for_sensitive_actions')
       .default(false)
       .notNull(),
