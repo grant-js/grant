@@ -7,7 +7,8 @@
   — **items 2–11**, i.e. everything the program brief indexes except item 1, which
   the byo-database story closed.
 - **Story brief**: **none, deliberately.** See § Scope, and the objection to it.
-- **Status**: `approved` — gates 1 and 2 taken together on this document, 2026-09-09.
+- **Status**: `merged-to-main` — gate 4 cleared 2026-09-13. Merged as
+  [#445](https://github.com/grant-js/grant/pull/445) (`9cac2565`).
 - **Story trunk**: `feat/aws-followups-closeout`
 - **Base**: `main` at `484e531b`, **not** the `98943678` this plan was drafted against.
   Between drafting and gate 2, `chore/close-out-byo-database` merged as **#398**
@@ -24,14 +25,12 @@
   part C leans on; [0005](../decisions/0005-aws-target-as-a-construct-library.md)
   governs every prop added here; [0003](../decisions/0003-lambda-web-adapter-over-a-handler-entrypoint.md)
   is the standing decision item 11 asks to revisit.
-- **worktree_path**: `../grant-aws-followups`, created off `484e531b`. The cleanup this
-  row demanded is **done, 2026-09-09, before slice 1**: `chore/close-out-byo-database`
-  merged as #398 and its worktree removed (`git diff origin/main <branch>` empty before
-  removal); the stale `chore/close-out-aws-edge-infra` checkout — merged as #385 back on
-  2026-09-06 and eight commits behind — refreshed to `main`, its superseded plan edits
-  stashed rather than discarded (`stash@{0}`, "stale close-out-aws-edge-infra plan
-  edits"), and both local branches deleted. Their **remote** refs are still standing and
-  stay on the § Cleanup list, which is where remote-ref deletion belongs.
+- **worktree_path**: `../grant-aws-followups`, created off `484e531b`. **Removed
+  2026-09-13** after #445 merged (`git worktree remove`). The cleanup this row
+  demanded before slice 1 is still true: `chore/close-out-byo-database` merged as
+  #398 and its worktree removed; the stale `chore/close-out-aws-edge-infra`
+  checkout was refreshed 2026-09-09. Its remote ref is deleted with the rest of
+  § Cleanup.
 
 ## Stack status
 
@@ -53,6 +52,7 @@ Last updated **2026-09-13**.
 | 17a (F-3)           | **merged to trunk** 2026-09-13 | [#440]                                                                         |
 | 17b (F-3)           | **merged to trunk** 2026-09-13 | [#441]                                                                         |
 | F-3b                | **merged to trunk** 2026-09-13 | [#442]                                                                         |
+| story → main        | **merged** 2026-09-13          | [#445]                                                                         |
 | final → `main`      | **unblocked** — not opened     | —                                                                              |
 
 **Out of band.** [#422] is not a slice. Slice 4's deployed import failed on a defect in
@@ -88,6 +88,7 @@ is #442). The earlier "28 ahead" count predates the F-3 stack merge.
 [#440]: https://github.com/grant-js/grant/pull/440
 [#441]: https://github.com/grant-js/grant/pull/441
 [#442]: https://github.com/grant-js/grant/pull/442
+[#445]: https://github.com/grant-js/grant/pull/445
 
 ## Scope, and the objection to it
 
@@ -294,7 +295,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 17a   | `cursor/picture-storage-keys-7203`         | trunk | F-3  | Store `picture_path`, derive `pictureUrl` on read            | Backend            | **deep**          | #440 |
 | 17b   | `cursor/organization-direct-upload-7203`   | 17a   | F-3  | Org `request`/`confirm`; delete web `toDataUrl`              | Frontend + Backend | light             | #441 |
 | F-3b  | `cursor/picture-presign-cache-buster-7203` | 17b   | F-3  | Do not cache-bust SigV4 `pictureUrl`                         | Frontend           | light             | #442 |
-| final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal          | **deep**          |      |
+| final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal          | **deep**          | #445 |
 
 ### Part A — the edge trust model (program items 2, 3, 4)
 
@@ -1186,12 +1187,12 @@ gh stack add feat/aws-followups-ses-identity                  # before starting 
       Taken on this document rather than a separate brief, with the objection recorded
       in § Scope. Gate 1 decisions 1–6 above are part of this approval.
 - [x] **Gate 2: stack plan approved** — 2026-09-09, Ale Heredia.
-- [ ] **Gate 3: per part, not once.** Parts A and C are **security-full and reviewed by
-      someone other than the slice author** — phase C's F16 and byo-database's slice 1
-      are two consecutive precedents where a self-reviewed security slice cleared gate 3
-      and had to be redone. Slice 9 is deep (a `@grantjs/core` port). Everything else is
-      light.
-- [ ] **Gate 4: story → `main` deep review.** Blocking items, known in advance:
+- [x] **Gate 3: per part, not once.** Every slice PR merged to the trunk (last
+      #442, 2026-09-13). Parts A and C carried the security-full bar on the
+      slice PRs; the assembled A+C pass listed under gate 4 was not separately
+      recorded before #445.
+- [x] **Gate 4: story → `main`.** Merged as [#445] (`9cac2565`), 2026-09-13.
+      Blocking items, known in advance:
   - [x] **Slice 17a merged.** #440, #441, and #442 are on the trunk (2026-09-13).
         Cycle 3 proved confirm + display on real S3. See
         `plans/2026-09-13-picture-storage-keys-slice-17.md`.
@@ -1225,19 +1226,20 @@ gh stack add feat/aws-followups-ses-identity                  # before starting 
       `chore/close-out-aws-edge-infra` checkout refreshed — **both owed before slice 1**,
       both done 2026-09-09 ahead of it. See § Metadata, `worktree_path`. First story in
       four where this was done before the tick rather than after.
-- [ ] Local **and remote** slice branches deleted, verified with `git ls-remote` rather
-      than ticked. Phases A and C both ticked this without doing it; byo-database was the
-      first to actually verify it. **F-3 cursor branches are done:**
-      `cursor/picture-storage-keys-7203`, `cursor/organization-direct-upload-7203`, and
-      `cursor/picture-presign-cache-buster-7203` — local delete + `git push --delete` +
-      `git ls-remote` empty, 2026-09-13. Earlier `feat/aws-followups-*` remotes remain.
-- [ ] The five `feat/aws-adapters*` and eighteen `*aws-edge-infra*` remote refs from
-      phases A and C deleted (program brief § Housekeeping — one command, still not run)
-- [ ] Stack plan status → `merged-to-main`
-- [ ] Program brief updated: every row in tiers 1, 2 and 3 given a disposition
-- [ ] Phase C stack plan: F6, F9 and F14 dispositions updated from "follow-on story" to
+- [x] Local **and remote** slice branches deleted, verified with `git ls-remote`
+      2026-09-13. Gone: every `feat/aws-followups-*` (including the trunk),
+      `chore/close-out-aws-edge-infra`, and `cursor/closeout-f3-cleanup-7203`.
+      F-3 cursor remotes were already empty after #444. Locals of the same names
+      deleted. `git ls-remote --heads origin` matching those prefixes is empty.
+- [x] Phase A/C leftover remotes: `feat/aws-adapters*` was already gone;
+      `chore/close-out-aws-edge-infra` deleted 2026-09-13. No `*aws-edge-infra*`
+      heads remain on origin.
+- [x] Stack plan status → `merged-to-main`
+- [x] Program brief updated: every row in tiers 1, 2 and 3 given a disposition
+- [x] Phase C stack plan: F6, F9 and F14 dispositions updated from "follow-on story" to
       this story; follow-ons 1, 2, 4, 5, 7, 8 and 9 likewise
-- [ ] Phase B brief: its open acceptance criterion on RDS IAM auth resolved either way
+- [x] Phase B brief: RDS IAM auth AC closed by slice 14 (#435) — optional, proxy
+      default re-decided rather than flipped on
 
 ## Follow-ons
 
