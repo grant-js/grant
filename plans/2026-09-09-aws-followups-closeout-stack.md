@@ -51,7 +51,7 @@ Last updated **2026-09-13**.
 | 14 (part E)         | **merged to trunk** 2026-09-13 | [#435]                                                                         |
 | 16 (part F)         | **merged to trunk** 2026-09-13 | [#439]                                                                         |
 | 17a (F-3)           | **open into trunk**            | [#440]                                                                         |
-| 17b (F-3)           | **open, stacked on 17a**       | same plan                                                                      |
+| 17b (F-3)           | **open, stacked on 17a**       | [#441]                                                                         |
 | final → `main`      | **blocked on 17a**             | —                                                                              |
 
 **Out of band.** [#422] is not a slice. Slice 4's deployed import failed on a defect in
@@ -85,6 +85,7 @@ already merged `main`). The 2026-09-11 "15 ahead, 5 behind" count is stale.
 [#435]: https://github.com/grant-js/grant/pull/435
 [#439]: https://github.com/grant-js/grant/pull/439
 [#440]: https://github.com/grant-js/grant/pull/440
+[#441]: https://github.com/grant-js/grant/pull/441
 
 ## Scope, and the objection to it
 
@@ -289,7 +290,7 @@ risk; slice 4 early because two later slices are blocked on its number.
 | 15    | `feat/aws-followups-opennext`              | 13    | E    | Re-checked: decision stands, 180 ms boot, tool added         | Backend           | light             | #434 |
 | 16    | `feat/aws-followups-proof`                 | 15    | F    | Deployed proof of C, D and anything E built; teardown        | **QA**            | light             | #439 |
 | 17a   | `cursor/picture-storage-keys-7203`         | trunk | F-3  | Store `picture_path`, derive `pictureUrl` on read            | Backend           | **deep**          | #440 |
-| 17b   | `cursor/organization-direct-upload-7203`   | 17a   | F-3  | Org `request`/`confirm`; delete web `toDataUrl`              | Frontend + Backend | light             |      |
+| 17b   | `cursor/organization-direct-upload-7203`   | 17a   | F-3  | Org `request`/`confirm`; delete web `toDataUrl`              | Frontend + Backend | light             | #441 |
 | final | `feat/aws-followups-closeout`              | main  | —    | integration                                                  | Principal         | **deep**          |      |
 
 ### Part A — the edge trust model (program items 2, 3, 4)
