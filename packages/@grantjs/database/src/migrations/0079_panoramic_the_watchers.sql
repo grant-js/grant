@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "picture_url" varchar(500);

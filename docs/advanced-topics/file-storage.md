@@ -75,6 +75,10 @@ When a user uploads a profile picture, the flow is:
 4. The adapter uploads the file and returns a public URL
 5. The user record is updated with the new `pictureUrl`
 
+Organization logos use the same flow with path `organizations/{organizationId}/picture.{ext}` and persist the URL on `organizations.picture_url`.
+
+Project membership pictures use `users/{userId}/projects/{projectId}/picture.{ext}`.
+
 ::: tip
 The adapter is instantiated once at startup via `StorageFactory.createStorageService()` and receives an `ILoggerFactory` via dependency injection — it never imports the logger directly.
 :::

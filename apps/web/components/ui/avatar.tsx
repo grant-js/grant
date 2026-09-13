@@ -21,6 +21,7 @@ function AvatarImage({ className, ...props }: React.ComponentProps<typeof Avatar
       data-slot="avatar-image"
       className={cn('aspect-square size-full', className)}
       {...props}
+      referrerPolicy="no-referrer"
     />
   );
 }

@@ -587,6 +587,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       resource: ResourceSlug.Organization,
       condition: null,
     },
+    {
+      action: ResourceAction.UploadPicture,
+      resource: ResourceSlug.Organization,
+      condition: null,
+    },
   ],
 
   [GroupKey.OrganizationAdmin]: [],

@@ -97,17 +97,22 @@ describe('a resolver-backed secret never becomes a Lambda environment variable',
     // The positive control the refusals need: `secrets` is the supported path, so it
     // must actually work, or the error messages point somewhere useless.
     const { template } = build({
-      secrets: { GITHUB_CLIENT_SECRET: SecretValue.secretsManager('github/oauth') },
+      secrets: {
+        GITHUB_CLIENT_SECRET: SecretValue.secretsManager('github/oauth'),
+        GOOGLE_CLIENT_SECRET: SecretValue.secretsManager('google/oauth'),
+      },
     });
 
     for (const env of lambdaEnvironments(template)) {
       expect(env).not.toHaveProperty('GITHUB_CLIENT_SECRET');
+      expect(env).not.toHaveProperty('GOOGLE_CLIENT_SECRET');
     }
 
     const templates = Object.values(template.findResources('AWS::SecretsManager::Secret')).map(
       (s) => s.Properties?.GenerateSecretString?.SecretStringTemplate
     );
     expect(JSON.stringify(templates)).toContain('GITHUB_CLIENT_SECRET');
+    expect(JSON.stringify(templates)).toContain('GOOGLE_CLIENT_SECRET');
   });
 });
 

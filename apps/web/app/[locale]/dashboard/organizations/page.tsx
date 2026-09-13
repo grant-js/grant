@@ -8,6 +8,7 @@ import {
   OrganizationDeleteDialog,
   OrganizationEditDialog,
   OrganizationPagination,
+  OrganizationPictureUploadDialog,
   OrganizationToolbar,
   OrganizationViewer,
 } from '@/components/features/organizations';
@@ -43,6 +44,7 @@ export default function DashboardPage() {
         <OrganizationViewer />
         <OrganizationDeleteDialog />
         <OrganizationEditDialog />
+        <OrganizationPictureUploadDialog />
       </>
     </DashboardLayout>
   );

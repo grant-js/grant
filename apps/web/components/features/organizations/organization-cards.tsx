@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { TagColor } from '@grantjs/constants';
+import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { Organization } from '@grantjs/schema';
 import { Building2 } from 'lucide-react';
 
@@ -10,6 +10,7 @@ import { useOrganizationsStore } from '@/stores/organizations.store';
 
 import { OrganizationActions } from './organization-actions';
 import { OrganizationAudit } from './organization-audit';
+import { OrganizationAvatar } from './organization-avatar';
 import { OrganizationCardSkeleton } from './organization-card-skeleton';
 import { OrganizationCreateDialog } from './organization-create-dialog';
 import { OrganizationNavigationButton } from './organization-navigation-button';
@@ -38,13 +39,20 @@ export function OrganizationCards() {
       }}
       renderHeader={(organization: Organization) => (
         <CardHeader
-          avatar={{
-            initial: organization.name.charAt(0),
-            size: 'lg',
-          }}
+          avatarContent={
+            <OrganizationAvatar
+              organization={organization}
+              size="lg"
+              interactive
+              className={
+                organization.tags?.find((tag) => tag.isPrimary)?.color
+                  ? `border-2 ${getTagBorderClasses(organization.tags.find((tag) => tag.isPrimary)?.color as TagColor)}`
+                  : undefined
+              }
+            />
+          }
           title={organization.name}
           description={organization.slug}
-          color={organization.tags?.find((tag) => tag.isPrimary)?.color as TagColor}
           actions={<OrganizationActions organization={organization} />}
         />
       )}

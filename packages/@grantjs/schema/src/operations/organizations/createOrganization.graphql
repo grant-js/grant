@@ -3,6 +3,7 @@ mutation CreateOrganization($input: CreateOrganizationInput!) {
     id
     name
     slug
+    pictureUrl
     createdAt
     updatedAt
   }

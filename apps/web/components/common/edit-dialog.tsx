@@ -32,6 +32,7 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
   mapEntityToFormValues,
   onUpdate,
   translationNamespace,
+  bodyClassName,
 }: EditDialogProps<TFormValues, TEntity>) {
   const resetValues = useMemo((): DefaultValues<TFormValues> => {
     if (entity) {
@@ -61,6 +62,7 @@ export function EditDialog<TFormValues extends Record<string, any>, TEntity>({
       relationships={relationships}
       supplementaryContent={supplementaryContent}
       translationNamespace={translationNamespace}
+      bodyClassName={bodyClassName}
       onSubmit={handleSubmit}
       resetValues={resetValues}
     />

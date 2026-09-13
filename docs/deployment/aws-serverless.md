@@ -89,12 +89,13 @@ Two kinds of value are handled differently, and the difference is deliberate:
 list becomes a Lambda environment variable, and those are plaintext in the
 CloudFormation template, in the function configuration and in `cdk.out` on disk —
 Lambda has no equivalent of the ECS task's `Secrets`/`ValueFrom`, where the template
-carries only an ARN. So the fifteen keys below are routed instead: put them in `.env`,
+carries only an ARN. So the sixteen keys below are routed instead: put them in `.env`,
 run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
 
 | Provider                          | Keys                                                              |
 | --------------------------------- | ----------------------------------------------------------------- |
 | GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                            |
+| Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                            |
 | MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                  |
 | Mailgun                           | `MAILGUN_API_KEY`                                                 |
 | Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                           |
@@ -222,6 +223,7 @@ Pass **`-c appUrl=`** as the HTTPS URL users type in the browser, with no traili
 - `APP_URL`, `SECURITY_FRONTEND_URL`, `OPENAPI_PRODUCTION_URL`
 - `DOCS_URL` as `{APP_URL}/docs`
 - `GITHUB_CALLBACK_URL` / `GITHUB_PROJECT_CALLBACK_URL` under `/api/auth/…`, **when** `GITHUB_CLIENT_ID` is set
+- `GOOGLE_CALLBACK_URL` / `GOOGLE_PROJECT_CALLBACK_URL` under `/api/auth/…`, **when** `GOOGLE_CLIENT_ID` is set
 
 This is the single-host model documented in [Environment setup](/deployment/environment), and the paths are the same ones [`deploy/gateway.conf.template`](https://github.com/grant-js/grant/blob/main/deploy/gateway.conf.template) serves on the other targets — a parity test asserts the three implementations agree.
 

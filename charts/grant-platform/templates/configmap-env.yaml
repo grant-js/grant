@@ -13,6 +13,8 @@
   "OPENAPI_PRODUCTION_URL" .Values.global.appUrl
   "GITHUB_CALLBACK_URL" (printf "%s/api/auth/github/callback" $appBase)
   "GITHUB_PROJECT_CALLBACK_URL" (printf "%s/api/auth/project/callback" $appBase)
+  "GOOGLE_CALLBACK_URL" (printf "%s/api/auth/google/callback" $appBase)
+  "GOOGLE_PROJECT_CALLBACK_URL" (printf "%s/api/auth/project/callback" $appBase)
   "CACHE_STRATEGY" .Values.config.cacheStrategy
   "EMAIL_PROVIDER" .Values.config.emailProvider
   "STORAGE_PROVIDER" .Values.config.storageProvider
@@ -30,6 +32,7 @@
   "POSTGRES_PASSWORD"
   "REDIS_PASSWORD"
   "GITHUB_CLIENT_SECRET"
+  "GOOGLE_CLIENT_SECRET"
   "AUTH_MFA_SECRET_ENCRYPTION_KEY"
   "MAILGUN_API_KEY"
   "MAILJET_API_KEY"

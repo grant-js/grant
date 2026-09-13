@@ -320,13 +320,22 @@ export function useMyMutations() {
         variables: { input },
       });
 
-      toast.success(t('security.notifications.changePasswordSuccess'));
+      toast.success(
+        input.currentPassword
+          ? t('security.notifications.changePasswordSuccess')
+          : t('security.notifications.setPasswordSuccess')
+      );
       return result.data?.changeMyPassword;
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error(t('security.notifications.changePasswordError'), {
-        description: error instanceof Error ? error.message : tErrors('common.unknownError'),
-      });
+      toast.error(
+        input.currentPassword
+          ? t('security.notifications.changePasswordError')
+          : t('security.notifications.setPasswordError'),
+        {
+          description: error instanceof Error ? error.message : tErrors('common.unknownError'),
+        }
+      );
       throw error;
     }
   };

@@ -1,24 +1,26 @@
 import crypto from 'node:crypto';
 
 import type {
-  GitHubUserInfo,
-  IGitHubOAuthService,
   ILogger,
+  IOAuthProviderService,
   IOAuthStateService,
   ITransactionalConnection,
   IUserAuthenticationMethodService,
+  OAuthState,
+  OAuthUserInfo,
 } from '@grantjs/core';
 import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
 
-import { config } from '@/config';
+import { config, SOCIAL_OAUTH_PROVIDERS } from '@/config';
 import { OAUTH_CLI_CALLBACK_KEY_PREFIX } from '@/constants/cache.constants';
 import { CacheHandler, type ScopeServices } from '@/handlers/base/cache-handler';
 import { CacheKey, IEntityCacheAdapter } from '@/lib/cache';
-import { AuthenticationError, ConfigurationError } from '@/lib/errors';
+import { AuthenticationError, BadRequestError, ConfigurationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { generateSecureToken } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 /** Payload stored for CLI OAuth callback and returned from POST /api/auth/cli-callback */
@@ -28,34 +30,39 @@ export interface CliCallbackPayload {
   accounts: Array<{ id: string; type: string; ownerId?: string | null; [key: string]: unknown }>;
 }
 
-export interface InitiateGithubAuthParams {
+export interface InitiateOAuthAuthParams {
   redirectUrl?: string;
   accountType?: string;
-  userId?: string; // For connect flow from settings page
+  userId?: string;
   action?: UserAuthenticationEmailProviderAction;
 }
 
-export interface InitiateGithubAuthResult {
+export interface InitiateOAuthAuthResult {
   authorizationUrl: string;
 }
 
-export interface HandleGithubCallbackResult {
+export interface HandleOAuthCallbackResult {
+  provider: UserAuthenticationMethodProvider;
   redirectUrl: string | undefined;
-  githubUser: GitHubUserInfo;
+  user: OAuthUserInfo;
   providerId: string;
   accessToken: string;
+  providerData: Record<string, unknown>;
   existingAuthMethod: boolean;
   existingUserByEmail: { userId: string; email: string } | null;
   accountType: string | undefined;
-  userId?: string; // For connect flow
-  action?: UserAuthenticationEmailProviderAction; // Action type
+  userId?: string;
+  action?: UserAuthenticationEmailProviderAction;
 }
 
 export class OAuthHandler extends CacheHandler {
   protected readonly logger = createLogger('OAuthHandler');
 
   constructor(
-    private readonly githubOAuth: IGitHubOAuthService,
+    private readonly oauthProviders: ReadonlyMap<
+      UserAuthenticationMethodProvider,
+      IOAuthProviderService
+    >,
     private readonly oauthState: IOAuthStateService,
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     cache: IEntityCacheAdapter,
@@ -65,35 +72,48 @@ export class OAuthHandler extends CacheHandler {
     super(cache, scopeServices);
   }
 
-  public async initiateGithubAuth(
-    params: InitiateGithubAuthParams
-  ): Promise<InitiateGithubAuthResult> {
-    if (!(await this.githubOAuth.isConfigured())) {
-      throw new ConfigurationError('GitHub OAuth is not configured');
-    }
-
-    const state = this.githubOAuth.generateState({
-      redirectUrl: params.redirectUrl,
-      accountType: params.accountType,
-      userId: params.userId,
-      action: params.action,
-    });
-
-    await this.oauthState.storeState(state);
-
-    const authorizationUrl = this.githubOAuth.getAuthorizationUrl(state.state, params.redirectUrl);
-
-    return {
-      authorizationUrl,
-    };
+  async listProviders(): Promise<
+    Array<{ id: UserAuthenticationMethodProvider; configured: boolean }>
+  > {
+    const providers = await Promise.all(
+      SOCIAL_OAUTH_PROVIDERS.map(async (id) => {
+        const service = this.oauthProviders.get(id);
+        return {
+          id,
+          configured: service ? await service.isConfigured() : false,
+        };
+      })
+    );
+    return providers;
   }
 
-  public async handleGithubCallback(
+  public async initiateAuth(
+    provider: UserAuthenticationMethodProvider,
+    params: InitiateOAuthAuthParams
+  ): Promise<InitiateOAuthAuthResult> {
+    const oauth = this.requireProvider(provider);
+
+    if (!(await oauth.isConfigured())) {
+      throw new ConfigurationError(`${this.providerLabel(provider)} OAuth is not configured`);
+    }
+
+    const state = this.generateState(params);
+    await this.oauthState.storeState(state);
+
+    const authorizationUrl = oauth.getAuthorizationUrl(state.state, params.redirectUrl);
+
+    return { authorizationUrl };
+  }
+
+  public async handleCallback(
+    provider: UserAuthenticationMethodProvider,
     code: string | undefined,
     stateToken: string | undefined
-  ): Promise<HandleGithubCallbackResult> {
-    if (!(await this.githubOAuth.isConfigured())) {
-      throw new ConfigurationError('GitHub OAuth is not configured');
+  ): Promise<HandleOAuthCallbackResult> {
+    const oauth = this.requireProvider(provider);
+
+    if (!(await oauth.isConfigured())) {
+      throw new ConfigurationError(`${this.providerLabel(provider)} OAuth is not configured`);
     }
 
     const isValidState = await this.oauthState.validateState(stateToken as string);
@@ -109,15 +129,14 @@ export class OAuthHandler extends CacheHandler {
     await this.oauthState.deleteState(stateToken as string);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const accessToken = await this.githubOAuth.exchangeCodeForToken(code as string);
-
-      const githubUser = await this.githubOAuth.getUserInfo(accessToken);
-
-      const providerId = githubUser.id.toString();
+      const accessToken = await oauth.exchangeCodeForToken(code as string);
+      const user = await oauth.getOAuthUserInfo(accessToken);
+      const providerId = user.id;
+      const providerData = oauth.buildProviderData(user, accessToken, true);
 
       let existingAuthMethod =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
-          UserAuthenticationMethodProvider.Github,
+          provider,
           providerId,
           undefined,
           tx
@@ -125,47 +144,46 @@ export class OAuthHandler extends CacheHandler {
 
       let existingUserByEmail: { userId: string; email: string } | null = null;
 
-      if (!existingAuthMethod && githubUser.email) {
+      if (!existingAuthMethod && user.email && !storedState.userId) {
         const existingEmailAuthMethod =
-          await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
-            githubUser.email,
-            tx
-          );
+          await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(user.email, tx);
 
         if (existingEmailAuthMethod) {
+          const cannotAutoLink = !user.emailVerified || existingEmailAuthMethod.isVerified !== true;
+
+          if (cannotAutoLink) {
+            throw new BadRequestError('Email is not verified');
+          }
+
           existingUserByEmail = {
             userId: existingEmailAuthMethod.userId,
-            email: githubUser.email,
+            email: user.email,
           };
         }
       }
 
-      // Re-check by provider so we don't treat an existing GitHub user as new (e.g. first lookup missed)
       if (!existingAuthMethod && !existingUserByEmail) {
         existingAuthMethod =
           await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
-            UserAuthenticationMethodProvider.Github,
+            provider,
             providerId,
             undefined,
             tx
           );
       }
 
-      const redirectUrl = storedState.redirectUrl;
-      const accountType = storedState.accountType;
-      const userId = storedState.userId;
-      const action = storedState.action;
-
       return {
-        redirectUrl,
-        githubUser,
+        provider,
+        redirectUrl: storedState.redirectUrl,
+        user,
         providerId,
         accessToken,
+        providerData,
         existingAuthMethod: !!existingAuthMethod,
         existingUserByEmail,
-        accountType,
-        userId,
-        action,
+        accountType: storedState.accountType,
+        userId: storedState.userId,
+        action: storedState.action,
       };
     });
   }
@@ -204,5 +222,35 @@ export class OAuthHandler extends CacheHandler {
 
   async getStoredState(stateToken: string): Promise<{ redirectUrl?: string } | null> {
     return this.oauthState.getState(stateToken);
+  }
+
+  private requireProvider(provider: UserAuthenticationMethodProvider): IOAuthProviderService {
+    const oauth = this.oauthProviders.get(provider);
+    if (!oauth) {
+      throw new BadRequestError(`Unknown OAuth provider: ${provider}`);
+    }
+    return oauth;
+  }
+
+  private providerLabel(provider: UserAuthenticationMethodProvider): string {
+    if (provider === UserAuthenticationMethodProvider.Google) return 'Google';
+    if (provider === UserAuthenticationMethodProvider.Github) return 'GitHub';
+    return String(provider);
+  }
+
+  private generateState(params: InitiateOAuthAuthParams): OAuthState {
+    const stateToken = generateSecureToken(config.githubOAuth.stateValidityMinutes, 32);
+    return {
+      state: stateToken.token,
+      redirectUrl: params.redirectUrl,
+      accountType: params.accountType,
+      userId: params.userId,
+      action:
+        params.action ||
+        (params.userId
+          ? UserAuthenticationEmailProviderAction.Connect
+          : UserAuthenticationEmailProviderAction.Login),
+      createdAt: Date.now(),
+    };
   }
 }

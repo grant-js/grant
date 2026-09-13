@@ -1,0 +1,8 @@
+extend type Mutation {
+  """
+  Upload an organization logo and persist its public URL.
+  """
+  uploadOrganizationPicture(
+    input: UploadOrganizationPictureInput!
+  ): UploadOrganizationPictureResult!
+}

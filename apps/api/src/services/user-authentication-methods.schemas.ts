@@ -52,6 +52,7 @@ export const userAuthenticationMethodSchema = baseEntitySchema.extend({
   providerData: providerDataSchema,
   isVerified: z.boolean(),
   isPrimary: z.boolean(),
+  hasPassword: z.boolean(),
   lastUsedAt: z.date().nullable().optional(),
   user: z.any().nullable().optional(),
 });
@@ -171,6 +172,24 @@ export const githubProviderDataSchema = z.object({
     .transform((val) => (val === '' ? null : val))
     .nullable()
     .optional(),
+  emailVerified: z.boolean().optional(),
+  name: z.string().nullable().optional(),
+  avatarUrl: z
+    .union([z.string().url(), z.string().length(0), z.null()])
+    .transform((val) => (val === '' ? null : val))
+    .nullable()
+    .optional(),
+});
+
+export const googleProviderDataSchema = z.object({
+  accessToken: z.string().min(1, 'errors.validation.accessTokenRequired'),
+  googleId: z.string().min(1, 'errors.validation.googleIdRequired'),
+  email: z
+    .union([z.string().email(), z.string().length(0), z.null()])
+    .transform((val) => (val === '' ? null : val))
+    .nullable()
+    .optional(),
+  emailVerified: z.boolean().optional(),
   name: z.string().nullable().optional(),
   avatarUrl: z
     .union([z.string().url(), z.string().length(0), z.null()])

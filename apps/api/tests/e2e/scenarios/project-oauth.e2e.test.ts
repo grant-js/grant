@@ -63,7 +63,7 @@ describe('Project OAuth E2E', () => {
           scope: { tenant: 'organizationProject', id: `${org.id}:${projectId}` },
           name: 'E2E OAuth App',
           redirectUris: [redirectUri],
-          enabledProviders: ['github', 'email'],
+          enabledProviders: ['github', 'google', 'email'],
           allowSignUp: false,
         },
       },
@@ -96,7 +96,7 @@ describe('Project OAuth E2E', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.name).toBe('E2E OAuth App');
-    expect(res.body.data.enabledProviders).toEqual(['github', 'email']);
+    expect(res.body.data.enabledProviders).toEqual(['github', 'google', 'email']);
     expect(Array.isArray(res.body.data.scopes)).toBe(true);
   });
 
@@ -116,6 +116,25 @@ describe('Project OAuth E2E', () => {
 
       expect(res.headers.location).toBeDefined();
       expect(res.headers.location).toMatch(/github\.com/);
+    }
+  );
+
+  it.skipIf(!process.env.GOOGLE_CLIENT_ID)(
+    'GET /api/auth/project/authorize?provider=google → 302 with Location to Google',
+    async () => {
+      const res = await apiClient()
+        .get('/api/auth/project/authorize')
+        .query({
+          client_id: projectAppClientId,
+          redirect_uri: redirectUri,
+          state: 'e2e-state-google',
+          provider: 'google',
+        })
+        .redirects(0)
+        .expect(302);
+
+      expect(res.headers.location).toBeDefined();
+      expect(res.headers.location).toMatch(/accounts\.google\.com/);
     }
   );
 

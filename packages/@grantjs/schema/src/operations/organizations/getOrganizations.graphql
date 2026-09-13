@@ -18,6 +18,7 @@ query GetOrganizations(
       id
       name
       slug
+      pictureUrl
       requireMfaForSensitiveActions
       createdAt
       updatedAt

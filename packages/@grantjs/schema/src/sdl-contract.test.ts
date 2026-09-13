@@ -44,10 +44,11 @@ describe('operation documents', () => {
   // direct-upload pair (`requestMyUserPictureUploadUrl`,
   // `confirmMyUserPictureUpload`) arrived, and 121 with the two remaining targets —
   // project membership and the administrator route — each another request/confirm
-  // pair. Updating this number is the point of the pin, not a nuisance: every change
+  // pair. 122 after `main` merged in, which added `upload-organization-picture`.
+  // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(121);
+    expect(files).toHaveLength(122);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {

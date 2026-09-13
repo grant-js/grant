@@ -15,6 +15,7 @@ import { projectAppResolver as ProjectApp } from './project-apps/fields';
 import { resourceResolver as Resource } from './resources/fields';
 import { rolePermissionResolver as RolePermission } from './role-permissions/fields';
 import { roleResolver as Role } from './roles/fields';
+import { userAuthenticationMethodResolver as UserAuthenticationMethod } from './user-authentication-methods/fields';
 import { userPermissionResolver as UserPermission } from './user-permissions/fields';
 import { userResolver as User } from './users/fields';
 
@@ -45,6 +46,7 @@ export const schema = makeExecutableSchema({
     Query,
     Mutation,
     User,
+    UserAuthenticationMethod,
     Group,
     Role,
     RolePermission,

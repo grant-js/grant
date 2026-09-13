@@ -619,7 +619,8 @@ export interface GrantPlatformProps {
    * the container's environment.
    *
    * For anything the application resolves through `ISecretResolver` —
-   * `GITHUB_CLIENT_SECRET`, `AUTH_MFA_SECRET_ENCRYPTION_KEY`. Unlike `env`, these never
+   * `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET`, `AUTH_MFA_SECRET_ENCRYPTION_KEY`.
+   * Unlike `env`, these never
    * become Lambda environment variables, and a rotation is picked up within the
    * resolver's TTL rather than at the next redeploy.
    *

@@ -7,7 +7,7 @@ import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@gr
 import { User } from '@grantjs/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { LucideIcon } from 'lucide-react';
-import { Calendar, Fingerprint, GitBranch, LogIn, Mail, Pencil } from 'lucide-react';
+import { Calendar, Fingerprint, LogIn, Mail, Pencil } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -18,6 +18,7 @@ import {
   PrimaryTagSelector,
 } from '@/components/common';
 import { DataTableColGroup } from '@/components/common/data-table-colgroup';
+import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
 import {
   SettingImageUploadDialog,
   type SettingImageUploadDialogProps,
@@ -93,14 +94,16 @@ function isValidImageUrl(url: string | null | undefined): url is string {
   );
 }
 
-function getAuthMethodIcon(provider: string): LucideIcon {
+function getAuthMethodIcon(provider: string): ReactNode {
+  const className = 'h-3 w-3 text-muted-foreground';
   switch (provider.toLowerCase()) {
     case 'email':
-      return Mail;
+      return <Mail className={className} />;
     case 'github':
-      return GitBranch;
+    case 'google':
+      return <OAuthProviderIcon provider={provider.toLowerCase()} className={className} />;
     default:
-      return LogIn;
+      return <LogIn className={className} />;
   }
 }
 
@@ -214,10 +217,9 @@ export function UserGeneralCard({
     ];
 
     for (const method of user.authenticationMethods ?? []) {
-      const Icon = getAuthMethodIcon(method.provider);
       rows.push({
         id: `${method.provider}-${method.providerId}`,
-        icon: infoTableIcon(Icon),
+        icon: getAuthMethodIcon(method.provider),
         label: tProjectApps(
           `providers.${method.provider}` as 'providers.email' | 'providers.github'
         ),

@@ -1,6 +1,6 @@
 /**
  * Auth-domain service port interfaces.
- * Covers: Auth, GitHubOAuth, OAuthState, Me.
+ * Covers: Auth, OAuth providers, OAuthState, Me.
  */
 import type {
   Account,
@@ -8,6 +8,7 @@ import type {
   IsAuthorizedInput,
   MeResponse,
   UserAuthenticationEmailProviderAction,
+  UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
 
 import type { GrantAuth } from '../../types';
@@ -20,11 +21,22 @@ export interface GitHubUserInfo {
   id: number;
   login: string;
   email: string | null;
+  emailVerified: boolean;
   name: string | null;
   avatar_url: string;
   bio: string | null;
   company: string | null;
   location: string | null;
+}
+
+/** Normalized identity returned by any social OAuth provider. */
+export interface OAuthUserInfo {
+  id: string;
+  email: string | null;
+  emailVerified: boolean;
+  name: string | null;
+  avatarUrl: string | null;
+  username?: string | null;
 }
 
 export interface GenerateStateParams {
@@ -56,28 +68,50 @@ export interface IAuthService {
 }
 
 // ---------------------------------------------------------------------------
-// IGitHubOAuthService
+// IOAuthProviderService (GitHub, Google, …)
 // ---------------------------------------------------------------------------
 
-export interface IGitHubOAuthService {
+export interface IOAuthProviderService {
+  readonly provider: UserAuthenticationMethodProvider;
+
+  isConfigured(): Promise<boolean>;
+
   getAuthorizationUrl(state: string, redirectUrl?: string): string;
 
-  /** Project OAuth: authorization URL using project callback (no redirectUrl param). */
   getProjectAuthorizationUrl(state: string): string;
+
+  getProjectCallbackUrl(): string;
 
   exchangeCodeForToken(code: string): Promise<string>;
 
-  /** Project OAuth: exchange code using a specific redirect_uri (must match authorize). */
   exchangeCodeForTokenWithRedirect(code: string, redirectUri: string): Promise<string>;
 
+  getOAuthUserInfo(accessToken: string): Promise<OAuthUserInfo>;
+
+  buildProviderData(
+    user: OAuthUserInfo,
+    accessToken: string,
+    includeUsername?: boolean
+  ): Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// IGitHubOAuthService
+// ---------------------------------------------------------------------------
+
+export interface IGitHubOAuthService extends IOAuthProviderService {
   getUserInfo(accessToken: string): Promise<GitHubUserInfo>;
 
   validateToken(accessToken: string): Promise<boolean>;
 
   generateState(params: GenerateStateParams): OAuthState;
-
-  isConfigured(): Promise<boolean>;
 }
+
+// ---------------------------------------------------------------------------
+// IGoogleOAuthService
+// ---------------------------------------------------------------------------
+
+export type IGoogleOAuthService = IOAuthProviderService;
 
 // ---------------------------------------------------------------------------
 // IOAuthStateService

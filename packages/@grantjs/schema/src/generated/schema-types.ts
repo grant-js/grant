@@ -472,7 +472,8 @@ export enum CdmOnConflict {
 
 export type ChangeMyPasswordInput = {
   confirmPassword: Scalars['String']['input'];
-  currentPassword: Scalars['String']['input'];
+  /** Required when a password already exists; omit when setting the first password. */
+  currentPassword?: InputMaybe<Scalars['String']['input']>;
   newPassword: Scalars['String']['input'];
 };
 
@@ -1154,6 +1155,8 @@ export type Mutation = {
   updateWebhookSubscription: WebhookSubscription;
   uploadMyProjectMembershipPicture: UploadUserPictureResult;
   uploadMyUserPicture: UploadUserPictureResult;
+  /** Upload an organization logo and persist its public URL. */
+  uploadOrganizationPicture: UploadOrganizationPictureResult;
   uploadUserPicture: UploadUserPictureResult;
   verifyEmail: VerifyEmailResponse;
   verifyMfa: MfaVerifyResponse;
@@ -1503,6 +1506,10 @@ export type MutationUploadMyUserPictureArgs = {
   input: UploadMyUserPictureInput;
 };
 
+export type MutationUploadOrganizationPictureArgs = {
+  input: UploadOrganizationPictureInput;
+};
+
 export type MutationUploadUserPictureArgs = {
   input: UploadUserPictureInput;
 };
@@ -1618,6 +1625,7 @@ export type Organization = Auditable & {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   permissions?: Maybe<Array<Permission>>;
+  pictureUrl?: Maybe<Scalars['String']['output']>;
   projects?: Maybe<Array<Project>>;
   requireMfaForSensitiveActions: Scalars['Boolean']['output'];
   roles?: Maybe<Array<Role>>;
@@ -3562,6 +3570,20 @@ export type UploadMyUserPictureInput = {
   filename: Scalars['String']['input'];
 };
 
+export type UploadOrganizationPictureInput = {
+  contentType: Scalars['String']['input'];
+  file: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  organizationId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type UploadOrganizationPictureResult = {
+  __typename?: 'UploadOrganizationPictureResult';
+  path: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
 /**
  * A bounded, time-limited URL the client writes bytes to directly.
  *
@@ -3651,6 +3673,8 @@ export type UserAuthenticationMethod = Auditable & {
   __typename?: 'UserAuthenticationMethod';
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
+  /** True when this Email method has a password. Always false for social providers. */
+  hasPassword: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   isPrimary: Scalars['Boolean']['output'];
   isVerified: Scalars['Boolean']['output'];

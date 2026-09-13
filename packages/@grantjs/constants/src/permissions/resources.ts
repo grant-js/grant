@@ -72,6 +72,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
+      ResourceAction.UploadPicture,
     ],
   },
   [ResourceSlug.Project]: {

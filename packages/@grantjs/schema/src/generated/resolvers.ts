@@ -527,6 +527,8 @@ export type ResolversTypes = ResolversObject<{
   UpdateWebhookSubscriptionMutationInput: Types.UpdateWebhookSubscriptionMutationInput;
   UploadMyProjectMembershipPictureInput: Types.UploadMyProjectMembershipPictureInput;
   UploadMyUserPictureInput: Types.UploadMyUserPictureInput;
+  UploadOrganizationPictureInput: Types.UploadOrganizationPictureInput;
+  UploadOrganizationPictureResult: ResolverTypeWrapper<Types.UploadOrganizationPictureResult>;
   UploadUrl: ResolverTypeWrapper<Types.UploadUrl>;
   UploadUrlHeader: ResolverTypeWrapper<Types.UploadUrlHeader>;
   UploadUserPictureInput: Types.UploadUserPictureInput;
@@ -881,6 +883,8 @@ export type ResolversParentTypes = ResolversObject<{
   UpdateWebhookSubscriptionMutationInput: Types.UpdateWebhookSubscriptionMutationInput;
   UploadMyProjectMembershipPictureInput: Types.UploadMyProjectMembershipPictureInput;
   UploadMyUserPictureInput: Types.UploadMyUserPictureInput;
+  UploadOrganizationPictureInput: Types.UploadOrganizationPictureInput;
+  UploadOrganizationPictureResult: Types.UploadOrganizationPictureResult;
   UploadUrl: Types.UploadUrl;
   UploadUrlHeader: Types.UploadUrlHeader;
   UploadUserPictureInput: Types.UploadUserPictureInput;
@@ -1930,6 +1934,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationUploadMyUserPictureArgs, 'input'>
   >;
+  uploadOrganizationPicture?: Resolver<
+    ResolversTypes['UploadOrganizationPictureResult'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationUploadOrganizationPictureArgs, 'input'>
+  >;
   uploadUserPicture?: Resolver<
     ResolversTypes['UploadUserPictureResult'],
     ParentType,
@@ -2043,6 +2053,7 @@ export type OrganizationResolvers<
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
+  pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   projects?: Resolver<Types.Maybe<Array<ResolversTypes['Project']>>, ParentType, ContextType>;
   requireMfaForSensitiveActions?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   roles?: Resolver<Types.Maybe<Array<ResolversTypes['Role']>>, ParentType, ContextType>;
@@ -3160,6 +3171,15 @@ export type UnreadNotificationCountResolvers<
   unreadCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type UploadOrganizationPictureResultResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['UploadOrganizationPictureResult'] =
+    ResolversParentTypes['UploadOrganizationPictureResult'],
+> = ResolversObject<{
+  path?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type UploadUrlResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['UploadUrl'] = ResolversParentTypes['UploadUrl'],
@@ -3228,6 +3248,7 @@ export type UserAuthenticationMethodResolvers<
 > = ResolversObject<{
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  hasPassword?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   isPrimary?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   isVerified?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
@@ -3599,6 +3620,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   Tag?: TagResolvers<ContextType>;
   TagPage?: TagPageResolvers<ContextType>;
   UnreadNotificationCount?: UnreadNotificationCountResolvers<ContextType>;
+  UploadOrganizationPictureResult?: UploadOrganizationPictureResultResolvers<ContextType>;
   UploadUrl?: UploadUrlResolvers<ContextType>;
   UploadUrlHeader?: UploadUrlHeaderResolvers<ContextType>;
   UploadUserPictureResult?: UploadUserPictureResultResolvers<ContextType>;

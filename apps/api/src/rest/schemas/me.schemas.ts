@@ -136,10 +136,15 @@ export const createMyUserAuthenticationMethodResponseSchema = createSuccessRespo
 // Password Change Schemas (messages are translation keys; API middleware translates in formatZodError)
 export const changeMyPasswordRequestSchema = z
   .object({
-    currentPassword: z.string().min(1, 'errors.validation.currentPasswordRequired').openapi({
-      description: 'Current password',
-      example: 'CurrentPassword123!',
-    }),
+    currentPassword: z
+      .string()
+      .min(1, 'errors.validation.currentPasswordRequired')
+      .optional()
+      .openapi({
+        description:
+          'Current password. Required when a password already exists; omit when setting the first password.',
+        example: 'CurrentPassword123!',
+      }),
     newPassword: z
       .string()
       .min(8, 'errors.validation.passwordMin8')
@@ -161,7 +166,7 @@ export const changeMyPasswordRequestSchema = z
     message: 'errors.validation.passwordMismatch',
     path: ['confirmPassword'],
   })
-  .refine((data) => data.currentPassword !== data.newPassword, {
+  .refine((data) => !data.currentPassword || data.currentPassword !== data.newPassword, {
     message: 'errors.validation.newPasswordDifferent',
     path: ['newPassword'],
   });

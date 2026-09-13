@@ -25,7 +25,8 @@ import type { GrantEnv } from './props';
 /**
  * Keys the application reads through `ISecretResolver` rather than `process.env`,
  * and which an operator supplies. Derived from the call sites, not convention:
- * `services/github-oauth.service.ts` and `services/user-mfa.service.ts`.
+ * `services/github-oauth.service.ts`, `services/google-oauth.service.ts`, and
+ * `services/user-mfa.service.ts`.
  *
  * `DB_URL` is resolver-backed too but is not here, and it is not settable from this
  * file at all — see `STACK_COMPOSED_KEYS`.
@@ -41,6 +42,7 @@ export const ENV_KEY_SHAPE = /^[A-Z_][A-Z0-9_]*$/;
 
 export const RESOLVER_SECRET_KEYS = [
   'GITHUB_CLIENT_SECRET',
+  'GOOGLE_CLIENT_SECRET',
   'AUTH_MFA_SECRET_ENCRYPTION_KEY',
 
   // Routed rather than refused since `apps/api/src/config/credentials.ts` began
@@ -285,7 +287,7 @@ export function classifyConfig(pairs: Readonly<Record<string, string>>): TargetC
       continue;
     }
 
-    // After the resolver check, so the two keys that *do* have a safe path are routed
+    // After the resolver check, so the keys that *do* have a safe path are routed
     // before anything is refused.
     if ((CREDENTIAL_KEYS as readonly string[]).includes(key)) {
       throw new Error(

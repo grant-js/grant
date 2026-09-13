@@ -22,6 +22,7 @@ const userSortInputSchema = z.object({
 
 export const createUserInputSchema = z.object({
   name: nonEmptyNameSchema,
+  pictureUrl: z.string().max(500).nullable().optional(),
   metadata: metadataSchema.nullable().optional(),
 });
 

@@ -18,17 +18,24 @@ import {
 } from '@/components/ui/form';
 import { useEmailVerified } from '@/hooks/auth';
 
-import { changePasswordSchema } from './setting-schemas';
+import { changePasswordSchema, setPasswordSchema } from './setting-schemas';
 import { PasswordChangeFormProps, PasswordChangeFormValues } from './setting-types';
 
-export function SettingPasswordChangeForm({ onSubmit, onCancel }: PasswordChangeFormProps) {
-  const t = useTranslations('settings.security.changePassword');
+export function SettingPasswordChangeForm({
+  mode = 'change',
+  onSubmit,
+  onCancel,
+}: PasswordChangeFormProps) {
+  const copyKey =
+    mode === 'set' ? 'settings.security.setPassword' : 'settings.security.changePassword';
+  const t = useTranslations(copyKey);
   const tCommon = useTranslations('common');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEmailVerified = useEmailVerified();
+  const schema = mode === 'set' ? setPasswordSchema : changePasswordSchema;
 
   const form = useForm<PasswordChangeFormValues>({
-    resolver: zodResolver(changePasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       currentPassword: '',
       newPassword: '',
@@ -61,23 +68,25 @@ export function SettingPasswordChangeForm({ onSubmit, onCancel }: PasswordChange
     <SettingCard title={t('title')} description={t('description')}>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="currentPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('currentPassword')}</FormLabel>
-                <FormControl>
-                  <PasswordInput
-                    {...field}
-                    autoComplete="current-password"
-                    disabled={isSubmitting}
-                  />
-                </FormControl>
-                <TranslatedFormMessage />
-              </FormItem>
-            )}
-          />
+          {mode === 'change' && (
+            <FormField
+              control={form.control}
+              name="currentPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('currentPassword')}</FormLabel>
+                  <FormControl>
+                    <PasswordInput
+                      {...field}
+                      autoComplete="current-password"
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <TranslatedFormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}

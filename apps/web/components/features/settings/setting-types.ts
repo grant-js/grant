@@ -10,7 +10,6 @@ import type { DirectUploadBody } from '@/lib/direct-upload';
 
 import {
   addEmailAuthMethodSchema,
-  changePasswordSchema,
   profileSettingsSchema,
   projectMembershipProfileSchema,
 } from './setting-schemas';
@@ -31,9 +30,16 @@ export interface SettingActiveSessionsListProps {
   limit: number;
 }
 
-export type PasswordChangeFormValues = z.infer<typeof changePasswordSchema>;
+type PasswordFormMode = 'set' | 'change';
+
+export type PasswordChangeFormValues = {
+  currentPassword?: string;
+  newPassword: string;
+  confirmPassword: string;
+};
 
 export interface PasswordChangeFormProps {
+  mode?: PasswordFormMode;
   onSubmit: (values: PasswordChangeFormValues) => Promise<void>;
   onCancel?: () => void;
 }
@@ -48,11 +54,13 @@ export interface SettingAuthenticationMethodActionsProps {
   onDisconnect: () => void;
   onSetPrimary: () => void;
   onChangePassword?: () => void;
+  onSetPassword?: () => void;
 }
 
 export interface SettingAuthenticationMethodsListProps {
   loading?: boolean;
   onChangePassword?: () => void;
+  onSetPassword?: () => void;
 }
 
 export interface SettingProfileInformationFormProps {
@@ -73,6 +81,7 @@ export interface SettingImageUploadDialogProps {
    */
   onUpload: (file: DirectUploadBody, options: { signal: AbortSignal }) => Promise<void>;
   currentImageUrl?: string;
+  translationNamespace?: string;
 }
 
 export type SettingEmailAuthMethodAddFormValues = z.infer<typeof addEmailAuthMethodSchema>;

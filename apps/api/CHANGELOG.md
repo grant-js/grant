@@ -1,5 +1,54 @@
 # grant-api
 
+## 1.8.0
+
+### Minor Changes
+
+- f8d52ec: Add Google as a platform and project OAuth sign-in provider, with account linking, verified contact-email bind, and IdP profile picture inheritance.
+
+### Patch Changes
+
+- @grantjs/schema@1.8.0
+- @grantjs/core@1.0.0
+- @grantjs/jobs@1.0.0
+- @grantjs/analytics@1.0.0
+- @grantjs/cache@1.0.0
+- @grantjs/constants@1.0.0
+- @grantjs/database@1.0.0
+- @grantjs/email@1.0.0
+- @grantjs/errors@1.0.0
+- @grantjs/logger@1.0.0
+- @grantjs/secrets@1.0.0
+- @grantjs/storage@1.0.0
+- @grantjs/telemetry@1.0.0
+- @grantjs/webhooks@1.0.0
+
+## 1.7.0
+
+### Minor Changes
+
+- 31399fc: Add organization logos that owners can upload and that replace initials in lists, the edit dialog, and the organization switcher.
+
+  The logo is stored as `pictureUrl`, written only through `uploadOrganizationPicture` / `POST /api/organizations/:id/picture` (MIME and size checks, public storage). `Organization:UploadPicture` is granted to Organization Owner. Existing deployments need `db:seed` so the new permission is inserted.
+
+### Patch Changes
+
+- Updated dependencies [31399fc]
+  - @grantjs/schema@1.7.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.6.2
 
 ### Patch Changes

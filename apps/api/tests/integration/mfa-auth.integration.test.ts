@@ -35,7 +35,10 @@ const { mockConfig } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/config', () => ({ config: mockConfig }));
+vi.mock('@/config', () => ({
+  config: mockConfig,
+  SOCIAL_OAUTH_PROVIDERS: ['github', 'google'],
+}));
 
 function mockI18nMiddleware(
   req: express.Request,

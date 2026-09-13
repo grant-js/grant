@@ -123,6 +123,10 @@ GITHUB_TOKEN_URL: https://github.com/login/oauth/access_token
 GITHUB_API_URL: https://api.github.com
 GITHUB_OAUTH_STATE_VALIDITY_MINUTES: '10'
 GITHUB_DEFAULT_AVATAR_URL: https://github.com/identicons/placeholder
+GOOGLE_CLIENT_ID: ''
+GOOGLE_AUTHORIZATION_URL: https://accounts.google.com/o/oauth2/v2/auth
+GOOGLE_TOKEN_URL: https://oauth2.googleapis.com/token
+GOOGLE_USERINFO_URL: https://www.googleapis.com/oauth2/v3/userinfo
 OAUTH_CLI_CALLBACK_TTL_SECONDS: '60'
 PROJECT_OAUTH_EMAIL_ENTRY_URL: ''
 PROJECT_OAUTH_CONSENT_URL: ''

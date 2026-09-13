@@ -26,6 +26,7 @@ interface OrganizationsState {
   organizationToDelete: { id: string; name: string } | null;
   organizationToEdit: Organization | null;
   isCreateDialogOpen: boolean;
+  organizationForPictureUpload: Organization | null;
 
   // Current organization detail (for breadcrumb)
   currentOrganization: Organization | null;
@@ -48,6 +49,7 @@ interface OrganizationsState {
   setOrganizationToDelete: (organization: { id: string; name: string } | null) => void;
   setOrganizationToEdit: (organization: Organization | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
+  setOrganizationForPictureUpload: (organization: Organization | null) => void;
   setCurrentOrganization: (organization: Organization | null) => void;
 }
 
@@ -77,6 +79,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       organizationToDelete: null,
       organizationToEdit: null,
       isCreateDialogOpen: false,
+      organizationForPictureUpload: null,
 
       // Current organization detail
       currentOrganization: null,
@@ -108,6 +111,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
           organizationToDelete: null,
           organizationToEdit: null,
           isCreateDialogOpen: false,
+          organizationForPictureUpload: null,
           currentOrganization: null,
         }),
       initializeFromUrl: (params) => {
@@ -138,6 +142,8 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       setOrganizationToDelete: (organization) => set({ organizationToDelete: organization }),
       setOrganizationToEdit: (organization) => set({ organizationToEdit: organization }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setOrganizationForPictureUpload: (organization) =>
+        set({ organizationForPictureUpload: organization }),
       setCurrentOrganization: (organization) => set({ currentOrganization: organization }),
     }),
     {

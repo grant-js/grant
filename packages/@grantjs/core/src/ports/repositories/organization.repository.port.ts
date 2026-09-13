@@ -80,6 +80,12 @@ export interface IOrganizationRepository extends IEntityExistence {
     params: Omit<MutationDeleteOrganizationArgs, 'scope'>,
     transaction?: unknown
   ): Promise<Organization>;
+
+  setOrganizationPictureUrl(
+    organizationId: string,
+    pictureUrl: string,
+    transaction?: unknown
+  ): Promise<Organization>;
 }
 
 export interface IOrganizationUserRepository {

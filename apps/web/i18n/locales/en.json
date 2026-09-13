@@ -483,6 +483,9 @@
         "oauthNotConfigured": "Sign-in is not configured. Please contact support.",
         "githubUserInfoFailed": "We couldn't get your GitHub information. Please try again.",
         "githubUnavailable": "GitHub is temporarily unavailable. Please try again later.",
+        "googleUserInfoFailed": "We couldn't get your Google information. Please try again.",
+        "googleUnavailable": "Google is temporarily unavailable. Please try again later.",
+        "emailUnverified": "Verify the email on your existing account before signing in with GitHub or Google.",
         "oauthError": "Sign-in was cancelled or failed. Please try again."
       }
     },
@@ -676,6 +679,16 @@
         "errorDescription": "An error occurred during GitHub authentication. Please try again."
       }
     },
+    "google": {
+      "signIn": "Sign in with Google",
+      "signUp": "Sign up with Google",
+      "continue": "Continue with Google"
+    },
+    "oauth": {
+      "signInWith": "Sign in with",
+      "signUpWith": "Sign up with",
+      "or": "Or"
+    },
     "projectOAuth": {
       "entry": {
         "loading": "Loading…",
@@ -690,6 +703,7 @@
         "signInWith": "Sign in with",
         "email": "Email",
         "github": "GitHub",
+        "google": "Google",
         "failedToLoad": "Failed to load app"
       },
       "email": {
@@ -1656,7 +1670,8 @@
     },
     "providers": {
       "email": "Email",
-      "github": "GitHub"
+      "github": "GitHub",
+      "google": "Google"
     },
     "createDialog": {
       "title": "Create app",
@@ -2317,7 +2332,8 @@
         "read": "Read Organization",
         "update": "Update Organization",
         "delete": "Delete Organization",
-        "query": "Query Organization"
+        "query": "Query Organization",
+        "uploadPicture": "Upload Picture Organization"
       },
       "project": {
         "create": "Create Project",
@@ -2433,7 +2449,8 @@
         "read": "Permission to read organization information",
         "update": "Permission to update an organization",
         "delete": "Permission to delete an organization",
-        "query": "Permission to query organizations"
+        "query": "Permission to query organizations",
+        "uploadPicture": "Permission to upload an organization logo"
       },
       "project": {
         "create": "Permission to create a project",
@@ -2615,7 +2632,9 @@
       "tagAddedSuccess": "Tag added to organization",
       "tagAddedError": "Failed to add tag to organization",
       "tagRemovedSuccess": "Tag removed from organization",
-      "tagRemovedError": "Failed to remove tag from organization"
+      "tagRemovedError": "Failed to remove tag from organization",
+      "uploadPictureSuccess": "Organization logo uploaded",
+      "uploadPictureError": "Failed to upload organization logo"
     },
     "view": {
       "card": "Card View",
@@ -2641,6 +2660,29 @@
         "selected": "{count} selected",
         "clearAll": "Clear all",
         "loading": "Loading tags..."
+      }
+    },
+    "avatar": {
+      "uploadButton": "Upload logo",
+      "changeButton": "Change logo"
+    },
+    "upload": {
+      "title": "Upload organization logo",
+      "description": "Select an image, crop it, and upload it as the organization logo",
+      "dropzone": {
+        "idle": "Drag and drop an image here, or click to browse",
+        "active": "Drop the image here",
+        "hint": "Supported formats: JPG, PNG, GIF, WebP (max 5MB)",
+        "browse": "Browse Files"
+      },
+      "zoom": "Zoom",
+      "changeImage": "Change Image",
+      "upload": "Upload",
+      "errors": {
+        "invalidType": "Invalid file type. Please use JPG, PNG, GIF, or WebP.",
+        "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
+        "readFailed": "Failed to read the file. Please try again.",
+        "uploadFailed": "Failed to upload the image. Please try again."
       }
     }
   },
@@ -3299,6 +3341,7 @@
         "notConnected": "Not connected",
         "lastUsed": "Last used",
         "changePassword": "Change Password",
+        "setPassword": "Set Password",
         "connect": "Connect",
         "disconnect": "Disconnect",
         "setAsPrimary": "Set as Primary",
@@ -3306,6 +3349,8 @@
         "cannotDisconnectLastMethod": "Cannot disconnect your last authentication method. Please add another method first.",
         "githubConnected": "GitHub account connected successfully",
         "githubConnectError": "Failed to connect GitHub account",
+        "googleConnected": "Google account connected successfully",
+        "googleConnectError": "Failed to connect Google account",
         "emailConnected": "Email authentication method added successfully",
         "emailConnectError": "Failed to add email authentication method",
         "disconnected": "{provider} account disconnected successfully",
@@ -3330,6 +3375,13 @@
         "confirmPassword": "Confirm Password",
         "submit": "Change Password"
       },
+      "setPassword": {
+        "title": "Set Password",
+        "description": "Add a password so you can also sign in with email",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "submit": "Set Password"
+      },
       "activeSessions": {
         "title": "Active Sessions",
         "description": "Manage your active login sessions across all devices",
@@ -3353,6 +3405,8 @@
       "notifications": {
         "changePasswordSuccess": "Password changed successfully",
         "changePasswordError": "Failed to change password",
+        "setPasswordSuccess": "Password set successfully",
+        "setPasswordError": "Failed to set password",
         "revokeSessionSuccess": "Session revoked successfully",
         "revokeSessionError": "Failed to revoke session"
       },

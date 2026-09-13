@@ -1,4 +1,8 @@
-import { UserAuthenticationEmailProviderAction } from '@grantjs/schema';
+import type { IGitHubOAuthService, ISecretResolver, OAuthUserInfo } from '@grantjs/core';
+import {
+  UserAuthenticationEmailProviderAction,
+  UserAuthenticationMethodProvider,
+} from '@grantjs/schema';
 import { Octokit } from '@octokit/rest';
 
 import { config } from '@/config';
@@ -19,6 +23,7 @@ export interface GitHubUserInfo {
   id: number;
   login: string;
   email: string | null;
+  emailVerified: boolean;
   name: string | null;
   avatar_url: string;
   bio: string | null;
@@ -42,9 +47,8 @@ export interface OAuthState {
   createdAt: number;
 }
 
-import type { IGitHubOAuthService, ISecretResolver } from '@grantjs/core';
-
 export class GitHubOAuthService implements IGitHubOAuthService {
+  readonly provider = UserAuthenticationMethodProvider.Github;
   private readonly logger = createLogger('GitHubOAuthService');
 
   constructor(private readonly secrets: ISecretResolver) {}
@@ -65,6 +69,10 @@ export class GitHubOAuthService implements IGitHubOAuthService {
    */
   private async hasClientCredentials(): Promise<boolean> {
     return Boolean(config.githubOAuth.clientId && (await this.resolveClientSecret()));
+  }
+
+  getProjectCallbackUrl(): string {
+    return config.githubOAuth.projectCallbackUrl ?? config.githubOAuth.callbackUrl;
   }
 
   getAuthorizationUrl(state: string, redirectUrl?: string): string {
@@ -100,8 +108,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
     if (!config.githubOAuth.clientId) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
-    const projectCallbackUrl =
-      config.githubOAuth.projectCallbackUrl ?? config.githubOAuth.callbackUrl;
+    const projectCallbackUrl = this.getProjectCallbackUrl();
     const params = new URLSearchParams({
       client_id: config.githubOAuth.clientId,
       redirect_uri: projectCallbackUrl,
@@ -214,10 +221,14 @@ export class GitHubOAuthService implements IGitHubOAuthService {
       const { data: user } = await userOctokit.rest.users.getAuthenticated();
 
       let email: string | null = null;
+      let emailVerified = false;
       try {
         const { data: emails } = await userOctokit.rest.users.listEmailsForAuthenticatedUser();
-        const primaryEmail = emails.find((e) => e.primary) || emails.find((e) => e.verified);
-        email = primaryEmail?.email || emails[0]?.email || null;
+        const primaryVerified = emails.find((e) => e.primary && e.verified);
+        const anyVerified = emails.find((e) => e.verified);
+        const selected = primaryVerified || anyVerified;
+        email = selected?.email || null;
+        emailVerified = Boolean(selected);
       } catch (emailError) {
         this.logger.warn({
           msg: 'Could not fetch user email from GitHub',
@@ -234,6 +245,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
         id: user.id,
         login: user.login,
         email: email === '' ? null : email,
+        emailVerified,
         name: user.name || null,
         avatar_url: avatarUrl,
         bio: user.bio ?? null,
@@ -255,6 +267,39 @@ export class GitHubOAuthService implements IGitHubOAuthService {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  async getOAuthUserInfo(accessToken: string): Promise<OAuthUserInfo> {
+    const githubUser = await this.getUserInfo(accessToken);
+    return {
+      id: githubUser.id.toString(),
+      email: githubUser.email,
+      emailVerified: githubUser.emailVerified,
+      name: githubUser.name,
+      avatarUrl: githubUser.avatar_url,
+      username: githubUser.login,
+    };
+  }
+
+  buildProviderData(
+    user: OAuthUserInfo,
+    accessToken: string,
+    includeUsername = false
+  ): Record<string, unknown> {
+    const providerData: Record<string, unknown> = {
+      accessToken,
+      githubId: user.id,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+    };
+
+    if (includeUsername) {
+      providerData.username = user.username;
+    }
+
+    return providerData;
   }
 
   async validateToken(accessToken: string): Promise<boolean> {

@@ -4,7 +4,7 @@
  */
 
 export type EnvCategoryId =
-  'main' | 'database' | 'cache' | 'auth' | 'github' | 'security' | 'optional';
+  'main' | 'database' | 'cache' | 'auth' | 'github' | 'google' | 'security' | 'optional';
 
 export interface EnvVarMeta {
   key: string;
@@ -44,6 +44,7 @@ export const ENV_CATEGORIES: { id: EnvCategoryId; label: string; priority: numbe
   { id: 'cache', label: 'Cache / Redis', priority: 4 },
   { id: 'auth', label: 'Auth', priority: 5 },
   { id: 'github', label: 'GitHub OAuth', priority: 6 },
+  { id: 'google', label: 'Google OAuth', priority: 6.5 },
   { id: 'security', label: 'Security', priority: 7 },
   { id: 'optional', label: 'Advanced', priority: 9 },
 ];
@@ -656,6 +657,66 @@ const META: EnvVarMeta[] = [
     description: 'TTL for CLI OAuth callback payloads in cache (default: 60).',
     envFiles: ['.env'],
     digitsOnly: true,
+    section: 'Advanced',
+  },
+  {
+    key: 'GOOGLE_CLIENT_ID',
+    category: 'google',
+    label: 'Google Client ID',
+    description: 'Google OAuth 2.0 Web client ID.',
+    envFiles: ['.env'],
+    section: 'Credentials',
+    critical: true,
+  },
+  {
+    key: 'GOOGLE_CLIENT_SECRET',
+    category: 'google',
+    label: 'Google Client Secret',
+    description: 'Google OAuth 2.0 Web client secret.',
+    envFiles: ['.env'],
+    section: 'Credentials',
+    critical: true,
+  },
+  {
+    key: 'GOOGLE_CALLBACK_URL',
+    category: 'google',
+    label: 'Google callback URL',
+    description: 'Platform sign-in callback URL (exact redirect URI in Google Cloud Console).',
+    envFiles: ['.env'],
+    section: 'Callbacks',
+    critical: true,
+  },
+  {
+    key: 'GOOGLE_PROJECT_CALLBACK_URL',
+    category: 'google',
+    label: 'Project OAuth callback URL',
+    description: 'Project app OAuth callback URL (exact redirect URI in Google Cloud Console).',
+    envFiles: ['.env'],
+    section: 'Callbacks',
+  },
+  {
+    key: 'GOOGLE_AUTHORIZATION_URL',
+    category: 'google',
+    label: 'Google OAuth authorization URL',
+    description:
+      'Google OAuth authorization URL (default: https://accounts.google.com/o/oauth2/v2/auth).',
+    envFiles: ['.env'],
+    section: 'Advanced',
+  },
+  {
+    key: 'GOOGLE_TOKEN_URL',
+    category: 'google',
+    label: 'Google OAuth token URL',
+    description: 'Google OAuth token URL (default: https://oauth2.googleapis.com/token).',
+    envFiles: ['.env'],
+    section: 'Advanced',
+  },
+  {
+    key: 'GOOGLE_USERINFO_URL',
+    category: 'google',
+    label: 'Google userinfo URL',
+    description: 'Google userinfo URL (default: https://www.googleapis.com/oauth2/v3/userinfo).',
+    envFiles: ['.env'],
     section: 'Advanced',
   },
   // Security

@@ -46,7 +46,13 @@ const { mockConfig } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/config', () => ({ config: mockConfig }));
+vi.mock('@/config', () => ({
+  config: mockConfig,
+  SOCIAL_OAUTH_PROVIDERS: [
+    UserAuthenticationMethodProvider.Github,
+    UserAuthenticationMethodProvider.Google,
+  ],
+}));
 
 const fixtureApp = {
   id: 'app-id-1',
@@ -111,6 +117,7 @@ function buildProjectOAuthContext(
   };
   const authHandler = {
     resolveUserIdFromGithubForProject: vi.fn().mockResolvedValue('user-1'),
+    resolveUserIdFromOAuthForProject: vi.fn().mockResolvedValue('user-1'),
     resolveUserIdFromEmailForProject: vi.fn().mockResolvedValue('user-1'),
   };
   const githubOAuth = {
@@ -118,14 +125,31 @@ function buildProjectOAuthContext(
     getProjectAuthorizationUrl: vi
       .fn()
       .mockReturnValue('https://github.com/login/oauth/authorize?state=xyz'),
+    getProjectCallbackUrl: vi
+      .fn()
+      .mockReturnValue('https://api.example.com/api/auth/project/callback'),
     exchangeCodeForTokenWithRedirect: vi.fn().mockResolvedValue('gh-token'),
-    getUserInfo: vi.fn().mockResolvedValue({
-      id: 1,
-      login: 'user',
+    getOAuthUserInfo: vi.fn().mockResolvedValue({
+      id: '1',
       email: 'user@example.com',
+      emailVerified: true,
       name: 'User',
-      avatar_url: 'https://avatars.github.com/1',
+      avatarUrl: 'https://avatars.github.com/1',
+      username: 'user',
     }),
+    buildProviderData: vi.fn().mockReturnValue({ accessToken: 'gh-token', githubId: '1' }),
+  };
+  const googleOAuth = {
+    isConfigured: vi.fn().mockReturnValue(true),
+    getProjectAuthorizationUrl: vi
+      .fn()
+      .mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth?state=xyz'),
+    getProjectCallbackUrl: vi
+      .fn()
+      .mockReturnValue('https://api.example.com/api/auth/project/callback'),
+    exchangeCodeForTokenWithRedirect: vi.fn(),
+    getOAuthUserInfo: vi.fn(),
+    buildProviderData: vi.fn(),
   };
   const grant = {
     signApiKeyToken: vi.fn().mockResolvedValue('fake-jwt-token'),
@@ -154,6 +178,7 @@ function buildProjectOAuthContext(
     organizationUsers as never,
     authHandler as never,
     githubOAuth as never,
+    googleOAuth as never,
     grant as never,
     cache,
     email as never,
@@ -236,6 +261,20 @@ describe('Project OAuth integration', () => {
       expect(res.headers.location).toContain('client_id=');
       expect(res.headers.location).toContain('redirect_uri=');
       expect(res.headers.location).toContain('state=');
+    });
+
+    it('returns 302 with Location to Google when provider=google', async () => {
+      const res = await request(app)
+        .get('/api/auth/project/authorize')
+        .query({
+          client_id: fixtureApp.clientId,
+          redirect_uri: 'https://example.com/callback',
+          state: 'test-state',
+          provider: UserAuthenticationMethodProvider.Google,
+        })
+        .expect(302);
+
+      expect(res.headers.location).toContain('accounts.google.com');
     });
 
     it('returns 400 when redirect_uri is not in allowlist', async () => {

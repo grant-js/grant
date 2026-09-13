@@ -10,6 +10,7 @@ import { useEmailVerified } from '@/hooks/auth';
 import { useOrganizationMutations } from '@/hooks/organizations';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
+import { OrganizationAvatar } from './organization-avatar';
 import { EditOrganizationFormValues, editOrganizationSchema } from './organization-types';
 
 export function OrganizationEditDialog() {
@@ -41,17 +42,20 @@ export function OrganizationEditDialog() {
 
   const fields: DialogField[] = [
     {
-      name: 'requireMfaForSensitiveActions',
-      label: 'form.requireMfaForSensitiveActions',
-      type: 'switch',
-      required: false,
-    },
-    {
       name: 'name',
       label: 'form.name',
       placeholder: 'form.name',
       type: 'text',
       required: true,
+      leading: organizationToEdit ? (
+        <OrganizationAvatar organization={organizationToEdit} size="xl" interactive />
+      ) : null,
+    },
+    {
+      name: 'requireMfaForSensitiveActions',
+      label: 'form.requireMfaForSensitiveActions',
+      type: 'switch',
+      required: false,
     },
   ];
 
@@ -79,6 +83,9 @@ export function OrganizationEditDialog() {
   };
 
   const handleOpenChange = (open: boolean) => {
+    if (!open && useOrganizationsStore.getState().organizationForPictureUpload) {
+      return;
+    }
     if (!open) {
       setOrganizationToEdit(null);
     }
@@ -91,6 +98,7 @@ export function OrganizationEditDialog() {
       schema={editOrganizationSchema}
       defaultValues={defaultValues}
       fields={fields}
+      bodyClassName="space-y-8"
       title="editDialog.title"
       description="editDialog.description"
       confirmText="editDialog.confirm"

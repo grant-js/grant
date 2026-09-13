@@ -331,7 +331,12 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
 
   [GroupKey.OrganizationOwner]: {
     resource: ResourceSlug.Organization,
-    permissions: [ResourceAction.Create, ResourceAction.Update, ResourceAction.Delete],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.UploadPicture,
+    ],
     assignedRoles: [RoleKey.OrganizationOwner],
   },
   [GroupKey.OrganizationAdmin]: {

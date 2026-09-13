@@ -79,6 +79,12 @@ export interface IOrganizationService {
     params: Omit<MutationDeleteOrganizationArgs, 'scope'> & DeleteParams,
     transaction?: unknown
   ): Promise<Organization>;
+
+  setOrganizationPictureUrl(
+    organizationId: string,
+    pictureUrl: string,
+    transaction?: unknown
+  ): Promise<Organization>;
 }
 
 // ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ mutation DeleteOrganization($id: ID!, $scope: Scope!) {
     id
     name
     slug
+    pictureUrl
     createdAt
     updatedAt
   }

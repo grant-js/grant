@@ -239,6 +239,14 @@ export const Mutation = {
       organizationMutations.updateOrganization!
     )
   ),
+  uploadOrganizationPicture: requireEmailThenMfaGraphQL(
+    BLOCK_UNVERIFIED_EMAIL,
+    BLOCK_UNVERIFIED_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.Organization, action: ResourceAction.UploadPicture },
+      organizationMutations.uploadOrganizationPicture!
+    )
+  ),
   deleteOrganization: requireEmailThenMfaGraphQL(
     BLOCK_UNVERIFIED_EMAIL,
     BLOCK_UNVERIFIED_MFA,

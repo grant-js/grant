@@ -240,12 +240,32 @@ const GITHUB_OAUTH_CONFIG = {
   cliCallbackTtlSeconds: env.OAUTH_CLI_CALLBACK_TTL_SECONDS,
 } as const;
 
+const GOOGLE_OAUTH_CONFIG = {
+  clientId: env.GOOGLE_CLIENT_ID,
+  clientSecret: env.GOOGLE_CLIENT_SECRET,
+  callbackUrl: env.GOOGLE_CALLBACK_URL,
+  projectCallbackUrl: env.GOOGLE_PROJECT_CALLBACK_URL,
+  authorizationUrl: env.GOOGLE_AUTHORIZATION_URL,
+  tokenUrl: env.GOOGLE_TOKEN_URL,
+  userInfoUrl: env.GOOGLE_USERINFO_URL,
+  scopes: ['openid', 'email', 'profile'],
+} as const;
+
+/**
+ * Social OAuth providers that use GET /api/auth/:provider (not email).
+ */
+export const SOCIAL_OAUTH_PROVIDERS = [
+  UserAuthenticationMethodProvider.Github,
+  UserAuthenticationMethodProvider.Google,
+] as const;
+
 /**
  * Subset of UserAuthenticationMethodProvider (schema) that is supported in the project OAuth flow.
  * Single source of truth: schema enum; this list defines which are implemented for project apps.
  */
 export const PROJECT_OAUTH_PROVIDERS = [
   UserAuthenticationMethodProvider.Github,
+  UserAuthenticationMethodProvider.Google,
   UserAuthenticationMethodProvider.Email,
 ] as const;
 export type ProjectOAuthProvider = (typeof PROJECT_OAUTH_PROVIDERS)[number];
@@ -1100,6 +1120,12 @@ export function validateConfig(): void {
     // The reverse check above stays: a secret with no client ID is unusable either way.
   }
 
+  if (GOOGLE_OAUTH_CONFIG.clientId || GOOGLE_OAUTH_CONFIG.clientSecret) {
+    if (!GOOGLE_OAUTH_CONFIG.clientId) {
+      errors.push('GOOGLE_CLIENT_ID is required when GOOGLE_CLIENT_SECRET is set');
+    }
+  }
+
   if (errors.length > 0) {
     throw new ConfigurationError(
       `Configuration validation failed:\n${errors.map((e) => `  - ${e}`).join('\n')}`
@@ -1224,6 +1250,7 @@ export const config = {
   auth: AUTH_CONFIG,
   token: TOKEN_CONFIG,
   githubOAuth: GITHUB_OAUTH_CONFIG,
+  googleOAuth: GOOGLE_OAUTH_CONFIG,
   projectOAuth: PROJECT_OAUTH_CONFIG,
   cache: CACHE_CONFIG,
   redis: REDIS_CONFIG,

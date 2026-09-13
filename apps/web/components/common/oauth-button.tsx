@@ -2,35 +2,38 @@
 
 import { useParams, useSearchParams } from 'next/navigation';
 import { AccountType } from '@grantjs/schema';
-import { GitBranch } from 'lucide-react';
 
+import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
 import { Button } from '@/components/ui/button';
 import { getApiBaseUrl } from '@/lib/constants';
+import type { SocialOAuthProviderId } from '@/lib/oauth-providers';
 
-interface GithubOAuthButtonProps {
+interface OAuthButtonProps {
+  provider: SocialOAuthProviderId;
+  label: string;
   className?: string;
   variant?: 'default' | 'outline';
   accountType?: AccountType;
 }
 
-export function GithubOAuthButton({
+export function OAuthButton({
+  provider,
+  label,
   className,
   variant = 'outline',
   accountType,
-}: GithubOAuthButtonProps) {
+}: OAuthButtonProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const locale = params.locale as string;
-
   const redirectParam = searchParams.get('redirect');
 
-  const handleGithubAuth = () => {
+  const handleAuth = () => {
     const apiBaseUrl = getApiBaseUrl();
     const urlParams = new URLSearchParams();
-
-    let redirectUrl: string;
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
+    let redirectUrl: string;
     if (redirectParam) {
       if (redirectParam.includes('://')) {
         redirectUrl = redirectParam;
@@ -47,20 +50,13 @@ export function GithubOAuthButton({
       urlParams.set('accountType', accountType);
     }
 
-    const githubAuthUrl = `${apiBaseUrl}/api/auth/github?${urlParams.toString()}`;
-    window.location.href = githubAuthUrl;
+    window.location.href = `${apiBaseUrl}/api/auth/${provider}?${urlParams.toString()}`;
   };
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      className={className}
-      onClick={handleGithubAuth}
-      disabled={false}
-    >
-      <GitBranch className="size-4" />
-      Github
+    <Button type="button" variant={variant} className={className} onClick={handleAuth}>
+      <OAuthProviderIcon provider={provider} />
+      {label}
     </Button>
   );
 }

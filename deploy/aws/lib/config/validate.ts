@@ -237,9 +237,10 @@ export function assertDatabaseSelection(
  * `RESOLVER_SECRET_KEYS` was excluded here on the reasoning that those keys have a
  * safe path and refusing them "would remove the only way to supply them". That was
  * wrong in a way worth recording: `secrets` **is** the way, so refusing them on `env`
- * removes nothing. The exclusion meant `AUTH_MFA_SECRET_ENCRYPTION_KEY` and
- * `GITHUB_CLIENT_SECRET` — routed to the platform secret by the env file — synthesized
- * as plaintext Lambda environment variables when passed through props. They were not
+ * removes nothing. The exclusion meant `AUTH_MFA_SECRET_ENCRYPTION_KEY`,
+ * `GITHUB_CLIENT_SECRET`, and `GOOGLE_CLIENT_SECRET` — routed to the platform secret
+ * by the env file — synthesized as plaintext Lambda environment variables when passed
+ * through props. They were not
  * inert there either: the AWS resolver reads `payload[name] ?? process.env[name]`
  * (`@grantjs/secrets/src/aws-secrets-manager.ts:53`), so the plaintext works, which is
  * why an adopter would reach for it. The MFA key derives the AES-256 key over every

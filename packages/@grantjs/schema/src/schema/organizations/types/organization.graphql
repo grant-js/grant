@@ -2,6 +2,7 @@ type Organization implements Auditable {
   id: ID!
   name: String!
   slug: String!
+  pictureUrl: String
   requireMfaForSensitiveActions: Boolean!
   projects: [Project!]
   roles: [Role!]

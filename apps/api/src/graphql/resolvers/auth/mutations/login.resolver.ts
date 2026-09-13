@@ -1,9 +1,11 @@
 import { MutationResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { assertEmailProviderForDirectAuth } from '@/lib/oauth-direct-auth.lib';
 import { setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 
 export const login: MutationResolvers<GraphqlContext>['login'] = async (req, args, context) => {
+  assertEmailProviderForDirectAuth(args.input.provider);
   const result = await context.handlers.auth.login(
     args,
     context.userAgent,

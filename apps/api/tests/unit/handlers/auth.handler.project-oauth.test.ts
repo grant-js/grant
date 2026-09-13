@@ -10,6 +10,7 @@ import { AuthHandler } from '@/handlers/auth.handler';
 const mockWithTransaction = vi.fn((fn: (tx: unknown) => Promise<unknown>) => fn({}));
 
 const mockUserAuthenticationMethods = {
+  ensureVerifiedContactEmail: vi.fn(),
   getUserAuthenticationMethodByProvider: vi.fn(),
   getUserAuthenticationMethodByEmail: vi.fn(),
   processProvider: vi.fn(),
@@ -22,7 +23,12 @@ const mockUserAuthenticationMethods = {
   resetPassword: vi.fn(),
   invalidateAllUserSessions: vi.fn(),
 };
-const mockUsers = { createUser: vi.fn(), getUsers: vi.fn(), deleteOwnUser: vi.fn() };
+const mockUsers = {
+  createUser: vi.fn(),
+  getUsers: vi.fn(),
+  updateUser: vi.fn(),
+  deleteOwnUser: vi.fn(),
+};
 const mockAccounts = { createAccount: vi.fn(), getOwnerAccounts: vi.fn(), deleteAccount: vi.fn() };
 const mockAccountRoles = { seedAccountRoles: vi.fn() };
 const mockUserRoles = { addUserRole: vi.fn(), getUserRoles: vi.fn() };
@@ -105,6 +111,8 @@ describe('AuthHandler project OAuth resolution', () => {
       mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
       mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
         userId: 'email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: true,
       });
       mockUserAuthenticationMethods.processProvider.mockResolvedValue({
         providerData: { normalized: true },
@@ -154,6 +162,42 @@ describe('AuthHandler project OAuth resolution', () => {
         }),
         tx
       );
+    });
+
+    it('creates a user with the GitHub avatar URL', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: { avatarUrl: 'https://avatars.githubusercontent.com/u/42?v=4' },
+        isVerified: true,
+      });
+      mockUsers.createUser.mockResolvedValue({ id: 'new-user-id' });
+      const handler = createHandler();
+      await handler.resolveUserIdFromGithubForProject(
+        githubUser,
+        providerId,
+        { ...providerData, avatarUrl: 'https://avatars.githubusercontent.com/u/42?v=4' },
+        tx as never
+      );
+      expect(mockUsers.createUser).toHaveBeenCalledWith(
+        { name: 'Octocat', pictureUrl: 'https://avatars.githubusercontent.com/u/42?v=4' },
+        tx
+      );
+    });
+
+    it('refuses to link or register when the matching email method is unverified', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        userId: 'email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: false,
+      });
+      const handler = createHandler();
+      await expect(
+        handler.resolveUserIdFromGithubForProject(githubUser, providerId, providerData, tx as never)
+      ).rejects.toThrow('Email is not verified');
+      expect(mockUsers.createUser).not.toHaveBeenCalled();
+      expect(mockUserAuthenticationMethods.createUserAuthenticationMethod).not.toHaveBeenCalled();
     });
   });
 
@@ -248,6 +292,231 @@ describe('AuthHandler project OAuth resolution', () => {
           providerId: 'newuser@example.com',
           isVerified: true,
         }),
+        tx
+      );
+    });
+  });
+
+  describe('resolveUserIdFromOAuthForProject (Google)', () => {
+    it('links Google to an existing verified email user', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        userId: 'email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: true,
+      });
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: { googleId: 'google-sub-1' },
+        isVerified: true,
+      });
+      const handler = createHandler();
+      const userId = await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'user@example.com',
+          emailVerified: true,
+          name: 'Ada',
+          providerData: { googleId: 'google-sub-1' },
+        },
+        tx as never
+      );
+      expect(userId).toBe('email-user-id');
+      expect(mockUserAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'email-user-id',
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+        }),
+        tx
+      );
+    });
+
+    it('creates a user with the Google picture URL', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: {
+          googleId: 'google-sub-1',
+          avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+        },
+        isVerified: true,
+      });
+      mockUsers.createUser.mockResolvedValue({ id: 'new-google-user' });
+      const handler = createHandler();
+      const userId = await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'user@example.com',
+          emailVerified: true,
+          name: 'Ada',
+          providerData: {
+            googleId: 'google-sub-1',
+            avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+          },
+        },
+        tx as never
+      );
+      expect(userId).toBe('new-google-user');
+      expect(mockUsers.createUser).toHaveBeenCalledWith(
+        { name: 'Ada', pictureUrl: 'https://lh3.googleusercontent.com/a/photo' },
+        tx
+      );
+    });
+
+    it('sets picture from Google when linking to a user with an empty picture', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        userId: 'email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: true,
+      });
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: {
+          googleId: 'google-sub-1',
+          avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+        },
+        isVerified: true,
+      });
+      mockUsers.getUsers.mockResolvedValue({
+        users: [{ id: 'email-user-id', pictureUrl: null }],
+        totalCount: 1,
+      });
+      const handler = createHandler();
+      await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'user@example.com',
+          emailVerified: true,
+          name: 'Ada',
+          providerData: {
+            googleId: 'google-sub-1',
+            avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+          },
+        },
+        tx as never
+      );
+      expect(mockUsers.updateUser).toHaveBeenCalledWith(
+        'email-user-id',
+        { pictureUrl: 'https://lh3.googleusercontent.com/a/photo' },
+        tx
+      );
+    });
+
+    it('does not override an existing custom picture when linking Google', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        userId: 'email-user-id',
+        provider: UserAuthenticationMethodProvider.Email,
+        isVerified: true,
+      });
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: {
+          googleId: 'google-sub-1',
+          avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+        },
+        isVerified: true,
+      });
+      mockUsers.getUsers.mockResolvedValue({
+        users: [{ id: 'email-user-id', pictureUrl: 'https://cdn.example.com/custom.png' }],
+        totalCount: 1,
+      });
+      const handler = createHandler();
+      await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'user@example.com',
+          emailVerified: true,
+          name: 'Ada',
+          providerData: {
+            googleId: 'google-sub-1',
+            avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
+          },
+        },
+        tx as never
+      );
+      expect(mockUsers.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('binds a verified contact email when creating a Google user', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: { googleId: 'google-sub-1' },
+        isVerified: true,
+      });
+      mockUsers.createUser.mockResolvedValue({ id: 'new-google-user' });
+      const handler = createHandler();
+      await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'Ada@Example.com',
+          emailVerified: true,
+          name: 'Ada',
+          providerData: { googleId: 'google-sub-1' },
+        },
+        tx as never
+      );
+      expect(mockUserAuthenticationMethods.ensureVerifiedContactEmail).toHaveBeenCalledWith(
+        'new-google-user',
+        'Ada@Example.com',
+        true,
+        tx
+      );
+    });
+
+    it('does not treat an unverified IdP email as a contact mailbox', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: { googleId: 'google-sub-1' },
+        isVerified: false,
+      });
+      mockUsers.createUser.mockResolvedValue({ id: 'new-google-user' });
+      const handler = createHandler();
+      await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'user@example.com',
+          emailVerified: false,
+          name: 'Ada',
+          providerData: { googleId: 'google-sub-1' },
+        },
+        tx as never
+      );
+      expect(mockUserAuthenticationMethods.ensureVerifiedContactEmail).toHaveBeenCalledWith(
+        'new-google-user',
+        'user@example.com',
+        false,
+        tx
+      );
+    });
+
+    it('backfills a verified contact email for an existing Google method', async () => {
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue({
+        userId: 'existing-user-id',
+      });
+      const handler = createHandler();
+      await handler.resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: 'user@example.com',
+          emailVerified: true,
+          name: 'Ada',
+          providerData: { googleId: 'google-sub-1' },
+        },
+        tx as never
+      );
+      expect(mockUserAuthenticationMethods.ensureVerifiedContactEmail).toHaveBeenCalledWith(
+        'existing-user-id',
+        'user@example.com',
+        true,
         tx
       );
     });

@@ -1,12 +1,13 @@
 import { UserAuthenticationEmailProviderAction } from '@grantjs/schema';
 import { Response, Router } from 'express';
 
-import { config } from '@/config';
+import { config, SOCIAL_OAUTH_PROVIDERS } from '@/config';
 import type { ProjectOAuthProvider } from '@/config/env.config';
 import { t } from '@/i18n';
 import { authenticateRestRoute } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
+import { assertEmailProviderForDirectAuth } from '@/lib/oauth-direct-auth.lib';
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
 import {
@@ -35,10 +36,10 @@ import { TypedRequest } from '@/rest/types';
 import {
   buildAuthRedirectUrl,
   determineErrorCode,
-  handleGithubCallbackAuth,
-  handleGithubCallbackConnect,
-  handleGithubConnectFlow,
-  handleGithubOAuthError,
+  handleOAuthCallbackAuth,
+  handleOAuthCallbackConnect,
+  handleOAuthConnectFlow,
+  handleOAuthError,
   isCliRedirectUrl,
   validateRedirectUrl,
 } from '@/rest/utils/auth';
@@ -53,6 +54,7 @@ export function createAuthRoutes(context: RequestContext) {
     validateBody(loginRequestSchema),
     async (req: TypedRequest<{ body: typeof loginRequestSchema }>, res: Response) => {
       const { provider, providerId, providerData, emailVerificationProof } = req.body;
+      assertEmailProviderForDirectAuth(provider);
 
       const result = await context.handlers.auth.login(
         {
@@ -141,6 +143,7 @@ export function createAuthRoutes(context: RequestContext) {
     validateBody(registerRequestSchema),
     async (req: TypedRequest<{ body: typeof registerRequestSchema }>, res: Response) => {
       const { type, provider, providerId, providerData, emailVerificationProof } = req.body;
+      assertEmailProviderForDirectAuth(provider);
 
       const result = await context.handlers.auth.register(
         {
@@ -252,166 +255,188 @@ export function createAuthRoutes(context: RequestContext) {
     }
   );
 
-  router.get(
-    '/github',
-    validateQuery(initiateGithubAuthQuerySchema),
-    async (req: TypedRequest<{ query: typeof initiateGithubAuthQuerySchema }>, res: Response) => {
-      const { redirect, accountType, action } = req.query;
+  router.get('/providers', async (_req: TypedRequest<Record<string, never>>, res: Response) => {
+    const providers = await context.handlers.oauth.listProviders();
+    sendSuccessResponse(res, { providers });
+  });
 
-      // For connect flow, require authenticated user (from access token or refresh token)
-      if (action === UserAuthenticationEmailProviderAction.Connect) {
-        let userId = context.user?.userId;
+  for (const socialProvider of SOCIAL_OAUTH_PROVIDERS) {
+    router.get(
+      `/${socialProvider}`,
+      validateQuery(initiateGithubAuthQuerySchema),
+      async (req: TypedRequest<{ query: typeof initiateGithubAuthQuerySchema }>, res: Response) => {
+        const { redirect, accountType, action } = req.query;
 
-        if (!userId) {
-          const refreshToken = getRefreshTokenFromCookie(req);
-          if (refreshToken) {
-            try {
-              const result = await context.handlers.auth.refreshSession(
-                refreshToken,
-                context.userAgent,
-                context.ipAddress,
-                context.requestBaseUrl
-              );
-              setRefreshTokenCookie(res, result.refreshToken);
-              const claims = await context.grant.verifyToken(result.accessToken);
-              userId = claims.sub;
-            } catch {
-              // Invalid or expired refresh token
+        if (action === UserAuthenticationEmailProviderAction.Connect) {
+          let userId = context.user?.userId;
+
+          if (!userId) {
+            const refreshToken = getRefreshTokenFromCookie(req);
+            if (refreshToken) {
+              try {
+                const result = await context.handlers.auth.refreshSession(
+                  refreshToken,
+                  context.userAgent,
+                  context.ipAddress,
+                  context.requestBaseUrl
+                );
+                setRefreshTokenCookie(res, result.refreshToken);
+                const claims = await context.grant.verifyToken(result.accessToken);
+                userId = claims.sub;
+              } catch {
+                // Invalid or expired refresh token
+              }
             }
           }
-        }
 
-        if (!userId) {
-          const frontendUrl = config.security.frontendUrl;
-          const locale = context.locale || 'en';
-          res.redirect(`${frontendUrl}/${locale}/auth/login?error=authenticationRequired`);
+          if (!userId) {
+            const frontendUrl = config.security.frontendUrl;
+            const locale = context.locale || 'en';
+            res.redirect(`${frontendUrl}/${locale}/auth/login?error=authenticationRequired`);
+            return;
+          }
+
+          const authorizationUrl = await handleOAuthConnectFlow(
+            context,
+            socialProvider,
+            redirect,
+            userId
+          );
+          res.redirect(authorizationUrl);
           return;
         }
 
-        const authorizationUrl = await handleGithubConnectFlow(context, redirect, userId);
-        res.redirect(authorizationUrl);
-        return;
-      }
+        if (redirect && !validateRedirectUrl(redirect)) {
+          context.requestLogger.warn({
+            msg: 'OAuth initiate - invalid redirect URL',
+            provider: socialProvider,
+            redirectUrl: redirect,
+            expectedOrigin: new URL(config.security.frontendUrl).origin,
+          });
+          const result = await context.handlers.oauth.initiateAuth(socialProvider, {});
+          res.redirect(result.authorizationUrl);
+          return;
+        }
 
-      // Validate redirect URL if provided
-      if (redirect && !validateRedirectUrl(redirect)) {
-        context.requestLogger.warn({
-          msg: 'OAuth initiate - invalid redirect URL',
+        const result = await context.handlers.oauth.initiateAuth(socialProvider, {
           redirectUrl: redirect,
-          expectedOrigin: new URL(config.security.frontendUrl).origin,
+          accountType,
+          action: action || UserAuthenticationEmailProviderAction.Login,
         });
-        const result = await context.handlers.oauth.initiateGithubAuth({});
+
         res.redirect(result.authorizationUrl);
-        return;
       }
+    );
 
-      const result = await context.handlers.oauth.initiateGithubAuth({
-        redirectUrl: redirect,
-        accountType,
-        action: action || UserAuthenticationEmailProviderAction.Login,
-      });
+    router.get(
+      `/${socialProvider}/callback`,
+      validateQuery(handleGithubCallbackQuerySchema),
+      async (
+        req: TypedRequest<{ query: typeof handleGithubCallbackQuerySchema }>,
+        res: Response
+      ) => {
+        const { error, error_description, code, state } = req.query;
+        const locale = context.locale || 'en';
+        const frontendUrl = config.security.frontendUrl;
 
-      res.redirect(result.authorizationUrl);
-    }
-  );
+        if (error) {
+          if (state && typeof state === 'string') {
+            const storedState = await context.handlers.oauth.getStoredState(state);
+            if (
+              storedState?.redirectUrl &&
+              isCliRedirectUrl(storedState.redirectUrl, frontendUrl)
+            ) {
+              const url = new URL(storedState.redirectUrl);
+              url.searchParams.set('error', 'oauthError');
+              if (error_description) url.searchParams.set('error_description', error_description);
+              res.redirect(url.toString());
+              return;
+            }
+          }
+          handleOAuthError(
+            context.requestLogger,
+            res,
+            error,
+            error_description,
+            locale,
+            socialProvider
+          );
+          return;
+        }
 
-  router.get(
-    '/github/callback',
-    validateQuery(handleGithubCallbackQuerySchema),
-    async (req: TypedRequest<{ query: typeof handleGithubCallbackQuerySchema }>, res: Response) => {
-      const { error, error_description, code, state } = req.query;
-      const locale = context.locale || 'en';
-      const frontendUrl = config.security.frontendUrl;
-
-      // Handle OAuth errors from GitHub
-      if (error) {
-        // CLI flow: redirect to CLI localhost with error (not same origin as frontend)
+        let cliRedirectUrl: string | null = null;
         if (state && typeof state === 'string') {
           const storedState = await context.handlers.oauth.getStoredState(state);
           if (storedState?.redirectUrl && isCliRedirectUrl(storedState.redirectUrl, frontendUrl)) {
-            const url = new URL(storedState.redirectUrl);
-            url.searchParams.set('error', 'oauthError');
-            if (error_description) url.searchParams.set('error_description', error_description);
+            cliRedirectUrl = storedState.redirectUrl;
+          }
+        }
+
+        try {
+          const oauthResult = await context.handlers.oauth.handleCallback(
+            socialProvider,
+            code,
+            state
+          );
+
+          const handledConnect = await handleOAuthCallbackConnect(context, res, oauthResult);
+          if (handledConnect) {
+            return;
+          }
+
+          const loginResult = await handleOAuthCallbackAuth(context, oauthResult);
+
+          const isCli = isCliRedirectUrl(oauthResult.redirectUrl, frontendUrl);
+
+          if (oauthResult.redirectUrl && isCli) {
+            const oneTimeCode = await context.handlers.oauth.storeCliCallbackPayload(
+              {
+                accessToken: loginResult.accessToken,
+                refreshToken: loginResult.refreshToken,
+                accounts: loginResult.accounts,
+              },
+              context.requestLogger
+            );
+            const url = new URL(oauthResult.redirectUrl);
+            url.searchParams.set('code', oneTimeCode);
             res.redirect(url.toString());
             return;
           }
+
+          setRefreshTokenCookie(res, loginResult.refreshToken);
+
+          if (loginResult.requiresMfaStepUp) {
+            const returnTo = buildAuthRedirectUrl(oauthResult, locale);
+            res.redirect(
+              `${frontendUrl}/${locale}/auth/mfa?mode=challenge&returnTo=${encodeURIComponent(returnTo)}`
+            );
+          } else {
+            res.redirect(buildAuthRedirectUrl(oauthResult, locale));
+          }
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          const errorCode = determineErrorCode(err);
+          context.requestLogger.error({
+            msg: 'Error handling OAuth callback',
+            provider: socialProvider,
+            err,
+            errorMessage,
+            errorCode,
+            redirectToLoginWithError: errorCode,
+          });
+
+          if (cliRedirectUrl) {
+            const url = new URL(cliRedirectUrl);
+            url.searchParams.set('error', errorCode);
+            res.redirect(url.toString());
+            return;
+          }
+
+          res.redirect(`${frontendUrl}/${locale}/auth/login?error=${errorCode}`);
         }
-        handleGithubOAuthError(context.requestLogger, res, error, error_description, locale);
-        return;
       }
-
-      // Capture CLI redirect URL before handleGithubCallback consumes state (for error redirect in catch)
-      let cliRedirectUrl: string | null = null;
-      if (state && typeof state === 'string') {
-        const storedState = await context.handlers.oauth.getStoredState(state);
-        if (storedState?.redirectUrl && isCliRedirectUrl(storedState.redirectUrl, frontendUrl)) {
-          cliRedirectUrl = storedState.redirectUrl;
-        }
-      }
-
-      try {
-        const oauthResult = await context.handlers.oauth.handleGithubCallback(code, state);
-
-        // Handle connect flow (linking GitHub to existing authenticated user)
-        const handledConnect = await handleGithubCallbackConnect(context, res, oauthResult);
-        if (handledConnect) {
-          return;
-        }
-
-        // Handle authentication flow (login/register)
-        const loginResult = await handleGithubCallbackAuth(context, oauthResult);
-
-        const isCli = isCliRedirectUrl(oauthResult.redirectUrl, frontendUrl);
-
-        // CLI flow: redirect to CLI localhost (different origin from frontend) with one-time code
-        if (oauthResult.redirectUrl && isCli) {
-          const oneTimeCode = await context.handlers.oauth.storeCliCallbackPayload(
-            {
-              accessToken: loginResult.accessToken,
-              refreshToken: loginResult.refreshToken,
-              accounts: loginResult.accounts,
-            },
-            context.requestLogger
-          );
-          const url = new URL(oauthResult.redirectUrl);
-          url.searchParams.set('code', oneTimeCode);
-          res.redirect(url.toString());
-          return;
-        }
-
-        // Browser flow: set refresh token cookie and redirect.
-        setRefreshTokenCookie(res, loginResult.refreshToken);
-
-        if (loginResult.requiresMfaStepUp) {
-          const returnTo = buildAuthRedirectUrl(oauthResult, locale);
-          res.redirect(
-            `${frontendUrl}/${locale}/auth/mfa?mode=challenge&returnTo=${encodeURIComponent(returnTo)}`
-          );
-        } else {
-          res.redirect(buildAuthRedirectUrl(oauthResult, locale));
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        const errorCode = determineErrorCode(err);
-        context.requestLogger.error({
-          msg: 'Error handling GitHub OAuth callback',
-          err,
-          errorMessage,
-          errorCode,
-          redirectToLoginWithError: errorCode,
-        });
-
-        if (cliRedirectUrl) {
-          const url = new URL(cliRedirectUrl);
-          url.searchParams.set('error', errorCode);
-          res.redirect(url.toString());
-          return;
-        }
-
-        res.redirect(`${frontendUrl}/${locale}/auth/login?error=${errorCode}`);
-      }
-    }
-  );
+    );
+  }
 
   router.post(
     '/cli-callback',
