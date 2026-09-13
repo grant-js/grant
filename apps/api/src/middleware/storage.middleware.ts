@@ -6,6 +6,15 @@ import { logger, loggerFactory } from '@/lib/logger';
 import { LocalStorageAdapter } from '@/lib/storage';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
+/**
+ * Express will parse a repeated query key as an array. The signature is bound to
+ * four strings, so anything else is treated as missing and refused by
+ * `verifyUploadUrl` rather than coerced.
+ */
+function queryParamString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
 export function storageMiddleware(): express.RequestHandler {
   const storagePath = path.resolve(config.storage.local.basePath);
 
@@ -71,12 +80,16 @@ export function uploadMiddleware(): express.RequestHandler {
 
       const storagePath = decodeURIComponent(req.path.replace(/^\//, ''));
       const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
-      const query = req.query as Record<string, string | undefined>;
 
       void adapter
         .verifyUploadUrl(
           storagePath,
-          { exp: query.exp, len: query.len, ct: query.ct, sig: query.sig },
+          {
+            exp: queryParamString(req.query.exp),
+            len: queryParamString(req.query.len),
+            ct: queryParamString(req.query.ct),
+            sig: queryParamString(req.query.sig),
+          },
           { contentType: req.headers['content-type'], contentLength: body.length }
         )
         .then(async ({ contentType }) => {

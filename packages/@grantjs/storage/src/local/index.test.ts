@@ -1,7 +1,7 @@
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { AuthorizationError, GrantException, noopLogger } from '@grantjs/core';
+import { AuthorizationError, GrantException, noopLogger, ValidationError } from '@grantjs/core';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -209,6 +209,16 @@ describe('local upload signing key', () => {
     });
 
     await fs.rm(configuredBase, { recursive: true, force: true });
+  });
+
+  it('upload refuses a path that would leave the storage root', async () => {
+    await expect(adapter.upload(Buffer.from('x'), '../outside.png')).rejects.toBeInstanceOf(
+      ValidationError
+    );
+
+    await expect(fs.stat(path.join(path.dirname(basePath), 'outside.png'))).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
   });
 
   it('divergence — getMetadata reports no content type, because the filesystem holds none', async () => {

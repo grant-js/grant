@@ -95,6 +95,23 @@ describe('PUT /storage — the route that honours a minted URL', () => {
     });
   });
 
+  it('refuses a PUT whose signature parameters arrived as arrays', async () => {
+    const body = Buffer.from('a'.repeat(16));
+    const minted = await mint('users/1/array-query.png', body);
+    const url = new URL(minted, 'http://placeholder.invalid');
+    const exp = url.searchParams.get('exp') as string;
+
+    const response = await request(app)
+      .put(`${url.pathname}${url.search}&exp=${exp}`)
+      .set('Content-Type', 'image/png')
+      .send(body);
+
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    await expect(fs.stat(path.join(basePath, 'users/1/array-query.png'))).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
+
   it('refuses a PUT whose signature was tampered with', async () => {
     const body = Buffer.from('t'.repeat(16));
     const url = new URL(await mint('users/1/forged.png', body), 'http://placeholder.invalid');

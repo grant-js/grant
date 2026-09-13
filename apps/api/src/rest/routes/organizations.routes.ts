@@ -120,6 +120,7 @@ export function createOrganizationRoutes(context: RequestContext) {
       params: organizationParamsSchema,
       body: uploadOrganizationPictureRequestSchema,
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
     // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
@@ -154,6 +155,7 @@ export function createOrganizationRoutes(context: RequestContext) {
       params: organizationParamsSchema,
       body: requestOrganizationPictureUploadUrlRequestSchema,
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
     // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
@@ -186,6 +188,7 @@ export function createOrganizationRoutes(context: RequestContext) {
       params: organizationParamsSchema,
       body: confirmOrganizationPictureUploadRequestSchema,
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
     // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({

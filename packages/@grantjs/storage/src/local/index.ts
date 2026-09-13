@@ -65,6 +65,16 @@ export class LocalStorageAdapter implements IFileStorageService {
     return this.config.urlPrefix ?? DEFAULT_URL_PREFIX;
   }
 
+  private resolveUnderBase(filePath: string): string {
+    assertUploadPath(filePath);
+    const root = path.resolve(this.config.basePath);
+    const fullPath = path.resolve(root, filePath);
+    if (fullPath !== root && !fullPath.startsWith(root + path.sep)) {
+      throw new ValidationError(`Storage path escapes the storage root: ${filePath}`);
+    }
+    return fullPath;
+  }
+
   private async ensureDirectoryExists(dirPath: string): Promise<void> {
     try {
       await fs.access(dirPath);
@@ -75,7 +85,7 @@ export class LocalStorageAdapter implements IFileStorageService {
   }
 
   async upload(file: Buffer, filePath: string, options?: UploadOptions): Promise<UploadResult> {
-    const fullPath = path.join(this.config.basePath, filePath);
+    const fullPath = this.resolveUnderBase(filePath);
     const dirPath = path.dirname(fullPath);
 
     await this.ensureDirectoryExists(dirPath);
@@ -113,7 +123,7 @@ export class LocalStorageAdapter implements IFileStorageService {
   }
 
   async delete(filePath: string): Promise<void> {
-    const fullPath = path.join(this.config.basePath, filePath);
+    const fullPath = this.resolveUnderBase(filePath);
 
     try {
       await fs.unlink(fullPath);
@@ -141,7 +151,7 @@ export class LocalStorageAdapter implements IFileStorageService {
   }
 
   async getMetadata(filePath: string): Promise<StoredObjectMetadata | null> {
-    const fullPath = path.join(this.config.basePath, filePath);
+    const fullPath = this.resolveUnderBase(filePath);
 
     try {
       const stats = await fs.stat(fullPath);
@@ -325,7 +335,7 @@ export class LocalStorageAdapter implements IFileStorageService {
   }
 
   async exists(filePath: string): Promise<boolean> {
-    const fullPath = path.join(this.config.basePath, filePath);
+    const fullPath = this.resolveUnderBase(filePath);
     try {
       await fs.access(fullPath);
       return true;
@@ -335,8 +345,8 @@ export class LocalStorageAdapter implements IFileStorageService {
   }
 
   async copy(sourcePath: string, destinationPath: string): Promise<void> {
-    const sourceFullPath = path.join(this.config.basePath, sourcePath);
-    const destinationFullPath = path.join(this.config.basePath, destinationPath);
+    const sourceFullPath = this.resolveUnderBase(sourcePath);
+    const destinationFullPath = this.resolveUnderBase(destinationPath);
     const destinationDir = path.dirname(destinationFullPath);
 
     await this.ensureDirectoryExists(destinationDir);
