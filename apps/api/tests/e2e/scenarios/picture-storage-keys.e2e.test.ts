@@ -8,7 +8,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { apiClient } from '../helpers/api-client';
-import { closeDbHelper, query } from '../helpers/db-tokens';
+import { addProjectUserForE2e, closeDbHelper, query } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
 
@@ -99,11 +99,51 @@ describe('picture storage keys (F-3)', () => {
     expect(listed?.pictureUrl).toBe(`/storage/${uploadOrg.body.data.path}`);
     expect(listed?.pictureUrl?.length).toBeLessThanOrEqual(derivedPictureUrlMax);
 
+    // Creating a project does not insert project_users; membership picture
+    // lives on that pivot. PATCH /api/users/:id cannot update the platform
+    // user in account scope (not a User resource there).
+    const project = await owner.createProject(org.id, `Picture Keys Project ${Date.now()}`);
+    expect(project.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    await addProjectUserForE2e(project.id, userId);
+
+    const uploadMembership = await graphqlRequest<{
+      uploadMyProjectMembershipPicture: { path: string };
+    }>({
+      query: `mutation ($input: UploadMyProjectMembershipPictureInput!) {
+        uploadMyProjectMembershipPicture(input: $input) { path }
+      }`,
+      variables: {
+        input: {
+          projectId: project.id,
+          file: jpeg,
+          filename: 'member.jpg',
+          contentType: 'image/jpeg',
+        },
+      },
+      accessToken: owner.accessToken,
+    });
+    expect(uploadMembership.body.errors).toBeUndefined();
+    const membershipPath = uploadMembership.body.data?.uploadMyProjectMembershipPicture.path;
+    expect(membershipPath).toBe(`users/${userId}/projects/${project.id}/picture.jpg`);
+
+    const membershipRows = await query<{
+      picture_url: string | null;
+      picture_path: string | null;
+    }>`
+      SELECT picture_url, picture_path
+      FROM project_users
+      WHERE project_id = ${project.id}::uuid
+        AND user_id = ${userId}::uuid
+        AND deleted_at IS NULL
+      LIMIT 1
+    `;
+    expect(membershipRows[0]?.picture_path).toBe(membershipPath);
+    expect(membershipRows[0]?.picture_url).toBeNull();
+
     const update = await apiClient()
-      .patch(`/api/users/${userId}`)
+      .patch(`/api/me/project-memberships/${project.id}`)
       .set('Authorization', owner.authHeader)
       .send({
-        scope: { id: owner.accountId, tenant: 'account' },
         pictureUrl: 'https://idp.example/avatar.png',
       });
     expect(update.status).toBe(200);
@@ -113,8 +153,11 @@ describe('picture storage keys (F-3)', () => {
       picture_path: string | null;
     }>`
       SELECT picture_url, picture_path
-      FROM users
-      WHERE id = ${userId}::uuid
+      FROM project_users
+      WHERE project_id = ${project.id}::uuid
+        AND user_id = ${userId}::uuid
+        AND deleted_at IS NULL
+      LIMIT 1
     `;
     expect(cleared[0]?.picture_url).toBe('https://idp.example/avatar.png');
     expect(cleared[0]?.picture_path).toBeNull();
