@@ -1,0 +1,6 @@
+mutation UploadProjectAppPicture($input: UploadProjectAppPictureInput!) {
+  uploadProjectAppPicture(input: $input) {
+    url
+    path
+  }
+}

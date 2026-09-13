@@ -350,11 +350,13 @@ export function createServices(
     ),
     projects: new ProjectService(
       repositories.projectRepository,
-      audit(projectAuditLogs, 'projectId', user, db)
+      audit(projectAuditLogs, 'projectId', user, db),
+      fileStorage
     ),
     projectApps: new ProjectAppService(
       repositories.projectAppRepository,
-      audit(projectAppAuditLogs, 'projectAppId', user, db)
+      audit(projectAppAuditLogs, 'projectAppId', user, db),
+      fileStorage
     ),
     projectAppTags: new ProjectAppTagService(
       repositories.projectAppRepository,

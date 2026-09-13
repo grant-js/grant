@@ -91,6 +91,9 @@ function buildProjectOAuthContext(
       ),
     getProjectAppById: vi.fn().mockResolvedValue(fixtureApp),
   };
+  const projects = {
+    getProjects: vi.fn().mockResolvedValue({ projects: [], totalCount: 0, hasNextPage: false }),
+  };
   const projectPermissions = {
     getScopeSlugLabelsForProject:
       overrides?.getScopeSlugLabelsForProject ?? vi.fn().mockResolvedValue([]),
@@ -169,6 +172,7 @@ function buildProjectOAuthContext(
 
   const projectOAuthHandler = new ProjectOAuthHandler(
     projectApps as never,
+    projects as never,
     projectPermissions as never,
     projectUsers as never,
     userRoles as never,

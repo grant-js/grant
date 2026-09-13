@@ -1,4 +1,4 @@
-import { Tenant } from '@grantjs/schema';
+import { PROJECT_OAUTH_THEME_MODES, Tenant } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
@@ -23,6 +23,10 @@ export const projectAppSchema = z.object({
   projectId: z.string().uuid(),
   clientId: z.string().uuid(),
   name: z.string().nullable(),
+  pictureUrl: z.string().nullable().optional(),
+  primaryColor: z.string().nullable().optional(),
+  showHelpPanel: z.boolean().nullable().optional(),
+  themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable().optional(),
   redirectUris: z.array(z.string().url()),
   scopes: z.array(z.string()).optional(),
   enabledProviders: z.array(z.string()).optional(),
@@ -73,6 +77,13 @@ export const updateProjectAppRequestSchema = z.object({
   enabledProviders: z.array(z.string()).optional(),
   allowSignUp: z.boolean().optional(),
   signUpRoleId: z.string().uuid().nullable().optional(),
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .nullable()
+    .optional(),
+  showHelpPanel: z.boolean().nullable().optional(),
+  themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable().optional(),
   tagIds: z.array(z.string()).optional(),
   primaryTagId: z.string().uuid().nullable().optional(),
 });
@@ -100,3 +111,44 @@ export const createProjectAppResponseSchema = z.object({
 export const getProjectAppsResponseSchema = createSuccessResponseSchema(projectAppPageSchema);
 export const updateProjectAppResponseSchema = createSuccessResponseSchema(projectAppSchema);
 export const deleteProjectAppResponseSchema = createSuccessResponseSchema(projectAppSchema);
+
+export const uploadProjectAppPictureRequestSchema = z.object({
+  scope: projectAppScopeSchema,
+  file: z.string().min(1, 'errors.validation.fileRequired'),
+  filename: z.string().min(1, 'errors.validation.filenameRequired'),
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired'),
+});
+
+export const uploadProjectAppPictureResponseSchema = createSuccessResponseSchema(
+  z.object({
+    url: z.string(),
+    path: z.string(),
+  }),
+  'Successfully uploaded project-app picture'
+);
+
+export const requestProjectAppPictureUploadUrlRequestSchema = z.object({
+  scope: projectAppScopeSchema,
+  filename: z.string().min(1, 'errors.validation.filenameRequired'),
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired'),
+  contentLength: z.number().int().positive(),
+});
+
+export const requestProjectAppPictureUploadUrlResponseSchema = createSuccessResponseSchema(
+  z.object({
+    url: z.string(),
+    method: z.string(),
+    headers: z.array(z.object({ name: z.string(), value: z.string() })),
+    expiresAt: z.string(),
+  }),
+  'Direct-upload URL issued for a project-app picture'
+);
+
+export const confirmProjectAppPictureUploadRequestSchema = z.object({
+  scope: projectAppScopeSchema,
+  filename: z.string().min(1, 'errors.validation.filenameRequired'),
+});
+
+export const clearProjectAppPictureRequestSchema = z.object({
+  scope: projectAppScopeSchema,
+});

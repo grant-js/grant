@@ -352,6 +352,54 @@ export const Mutation = {
       projectMutations.updateProject!
     )
   ),
+  uploadProjectPicture: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'project',
+      },
+      projectMutations.uploadProjectPicture!
+    )
+  ),
+  requestProjectPictureUploadUrl: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'project',
+      },
+      projectMutations.requestProjectPictureUploadUrl!
+    )
+  ),
+  confirmProjectPictureUpload: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'project',
+      },
+      projectMutations.confirmProjectPictureUpload!
+    )
+  ),
+  clearProjectPicture: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'project',
+      },
+      projectMutations.clearProjectPicture!
+    )
+  ),
   startProjectExport: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,
@@ -558,6 +606,54 @@ export const Mutation = {
         resourceResolver: 'projectApp',
       },
       projectAppMutations.updateProjectApp!
+    )
+  ),
+  uploadProjectAppPicture: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.ProjectApp,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      projectAppMutations.uploadProjectAppPicture!
+    )
+  ),
+  requestProjectAppPictureUploadUrl: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.ProjectApp,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      projectAppMutations.requestProjectAppPictureUploadUrl!
+    )
+  ),
+  confirmProjectAppPictureUpload: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.ProjectApp,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      projectAppMutations.confirmProjectAppPictureUpload!
+    )
+  ),
+  clearProjectAppPicture: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.ProjectApp,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      projectAppMutations.clearProjectAppPicture!
     )
   ),
   deleteProjectApp: requireEmailThenMfaGraphQL(

@@ -1,5 +1,7 @@
 export * from './project-actions';
 export * from './project-audit';
+export * from './project-avatar';
+export * from './project-branding-viewer';
 export * from './project-card-skeleton';
 export * from './project-cards';
 export * from './project-create-dialog';
@@ -9,6 +11,7 @@ export * from './project-header';
 export * from './project-limit';
 export * from './project-navigation-button';
 export * from './project-pagination';
+export * from './project-picture-upload-dialog';
 export * from './project-search';
 export * from './project-sorter';
 export * from './project-switcher';

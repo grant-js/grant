@@ -1,0 +1,6 @@
+extend type Mutation {
+  """
+  Clear the project logo. Does not delete the stored object.
+  """
+  clearProjectPicture(input: ClearProjectPictureInput!): Project!
+}

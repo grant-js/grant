@@ -1,0 +1,7 @@
+input UploadProjectPictureInput {
+  scope: Scope!
+  projectId: ID!
+  file: String!
+  filename: String!
+  contentType: String!
+}

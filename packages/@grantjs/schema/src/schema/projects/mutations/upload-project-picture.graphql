@@ -1,0 +1,6 @@
+extend type Mutation {
+  """
+  Upload a project logo and persist its public URL.
+  """
+  uploadProjectPicture(input: UploadProjectPictureInput!): UploadProjectPictureResult!
+}

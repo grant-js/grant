@@ -11,6 +11,7 @@ import {
   KeyRound,
   LayoutGrid,
   Package,
+  Palette,
   Shield,
   Tag,
   Users,
@@ -68,6 +69,11 @@ export function PersonalProjectSidebar({ ...props }: ComponentProps<typeof Sideb
           title: t('projectApps'),
           url: `/dashboard/accounts/${accountId}/projects/${projectId}/apps`,
           icon: LayoutGrid,
+        },
+        {
+          title: t('branding'),
+          url: `/dashboard/accounts/${accountId}/projects/${projectId}/branding`,
+          icon: Palette,
         },
         {
           title: t('roles'),

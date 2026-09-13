@@ -80,3 +80,14 @@ export function useScopeFromParams(): Scope | null {
     return null;
   }, [accountId, organizationId, projectId, userId]);
 }
+
+/** Picture uploads require accountProject / organizationProject, not the parent tenant. */
+export function toProjectScope(parent: Scope, projectId: string): Scope {
+  if (parent.tenant === Tenant.Organization) {
+    return { tenant: Tenant.OrganizationProject, id: `${parent.id}:${projectId}` };
+  }
+  if (parent.tenant === Tenant.Account) {
+    return { tenant: Tenant.AccountProject, id: `${parent.id}:${projectId}` };
+  }
+  return parent;
+}

@@ -21,6 +21,10 @@ query GetProjectApps(
       projectId
       clientId
       name
+      pictureUrl
+      primaryColor
+      showHelpPanel
+      themeMode
       redirectUris
       scopes
       enabledProviders
@@ -36,6 +40,9 @@ query GetProjectApps(
       project {
         id
         name
+        pictureUrl
+        primaryColor
+        showHelpPanel
       }
       tags {
         id

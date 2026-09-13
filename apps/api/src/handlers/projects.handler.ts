@@ -1,6 +1,7 @@
 import type {
   IAccountProjectService,
   IAccountProjectTagService,
+  IFileStorageServicePort,
   IJobAdapter,
   IOrganizationProjectService,
   IOrganizationProjectTagService,
@@ -18,6 +19,8 @@ import {
   CdmFindBy,
   CdmModeStrategy,
   CdmOnConflict,
+  ClearProjectPictureInput,
+  ConfirmProjectPictureUploadInput,
   MutationCancelProjectSyncArgs,
   MutationCreateProjectArgs,
   MutationDeleteProjectArgs,
@@ -33,11 +36,15 @@ import {
   QueryProjectsArgs,
   QueryProjectSyncJobArgs,
   QueryProjectSyncJobsArgs,
+  RequestProjectPictureUploadUrlInput,
   Scope,
   SyncProjectInput,
   Tenant,
+  UploadProjectPictureInput,
+  UploadUrl,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
 import { IEntityCacheAdapter } from '@/lib/cache';
@@ -65,6 +72,7 @@ export class ProjectHandler extends CacheHandler {
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
+    private readonly fileStorage: IFileStorageServicePort,
     private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
   ) {
     super(cache, scopeServices);
@@ -692,6 +700,80 @@ export class ProjectHandler extends CacheHandler {
       await this.removeProjectIdFromScopeCache(scope, projectId);
 
       return await this.projects.deleteProject(params, tx);
+    });
+  }
+
+  private assertProjectPictureScope(projectId: string, scope: UploadProjectPictureInput['scope']) {
+    if (scope.tenant !== Tenant.AccountProject && scope.tenant !== Tenant.OrganizationProject) {
+      throw new ValidationError('project pictures require accountProject or organizationProject scope');
+    }
+    if (this.extractProjectIdFromScope(scope) !== projectId) {
+      throw new ValidationError('scope id must contain the same projectId as the projectId argument');
+    }
+  }
+
+  private projectPicturePath(projectId: string, filename: string): string {
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(filename, `projects/${projectId}/picture`);
+  }
+
+  public async requestProjectPictureUploadUrl(
+    params: RequestProjectPictureUploadUrlInput
+  ): Promise<UploadUrl> {
+    const { projectId, filename, contentType, contentLength, scope } = params;
+    this.assertProjectPictureScope(projectId, scope);
+    this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
+    const minted = await this.fileStorage.getUploadUrl(this.projectPicturePath(projectId, filename), {
+      contentType,
+      contentLength,
+      expiresInSeconds: config.storage.upload.urlExpirySeconds,
+    });
+    return {
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  public async confirmProjectPictureUpload(
+    params: ConfirmProjectPictureUploadInput
+  ): Promise<{ url: string; path: string }> {
+    const { projectId, filename, scope } = params;
+    this.assertProjectPictureScope(projectId, scope);
+    const storagePath = this.projectPicturePath(projectId, filename);
+    await this.fileStorage.assertStoredWithinPolicy(storagePath);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const url = await this.fileStorage.getUrl(storagePath);
+      await this.projects.setProjectPicture(projectId, { picturePath: storagePath }, tx);
+      return { url, path: storagePath };
+    });
+  }
+
+  public async uploadProjectPicture(
+    params: UploadProjectPictureInput
+  ): Promise<{ url: string; path: string }> {
+    const { projectId, file, contentType, filename, scope } = params;
+    this.assertProjectPictureScope(projectId, scope);
+    const fileBuffer = this.fileStorage.validateAndDecodeUpload({ file, contentType, filename });
+    const storagePath = this.projectPicturePath(projectId, filename);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.fileStorage.upload(fileBuffer, storagePath, {
+        contentType,
+        public: true,
+      });
+      await this.projects.setProjectPicture(projectId, { picturePath: result.path }, tx);
+      return { url: result.url, path: result.path };
+    });
+  }
+
+  public async clearProjectPicture(params: ClearProjectPictureInput): Promise<Project> {
+    this.assertProjectPictureScope(params.projectId, params.scope);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      return this.projects.setProjectPicture(
+        params.projectId,
+        { picturePath: null, pictureUrl: null },
+        tx
+      );
     });
   }
 }

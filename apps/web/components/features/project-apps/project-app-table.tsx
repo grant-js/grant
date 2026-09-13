@@ -19,6 +19,7 @@ import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
 import { ProjectAppActions } from './project-app-actions';
+import { ProjectAppAvatar } from './project-app-avatar';
 import { ProjectAppSignUpStatusLabel } from './project-app-sign-up-status-label';
 
 export function ProjectAppTable() {
@@ -42,6 +43,7 @@ export function ProjectAppTable() {
       className: 'pl-4',
       render: (app: ProjectApp) => (
         <div className="flex items-center gap-2 min-w-0">
+          <ProjectAppAvatar projectApp={app} size="sm" />
           <span className="text-sm font-medium font-mono truncate">{app.clientId}</span>
           <CopyToClipboard text={app.clientId} size="sm" variant="ghost" />
         </div>

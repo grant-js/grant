@@ -568,6 +568,20 @@
       "when": 1789289785087,
       "tag": "0080_abnormal_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1789322038638,
+      "tag": "0081_salty_young_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1789329166442,
+      "tag": "0082_clean_rick_jones",
+      "breakpoints": true
     }
   ]
 }

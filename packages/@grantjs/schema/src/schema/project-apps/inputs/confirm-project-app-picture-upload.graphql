@@ -1,0 +1,9 @@
+"""
+`filename` is repeated from the request step rather than carried in a token: the
+storage path is re-derived server-side from the project-app id both times.
+"""
+input ConfirmProjectAppPictureUploadInput {
+  scope: Scope!
+  projectAppId: ID!
+  filename: String!
+}

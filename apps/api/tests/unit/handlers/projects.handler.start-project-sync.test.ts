@@ -107,6 +107,7 @@ function createHandler(opts: {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     opts.scheduleAfterCommit
   );
 }

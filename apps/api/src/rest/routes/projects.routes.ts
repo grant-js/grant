@@ -17,6 +17,8 @@ import { AuthenticationError } from '@/lib/errors';
 import { resolveSyncJobEnqueuedById } from '@/lib/resolve-sync-job-enqueued-by.lib';
 import { validate } from '@/middleware/validation.middleware';
 import {
+  clearProjectPictureRequestSchema,
+  confirmProjectPictureUploadRequestSchema,
   createProjectRequestSchema,
   deleteProjectQuerySchema,
   getProjectsQuerySchema,
@@ -24,9 +26,11 @@ import {
   projectParamsSchema,
   projectSyncJobParamsSchema,
   projectSyncJobScopeQuerySchema,
+  requestProjectPictureUploadUrlRequestSchema,
   startProjectExportJobRequestSchema,
   startProjectSyncRequestSchema,
   updateProjectRequestSchema,
+  uploadProjectPictureRequestSchema,
 } from '@/rest/schemas';
 import { TypedRequest } from '@/rest/types';
 import { buildSortInput, queryListCommons } from '@/rest/utils/list-query';
@@ -364,6 +368,116 @@ export function createProjectsRouter(context: RequestContext): Router {
 
       const project: Project = await context.handlers.projects.updateProject(variables);
 
+      sendSuccessResponse(res, project);
+    }
+  );
+
+  router.post(
+    '/:id/picture',
+    validate({ params: projectParamsSchema, body: uploadProjectPictureRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof uploadProjectPictureRequestSchema;
+      }>,
+      res
+    ) => {
+      const { id } = req.params;
+      const { file, filename, contentType, scope } = req.body;
+      const result = await context.handlers.projects.uploadProjectPicture({
+        projectId: id,
+        file,
+        filename,
+        contentType,
+        scope,
+      });
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.post(
+    '/:id/picture/upload-url',
+    validate({ params: projectParamsSchema, body: requestProjectPictureUploadUrlRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof requestProjectPictureUploadUrlRequestSchema;
+      }>,
+      res
+    ) => {
+      const { id } = req.params;
+      const { filename, contentType, contentLength, scope } = req.body;
+      const result = await context.handlers.projects.requestProjectPictureUploadUrl({
+        projectId: id,
+        filename,
+        contentType,
+        contentLength,
+        scope,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
+    '/:id/picture/confirm',
+    validate({ params: projectParamsSchema, body: confirmProjectPictureUploadRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof confirmProjectPictureUploadRequestSchema;
+      }>,
+      res
+    ) => {
+      const { id } = req.params;
+      const { filename, scope } = req.body;
+      const result = await context.handlers.projects.confirmProjectPictureUpload({
+        projectId: id,
+        filename,
+        scope,
+      });
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.delete(
+    '/:id/picture',
+    validate({ params: projectParamsSchema, body: clearProjectPictureRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.Update,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof clearProjectPictureRequestSchema;
+      }>,
+      res
+    ) => {
+      const { id } = req.params;
+      const project = await context.handlers.projects.clearProjectPicture({
+        projectId: id,
+        scope: req.body.scope,
+      });
       sendSuccessResponse(res, project);
     }
   );

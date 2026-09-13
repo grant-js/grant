@@ -1129,6 +1129,14 @@ export type UpdatePermissionMutation = {
   };
 };
 
+export type ClearProjectAppPictureMutationVariables = Exact<{
+  input: Types.ClearProjectAppPictureInput;
+}>;
+
+export type ClearProjectAppPictureMutation = {
+  clearProjectAppPicture: { id: string; pictureUrl: string | null; updatedAt: Date };
+};
+
 export type CreateProjectAppMutationVariables = Exact<{
   input: Types.CreateProjectAppInput;
 }>;
@@ -1183,6 +1191,10 @@ export type GetProjectAppsQuery = {
       projectId: string;
       clientId: string;
       name: string | null;
+      pictureUrl: string | null;
+      primaryColor: string | null;
+      showHelpPanel: boolean | null;
+      themeMode: string | null;
       redirectUris: Array<string>;
       scopes: Array<string> | null;
       enabledProviders: Array<string> | null;
@@ -1192,7 +1204,13 @@ export type GetProjectAppsQuery = {
       updatedAt: Date;
       deletedAt: Date | null;
       signUpRole: { id: string; name: string } | null;
-      project: { id: string; name: string } | null;
+      project: {
+        id: string;
+        name: string;
+        pictureUrl: string | null;
+        primaryColor: string | null;
+        showHelpPanel: boolean | null;
+      } | null;
       tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
     }>;
   };
@@ -1209,6 +1227,10 @@ export type UpdateProjectAppMutation = {
     projectId: string;
     clientId: string;
     name: string | null;
+    pictureUrl: string | null;
+    primaryColor: string | null;
+    showHelpPanel: boolean | null;
+    themeMode: string | null;
     redirectUris: Array<string>;
     scopes: Array<string> | null;
     enabledProviders: Array<string> | null;
@@ -1217,8 +1239,22 @@ export type UpdateProjectAppMutation = {
     createdAt: Date;
     updatedAt: Date;
     deletedAt: Date | null;
-    project: { id: string; name: string } | null;
+    project: {
+      id: string;
+      name: string;
+      pictureUrl: string | null;
+      primaryColor: string | null;
+      showHelpPanel: boolean | null;
+    } | null;
   };
+};
+
+export type UploadProjectAppPictureMutationVariables = Exact<{
+  input: Types.UploadProjectAppPictureInput;
+}>;
+
+export type UploadProjectAppPictureMutation = {
+  uploadProjectAppPicture: { url: string; path: string };
 };
 
 export type CancelProjectSyncMutationVariables = Exact<{
@@ -1243,6 +1279,14 @@ export type CancelProjectSyncMutation = {
     completedAt: Date | null;
     cancelledAt: Date | null;
   };
+};
+
+export type ClearProjectPictureMutationVariables = Exact<{
+  input: Types.ClearProjectPictureInput;
+}>;
+
+export type ClearProjectPictureMutation = {
+  clearProjectPicture: { id: string; pictureUrl: string | null; updatedAt: Date };
 };
 
 export type CreateProjectMutationVariables = Exact<{
@@ -1316,6 +1360,9 @@ export type GetProjectsQuery = {
       name: string;
       slug: string;
       description: string | null;
+      pictureUrl: string | null;
+      primaryColor: string | null;
+      showHelpPanel: boolean | null;
       createdAt: Date;
       updatedAt: Date;
       organizationTags: Array<{
@@ -1476,10 +1523,19 @@ export type UpdateProjectMutation = {
     name: string;
     slug: string;
     description: string | null;
+    pictureUrl: string | null;
+    primaryColor: string | null;
+    showHelpPanel: boolean | null;
     createdAt: Date;
     updatedAt: Date;
   };
 };
+
+export type UploadProjectPictureMutationVariables = Exact<{
+  input: Types.UploadProjectPictureInput;
+}>;
+
+export type UploadProjectPictureMutation = { uploadProjectPicture: { url: string; path: string } };
 
 export type CreateResourceMutationVariables = Exact<{
   input: Types.CreateResourceInput;
@@ -1798,6 +1854,22 @@ export type ConfirmOrganizationPictureUploadMutation = {
   confirmOrganizationPictureUpload: { url: string; path: string };
 };
 
+export type ConfirmProjectAppPictureUploadMutationVariables = Exact<{
+  input: Types.ConfirmProjectAppPictureUploadInput;
+}>;
+
+export type ConfirmProjectAppPictureUploadMutation = {
+  confirmProjectAppPictureUpload: { url: string; path: string };
+};
+
+export type ConfirmProjectPictureUploadMutationVariables = Exact<{
+  input: Types.ConfirmProjectPictureUploadInput;
+}>;
+
+export type ConfirmProjectPictureUploadMutation = {
+  confirmProjectPictureUpload: { url: string; path: string };
+};
+
 export type ConfirmUserPictureUploadMutationVariables = Exact<{
   input: Types.ConfirmUserPictureUploadInput;
 }>;
@@ -1838,6 +1910,32 @@ export type RequestOrganizationPictureUploadUrlMutationVariables = Exact<{
 
 export type RequestOrganizationPictureUploadUrlMutation = {
   requestOrganizationPictureUploadUrl: {
+    url: string;
+    method: string;
+    expiresAt: Date;
+    headers: Array<{ name: string; value: string }>;
+  };
+};
+
+export type RequestProjectAppPictureUploadUrlMutationVariables = Exact<{
+  input: Types.RequestProjectAppPictureUploadUrlInput;
+}>;
+
+export type RequestProjectAppPictureUploadUrlMutation = {
+  requestProjectAppPictureUploadUrl: {
+    url: string;
+    method: string;
+    expiresAt: Date;
+    headers: Array<{ name: string; value: string }>;
+  };
+};
+
+export type RequestProjectPictureUploadUrlMutationVariables = Exact<{
+  input: Types.RequestProjectPictureUploadUrlInput;
+}>;
+
+export type RequestProjectPictureUploadUrlMutation = {
+  requestProjectPictureUploadUrl: {
     url: string;
     method: string;
     expiresAt: Date;
@@ -6618,6 +6716,56 @@ export const UpdatePermissionDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdatePermissionMutation, UpdatePermissionMutationVariables>;
+export const ClearProjectAppPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ClearProjectAppPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ClearProjectAppPictureInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'clearProjectAppPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ClearProjectAppPictureMutation,
+  ClearProjectAppPictureMutationVariables
+>;
 export const CreateProjectAppDocument = {
   kind: 'Document',
   definitions: [
@@ -6844,6 +6992,10 @@ export const GetProjectAppsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'primaryColor' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'showHelpPanel' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'themeMode' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'redirectUris' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'scopes' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'enabledProviders' } },
@@ -6871,6 +7023,9 @@ export const GetProjectAppsDocument = {
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'primaryColor' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'showHelpPanel' } },
                           ],
                         },
                       },
@@ -6950,6 +7105,10 @@ export const UpdateProjectAppDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'primaryColor' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'showHelpPanel' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'themeMode' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'redirectUris' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'scopes' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'enabledProviders' } },
@@ -6966,6 +7125,9 @@ export const UpdateProjectAppDocument = {
                     selections: [
                       { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'primaryColor' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'showHelpPanel' } },
                     ],
                   },
                 },
@@ -6977,6 +7139,55 @@ export const UpdateProjectAppDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateProjectAppMutation, UpdateProjectAppMutationVariables>;
+export const UploadProjectAppPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UploadProjectAppPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UploadProjectAppPictureInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'uploadProjectAppPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UploadProjectAppPictureMutation,
+  UploadProjectAppPictureMutationVariables
+>;
 export const CancelProjectSyncDocument = {
   kind: 'Document',
   definitions: [
@@ -7057,6 +7268,50 @@ export const CancelProjectSyncDocument = {
     },
   ],
 } as unknown as DocumentNode<CancelProjectSyncMutation, CancelProjectSyncMutationVariables>;
+export const ClearProjectPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ClearProjectPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ClearProjectPictureInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'clearProjectPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<ClearProjectPictureMutation, ClearProjectPictureMutationVariables>;
 export const CreateProjectDocument = {
   kind: 'Document',
   definitions: [
@@ -7386,6 +7641,9 @@ export const GetProjectsDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'primaryColor' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'showHelpPanel' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                       {
@@ -7891,6 +8149,9 @@ export const UpdateProjectDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'pictureUrl' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'primaryColor' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'showHelpPanel' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
               ],
@@ -7901,6 +8162,49 @@ export const UpdateProjectDocument = {
     },
   ],
 } as unknown as DocumentNode<UpdateProjectMutation, UpdateProjectMutationVariables>;
+export const UploadProjectPictureDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UploadProjectPicture' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'UploadProjectPictureInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'uploadProjectPicture' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UploadProjectPictureMutation, UploadProjectPictureMutationVariables>;
 export const CreateResourceDocument = {
   kind: 'Document',
   definitions: [
@@ -9354,6 +9658,104 @@ export const ConfirmOrganizationPictureUploadDocument = {
   ConfirmOrganizationPictureUploadMutation,
   ConfirmOrganizationPictureUploadMutationVariables
 >;
+export const ConfirmProjectAppPictureUploadDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ConfirmProjectAppPictureUpload' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ConfirmProjectAppPictureUploadInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'confirmProjectAppPictureUpload' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ConfirmProjectAppPictureUploadMutation,
+  ConfirmProjectAppPictureUploadMutationVariables
+>;
+export const ConfirmProjectPictureUploadDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ConfirmProjectPictureUpload' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ConfirmProjectPictureUploadInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'confirmProjectPictureUpload' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'path' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ConfirmProjectPictureUploadMutation,
+  ConfirmProjectPictureUploadMutationVariables
+>;
 export const ConfirmUserPictureUploadDocument = {
   kind: 'Document',
   definitions: [
@@ -9585,6 +9987,128 @@ export const RequestOrganizationPictureUploadUrlDocument = {
 } as unknown as DocumentNode<
   RequestOrganizationPictureUploadUrlMutation,
   RequestOrganizationPictureUploadUrlMutationVariables
+>;
+export const RequestProjectAppPictureUploadUrlDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RequestProjectAppPictureUploadUrl' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'RequestProjectAppPictureUploadUrlInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'requestProjectAppPictureUploadUrl' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'method' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'headers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'value' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RequestProjectAppPictureUploadUrlMutation,
+  RequestProjectAppPictureUploadUrlMutationVariables
+>;
+export const RequestProjectPictureUploadUrlDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RequestProjectPictureUploadUrl' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'RequestProjectPictureUploadUrlInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'requestProjectPictureUploadUrl' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'method' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'headers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'value' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RequestProjectPictureUploadUrlMutation,
+  RequestProjectPictureUploadUrlMutationVariables
 >;
 export const RequestUserPictureUploadUrlDocument = {
   kind: 'Document',

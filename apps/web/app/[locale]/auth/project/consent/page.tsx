@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Check, User } from 'lucide-react';
+import { User } from 'lucide-react';
 
+import { OAuthAppHeading } from '@/components/auth/oauth-app-heading';
+import { OAuthPermissionsCard } from '@/components/auth/oauth-permissions-card';
+import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
+import { useSetOAuthBranding } from '@/components/layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { oauthClientDisplayName, oauthPrimaryButtonStyle } from '@/lib/oauth-branding';
 import {
   approveProjectConsent,
   denyProjectConsent,
@@ -23,6 +29,17 @@ export default function ProjectOAuthConsentPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<'allow' | 'deny' | null>(null);
+  useSetOAuthBranding(
+    info
+      ? {
+          pictureUrl: info.pictureUrl,
+          projectName: info.projectName,
+          primaryColor: info.primaryColor,
+          showHelpPanel: info.showHelpPanel,
+          themeMode: info.themeMode,
+        }
+      : null
+  );
 
   useEffect(() => {
     if (!consentToken) return;
@@ -96,21 +113,35 @@ export default function ProjectOAuthConsentPage() {
 
   if (!info) return null;
 
-  const appName = info.name ?? t('thisApp');
+  const appName = oauthClientDisplayName(info.name, info.projectName, t('thisApp'));
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('wantsAccess', { appName })}</h1>
-        <p className="text-muted-foreground">{t('reviewPermissions')}</p>
-      </div>
+      <OAuthAppHeading
+        title={t('wantsAccess', { appName })}
+        name={appName}
+        pictureUrl={info.pictureUrl}
+        description={t('reviewPermissions')}
+      />
 
       {info.user && (
-        <div className="rounded-xl border border-border/80 bg-muted/20 px-4 py-3 backdrop-blur-sm">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t('signedInAs')}
-          </p>
-          <div className="flex items-center gap-3">
+        <div className="rounded-xl border border-border/80 bg-muted/20 backdrop-blur-sm">
+          {info.user.provider ? (
+            <>
+              <p className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-muted-foreground">
+                <OAuthProviderIcon provider={info.user.provider} className="size-3.5" />
+                <span>
+                  {t('signedInWith', {
+                    provider: ['email', 'github', 'google'].includes(info.user.provider)
+                      ? t(`providers.${info.user.provider}`)
+                      : info.user.provider,
+                  })}
+                </span>
+              </p>
+              <Separator />
+            </>
+          ) : null}
+          <div className="flex items-center gap-3 px-4 py-3">
             <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
               {info.user.pictureUrl ? <AvatarImage src={info.user.pictureUrl} alt="" /> : null}
               <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
@@ -125,37 +156,21 @@ export default function ProjectOAuthConsentPage() {
               <p className="truncate font-medium text-foreground">
                 {info.user.displayName || info.user.email || '—'}
               </p>
-              {info.user.email && (
+              {info.user.email ? (
                 <p className="truncate text-sm text-muted-foreground">{info.user.email}</p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
       )}
 
       {info.scopes?.length ? (
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground">{t('permissions')}</p>
-          <ul className="text-sm text-muted-foreground space-y-2 list-none pl-0">
-            {info.scopes.map((s) => (
-              <li key={s.slug} className="flex items-start gap-2">
-                <Check className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
-                <span>
-                  <span className="font-medium text-foreground">{s.name}</span>
-                  {s.description && <> — {s.description}</>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <OAuthPermissionsCard label={t('permissions')} scopes={info.scopes} />
       ) : null}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex gap-3">
-        <Button onClick={handleAllow} disabled={!!actionLoading} className="flex-1">
-          {actionLoading === 'allow' ? t('redirecting') : t('allow')}
-        </Button>
         <Button
           variant="outline"
           onClick={handleDeny}
@@ -163,6 +178,14 @@ export default function ProjectOAuthConsentPage() {
           className="flex-1"
         >
           {actionLoading === 'deny' ? t('redirecting') : t('deny')}
+        </Button>
+        <Button
+          onClick={handleAllow}
+          disabled={!!actionLoading}
+          className="flex-1"
+          style={oauthPrimaryButtonStyle(info.primaryColor)}
+        >
+          {actionLoading === 'allow' ? t('redirecting') : t('allow')}
         </Button>
       </div>
     </div>

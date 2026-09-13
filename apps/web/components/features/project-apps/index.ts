@@ -1,5 +1,6 @@
 export * from './project-app-actions';
 export * from './project-app-audit';
+export * from './project-app-avatar';
 export * from './project-app-card-skeleton';
 export * from './project-app-cards';
 export * from './project-app-create-viewer';

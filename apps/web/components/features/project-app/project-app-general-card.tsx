@@ -182,6 +182,8 @@ export function ProjectAppGeneralCard({
       <div className="flex items-start gap-4">
         <Avatar
           initial={(projectApp.name ?? projectApp.clientId).charAt(0)}
+          imageUrl={projectApp.pictureUrl || undefined}
+          cacheBuster={projectApp.updatedAt}
           size="lg"
           icon={<LayoutGrid className="h-5 w-5 text-muted-foreground" />}
           className={cn(

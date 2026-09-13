@@ -84,6 +84,12 @@ export interface IProjectRepository extends IEntityExistence {
 
   updateProject(params: MutationUpdateProjectArgs, transaction?: unknown): Promise<Project>;
 
+  setProjectPicture(
+    projectId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: unknown
+  ): Promise<Project>;
+
   softDeleteProject(
     params: Omit<MutationDeleteProjectArgs, 'scope'>,
     transaction?: unknown
@@ -365,6 +371,12 @@ export interface IProjectAppRepository {
 
   updateProjectApp(
     params: { id: string; projectId: string } & Omit<UpdateProjectAppInput, 'scope'>,
+    transaction?: unknown
+  ): Promise<ProjectApp>;
+
+  setProjectAppPicture(
+    projectAppId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
     transaction?: unknown
   ): Promise<ProjectApp>;
 

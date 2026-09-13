@@ -48,6 +48,9 @@ const mockProjectApps = {
   getProjectAppByClientId: vi.fn(),
   getProjectAppById: vi.fn(),
 };
+const mockProjects = {
+  getProjects: vi.fn().mockResolvedValue({ projects: [], totalCount: 0, hasNextPage: false }),
+};
 const mockProjectUsers = {
   getProjectUsers: vi.fn(),
   addProjectUser: vi.fn(),
@@ -113,6 +116,7 @@ const mockProjectPermissions = {
 function createHandler(): ProjectOAuthHandler {
   return new ProjectOAuthHandler(
     mockProjectApps as never,
+    mockProjects as never,
     mockProjectPermissions as never,
     mockProjectUsers as never,
     mockUserRoles as never,
@@ -147,6 +151,7 @@ describe('ProjectOAuthHandler', () => {
     vi.clearAllMocks();
     mockProjectApps.getProjectAppByClientId.mockResolvedValue(validApp);
     mockProjectApps.getProjectAppById.mockResolvedValue(validApp);
+    mockProjects.getProjects.mockResolvedValue({ projects: [], totalCount: 0, hasNextPage: false });
     mockGithubOAuth.isConfigured.mockReturnValue(true);
     mockGithubOAuth.getProjectAuthorizationUrl.mockReturnValue(
       'https://github.com/login/oauth/authorize?state=xyz'
@@ -469,11 +474,49 @@ describe('ProjectOAuthHandler', () => {
         name: 'My App',
         enabledProviders: ['github', 'email'],
         scopes: [{ slug: 'read', name: 'Read', description: 'Read access' }],
+        pictureUrl: null,
+        primaryColor: null,
+        showHelpPanel: true,
+        themeMode: null,
+        projectName: null,
       });
       expect(mockProjectPermissions.getScopeSlugLabelsForProject).toHaveBeenCalledWith(
         validApp.projectId,
         ['read']
       );
+    });
+
+    it('returns resolved branding including app themeMode', async () => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue({
+        ...validApp,
+        name: 'Branded App',
+        pictureUrl: 'https://cdn.example/app.png',
+        primaryColor: '#AABBCC',
+        showHelpPanel: false,
+        themeMode: 'dark',
+      });
+      mockProjects.getProjects.mockResolvedValue({
+        projects: [
+          {
+            name: 'Acme',
+            pictureUrl: 'https://cdn.example/project.png',
+            primaryColor: '#112233',
+            showHelpPanel: true,
+          },
+        ],
+        totalCount: 1,
+        hasNextPage: false,
+      });
+      mockProjectPermissions.getScopeSlugLabelsForProject.mockResolvedValue([]);
+      const handler = createHandler();
+      await expect(handler.getProjectAppPublicInfo(validApp.clientId)).resolves.toMatchObject({
+        name: 'Branded App',
+        pictureUrl: 'https://cdn.example/app.png',
+        primaryColor: '#AABBCC',
+        showHelpPanel: false,
+        themeMode: 'dark',
+        projectName: 'Acme',
+      });
     });
 
     it('returns scopes filtered by scope param when provided', async () => {
@@ -580,6 +623,11 @@ describe('ProjectOAuthHandler', () => {
         name: 'Consent App',
         scopes: [{ slug: 'read', name: 'Read', description: null }],
         user: null,
+        pictureUrl: null,
+        primaryColor: null,
+        showHelpPanel: true,
+        themeMode: null,
+        projectName: null,
       });
       expect(mockCacheOauth.get).toHaveBeenCalledWith(
         `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}consent-token-123`
@@ -623,7 +671,10 @@ describe('ProjectOAuthHandler', () => {
     });
 
     it('returns user display (displayName, email, pictureUrl) when user is resolved', async () => {
-      mockCacheOauth.get.mockResolvedValue(consentPayload);
+      mockCacheOauth.get.mockResolvedValue({
+        ...consentPayload,
+        provider: UserAuthenticationMethodProvider.Github,
+      });
       mockProjectApps.getProjectAppById.mockResolvedValue({
         ...validApp,
         name: 'App',
@@ -653,6 +704,7 @@ describe('ProjectOAuthHandler', () => {
         displayName: 'Jane Doe',
         email: 'jane@example.com',
         pictureUrl: 'https://example.com/avatar.png',
+        provider: UserAuthenticationMethodProvider.Github,
       });
     });
   });
@@ -855,6 +907,7 @@ describe('ProjectOAuthHandler', () => {
           projectAppId: validApp.id,
           redirectUri: 'https://example.com/callback',
           userId: 'user-id',
+          provider: UserAuthenticationMethodProvider.Github,
         }),
         expect.any(Number)
       );
@@ -1024,6 +1077,7 @@ describe('ProjectOAuthHandler', () => {
           projectAppId: validApp.id,
           redirectUri: 'https://example.com/callback',
           userId: 'user-id',
+          provider: UserAuthenticationMethodProvider.Email,
         }),
         expect.any(Number)
       );

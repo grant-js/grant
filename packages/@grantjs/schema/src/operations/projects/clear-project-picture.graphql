@@ -1,0 +1,7 @@
+mutation ClearProjectPicture($input: ClearProjectPictureInput!) {
+  clearProjectPicture(input: $input) {
+    id
+    pictureUrl
+    updatedAt
+  }
+}

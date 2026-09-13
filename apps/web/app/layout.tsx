@@ -5,6 +5,7 @@ import './globals.css';
 import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 
+import { OAuthBrandingProvider } from '@/components/layout';
 import { ThemeProvider } from '@/components/providers';
 import { Toast } from '@/components/ui/toast';
 
@@ -28,12 +29,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_SCRIPT}
         </Script>
-        <ThemeProvider>
-          <>
-            {children}
-            <Toast />
-          </>
-        </ThemeProvider>
+        <OAuthBrandingProvider>
+          <ThemeProvider>
+            <>
+              {children}
+              <Toast />
+            </>
+          </ThemeProvider>
+        </OAuthBrandingProvider>
       </body>
     </html>
   );

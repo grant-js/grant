@@ -1,0 +1,11 @@
+mutation RequestProjectAppPictureUploadUrl($input: RequestProjectAppPictureUploadUrlInput!) {
+  requestProjectAppPictureUploadUrl(input: $input) {
+    url
+    method
+    expiresAt
+    headers {
+      name
+      value
+    }
+  }
+}

@@ -44,6 +44,7 @@ describe('Project OAuth E2E', () => {
   let owner: TestUser;
   let org: { id: string; name: string; slug: string };
   let projectId: string;
+  let projectAppId: string;
   let projectAppClientId: string;
   const redirectUri = 'https://example.com/oauth/callback';
 
@@ -72,6 +73,7 @@ describe('Project OAuth E2E', () => {
     expect(res.status).toBe(200);
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data?.createProjectApp).toBeDefined();
+    projectAppId = res.body.data!.createProjectApp!.id;
     projectAppClientId = res.body.data!.createProjectApp!.clientId;
   });
 
@@ -98,6 +100,57 @@ describe('Project OAuth E2E', () => {
     expect(res.body.data.name).toBe('E2E OAuth App');
     expect(res.body.data.enabledProviders).toEqual(['github', 'google', 'email']);
     expect(Array.isArray(res.body.data.scopes)).toBe(true);
+    expect(res.body.data.projectName).toBe('E2E Project OAuth Project');
+    expect(res.body.data.pictureUrl).toBeNull();
+    expect(res.body.data.primaryColor).toBeNull();
+    expect(res.body.data.showHelpPanel).toBe(true);
+    expect(res.body.data.themeMode).toBeNull();
+  });
+
+  it('GET /api/auth/project/app-info resolves project theme after update', async () => {
+    const patch = await apiClient()
+      .patch(`/api/projects/${projectId}`)
+      .set('Authorization', owner.authHeader)
+      .send({
+        scope: { id: org.id, tenant: 'organization' },
+        primaryColor: '#FF5500',
+        showHelpPanel: false,
+      });
+    expect(patch.status).toBe(200);
+
+    const res = await apiClient()
+      .get('/api/auth/project/app-info')
+      .query({
+        client_id: projectAppClientId,
+        redirect_uri: redirectUri,
+      })
+      .expect(200);
+
+    expect(res.body.data.projectName).toBe('E2E Project OAuth Project');
+    expect(res.body.data.primaryColor).toBe('#FF5500');
+    expect(res.body.data.showHelpPanel).toBe(false);
+    expect(res.body.data.themeMode).toBeNull();
+  });
+
+  it('GET /api/auth/project/app-info resolves app themeMode after update', async () => {
+    const patch = await apiClient()
+      .patch(`/api/project-apps/${projectAppId}`)
+      .set('Authorization', owner.authHeader)
+      .send({
+        scope: { id: `${org.id}:${projectId}`, tenant: 'organizationProject' },
+        themeMode: 'dark',
+      });
+    expect(patch.status).toBe(200);
+
+    const res = await apiClient()
+      .get('/api/auth/project/app-info')
+      .query({
+        client_id: projectAppClientId,
+        redirect_uri: redirectUri,
+      })
+      .expect(200);
+
+    expect(res.body.data.themeMode).toBe('dark');
   });
 
   it.skipIf(!process.env.GITHUB_CLIENT_ID)(

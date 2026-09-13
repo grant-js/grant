@@ -6,7 +6,6 @@ import { Project, Tag } from '@grantjs/schema';
 import { FolderOpen } from 'lucide-react';
 
 import {
-  Avatar,
   DataTable,
   type DataTableColumnConfig,
   type TableSkeletonColumnConfig,
@@ -19,6 +18,7 @@ import { useProjectsStore } from '@/stores/projects.store';
 
 import { ProjectActions } from './project-actions';
 import { ProjectAudit } from './project-audit';
+import { ProjectAvatar } from './project-avatar';
 import { ProjectCreateDialog } from './project-create-dialog';
 import { ProjectNavigationButton } from './project-navigation-button';
 
@@ -41,9 +41,10 @@ export function ProjectTable() {
       header: '',
       width: '60px',
       render: (project: Project) => (
-        <Avatar
-          initial={project.name.charAt(0).toUpperCase()}
+        <ProjectAvatar
+          project={project}
           size="lg"
+          interactive
           className={
             getProjectTags(project)?.find((tag: Tag) => tag.isPrimary)?.color
               ? cn(

@@ -41,6 +41,12 @@ export interface IProjectAppService {
     transaction?: unknown
   ): Promise<ProjectApp>;
 
+  setProjectAppPicture(
+    projectAppId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: unknown
+  ): Promise<ProjectApp>;
+
   deleteProjectApp(
     params: Omit<MutationDeleteProjectAppArgs, 'scope'> & { projectId: string } & DeleteParams,
     transaction?: unknown

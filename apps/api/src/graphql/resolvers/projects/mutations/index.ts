@@ -1,6 +1,10 @@
 export { cancelProjectSyncResolver as cancelProjectSync } from './cancel-project-sync.resolver';
+export { clearProjectPictureResolver as clearProjectPicture } from './clear-project-picture.resolver';
+export { confirmProjectPictureUploadResolver as confirmProjectPictureUpload } from './confirm-project-picture-upload.resolver';
 export { createProjectResolver as createProject } from './create-project.resolver';
 export { deleteProjectResolver as deleteProject } from './delete-project.resolver';
+export { requestProjectPictureUploadUrlResolver as requestProjectPictureUploadUrl } from './request-project-picture-upload-url.resolver';
 export { startProjectExportResolver as startProjectExport } from './start-project-export.resolver';
 export { startProjectSyncResolver as startProjectSync } from './start-project-sync.resolver';
 export { updateProjectResolver as updateProject } from './update-project.resolver';
+export { uploadProjectPictureResolver as uploadProjectPicture } from './upload-project-picture.resolver';

@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { OAuthAppHeading } from '@/components/auth/oauth-app-heading';
+import { useSetOAuthBranding } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,7 +20,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Link } from '@/i18n/navigation';
-import { requestProjectEmailLink } from '@/lib/project-oauth-api';
+import { oauthClientDisplayName, oauthPrimaryButtonStyle } from '@/lib/oauth-branding';
+import {
+  getProjectAppPublicInfo,
+  type ProjectAppPublicInfo,
+  requestProjectEmailLink,
+} from '@/lib/project-oauth-api';
 
 type FormValues = { email: string };
 
@@ -34,6 +41,35 @@ export default function ProjectOAuthEmailPage() {
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(null);
+  const tEntry = useTranslations('auth.projectOAuth.entry');
+
+  useEffect(() => {
+    if (!clientId) return;
+    let cancelled = false;
+    getProjectAppPublicInfo(clientId, scopeParam ?? undefined, redirectUri ?? undefined)
+      .then((info) => {
+        if (!cancelled) setAppInfo(info);
+      })
+      .catch(() => {
+        if (!cancelled) setAppInfo(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, scopeParam, redirectUri]);
+
+  useSetOAuthBranding(
+    appInfo
+      ? {
+          pictureUrl: appInfo.pictureUrl,
+          projectName: appInfo.projectName,
+          primaryColor: appInfo.primaryColor,
+          showHelpPanel: appInfo.showHelpPanel,
+          themeMode: appInfo.themeMode,
+        }
+      : null
+  );
 
   const schema = useMemo(
     () =>
@@ -83,21 +119,23 @@ export default function ProjectOAuthEmailPage() {
     );
   }
 
+  const appName = oauthClientDisplayName(appInfo?.name, appInfo?.projectName, tEntry('thisApp'));
+  const heading = (
+    <OAuthAppHeading
+      title={submitted ? t('checkEmailTitle') : tEntry('signInTo', { appName })}
+      name={appName}
+      pictureUrl={appInfo?.pictureUrl}
+      description={submitted ? t('checkEmailDescription') : t('description')}
+    />
+  );
+
   if (submitted) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{t('checkEmailTitle')}</h1>
-        <p className="text-muted-foreground">{t('checkEmailDescription')}</p>
-      </div>
-    );
+    return <div className="space-y-6">{heading}</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('description')}</p>
-      </div>
+      {heading}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -115,7 +153,12 @@ export default function ProjectOAuthEmailPage() {
             )}
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.formState.isSubmitting}
+            style={oauthPrimaryButtonStyle(appInfo?.primaryColor)}
+          >
             {form.formState.isSubmitting ? t('sending') : t('sendLink')}
           </Button>
         </form>

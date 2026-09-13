@@ -30,6 +30,9 @@ export const projectSchema = z.object({
   name: z.string(),
   slug: z.string(),
   description: z.string().nullable(),
+  pictureUrl: z.string().nullable().optional(),
+  primaryColor: z.string().nullable().optional(),
+  showHelpPanel: z.boolean().nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
@@ -133,6 +136,17 @@ export const updateProjectRequestSchema = z.object({
     description: 'Primary tag ID for the project',
     example: '123e4567-e89b-12d3-a456-426614174001',
   }),
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .nullable()
+    .optional()
+    .openapi({ description: 'Brand hex color (#RRGGBB). Null resets to Grant default.' }),
+  showHelpPanel: z
+    .boolean()
+    .nullable()
+    .optional()
+    .openapi({ description: 'OAuth help panel visibility. Null resets to Grant default (shown).' }),
 });
 
 export const projectParamsSchema = z.object({
@@ -537,3 +551,44 @@ export const listProjectSyncJobsResponseSchema = createSuccessResponseSchema(
     hasNextPage: z.boolean(),
   })
 );
+
+export const uploadProjectPictureRequestSchema = z.object({
+  scope: scopeSchema,
+  file: z.string().min(1, 'errors.validation.fileRequired'),
+  filename: z.string().min(1, 'errors.validation.filenameRequired'),
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired'),
+});
+
+export const uploadProjectPictureResponseSchema = createSuccessResponseSchema(
+  z.object({
+    url: z.string(),
+    path: z.string(),
+  }),
+  'Successfully uploaded project picture'
+);
+
+export const requestProjectPictureUploadUrlRequestSchema = z.object({
+  scope: scopeSchema,
+  filename: z.string().min(1, 'errors.validation.filenameRequired'),
+  contentType: z.string().min(1, 'errors.validation.contentTypeRequired'),
+  contentLength: z.number().int().positive(),
+});
+
+export const requestProjectPictureUploadUrlResponseSchema = createSuccessResponseSchema(
+  z.object({
+    url: z.string(),
+    method: z.string(),
+    headers: z.array(z.object({ name: z.string(), value: z.string() })),
+    expiresAt: z.string(),
+  }),
+  'Direct-upload URL issued for a project picture'
+);
+
+export const confirmProjectPictureUploadRequestSchema = z.object({
+  scope: scopeSchema,
+  filename: z.string().min(1, 'errors.validation.filenameRequired'),
+});
+
+export const clearProjectPictureRequestSchema = z.object({
+  scope: scopeSchema,
+});

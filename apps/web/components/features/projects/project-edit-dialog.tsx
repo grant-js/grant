@@ -20,6 +20,7 @@ import { useProjectMutations } from '@/hooks/projects';
 import { useTags } from '@/hooks/tags';
 import { useProjectsStore } from '@/stores/projects.store';
 
+import { ProjectAvatar } from './project-avatar';
 import { editProjectSchema, type ProjectEditFormValues } from './project-types';
 
 export function ProjectEditDialog() {
@@ -59,6 +60,7 @@ export function ProjectEditDialog() {
       placeholder: 'form.namePlaceholder',
       type: 'text',
       required: true,
+      leading: projectToEdit ? <ProjectAvatar project={projectToEdit} size="xl" interactive /> : null,
     },
     {
       name: 'description',
@@ -114,6 +116,9 @@ export function ProjectEditDialog() {
   };
 
   const handleOpenChange = (open: boolean) => {
+    if (!open && useProjectsStore.getState().projectForPictureUpload) {
+      return;
+    }
     if (!open) {
       setProjectToEdit(null);
     }
@@ -136,6 +141,7 @@ export function ProjectEditDialog() {
       mapEntityToFormValues={mapProjectToFormValues}
       onUpdate={handleUpdate}
       onOpenChange={handleOpenChange}
+      bodyClassName="space-y-8"
     />
   );
 }

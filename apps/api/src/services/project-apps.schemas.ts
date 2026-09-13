@@ -1,5 +1,11 @@
-import { ProjectAppSortableField } from '@grantjs/schema';
+import { PROJECT_OAUTH_THEME_MODES, ProjectAppSortableField } from '@grantjs/schema';
 import { z } from 'zod';
+
+import { PRIMARY_COLOR_HEX_PATTERN } from '@/lib/oauth-branding.lib';
+import {
+  STORED_PICTURE_PATH_MAX_LENGTH,
+  STORED_PICTURE_URL_MAX_LENGTH,
+} from '@/lib/picture-url.lib';
 
 import {
   baseEntitySchema,
@@ -9,6 +15,14 @@ import {
   queryParamsSchema,
   sortOrderSchema,
 } from './common/schemas';
+
+const primaryColorSchema = z
+  .string()
+  .regex(PRIMARY_COLOR_HEX_PATTERN, 'errors.validation.primaryColorInvalid')
+  .nullable()
+  .optional();
+
+const themeModeSchema = z.enum(PROJECT_OAUTH_THEME_MODES).nullable().optional();
 
 const redirectUriSchema = z
   .string()
@@ -64,7 +78,21 @@ export const updateProjectAppParamsSchema = z.object({
   enabledProviders: z.array(z.string()).nullable().optional(),
   allowSignUp: z.boolean().optional(),
   signUpRoleId: z.string().uuid().nullable().optional(),
+  primaryColor: primaryColorSchema,
+  showHelpPanel: z.boolean().nullable().optional(),
+  themeMode: themeModeSchema,
 });
+
+export const setProjectAppPictureParamsSchema = z
+  .object({
+    projectAppId: idSchema,
+    pictureUrl: z.string().max(STORED_PICTURE_URL_MAX_LENGTH).nullable().optional(),
+    picturePath: z.string().max(STORED_PICTURE_PATH_MAX_LENGTH).nullable().optional(),
+  })
+  .refine(
+    (v) => v.pictureUrl !== undefined || v.picturePath !== undefined,
+    'At least one of pictureUrl or picturePath must be provided'
+  );
 
 export const deleteProjectAppParamsSchema = deleteSchema.extend({
   id: idSchema,
@@ -80,6 +108,10 @@ export const projectAppSchema = baseEntitySchema.extend({
   enabledProviders: z.array(z.string()).nullable().optional(),
   allowSignUp: z.boolean().optional(),
   signUpRoleId: z.string().nullable().optional(),
+  pictureUrl: z.string().nullable().optional(),
+  primaryColor: z.string().nullable().optional(),
+  showHelpPanel: z.boolean().nullable().optional(),
+  themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable().optional(),
 });
 
 export const createProjectAppResultSchema = z.object({

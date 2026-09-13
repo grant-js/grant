@@ -1,4 +1,9 @@
-import type { IAuditLogger, IProjectAppRepository, IProjectAppService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IFileStorageService,
+  IProjectAppRepository,
+  IProjectAppService,
+} from '@grantjs/core';
 import type {
   CreateProjectAppInput,
   CreateProjectAppResult,
@@ -10,6 +15,11 @@ import type {
 } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
+import {
+  hydratePictureUrl,
+  hydratePictureUrls,
+  picturePathWhenSettingUrl,
+} from '@/lib/picture-url.lib';
 import { generateRandomBytes, hashSecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
@@ -27,13 +37,15 @@ import {
   deleteProjectAppParamsSchema,
   getProjectAppsParamsSchema,
   projectAppSchema,
+  setProjectAppPictureParamsSchema,
   updateProjectAppParamsSchema,
 } from './project-apps.schemas';
 
 export class ProjectAppService implements IProjectAppService {
   constructor(
     private readonly projectAppRepository: IProjectAppRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly fileStorage: IFileStorageService
   ) {}
 
   public async getProjectApps(
@@ -46,6 +58,7 @@ export class ProjectAppService implements IProjectAppService {
     validateInput(getProjectAppsParamsSchema, params, context);
 
     const result = await this.projectAppRepository.getProjectApps(params, transaction);
+    await hydratePictureUrls(this.fileStorage, result.projectApps);
 
     validatePage(
       createDynamicPaginatedSchema(projectAppSchema, params.requestedFields),
@@ -97,14 +110,22 @@ export class ProjectAppService implements IProjectAppService {
     id: string,
     transaction?: Transaction
   ): Promise<ProjectApp | null> {
-    return this.projectAppRepository.getProjectAppById(id, transaction);
+    const app = await this.projectAppRepository.getProjectAppById(id, transaction);
+    if (app) {
+      await hydratePictureUrl(this.fileStorage, app);
+    }
+    return app;
   }
 
   public async getProjectAppByClientId(
     clientId: string,
     transaction?: Transaction
   ): Promise<ProjectApp | null> {
-    return this.projectAppRepository.getProjectAppByClientId(clientId, transaction);
+    const app = await this.projectAppRepository.getProjectAppByClientId(clientId, transaction);
+    if (app) {
+      await hydratePictureUrl(this.fileStorage, app);
+    }
+    return app;
   }
 
   public async updateProjectApp(
@@ -132,6 +153,9 @@ export class ProjectAppService implements IProjectAppService {
       enabledProviders: existing.enabledProviders,
       allowSignUp: existing.allowSignUp,
       signUpRoleId: existing.signUpRoleId,
+      primaryColor: existing.primaryColor ?? null,
+      showHelpPanel: existing.showHelpPanel ?? null,
+      themeMode: existing.themeMode ?? null,
       updatedAt: existing.updatedAt,
     };
     const newValues = {
@@ -142,10 +166,59 @@ export class ProjectAppService implements IProjectAppService {
       enabledProviders: updated.enabledProviders,
       allowSignUp: updated.allowSignUp,
       signUpRoleId: updated.signUpRoleId,
+      primaryColor: updated.primaryColor ?? null,
+      showHelpPanel: updated.showHelpPanel ?? null,
+      themeMode: updated.themeMode ?? null,
       updatedAt: updated.updatedAt,
     };
     await this.audit.logUpdate(updated.id, oldValues, newValues, { context }, transaction);
 
+    await hydratePictureUrl(this.fileStorage, updated);
+    return validateOutput(createDynamicSingleSchema(projectAppSchema), updated, context);
+  }
+
+  public async setProjectAppPicture(
+    projectAppId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: Transaction
+  ): Promise<ProjectApp> {
+    const context = 'ProjectAppService.setProjectAppPicture';
+    const validatedParams = validateInput(
+      setProjectAppPictureParamsSchema,
+      { projectAppId, ...picturePathWhenSettingUrl(input) },
+      context
+    );
+
+    const existing = await this.projectAppRepository.getProjectAppById(
+      validatedParams.projectAppId,
+      transaction
+    );
+    if (!existing) {
+      throw new NotFoundError('ProjectApp');
+    }
+
+    const updated = await this.projectAppRepository.setProjectAppPicture(
+      validatedParams.projectAppId,
+      {
+        ...(validatedParams.pictureUrl !== undefined
+          ? { pictureUrl: validatedParams.pictureUrl }
+          : {}),
+        ...(validatedParams.picturePath !== undefined
+          ? { picturePath: validatedParams.picturePath }
+          : {}),
+      },
+      transaction
+    );
+
+    await this.audit.logUpdate(
+      updated.id,
+      { id: existing.id, pictureUrl: existing.pictureUrl ?? null },
+      { id: updated.id, pictureUrl: updated.pictureUrl ?? null },
+      { context },
+      transaction
+    );
+
+    await hydratePictureUrl(this.fileStorage, updated);
     return validateOutput(createDynamicSingleSchema(projectAppSchema), updated, context);
   }
 

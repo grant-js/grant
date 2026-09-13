@@ -1,4 +1,4 @@
-import { GitBranch } from 'lucide-react';
+import { GitBranch, Mail } from 'lucide-react';
 
 import type { SocialOAuthProviderId } from '@/lib/oauth-providers';
 
@@ -45,6 +45,9 @@ export function OAuthProviderIcon({
   }
   if (provider === 'github') {
     return <GitHubMark className={className} />;
+  }
+  if (provider === 'email') {
+    return <Mail className={className} />;
   }
   return <GitBranch className={className} />;
 }

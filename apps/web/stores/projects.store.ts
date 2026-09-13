@@ -26,6 +26,7 @@ interface ProjectsState {
   projectToDelete: { id: string; name: string } | null;
   projectToEdit: Project | null;
   isCreateDialogOpen: boolean;
+  projectForPictureUpload: Project | null;
 
   // Current project detail (for breadcrumb)
   currentProject: Project | null;
@@ -48,6 +49,7 @@ interface ProjectsState {
   setProjectToDelete: (project: { id: string; name: string } | null) => void;
   setProjectToEdit: (project: Project | null) => void;
   setCreateDialogOpen: (open: boolean) => void;
+  setProjectForPictureUpload: (project: Project | null) => void;
   setCurrentProject: (project: Project | null) => void;
 }
 
@@ -77,6 +79,7 @@ export const useProjectsStore = create<ProjectsState>()(
       projectToDelete: null,
       projectToEdit: null,
       isCreateDialogOpen: false,
+      projectForPictureUpload: null,
 
       // Current project detail
       currentProject: null,
@@ -108,6 +111,7 @@ export const useProjectsStore = create<ProjectsState>()(
           projectToDelete: null,
           projectToEdit: null,
           isCreateDialogOpen: false,
+          projectForPictureUpload: null,
           currentProject: null,
         }),
       initializeFromUrl: (params) => {
@@ -138,6 +142,7 @@ export const useProjectsStore = create<ProjectsState>()(
       setProjectToDelete: (project) => set({ projectToDelete: project }),
       setProjectToEdit: (project) => set({ projectToEdit: project }),
       setCreateDialogOpen: (open) => set({ isCreateDialogOpen: open }),
+      setProjectForPictureUpload: (project) => set({ projectForPictureUpload: project }),
       setCurrentProject: (project) => set({ currentProject: project }),
     }),
     {

@@ -12,6 +12,7 @@ import {
   KeyRound,
   LayoutGrid,
   Package,
+  Palette,
   Shield,
   Tag,
   Users,
@@ -85,6 +86,11 @@ export function ProjectSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           title: t('projectApps'),
           url: `/dashboard/organizations/${organizationId}/projects/${projectId}/apps`,
           icon: LayoutGrid,
+        },
+        {
+          title: t('branding'),
+          url: `/dashboard/organizations/${organizationId}/projects/${projectId}/branding`,
+          icon: Palette,
         },
         {
           title: t('roles'),

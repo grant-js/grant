@@ -1,0 +1,4 @@
+type UploadProjectAppPictureResult {
+  url: String!
+  path: String!
+}
