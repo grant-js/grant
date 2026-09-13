@@ -45,10 +45,11 @@ describe('operation documents', () => {
   // `confirmMyUserPictureUpload`) arrived, and 121 with the two remaining targets —
   // project membership and the administrator route — each another request/confirm
   // pair. 122 after `main` merged in, which added `upload-organization-picture`.
+  // 124 after slice 17b: organization request/confirm (the last upload target).
   // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(122);
+    expect(files).toHaveLength(124);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {

@@ -9,21 +9,6 @@ import {
 import { useOrganizationMutations } from '@/hooks/organizations';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
-/**
- * The dialog hands out a `Blob` since the direct-upload slices landed; the organization
- * picture mutation still takes a base64 data URL, which is what it received when
- * `resizeImage` returned a string. Bridging here keeps #431 behaving exactly as it did
- * on `main` across the merge — organizations are the one upload target without a
- * request/confirm pair, and the bridge goes away when they get one.
- */
-const toDataUrl = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error('Could not read the image'));
-    reader.readAsDataURL(blob);
-  });
-
 export function OrganizationPictureUploadDialog() {
   const organization = useOrganizationsStore((state) => state.organizationForPictureUpload);
   const setOrganizationForPictureUpload = useOrganizationsStore(
@@ -32,7 +17,7 @@ export function OrganizationPictureUploadDialog() {
   const setOrganizationToEdit = useOrganizationsStore((state) => state.setOrganizationToEdit);
   const setOrganizations = useOrganizationsStore((state) => state.setOrganizations);
   const setCurrentOrganization = useOrganizationsStore((state) => state.setCurrentOrganization);
-  const { uploadOrganizationPicture } = useOrganizationMutations();
+  const { uploadOrganizationPictureDirect } = useOrganizationMutations();
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -42,13 +27,13 @@ export function OrganizationPictureUploadDialog() {
 
   const handleUpload: SettingImageUploadDialogProps['onUpload'] = async (file) => {
     if (!organization) return;
-    const result = await uploadOrganizationPicture({
-      scope: { tenant: Tenant.Organization, id: organization.id },
-      organizationId: organization.id,
-      file: await toDataUrl(file.body),
-      filename: file.filename,
-      contentType: file.contentType,
-    });
+    const result = await uploadOrganizationPictureDirect(
+      {
+        scope: { tenant: Tenant.Organization, id: organization.id },
+        organizationId: organization.id,
+      },
+      file
+    );
 
     if (!result?.url) return;
 

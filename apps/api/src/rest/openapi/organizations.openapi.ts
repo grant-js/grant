@@ -13,6 +13,9 @@ import {
   organizationParamsSchema,
   organizationSchema,
   organizationWithRelationsSchema,
+  confirmOrganizationPictureUploadRequestSchema,
+  requestOrganizationPictureUploadUrlRequestSchema,
+  requestOrganizationPictureUploadUrlResponseSchema,
   updateOrganizationRequestSchema,
   updateOrganizationResponseSchema,
   uploadOrganizationPictureRequestSchema,
@@ -33,6 +36,18 @@ export function registerOrganizationsOpenApi(registry: OpenAPIRegistry) {
   registry.register('OrganizationParams', organizationParamsSchema);
   registry.register('UploadOrganizationPictureRequest', uploadOrganizationPictureRequestSchema);
   registry.register('UploadOrganizationPictureResponse', uploadOrganizationPictureResponseSchema);
+  registry.register(
+    'RequestOrganizationPictureUploadUrlRequest',
+    requestOrganizationPictureUploadUrlRequestSchema
+  );
+  registry.register(
+    'RequestOrganizationPictureUploadUrlResponse',
+    requestOrganizationPictureUploadUrlResponseSchema
+  );
+  registry.register(
+    'ConfirmOrganizationPictureUploadRequest',
+    confirmOrganizationPictureUploadRequestSchema
+  );
 
   /**
    * GET /api/organizations
@@ -349,6 +364,142 @@ The file must be provided as a base64-encoded string (optional data URI prefix).
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/organizations/{id}/picture/upload-url',
+    tags: ['Organizations'],
+    summary: 'Request a direct-upload URL for an organization logo',
+    description: `
+Ask for a URL to upload an organization logo **directly to storage**, without the
+bytes passing through this API.
+
+Content type, extension and size are validated **before** the URL is issued. The
+URL commits to the exact \`contentLength\` and \`contentType\`, and to a path
+derived from the organization id.
+
+PUT the bytes to \`url\`, then call \`POST /api/organizations/{id}/picture/confirm\`.
+Nothing is recorded against the organization until you do.
+    `.trim(),
+    request: {
+      params: organizationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: requestOrganizationPictureUploadUrlRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Upload URL issued',
+        content: {
+          'application/json': {
+            schema: requestOrganizationPictureUploadUrlResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid content type, extension, size, or scope',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/organizations/{id}/picture/confirm',
+    tags: ['Organizations'],
+    summary: 'Record a completed direct upload of an organization logo',
+    description: `
+Call this after the PUT from \`POST /api/organizations/{id}/picture/upload-url\` succeeds.
+
+The object is read back from storage and checked against the upload policy before
+anything is recorded. The storage path is re-derived from the organization id.
+Confirm writes \`picture_path\`; the public \`pictureUrl\` is derived on read.
+    `.trim(),
+    request: {
+      params: organizationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: confirmOrganizationPictureUploadRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Upload recorded; the organization pictureUrl now points at it',
+        content: {
+          'application/json': {
+            schema: uploadOrganizationPictureResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'No uploaded file found, or it exceeds the size policy',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },
