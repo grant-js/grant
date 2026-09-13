@@ -1,5 +1,19 @@
 # grant-web
 
+## 1.9.0
+
+### Minor Changes
+
+- 099972d: Add project and project-app branding for hosted OAuth: uploadable logos, primary color, help-panel visibility, and an app-level light/dark/system lock on sign-in and authorize pages.
+
+### Patch Changes
+
+- Updated dependencies [099972d]
+  - @grantjs/schema@1.9.0
+  - @grantjs/client@1.9.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.8.0
 
 ### Minor Changes

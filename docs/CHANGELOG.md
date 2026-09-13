@@ -1,5 +1,11 @@
 # grant-docs
 
+## 1.9.0
+
+### Minor Changes
+
+- 099972d: Add project and project-app branding for hosted OAuth: uploadable logos, primary color, help-panel visibility, and an app-level light/dark/system lock on sign-in and authorize pages.
+
 ## 1.8.0
 
 ### Minor Changes
