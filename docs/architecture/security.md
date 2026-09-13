@@ -191,6 +191,7 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 
 #### Security
 
+- **Branding:** `GET /api/auth/project/app-info` and consent-info are unauthenticated and return **resolved** branding only (`pictureUrl`, `projectName`, `primaryColor`, `showHelpPanel`, `themeMode`). Values resolve app → project → Grant defaults (help panel on, no custom color). `themeMode` is app-only (`light` / `dark` / `system`); null keeps the visitor's Grant theme. Organization logos are not in the fallback. Storage keys are tenant-scoped (`projects/{id}/picture`, `project-apps/{id}/picture`). Product surface: [Project OAuth](/core-concepts/project-oauth).
 - **redirect_uri** is validated strictly against the ProjectApp's allowed redirect URIs on both authorize and callback.
 - State is stored in cache with a short TTL (e.g. 10 minutes) and deleted after use.
 - The provider (e.g. GitHub) must have the platform callback URL(s) registered. See [Configuring the GitHub OAuth app](#configuring-the-github-oauth-app) below.

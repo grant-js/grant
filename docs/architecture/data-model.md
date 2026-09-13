@@ -9,20 +9,20 @@ Grant stores all data in PostgreSQL using [Drizzle ORM](https://orm.drizzle.team
 
 ## Entities
 
-| Entity           | Purpose                                                                   | Key relationships                                                                          |
-| ---------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **User**         | A person who can log in                                                   | Owns accounts, belongs to organizations and projects via pivots                            |
-| **Account**      | Person-centric identity (personal or organization)                        | Owned by a user; links to projects via `account_projects`                                  |
-| **Organization** | Business entity that groups projects and members                          | Contains projects and users via pivot tables                                               |
-| **Project**      | Isolated environment for managing external identities                     | Contains resources, users, roles, groups, permissions, API keys, signing keys, apps        |
-| **Project App**  | OAuth/consent application in a project                                    | Belongs to a project; tags via `project_app_tags`; scopes and redirect URIs                |
-| **Resource**     | Domain entity defined by an external system (e.g. invoice, order, policy) | Belongs to a project; permissions are scoped to resources                                  |
-| **Role**         | Named collection of groups                                                | Assigned to users via `user_roles`; contains groups via `role_groups`                      |
-| **Group**        | Collection of permissions                                                 | Linked to roles via `role_groups`; may also attach directly to users via `user_groups`     |
-| **Permission**   | A specific action on a resource (e.g. `user:read`)                        | Belongs to groups; linked to a resource                                                    |
-| **Tag**          | Flexible label for categorization                                         | Applied to users, roles, groups, permissions, organizations, and projects via pivot tables |
-| **API Key**      | Programmatic access credential scoped to a project                        | Belongs to a user and a project; exchanged for a JWT                                       |
-| **Signing Key**  | RSA key pair for JWT signing (system or per-project)                      | Scoped to system or a project; exposed via JWKS                                            |
+| Entity           | Purpose                                                                   | Key relationships                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **User**         | A person who can log in                                                   | Owns accounts, belongs to organizations and projects via pivots                                                                                                       |
+| **Account**      | Person-centric identity (personal or organization)                        | Owned by a user; links to projects via `account_projects`                                                                                                             |
+| **Organization** | Business entity that groups projects and members                          | Contains projects and users via pivot tables                                                                                                                          |
+| **Project**      | Isolated environment for managing external identities                     | Contains resources, users, roles, groups, permissions, API keys, signing keys, apps. Stores default OAuth branding (`picture_*`, `primary_color`, `show_help_panel`). |
+| **Project App**  | OAuth/consent application in a project                                    | Belongs to a project; tags via `project_app_tags`; scopes and redirect URIs. May override branding and lock hosted pages with `theme_mode`.                           |
+| **Resource**     | Domain entity defined by an external system (e.g. invoice, order, policy) | Belongs to a project; permissions are scoped to resources                                                                                                             |
+| **Role**         | Named collection of groups                                                | Assigned to users via `user_roles`; contains groups via `role_groups`                                                                                                 |
+| **Group**        | Collection of permissions                                                 | Linked to roles via `role_groups`; may also attach directly to users via `user_groups`                                                                                |
+| **Permission**   | A specific action on a resource (e.g. `user:read`)                        | Belongs to groups; linked to a resource                                                                                                                               |
+| **Tag**          | Flexible label for categorization                                         | Applied to users, roles, groups, permissions, organizations, and projects via pivot tables                                                                            |
+| **API Key**      | Programmatic access credential scoped to a project                        | Belongs to a user and a project; exchanged for a JWT                                                                                                                  |
+| **Signing Key**  | RSA key pair for JWT signing (system or per-project)                      | Scoped to system or a project; exposed via JWKS                                                                                                                       |
 
 ## Entity Relationships
 

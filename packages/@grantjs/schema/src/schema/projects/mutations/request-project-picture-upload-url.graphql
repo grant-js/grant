@@ -1,0 +1,12 @@
+extend type Mutation {
+  """
+  Ask for a URL to upload a project logo directly to storage, without the
+  bytes passing through this API.
+
+  Validates content type, extension and size **before** issuing the URL, and
+  binds the URL to a path derived from the project id. Call
+  `confirmProjectPictureUpload` once the PUT succeeds; until then nothing
+  is recorded against the project.
+  """
+  requestProjectPictureUploadUrl(input: RequestProjectPictureUploadUrlInput!): UploadUrl!
+}

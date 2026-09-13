@@ -3,6 +3,15 @@ type Project implements Auditable {
   name: String!
   slug: String!
   description: String
+  pictureUrl: String
+  """
+  Brand hex (`#RRGGBB`). Null uses Grant's default OAuth theme.
+  """
+  primaryColor: String
+  """
+  Whether the OAuth help panel is shown. Null uses Grant's default (shown).
+  """
+  showHelpPanel: Boolean
   roles: [Role!]
   groups: [Group!]
   permissions: [Permission!]

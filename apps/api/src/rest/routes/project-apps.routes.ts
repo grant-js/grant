@@ -4,11 +4,15 @@ import { Response, Router } from 'express';
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
 import {
+  clearProjectAppPictureRequestSchema,
+  confirmProjectAppPictureUploadRequestSchema,
   createProjectAppRequestSchema,
   deleteProjectAppQuerySchema,
   getProjectAppsQuerySchema,
   projectAppIdParamsSchema,
+  requestProjectAppPictureUploadUrlRequestSchema,
   updateProjectAppRequestSchema,
+  uploadProjectAppPictureRequestSchema,
 } from '@/rest/schemas/project-apps.schemas';
 import { TypedRequest } from '@/rest/types';
 import { buildScope } from '@/rest/utils/list-query';
@@ -123,6 +127,9 @@ export function createProjectAppsRouter(context: RequestContext): Router {
         enabledProviders,
         allowSignUp,
         signUpRoleId,
+        primaryColor,
+        showHelpPanel,
+        themeMode,
         tagIds,
         primaryTagId,
       } = req.body;
@@ -137,12 +144,139 @@ export function createProjectAppsRouter(context: RequestContext): Router {
           enabledProviders,
           allowSignUp,
           signUpRoleId,
+          primaryColor,
+          showHelpPanel,
+          themeMode,
           tagIds,
           primaryTagId,
         },
       });
 
       sendSuccessResponse(res, updated);
+    }
+  );
+
+  router.post(
+    '/:id/picture',
+    validate({ params: projectAppIdParamsSchema, body: uploadProjectAppPictureRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectApp,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectAppIdParamsSchema;
+        body: typeof uploadProjectAppPictureRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { file, filename, contentType, scope } = req.body;
+      const result = await context.handlers.projectApps.uploadProjectAppPicture({
+        projectAppId: id,
+        file,
+        filename,
+        contentType,
+        scope,
+      });
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.post(
+    '/:id/picture/upload-url',
+    validate({
+      params: projectAppIdParamsSchema,
+      body: requestProjectAppPictureUploadUrlRequestSchema,
+    }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectApp,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectAppIdParamsSchema;
+        body: typeof requestProjectAppPictureUploadUrlRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { filename, contentType, contentLength, scope } = req.body;
+      const result = await context.handlers.projectApps.requestProjectAppPictureUploadUrl({
+        projectAppId: id,
+        filename,
+        contentType,
+        contentLength,
+        scope,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
+    '/:id/picture/confirm',
+    validate({
+      params: projectAppIdParamsSchema,
+      body: confirmProjectAppPictureUploadRequestSchema,
+    }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectApp,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectAppIdParamsSchema;
+        body: typeof confirmProjectAppPictureUploadRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { filename, scope } = req.body;
+      const result = await context.handlers.projectApps.confirmProjectAppPictureUpload({
+        projectAppId: id,
+        filename,
+        scope,
+      });
+      sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.delete(
+    '/:id/picture',
+    validate({ params: projectAppIdParamsSchema, body: clearProjectAppPictureRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectApp,
+      action: ResourceAction.Update,
+      resourceResolver: 'projectApp',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectAppIdParamsSchema;
+        body: typeof clearProjectAppPictureRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const projectApp = await context.handlers.projectApps.clearProjectAppPicture({
+        projectAppId: id,
+        scope: req.body.scope,
+      });
+      sendSuccessResponse(res, projectApp);
     }
   );
 

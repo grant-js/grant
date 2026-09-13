@@ -1,0 +1,6 @@
+extend type Mutation {
+  """
+  Clear the project-app logo. Does not delete the stored object.
+  """
+  clearProjectAppPicture(input: ClearProjectAppPictureInput!): ProjectApp!
+}

@@ -74,6 +74,12 @@ export interface IProjectService {
 
   updateProject(params: MutationUpdateProjectArgs, transaction?: unknown): Promise<Project>;
 
+  setProjectPicture(
+    projectId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: unknown
+  ): Promise<Project>;
+
   deleteProject(
     params: Omit<MutationDeleteProjectArgs, 'scope'> & DeleteParams,
     transaction?: unknown

@@ -102,6 +102,10 @@ export default withMermaid({
               link: '/core-concepts/sign-in-providers',
             },
             {
+              text: 'Project OAuth',
+              link: '/core-concepts/project-oauth',
+            },
+            {
               text: 'Members & Invitations',
               link: '/core-concepts/organization-invitations',
             },

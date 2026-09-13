@@ -3,6 +3,8 @@ import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import {
   authenticationErrorResponseSchema,
   cdmJsonArtifactSchema,
+  clearProjectPictureRequestSchema,
+  confirmProjectPictureUploadRequestSchema,
   createProjectRequestSchema,
   createProjectResponseSchema,
   deleteProjectQuerySchema,
@@ -20,10 +22,14 @@ import {
   projectSyncJobSchema,
   projectSyncJobScopeQuerySchema,
   projectWithRelationsSchema,
+  requestProjectPictureUploadUrlRequestSchema,
+  requestProjectPictureUploadUrlResponseSchema,
   startProjectExportJobRequestSchema,
   startProjectSyncRequestSchema,
   updateProjectRequestSchema,
   updateProjectResponseSchema,
+  uploadProjectPictureRequestSchema,
+  uploadProjectPictureResponseSchema,
   validationErrorResponseSchema,
 } from '@/rest/schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
@@ -44,6 +50,17 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
   registry.register('ProjectSyncJobParams', projectSyncJobParamsSchema);
   registry.register('ProjectSyncJobScopeQuery', projectSyncJobScopeQuerySchema);
   registry.register('CdmJsonArtifact', cdmJsonArtifactSchema);
+  registry.register('UploadProjectPictureRequest', uploadProjectPictureRequestSchema);
+  registry.register('UploadProjectPictureResponse', uploadProjectPictureResponseSchema);
+  registry.register(
+    'RequestProjectPictureUploadUrlRequest',
+    requestProjectPictureUploadUrlRequestSchema
+  );
+  registry.register(
+    'RequestProjectPictureUploadUrlResponse',
+    requestProjectPictureUploadUrlResponseSchema
+  );
+  registry.register('ConfirmProjectPictureUploadRequest', confirmProjectPictureUploadRequestSchema);
 
   /**
    * GET /api/projects
@@ -902,6 +919,176 @@ All fields are optional - only provide the fields you want to update.
             schema: errorResponseSchema,
           },
         },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/projects/{id}/picture',
+    tags: ['Projects'],
+    summary: 'Upload a project picture',
+    description:
+      'Upload a project logo (jpeg/png/gif/webp, max 5MB). Requires Project:Update on an accountProject or organizationProject scope that matches the project id.',
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: uploadProjectPictureRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Picture uploaded successfully',
+        content: { 'application/json': { schema: uploadProjectPictureResponseSchema } },
+      },
+      400: {
+        description: 'Invalid request body or file validation failed',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      404: {
+        description: 'Project not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/projects/{id}/picture/upload-url',
+    tags: ['Projects'],
+    summary: 'Request a direct-upload URL for a project picture',
+    description:
+      'Mint a storage URL to PUT the bytes directly. Confirm with POST /api/projects/{id}/picture/confirm.',
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: requestProjectPictureUploadUrlRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Upload URL issued',
+        content: { 'application/json': { schema: requestProjectPictureUploadUrlResponseSchema } },
+      },
+      400: {
+        description: 'Invalid content type, extension, size, or scope',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/projects/{id}/picture/confirm',
+    tags: ['Projects'],
+    summary: 'Record a completed direct upload of a project picture',
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: confirmProjectPictureUploadRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Upload recorded; the project pictureUrl now points at it',
+        content: { 'application/json': { schema: uploadProjectPictureResponseSchema } },
+      },
+      400: {
+        description: 'No uploaded file found, or it exceeds the size policy',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/api/projects/{id}/picture',
+    tags: ['Projects'],
+    summary: 'Clear a project picture',
+    description:
+      'Nulls picture_path and picture_url. Orphan blob cleanup is deferred. Requires Project:Update.',
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: clearProjectPictureRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Picture cleared',
+        content: { 'application/json': { schema: updateProjectResponseSchema } },
+      },
+      400: {
+        description: 'Invalid request',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      404: {
+        description: 'Project not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
       },
     },
   });

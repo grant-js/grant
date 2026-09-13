@@ -21,9 +21,10 @@ import {
 import { useProjectScope } from '@/hooks/common';
 import { useProjects } from '@/hooks/projects';
 import { usePathname, useRouter } from '@/i18n/navigation';
-import { cn } from '@/lib/utils';
+import { cn, getInitials } from '@/lib/utils';
 import { useProjectsStore } from '@/stores/projects.store';
 
+import { ProjectAvatar } from './project-avatar';
 import { ProjectCreateDialog } from './project-create-dialog';
 
 interface ProjectSwitcherProps {
@@ -124,6 +125,7 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
                   currentProjectId === project.id ? 'opacity-100' : 'opacity-0'
                 )}
               />
+              <ProjectAvatar project={project} size="sm" />
               {project.name}
             </CommandItem>
           ))}
@@ -148,6 +150,15 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
       {canCreate && isProjectPage && <ProjectCreateDialog hideTrigger />}
       <SidebarPopover
         icon={<FolderOpen />}
+        avatar={
+          currentProject
+            ? {
+                initial: getInitials(currentProject.name, 2, 'P'),
+                imageUrl: currentProject.pictureUrl || undefined,
+                cacheBuster: currentProject.updatedAt,
+              }
+            : undefined
+        }
         title={projectName}
         label={t('projects.project')}
         content={popoverContent}

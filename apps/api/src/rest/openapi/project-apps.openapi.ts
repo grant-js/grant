@@ -8,6 +8,8 @@ import {
 } from '@/rest/schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 import {
+  clearProjectAppPictureRequestSchema,
+  confirmProjectAppPictureUploadRequestSchema,
   createProjectAppRequestSchema,
   createProjectAppResponseSchema,
   deleteProjectAppQuerySchema,
@@ -17,8 +19,12 @@ import {
   projectAppIdParamsSchema,
   projectAppPageSchema,
   projectAppSchema,
+  requestProjectAppPictureUploadUrlRequestSchema,
+  requestProjectAppPictureUploadUrlResponseSchema,
   updateProjectAppRequestSchema,
   updateProjectAppResponseSchema,
+  uploadProjectAppPictureRequestSchema,
+  uploadProjectAppPictureResponseSchema,
 } from '@/rest/schemas/project-apps.schemas';
 
 /**
@@ -33,6 +39,20 @@ export function registerProjectAppsOpenApi(registry: OpenAPIRegistry) {
   registry.register('UpdateProjectAppRequest', updateProjectAppRequestSchema);
   registry.register('ProjectAppIdParams', projectAppIdParamsSchema);
   registry.register('DeleteProjectAppQuery', deleteProjectAppQuerySchema);
+  registry.register('UploadProjectAppPictureRequest', uploadProjectAppPictureRequestSchema);
+  registry.register('UploadProjectAppPictureResponse', uploadProjectAppPictureResponseSchema);
+  registry.register(
+    'RequestProjectAppPictureUploadUrlRequest',
+    requestProjectAppPictureUploadUrlRequestSchema
+  );
+  registry.register(
+    'RequestProjectAppPictureUploadUrlResponse',
+    requestProjectAppPictureUploadUrlResponseSchema
+  );
+  registry.register(
+    'ConfirmProjectAppPictureUploadRequest',
+    confirmProjectAppPictureUploadRequestSchema
+  );
 
   const createProjectAppSuccessSchema = createSuccessResponseSchema(createProjectAppResponseSchema);
 
@@ -302,6 +322,175 @@ Delete a project app. Scope is provided via query parameters.
             schema: errorResponseSchema,
           },
         },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/project-apps/{id}/picture',
+    tags: ['Project Apps'],
+    summary: 'Upload a project-app picture',
+    description:
+      "Upload an app logo (jpeg/png/gif/webp, max 5MB). Requires ProjectApp:Update on the app's project scope.",
+    request: {
+      params: projectAppIdParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: uploadProjectAppPictureRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Picture uploaded successfully',
+        content: { 'application/json': { schema: uploadProjectAppPictureResponseSchema } },
+      },
+      400: {
+        description: 'Invalid request body or file validation failed',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      404: {
+        description: 'Project app not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/project-apps/{id}/picture/upload-url',
+    tags: ['Project Apps'],
+    summary: 'Request a direct-upload URL for a project-app picture',
+    request: {
+      params: projectAppIdParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: requestProjectAppPictureUploadUrlRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Upload URL issued',
+        content: {
+          'application/json': { schema: requestProjectAppPictureUploadUrlResponseSchema },
+        },
+      },
+      400: {
+        description: 'Invalid content type, extension, size, or scope',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/project-apps/{id}/picture/confirm',
+    tags: ['Project Apps'],
+    summary: 'Record a completed direct upload of a project-app picture',
+    request: {
+      params: projectAppIdParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: confirmProjectAppPictureUploadRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Upload recorded; the app pictureUrl now points at it',
+        content: { 'application/json': { schema: uploadProjectAppPictureResponseSchema } },
+      },
+      400: {
+        description: 'No uploaded file found, or it exceeds the size policy',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/api/project-apps/{id}/picture',
+    tags: ['Project Apps'],
+    summary: 'Clear a project-app picture',
+    description: 'Nulls picture_path and picture_url so the app inherits the project picture.',
+    request: {
+      params: projectAppIdParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: clearProjectAppPictureRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Picture cleared',
+        content: { 'application/json': { schema: updateProjectAppResponseSchema } },
+      },
+      400: {
+        description: 'Invalid request',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      404: {
+        description: 'Project app not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
       },
     },
   });

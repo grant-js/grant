@@ -32,6 +32,12 @@ function toProjectApp(row: ProjectAppModel & { tags?: ProjectApp['tags'] }): Pro
     projectId: row.projectId,
     clientId: row.clientId,
     name: row.name ?? undefined,
+    pictureUrl: row.pictureUrl ?? undefined,
+    // Hydrate reads path then strips it before the client sees the app.
+    picturePath: row.picturePath ?? undefined,
+    primaryColor: row.primaryColor ?? undefined,
+    showHelpPanel: row.showHelpPanel ?? undefined,
+    themeMode: row.themeMode ?? undefined,
     redirectUris: (row.redirectUris as string[]) ?? [],
     scopes: (row.scopes as string[] | null) ?? null,
     enabledProviders: (row.enabledProviders as string[] | null) ?? null,
@@ -41,7 +47,7 @@ function toProjectApp(row: ProjectAppModel & { tags?: ProjectApp['tags'] }): Pro
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt ?? undefined,
     ...(row.tags !== undefined && { tags: row.tags }),
-  };
+  } as ProjectApp;
 }
 
 export class ProjectAppRepository
@@ -165,9 +171,24 @@ export class ProjectAppRepository
       input.enabledProviders = params.enabledProviders ?? null;
     if (params.allowSignUp !== undefined) input.allowSignUp = params.allowSignUp;
     if (params.signUpRoleId !== undefined) input.signUpRoleId = params.signUpRoleId ?? null;
+    if (params.primaryColor !== undefined) input.primaryColor = params.primaryColor ?? null;
+    if (params.showHelpPanel !== undefined) input.showHelpPanel = params.showHelpPanel ?? null;
+    if (params.themeMode !== undefined) input.themeMode = params.themeMode ?? null;
 
     const baseParams: BaseUpdateArgs = { id: params.id, input };
     const updated = await this.update(baseParams, transaction);
+    if (!updated) {
+      throw new NotFoundError('ProjectApp');
+    }
+    return toProjectApp(updated as ProjectAppModel);
+  }
+
+  public async setProjectAppPicture(
+    projectAppId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: Transaction
+  ): Promise<ProjectApp> {
+    const updated = await this.update({ id: projectAppId, input }, transaction);
     if (!updated) {
       throw new NotFoundError('ProjectApp');
     }

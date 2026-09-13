@@ -1,13 +1,24 @@
 import { useTranslations } from 'next-intl';
 import { ApolloCache } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
-import { CreateProjectInput, Project, Scope, UpdateProjectInput } from '@grantjs/schema';
 import {
+  ClearProjectPictureDocument,
+  ClearProjectPictureInput,
+  ConfirmProjectPictureUploadDocument,
+  ConfirmProjectPictureUploadMutation,
   CreateProjectDocument,
+  CreateProjectInput,
   DeleteProjectDocument,
+  Project,
+  RequestProjectPictureUploadUrlDocument,
+  RequestProjectPictureUploadUrlMutation,
+  Scope,
   UpdateProjectDocument,
+  UpdateProjectInput,
 } from '@grantjs/schema';
 import { toast } from 'sonner';
+
+import { type DirectUploadBody, runDirectUpload } from '@/lib/direct-upload';
 
 import { evictProjectsCache } from './cache';
 
@@ -29,6 +40,20 @@ export function useProjectMutations() {
   const [deleteProject] = useMutation<{ deleteProject: Project }>(DeleteProjectDocument, {
     update,
   });
+
+  const [requestProjectPictureUploadUrl] = useMutation<RequestProjectPictureUploadUrlMutation>(
+    RequestProjectPictureUploadUrlDocument
+  );
+
+  const [confirmProjectPictureUpload] = useMutation<ConfirmProjectPictureUploadMutation>(
+    ConfirmProjectPictureUploadDocument,
+    { update }
+  );
+
+  const [clearProjectPicture] = useMutation<{ clearProjectPicture: Project }>(
+    ClearProjectPictureDocument,
+    { update }
+  );
 
   const handleCreateProject = async (input: CreateProjectInput) => {
     try {
@@ -81,9 +106,54 @@ export function useProjectMutations() {
     }
   };
 
+  const handleUploadProjectPictureDirect = async (
+    target: { projectId: string; scope: Scope },
+    file: DirectUploadBody,
+    options?: { signal?: AbortSignal }
+  ) => {
+    const result = await runDirectUpload(
+      {
+        mint: async (descriptor) =>
+          (
+            await requestProjectPictureUploadUrl({
+              variables: { input: { ...descriptor, ...target } },
+            })
+          ).data?.requestProjectPictureUploadUrl,
+        confirm: async ({ filename }) =>
+          (
+            await confirmProjectPictureUpload({
+              variables: { input: { filename, ...target } },
+            })
+          ).data?.confirmProjectPictureUpload,
+      },
+      file,
+      options
+    );
+
+    toast.success(t('notifications.uploadPictureSuccess'));
+    return result;
+  };
+
+  const handleClearProjectPicture = async (input: ClearProjectPictureInput) => {
+    try {
+      const result = await clearProjectPicture({
+        variables: { input },
+      });
+      toast.success(t('notifications.clearPictureSuccess'));
+      return result.data?.clearProjectPicture;
+    } catch (error) {
+      toast.error(t('notifications.clearPictureError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   return {
     createProject: handleCreateProject,
     updateProject: handleUpdateProject,
     deleteProject: handleDeleteProject,
+    uploadProjectPictureDirect: handleUploadProjectPictureDirect,
+    clearProjectPicture: handleClearProjectPicture,
   };
 }

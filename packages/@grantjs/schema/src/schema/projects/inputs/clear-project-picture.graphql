@@ -1,0 +1,4 @@
+input ClearProjectPictureInput {
+  scope: Scope!
+  projectId: ID!
+}

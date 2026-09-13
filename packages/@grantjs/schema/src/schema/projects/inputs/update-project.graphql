@@ -2,6 +2,14 @@ input UpdateProjectInput {
   scope: Scope!
   name: String
   description: String
+  """
+  Brand hex (`#RRGGBB`). Null resets to Grant's default.
+  """
+  primaryColor: String
+  """
+  Whether the OAuth help panel is shown. Null resets to Grant's default (shown).
+  """
+  showHelpPanel: Boolean
   tagIds: [ID!]
   primaryTagId: ID
 }

@@ -5,6 +5,18 @@ input UpdateProjectAppInput {
   """
   name: String
   """
+  Brand hex (`#RRGGBB`). Null inherits the project color.
+  """
+  primaryColor: String
+  """
+  Whether the OAuth help panel is shown. Null inherits the project setting.
+  """
+  showHelpPanel: Boolean
+  """
+  Forced OAuth appearance (`light`, `dark`, `system`). Null keeps the visitor's Grant theme.
+  """
+  themeMode: String
+  """
   Allowed redirect URIs for OAuth callback. If provided, at least one required.
   """
   redirectUris: [String!]

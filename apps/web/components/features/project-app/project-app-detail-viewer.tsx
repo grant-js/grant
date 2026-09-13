@@ -9,6 +9,7 @@ import { useScopeFromParams } from '@/hooks/common';
 import { useProjectApps } from '@/hooks/project-apps';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
+import { ProjectAppBrandingCard } from './project-app-branding-card';
 import { ProjectAppGeneralCard } from './project-app-general-card';
 import { ProjectAppOauthCard } from './project-app-oauth-card';
 import { ProjectAppScopes } from './project-app-scopes';
@@ -39,6 +40,7 @@ export function ProjectAppDetailViewer() {
       <FeatureDetailSkeleton
         cards={[
           { showAvatar: true, showFooter: true, rows: 4 },
+          { showAvatar: true, showFooter: true, rows: 4 },
           { showFooter: true, rows: 4 },
           { variant: 'table', rows: 4, showToolbar: true },
           { variant: 'table', rows: 3, showToolbar: true },
@@ -54,6 +56,7 @@ export function ProjectAppDetailViewer() {
   return (
     <FeatureDetailLayout>
       <ProjectAppGeneralCard projectApp={projectApp} onAfterProjectAppMutation={refetch} />
+      <ProjectAppBrandingCard projectApp={projectApp} onAfterProjectAppMutation={refetch} />
       <ProjectAppOauthCard projectApp={projectApp} onAfterProjectAppMutation={refetch} />
       <ProjectAppScopes projectApp={projectApp} />
       <ProjectAppTags projectApp={projectApp} />

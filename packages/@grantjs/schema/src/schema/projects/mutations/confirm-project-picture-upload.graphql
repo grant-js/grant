@@ -1,0 +1,8 @@
+extend type Mutation {
+  """
+  Record a direct project-logo upload that has completed. Reads the object
+  back from storage to confirm it exists and is within the size policy, then
+  stores the object key on the project (`picture_path`).
+  """
+  confirmProjectPictureUpload(input: ConfirmProjectPictureUploadInput!): UploadProjectPictureResult!
+}

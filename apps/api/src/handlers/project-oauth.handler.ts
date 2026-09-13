@@ -7,6 +7,7 @@ import type {
   IOrganizationUserService,
   IProjectAppService,
   IProjectPermissionService,
+  IProjectService,
   IProjectUserService,
   IUserAuthenticationMethodService,
   IUserRoleService,
@@ -38,6 +39,7 @@ import {
 } from '@/lib/errors';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { createLogger } from '@/lib/logger';
+import { resolveOAuthBranding } from '@/lib/oauth-branding.lib';
 import { oauthPictureUrlFromProviderData } from '@/lib/oauth-picture.lib';
 import type { IProjectOAuthProvider } from '@/lib/project-oauth';
 import { generateSecureToken } from '@/lib/token.lib';
@@ -97,6 +99,8 @@ interface ProjectOAuthConsentPayload {
   signingScope: Scope;
   /** Effective requested scopes for this flow (subset of app scopes); used for consent display and token. */
   requestedScopeSlugs?: string[];
+  /** Provider used for this sign-in (email, github, google). */
+  provider?: ProjectOAuthProvider;
 }
 
 export class ProjectOAuthHandler {
@@ -104,6 +108,7 @@ export class ProjectOAuthHandler {
 
   constructor(
     private readonly projectApps: IProjectAppService,
+    private readonly projects: IProjectService,
     private readonly projectPermissions: IProjectPermissionService,
     private readonly projectUsers: IProjectUserService,
     private readonly userRoles: IUserRoleService,
@@ -192,10 +197,12 @@ export class ProjectOAuthHandler {
       app.projectId,
       scopeSlugs
     );
+    const branding = await this.resolveAppBranding(app);
     return {
       name: app.name ?? null,
       enabledProviders: app.enabledProviders ?? null,
       scopes,
+      ...branding,
     };
   }
 
@@ -460,6 +467,7 @@ export class ProjectOAuthHandler {
       clientState: state.clientState,
       requestedScopeSlugs: state.requestedScopeSlugs,
       locale: state.locale,
+      provider,
     });
     await this.cache.oauth.delete(key);
     return result;
@@ -503,6 +511,7 @@ export class ProjectOAuthHandler {
       clientState: payload.clientState,
       requestedScopeSlugs: payload.requestedScopeSlugs,
       locale: payload.locale,
+      provider: UserAuthenticationMethodProvider.Email,
     });
   }
 
@@ -523,8 +532,9 @@ export class ProjectOAuthHandler {
     requestedScopeSlugs?: string[];
     /** Frontend locale for consent page URL (e.g. en, de). */
     locale?: string | null;
+    provider: ProjectOAuthProvider;
   }): Promise<HandleProjectCallbackConsentRedirectResult> {
-    const { userId, app, redirectUri, clientState, requestedScopeSlugs, locale } = params;
+    const { userId, app, redirectUri, clientState, requestedScopeSlugs, locale, provider } = params;
 
     const projectUsers = await this.projectUsers.getProjectUsers({
       projectId: app.projectId,
@@ -575,6 +585,7 @@ export class ProjectOAuthHandler {
       userId,
       scope,
       signingScope,
+      provider,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
     };
     const consentKey = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
@@ -621,8 +632,12 @@ export class ProjectOAuthHandler {
       grantedSlugs
     );
 
-    let user: { displayName: string; email: string | null; pictureUrl: string | null } | null =
-      null;
+    let user: {
+      displayName: string;
+      email: string | null;
+      pictureUrl: string | null;
+      provider: string | null;
+    } | null = null;
     try {
       const userPage = await this.users.getUsers({
         ids: [payload.userId],
@@ -665,6 +680,7 @@ export class ProjectOAuthHandler {
           displayName: displayName || '—',
           email,
           pictureUrl: pictureUrl || null,
+          provider: payload.provider ?? null,
         };
       }
     } catch (e) {
@@ -674,7 +690,25 @@ export class ProjectOAuthHandler {
       );
     }
 
-    return { name: app.name ?? null, scopes, user };
+    const branding = await this.resolveAppBranding(app);
+    return { name: app.name ?? null, scopes, user, ...branding };
+  }
+
+  private async resolveAppBranding(app: {
+    projectId: string;
+    pictureUrl?: string | null;
+    primaryColor?: string | null;
+    showHelpPanel?: boolean | null;
+    themeMode?: string | null;
+  }) {
+    const page = await this.projects.getProjects({ ids: [app.projectId], limit: 1 });
+    const project = page.projects[0];
+    return resolveOAuthBranding(app, {
+      name: project?.name,
+      pictureUrl: project?.pictureUrl,
+      primaryColor: project?.primaryColor,
+      showHelpPanel: project?.showHelpPanel,
+    });
   }
 
   /**

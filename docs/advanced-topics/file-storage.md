@@ -77,6 +77,8 @@ When a user uploads a profile picture, the flow is:
 
 Organization logos use the same flow with path `organizations/{organizationId}/picture.{ext}` and persist the URL on `organizations.picture_url`.
 
+Project logos use `projects/{projectId}/picture.{ext}`. Project-app logos use `project-apps/{projectAppId}/picture.{ext}`. Both write through mint / confirm / upload (or a clear action). `UpdateProject` / `UpdateProjectApp` do not accept `pictureUrl`. On read, Grant hydrates a public URL from the stored path.
+
 Project membership pictures use `users/{userId}/projects/{projectId}/picture.{ext}`.
 
 ::: tip

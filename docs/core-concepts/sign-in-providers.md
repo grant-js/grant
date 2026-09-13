@@ -106,7 +106,7 @@ Googleusercontent URLs (`lh3.googleusercontent.com`) reject hotlinks that send a
 
 ## Project apps
 
-Project OAuth uses the same GitHub and Google clients. Each ProjectApp can restrict **enabled providers**. User resolution is the same global linking algorithm, then membership is checked in that project. See [Project OAuth](/architecture/security#project-oauth).
+Project OAuth uses the same GitHub and Google clients. Each ProjectApp can restrict **enabled providers**. User resolution is the same global linking algorithm, then membership is checked in that project. Hosted sign-in and consent branding is documented in [Project OAuth](/core-concepts/project-oauth). Token and callback rules are in [Security](/architecture/security#project-oauth).
 
 ## See also
 

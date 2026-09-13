@@ -1,4 +1,9 @@
-import type { IAuditLogger, IProjectRepository, IProjectService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IFileStorageService,
+  IProjectRepository,
+  IProjectService,
+} from '@grantjs/core';
 import {
   CreateProjectInput,
   MutationDeleteProjectArgs,
@@ -9,6 +14,11 @@ import {
 } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
+import {
+  hydratePictureUrl,
+  hydratePictureUrls,
+  picturePathWhenSettingUrl,
+} from '@/lib/picture-url.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -24,13 +34,15 @@ import {
   deleteProjectParamsSchema,
   getProjectsParamsSchema,
   projectSchema,
+  setProjectPictureParamsSchema,
   updateProjectParamsSchema,
 } from './projects.schemas';
 
 export class ProjectService implements IProjectService {
   constructor(
     private readonly projectRepository: IProjectRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly fileStorage: IFileStorageService
   ) {}
 
   private async getProject(projectId: string): Promise<Project> {
@@ -52,6 +64,7 @@ export class ProjectService implements IProjectService {
     const validationContext = 'ProjectService.getProjects';
     validateInput(getProjectsParamsSchema, params, validationContext);
     const result = await this.projectRepository.getProjects(params);
+    await hydratePictureUrls(this.fileStorage, result.projects);
 
     validatePage(
       createDynamicPaginatedSchema(projectSchema),
@@ -106,6 +119,8 @@ export class ProjectService implements IProjectService {
       name: oldProject.name,
       slug: oldProject.slug,
       description: oldProject.description,
+      primaryColor: oldProject.primaryColor ?? null,
+      showHelpPanel: oldProject.showHelpPanel ?? null,
       createdAt: oldProject.createdAt,
       updatedAt: oldProject.updatedAt,
     };
@@ -115,6 +130,8 @@ export class ProjectService implements IProjectService {
       name: updatedProject.name,
       slug: updatedProject.slug,
       description: updatedProject.description,
+      primaryColor: updatedProject.primaryColor ?? null,
+      showHelpPanel: updatedProject.showHelpPanel ?? null,
       createdAt: updatedProject.createdAt,
       updatedAt: updatedProject.updatedAt,
     };
@@ -125,6 +142,51 @@ export class ProjectService implements IProjectService {
 
     await this.audit.logUpdate(updatedProject.id, oldValues, newValues, metadata, transaction);
 
+    await hydratePictureUrl(this.fileStorage, updatedProject);
+    return validateOutput(createDynamicSingleSchema(projectSchema), updatedProject, context);
+  }
+
+  public async setProjectPicture(
+    projectId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: Transaction
+  ): Promise<Project> {
+    const context = 'ProjectService.setProjectPicture';
+    const validatedParams = validateInput(
+      setProjectPictureParamsSchema,
+      { projectId, ...picturePathWhenSettingUrl(input) },
+      context
+    );
+
+    const oldProject = await this.getProject(validatedParams.projectId);
+    const updatedProject = await this.projectRepository.setProjectPicture(
+      validatedParams.projectId,
+      {
+        ...(validatedParams.pictureUrl !== undefined
+          ? { pictureUrl: validatedParams.pictureUrl }
+          : {}),
+        ...(validatedParams.picturePath !== undefined
+          ? { picturePath: validatedParams.picturePath }
+          : {}),
+      },
+      transaction
+    );
+
+    await this.audit.logUpdate(
+      updatedProject.id,
+      {
+        id: oldProject.id,
+        pictureUrl: oldProject.pictureUrl ?? null,
+      },
+      {
+        id: updatedProject.id,
+        pictureUrl: updatedProject.pictureUrl ?? null,
+      },
+      { context },
+      transaction
+    );
+
+    await hydratePictureUrl(this.fileStorage, updatedProject);
     return validateOutput(createDynamicSingleSchema(projectSchema), updatedProject, context);
   }
 

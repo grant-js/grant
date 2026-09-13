@@ -938,7 +938,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     tags: ['Authentication'],
     summary: 'Consent info',
     description:
-      'Returns app name, scopes (with labels), and current user display (name, email, pictureUrl) for the consent page. Validates consent_token but does not consume it.',
+      'Returns app name, scopes (with labels), and current user display (name, email, pictureUrl, provider) for the consent page. Validates consent_token but does not consume it.',
     request: {
       query: projectConsentInfoQuerySchema,
     },

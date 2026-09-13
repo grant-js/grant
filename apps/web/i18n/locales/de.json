@@ -219,7 +219,8 @@
       "testApp": "App testen",
       "projectSyncJobs": "Import/Export",
       "webhooks": "Webhooks",
-      "notifications": "Benachrichtigungen"
+      "notifications": "Benachrichtigungen",
+      "branding": "Branding"
     }
   },
   "theme": {
@@ -688,6 +689,10 @@
       "or": "Oder"
     },
     "projectOAuth": {
+      "permissionsCard": {
+        "showMore": "{count} weitere anzeigen",
+        "showLess": "Weniger anzeigen"
+      },
       "entry": {
         "loading": "Laden…",
         "signInTitle": "Anmelden",
@@ -697,7 +702,7 @@
         "signInTo": "Bei {appName} anmelden",
         "thisApp": "diese App",
         "requestingAccess": "Diese App möchte auf Ihr Konto zugreifen.",
-        "requestedPermissions": "Angeforderte Berechtigungen",
+        "requestedPermissions": "Angeforderte Berechtigungen:",
         "signInWith": "Anmelden mit",
         "email": "E-Mail",
         "github": "GitHub",
@@ -724,11 +729,16 @@
         "loading": "Laden…",
         "title": "Einwilligung",
         "missingToken": "consent_token fehlt",
-        "signedInAs": "Angemeldet als",
+        "signedInWith": "Angemeldet mit {provider}",
+        "providers": {
+          "email": "E-Mail",
+          "github": "GitHub",
+          "google": "Google"
+        },
         "wantsAccess": "{appName} möchte auf Ihr Konto zugreifen",
         "thisApp": "Diese App",
         "reviewPermissions": "Prüfen Sie die Berechtigungen unten und erlauben oder verweigern Sie den Zugriff.",
-        "permissions": "Berechtigungen",
+        "permissions": "Berechtigungen:",
         "allow": "Erlauben",
         "deny": "Verweigern",
         "redirecting": "Weiterleitung…",
@@ -1442,7 +1452,54 @@
       "updateSuccess": "Projekt-App aktualisiert",
       "updateError": "Projekt-App konnte nicht aktualisiert werden",
       "deleteSuccess": "Projekt-App gelöscht",
-      "deleteError": "Projekt-App konnte nicht gelöscht werden"
+      "deleteError": "Projekt-App konnte nicht gelöscht werden",
+      "uploadPictureSuccess": "App-Bild hochgeladen",
+      "uploadPictureError": "App-Bild konnte nicht hochgeladen werden",
+      "clearPictureSuccess": "App-Bild entfernt",
+      "clearPictureError": "App-Bild konnte nicht entfernt werden"
+    },
+    "branding": {
+      "title": "Branding",
+      "description": "Logo und OAuth-Theme dieses Projekts für diese App überschreiben. Leere Felder erben vom Projekt.",
+      "picture": {
+        "upload": "App-Bild hochladen",
+        "change": "App-Bild ändern",
+        "remove": "Projektbild verwenden",
+        "inheritHint": "Diese App erbt das Projektbild auf den OAuth-Seiten.",
+        "overrideHint": "Dieses Bild ersetzt das Projektlogo auf den OAuth-Seiten."
+      },
+      "theme": {
+        "inheritColor": "Projektfarbe übernehmen",
+        "inheritsColor": "Verwendet die Projektfarbe ({color})",
+        "helpPanel": "Hilfspanel anzeigen",
+        "helpPanelHint": "Wenn deaktiviert, verwenden gehostete OAuth-Seiten eine einzelne Spalte.",
+        "invalidColor": "Verwenden Sie eine Hex-Farbe wie #2563EB",
+        "themeMode": "Farbmodus",
+        "themeModeHint": "Sperrt die gehosteten Anmelde- und Autorisierungsseiten auf dieses Erscheinungsbild. Grant-Standard folgt dem Theme des Besuchers.",
+        "themeModeGrant": "Grant-Standard",
+        "themeModeLight": "Hell",
+        "themeModeDark": "Dunkel",
+        "themeModeSystem": "System"
+      },
+      "upload": {
+        "title": "App-Bild hochladen",
+        "description": "Wählen Sie ein Bild, schneiden Sie es zu und laden Sie es als App-Logo hoch",
+        "dropzone": {
+          "idle": "Bild hierher ziehen oder klicken zum Durchsuchen",
+          "active": "Bild hier ablegen",
+          "hint": "Unterstützte Formate: JPG, PNG, GIF, WebP (max. 5 MB)",
+          "browse": "Dateien durchsuchen"
+        },
+        "zoom": "Zoom",
+        "changeImage": "Bild ändern",
+        "upload": "Hochladen",
+        "errors": {
+          "invalidType": "Ungültiger Dateityp. Bitte JPG, PNG, GIF oder WebP verwenden.",
+          "fileTooLarge": "Datei ist zu groß. Maximale Größe ist {maxSize} MB.",
+          "readFailed": "Datei konnte nicht gelesen werden. Bitte erneut versuchen.",
+          "uploadFailed": "Bild konnte nicht hochgeladen werden. Bitte erneut versuchen."
+        }
+      }
     }
   },
   "resources": {
@@ -2470,7 +2527,56 @@
       "tagRemovedSuccess": "Tag vom Projekt entfernt",
       "tagRemovedError": "Tag konnte nicht vom Projekt entfernt werden",
       "roleAddedSuccess": "Rolle zum Projekt hinzugefügt",
-      "roleAddedError": "Rolle konnte nicht zum Projekt hinzugefügt werden"
+      "roleAddedError": "Rolle konnte nicht zum Projekt hinzugefügt werden",
+      "uploadPictureSuccess": "Projektbild hochgeladen",
+      "uploadPictureError": "Projektbild konnte nicht hochgeladen werden",
+      "clearPictureSuccess": "Projektbild entfernt",
+      "clearPictureError": "Projektbild konnte nicht entfernt werden"
+    },
+    "avatar": {
+      "uploadButton": "Bild hochladen",
+      "changeButton": "Bild ändern"
+    },
+    "branding": {
+      "title": "Branding",
+      "loadError": "Projekt-Branding konnte nicht geladen werden",
+      "picture": {
+        "title": "Projektbild",
+        "description": "Wird in Projektlisten und als Standard-OAuth-Logo für Apps ohne eigenes Bild angezeigt.",
+        "hint": "JPG, PNG, GIF oder WebP. Hochladen und Entfernen erfolgen hier.",
+        "upload": "Projektbild hochladen",
+        "change": "Projektbild ändern",
+        "remove": "Bild entfernen"
+      },
+      "theme": {
+        "title": "OAuth-Theme",
+        "description": "Primärfarbe und Hilfspanel auf den gehosteten Anmeldeseiten. Apps können diese Werte überschreiben.",
+        "primaryColor": "Primärfarbe",
+        "primaryColorHint": "Wird für das Hilfspanel und primäre Schaltflächen verwendet. Leer lassen für Grant-Blau.",
+        "invalidColor": "Verwenden Sie eine Hex-Farbe wie #2563EB",
+        "helpPanel": "Hilfspanel anzeigen",
+        "helpPanelHint": "Wenn aus, verwenden die OAuth-Seiten eine einzelne Spalte.",
+        "reset": "Auf Grant-Standard zurücksetzen"
+      },
+      "upload": {
+        "title": "Projektbild hochladen",
+        "description": "Wählen Sie ein Bild, schneiden Sie es zu und laden Sie es als Projektlogo hoch",
+        "dropzone": {
+          "idle": "Bild hierher ziehen oder klicken zum Durchsuchen",
+          "active": "Bild hier ablegen",
+          "hint": "Unterstützte Formate: JPG, PNG, GIF, WebP (max. 5 MB)",
+          "browse": "Dateien durchsuchen"
+        },
+        "zoom": "Zoom",
+        "changeImage": "Bild ändern",
+        "upload": "Hochladen",
+        "errors": {
+          "invalidType": "Ungültiger Dateityp. Bitte JPG, PNG, GIF oder WebP verwenden.",
+          "fileTooLarge": "Datei ist zu groß. Maximale Größe ist {maxSize} MB.",
+          "readFailed": "Datei konnte nicht gelesen werden. Bitte erneut versuchen.",
+          "uploadFailed": "Bild konnte nicht hochgeladen werden. Bitte erneut versuchen."
+        }
+      }
     },
     "view": {
       "card": "Kartenansicht",

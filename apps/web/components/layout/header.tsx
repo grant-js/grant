@@ -7,6 +7,7 @@ import { BookOpen, FileJson, Globe, Menu, Moon, Network, Sun, X } from 'lucide-r
 import { DemoModeDialogProvider, DemoModeDialogTrigger, Logo } from '@/components/common';
 import { NotificationBell } from '@/components/features/notifications';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
+import { useOAuthBrandingTheme } from '@/components/layout/oauth-branding-context';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { getApiDocsUrl, getAppVersion, getDocsUrl, getGraphqlPlaygroundUrl } from '@/lib/constants';
@@ -17,6 +18,7 @@ export function Header() {
   const t = useTranslations('common');
   const themeT = useTranslations('theme');
   const { isAuthenticated } = useAuthStore();
+  const hideThemeToggle = useOAuthBrandingTheme()?.themeMode != null;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const languageSwitcherRef = useRef<HTMLButtonElement>(null);
   const themeToggleRef = useRef<HTMLButtonElement>(null);
@@ -112,7 +114,9 @@ export function Header() {
                 {t('navigation.graphqlPlayground')}
               </a>
               {isAuthenticated() ? <NotificationBell /> : null}
-              <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
+              {hideThemeToggle ? null : (
+                <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
+              )}
               <LanguageSwitcher ref={languageSwitcherRef} trigger={desktopLanguageTrigger} />
             </div>
           </div>
@@ -172,7 +176,9 @@ export function Header() {
               </div>
               <div className="h-px bg-border" />
               <div className="flex flex-col space-y-2">
-                <ThemeToggle ref={themeToggleRef} trigger={mobileThemeTrigger} />
+                {hideThemeToggle ? null : (
+                  <ThemeToggle ref={themeToggleRef} trigger={mobileThemeTrigger} />
+                )}
                 <LanguageSwitcher ref={languageSwitcherRef} trigger={mobileLanguageTrigger} />
               </div>
               <div className="h-px bg-border" />

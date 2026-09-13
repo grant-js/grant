@@ -1,5 +1,6 @@
 import {
   EmailVerificationProofType,
+  PROJECT_OAUTH_THEME_MODES,
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
@@ -393,6 +394,11 @@ const projectAppInfoScopeSchema = z.object({
 
 export const projectAppInfoResponseSchema = z.object({
   name: z.string().nullable(),
+  projectName: z.string().nullable(),
+  pictureUrl: z.string().nullable(),
+  primaryColor: z.string().nullable(),
+  showHelpPanel: z.boolean(),
+  themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable(),
   enabledProviders: z.array(z.string()).nullable(),
   scopes: z.array(projectAppInfoScopeSchema),
 });
@@ -417,11 +423,17 @@ const projectConsentInfoUserSchema = z.object({
   displayName: z.string(),
   email: z.string().nullable(),
   pictureUrl: z.string().url().nullable(),
+  provider: z.string().nullable(),
 });
 
 /** Response for GET project consent info. */
 export const projectConsentInfoResponseSchema = z.object({
   name: z.string().nullable(),
+  projectName: z.string().nullable(),
+  pictureUrl: z.string().nullable(),
+  primaryColor: z.string().nullable(),
+  showHelpPanel: z.boolean(),
+  themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable(),
   scopes: z.array(projectAppInfoScopeSchema),
   user: projectConsentInfoUserSchema.nullable(),
 });

@@ -132,9 +132,23 @@ export class ProjectRepository
         name: params.input.name,
         slug: params.input.name ? this.generateSlug(params.input.name) : undefined,
         description: params.input.description,
+        primaryColor: params.input.primaryColor,
+        showHelpPanel: params.input.showHelpPanel,
       },
     };
 
+    return this.update(baseParams, transaction);
+  }
+
+  public async setProjectPicture(
+    projectId: string,
+    input: { picturePath?: string | null; pictureUrl?: string | null },
+    transaction?: Transaction
+  ): Promise<Project> {
+    const baseParams: BaseUpdateArgs = {
+      id: projectId,
+      input,
+    };
     return this.update(baseParams, transaction);
   }
 

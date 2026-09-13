@@ -107,6 +107,8 @@ Some operations are only available via REST (not GraphQL):
 
 - `GET /api/auth/github` — Initiate GitHub OAuth (browser redirect)
 - `GET /api/auth/github/callback` — GitHub OAuth callback
+- `GET /api/auth/project/app-info` — Public project-app branding and scopes for hosted sign-in
+- `GET /api/auth/project/consent-info` — Public consent payload (resolved branding, scopes, signed-in user)
 - `POST /api/auth/cli-callback` — Exchange CLI one-time code for tokens
 - `POST /api/auth/token` — Exchange API key for JWT
 - `POST /api/auth/is-authorized` — Check authorization (used by SDKs)

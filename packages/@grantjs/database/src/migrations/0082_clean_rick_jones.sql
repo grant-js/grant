@@ -1,0 +1,1 @@
+ALTER TABLE "project_apps" ADD COLUMN "theme_mode" varchar(16);

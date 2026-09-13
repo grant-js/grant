@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 export const projects = pgTable(
   'projects',
@@ -8,6 +8,10 @@ export const projects = pgTable(
     name: varchar('name', { length: 255 }).notNull(),
     slug: varchar('slug', { length: 255 }).notNull(),
     description: varchar('description', { length: 1000 }),
+    pictureUrl: varchar('picture_url', { length: 500 }),
+    picturePath: varchar('picture_path', { length: 1024 }),
+    primaryColor: varchar('primary_color', { length: 7 }),
+    showHelpPanel: boolean('show_help_panel'),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

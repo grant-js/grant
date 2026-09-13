@@ -3,14 +3,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Check } from 'lucide-react';
 
+import { OAuthAppHeading } from '@/components/auth/oauth-app-heading';
+import { OAuthPermissionsCard } from '@/components/auth/oauth-permissions-card';
 import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
-import { AuthLayoutStandalone } from '@/components/layout';
+import { AuthLayoutStandalone, useSetOAuthBranding } from '@/components/layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { getApiBaseUrl } from '@/lib/constants';
+import { oauthClientDisplayName } from '@/lib/oauth-branding';
 import { getSocialOAuthProviders, type SocialOAuthProviderId } from '@/lib/oauth-providers';
 import {
   getProjectAppPublicInfo,
@@ -56,6 +58,17 @@ export default function ProjectOAuthEntryPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [configuredSocial, setConfiguredSocial] = useState<SocialOAuthProviderId[]>([]);
+  useSetOAuthBranding(
+    appInfo
+      ? {
+          pictureUrl: appInfo.pictureUrl,
+          projectName: appInfo.projectName,
+          primaryColor: appInfo.primaryColor,
+          showHelpPanel: appInfo.showHelpPanel,
+          themeMode: appInfo.themeMode,
+        }
+      : null
+  );
 
   useEffect(() => {
     if (!clientId) return;
@@ -186,7 +199,7 @@ export default function ProjectOAuthEntryPage() {
 
   if (!appInfo) return null;
 
-  const appName = appInfo.name ?? t('thisApp');
+  const appName = oauthClientDisplayName(appInfo.name, appInfo.projectName, t('thisApp'));
   const content = (
     <div className="space-y-6">
       {oauthErrorMessage && (
@@ -194,26 +207,15 @@ export default function ProjectOAuthEntryPage() {
           <p className="text-sm text-destructive">{oauthErrorMessage}</p>
         </div>
       )}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{t('signInTo', { appName })}</h1>
-        <p className="text-muted-foreground">{t('requestingAccess')}</p>
-      </div>
+      <OAuthAppHeading
+        title={t('signInTo', { appName })}
+        name={appName}
+        pictureUrl={appInfo.pictureUrl}
+        description={t('requestingAccess')}
+      />
 
       {appInfo.scopes?.length > 0 && (
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground">{t('requestedPermissions')}</p>
-          <ul className="text-sm text-muted-foreground space-y-2 list-none pl-0">
-            {appInfo.scopes.map((s) => (
-              <li key={s.slug} className="flex items-start gap-2">
-                <Check className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
-                <span>
-                  <span className="font-medium text-foreground">{s.name}</span>
-                  {s.description && <> — {s.description}</>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <OAuthPermissionsCard label={t('requestedPermissions')} scopes={appInfo.scopes} />
       )}
 
       <div className="relative">
@@ -255,6 +257,7 @@ export default function ProjectOAuthEntryPage() {
         {showEmail && (
           <Link href={emailPageUrl()}>
             <Button type="button" variant="outline" className="w-full">
+              <OAuthProviderIcon provider="email" />
               {t('email')}
             </Button>
           </Link>

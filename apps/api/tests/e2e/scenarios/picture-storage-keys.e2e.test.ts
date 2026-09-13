@@ -161,5 +161,90 @@ describe('picture storage keys (F-3)', () => {
     `;
     expect(cleared[0]?.picture_url).toBe('https://idp.example/avatar.png');
     expect(cleared[0]?.picture_path).toBeNull();
+
+    const projectScope = { id: `${org.id}:${project.id}`, tenant: 'organizationProject' };
+
+    const uploadProject = await apiClient()
+      .post(`/api/projects/${project.id}/picture`)
+      .set('Authorization', owner.authHeader)
+      .send({
+        file: jpeg,
+        filename: 'project.jpg',
+        contentType: 'image/jpeg',
+        scope: projectScope,
+      });
+    expect(uploadProject.status).toBe(201);
+    expect(uploadProject.body.data.path).toBe(`projects/${project.id}/picture.jpg`);
+
+    const projectRows = await query<{
+      picture_url: string | null;
+      picture_path: string | null;
+    }>`
+      SELECT picture_url, picture_path
+      FROM projects
+      WHERE id = ${project.id}::uuid
+    `;
+    expect(projectRows[0]?.picture_path).toBe(uploadProject.body.data.path);
+    expect(projectRows[0]?.picture_url).toBeNull();
+
+    const listedProjects = await apiClient()
+      .get('/api/projects')
+      .query({ scopeId: org.id, tenant: 'organization' })
+      .set('Authorization', owner.authHeader);
+    expect(listedProjects.status).toBe(200);
+    const listedProject = (
+      listedProjects.body.data.projects as Array<{ id: string; pictureUrl: string | null }>
+    ).find((item) => item.id === project.id);
+    expect(listedProject?.pictureUrl).toBe(`/storage/${uploadProject.body.data.path}`);
+
+    const createApp = await graphqlRequest<{
+      createProjectApp: { id: string };
+    }>({
+      query: `mutation ($input: CreateProjectAppInput!) {
+        createProjectApp(input: $input) { id }
+      }`,
+      variables: {
+        input: {
+          scope: projectScope,
+          name: 'Picture Keys App',
+          redirectUris: ['https://example.com/oauth/callback'],
+          allowSignUp: false,
+        },
+      },
+      accessToken: owner.accessToken,
+    });
+    expect(createApp.body.errors).toBeUndefined();
+    const appId = createApp.body.data?.createProjectApp.id;
+    expect(appId).toBeDefined();
+
+    const uploadApp = await apiClient()
+      .post(`/api/project-apps/${appId}/picture`)
+      .set('Authorization', owner.authHeader)
+      .send({
+        file: jpeg,
+        filename: 'app.jpg',
+        contentType: 'image/jpeg',
+        scope: projectScope,
+      });
+    expect(uploadApp.status).toBe(201);
+    expect(uploadApp.body.data.path).toBe(`project-apps/${appId}/picture.jpg`);
+
+    const appRows = await query<{
+      picture_url: string | null;
+      picture_path: string | null;
+    }>`
+      SELECT picture_url, picture_path
+      FROM project_apps
+      WHERE id = ${appId}::uuid
+    `;
+    expect(appRows[0]?.picture_path).toBe(uploadApp.body.data.path);
+    expect(appRows[0]?.picture_url).toBeNull();
+
+    const clearProject = await apiClient()
+      .delete(`/api/projects/${project.id}/picture`)
+      .set('Authorization', owner.authHeader)
+      .send({ scope: projectScope });
+    expect(clearProject.status).toBe(200);
+    expect(clearProject.body.data.pictureUrl).toBeNull();
   });
 });

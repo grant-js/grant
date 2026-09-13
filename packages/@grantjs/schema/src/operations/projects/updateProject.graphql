@@ -4,6 +4,9 @@ mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
     name
     slug
     description
+    pictureUrl
+    primaryColor
+    showHelpPanel
     createdAt
     updatedAt
   }

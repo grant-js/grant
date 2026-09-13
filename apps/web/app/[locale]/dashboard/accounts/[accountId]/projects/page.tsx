@@ -6,6 +6,7 @@ import {
   ProjectDeleteDialog,
   ProjectEditDialog,
   ProjectPagination,
+  ProjectPictureUploadDialog,
   ProjectToolbar,
   ProjectViewer,
 } from '@/components/features/projects';
@@ -28,6 +29,7 @@ export default function PersonalWorkspaceProjectsPage() {
         <ProjectViewer />
         <ProjectDeleteDialog />
         <ProjectEditDialog />
+        <ProjectPictureUploadDialog />
       </>
     </DashboardLayout>
   );

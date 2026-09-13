@@ -4,6 +4,10 @@ import { usePathname } from 'next/navigation';
 
 import { AuthAssistant, type AuthPageId } from '@/components/auth/auth-assistant';
 import { ParticleMesh } from '@/components/auth/particle-mesh';
+import { GRANT_PRIMARY_COLOR, radialGradientFromHex } from '@/lib/oauth-branding';
+import { cn } from '@/lib/utils';
+
+import { useOAuthBrandingTheme } from './oauth-branding-context';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -56,10 +60,17 @@ export function AuthLayoutStandalone({ children }: { children: React.ReactNode }
 export function AuthLayout({ children, title, description }: AuthLayoutProps) {
   const pathname = usePathname();
   const pageId = getAuthPageId(pathname);
+  const branding = useOAuthBrandingTheme();
+  const showHelpPanel = branding?.showHelpPanel ?? true;
+  const panelColor = branding?.primaryColor ?? GRANT_PRIMARY_COLOR;
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem-1px)] grid lg:grid-cols-2">
-      {/* Left side - Content */}
+    <div
+      className={cn(
+        'min-h-[calc(100vh-3.5rem-1px)]',
+        showHelpPanel ? 'grid lg:grid-cols-2' : 'flex justify-center'
+      )}
+    >
       <div className="flex items-center justify-center p-6 sm:p-4">
         <div className="w-full max-w-sm space-y-6">
           {(title || description) && (
@@ -72,20 +83,17 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
         </div>
       </div>
 
-      {/* Right side - Particle mesh and contextual help accordion */}
-      <div
-        className="hidden lg:flex flex-col items-center justify-center p-8 relative overflow-hidden"
-        style={{
-          background:
-            'radial-gradient(ellipse at center, rgb(96 165 250) 0%, rgb(59 130 246) 45%, rgb(37 99 235) 80%, rgb(29 78 216) 100%)',
-        }}
-      >
-        {/* Animated particle mesh (connected nodes) */}
-        <ParticleMesh className="pointer-events-none" />
-        <div className="max-w-lg text-white relative z-10 flex flex-col items-center w-full">
-          <AuthAssistant pageId={pageId} className="w-full" />
+      {showHelpPanel ? (
+        <div
+          className="hidden lg:flex flex-col items-center justify-center p-8 relative overflow-hidden"
+          style={{ background: radialGradientFromHex(panelColor) }}
+        >
+          <ParticleMesh className="pointer-events-none" />
+          <div className="max-w-lg text-white relative z-10 flex flex-col items-center w-full">
+            <AuthAssistant pageId={pageId} className="w-full" />
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

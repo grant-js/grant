@@ -483,6 +483,16 @@ export type ChangeMyPasswordResult = {
   success: Scalars['Boolean']['output'];
 };
 
+export type ClearProjectAppPictureInput = {
+  projectAppId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type ClearProjectPictureInput = {
+  projectId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
 export type ConfirmMyProjectMembershipPictureUploadInput = {
   filename: Scalars['String']['input'];
   projectId: Scalars['ID']['input'];
@@ -504,6 +514,26 @@ export type ConfirmMyUserPictureUploadInput = {
 export type ConfirmOrganizationPictureUploadInput = {
   filename: Scalars['String']['input'];
   organizationId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+/**
+ * `filename` is repeated from the request step rather than carried in a token: the
+ * storage path is re-derived server-side from the project-app id both times.
+ */
+export type ConfirmProjectAppPictureUploadInput = {
+  filename: Scalars['String']['input'];
+  projectAppId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+/**
+ * `filename` is repeated from the request step rather than carried in a token: the
+ * storage path is re-derived server-side from the project id both times.
+ */
+export type ConfirmProjectPictureUploadInput = {
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
   scope: Scope;
 };
 
@@ -1006,6 +1036,10 @@ export type Mutation = {
    */
   cancelProjectSync: ProjectSyncJob;
   changeMyPassword: ChangeMyPasswordResult;
+  /** Clear the project-app logo. Does not delete the stored object. */
+  clearProjectAppPicture: ProjectApp;
+  /** Clear the project logo. Does not delete the stored object. */
+  clearProjectPicture: Project;
   /**
    * Record a direct upload of a project-membership picture that has completed.
    * Re-checks membership and reads the object back from storage before anything is
@@ -1025,6 +1059,18 @@ export type Mutation = {
    * stores the object key on the organization (`picture_path`).
    */
   confirmOrganizationPictureUpload: UploadOrganizationPictureResult;
+  /**
+   * Record a direct project-app-logo upload that has completed. Reads the object
+   * back from storage to confirm it exists and is within the size policy, then
+   * stores the object key on the app (`picture_path`).
+   */
+  confirmProjectAppPictureUpload: UploadProjectAppPictureResult;
+  /**
+   * Record a direct project-logo upload that has completed. Reads the object
+   * back from storage to confirm it exists and is within the size policy, then
+   * stores the object key on the project (`picture_path`).
+   */
+  confirmProjectPictureUpload: UploadProjectPictureResult;
   /**
    * Record a completed direct upload of another user's picture. Re-runs the scope
    * and permission checks, then reads the object back from storage before writing
@@ -1106,6 +1152,26 @@ export type Mutation = {
   requestOrganizationPictureUploadUrl: UploadUrl;
   requestPasswordReset: RequestPasswordResetResponse;
   /**
+   * Ask for a URL to upload a project-app logo directly to storage, without the
+   * bytes passing through this API.
+   *
+   * Validates content type, extension and size **before** issuing the URL, and
+   * binds the URL to a path derived from the project-app id. Call
+   * `confirmProjectAppPictureUpload` once the PUT succeeds; until then nothing
+   * is recorded against the app.
+   */
+  requestProjectAppPictureUploadUrl: UploadUrl;
+  /**
+   * Ask for a URL to upload a project logo directly to storage, without the
+   * bytes passing through this API.
+   *
+   * Validates content type, extension and size **before** issuing the URL, and
+   * binds the URL to a path derived from the project id. Call
+   * `confirmProjectPictureUpload` once the PUT succeeds; until then nothing
+   * is recorded against the project.
+   */
+  requestProjectPictureUploadUrl: UploadUrl;
+  /**
    * Ask for a URL to upload another user's picture directly to storage.
    *
    * Unlike the `me` variants, the storage path here is derived from the **target**
@@ -1183,6 +1249,10 @@ export type Mutation = {
   uploadMyUserPicture: UploadUserPictureResult;
   /** Upload an organization logo and persist its public URL. */
   uploadOrganizationPicture: UploadOrganizationPictureResult;
+  /** Upload a project-app logo and persist its public URL. */
+  uploadProjectAppPicture: UploadProjectAppPictureResult;
+  /** Upload a project logo and persist its public URL. */
+  uploadProjectPicture: UploadProjectPictureResult;
   uploadUserPicture: UploadUserPictureResult;
   verifyEmail: VerifyEmailResponse;
   verifyMfa: MfaVerifyResponse;
@@ -1212,6 +1282,14 @@ export type MutationChangeMyPasswordArgs = {
   input: ChangeMyPasswordInput;
 };
 
+export type MutationClearProjectAppPictureArgs = {
+  input: ClearProjectAppPictureInput;
+};
+
+export type MutationClearProjectPictureArgs = {
+  input: ClearProjectPictureInput;
+};
+
 export type MutationConfirmMyProjectMembershipPictureUploadArgs = {
   input: ConfirmMyProjectMembershipPictureUploadInput;
 };
@@ -1222,6 +1300,14 @@ export type MutationConfirmMyUserPictureUploadArgs = {
 
 export type MutationConfirmOrganizationPictureUploadArgs = {
   input: ConfirmOrganizationPictureUploadInput;
+};
+
+export type MutationConfirmProjectAppPictureUploadArgs = {
+  input: ConfirmProjectAppPictureUploadInput;
+};
+
+export type MutationConfirmProjectPictureUploadArgs = {
+  input: ConfirmProjectPictureUploadInput;
 };
 
 export type MutationConfirmUserPictureUploadArgs = {
@@ -1395,6 +1481,14 @@ export type MutationRequestPasswordResetArgs = {
   input: RequestPasswordResetInput;
 };
 
+export type MutationRequestProjectAppPictureUploadUrlArgs = {
+  input: RequestProjectAppPictureUploadUrlInput;
+};
+
+export type MutationRequestProjectPictureUploadUrlArgs = {
+  input: RequestProjectPictureUploadUrlInput;
+};
+
 export type MutationRequestUserPictureUploadUrlArgs = {
   input: RequestUserPictureUploadUrlInput;
 };
@@ -1542,6 +1636,14 @@ export type MutationUploadMyUserPictureArgs = {
 
 export type MutationUploadOrganizationPictureArgs = {
   input: UploadOrganizationPictureInput;
+};
+
+export type MutationUploadProjectAppPictureArgs = {
+  input: UploadProjectAppPictureInput;
+};
+
+export type MutationUploadProjectPictureArgs = {
+  input: UploadProjectPictureInput;
 };
 
 export type MutationUploadUserPictureArgs = {
@@ -1979,8 +2081,13 @@ export type Project = Auditable & {
   name: Scalars['String']['output'];
   organizationTags?: Maybe<Array<Tag>>;
   permissions?: Maybe<Array<Permission>>;
+  pictureUrl?: Maybe<Scalars['String']['output']>;
+  /** Brand hex (`#RRGGBB`). Null uses Grant's default OAuth theme. */
+  primaryColor?: Maybe<Scalars['String']['output']>;
   resources?: Maybe<Array<Resource>>;
   roles?: Maybe<Array<Role>>;
+  /** Whether the OAuth help panel is shown. Null uses Grant's default (shown). */
+  showHelpPanel?: Maybe<Scalars['Boolean']['output']>;
   slug: Scalars['String']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
@@ -1998,15 +2105,22 @@ export type ProjectApp = Auditable & {
   enabledProviders?: Maybe<Array<Scalars['String']['output']>>;
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
+  pictureUrl?: Maybe<Scalars['String']['output']>;
+  /** Brand hex (`#RRGGBB`). Null inherits the project color. */
+  primaryColor?: Maybe<Scalars['String']['output']>;
   project?: Maybe<Project>;
   projectId: Scalars['ID']['output'];
   redirectUris: Array<Scalars['String']['output']>;
   scopes?: Maybe<Array<Scalars['String']['output']>>;
+  /** Whether the OAuth help panel is shown. Null inherits the project setting. */
+  showHelpPanel?: Maybe<Scalars['Boolean']['output']>;
   /** Resolved role for signUpRoleId (for display). */
   signUpRole?: Maybe<Role>;
   /** Role assigned to users who sign up via this app. Required when allowSignUp is true. */
   signUpRoleId?: Maybe<Scalars['ID']['output']>;
   tags?: Maybe<Array<Tag>>;
+  /** Forced OAuth appearance (`light`, `dark`, `system`). Null keeps the visitor's Grant theme. */
+  themeMode?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['Date']['output'];
 };
 
@@ -2933,6 +3047,30 @@ export type RequestPasswordResetResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type RequestProjectAppPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectAppId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type RequestProjectPictureUploadUrlInput = {
+  /**
+   * Exact byte length the client will send. Validated against the upload policy
+   * before a URL is issued, and committed to by the URL itself.
+   */
+  contentLength: Scalars['Int']['input'];
+  contentType: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
 export type RequestUserPictureUploadUrlInput = {
   /**
    * Exact byte length the client will send. Validated against the upload policy
@@ -3491,15 +3629,21 @@ export type UpdateProjectAppInput = {
   enabledProviders?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Display name for the app. */
   name?: InputMaybe<Scalars['String']['input']>;
+  /** Brand hex (`#RRGGBB`). Null inherits the project color. */
+  primaryColor?: InputMaybe<Scalars['String']['input']>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   /** Allowed redirect URIs for OAuth callback. If provided, at least one required. */
   redirectUris?: InputMaybe<Array<Scalars['String']['input']>>;
   scope: Scope;
   /** Optional OAuth scopes the app may request. */
   scopes?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Whether the OAuth help panel is shown. Null inherits the project setting. */
+  showHelpPanel?: InputMaybe<Scalars['Boolean']['input']>;
   /** Role to assign to users who sign up via this app. Required when allowSignUp is true; must be a role in the project. */
   signUpRoleId?: InputMaybe<Scalars['ID']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Forced OAuth appearance (`light`, `dark`, `system`). Null keeps the visitor's Grant theme. */
+  themeMode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateProjectAppTagInput = {
@@ -3511,8 +3655,12 @@ export type UpdateProjectAppTagInput = {
 export type UpdateProjectInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  /** Brand hex (`#RRGGBB`). Null resets to Grant's default. */
+  primaryColor?: InputMaybe<Scalars['String']['input']>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
+  /** Whether the OAuth help panel is shown. Null resets to Grant's default (shown). */
+  showHelpPanel?: InputMaybe<Scalars['Boolean']['input']>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -3626,6 +3774,34 @@ export type UploadOrganizationPictureInput = {
 
 export type UploadOrganizationPictureResult = {
   __typename?: 'UploadOrganizationPictureResult';
+  path: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
+export type UploadProjectAppPictureInput = {
+  contentType: Scalars['String']['input'];
+  file: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectAppId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type UploadProjectAppPictureResult = {
+  __typename?: 'UploadProjectAppPictureResult';
+  path: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
+export type UploadProjectPictureInput = {
+  contentType: Scalars['String']['input'];
+  file: Scalars['String']['input'];
+  filename: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
+  scope: Scope;
+};
+
+export type UploadProjectPictureResult = {
+  __typename?: 'UploadProjectPictureResult';
   path: Scalars['String']['output'];
   url: Scalars['String']['output'];
 };

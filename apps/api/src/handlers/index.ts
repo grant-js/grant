@@ -114,6 +114,7 @@ export function createHandlers(
     auth: authHandler,
     projectOAuth: new ProjectOAuthHandler(
       services.projectApps,
+      services.projects,
       services.projectPermissions,
       services.projectUsers,
       services.userRoles,
@@ -216,6 +217,7 @@ export function createHandlers(
       cache,
       services,
       db,
+      services.fileStorage,
       options?.scheduleAfterCommit
     ),
     projectApps: new ProjectAppsHandler(
@@ -223,7 +225,8 @@ export function createHandlers(
       services.projectAppTags,
       cache,
       services,
-      db
+      db,
+      services.fileStorage
     ),
     resources: new ResourceHandler(
       services.resourceTags,

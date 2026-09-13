@@ -64,6 +64,8 @@ export function ProjectAppCards() {
           <CardHeader
             avatar={{
               initial: (app.name || app.clientId).charAt(0),
+              imageUrl: app.pictureUrl || undefined,
+              cacheBuster: app.updatedAt,
               size: 'lg',
               icon: <LayoutGrid className="h-5 w-5 text-muted-foreground" />,
             }}

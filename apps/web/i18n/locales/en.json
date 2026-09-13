@@ -221,7 +221,8 @@
       "testApp": "Test App",
       "projectSyncJobs": "Import/Export",
       "webhooks": "Webhooks",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "branding": "Branding"
     }
   },
   "theme": {
@@ -690,6 +691,10 @@
       "or": "Or"
     },
     "projectOAuth": {
+      "permissionsCard": {
+        "showMore": "Show {count} more",
+        "showLess": "Show less"
+      },
       "entry": {
         "loading": "Loading…",
         "signInTitle": "Sign in",
@@ -699,7 +704,7 @@
         "signInTo": "Sign in to {appName}",
         "thisApp": "this app",
         "requestingAccess": "This app is requesting access to your account.",
-        "requestedPermissions": "Requested permissions",
+        "requestedPermissions": "Requested permissions:",
         "signInWith": "Sign in with",
         "email": "Email",
         "github": "GitHub",
@@ -726,11 +731,16 @@
         "loading": "Loading…",
         "title": "Consent",
         "missingToken": "Missing consent_token",
-        "signedInAs": "Signed in as",
+        "signedInWith": "Signed in with {provider}",
+        "providers": {
+          "email": "Email",
+          "github": "GitHub",
+          "google": "Google"
+        },
         "wantsAccess": "{appName} wants to access your account",
         "thisApp": "This app",
         "reviewPermissions": "Review the permissions below and allow or deny access.",
-        "permissions": "Permissions",
+        "permissions": "Permissions:",
         "allow": "Allow",
         "deny": "Deny",
         "redirecting": "Redirecting…",
@@ -1727,7 +1737,54 @@
       "updateSuccess": "Project app updated",
       "updateError": "Failed to update project app",
       "deleteSuccess": "Project app deleted",
-      "deleteError": "Failed to delete project app"
+      "deleteError": "Failed to delete project app",
+      "uploadPictureSuccess": "App picture uploaded",
+      "uploadPictureError": "Failed to upload app picture",
+      "clearPictureSuccess": "App picture removed",
+      "clearPictureError": "Failed to remove app picture"
+    },
+    "branding": {
+      "title": "Branding",
+      "description": "Override the project logo and OAuth theme for this app. Unset fields inherit from the project.",
+      "picture": {
+        "upload": "Upload app picture",
+        "change": "Change app picture",
+        "remove": "Use project picture",
+        "inheritHint": "This app inherits the project picture on OAuth pages.",
+        "overrideHint": "This picture overrides the project logo on OAuth pages."
+      },
+      "theme": {
+        "inheritColor": "Inherit project color",
+        "inheritsColor": "Uses the project color ({color})",
+        "helpPanel": "Show help panel",
+        "helpPanelHint": "When off, hosted OAuth pages use a single column.",
+        "invalidColor": "Use a hex color like #2563EB",
+        "themeMode": "Color mode",
+        "themeModeHint": "Locks hosted sign-in and authorize pages to this appearance. Grant default follows the visitor's theme.",
+        "themeModeGrant": "Grant default",
+        "themeModeLight": "Light",
+        "themeModeDark": "Dark",
+        "themeModeSystem": "System"
+      },
+      "upload": {
+        "title": "Upload app picture",
+        "description": "Select an image, crop it, and upload it as the app logo",
+        "dropzone": {
+          "idle": "Drag and drop an image here, or click to browse",
+          "active": "Drop the image here",
+          "hint": "Supported formats: JPG, PNG, GIF, WebP (max 5MB)",
+          "browse": "Browse Files"
+        },
+        "zoom": "Zoom",
+        "changeImage": "Change Image",
+        "upload": "Upload",
+        "errors": {
+          "invalidType": "Invalid file type. Please use JPG, PNG, GIF, or WebP.",
+          "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
+          "readFailed": "Failed to read the file. Please try again.",
+          "uploadFailed": "Failed to upload the image. Please try again."
+        }
+      }
     }
   },
   "resources": {
@@ -2772,7 +2829,56 @@
       "tagRemovedSuccess": "Tag removed from project",
       "tagRemovedError": "Failed to remove tag from project",
       "roleAddedSuccess": "Role added to project",
-      "roleAddedError": "Failed to add role to project"
+      "roleAddedError": "Failed to add role to project",
+      "uploadPictureSuccess": "Project picture uploaded",
+      "uploadPictureError": "Failed to upload project picture",
+      "clearPictureSuccess": "Project picture removed",
+      "clearPictureError": "Failed to remove project picture"
+    },
+    "avatar": {
+      "uploadButton": "Upload picture",
+      "changeButton": "Change picture"
+    },
+    "branding": {
+      "title": "Branding",
+      "loadError": "Unable to load project branding",
+      "picture": {
+        "title": "Project picture",
+        "description": "Shown on project lists and as the default OAuth logo for apps that do not override it.",
+        "hint": "JPG, PNG, GIF, or WebP. Upload and remove live here.",
+        "upload": "Upload project picture",
+        "change": "Change project picture",
+        "remove": "Remove picture"
+      },
+      "theme": {
+        "title": "OAuth theme",
+        "description": "Primary color and help-panel visibility used on hosted sign-in pages. Apps can override these.",
+        "primaryColor": "Primary color",
+        "primaryColorHint": "Used on the help panel and primary buttons. Leave empty for Grant blue.",
+        "invalidColor": "Use a hex color like #2563EB",
+        "helpPanel": "Show help panel",
+        "helpPanelHint": "When off, hosted OAuth pages use a single column.",
+        "reset": "Reset to Grant defaults"
+      },
+      "upload": {
+        "title": "Upload project picture",
+        "description": "Select an image, crop it, and upload it as the project logo",
+        "dropzone": {
+          "idle": "Drag and drop an image here, or click to browse",
+          "active": "Drop the image here",
+          "hint": "Supported formats: JPG, PNG, GIF, WebP (max 5MB)",
+          "browse": "Browse Files"
+        },
+        "zoom": "Zoom",
+        "changeImage": "Change Image",
+        "upload": "Upload",
+        "errors": {
+          "invalidType": "Invalid file type. Please use JPG, PNG, GIF, or WebP.",
+          "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
+          "readFailed": "Failed to read the file. Please try again.",
+          "uploadFailed": "Failed to upload the image. Please try again."
+        }
+      }
     },
     "view": {
       "card": "Card View",

@@ -1,9 +1,12 @@
 import type {
+  IFileStorageServicePort,
   IProjectAppService,
   IProjectAppTagService,
   ITransactionalConnection,
 } from '@grantjs/core';
 import {
+  ClearProjectAppPictureInput,
+  ConfirmProjectAppPictureUploadInput,
   CreateProjectAppResult,
   MutationCreateProjectAppArgs,
   MutationDeleteProjectAppArgs,
@@ -12,10 +15,14 @@ import {
   ProjectAppPage,
   ProjectAppTag,
   QueryProjectAppsArgs,
+  RequestProjectAppPictureUploadUrlInput,
   Scope,
   Tenant,
+  UploadProjectAppPictureInput,
+  UploadUrl,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import {
   type ProjectAppListHydrationContext,
   projectAppListHydrators,
@@ -35,7 +42,8 @@ export class ProjectAppsHandler extends CacheHandler {
     private readonly projectAppTags: IProjectAppTagService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
-    private readonly db: ITransactionalConnection<Transaction>
+    private readonly db: ITransactionalConnection<Transaction>,
+    private readonly fileStorage: IFileStorageServicePort
   ) {
     super(cache, scopeServices);
   }
@@ -203,6 +211,9 @@ export class ProjectAppsHandler extends CacheHandler {
       enabledProviders,
       allowSignUp,
       signUpRoleId,
+      primaryColor,
+      showHelpPanel,
+      themeMode,
       tagIds,
       primaryTagId,
     } = input;
@@ -259,6 +270,9 @@ export class ProjectAppsHandler extends CacheHandler {
           enabledProviders,
           allowSignUp,
           signUpRoleId,
+          primaryColor,
+          showHelpPanel,
+          themeMode,
         },
         tx
       );
@@ -334,5 +348,95 @@ export class ProjectAppsHandler extends CacheHandler {
     );
     await this.removeProjectAppIdFromScopeCache(scope, id);
     return deleted;
+  }
+
+  private async assertProjectAppPictureScope(
+    projectAppId: string,
+    scope: UploadProjectAppPictureInput['scope']
+  ): Promise<void> {
+    if (scope.tenant !== Tenant.AccountProject && scope.tenant !== Tenant.OrganizationProject) {
+      throw new ValidationError(
+        'project-app pictures require accountProject or organizationProject scope'
+      );
+    }
+    const projectId = this.extractProjectIdFromScope(scope);
+    const app = await this.projectApps.getProjectAppById(projectAppId);
+    if (!app) {
+      throw new NotFoundError('ProjectApp');
+    }
+    if (app.projectId !== projectId) {
+      throw new ValidationError('projectAppId must belong to the scoped project');
+    }
+  }
+
+  private projectAppPicturePath(projectAppId: string, filename: string): string {
+    return this.fileStorage.sanitizeExtensionAndGeneratePath(
+      filename,
+      `project-apps/${projectAppId}/picture`
+    );
+  }
+
+  public async requestProjectAppPictureUploadUrl(
+    params: RequestProjectAppPictureUploadUrlInput
+  ): Promise<UploadUrl> {
+    const { projectAppId, filename, contentType, contentLength, scope } = params;
+    await this.assertProjectAppPictureScope(projectAppId, scope);
+    this.fileStorage.validateUploadRequest({ contentType, filename, contentLength });
+    const minted = await this.fileStorage.getUploadUrl(
+      this.projectAppPicturePath(projectAppId, filename),
+      {
+        contentType,
+        contentLength,
+        expiresInSeconds: config.storage.upload.urlExpirySeconds,
+      }
+    );
+    return {
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  public async confirmProjectAppPictureUpload(
+    params: ConfirmProjectAppPictureUploadInput
+  ): Promise<{ url: string; path: string }> {
+    const { projectAppId, filename, scope } = params;
+    await this.assertProjectAppPictureScope(projectAppId, scope);
+    const storagePath = this.projectAppPicturePath(projectAppId, filename);
+    await this.fileStorage.assertStoredWithinPolicy(storagePath);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const url = await this.fileStorage.getUrl(storagePath);
+      await this.projectApps.setProjectAppPicture(projectAppId, { picturePath: storagePath }, tx);
+      return { url, path: storagePath };
+    });
+  }
+
+  public async uploadProjectAppPicture(
+    params: UploadProjectAppPictureInput
+  ): Promise<{ url: string; path: string }> {
+    const { projectAppId, file, contentType, filename, scope } = params;
+    await this.assertProjectAppPictureScope(projectAppId, scope);
+    const fileBuffer = this.fileStorage.validateAndDecodeUpload({ file, contentType, filename });
+    const storagePath = this.projectAppPicturePath(projectAppId, filename);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.fileStorage.upload(fileBuffer, storagePath, {
+        contentType,
+        public: true,
+      });
+      await this.projectApps.setProjectAppPicture(projectAppId, { picturePath: result.path }, tx);
+      return { url: result.url, path: result.path };
+    });
+  }
+
+  public async clearProjectAppPicture(params: ClearProjectAppPictureInput): Promise<ProjectApp> {
+    await this.assertProjectAppPictureScope(params.projectAppId, params.scope);
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      return this.projectApps.setProjectAppPicture(
+        params.projectAppId,
+        { picturePath: null, pictureUrl: null },
+        tx
+      );
+    });
   }
 }

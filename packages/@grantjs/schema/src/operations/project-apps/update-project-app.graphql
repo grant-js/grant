@@ -4,6 +4,10 @@ mutation UpdateProjectApp($id: ID!, $input: UpdateProjectAppInput!) {
     projectId
     clientId
     name
+    pictureUrl
+    primaryColor
+    showHelpPanel
+    themeMode
     redirectUris
     scopes
     enabledProviders
@@ -15,6 +19,9 @@ mutation UpdateProjectApp($id: ID!, $input: UpdateProjectAppInput!) {
     project {
       id
       name
+      pictureUrl
+      primaryColor
+      showHelpPanel
     }
   }
 }

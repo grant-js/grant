@@ -15,7 +15,7 @@ export interface ProjectResourceData {
 }
 
 function extractProjectId(request: ResourceResolverRequest): string | null {
-  return extractResourceId(request);
+  return extractResourceId(request) ?? extractResourceId(request, 'projectId');
 }
 
 export function createProjectResourceResolver(): ResourceResolver<ProjectResourceData> {

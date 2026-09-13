@@ -1,0 +1,6 @@
+mutation ConfirmProjectPictureUpload($input: ConfirmProjectPictureUploadInput!) {
+  confirmProjectPictureUpload(input: $input) {
+    url
+    path
+  }
+}

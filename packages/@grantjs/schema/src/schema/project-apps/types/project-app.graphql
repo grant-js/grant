@@ -3,6 +3,19 @@ type ProjectApp implements Auditable {
   projectId: ID!
   clientId: String!
   name: String
+  pictureUrl: String
+  """
+  Brand hex (`#RRGGBB`). Null inherits the project color.
+  """
+  primaryColor: String
+  """
+  Whether the OAuth help panel is shown. Null inherits the project setting.
+  """
+  showHelpPanel: Boolean
+  """
+  Forced OAuth appearance (`light`, `dark`, `system`). Null keeps the visitor's Grant theme.
+  """
+  themeMode: String
   redirectUris: [String!]!
   scopes: [String!]
   """

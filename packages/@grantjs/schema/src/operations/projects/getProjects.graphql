@@ -21,6 +21,9 @@ query GetProjects(
       name
       slug
       description
+      pictureUrl
+      primaryColor
+      showHelpPanel
       createdAt
       updatedAt
       organizationTags {
