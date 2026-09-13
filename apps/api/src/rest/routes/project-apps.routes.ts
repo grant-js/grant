@@ -159,7 +159,9 @@ export function createProjectAppsRouter(context: RequestContext): Router {
   router.post(
     '/:id/picture',
     validate({ params: projectAppIdParamsSchema, body: uploadProjectAppPictureRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.ProjectApp,
       action: ResourceAction.Update,
@@ -191,7 +193,9 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       params: projectAppIdParamsSchema,
       body: requestProjectAppPictureUploadUrlRequestSchema,
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.ProjectApp,
       action: ResourceAction.Update,
@@ -223,7 +227,9 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       params: projectAppIdParamsSchema,
       body: confirmProjectAppPictureUploadRequestSchema,
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.ProjectApp,
       action: ResourceAction.Update,
@@ -250,7 +256,9 @@ export function createProjectAppsRouter(context: RequestContext): Router {
   router.delete(
     '/:id/picture',
     validate({ params: projectAppIdParamsSchema, body: clearProjectAppPictureRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.ProjectApp,
       action: ResourceAction.Update,
