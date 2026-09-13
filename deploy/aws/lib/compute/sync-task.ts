@@ -121,9 +121,19 @@ export class SyncTask extends Construct {
       // A failed import must fail the task, so a dispatched job that dies surfaces as a
       // stopped task with a non-zero exit rather than as a job row stuck in RUNNING.
       essential: true,
-      // Longer than the migrate task's 120 s: a stop signal arriving mid-import has a
-      // transaction to roll back, and rolling back 1.4 M statements is not instant.
-      stopTimeout: Duration.seconds(300),
+      // **120 s is Fargate's maximum, not a choice.** The reasoning for wanting longer was
+      // sound — a stop signal arriving mid-import has a transaction to roll back, and
+      // rolling back 1.4 M statements is not instant — but `stopTimeout` above 120 s is
+      // rejected outright for the Fargate launch type. CDK synthesises it happily; ECS
+      // refuses at `CreateTaskDefinition`, so the first deploy of slice 12b failed with
+      // `Tasks using the Fargate launch type must have a container stop timeout of less
+      // than 120 seconds` and rolled the whole stack back.
+      //
+      // Correctness does not depend on it. Past the timeout ECS sends `SIGKILL`, the
+      // connection drops, and PostgreSQL rolls the transaction back server-side — so a
+      // hard-killed import still leaves no partial state. The timeout only decides whether
+      // the process gets to exit cleanly or not.
+      stopTimeout: Duration.seconds(120),
     });
 
     props.platformSecret.grantRead(this.taskDefinition.taskRole);

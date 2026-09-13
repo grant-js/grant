@@ -84,6 +84,33 @@ const certificateArn = optional('certificateArn');
 const ephemeral = optional('ephemeral') === 'true';
 
 /**
+ * ADR 0002's escape hatch: run `project-sync` on Fargate instead of the jobs function.
+ *
+ *   cdk deploy --all -c syncRuntime=container ...
+ *
+ * Off by default, because "existing deployments keep running the job in-process exactly
+ * as today" is the ADR's own wording. Worth enabling when imports approach Lambda's
+ * 15-minute ceiling — measured at 62.3 minutes for 28,880 entities, crossing the ceiling
+ * near 10,700 (`plans/2026-09-09-aws-followups-closeout-measurements.md` § ADR 0002).
+ *
+ * Requires the container tier, so it is inert with `migration: { enabled: false }` or on a
+ * vpcless topology.
+ */
+const syncRuntime = optional('syncRuntime') === 'container';
+
+/**
+ * RDS IAM database authentication on the cluster this stack creates.
+ *
+ *   cdk deploy --all -c dbIamAuth=true ...
+ *
+ * Enables the cluster flag and grants the API `rds-db:connect`. **It does not make the
+ * application use it** — that is `DB_AUTH_MODE=iam` in the env file — and it cannot grant
+ * `rds_iam` to a Postgres user, which is a SQL statement no CloudFormation resource can
+ * issue. All three are required; see `docs/deployment/aws-serverless.md`.
+ */
+const dbIamAuth = optional('dbIamAuth') === 'true';
+
+/**
  * Configuration file for this target — the AWS analogue of the Helm chart's
  * `config:` block. Defaults to `deploy/aws/.env`; override with `-c envFile=...`.
  *
@@ -356,7 +383,9 @@ function buildEmail(env: GrantEnv): Pick<GrantPlatformProps, 'email'> {
 function buildDatabase(
   stack: Stack
 ): Pick<GrantPlatformProps, 'database' | 'databaseUrl' | 'network'> {
-  if (!dbUrlSecretArn) return { database: { destroyOnRemoval: ephemeral } };
+  if (!dbUrlSecretArn) {
+    return { database: { destroyOnRemoval: ephemeral, iamAuthentication: dbIamAuth } };
+  }
 
   // Rendered as a {{resolve:secretsmanager:...}} dynamic reference inside the platform
   // secret: present at deploy time, absent from the template. Never `unsafePlainText`,
@@ -427,6 +456,7 @@ function buildPlatform(stack: Stack, cert: ICertificate): void {
     // property `ephemeral` exists to provide. The cache table already defaults to
     // Delete, so only this one needs saying.
     storage: { destroyOnRemoval: ephemeral },
+    sync: { enabled: syncRuntime },
     // The web app is what makes the deployment a platform rather than docs plus an
     // API. Built from source; `apps/web/.next/static` must exist, so run
     // `pnpm --filter grant-web build` first — the same contract the docs site has.
