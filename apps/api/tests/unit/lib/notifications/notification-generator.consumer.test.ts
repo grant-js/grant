@@ -125,4 +125,22 @@ describe('NotificationGeneratorConsumer link eligibility', () => {
       refId: 'proj-2',
     });
   });
+
+  it('does not enqueue email for organization.invitation_sent', async () => {
+    audience.resolve.mockResolvedValue(['invitee-1']);
+    organizationUsers.getOrganizationUsers.mockResolvedValue([]);
+    projectUsers.getProjectUsers.mockResolvedValue([]);
+
+    await consumer.process(
+      event({
+        type: 'organization.invitation_sent',
+        category: 'membership',
+        scope: { tenant: Tenant.Organization, id: 'org-1' },
+        subjectUserId: 'invitee-1',
+      })
+    );
+
+    const channels = notifications.upsert.mock.calls.map((call) => call[0].channel);
+    expect(channels).toEqual(['in_app']);
+  });
 });

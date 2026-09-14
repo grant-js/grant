@@ -22,6 +22,9 @@ const ctx: NotificationDisplayContext = {
   scopeName: 'Acme Corp',
   roleName: 'Developer',
   entityName: null,
+  permissionName: null,
+  groupName: null,
+  subjectName: 'Bob Member',
 };
 
 describe('renderNotification', () => {
@@ -114,6 +117,22 @@ describe('renderNotification', () => {
     expect(rendered.body).toBe('Role "Developer" was updated by Alice Admin in Acme Corp.');
   });
 
+  it('renders role.permission_assigned with named permission and role', () => {
+    const rendered = renderNotification(
+      {
+        ...baseEvent,
+        type: 'role.permission_assigned',
+        aggregate: { kind: 'rolePermission', id: 'rp_1' },
+        data: { after: { roleId: 'role_1', permissionId: 'perm_1' } },
+      },
+      { ...ctx, permissionName: 'Read users', roleName: 'Developer' }
+    );
+    expect(rendered.title).toBe('Permission assigned');
+    expect(rendered.body).toBe(
+      'Permission "Read users" was assigned to role "Developer" by Alice Admin in Acme Corp.'
+    );
+  });
+
   it('renders role.permission_assigned for a role link', () => {
     const rendered = renderNotification(
       {
@@ -142,6 +161,17 @@ describe('renderNotification', () => {
     expect(rendered.body).toBe('A group was assigned to you by Alice Admin in Acme Corp.');
   });
 
+  it('renders user.role_assigned for an observer with the subject name', () => {
+    const rendered = renderNotification(
+      { ...baseEvent, type: 'user.role_assigned', data: { after: { roleId: 'role_1' } } },
+      ctx,
+      { recipientUserId: 'user_owner' }
+    );
+    expect(rendered.body).toBe(
+      'Bob Member was assigned the role "Developer" by Alice Admin in Acme Corp.'
+    );
+  });
+
   it('renders organization.invitation_accepted', () => {
     const rendered = renderNotification(
       {
@@ -167,7 +197,7 @@ describe('renderNotification', () => {
       { ...ctx, roleName: null }
     );
     expect(rendered.title).toBe('Member removed');
-    expect(rendered.body).toBe('A member was removed by Alice Admin in Acme Corp.');
+    expect(rendered.body).toBe('You were removed by Alice Admin in Acme Corp.');
   });
 
   it('renders project.user_added', () => {
@@ -181,7 +211,7 @@ describe('renderNotification', () => {
       { ...ctx, scopeName: 'Grant Demo', roleName: null }
     );
     expect(rendered.title).toBe('Project member added');
-    expect(rendered.body).toBe('A member was added to the project by Alice Admin in Grant Demo.');
+    expect(rendered.body).toBe('You were added to the project by Alice Admin in Grant Demo.');
   });
 
   it('renders user.mfa_enabled', () => {

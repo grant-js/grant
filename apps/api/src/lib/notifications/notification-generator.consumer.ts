@@ -49,8 +49,14 @@ export class NotificationGeneratorConsumer implements IEventConsumer {
     private readonly projectUsers: ProjectUserRepository
   ) {}
 
-  private channelsFor(deliveryClass: 'transactional' | 'notification'): NotificationChannel[] {
-    return deliveryClass === 'transactional' ? ['in_app'] : ALL_CHANNELS;
+  private channelsFor(
+    type: DomainEvent['type'],
+    deliveryClass: 'transactional' | 'notification'
+  ): NotificationChannel[] {
+    if (deliveryClass === 'transactional') return ['in_app'];
+    // Dedicated invitation email already goes out on this path.
+    if (type === 'organization.invitation_sent') return ['in_app'];
+    return ALL_CHANNELS;
   }
 
   private async isChannelEnabled(
@@ -108,8 +114,8 @@ export class NotificationGeneratorConsumer implements IEventConsumer {
     if (recipients.length === 0) return;
 
     const ctx = await this.displayContext.resolve(event, tx);
-    const content = renderNotification(event, ctx);
-    const channels = this.channelsFor(entry.deliveryClass);
+    const sharedContent = renderNotification(event, ctx);
+    const channels = this.channelsFor(event.type, entry.deliveryClass);
     const { orgMemberIds, projectMemberIds, projectId } = await this.resolveMembershipSets(
       event,
       tx
@@ -117,6 +123,7 @@ export class NotificationGeneratorConsumer implements IEventConsumer {
     let created = 0;
 
     for (const recipientUserId of recipients) {
+      const content = renderNotification(event, ctx, { recipientUserId });
       const kind = classifyNotificationLinkKind({
         tenant: event.scope.tenant,
         isOrgMember: orgMemberIds.has(recipientUserId),
@@ -125,7 +132,7 @@ export class NotificationGeneratorConsumer implements IEventConsumer {
       });
       const refs = resolveNotificationLinkRefs({
         kind,
-        contentRefs: { refEntity: content.refEntity, refId: content.refId },
+        contentRefs: { refEntity: sharedContent.refEntity, refId: sharedContent.refId },
         projectId,
       });
 

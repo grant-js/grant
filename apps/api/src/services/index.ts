@@ -168,6 +168,15 @@ export function createServices(
     repositories.webhookSubscriptionRepository,
     repositories.webhookDeliveryRepository
   );
+  const displayContextResolver = new NotificationDisplayContextResolver(
+    repositories.userRepository,
+    repositories.organizationRepository,
+    repositories.accountRepository,
+    repositories.projectRepository,
+    repositories.roleRepository,
+    repositories.permissionRepository,
+    repositories.groupRepository
+  );
   const notificationGenerator = new NotificationGeneratorConsumer(
     new AudienceResolver(
       repositories.projectUserRepository,
@@ -178,13 +187,7 @@ export function createServices(
     ),
     repositories.notificationPreferenceRepository,
     repositories.notificationRepository,
-    new NotificationDisplayContextResolver(
-      repositories.userRepository,
-      repositories.organizationRepository,
-      repositories.accountRepository,
-      repositories.projectRepository,
-      repositories.roleRepository
-    ),
+    displayContextResolver,
     repositories.organizationUserRepository,
     repositories.projectUserRepository
   );
@@ -249,6 +252,8 @@ export function createServices(
       repositories.notificationRepository,
       repositories.userAuthenticationMethodRepository,
       new EmailService(),
+      repositories.eventLogRepository,
+      displayContextResolver,
       db
     ),
     webhookSubscriptions: new WebhookSubscriptionService(

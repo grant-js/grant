@@ -25,25 +25,31 @@ function event(overrides: Partial<DomainEvent> = {}): DomainEvent {
   } as DomainEvent;
 }
 
-describe('NotificationDisplayContextResolver.resolveRoleName', () => {
+describe('NotificationDisplayContextResolver', () => {
   const users = { getUsers: vi.fn() };
   const organizations = { getOrganizations: vi.fn() };
   const accounts = { getAccounts: vi.fn() };
   const projects = { getProjects: vi.fn() };
   const roles = { getRoles: vi.fn() };
+  const permissions = { getPermissions: vi.fn() };
+  const groups = { getGroups: vi.fn() };
 
   const resolver = new NotificationDisplayContextResolver(
     users as never,
     organizations as never,
     accounts as never,
     projects as never,
-    roles as never
+    roles as never,
+    permissions as never,
+    groups as never
   );
 
   beforeEach(() => {
     vi.clearAllMocks();
     users.getUsers.mockResolvedValue({ users: [] });
     accounts.getAccounts.mockResolvedValue({ accounts: [{ id: 'acct-1' }] });
+    permissions.getPermissions.mockResolvedValue({ permissions: [] });
+    groups.getGroups.mockResolvedValue({ groups: [] });
     mockGetFixedT.mockReturnValue((key: string) => `translated:${key}`);
   });
 
@@ -73,5 +79,31 @@ describe('NotificationDisplayContextResolver.resolveRoleName', () => {
     roles.getRoles.mockResolvedValue({ roles: [] });
     const ctx = await resolver.resolve(event({ data: {} }));
     expect(ctx.roleName).toBeNull();
+  });
+
+  it('resolves permission, group, actor, and subject names', async () => {
+    users.getUsers.mockResolvedValue({
+      users: [
+        { id: 'actor-1', name: 'Alice Admin' },
+        { id: 'user-1', name: 'Bob Member' },
+      ],
+    });
+    permissions.getPermissions.mockResolvedValue({
+      permissions: [{ name: 'Read users' }],
+    });
+    groups.getGroups.mockResolvedValue({ groups: [{ name: 'Editors' }] });
+    roles.getRoles.mockResolvedValue({ roles: [] });
+
+    const ctx = await resolver.resolve(
+      event({
+        actorUserId: 'actor-1',
+        data: { after: { permissionId: 'perm-1', groupId: 'group-1' } },
+      })
+    );
+
+    expect(ctx.actorName).toBe('Alice Admin');
+    expect(ctx.subjectName).toBe('Bob Member');
+    expect(ctx.permissionName).toBe('Read users');
+    expect(ctx.groupName).toBe('Editors');
   });
 });

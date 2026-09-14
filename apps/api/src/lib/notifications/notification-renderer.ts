@@ -9,9 +9,14 @@ export interface RenderedNotification {
   refId: string | null;
 }
 
+export interface RenderNotificationOptions {
+  recipientUserId?: string | null;
+}
+
 type Renderer = (
   event: DomainEvent,
-  ctx: NotificationDisplayContext
+  ctx: NotificationDisplayContext,
+  options: RenderNotificationOptions
 ) => { title: string; body: string | null };
 
 const EMPTY_CONTEXT: NotificationDisplayContext = {
@@ -19,6 +24,9 @@ const EMPTY_CONTEXT: NotificationDisplayContext = {
   scopeName: null,
   roleName: null,
   entityName: null,
+  permissionName: null,
+  groupName: null,
+  subjectName: null,
 };
 
 const RENDERERS: Partial<Record<EventType, Renderer>> = {
@@ -37,16 +45,20 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
   'role.permission_assigned': (_e, ctx) =>
     assignmentMutation(ctx, 'Permission', 'assigned', 'role'),
   'role.permission_revoked': (_e, ctx) => assignmentMutation(ctx, 'Permission', 'revoked', 'role'),
-  'user.permission_assigned': (_e, ctx) => subjectAssignmentMutation(ctx, 'Permission', 'assigned'),
-  'user.permission_revoked': (_e, ctx) => subjectAssignmentMutation(ctx, 'Permission', 'revoked'),
+  'user.permission_assigned': (e, ctx, options) =>
+    subjectAssignmentMutation(e, ctx, options, 'Permission', 'assigned'),
+  'user.permission_revoked': (e, ctx, options) =>
+    subjectAssignmentMutation(e, ctx, options, 'Permission', 'revoked'),
   'group.permission_assigned': (_e, ctx) =>
     assignmentMutation(ctx, 'Permission', 'assigned', 'group'),
   'group.permission_revoked': (_e, ctx) =>
     assignmentMutation(ctx, 'Permission', 'revoked', 'group'),
   'role.group_assigned': (_e, ctx) => assignmentMutation(ctx, 'Group', 'assigned', 'role'),
   'role.group_revoked': (_e, ctx) => assignmentMutation(ctx, 'Group', 'revoked', 'role'),
-  'user.group_assigned': (_e, ctx) => subjectAssignmentMutation(ctx, 'Group', 'assigned'),
-  'user.group_revoked': (_e, ctx) => subjectAssignmentMutation(ctx, 'Group', 'revoked'),
+  'user.group_assigned': (e, ctx, options) =>
+    subjectAssignmentMutation(e, ctx, options, 'Group', 'assigned'),
+  'user.group_revoked': (e, ctx, options) =>
+    subjectAssignmentMutation(e, ctx, options, 'Group', 'revoked'),
   'api_key.created': (e, ctx) => {
     const name = ctx.entityName ?? stringField(e.data.after, 'name');
     return {
@@ -76,24 +88,8 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
         : `An API key was revoked${byActor(ctx)}${inScope(ctx)}.`,
     };
   },
-  'user.role_assigned': (_e, ctx) => {
-    const role = ctx.roleName;
-    return {
-      title: role ? `Role "${role}" assigned` : 'Role assigned',
-      body: role
-        ? `You were assigned the role "${role}"${byActor(ctx)}${inScope(ctx)}.`
-        : `A role was assigned to you${byActor(ctx)}${inScope(ctx)}.`,
-    };
-  },
-  'user.role_revoked': (_e, ctx) => {
-    const role = ctx.roleName;
-    return {
-      title: role ? `Role "${role}" revoked` : 'Role revoked',
-      body: role
-        ? `The role "${role}" was revoked from you${byActor(ctx)}${inScope(ctx)}.`
-        : `A role was revoked from you${byActor(ctx)}${inScope(ctx)}.`,
-    };
-  },
+  'user.role_assigned': (e, ctx, options) => userRoleMutation(e, ctx, options, 'assigned'),
+  'user.role_revoked': (e, ctx, options) => userRoleMutation(e, ctx, options, 'revoked'),
   'organization.invitation_sent': (_e, ctx) => ({
     title: ctx.scopeName ? `Invitation to ${ctx.scopeName}` : 'You have an invitation',
     body: ctx.scopeName
@@ -112,17 +108,42 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
       ? `An invitation to ${ctx.scopeName} was revoked${byActor(ctx)}.`
       : `An organization invitation was revoked${byActor(ctx)}.`,
   }),
-  'organization.member_added': (_e, ctx) => membershipMutation(ctx, 'Member added', 'joined'),
-  'organization.member_role_changed': (_e, ctx) =>
-    membershipMutation(ctx, 'Member role changed', 'had their role changed'),
-  'organization.member_removed': (_e, ctx) =>
-    membershipMutation(ctx, 'Member removed', 'was removed'),
-  'project.user_added': (_e, ctx) =>
-    membershipMutation(ctx, 'Project member added', 'was added to the project'),
-  'project.user_removed': (_e, ctx) =>
-    membershipMutation(ctx, 'Project member removed', 'was removed from the project'),
-  'project.user_profile_updated': (_e, ctx) =>
-    membershipMutation(ctx, 'Project profile updated', 'updated their project profile'),
+  'organization.member_added': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Member added', {
+      you: 'You joined',
+      named: (name) => `${name} joined`,
+      generic: 'A member joined',
+    }),
+  'organization.member_role_changed': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Member role changed', {
+      you: 'Your role was changed',
+      named: (name) => `${name} had their role changed`,
+      generic: 'A member had their role changed',
+    }),
+  'organization.member_removed': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Member removed', {
+      you: 'You were removed',
+      named: (name) => `${name} was removed`,
+      generic: 'A member was removed',
+    }),
+  'project.user_added': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Project member added', {
+      you: 'You were added to the project',
+      named: (name) => `${name} was added to the project`,
+      generic: 'A member was added to the project',
+    }),
+  'project.user_removed': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Project member removed', {
+      you: 'You were removed from the project',
+      named: (name) => `${name} was removed from the project`,
+      generic: 'A member was removed from the project',
+    }),
+  'project.user_profile_updated': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Project profile updated', {
+      you: 'You updated your project profile',
+      named: (name) => `${name} updated their project profile`,
+      generic: 'A member updated their project profile',
+    }),
   'user.email_verification_requested': () => ({
     title: 'Verify your email',
     body: 'Please verify your email address.',
@@ -147,36 +168,48 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
     title: 'Signing key rotated',
     body: `A signing key was rotated${byActor(ctx)}${inScope(ctx)}.`,
   }),
-  'user.mfa_enabled': (_e, ctx) => ({
-    title: 'MFA enabled',
-    body: `Multi-factor authentication was enabled on your account${byActor(ctx)}.`,
-  }),
-  'user.mfa_disabled': (_e, ctx) => ({
-    title: 'MFA disabled',
-    body: `Multi-factor authentication was disabled on your account${byActor(ctx)}.`,
-  }),
-  'user.mfa_recovery_codes_regenerated': (_e, ctx) => ({
-    title: 'MFA recovery codes regenerated',
-    body: `Your MFA recovery codes were regenerated${byActor(ctx)}.`,
-  }),
-  'user.session_revoked': (_e, ctx) => ({
-    title: 'Session revoked',
-    body: `A session was revoked on your account${byActor(ctx)}.`,
-  }),
-  'user.sessions_revoked': (e, ctx) => {
+  'user.mfa_enabled': (e, ctx, options) =>
+    subjectSecurityMutation(e, ctx, options, 'MFA enabled', {
+      you: 'Multi-factor authentication was enabled on your account',
+      named: (name) => `Multi-factor authentication was enabled on ${name}'s account`,
+      generic: 'Multi-factor authentication was enabled on an account',
+    }),
+  'user.mfa_disabled': (e, ctx, options) =>
+    subjectSecurityMutation(e, ctx, options, 'MFA disabled', {
+      you: 'Multi-factor authentication was disabled on your account',
+      named: (name) => `Multi-factor authentication was disabled on ${name}'s account`,
+      generic: 'Multi-factor authentication was disabled on an account',
+    }),
+  'user.mfa_recovery_codes_regenerated': (e, ctx, options) =>
+    subjectSecurityMutation(e, ctx, options, 'MFA recovery codes regenerated', {
+      you: 'Your MFA recovery codes were regenerated',
+      named: (name) => `${name}'s MFA recovery codes were regenerated`,
+      generic: 'MFA recovery codes were regenerated',
+    }),
+  'user.session_revoked': (e, ctx, options) =>
+    subjectSecurityMutation(e, ctx, options, 'Session revoked', {
+      you: 'A session was revoked on your account',
+      named: (name) => `A session was revoked on ${name}'s account`,
+      generic: 'A session was revoked on an account',
+    }),
+  'user.sessions_revoked': (e, ctx, options) => {
     const count = numberField(e.data.after, 'count');
-    return {
-      title: 'All sessions revoked',
-      body:
-        count != null
-          ? `${count} session${count === 1 ? '' : 's'} were revoked on your account${byActor(ctx)}.`
-          : `All sessions were revoked on your account${byActor(ctx)}.`,
-    };
+    const countLabel =
+      count != null
+        ? `${count} session${count === 1 ? '' : 's'} were revoked`
+        : 'All sessions were revoked';
+    return subjectSecurityMutation(e, ctx, options, 'All sessions revoked', {
+      you: `${countLabel} on your account`,
+      named: (name) => `${countLabel} on ${name}'s account`,
+      generic: `${countLabel} on an account`,
+    });
   },
-  'user.password_changed': (_e, ctx) => ({
-    title: 'Password changed',
-    body: `Your password was changed${byActor(ctx)}.`,
-  }),
+  'user.password_changed': (e, ctx, options) =>
+    subjectSecurityMutation(e, ctx, options, 'Password changed', {
+      you: 'Your password was changed',
+      named: (name) => `${name}'s password was changed`,
+      generic: 'A password was changed',
+    }),
   'project_sync.completed': (e, ctx) => {
     const operation = stringField(e.data.after, 'operation') ?? 'import';
     const where = inScope(ctx);
@@ -203,11 +236,12 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
 
 export function renderNotification(
   event: DomainEvent,
-  ctx: NotificationDisplayContext = EMPTY_CONTEXT
+  ctx: NotificationDisplayContext = EMPTY_CONTEXT,
+  options: RenderNotificationOptions = {}
 ): RenderedNotification {
   const renderer = RENDERERS[event.type];
   const rendered = renderer
-    ? renderer(event, ctx)
+    ? renderer(event, ctx, options)
     : { title: humanizeType(event.type), body: null };
   return {
     title: rendered.title,
@@ -215,6 +249,12 @@ export function renderNotification(
     refEntity: event.aggregate?.kind ?? null,
     refId: event.aggregate?.id ?? null,
   };
+}
+
+function isSubjectRecipient(event: DomainEvent, options: RenderNotificationOptions): boolean {
+  if (!event.subjectUserId) return false;
+  if (!options.recipientUserId) return true;
+  return options.recipientUserId === event.subjectUserId;
 }
 
 function byActor(ctx: NotificationDisplayContext): string {
@@ -250,47 +290,139 @@ function namedEntityMutation(
 
 function assignmentMutation(
   ctx: NotificationDisplayContext,
-  entityLabel: string,
+  entityLabel: 'Permission' | 'Group',
   verb: 'assigned' | 'revoked',
   target: 'role' | 'group'
 ): { title: string; body: string | null } {
   const where = inScope(ctx);
   const by = byActor(ctx);
-  const targetLabel = target === 'role' ? 'a role' : 'a group';
+  const entityName = entityLabel === 'Permission' ? ctx.permissionName : ctx.groupName;
+  const targetName = target === 'role' ? ctx.roleName : ctx.groupName;
+  const targetIndefinite = target === 'role' ? 'a role' : 'a group';
+  const preposition = verb === 'assigned' ? 'to' : 'from';
+  const targetPhrase = targetName ? `${target} "${targetName}"` : targetIndefinite;
+  const entityPhrase = entityName
+    ? `${entityLabel} "${entityName}"`
+    : `A ${entityLabel.toLowerCase()}`;
+
   return {
     title: `${entityLabel} ${verb}`,
-    body: `A ${entityLabel.toLowerCase()} was ${verb} ${verb === 'assigned' ? 'to' : 'from'} ${targetLabel}${by}${where}.`,
+    body: `${entityPhrase} was ${verb} ${preposition} ${targetPhrase}${by}${where}.`,
   };
 }
 
 function subjectAssignmentMutation(
+  event: DomainEvent,
   ctx: NotificationDisplayContext,
-  entityLabel: string,
+  options: RenderNotificationOptions,
+  entityLabel: 'Permission' | 'Group',
   verb: 'assigned' | 'revoked'
 ): { title: string; body: string | null } {
   const where = inScope(ctx);
   const by = byActor(ctx);
-  const lower = entityLabel.toLowerCase();
+  const entityName = entityLabel === 'Permission' ? ctx.permissionName : ctx.groupName;
+  const entityPhrase = entityName
+    ? `${entityLabel} "${entityName}"`
+    : `A ${entityLabel.toLowerCase()}`;
+  const preposition = verb === 'assigned' ? 'to' : 'from';
+  const recipient = subjectPhrase(event, ctx, options, {
+    you: 'you',
+    named: (name) => name,
+    generic: 'a member',
+  });
+
   return {
     title: `${entityLabel} ${verb}`,
-    body:
-      verb === 'assigned'
-        ? `A ${lower} was assigned to you${by}${where}.`
-        : `A ${lower} was revoked from you${by}${where}.`,
+    body: `${entityPhrase} was ${verb} ${preposition} ${recipient}${by}${where}.`,
+  };
+}
+
+function userRoleMutation(
+  event: DomainEvent,
+  ctx: NotificationDisplayContext,
+  options: RenderNotificationOptions,
+  verb: 'assigned' | 'revoked'
+): { title: string; body: string | null } {
+  const role = ctx.roleName;
+  const where = inScope(ctx);
+  const by = byActor(ctx);
+  const title = role ? `Role "${role}" ${verb}` : `Role ${verb}`;
+
+  if (verb === 'assigned') {
+    if (isSubjectRecipient(event, options)) {
+      return {
+        title,
+        body: role
+          ? `You were assigned the role "${role}"${by}${where}.`
+          : `A role was assigned to you${by}${where}.`,
+      };
+    }
+    const member = ctx.subjectName ?? 'A member';
+    return {
+      title,
+      body: role
+        ? `${member} was assigned the role "${role}"${by}${where}.`
+        : `${member} was assigned a role${by}${where}.`,
+    };
+  }
+
+  if (isSubjectRecipient(event, options)) {
+    return {
+      title,
+      body: role
+        ? `The role "${role}" was revoked from you${by}${where}.`
+        : `A role was revoked from you${by}${where}.`,
+    };
+  }
+  const member = ctx.subjectName ?? 'a member';
+  return {
+    title,
+    body: role
+      ? `The role "${role}" was revoked from ${member}${by}${where}.`
+      : `A role was revoked from ${member}${by}${where}.`,
   };
 }
 
 function membershipMutation(
+  event: DomainEvent,
   ctx: NotificationDisplayContext,
+  options: RenderNotificationOptions,
   title: string,
-  verbPhrase: string
+  phrases: { you: string; named: (name: string) => string; generic: string }
 ): { title: string; body: string | null } {
   const where = inScope(ctx);
   const by = byActor(ctx);
+  const lead = subjectPhrase(event, ctx, options, phrases);
   return {
     title,
-    body: `A member ${verbPhrase}${by}${where}.`,
+    body: `${lead}${by}${where}.`,
   };
+}
+
+function subjectSecurityMutation(
+  event: DomainEvent,
+  ctx: NotificationDisplayContext,
+  options: RenderNotificationOptions,
+  title: string,
+  phrases: { you: string; named: (name: string) => string; generic: string }
+): { title: string; body: string | null } {
+  const by = byActor(ctx);
+  const lead = subjectPhrase(event, ctx, options, phrases);
+  return {
+    title,
+    body: `${lead}${by}.`,
+  };
+}
+
+function subjectPhrase(
+  event: DomainEvent,
+  ctx: NotificationDisplayContext,
+  options: RenderNotificationOptions,
+  phrases: { you: string; named: (name: string) => string; generic: string }
+): string {
+  if (isSubjectRecipient(event, options)) return phrases.you;
+  if (ctx.subjectName) return phrases.named(ctx.subjectName);
+  return phrases.generic;
 }
 
 function stringField(
