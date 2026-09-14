@@ -35,6 +35,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
+  buildAuthHref,
+  emailFromSearchParam,
   getAuthRedirectUrl,
   getInvitationProofFromRedirectUrl,
   getInvitationTokenFromRedirectUrl,
@@ -52,7 +54,7 @@ export default function RegisterPage() {
   usePageTitle('auth.register');
 
   const redirectParam = searchParams.get('redirect');
-  const emailParam = searchParams.get('email');
+  const emailParam = emailFromSearchParam(searchParams.get('email'));
 
   const invitationToken = getInvitationTokenFromRedirectUrl(redirectParam);
   const invitationProof = getInvitationProofFromRedirectUrl(redirectParam);
@@ -239,7 +241,10 @@ export default function RegisterPage() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {t('register.haveAccount')}{' '}
             <Link
-              href={`/auth/login${redirectParam || emailParam ? `?${new URLSearchParams({ ...(redirectParam && { redirect: redirectParam }), ...(emailParam && { email: emailParam }) }).toString()}` : ''}`}
+              href={buildAuthHref('/auth/login', {
+                email: emailParam,
+                redirect: redirectParam,
+              })}
               className="text-primary hover:text-primary/80"
             >
               {t('register.login')}

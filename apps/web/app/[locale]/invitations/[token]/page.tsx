@@ -15,6 +15,7 @@ import { usePageTitle } from '@/hooks';
 import { useAccountsSync } from '@/hooks/accounts';
 import { useInvitation, useMemberMutations } from '@/hooks/members';
 import { Link } from '@/i18n/navigation';
+import { buildAuthHref } from '@/lib/redirect';
 import { useAuthStore } from '@/stores/auth.store';
 
 type InvitationStatus =
@@ -269,14 +270,20 @@ export default function InvitationPage() {
                 />
                 <div className="flex flex-col gap-4">
                   <Link
-                    href={`/auth/login?email=${invitation?.email || ''}&redirect=${encodeURIComponent(invitationRedirect)}`}
+                    href={buildAuthHref('/auth/login', {
+                      email: invitation?.email,
+                      redirect: invitationRedirect,
+                    })}
                   >
                     <Button className="w-full" variant="default">
                       {t('requiresLogin.login')}
                     </Button>
                   </Link>
                   <Link
-                    href={`/auth/register?email=${invitation?.email || ''}&redirect=${encodeURIComponent(invitationRedirect)}`}
+                    href={buildAuthHref('/auth/register', {
+                      email: invitation?.email,
+                      redirect: invitationRedirect,
+                    })}
                   >
                     <Button className="w-full" variant="outline">
                       {t('requiresLogin.register')}
