@@ -21,12 +21,12 @@
     "lucide-react": "^1.42.0",
     "mailgun.js": "^14",
     "node-mailjet": "^6",
-    "nodemailer": "^10.0.0",
+    "nodemailer": "^10.0.3",
     "next": "16.3.4",
     "postgres": "^3.4.9",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zod": "^4.5.4"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
