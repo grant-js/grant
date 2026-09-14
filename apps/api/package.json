@@ -62,7 +62,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/mjml": "^5.0.0",
     "bcrypt": "^6.0.0",
-    "bullmq": "^5.81.3",
+    "bullmq": "^6.3.4",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
