@@ -1,7 +1,9 @@
 import { isRoleI18nKey } from '@grantjs/constants';
 import type {
   IAccountRepository,
+  IGroupRepository,
   IOrganizationRepository,
+  IPermissionRepository,
   IProjectRepository,
   IRoleRepository,
   IUserRepository,
@@ -19,6 +21,9 @@ export interface NotificationDisplayContext {
   roleName: string | null;
   /** Generic entity name from `data.after.name` / `data.before.name`. */
   entityName: string | null;
+  permissionName: string | null;
+  groupName: string | null;
+  subjectName: string | null;
 }
 
 /**
@@ -32,33 +37,69 @@ export class NotificationDisplayContextResolver {
     private readonly organizations: IOrganizationRepository,
     private readonly accounts: IAccountRepository,
     private readonly projects: IProjectRepository,
-    private readonly roles: IRoleRepository
+    private readonly roles: IRoleRepository,
+    private readonly permissions: IPermissionRepository,
+    private readonly groups: IGroupRepository
   ) {}
 
   async resolve(event: DomainEvent, tx?: Transaction): Promise<NotificationDisplayContext> {
-    const [actorName, scopeName, roleName] = await Promise.all([
-      this.resolveActorName(event.actorUserId, tx),
+    const [userNames, scopeName, roleName, permissionName, groupName] = await Promise.all([
+      this.resolveUserNames([event.actorUserId, event.subjectUserId], tx),
       this.resolveScopeName(event.scope, tx),
       this.resolveRoleName(event, tx),
+      this.resolvePermissionName(event, tx),
+      this.resolveGroupName(event, tx),
     ]);
 
     return {
-      actorName,
+      actorName: event.actorUserId ? (userNames.get(event.actorUserId) ?? null) : null,
       scopeName,
       roleName,
       entityName: entityNameFromPayload(event),
+      permissionName,
+      groupName,
+      subjectName: event.subjectUserId ? (userNames.get(event.subjectUserId) ?? null) : null,
     };
   }
 
-  private async resolveActorName(
-    actorUserId: string | null,
+  private async resolveUserNames(
+    userIds: Array<string | null>,
+    tx?: Transaction
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
+    const names = new Map<string, string>();
+    if (ids.length === 0) return names;
+
+    const { users } = await this.users.getUsers({ ids, limit: ids.length }, tx);
+    for (const user of users) {
+      const name = user.name?.trim();
+      if (name) names.set(user.id, name);
+    }
+    return names;
+  }
+
+  private async resolvePermissionName(
+    event: DomainEvent,
     tx?: Transaction
   ): Promise<string | null> {
-    if (!actorUserId) return null;
-    const { users } = await this.users.getUsers({ ids: [actorUserId], limit: 1 }, tx);
-    const user = users[0];
-    if (!user) return null;
-    const name = user.name?.trim();
+    const permissionId =
+      stringField(event.data.after, 'permissionId') ??
+      stringField(event.data.before, 'permissionId');
+    if (!permissionId) return null;
+    const { permissions } = await this.permissions.getPermissions(
+      { ids: [permissionId], limit: 1 },
+      tx
+    );
+    const name = permissions[0]?.name?.trim();
+    return name || null;
+  }
+
+  private async resolveGroupName(event: DomainEvent, tx?: Transaction): Promise<string | null> {
+    const groupId =
+      stringField(event.data.after, 'groupId') ?? stringField(event.data.before, 'groupId');
+    if (!groupId) return null;
+    const { groups } = await this.groups.getGroups({ ids: [groupId], limit: 1 }, tx);
+    const name = groups[0]?.name?.trim();
     return name || null;
   }
 

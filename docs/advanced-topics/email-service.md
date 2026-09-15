@@ -106,6 +106,8 @@ this.services.email
 
 The email service is created once at startup via the `EmailAdapterFactory` and injected into the service layer.
 
+Preference-governed **notification emails** are not sent through `sendInvitation` / `sendOtp`. The notification delivery job composes HTML with the shared MJML layout (`notification.template.ts`) and calls `sendNotification({ subject, text, html })`. Adapters already accept an optional HTML body.
+
 ::: tip Extending
 To add a new provider, implement `IEmailAdapter` and register it in `EmailAdapterFactory`. See `packages/@grantjs/email/src/` for the existing adapter implementations.
 :::

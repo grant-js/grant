@@ -74,3 +74,20 @@ export function getInvitationProofFromRedirectUrl(
 
   return { token, emailProofToken };
 }
+
+/** Query emails: unescaped `+` is a space; remaining spaces are restored (illegal in addr-spec). */
+export function emailFromSearchParam(value: string | null): string {
+  if (!value) return '';
+  return value.replaceAll(' ', '+').trim();
+}
+
+export function buildAuthHref(
+  path: '/auth/login' | '/auth/register',
+  params: { email?: string | null; redirect?: string | null }
+): string {
+  const search = new URLSearchParams();
+  if (params.email) search.set('email', params.email);
+  if (params.redirect) search.set('redirect', params.redirect);
+  const qs = search.toString();
+  return qs ? `${path}?${qs}` : path;
+}

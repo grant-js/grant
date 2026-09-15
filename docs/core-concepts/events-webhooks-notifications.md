@@ -132,7 +132,9 @@ The notification generator:
 3. Applies per-scope preferences (category × in-app / email). Security/`transactional` rows stay on where policy requires.
 4. Upserts idempotent notification rows and optionally enqueues email.
 
-Users see the **notification center** and **preferences** in the dashboard; the header bell shows unread counts. Copy is rendered from event type + display context (actor, scope, entity names) — not from raw webhook envelopes.
+Users see the **notification center** and **preferences** in the dashboard; the header bell shows unread counts. In-app copy is rendered from event type + display context (actor, scope, named entities, subject vs observer) — not from raw webhook envelopes.
+
+Email-channel rows are composed **at send time** from `event_log` + the same display context, using Grant’s MJML chrome (header, structured details, View in Grant, preferences footer). Copy lives in `@grantjs/i18n` `email.notification.*` (en + de). `organization.invitation_sent` does not enqueue email — the dedicated invitation template already goes out.
 
 **Audience notes:** `owners` and `roleHolders` resolve to org/account administrative roles as implemented by the audience resolver. The `watchers` primitive remains reserved for a future subscribe / follow model: it currently contributes no recipients, is not a user preference, and catalog `audienceRule`s do **not** list `watchers` until that model exists.
 
@@ -145,8 +147,9 @@ Follow this order so catalog, emit, and UI stay aligned:
 1. **Catalog** — add the type and `EVENT_CATALOG` entry in `packages/@grantjs/schema/src/events/event-catalog.ts`; rebuild `@grantjs/schema`.
 2. **Publish** — inject `IEventPublisher` if needed; call `events.publish` immediately after the audit call in the mutating service method.
 3. **Renderer** — add a title/body mapping in `apps/api/src/lib/notifications/notification-renderer.ts`.
-4. **i18n** — add `webhooks.events.types.<aggregate>.<verb>` labels in `apps/web/i18n/locales/en.json` and `de.json` so webhook pickers show a human name.
-5. **Tests** — extend catalog coverage (emitted set) and add a spot unit test with a mocked publisher when the path is non-trivial.
+4. **Email family** — map the type in `apps/api/src/lib/notifications/notification-email-families.ts` and add `email.notification.*` strings in `@grantjs/i18n` `locales/en/email.json` and `de/email.json`.
+5. **i18n (web)** — add `webhooks.events.types.<aggregate>.<verb>` labels in `apps/web/i18n/locales/en.json` and `de.json` so webhook pickers show a human name.
+6. **Tests** — extend catalog coverage (emitted set), email-family coverage, and add a spot unit test with a mocked publisher when the path is non-trivial.
 
 Prefer small batches of related types over one-off string literals. Skip high-volume, low-signal pivots (for example most tag attachments) unless a concrete subscriber needs them.
 

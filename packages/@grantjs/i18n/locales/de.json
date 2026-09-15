@@ -244,6 +244,283 @@
       "organization": "Organisation",
       "role": "Rolle"
     },
+    "projectOAuthMagicLink": {
+      "subject": "Bei {{appName}} anmelden",
+      "defaultAppName": "der App",
+      "message": "Klicken Sie auf die Schaltfläche unten, um sich anzumelden.",
+      "messageWithApp": "Klicken Sie auf die Schaltfläche unten, um sich bei {{appName}} anzumelden.",
+      "button": "Anmelden",
+      "messageLink": "Klicken Sie auf den Link unten, um sich anzumelden:",
+      "messageLinkWithApp": "Klicken Sie auf den Link unten, um sich bei {{appName}} anzumelden:"
+    },
+    "notification": {
+      "common": {
+        "greeting": "Hallo,",
+        "viewInGrant": "In Grant ansehen",
+        "managePreferences": "Benachrichtigungseinstellungen verwalten",
+        "footer": "Sie erhalten diese E-Mail, weil E-Mail-Benachrichtigungen für Ihr Konto aktiviert sind.",
+        "byActor": " von {{actorName}}",
+        "inScope": " in {{scopeName}}"
+      },
+      "details": {
+        "when": "Wann",
+        "actor": "Akteur",
+        "workspace": "Arbeitsbereich",
+        "entity": "Objekt",
+        "role": "Rolle",
+        "permission": "Berechtigung",
+        "group": "Gruppe",
+        "member": "Mitglied",
+        "apiKey": "API-Schlüssel",
+        "error": "Fehler"
+      },
+      "labels": {
+        "role": "Rolle",
+        "permission": "Berechtigung",
+        "group": "Gruppe",
+        "resource": "Ressource"
+      },
+      "indefinite": {
+        "role": "Eine Rolle",
+        "permission": "Eine Berechtigung",
+        "group": "Eine Gruppe",
+        "resource": "Eine Ressource"
+      },
+      "target": {
+        "role": "Rolle",
+        "group": "Gruppe",
+        "aRole": "einer Rolle",
+        "aGroup": "einer Gruppe"
+      },
+      "namedEntity": {
+        "created": {
+          "subjectNamed": "{{label}} \"{{name}}\" erstellt",
+          "subjectUnnamed": "{{label}} erstellt",
+          "summaryNamed": "{{label}} \"{{name}}\" wurde erstellt{{byActor}}{{inScope}}.",
+          "summaryUnnamed": "{{indefinite}} wurde erstellt{{byActor}}{{inScope}}."
+        },
+        "updated": {
+          "subjectNamed": "{{label}} \"{{name}}\" aktualisiert",
+          "subjectUnnamed": "{{label}} aktualisiert",
+          "summaryNamed": "{{label}} \"{{name}}\" wurde aktualisiert{{byActor}}{{inScope}}.",
+          "summaryUnnamed": "{{indefinite}} wurde aktualisiert{{byActor}}{{inScope}}."
+        },
+        "deleted": {
+          "subjectNamed": "{{label}} \"{{name}}\" gelöscht",
+          "subjectUnnamed": "{{label}} gelöscht",
+          "summaryNamed": "{{label}} \"{{name}}\" wurde gelöscht{{byActor}}{{inScope}}.",
+          "summaryUnnamed": "{{indefinite}} wurde gelöscht{{byActor}}{{inScope}}."
+        }
+      },
+      "assignment": {
+        "assigned": {
+          "subject": "{{entityLabel}} zugewiesen",
+          "summaryNamed": "{{entityLabel}} \"{{entityName}}\" wurde {{targetLabel}} \"{{targetName}}\" zugewiesen{{byActor}}{{inScope}}.",
+          "summaryEntityOnly": "{{entityLabel}} \"{{entityName}}\" wurde {{targetIndefinite}} zugewiesen{{byActor}}{{inScope}}.",
+          "summaryGeneric": "{{entityIndefinite}} wurde {{targetIndefinite}} zugewiesen{{byActor}}{{inScope}}."
+        },
+        "revoked": {
+          "subject": "{{entityLabel}} entzogen",
+          "summaryNamed": "{{entityLabel}} \"{{entityName}}\" wurde {{targetLabel}} \"{{targetName}}\" entzogen{{byActor}}{{inScope}}.",
+          "summaryEntityOnly": "{{entityLabel}} \"{{entityName}}\" wurde {{targetIndefinite}} entzogen{{byActor}}{{inScope}}.",
+          "summaryGeneric": "{{entityIndefinite}} wurde {{targetIndefinite}} entzogen{{byActor}}{{inScope}}."
+        }
+      },
+      "subjectAssignment": {
+        "assigned": {
+          "subject": "{{entityLabel}} zugewiesen",
+          "summaryYouNamed": "{{entityLabel}} \"{{entityName}}\" wurde Ihnen zugewiesen{{byActor}}{{inScope}}.",
+          "summaryYouGeneric": "{{entityIndefinite}} wurde Ihnen zugewiesen{{byActor}}{{inScope}}.",
+          "summaryOtherNamed": "{{entityLabel}} \"{{entityName}}\" wurde {{member}} zugewiesen{{byActor}}{{inScope}}.",
+          "summaryOtherGeneric": "{{entityIndefinite}} wurde {{member}} zugewiesen{{byActor}}{{inScope}}."
+        },
+        "revoked": {
+          "subject": "{{entityLabel}} entzogen",
+          "summaryYouNamed": "{{entityLabel}} \"{{entityName}}\" wurde Ihnen entzogen{{byActor}}{{inScope}}.",
+          "summaryYouGeneric": "{{entityIndefinite}} wurde Ihnen entzogen{{byActor}}{{inScope}}.",
+          "summaryOtherNamed": "{{entityLabel}} \"{{entityName}}\" wurde {{member}} entzogen{{byActor}}{{inScope}}.",
+          "summaryOtherGeneric": "{{entityIndefinite}} wurde {{member}} entzogen{{byActor}}{{inScope}}."
+        }
+      },
+      "apiKey": {
+        "created": {
+          "subjectNamed": "API-Schlüssel \"{{name}}\" erstellt",
+          "subjectUnnamed": "API-Schlüssel erstellt",
+          "summaryNamed": "API-Schlüssel \"{{name}}\" wurde erstellt{{byActor}}{{inScope}}.",
+          "summaryUnnamed": "Ein neuer API-Schlüssel wurde erstellt{{byActor}}{{inScope}}."
+        },
+        "rotated": {
+          "subjectNamed": "API-Schlüssel \"{{name}}\" rotiert",
+          "subjectUnnamed": "API-Schlüssel rotiert",
+          "summaryNamed": "API-Schlüssel \"{{name}}\" wurde rotiert{{byActor}}{{inScope}}.",
+          "summaryUnnamed": "Ein API-Schlüssel wurde rotiert{{byActor}}{{inScope}}."
+        },
+        "revoked": {
+          "subjectNamed": "API-Schlüssel \"{{name}}\" widerrufen",
+          "subjectUnnamed": "API-Schlüssel widerrufen",
+          "summaryNamed": "API-Schlüssel \"{{name}}\" wurde widerrufen{{byActor}}{{inScope}}.",
+          "summaryUnnamed": "Ein API-Schlüssel wurde widerrufen{{byActor}}{{inScope}}."
+        }
+      },
+      "userRole": {
+        "assigned": {
+          "subjectNamed": "Rolle \"{{role}}\" zugewiesen",
+          "subjectUnnamed": "Rolle zugewiesen",
+          "summaryYouNamed": "Ihnen wurde die Rolle \"{{role}}\" zugewiesen{{byActor}}{{inScope}}.",
+          "summaryYouGeneric": "Ihnen wurde eine Rolle zugewiesen{{byActor}}{{inScope}}.",
+          "summaryOtherNamed": "{{member}} wurde die Rolle \"{{role}}\" zugewiesen{{byActor}}{{inScope}}.",
+          "summaryOtherGeneric": "{{member}} wurde eine Rolle zugewiesen{{byActor}}{{inScope}}."
+        },
+        "revoked": {
+          "subjectNamed": "Rolle \"{{role}}\" entzogen",
+          "subjectUnnamed": "Rolle entzogen",
+          "summaryYouNamed": "Die Rolle \"{{role}}\" wurde Ihnen entzogen{{byActor}}{{inScope}}.",
+          "summaryYouGeneric": "Eine Rolle wurde Ihnen entzogen{{byActor}}{{inScope}}.",
+          "summaryOtherNamed": "Die Rolle \"{{role}}\" wurde {{member}} entzogen{{byActor}}{{inScope}}.",
+          "summaryOtherGeneric": "Eine Rolle wurde {{member}} entzogen{{byActor}}{{inScope}}."
+        }
+      },
+      "invitation": {
+        "sent": {
+          "subjectNamed": "Einladung zu {{scopeName}}",
+          "subjectUnnamed": "Sie haben eine Einladung",
+          "summaryNamed": "Sie wurden eingeladen, {{scopeName}} beizutreten{{byActor}}.",
+          "summaryUnnamed": "Sie wurden eingeladen, einer Organisation beizutreten{{byActor}}."
+        },
+        "accepted": {
+          "subjectNamed": "Einladung angenommen — {{scopeName}}",
+          "subjectUnnamed": "Einladung angenommen",
+          "summaryNamed": "Eine Einladung zu {{scopeName}} wurde angenommen{{byActor}}.",
+          "summaryUnnamed": "Eine Organisationseinladung wurde angenommen{{byActor}}."
+        },
+        "revoked": {
+          "subjectNamed": "Einladung widerrufen — {{scopeName}}",
+          "subjectUnnamed": "Einladung widerrufen",
+          "summaryNamed": "Eine Einladung zu {{scopeName}} wurde widerrufen{{byActor}}.",
+          "summaryUnnamed": "Eine Organisationseinladung wurde widerrufen{{byActor}}."
+        }
+      },
+      "membership": {
+        "organizationMemberAdded": {
+          "subject": "Mitglied hinzugefügt",
+          "you": "Sie sind beigetreten{{byActor}}{{inScope}}.",
+          "named": "{{member}} ist beigetreten{{byActor}}{{inScope}}.",
+          "generic": "Ein Mitglied ist beigetreten{{byActor}}{{inScope}}."
+        },
+        "organizationMemberRoleChanged": {
+          "subject": "Mitgliederrolle geändert",
+          "you": "Ihre Rolle wurde geändert{{byActor}}{{inScope}}.",
+          "named": "Die Rolle von {{member}} wurde geändert{{byActor}}{{inScope}}.",
+          "generic": "Die Rolle eines Mitglieds wurde geändert{{byActor}}{{inScope}}."
+        },
+        "organizationMemberRemoved": {
+          "subject": "Mitglied entfernt",
+          "you": "Sie wurden entfernt{{byActor}}{{inScope}}.",
+          "named": "{{member}} wurde entfernt{{byActor}}{{inScope}}.",
+          "generic": "Ein Mitglied wurde entfernt{{byActor}}{{inScope}}."
+        },
+        "projectUserAdded": {
+          "subject": "Projektmitglied hinzugefügt",
+          "you": "Sie wurden zum Projekt hinzugefügt{{byActor}}{{inScope}}.",
+          "named": "{{member}} wurde zum Projekt hinzugefügt{{byActor}}{{inScope}}.",
+          "generic": "Ein Mitglied wurde zum Projekt hinzugefügt{{byActor}}{{inScope}}."
+        },
+        "projectUserRemoved": {
+          "subject": "Projektmitglied entfernt",
+          "you": "Sie wurden aus dem Projekt entfernt{{byActor}}{{inScope}}.",
+          "named": "{{member}} wurde aus dem Projekt entfernt{{byActor}}{{inScope}}.",
+          "generic": "Ein Mitglied wurde aus dem Projekt entfernt{{byActor}}{{inScope}}."
+        },
+        "projectUserProfileUpdated": {
+          "subject": "Projektprofil aktualisiert",
+          "you": "Sie haben Ihr Projektprofil aktualisiert{{byActor}}{{inScope}}.",
+          "named": "{{member}} hat das Projektprofil aktualisiert{{byActor}}{{inScope}}.",
+          "generic": "Ein Mitglied hat das Projektprofil aktualisiert{{byActor}}{{inScope}}."
+        }
+      },
+      "security": {
+        "emailVerification": {
+          "subject": "E-Mail-Adresse verifizieren",
+          "summary": "Bitte verifizieren Sie Ihre E-Mail-Adresse."
+        },
+        "mfaPolicyEnabled": {
+          "subject": "MFA-Richtlinie geändert",
+          "summary": "{{scopeName}} verlangt jetzt MFA für sensible Aktionen{{byActor}}."
+        },
+        "mfaPolicyDisabled": {
+          "subject": "MFA-Richtlinie geändert",
+          "summary": "{{scopeName}} verlangt keine MFA mehr für sensible Aktionen{{byActor}}."
+        },
+        "signingKeyCreated": {
+          "subject": "Signaturschlüssel erstellt",
+          "summary": "Ein Signaturschlüssel wurde erstellt{{byActor}}{{inScope}}."
+        },
+        "signingKeyRotated": {
+          "subject": "Signaturschlüssel rotiert",
+          "summary": "Ein Signaturschlüssel wurde rotiert{{byActor}}{{inScope}}."
+        },
+        "mfaEnabled": {
+          "subject": "MFA aktiviert",
+          "you": "Die Multi-Faktor-Authentifizierung wurde für Ihr Konto aktiviert{{byActor}}.",
+          "named": "Die Multi-Faktor-Authentifizierung wurde für das Konto von {{member}} aktiviert{{byActor}}.",
+          "generic": "Die Multi-Faktor-Authentifizierung wurde für ein Konto aktiviert{{byActor}}."
+        },
+        "mfaDisabled": {
+          "subject": "MFA deaktiviert",
+          "you": "Die Multi-Faktor-Authentifizierung wurde für Ihr Konto deaktiviert{{byActor}}.",
+          "named": "Die Multi-Faktor-Authentifizierung wurde für das Konto von {{member}} deaktiviert{{byActor}}.",
+          "generic": "Die Multi-Faktor-Authentifizierung wurde für ein Konto deaktiviert{{byActor}}."
+        },
+        "recoveryCodes": {
+          "subject": "MFA-Wiederherstellungscodes neu erzeugt",
+          "you": "Ihre MFA-Wiederherstellungscodes wurden neu erzeugt{{byActor}}.",
+          "named": "Die MFA-Wiederherstellungscodes von {{member}} wurden neu erzeugt{{byActor}}.",
+          "generic": "MFA-Wiederherstellungscodes wurden neu erzeugt{{byActor}}."
+        },
+        "sessionRevoked": {
+          "subject": "Sitzung widerrufen",
+          "you": "Eine Sitzung wurde auf Ihrem Konto widerrufen{{byActor}}.",
+          "named": "Eine Sitzung wurde auf dem Konto von {{member}} widerrufen{{byActor}}.",
+          "generic": "Eine Sitzung wurde auf einem Konto widerrufen{{byActor}}."
+        },
+        "sessionsRevoked": {
+          "subject": "Alle Sitzungen widerrufen",
+          "you": "{{countLabel}} auf Ihrem Konto{{byActor}}.",
+          "named": "{{countLabel}} auf dem Konto von {{member}}{{byActor}}.",
+          "generic": "{{countLabel}} auf einem Konto{{byActor}}."
+        },
+        "sessionsCount": "{{count}} Sitzungen wurden widerrufen",
+        "sessionCountOne": "1 Sitzung wurde widerrufen",
+        "sessionsCountUnknown": "Alle Sitzungen wurden widerrufen",
+        "passwordChanged": {
+          "subject": "Passwort geändert",
+          "you": "Ihr Passwort wurde geändert{{byActor}}.",
+          "named": "Das Passwort von {{member}} wurde geändert{{byActor}}.",
+          "generic": "Ein Passwort wurde geändert{{byActor}}."
+        }
+      },
+      "sync": {
+        "importCompleted": {
+          "subject": "Projektsynchronisierung abgeschlossen",
+          "summary": "CDM-Import abgeschlossen{{inScope}}."
+        },
+        "exportCompleted": {
+          "subject": "Projektexport abgeschlossen",
+          "summary": "CDM-Export abgeschlossen{{inScope}}."
+        },
+        "importFailed": {
+          "subject": "Projektsynchronisierung fehlgeschlagen",
+          "summary": "CDM-Import fehlgeschlagen{{inScope}}."
+        },
+        "exportFailed": {
+          "subject": "Projektexport fehlgeschlagen",
+          "summary": "CDM-Export fehlgeschlagen{{inScope}}."
+        }
+      },
+      "fallback": {
+        "defaultTitle": "Benachrichtigung"
+      }
+    },
     "common": {
       "alternativeText": "Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link und fügen Sie ihn ein:",
       "footer": {

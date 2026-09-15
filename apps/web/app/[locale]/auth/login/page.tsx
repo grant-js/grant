@@ -22,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import { useAuthMutations, usePageTitle } from '@/hooks';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
+  buildAuthHref,
+  emailFromSearchParam,
   getAuthRedirectUrl,
   getInvitationProofFromRedirectUrl,
   getInvitationTokenFromRedirectUrl,
@@ -42,7 +44,7 @@ export default function LoginPage() {
   usePageTitle('auth.login');
 
   const redirectParam = searchParams.get('redirect');
-  const emailParam = searchParams.get('email');
+  const emailParam = emailFromSearchParam(searchParams.get('email'));
   const errorParam = searchParams.get('error');
   const invitationToken = getInvitationTokenFromRedirectUrl(redirectParam);
   const invitationProof = getInvitationProofFromRedirectUrl(redirectParam);
@@ -59,13 +61,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthMutations();
 
-  const registerUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (redirectParam) params.set('redirect', redirectParam);
-    if (emailParam) params.set('email', emailParam);
-    const queryString = params.toString();
-    return `/auth/register${queryString ? `?${queryString}` : ''}`;
-  }, [redirectParam, emailParam]);
+  const registerUrl = useMemo(
+    () => buildAuthHref('/auth/register', { email: emailParam, redirect: redirectParam }),
+    [redirectParam, emailParam]
+  );
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsSubmitting(true);

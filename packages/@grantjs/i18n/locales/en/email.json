@@ -42,6 +42,274 @@
     "messageLink": "Click the link below to sign in:",
     "messageLinkWithApp": "Click the link below to sign in to {{appName}}:"
   },
+  "notification": {
+    "common": {
+      "greeting": "Hi there,",
+      "viewInGrant": "View in Grant",
+      "managePreferences": "Manage notification preferences",
+      "footer": "You're receiving this because email notifications are enabled for your account.",
+      "byActor": " by {{actorName}}",
+      "inScope": " in {{scopeName}}"
+    },
+    "details": {
+      "when": "When",
+      "actor": "Actor",
+      "workspace": "Workspace",
+      "entity": "Entity",
+      "role": "Role",
+      "permission": "Permission",
+      "group": "Group",
+      "member": "Member",
+      "apiKey": "API key",
+      "error": "Error"
+    },
+    "labels": {
+      "role": "Role",
+      "permission": "Permission",
+      "group": "Group",
+      "resource": "Resource"
+    },
+    "indefinite": {
+      "role": "A role",
+      "permission": "A permission",
+      "group": "A group",
+      "resource": "A resource"
+    },
+    "target": {
+      "role": "role",
+      "group": "group",
+      "aRole": "a role",
+      "aGroup": "a group"
+    },
+    "namedEntity": {
+      "created": {
+        "subjectNamed": "{{label}} \"{{name}}\" created",
+        "subjectUnnamed": "{{label}} created",
+        "summaryNamed": "{{label}} \"{{name}}\" was created{{byActor}}{{inScope}}.",
+        "summaryUnnamed": "{{indefinite}} was created{{byActor}}{{inScope}}."
+      },
+      "updated": {
+        "subjectNamed": "{{label}} \"{{name}}\" updated",
+        "subjectUnnamed": "{{label}} updated",
+        "summaryNamed": "{{label}} \"{{name}}\" was updated{{byActor}}{{inScope}}.",
+        "summaryUnnamed": "{{indefinite}} was updated{{byActor}}{{inScope}}."
+      },
+      "deleted": {
+        "subjectNamed": "{{label}} \"{{name}}\" deleted",
+        "subjectUnnamed": "{{label}} deleted",
+        "summaryNamed": "{{label}} \"{{name}}\" was deleted{{byActor}}{{inScope}}.",
+        "summaryUnnamed": "{{indefinite}} was deleted{{byActor}}{{inScope}}."
+      }
+    },
+    "assignment": {
+      "assigned": {
+        "subject": "{{entityLabel}} assigned",
+        "summaryNamed": "{{entityLabel}} \"{{entityName}}\" was assigned to {{targetLabel}} \"{{targetName}}\"{{byActor}}{{inScope}}.",
+        "summaryEntityOnly": "{{entityLabel}} \"{{entityName}}\" was assigned to {{targetIndefinite}}{{byActor}}{{inScope}}.",
+        "summaryGeneric": "{{entityIndefinite}} was assigned to {{targetIndefinite}}{{byActor}}{{inScope}}."
+      },
+      "revoked": {
+        "subject": "{{entityLabel}} revoked",
+        "summaryNamed": "{{entityLabel}} \"{{entityName}}\" was revoked from {{targetLabel}} \"{{targetName}}\"{{byActor}}{{inScope}}.",
+        "summaryEntityOnly": "{{entityLabel}} \"{{entityName}}\" was revoked from {{targetIndefinite}}{{byActor}}{{inScope}}.",
+        "summaryGeneric": "{{entityIndefinite}} was revoked from {{targetIndefinite}}{{byActor}}{{inScope}}."
+      }
+    },
+    "subjectAssignment": {
+      "assigned": {
+        "subject": "{{entityLabel}} assigned",
+        "summaryYouNamed": "{{entityLabel}} \"{{entityName}}\" was assigned to you{{byActor}}{{inScope}}.",
+        "summaryYouGeneric": "{{entityIndefinite}} was assigned to you{{byActor}}{{inScope}}.",
+        "summaryOtherNamed": "{{entityLabel}} \"{{entityName}}\" was assigned to {{member}}{{byActor}}{{inScope}}.",
+        "summaryOtherGeneric": "{{entityIndefinite}} was assigned to {{member}}{{byActor}}{{inScope}}."
+      },
+      "revoked": {
+        "subject": "{{entityLabel}} revoked",
+        "summaryYouNamed": "{{entityLabel}} \"{{entityName}}\" was revoked from you{{byActor}}{{inScope}}.",
+        "summaryYouGeneric": "{{entityIndefinite}} was revoked from you{{byActor}}{{inScope}}.",
+        "summaryOtherNamed": "{{entityLabel}} \"{{entityName}}\" was revoked from {{member}}{{byActor}}{{inScope}}.",
+        "summaryOtherGeneric": "{{entityIndefinite}} was revoked from {{member}}{{byActor}}{{inScope}}."
+      }
+    },
+    "apiKey": {
+      "created": {
+        "subjectNamed": "API key \"{{name}}\" created",
+        "subjectUnnamed": "API key created",
+        "summaryNamed": "API key \"{{name}}\" was created{{byActor}}{{inScope}}.",
+        "summaryUnnamed": "A new API key was created{{byActor}}{{inScope}}."
+      },
+      "rotated": {
+        "subjectNamed": "API key \"{{name}}\" rotated",
+        "subjectUnnamed": "API key rotated",
+        "summaryNamed": "API key \"{{name}}\" was rotated{{byActor}}{{inScope}}.",
+        "summaryUnnamed": "An API key was rotated{{byActor}}{{inScope}}."
+      },
+      "revoked": {
+        "subjectNamed": "API key \"{{name}}\" revoked",
+        "subjectUnnamed": "API key revoked",
+        "summaryNamed": "API key \"{{name}}\" was revoked{{byActor}}{{inScope}}.",
+        "summaryUnnamed": "An API key was revoked{{byActor}}{{inScope}}."
+      }
+    },
+    "userRole": {
+      "assigned": {
+        "subjectNamed": "Role \"{{role}}\" assigned",
+        "subjectUnnamed": "Role assigned",
+        "summaryYouNamed": "You were assigned the role \"{{role}}\"{{byActor}}{{inScope}}.",
+        "summaryYouGeneric": "A role was assigned to you{{byActor}}{{inScope}}.",
+        "summaryOtherNamed": "{{member}} was assigned the role \"{{role}}\"{{byActor}}{{inScope}}.",
+        "summaryOtherGeneric": "{{member}} was assigned a role{{byActor}}{{inScope}}."
+      },
+      "revoked": {
+        "subjectNamed": "Role \"{{role}}\" revoked",
+        "subjectUnnamed": "Role revoked",
+        "summaryYouNamed": "The role \"{{role}}\" was revoked from you{{byActor}}{{inScope}}.",
+        "summaryYouGeneric": "A role was revoked from you{{byActor}}{{inScope}}.",
+        "summaryOtherNamed": "The role \"{{role}}\" was revoked from {{member}}{{byActor}}{{inScope}}.",
+        "summaryOtherGeneric": "A role was revoked from {{member}}{{byActor}}{{inScope}}."
+      }
+    },
+    "invitation": {
+      "sent": {
+        "subjectNamed": "Invitation to {{scopeName}}",
+        "subjectUnnamed": "You have an invitation",
+        "summaryNamed": "You were invited to join {{scopeName}}{{byActor}}.",
+        "summaryUnnamed": "You were invited to join an organization{{byActor}}."
+      },
+      "accepted": {
+        "subjectNamed": "Invitation accepted — {{scopeName}}",
+        "subjectUnnamed": "Invitation accepted",
+        "summaryNamed": "An invitation to {{scopeName}} was accepted{{byActor}}.",
+        "summaryUnnamed": "An organization invitation was accepted{{byActor}}."
+      },
+      "revoked": {
+        "subjectNamed": "Invitation revoked — {{scopeName}}",
+        "subjectUnnamed": "Invitation revoked",
+        "summaryNamed": "An invitation to {{scopeName}} was revoked{{byActor}}.",
+        "summaryUnnamed": "An organization invitation was revoked{{byActor}}."
+      }
+    },
+    "membership": {
+      "organizationMemberAdded": {
+        "subject": "Member added",
+        "you": "You joined{{byActor}}{{inScope}}.",
+        "named": "{{member}} joined{{byActor}}{{inScope}}.",
+        "generic": "A member joined{{byActor}}{{inScope}}."
+      },
+      "organizationMemberRoleChanged": {
+        "subject": "Member role changed",
+        "you": "Your role was changed{{byActor}}{{inScope}}.",
+        "named": "{{member}} had their role changed{{byActor}}{{inScope}}.",
+        "generic": "A member had their role changed{{byActor}}{{inScope}}."
+      },
+      "organizationMemberRemoved": {
+        "subject": "Member removed",
+        "you": "You were removed{{byActor}}{{inScope}}.",
+        "named": "{{member}} was removed{{byActor}}{{inScope}}.",
+        "generic": "A member was removed{{byActor}}{{inScope}}."
+      },
+      "projectUserAdded": {
+        "subject": "Project member added",
+        "you": "You were added to the project{{byActor}}{{inScope}}.",
+        "named": "{{member}} was added to the project{{byActor}}{{inScope}}.",
+        "generic": "A member was added to the project{{byActor}}{{inScope}}."
+      },
+      "projectUserRemoved": {
+        "subject": "Project member removed",
+        "you": "You were removed from the project{{byActor}}{{inScope}}.",
+        "named": "{{member}} was removed from the project{{byActor}}{{inScope}}.",
+        "generic": "A member was removed from the project{{byActor}}{{inScope}}."
+      },
+      "projectUserProfileUpdated": {
+        "subject": "Project profile updated",
+        "you": "You updated your project profile{{byActor}}{{inScope}}.",
+        "named": "{{member}} updated their project profile{{byActor}}{{inScope}}.",
+        "generic": "A member updated their project profile{{byActor}}{{inScope}}."
+      }
+    },
+    "security": {
+      "emailVerification": {
+        "subject": "Verify your email",
+        "summary": "Please verify your email address."
+      },
+      "mfaPolicyEnabled": {
+        "subject": "MFA policy changed",
+        "summary": "{{scopeName}} now requires MFA for sensitive actions{{byActor}}."
+      },
+      "mfaPolicyDisabled": {
+        "subject": "MFA policy changed",
+        "summary": "{{scopeName}} no longer requires MFA for sensitive actions{{byActor}}."
+      },
+      "signingKeyCreated": {
+        "subject": "Signing key created",
+        "summary": "A signing key was created{{byActor}}{{inScope}}."
+      },
+      "signingKeyRotated": {
+        "subject": "Signing key rotated",
+        "summary": "A signing key was rotated{{byActor}}{{inScope}}."
+      },
+      "mfaEnabled": {
+        "subject": "MFA enabled",
+        "you": "Multi-factor authentication was enabled on your account{{byActor}}.",
+        "named": "Multi-factor authentication was enabled on {{member}}'s account{{byActor}}.",
+        "generic": "Multi-factor authentication was enabled on an account{{byActor}}."
+      },
+      "mfaDisabled": {
+        "subject": "MFA disabled",
+        "you": "Multi-factor authentication was disabled on your account{{byActor}}.",
+        "named": "Multi-factor authentication was disabled on {{member}}'s account{{byActor}}.",
+        "generic": "Multi-factor authentication was disabled on an account{{byActor}}."
+      },
+      "recoveryCodes": {
+        "subject": "MFA recovery codes regenerated",
+        "you": "Your MFA recovery codes were regenerated{{byActor}}.",
+        "named": "{{member}}'s MFA recovery codes were regenerated{{byActor}}.",
+        "generic": "MFA recovery codes were regenerated{{byActor}}."
+      },
+      "sessionRevoked": {
+        "subject": "Session revoked",
+        "you": "A session was revoked on your account{{byActor}}.",
+        "named": "A session was revoked on {{member}}'s account{{byActor}}.",
+        "generic": "A session was revoked on an account{{byActor}}."
+      },
+      "sessionsRevoked": {
+        "subject": "All sessions revoked",
+        "you": "{{countLabel}} on your account{{byActor}}.",
+        "named": "{{countLabel}} on {{member}}'s account{{byActor}}.",
+        "generic": "{{countLabel}} on an account{{byActor}}."
+      },
+      "sessionsCount": "{{count}} sessions were revoked",
+      "sessionCountOne": "1 session was revoked",
+      "sessionsCountUnknown": "All sessions were revoked",
+      "passwordChanged": {
+        "subject": "Password changed",
+        "you": "Your password was changed{{byActor}}.",
+        "named": "{{member}}'s password was changed{{byActor}}.",
+        "generic": "A password was changed{{byActor}}."
+      }
+    },
+    "sync": {
+      "importCompleted": {
+        "subject": "Project sync completed",
+        "summary": "CDM import completed{{inScope}}."
+      },
+      "exportCompleted": {
+        "subject": "Project export completed",
+        "summary": "CDM export completed{{inScope}}."
+      },
+      "importFailed": {
+        "subject": "Project sync failed",
+        "summary": "CDM import failed{{inScope}}."
+      },
+      "exportFailed": {
+        "subject": "Project export failed",
+        "summary": "CDM export failed{{inScope}}."
+      }
+    },
+    "fallback": {
+      "defaultTitle": "Notification"
+    }
+  },
   "common": {
     "alternativeText": "If the button doesn't work, copy and paste this link:",
     "footer": {
