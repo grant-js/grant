@@ -1,5 +1,15 @@
 # grant-web
 
+## 1.9.2
+
+### Patch Changes
+
+- 98cb9b0: Stop the in-app MFA step-up dialog from opening on the dedicated `/auth/mfa` login challenge.
+  - @grantjs/schema@1.9.2
+  - @grantjs/client@1.9.2
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.9.1
 
 ### Patch Changes
