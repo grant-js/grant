@@ -1,5 +1,15 @@
 # grant-web
 
+## 1.9.1
+
+### Patch Changes
+
+- 2216969: Send notification emails through branded MJML templates, and keep plus-addressed emails in invitation and login links.
+  - @grantjs/schema@1.9.1
+  - @grantjs/client@1.9.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.9.0
 
 ### Minor Changes
