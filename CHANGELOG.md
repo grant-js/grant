@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.9.1
+
+### Platform
+
+**Docker images:** tagged `:1.9.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.9.1** (fixed group with apps).
+
+### Patch Changes
+
+- 2216969: Send notification emails through branded MJML templates, and keep plus-addressed emails in invitation and login links.
+
 ## 1.9.0
 
 ### Platform

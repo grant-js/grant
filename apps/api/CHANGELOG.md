@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.9.1
+
+### Patch Changes
+
+- 2216969: Send notification emails through branded MJML templates, and keep plus-addressed emails in invitation and login links.
+  - @grantjs/schema@1.9.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.9.0
 
 ### Minor Changes
