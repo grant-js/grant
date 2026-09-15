@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.9.2
+
+### Platform
+
+**Docker images:** tagged `:1.9.2` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.9.2** (fixed group with apps).
+
+### Patch Changes
+
+- 98cb9b0: Stop the in-app MFA step-up dialog from opening on the dedicated `/auth/mfa` login challenge.
+
 ## 1.9.1
 
 ### Platform
