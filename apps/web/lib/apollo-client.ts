@@ -9,9 +9,14 @@ import { GraphQLError } from 'graphql';
 import { toast } from 'sonner';
 
 import { getTempClient } from '@/lib/apollo-temp-client';
+import { shouldOpenInAppMfaStepUp } from '@/lib/auth';
 import { refreshSessionViaCookie } from '@/lib/refresh-session';
 import { useAuthStore } from '@/stores/auth.store';
 import { useMfaStepUpStore } from '@/stores/mfa-step-up.store';
+
+function currentPathname(): string {
+  return typeof window !== 'undefined' ? window.location.pathname : '';
+}
 
 interface ErrorWithGraphQLErrors {
   graphQLErrors?: readonly GraphQLError[];
@@ -470,6 +475,10 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
     const hasMfaRequiredGqlError = graphQLErrors.some(isMfaRequiredGraphQLError);
     const hasMfaRequiredFromServer = isMfaRequiredServerError(error);
     if (hasMfaRequiredGqlError || hasMfaRequiredFromServer) {
+      const pathname = currentPathname();
+      if (!shouldOpenInAppMfaStepUp(pathname)) {
+        return;
+      }
       const mfaErrors = hasMfaRequiredGqlError
         ? graphQLErrors
         : [

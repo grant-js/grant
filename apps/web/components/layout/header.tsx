@@ -9,7 +9,8 @@ import { NotificationBell } from '@/components/features/notifications';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
 import { useOAuthBrandingTheme } from '@/components/layout/oauth-branding-context';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
+import { shouldShowNotificationBell } from '@/lib/auth';
 import { getApiDocsUrl, getAppVersion, getDocsUrl, getGraphqlPlaygroundUrl } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -17,7 +18,9 @@ import { useAuthStore } from '@/stores/auth.store';
 export function Header() {
   const t = useTranslations('common');
   const themeT = useTranslations('theme');
+  const pathname = usePathname();
   const { isAuthenticated } = useAuthStore();
+  const showNotificationBell = shouldShowNotificationBell(pathname, isAuthenticated());
   const hideThemeToggle = useOAuthBrandingTheme()?.themeMode != null;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const languageSwitcherRef = useRef<HTMLButtonElement>(null);
@@ -113,7 +116,7 @@ export function Header() {
                 <Network className="h-[1rem] w-[1rem] shrink-0" />
                 {t('navigation.graphqlPlayground')}
               </a>
-              {isAuthenticated() ? <NotificationBell /> : null}
+              {showNotificationBell ? <NotificationBell /> : null}
               {hideThemeToggle ? null : (
                 <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
               )}
@@ -168,7 +171,7 @@ export function Header() {
                   <Network className="h-[1rem] w-[1rem] shrink-0" />
                   {t('navigation.graphqlPlayground')}
                 </a>
-                {isAuthenticated() ? (
+                {showNotificationBell ? (
                   <div className="py-2 -mx-2">
                     <NotificationBell />
                   </div>
