@@ -52,12 +52,12 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1131.0",
-    "@types/node": "^26.4.1",
+    "@aws-sdk/client-dynamodb": "^3.1133.0",
+    "@types/node": "^26.6.1",
     "ioredis": "^6.0.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.1"
   },
   "license": "MIT"
 }
