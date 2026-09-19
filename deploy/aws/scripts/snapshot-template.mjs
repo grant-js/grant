@@ -120,6 +120,17 @@ const ASSET_HASH = /\b[0-9a-f]{64}\b/g;
  */
 const VERSION_LOGICAL_ID = /(CurrentVersion[0-9A-Fa-f]{8})[0-9a-f]{32}\b/g;
 
+/**
+ * `AWS::CDK::Metadata.Analytics` is a deflate64 fingerprint of the CDK modules
+ * that participated in synth. It moves with Node/CDK patch versions even when
+ * every resource stays the same — which is how a snapshot committed on Node 22
+ * fails `synth:check` on CI's Node 24 (and the reverse).
+ *
+ * Normalized for the same reason asset hashes are: this file is evidence about
+ * stack structure, not which CDK CLI hashed the construct tree.
+ */
+const CDK_ANALYTICS = /("Analytics":\s*")v2:deflate64:[^"]+(")/g;
+
 function synth({ outDir, context }) {
   const args = ['synth', '--quiet', '--output', outDir];
   for (const [key, value] of Object.entries({ ...COMMON_CONTEXT, ...context })) {
@@ -145,7 +156,8 @@ function snapshot({ outDir, snapshotDir }) {
     const template = JSON.parse(readFileSync(join(from, name), 'utf8'));
     const normalized = JSON.stringify(template, null, 2)
       .replace(ASSET_HASH, '<asset-hash>')
-      .replace(VERSION_LOGICAL_ID, '$1<version-hash>');
+      .replace(VERSION_LOGICAL_ID, '$1<version-hash>')
+      .replace(CDK_ANALYTICS, '$1<cdk-analytics>$2');
     writeFileSync(join(into, name), `${normalized}\n`);
   }
 

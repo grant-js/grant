@@ -3091,7 +3091,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VTUU8bMQz+LbyHjLXbpD2WliIkEKzHeK3cnHuE5pLOTqiqKP99Su56LRW8nD9/99mxY2ckR79+y6sL2PGlqjeXRq9krDyojVggu0AKBex4GVGNZJyubYUqkPb7W3Jhe2cbQmbxgRTnqiQYFaHnFiw0SDJWxe+FhD4JVLQEZvQsZ05tkO5aaHCSmfxPLnDrWHtH+2tgFKhYxqkJ7JFymgOcAzXg8Rl4M8O1ttprZ7PgnHHWg7ZIRy4JDa2MC2cwBxT75IxW++x2KAnjGpbx3jVDqwN+QE9azbXpazr1kzDQrmqQcR6sOhQ14Bck7rkDPLmFQXYAf8lkaW+ekFrNJejmHa2vytQeYLvVtsmCz9l72CMdTqu0bQx6N5SURL230Lp6JeMzrAy+jHLQrXErMIVIgscyXge16SbZo84cL+6D3zl5gknwP5bxT8BQrrsD5XuMPXGTUMaFegdevco4MUBtVhSQBOYOWcZF6IcXuvqWscatcfsWrZfd4bOBEP2+lSXr86/JWf/FkKagXk+KO3Vnmj3pVTif0iPpRtuJUsicV45cmdhndDX+QnyaOwlywePPsYyTBSpHdem2oAq9mABA56UkSl+VhyYP3JNuGiSWzx0Q08DetcMbL2mO+DH4bfD90i5NXpUl7FgZLSc7nhpdtucsyRO5d10jlReaH0C3bElYV6N842/vo5H8/kNeXbyx1pcUrNctykVn/wN/vDLzigQAAA=="
+        "Analytics": "<cdk-analytics>"
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"

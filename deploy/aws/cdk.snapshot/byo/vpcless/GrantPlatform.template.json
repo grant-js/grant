@@ -2319,7 +2319,7 @@
     "CDKMetadata": {
       "Type": "AWS::CDK::Metadata",
       "Properties": {
-        "Analytics": "v2:deflate64:H4sIAAAAAAAA/3VTy27bMBD8ltxpNrXbAj06dhMUSBBXanM1VtRGYUxxVS5pwyD07wUpxRYS96Kd2RfBGWou59++y+srOPBM1buZ0ZWMpQe1EwUyBadQwIG3kVE59NyChQadjGXmYvVsB9SL+mihpbqS8TdUBp/mqXhnqAKTE73ghYw3Qe2GuRENYUNGq+M5PfKB3ACn6b8s46+AAVPbAPL3PDuhvUDltsCMnuWa1A7dzxYaXKZMqskCO2LtyR3TfmGoYRnvqblzFLq07YQf0DutbrXx6FJhynthoK1qkHFyyG2wymuyqfmE38AfZ1J+DBt0rWZODT/2aH2ZNX+ArtO2SQ2Xs/dwRPeELg+W2jYGPX08qxcaWhkLMlm0HM9yvSmlDIX6AF69yLg04NpUzKAXmI5nGYswrgiDk9tYY2fo2KL1crBpfUqIUfcs9rj/2ZH1Ml6UZgXqZWLjlK41e6er8F7CR6cbbZdKIfOKrHeU5byULhf/aZ7u7oWj4PHrQsZlgYpcnW+bUYleLAFgYH0v8r1KD83oxmPwXfBiFdhTe/pv8vyIh0eyNcm2LRxYGS2XB14ZnZ18N7pxtNc1uvww04MbjO+FpRrlK3/az+fy8xd5ffXKWs9csF63KIsh/gONlput1AMAAA=="
+        "Analytics": "<cdk-analytics>"
       },
       "Metadata": {
         "aws:cdk:path": "GrantPlatform/CDKMetadata/Default"
