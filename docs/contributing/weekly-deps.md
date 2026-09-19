@@ -5,7 +5,7 @@ description: How Grant folds Dependabot bumps into one human-reviewed PR to main
 
 # Weekly dependency PR
 
-Dependabot is the version picker. A weekly consolidator rebases those bumps, migrates call sites, runs gates, and opens **one** chore PR to `main`. Humans merge. Do not automerge or self-merge. Do not bump `typescript` or `@typescript/typescript6` (ADR 0006).
+Dependabot is the version picker. A weekly consolidator rebases those bumps, migrates call sites, runs gates, and opens **one** chore PR to `main`. Humans merge. Do not automerge or self-merge. Do not bump `typescript` or `@typescript/typescript6` (ADR 0006). Do not bump `graphql` to 17 while Apollo Server 5 still peers `graphql@^16` — 17 fails `startProjectSync` e2e with `Cannot read properties of null (reading 'constructor')`.
 
 This Grant Project will schedule the Monday consolidator after Dependabot’s 09:00 Europe/Madrid run; do not wire that Cursor Automation from a one-off PR. Until it is scheduled, run the steps below by hand.
 
