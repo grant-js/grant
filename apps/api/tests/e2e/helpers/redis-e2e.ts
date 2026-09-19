@@ -21,6 +21,7 @@ function getClient(): Redis {
       host: E2E_REDIS_HOST,
       port: E2E_REDIS_PORT,
       password: E2E_REDIS_PASSWORD,
+      protocol: 2,
       maxRetriesPerRequest: 2,
       retryStrategy: () => null,
     });

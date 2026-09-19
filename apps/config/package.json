@@ -17,7 +17,7 @@
     "@grantjs/email": "workspace:*",
     "@aws-sdk/client-ses": "^3",
     "form-data": "^4",
-    "ioredis": "^5.11.1",
+    "ioredis": "^6.0.0",
     "lucide-react": "^1.45.0",
     "mailgun.js": "^14",
     "node-mailjet": "^6",

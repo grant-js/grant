@@ -41,7 +41,7 @@
   },
   "peerDependencies": {
     "node-cron": "^3",
-    "bullmq": "^5",
+    "bullmq": "^6",
     "typescript": "^6.0.2",
     "@aws-sdk/client-sqs": "^3",
     "@aws-sdk/client-ecs": "^3"
@@ -64,7 +64,7 @@
     "@aws-sdk/client-sqs": "^3.1131.0",
     "@types/node": "^26.4.1",
     "@types/node-cron": "^3.0.11",
-    "bullmq": "^5.81.3",
+    "bullmq": "^6.3.4",
     "node-cron": "^4.6.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",

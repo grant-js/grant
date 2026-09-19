@@ -135,6 +135,7 @@ export default withMermaid({
           items: [
             { text: 'Development Guide', link: '/contributing/guide' },
             { text: 'Agentic SDLC', link: '/contributing/agentic-sdlc' },
+            { text: 'Weekly dependency PR', link: '/contributing/weekly-deps' },
             { text: 'Versioning and Release', link: '/contributing/versioning' },
             { text: 'Adding REST Endpoints', link: '/contributing/rest-api' },
             { text: 'Testing', link: '/contributing/testing' },
@@ -255,6 +256,9 @@ export default withMermaid({
   // Mermaid theme configuration
   mermaid: {
     theme: 'neutral',
+    // Mermaid 12 defaults to ELK layout and neo look; keep 11-era diagrams.
+    layout: 'dagre',
+    look: 'classic',
     themeVariables: {
       // Line colors
       lineColor: 'rgb(120, 178, 219)',
