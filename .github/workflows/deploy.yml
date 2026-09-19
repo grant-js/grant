@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Inspect Release workflow jobs
         id: check
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const jobs = await github.paginate(

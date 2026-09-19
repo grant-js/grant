@@ -61,15 +61,15 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1131.0",
-    "@types/node": "^26.4.1",
+    "@aws-sdk/client-sqs": "^3.1133.0",
+    "@types/node": "^26.6.1",
     "@types/node-cron": "^3.0.11",
     "bullmq": "^6.3.4",
     "node-cron": "^4.6.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^4.1.10",
-    "@aws-sdk/client-ecs": "^3.1127.0"
+    "vitest": "^5.0.1",
+    "@aws-sdk/client-ecs": "^3.1133.0"
   },
   "license": "MIT"
 }
