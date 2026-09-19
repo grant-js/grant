@@ -8,6 +8,10 @@ import { withMermaid } from 'vitepress-plugin-mermaid';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// esbuild 0.28 refuses to downlevel destructuring for safari14 (JSC rest-element
+// bug). safari14.1 is the floor that still matches Vite 5's other defaults.
+const docsEsbuildTarget = ['es2020', 'chrome87', 'edge88', 'firefox78', 'safari14.1'];
+
 export default withMermaid({
   title: 'Grant',
   description: 'Open-source, multi-tenant RBAC platform with self-hosting capabilities',
@@ -135,6 +139,7 @@ export default withMermaid({
           items: [
             { text: 'Development Guide', link: '/contributing/guide' },
             { text: 'Agentic SDLC', link: '/contributing/agentic-sdlc' },
+            { text: 'Weekly dependency PR', link: '/contributing/weekly-deps' },
             { text: 'Versioning and Release', link: '/contributing/versioning' },
             { text: 'Adding REST Endpoints', link: '/contributing/rest-api' },
             { text: 'Testing', link: '/contributing/testing' },
@@ -255,6 +260,8 @@ export default withMermaid({
   // Mermaid theme configuration
   mermaid: {
     theme: 'neutral',
+    layout: 'dagre',
+    look: 'classic',
     themeVariables: {
       // Line colors
       lineColor: 'rgb(120, 178, 219)',
@@ -274,6 +281,14 @@ export default withMermaid({
 
   // Vite configuration
   vite: {
+    build: {
+      target: docsEsbuildTarget,
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: docsEsbuildTarget,
+      },
+    },
     server: {
       // When docs are viewed via Next.js proxy (localhost:3000/docs), script and WS must go to
       // the Vite dev server (5173) so .vue files are transformed and HMR works.

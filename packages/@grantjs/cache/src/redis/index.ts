@@ -25,6 +25,8 @@ export class RedisCacheAdapter implements ICacheAdapter {
       port: config.port,
       password: config.password,
       db: config.db ?? 0,
+      // ioredis 6 defaults to RESP3, which changes SCAN/EXISTS return types.
+      protocol: 2,
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         return delay;

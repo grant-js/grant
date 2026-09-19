@@ -119,13 +119,14 @@ Prefer the [Agentic SDLC](/contributing/agentic-sdlc) for non-trivial work: stor
 6. Ensure checks pass (`pnpm build`, `pnpm test`, Verifier for touched packages)
 7. Open the **final** pull request: story trunk → `main` (deep review); release pipeline ships complete features from `main`
 
-Tiny fixes may use a single short-lived branch and PR directly to `main`.
+Tiny fixes may use a single short-lived branch and PR directly to `main`. Weekly dependency bumps follow [Weekly dependency PR](/contributing/weekly-deps): one chore PR to `main` after Dependabot, not a story trunk.
 
 ---
 
 **Related:**
 
 - [Agentic SDLC](/contributing/agentic-sdlc) — Agent roster, stacked PRs, gates, worktrees
+- [Weekly dependency PR](/contributing/weekly-deps) — Fold Dependabot into one PR to main
 - [Architecture Overview](/architecture/overview) — System design and package graph
 - [Adding REST Endpoints](/contributing/rest-api) — REST development guide
 - [Testing](/contributing/testing) — Test setup and patterns

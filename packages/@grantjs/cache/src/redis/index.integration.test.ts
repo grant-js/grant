@@ -30,6 +30,7 @@ async function assertRedisReachable(): Promise<void> {
     host: HOST,
     port: PORT,
     password: PASSWORD,
+    protocol: 2,
     lazyConnect: true,
     connectTimeout: 2_000,
     maxRetriesPerRequest: 1,

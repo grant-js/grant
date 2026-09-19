@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       host,
       port,
       password: password === '' ? undefined : password,
+      protocol: 2,
       connectTimeout: CONNECT_TIMEOUT_MS,
       maxRetriesPerRequest: 1,
     });
