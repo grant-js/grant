@@ -5,31 +5,36 @@ description: Configure GitHub and Google OAuth, how accounts are linked, and how
 
 # Sign-in providers
 
-Grant users authenticate with one or more **authentication methods**. Email/password is always available. GitHub and Google are optional **social OAuth** providers: enable each independently with a client ID and secret. Unconfigured providers are omitted from login, register, Settings → Login & Security, and project-app sign-in.
+Grant users authenticate with one or more **authentication methods**. Email/password is always available. GitHub and Google are optional **social OAuth** providers: enable each independently with a client ID and secret. Unconfigured providers are omitted from platform login, register, and Settings → Login & Security.
 
-This page covers operator configuration, how Grant links identities, and how IdP profile photos become the user’s avatar.
+**Project-app hosted sign-in uses a separate model.** Social providers for tenant products are configured as **per-project OAuth connections** (customer BYO apps), not the platform env vars below. See [Project OAuth](/core-concepts/project-oauth#social-connections-github-and-google). Platform env credentials may still be used as a **fallback** when a project has no BYO connection and `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL` is false.
 
-## Configuration
+This page covers **platform** operator configuration, how Grant links identities, and how IdP profile photos become the user’s avatar.
 
-Set credentials in the Config app (**GitHub OAuth** / **Google OAuth** categories) or in the root env file. Leave a provider’s client ID and secret empty to hide it.
+## Platform configuration
 
-| Variable                                    | Purpose                                                              |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App credentials                                         |
-| `GITHUB_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/github/callback`)     |
-| `GITHUB_PROJECT_CALLBACK_URL`               | Project-app callback (default `{APP_URL}/api/auth/project/callback`) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Web client credentials                                  |
-| `GOOGLE_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/google/callback`)     |
-| `GOOGLE_PROJECT_CALLBACK_URL`               | Project-app callback (default `{APP_URL}/api/auth/project/callback`) |
+Set credentials in the Config app (**GitHub OAuth** / **Google OAuth** categories) or in the root env file. Leave a provider’s client ID and secret empty to hide it on **platform** surfaces.
+
+| Variable                                    | Purpose                                                                                                                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App credentials                                                                                                                      |
+| `GITHUB_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/github/callback`)                                                                                  |
+| `GITHUB_PROJECT_CALLBACK_URL`               | Grant broker callback for project OAuth (default `{APP_URL}/api/auth/project/callback`) — register on **customer** GitHub apps, not only platform |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Web client credentials                                                                                                               |
+| `GOOGLE_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/google/callback`)                                                                                  |
+| `GOOGLE_PROJECT_CALLBACK_URL`               | Grant broker callback for project OAuth (default `{APP_URL}/api/auth/project/callback`) — register on **customer** Google clients when using BYO  |
+| `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`   | Encrypts per-project BYO client secrets at rest (required to save connections)                                                                    |
+| `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL`          | When `true`, project social sign-in requires BYO connections (no platform fallback; default `false`)                                              |
 
 If either ID or secret is set, **both** are required; the API refuses to start with a half-configured provider.
 
-The web app loads `GET /api/auth/providers` and renders only providers with `configured: true`. Restart the API after changing credentials.
+The web app loads `GET /api/auth/providers` for **platform** login/register only and renders providers with `configured: true`. Project hosted sign-in uses `configuredProviders` from `GET /api/auth/project/app-info` instead. Restart the API after changing credentials.
 
 Callback URL rules differ by IdP:
 
-- **GitHub** — one Authorization callback URL, prefix-matched. Register `{API}/api/auth` so both platform and project callbacks work. See [Configuring the GitHub OAuth app](/architecture/security#configuring-the-github-oauth-app).
-- **Google** — exact Authorized redirect URIs. List **both** platform and project callback URLs on the same Web client. See [Configuring the Google OAuth client](/architecture/security#configuring-the-google-oauth-client).
+- **GitHub (platform)** — one Authorization callback URL, prefix-matched. Register `{API}/api/auth` so the platform callback works. See [Configuring platform GitHub OAuth](/architecture/security#configuring-platform-github-oauth).
+- **Google (platform)** — exact Authorized redirect URI for `{API}/api/auth/google/callback`. See [Configuring platform Google OAuth](/architecture/security#configuring-platform-google-oauth).
+- **Project BYO** — customer GitHub/Google apps register Grant’s **broker** project callback only (`GITHUB_PROJECT_CALLBACK_URL` / `GOOGLE_PROJECT_CALLBACK_URL`). Never add tenant SPA URLs to the platform Google client. See [Configuring social OAuth for project apps](/architecture/security#configuring-social-oauth-for-project-apps).
 
 Requested scopes:
 
@@ -106,7 +111,14 @@ Googleusercontent URLs (`lh3.googleusercontent.com`) reject hotlinks that send a
 
 ## Project apps
 
-Project OAuth uses the same GitHub and Google clients. Each ProjectApp can restrict **enabled providers**. User resolution is the same global linking algorithm, then membership is checked in that project. Hosted sign-in and consent branding is documented in [Project OAuth](/core-concepts/project-oauth). Token and callback rules are in [Security](/architecture/security#project-oauth).
+Project OAuth is documented in [Project OAuth](/core-concepts/project-oauth). Summary:
+
+- **Credentials** — per-project **OAuth connections** (BYO GitHub/Google client id + secret), with optional fallback to platform env vars.
+- **Per app** — `ProjectApp.enabledProviders` subsets which methods each app offers; `redirectUris` hold customer product callbacks only.
+- **Linking** — same global user resolution as platform OAuth, then project membership is checked.
+- **Tokens and callbacks** — [Security § Project OAuth](/architecture/security#project-oauth).
+
+For multi-tenant SaaS, plan BYO connections per customer project rather than relying on one platform Google/GitHub app for all tenant products.
 
 ## See also
 

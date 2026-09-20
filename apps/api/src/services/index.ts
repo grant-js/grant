@@ -27,6 +27,7 @@ import {
   projectAppTagAuditLogs,
   projectAuditLogs,
   projectGroupAuditLogs,
+  projectOAuthConnectionAuditLogs,
   projectPermissionsAuditLogs,
   projectResourceAuditLogs,
   projectRoleAuditLogs,
@@ -105,6 +106,7 @@ import { ProjectAppService } from './project-apps.service';
 import { ProjectExportService } from './project-export.service';
 import { ProjectGroupService } from './project-groups.service';
 import { ProjectImportService } from './project-import.service';
+import { ProjectOAuthConnectionService } from './project-oauth-connections.service';
 import { ProjectPermissionService } from './project-permissions.service';
 import { ProjectResourceService } from './project-resources.service';
 import { ProjectRolePermissionService } from './project-role-permissions.service';
@@ -362,6 +364,11 @@ export function createServices(
       repositories.projectAppRepository,
       audit(projectAppAuditLogs, 'projectAppId', user, db),
       fileStorage
+    ),
+    projectOAuthConnections: new ProjectOAuthConnectionService(
+      repositories.projectOAuthConnectionRepository,
+      audit(projectOAuthConnectionAuditLogs, 'projectOAuthConnectionId', user, db),
+      secrets
     ),
     projectAppTags: new ProjectAppTagService(
       repositories.projectAppRepository,

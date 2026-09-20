@@ -12,6 +12,7 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "DELETE /api/permissions/{id}",
   "DELETE /api/project-apps/{id}",
   "DELETE /api/project-apps/{id}/picture",
+  "DELETE /api/project-oauth-connections",
   "DELETE /api/projects/{id}",
   "DELETE /api/projects/{id}/picture",
   "DELETE /api/projects/{id}/sync/jobs/{jobId}",
@@ -51,6 +52,7 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "GET /api/organizations/{id}",
   "GET /api/permissions",
   "GET /api/project-apps",
+  "GET /api/project-oauth-connections",
   "GET /api/projects",
   "GET /api/projects/{id}/sync/jobs",
   "GET /api/projects/{id}/sync/jobs/{jobId}",
@@ -135,5 +137,6 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "POST /api/webhook-subscriptions/deliveries/{deliveryId}/replay",
   "POST /api/webhook-subscriptions/{id}/rotate-secret",
   "PUT /api/me/notification-preferences",
+  "PUT /api/project-oauth-connections",
 ]
 `;

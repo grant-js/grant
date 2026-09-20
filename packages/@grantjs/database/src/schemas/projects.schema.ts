@@ -52,6 +52,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
   accounts: many(accountProjects),
   resources: many(projectResources),
   apps: many(projectApps),
+  oauthConnections: many(projectOAuthConnections),
 }));
 
 export const projectAuditLogsRelations = relations(projectAuditLogs, ({ one }) => ({
@@ -71,6 +72,7 @@ import { accountProjects } from './account-projects.schema';
 import { organizationProjectTags } from './organization-project-tags.schema';
 import { projectApps } from './project-apps.schema';
 import { projectGroups } from './project-groups.schema';
+import { projectOAuthConnections } from './project-oauth-connections.schema';
 import { projectPermissions } from './project-permissions.schema';
 import { projectResources } from './project-resources.schema';
 import { projectRoles } from './project-roles.schema';

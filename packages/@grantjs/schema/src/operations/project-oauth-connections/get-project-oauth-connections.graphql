@@ -1,0 +1,11 @@
+query GetProjectOAuthConnections($scope: Scope!) {
+  projectOAuthConnections(scope: $scope) {
+    id
+    projectId
+    provider
+    clientId
+    isConfigured
+    createdAt
+    updatedAt
+  }
+}

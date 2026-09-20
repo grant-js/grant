@@ -23,6 +23,7 @@ const { mockConfig } = vi.hoisted(() => ({
       stateTtlSeconds: 600,
       emailTokenTtlSeconds: 600,
       consentTtlSeconds: 600,
+      requireByoSocial: false,
     },
     app: {
       url: 'https://api.example.com',
@@ -107,6 +108,10 @@ const mockUserAuthenticationMethods = {
 const mockUsersScopeCacheUpdater = {
   addUserIdToScopeCache: vi.fn().mockResolvedValue(undefined),
 };
+const mockProjectOAuthConnections = {
+  listByProject: vi.fn().mockResolvedValue([]),
+  getDecryptedCredentials: vi.fn().mockResolvedValue(null),
+};
 
 const mockProjectPermissions = {
   getScopeSlugLabelsForProject: vi.fn(),
@@ -127,6 +132,7 @@ function createHandler(): ProjectOAuthHandler {
     mockAuthHandler as never,
     mockGithubOAuth as never,
     mockGoogleOAuth as never,
+    mockProjectOAuthConnections as never,
     mockGrant as never,
     mockCache as never,
     mockEmail as never,
@@ -153,6 +159,9 @@ describe('ProjectOAuthHandler', () => {
     mockProjectApps.getProjectAppById.mockResolvedValue(validApp);
     mockProjects.getProjects.mockResolvedValue({ projects: [], totalCount: 0, hasNextPage: false });
     mockGithubOAuth.isConfigured.mockReturnValue(true);
+    mockGoogleOAuth.isConfigured.mockResolvedValue(false);
+    mockProjectOAuthConnections.listByProject.mockResolvedValue([]);
+    mockProjectOAuthConnections.getDecryptedCredentials.mockResolvedValue(null);
     mockGithubOAuth.getProjectAuthorizationUrl.mockReturnValue(
       'https://github.com/login/oauth/authorize?state=xyz'
     );
@@ -215,8 +224,13 @@ describe('ProjectOAuthHandler', () => {
           projectAppId: validApp.id,
           redirectUri: 'https://example.com/callback',
           provider: UserAuthenticationMethodProvider.Github,
+          credentialSource: 'platform',
         }),
         expect.any(Number)
+      );
+      expect(mockGithubOAuth.getProjectAuthorizationUrl).toHaveBeenCalledWith(
+        expect.any(String),
+        undefined
       );
     });
 
@@ -278,6 +292,49 @@ describe('ProjectOAuthHandler', () => {
           UserAuthenticationMethodProvider.Github
         )
       ).rejects.toThrow('GitHub OAuth is not configured');
+    });
+
+    it('uses the project BYO client_id even when platform GitHub is not configured', async () => {
+      mockGithubOAuth.isConfigured.mockReturnValue(false);
+      mockProjectOAuthConnections.getDecryptedCredentials.mockResolvedValue({
+        clientId: 'byo-github-client',
+        clientSecret: 'byo-github-secret',
+      });
+      mockGithubOAuth.getProjectAuthorizationUrl.mockReturnValue(
+        'https://github.com/login/oauth/authorize?client_id=byo-github-client'
+      );
+      const handler = createHandler();
+      const result = await handler.initiateProjectAuthorize(
+        validApp.clientId,
+        'https://example.com/callback',
+        undefined,
+        UserAuthenticationMethodProvider.Github
+      );
+      expect(result.authorizationUrl).toContain('client_id=byo-github-client');
+      expect(mockGithubOAuth.getProjectAuthorizationUrl).toHaveBeenCalledWith(expect.any(String), {
+        clientId: 'byo-github-client',
+        clientSecret: 'byo-github-secret',
+      });
+      expect(mockCacheOauth.set).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${PROJECT_OAUTH_STATE_KEY_PREFIX}`)),
+        expect.objectContaining({ credentialSource: 'byo' }),
+        expect.any(Number)
+      );
+    });
+
+    it('throws ConfigurationError when require-BYO is on and no connection exists', async () => {
+      mockConfig.projectOAuth.requireByoSocial = true;
+      mockGithubOAuth.isConfigured.mockReturnValue(true);
+      const handler = createHandler();
+      await expect(
+        handler.initiateProjectAuthorize(
+          validApp.clientId,
+          'https://example.com/callback',
+          undefined,
+          UserAuthenticationMethodProvider.Github
+        )
+      ).rejects.toThrow('GitHub OAuth is not configured');
+      mockConfig.projectOAuth.requireByoSocial = false;
     });
 
     it('stores requestedScopeSlugs in state when scope param is provided', async () => {
@@ -473,6 +530,7 @@ describe('ProjectOAuthHandler', () => {
       expect(result).toEqual({
         name: 'My App',
         enabledProviders: ['github', 'email'],
+        configuredProviders: ['github'],
         scopes: [{ slug: 'read', name: 'Read', description: 'Read access' }],
         pictureUrl: null,
         primaryColor: null,
@@ -517,6 +575,17 @@ describe('ProjectOAuthHandler', () => {
         themeMode: 'dark',
         projectName: 'Acme',
       });
+    });
+
+    it('reports BYO google as configured when platform Google env is empty', async () => {
+      mockGoogleOAuth.isConfigured.mockResolvedValue(false);
+      mockGithubOAuth.isConfigured.mockReturnValue(false);
+      mockProjectOAuthConnections.listByProject.mockResolvedValue([
+        { provider: 'google', clientId: 'byo-google', isConfigured: true },
+      ]);
+      const handler = createHandler();
+      const result = await handler.getProjectAppPublicInfo(validApp.clientId);
+      expect(result.configuredProviders).toEqual(['google']);
     });
 
     it('returns scopes filtered by scope param when provided', async () => {
@@ -801,6 +870,8 @@ describe('ProjectOAuthHandler', () => {
       projectAppId: validApp.id,
       redirectUri: 'https://example.com/callback',
       clientState: 'client-state',
+      provider: UserAuthenticationMethodProvider.Github,
+      credentialSource: 'platform' as const,
     };
     const _scope: Scope = {
       tenant: Tenant.OrganizationProjectUser,
@@ -914,6 +985,68 @@ describe('ProjectOAuthHandler', () => {
       expect(mockAuthHandler.resolveUserIdFromOAuthForProject).toHaveBeenCalled();
       expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
     });
+
+    it('exchanges the BYO client stored in state, not the platform secret', async () => {
+      mockCacheOauth.get.mockResolvedValue({
+        ...statePayload,
+        provider: UserAuthenticationMethodProvider.Github,
+        credentialSource: 'byo',
+      });
+      mockGithubOAuth.isConfigured.mockReturnValue(false);
+      mockProjectOAuthConnections.getDecryptedCredentials.mockResolvedValue({
+        clientId: 'byo-github-client',
+        clientSecret: 'byo-github-secret',
+      });
+      const handler = createHandler();
+      await handler.handleProjectCallback('code', stateId);
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).toHaveBeenCalledWith(
+        'code',
+        'https://api.example.com/api/auth/project/callback',
+        { clientId: 'byo-github-client', clientSecret: 'byo-github-secret' }
+      );
+    });
+
+    it('does not fall back to platform when BYO authorize state has no live connection', async () => {
+      mockCacheOauth.get.mockResolvedValue({
+        ...statePayload,
+        provider: UserAuthenticationMethodProvider.Github,
+        credentialSource: 'byo',
+      });
+      mockGithubOAuth.isConfigured.mockReturnValue(true);
+      mockProjectOAuthConnections.getDecryptedCredentials.mockResolvedValue(null);
+      const handler = createHandler();
+      await expect(handler.handleProjectCallback('code', stateId)).rejects.toThrow(
+        'no longer configured'
+      );
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).not.toHaveBeenCalled();
+    });
+
+    it('exchanges with platform credentials when state says platform even if BYO exists', async () => {
+      mockProjectOAuthConnections.getDecryptedCredentials.mockResolvedValue({
+        clientId: 'byo-github-client',
+        clientSecret: 'byo-github-secret',
+      });
+      const handler = createHandler();
+      await handler.handleProjectCallback('code', stateId);
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).toHaveBeenCalledWith(
+        'code',
+        'https://api.example.com/api/auth/project/callback',
+        undefined
+      );
+    });
+
+    it('fails closed when callback state lacks credentialSource', async () => {
+      mockCacheOauth.get.mockResolvedValue({
+        projectAppId: validApp.id,
+        redirectUri: 'https://example.com/callback',
+        provider: UserAuthenticationMethodProvider.Github,
+      });
+      const handler = createHandler();
+      await expect(handler.handleProjectCallback('code', stateId)).rejects.toThrow(
+        'Invalid or expired state'
+      );
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).not.toHaveBeenCalled();
+    });
   });
 
   describe('handleProjectCallback (Google)', () => {
@@ -923,6 +1056,7 @@ describe('ProjectOAuthHandler', () => {
       redirectUri: 'https://example.com/callback',
       clientState: 'client-state',
       provider: UserAuthenticationMethodProvider.Google,
+      credentialSource: 'platform' as const,
     };
 
     beforeEach(() => {
@@ -963,7 +1097,8 @@ describe('ProjectOAuthHandler', () => {
       });
       expect(mockGoogleOAuth.exchangeCodeForTokenWithRedirect).toHaveBeenCalledWith(
         'code',
-        'https://api.example.com/api/auth/project/callback'
+        'https://api.example.com/api/auth/project/callback',
+        undefined
       );
       expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).not.toHaveBeenCalled();
       expect(mockAuthHandler.resolveUserIdFromOAuthForProject).toHaveBeenCalledWith(

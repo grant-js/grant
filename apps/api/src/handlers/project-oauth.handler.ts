@@ -6,18 +6,21 @@ import type {
   IOrganizationProjectService,
   IOrganizationUserService,
   IProjectAppService,
+  IProjectOAuthConnectionService,
   IProjectPermissionService,
   IProjectService,
   IProjectUserService,
   IUserAuthenticationMethodService,
   IUserRoleService,
   IUserService,
+  OAuthClientCredentials,
 } from '@grantjs/core';
 import type { Grant } from '@grantjs/core';
 import type { IGitHubOAuthService, IGoogleOAuthService } from '@grantjs/core';
 import {
   type ProjectAppPublicInfo,
   type ProjectConsentInfo,
+  ProjectOAuthConnectionProvider,
   Scope,
   Tenant,
   UserAuthenticationMethodProvider,
@@ -60,6 +63,8 @@ interface ProjectOAuthState {
   requestedScopeSlugs?: string[];
   /** Frontend locale for consent/entry redirects (e.g. en, de). */
   locale?: string;
+  /** Which client started this flow; callback must reuse the same source. Never store secrets. */
+  credentialSource?: 'byo' | 'platform';
 }
 
 interface ProjectOAuthEmailTokenPayload {
@@ -119,6 +124,7 @@ export class ProjectOAuthHandler {
     private readonly authHandler: AuthHandler,
     private readonly githubOAuth: IGitHubOAuthService,
     private readonly googleOAuth: IGoogleOAuthService,
+    private readonly projectOAuthConnections: IProjectOAuthConnectionService,
     private readonly grant: Grant,
     private readonly cache: IEntityCacheAdapter,
     private readonly email: IEmailService,
@@ -140,6 +146,99 @@ export class ProjectOAuthHandler {
   private effectiveRequestedScopes(appScopes: string[], requestedSlugs: string[]): string[] {
     const allowedSet = new Set(appScopes);
     return requestedSlugs.filter((s) => allowedSet.has(s));
+  }
+
+  private socialConnectionProvider(
+    provider: ProjectOAuthProvider
+  ): ProjectOAuthConnectionProvider | null {
+    if (provider === UserAuthenticationMethodProvider.Github) {
+      return ProjectOAuthConnectionProvider.Github;
+    }
+    if (provider === UserAuthenticationMethodProvider.Google) {
+      return ProjectOAuthConnectionProvider.Google;
+    }
+    return null;
+  }
+
+  private socialOAuthService(provider: ProjectOAuthConnectionProvider) {
+    return provider === ProjectOAuthConnectionProvider.Google ? this.googleOAuth : this.githubOAuth;
+  }
+
+  private socialProviderLabel(provider: ProjectOAuthConnectionProvider): string {
+    return provider === ProjectOAuthConnectionProvider.Google ? 'Google' : 'GitHub';
+  }
+
+  /**
+   * BYO connection first; otherwise platform env when fallback is allowed.
+   * Secrets are returned only for BYO and must not be logged or cached.
+   */
+  private async resolveSocialCredentials(
+    projectId: string,
+    provider: ProjectOAuthConnectionProvider
+  ): Promise<
+    { source: 'byo'; credentials: OAuthClientCredentials } | { source: 'platform' } | null
+  > {
+    const byo = await this.projectOAuthConnections.getDecryptedCredentials(projectId, provider);
+    if (byo) {
+      return { source: 'byo', credentials: byo };
+    }
+    if (config.projectOAuth.requireByoSocial) {
+      return null;
+    }
+    const oauth = this.socialOAuthService(provider);
+    if (!(await oauth.isConfigured())) {
+      return null;
+    }
+    return { source: 'platform' };
+  }
+
+  private async listConfiguredSocialProviders(projectId: string): Promise<string[]> {
+    const connections = await this.projectOAuthConnections.listByProject(projectId);
+    const configured = new Set(
+      connections.filter((row) => row.isConfigured).map((row) => row.provider)
+    );
+    if (!config.projectOAuth.requireByoSocial) {
+      if (await this.githubOAuth.isConfigured()) {
+        configured.add(ProjectOAuthConnectionProvider.Github);
+      }
+      if (await this.googleOAuth.isConfigured()) {
+        configured.add(ProjectOAuthConnectionProvider.Google);
+      }
+    }
+    return [ProjectOAuthConnectionProvider.Github, ProjectOAuthConnectionProvider.Google].filter(
+      (provider) => configured.has(provider)
+    );
+  }
+
+  /**
+   * Callback must use the same client that started authorize. BYO source never
+   * falls back to platform (that would mix a BYO client_id with the platform secret).
+   */
+  private async credentialsForCallback(
+    projectId: string,
+    provider: ProjectOAuthConnectionProvider,
+    source: 'byo' | 'platform' | undefined
+  ): Promise<OAuthClientCredentials | undefined> {
+    if (source === 'byo') {
+      const byo = await this.projectOAuthConnections.getDecryptedCredentials(projectId, provider);
+      if (!byo) {
+        throw new ConfigurationError(
+          `${this.socialProviderLabel(provider)} OAuth connection is no longer configured`
+        );
+      }
+      return byo;
+    }
+    if (source === 'platform') {
+      const oauth = this.socialOAuthService(provider);
+      if (!(await oauth.isConfigured())) {
+        throw new ConfigurationError(
+          `${this.socialProviderLabel(provider)} OAuth is not configured`
+        );
+      }
+      return undefined;
+    }
+
+    throw new AuthenticationError('Invalid or expired state');
   }
 
   /**
@@ -198,9 +297,11 @@ export class ProjectOAuthHandler {
       scopeSlugs
     );
     const branding = await this.resolveAppBranding(app);
+    const configuredProviders = await this.listConfiguredSocialProviders(app.projectId);
     return {
       name: app.name ?? null,
       enabledProviders: app.enabledProviders ?? null,
+      configuredProviders,
       scopes,
       ...branding,
     };
@@ -245,6 +346,21 @@ export class ProjectOAuthHandler {
       32
     );
     const stateId = stateToken.token;
+    const connectionProvider = this.socialConnectionProvider(provider);
+    let credentialSource: 'byo' | 'platform' | undefined;
+    let byoCredentials: OAuthClientCredentials | undefined;
+    if (connectionProvider) {
+      const resolved = await this.resolveSocialCredentials(app.projectId, connectionProvider);
+      if (!resolved) {
+        throw new ConfigurationError(
+          `${this.socialProviderLabel(connectionProvider)} OAuth is not configured`
+        );
+      }
+      credentialSource = resolved.source;
+      if (resolved.source === 'byo') {
+        byoCredentials = resolved.credentials;
+      }
+    }
     const statePayload: ProjectOAuthState = {
       projectAppId: app.id,
       redirectUri,
@@ -252,17 +368,19 @@ export class ProjectOAuthHandler {
       provider,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
       ...(locale?.trim() ? { locale: locale.trim() } : {}),
+      ...(credentialSource ? { credentialSource } : {}),
     };
     const key = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey;
     await this.cache.oauth.set(key, statePayload, config.projectOAuth.stateTtlSeconds);
 
-    const providerImpl = this.getProviderRegistry()[provider];
-    const authorizationUrl = await providerImpl.getAuthorizeUrl({
+    const providerImpl = this.getProviderRegistry();
+    const authorizationUrl = await providerImpl[provider].getAuthorizeUrl({
       clientId,
       redirectUri,
       stateId,
       clientState,
       appName: app.name ?? undefined,
+      credentials: byoCredentials,
     });
     return { authorizationUrl };
   }
@@ -275,20 +393,12 @@ export class ProjectOAuthHandler {
   private getProviderRegistry(): Record<ProjectOAuthProvider, IProjectOAuthProvider> {
     return {
       github: {
-        getAuthorizeUrl: async (params) => {
-          if (!(await this.githubOAuth.isConfigured())) {
-            throw new ConfigurationError('GitHub OAuth is not configured');
-          }
-          return this.githubOAuth.getProjectAuthorizationUrl(params.stateId);
-        },
+        getAuthorizeUrl: (params) =>
+          this.githubOAuth.getProjectAuthorizationUrl(params.stateId, params.credentials),
       },
       google: {
-        getAuthorizeUrl: async (params) => {
-          if (!(await this.googleOAuth.isConfigured())) {
-            throw new ConfigurationError('Google OAuth is not configured');
-          }
-          return this.googleOAuth.getProjectAuthorizationUrl(params.stateId);
-        },
+        getAuthorizeUrl: (params) =>
+          this.googleOAuth.getProjectAuthorizationUrl(params.stateId, params.credentials),
       },
       email: {
         getAuthorizeUrl: (params) => {
@@ -423,13 +533,11 @@ export class ProjectOAuthHandler {
       throw new BadRequestError(`Unknown provider: ${provider}`);
     }
 
-    const oauth =
-      provider === UserAuthenticationMethodProvider.Google ? this.googleOAuth : this.githubOAuth;
-    if (!(await oauth.isConfigured())) {
-      throw new ConfigurationError(
-        `${provider === UserAuthenticationMethodProvider.Google ? 'Google' : 'GitHub'} OAuth is not configured`
-      );
+    const connectionProvider = this.socialConnectionProvider(provider);
+    if (!connectionProvider) {
+      throw new BadRequestError(`Unknown provider: ${provider}`);
     }
+    const oauth = this.socialOAuthService(connectionProvider);
 
     const app = await this.projectApps.getProjectAppById(state.projectAppId);
     if (!app) {
@@ -441,8 +549,17 @@ export class ProjectOAuthHandler {
       throw new BadRequestError('redirect_uri mismatch');
     }
 
+    const exchangeCredentials = await this.credentialsForCallback(
+      app.projectId,
+      connectionProvider,
+      state.credentialSource
+    );
     const projectCallbackUrl = oauth.getProjectCallbackUrl();
-    const accessToken = await oauth.exchangeCodeForTokenWithRedirect(code, projectCallbackUrl);
+    const accessToken = await oauth.exchangeCodeForTokenWithRedirect(
+      code,
+      projectCallbackUrl,
+      exchangeCredentials
+    );
     const user = await oauth.getOAuthUserInfo(accessToken);
     const providerId = user.id;
     const providerData = oauth.buildProviderData(user, accessToken, true);

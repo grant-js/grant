@@ -1257,6 +1257,44 @@ export type UploadProjectAppPictureMutation = {
   uploadProjectAppPicture: { url: string; path: string };
 };
 
+export type ClearProjectOAuthConnectionMutationVariables = Exact<{
+  input: Types.ClearProjectOAuthConnectionInput;
+}>;
+
+export type ClearProjectOAuthConnectionMutation = { clearProjectOAuthConnection: boolean };
+
+export type GetProjectOAuthConnectionsQueryVariables = Exact<{
+  scope: Types.Scope;
+}>;
+
+export type GetProjectOAuthConnectionsQuery = {
+  projectOAuthConnections: Array<{
+    id: string;
+    projectId: string;
+    provider: Types.ProjectOAuthConnectionProvider;
+    clientId: string;
+    isConfigured: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+};
+
+export type UpsertProjectOAuthConnectionMutationVariables = Exact<{
+  input: Types.UpsertProjectOAuthConnectionInput;
+}>;
+
+export type UpsertProjectOAuthConnectionMutation = {
+  upsertProjectOAuthConnection: {
+    id: string;
+    projectId: string;
+    provider: Types.ProjectOAuthConnectionProvider;
+    clientId: string;
+    isConfigured: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
 export type CancelProjectSyncMutationVariables = Exact<{
   id: string | number;
   scope: Types.Scope;
@@ -7187,6 +7225,153 @@ export const UploadProjectAppPictureDocument = {
 } as unknown as DocumentNode<
   UploadProjectAppPictureMutation,
   UploadProjectAppPictureMutationVariables
+>;
+export const ClearProjectOAuthConnectionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'ClearProjectOAuthConnection' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ClearProjectOAuthConnectionInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'clearProjectOAuthConnection' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ClearProjectOAuthConnectionMutation,
+  ClearProjectOAuthConnectionMutationVariables
+>;
+export const GetProjectOAuthConnectionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetProjectOAuthConnections' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'projectOAuthConnections' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isConfigured' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetProjectOAuthConnectionsQuery,
+  GetProjectOAuthConnectionsQueryVariables
+>;
+export const UpsertProjectOAuthConnectionDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'UpsertProjectOAuthConnection' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'UpsertProjectOAuthConnectionInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'upsertProjectOAuthConnection' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isConfigured' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpsertProjectOAuthConnectionMutation,
+  UpsertProjectOAuthConnectionMutationVariables
 >;
 export const CancelProjectSyncDocument = {
   kind: 'Document',

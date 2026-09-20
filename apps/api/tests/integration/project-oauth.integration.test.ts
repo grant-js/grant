@@ -26,6 +26,7 @@ const { mockConfig } = vi.hoisted(() => ({
     projectOAuth: {
       emailEntryUrl: 'https://app.example.com/auth/project/email',
       consentUrl: 'https://app.example.com/auth/project/consent',
+      requireByoSocial: false,
     },
     app: {
       url: 'https://api.example.com',
@@ -77,6 +78,14 @@ interface ProjectOAuthContextOverrides {
     projectId: string,
     scopeSlugs: string[]
   ) => Promise<{ slug: string; name: string; description: string | null }[]>;
+  githubIsConfigured?: boolean;
+  googleIsConfigured?: boolean;
+  byoCredentials?: { clientId: string; clientSecret: string } | null;
+  listConnections?: Array<{ provider: string; isConfigured?: boolean }>;
+  getProjectAuthorizationUrl?: (
+    state: string,
+    credentials?: { clientId: string; clientSecret: string }
+  ) => string;
 }
 
 function buildProjectOAuthContext(
@@ -124,10 +133,10 @@ function buildProjectOAuthContext(
     resolveUserIdFromEmailForProject: vi.fn().mockResolvedValue('user-1'),
   };
   const githubOAuth = {
-    isConfigured: vi.fn().mockReturnValue(true),
-    getProjectAuthorizationUrl: vi
-      .fn()
-      .mockReturnValue('https://github.com/login/oauth/authorize?state=xyz'),
+    isConfigured: vi.fn().mockReturnValue(overrides?.githubIsConfigured ?? true),
+    getProjectAuthorizationUrl:
+      overrides?.getProjectAuthorizationUrl ??
+      vi.fn().mockReturnValue('https://github.com/login/oauth/authorize?state=xyz'),
     getProjectCallbackUrl: vi
       .fn()
       .mockReturnValue('https://api.example.com/api/auth/project/callback'),
@@ -143,7 +152,7 @@ function buildProjectOAuthContext(
     buildProviderData: vi.fn().mockReturnValue({ accessToken: 'gh-token', githubId: '1' }),
   };
   const googleOAuth = {
-    isConfigured: vi.fn().mockReturnValue(true),
+    isConfigured: vi.fn().mockReturnValue(overrides?.googleIsConfigured ?? true),
     getProjectAuthorizationUrl: vi
       .fn()
       .mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth?state=xyz'),
@@ -153,6 +162,10 @@ function buildProjectOAuthContext(
     exchangeCodeForTokenWithRedirect: vi.fn(),
     getOAuthUserInfo: vi.fn(),
     buildProviderData: vi.fn(),
+  };
+  const projectOAuthConnections = {
+    listByProject: vi.fn().mockResolvedValue(overrides?.listConnections ?? []),
+    getDecryptedCredentials: vi.fn().mockResolvedValue(overrides?.byoCredentials ?? null),
   };
   const grant = {
     signApiKeyToken: vi.fn().mockResolvedValue('fake-jwt-token'),
@@ -183,6 +196,7 @@ function buildProjectOAuthContext(
     authHandler as never,
     githubOAuth as never,
     googleOAuth as never,
+    projectOAuthConnections as never,
     grant as never,
     cache,
     email as never,
@@ -281,6 +295,37 @@ describe('Project OAuth integration', () => {
       expect(res.headers.location).toContain('accounts.google.com');
     });
 
+    it('returns 302 using the BYO GitHub client when a connection is configured', async () => {
+      const cacheByo = CacheFactory.createEntityCache({ strategy: 'memory' });
+      try {
+        const contextByo = buildProjectOAuthContext(cacheByo, {
+          githubIsConfigured: false,
+          byoCredentials: { clientId: 'byo-github-client', clientSecret: 'byo-github-secret' },
+          getProjectAuthorizationUrl: (_state, credentials) =>
+            `https://github.com/login/oauth/authorize?client_id=${credentials?.clientId ?? 'missing'}`,
+        });
+        const appByo = express();
+        appByo.use(express.json());
+        appByo.use('/api/auth', createAuthRoutes(contextByo));
+        appByo.use(errorHandler);
+
+        const res = await request(appByo)
+          .get('/api/auth/project/authorize')
+          .query({
+            client_id: fixtureApp.clientId,
+            redirect_uri: 'https://example.com/callback',
+            state: 'test-state',
+            provider: UserAuthenticationMethodProvider.Github,
+          })
+          .expect(302);
+
+        expect(res.headers.location).toContain('client_id=byo-github-client');
+        expect(res.headers.location).not.toContain('byo-github-secret');
+      } finally {
+        await CacheFactory.disconnect(cacheByo);
+      }
+    });
+
     it('returns 400 when redirect_uri is not in allowlist', async () => {
       await request(app)
         .get('/api/auth/project/authorize')
@@ -290,6 +335,34 @@ describe('Project OAuth integration', () => {
           state: 'test-state',
         })
         .expect(400);
+    });
+
+    it('returns 503 when require-BYO is on and no connection exists', async () => {
+      const cacheRequireByo = CacheFactory.createEntityCache({ strategy: 'memory' });
+      try {
+        mockConfig.projectOAuth.requireByoSocial = true;
+        const contextRequireByo = buildProjectOAuthContext(cacheRequireByo, {
+          githubIsConfigured: true,
+          googleIsConfigured: true,
+        });
+        const appRequireByo = express();
+        appRequireByo.use(express.json());
+        appRequireByo.use('/api/auth', createAuthRoutes(contextRequireByo));
+        appRequireByo.use(errorHandler);
+
+        await request(appRequireByo)
+          .get('/api/auth/project/authorize')
+          .query({
+            client_id: fixtureApp.clientId,
+            redirect_uri: 'https://example.com/callback',
+            state: 'test-state',
+            provider: UserAuthenticationMethodProvider.Google,
+          })
+          .expect(500);
+      } finally {
+        mockConfig.projectOAuth.requireByoSocial = false;
+        await CacheFactory.disconnect(cacheRequireByo);
+      }
     });
   });
 
@@ -426,6 +499,7 @@ describe('Project OAuth integration', () => {
       expect(res.body.data).toBeDefined();
       expect(res.body.data.name).toBe(fixtureApp.name);
       expect(res.body.data.enabledProviders).toEqual(fixtureApp.enabledProviders);
+      expect(res.body.data.configuredProviders).toEqual(['github', 'google']);
       expect(Array.isArray(res.body.data.scopes)).toBe(true);
     });
 
@@ -456,6 +530,40 @@ describe('Project OAuth integration', () => {
           redirect_uri: 'https://evil.com/callback',
         })
         .expect(400);
+    });
+
+    it('does not expose connection secrets or storage keys', async () => {
+      const res = await request(app)
+        .get('/api/auth/project/app-info')
+        .query({ client_id: fixtureApp.clientId })
+        .expect(200);
+
+      const body = JSON.stringify(res.body);
+      expect(body).not.toMatch(/clientSecret|encryptedSecret|secretIv|secretTag|picturePath/i);
+    });
+
+    it('includes BYO google in configuredProviders when platform Google is empty', async () => {
+      const cacheByo = CacheFactory.createEntityCache({ strategy: 'memory' });
+      try {
+        const contextByo = buildProjectOAuthContext(cacheByo, {
+          githubIsConfigured: false,
+          googleIsConfigured: false,
+          listConnections: [{ provider: 'google', isConfigured: true }],
+        });
+        const appByo = express();
+        appByo.use(express.json());
+        appByo.use('/api/auth', createAuthRoutes(contextByo));
+        appByo.use(errorHandler);
+
+        const res = await request(appByo)
+          .get('/api/auth/project/app-info')
+          .query({ client_id: fixtureApp.clientId })
+          .expect(200);
+
+        expect(res.body.data.configuredProviders).toEqual(['google']);
+      } finally {
+        await CacheFactory.disconnect(cacheByo);
+      }
     });
   });
 

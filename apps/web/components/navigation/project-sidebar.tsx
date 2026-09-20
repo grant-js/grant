@@ -11,6 +11,7 @@ import {
   Group,
   KeyRound,
   LayoutGrid,
+  Link2,
   Package,
   Palette,
   Shield,
@@ -91,6 +92,11 @@ export function ProjectSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           title: t('branding'),
           url: `/dashboard/organizations/${organizationId}/projects/${projectId}/branding`,
           icon: Palette,
+        },
+        {
+          title: t('oauthConnections'),
+          url: `/dashboard/organizations/${organizationId}/projects/${projectId}/oauth-connections`,
+          icon: Link2,
         },
         {
           title: t('roles'),

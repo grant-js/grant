@@ -1,4 +1,9 @@
-import type { IGoogleOAuthService, ISecretResolver, OAuthUserInfo } from '@grantjs/core';
+import type {
+  IGoogleOAuthService,
+  ISecretResolver,
+  OAuthClientCredentials,
+  OAuthUserInfo,
+} from '@grantjs/core';
 import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
 import { config } from '@/config';
@@ -57,15 +62,16 @@ export class GoogleOAuthService implements IGoogleOAuthService {
     return `${config.googleOAuth.authorizationUrl}?${params.toString()}`;
   }
 
-  getProjectAuthorizationUrl(state: string): string {
+  getProjectAuthorizationUrl(state: string, credentials?: OAuthClientCredentials): string {
     const context = 'GoogleOAuthService.getProjectAuthorizationUrl';
     const validatedState = validateInput(oauthStateTokenSchema, state, context);
-    if (!config.googleOAuth.clientId) {
+    const clientId = credentials?.clientId ?? config.googleOAuth.clientId;
+    if (!clientId) {
       throw new ConfigurationError('Google OAuth is not configured');
     }
 
     const params = new URLSearchParams({
-      client_id: config.googleOAuth.clientId,
+      client_id: clientId,
       redirect_uri: this.getProjectCallbackUrl(),
       response_type: 'code',
       scope: config.googleOAuth.scopes.join(' '),
@@ -89,11 +95,16 @@ export class GoogleOAuthService implements IGoogleOAuthService {
     return this.exchangeCodeForTokenWithRedirect(validatedCode, config.googleOAuth.callbackUrl);
   }
 
-  async exchangeCodeForTokenWithRedirect(code: string, redirectUri: string): Promise<string> {
+  async exchangeCodeForTokenWithRedirect(
+    code: string,
+    redirectUri: string,
+    credentials?: OAuthClientCredentials
+  ): Promise<string> {
     const context = 'GoogleOAuthService.exchangeCodeForTokenWithRedirect';
     const validatedCode = validateInput(googleAuthorizationCodeSchema, code, context);
-    const clientSecret = await this.resolveClientSecret();
-    if (!config.googleOAuth.clientId || !clientSecret) {
+    const clientId = credentials?.clientId ?? config.googleOAuth.clientId;
+    const clientSecret = credentials?.clientSecret ?? (await this.resolveClientSecret());
+    if (!clientId || !clientSecret) {
       throw new ConfigurationError('Google OAuth is not configured');
     }
 
@@ -105,7 +116,7 @@ export class GoogleOAuthService implements IGoogleOAuthService {
           Accept: 'application/json',
         },
         body: new URLSearchParams({
-          client_id: config.googleOAuth.clientId,
+          client_id: clientId,
           client_secret: clientSecret,
           code: validatedCode,
           grant_type: 'authorization_code',
@@ -155,10 +166,6 @@ export class GoogleOAuthService implements IGoogleOAuthService {
   async getOAuthUserInfo(accessToken: string): Promise<OAuthUserInfo> {
     const context = 'GoogleOAuthService.getOAuthUserInfo';
     const validatedAccessToken = validateInput(googleAccessTokenSchema, accessToken, context);
-
-    if (!(await this.hasClientCredentials())) {
-      throw new ConfigurationError('Google OAuth is not configured');
-    }
 
     try {
       const response = await fetch(config.googleOAuth.userInfoUrl, {

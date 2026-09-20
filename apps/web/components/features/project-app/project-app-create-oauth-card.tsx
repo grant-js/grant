@@ -27,6 +27,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useScopeFromParams } from '@/hooks/common';
 import { useProjectAppFormData } from '@/hooks/project-apps';
+import { useProjectOAuthConnectionNav } from '@/hooks/project-oauth-connections';
 
 import type { ProjectAppCreateFormValues } from '../project-apps/project-app-types';
 import { PROJECT_OAUTH_PROVIDER_OPTIONS } from '../project-apps/project-app-types';
@@ -39,6 +40,7 @@ export function ProjectAppCreateOauthCard() {
   const form = useFormContext<ProjectAppCreateFormValues>();
   const projectId = useMemo(() => (scope?.id ? scope.id.split(':')[1] : undefined), [scope]);
   const { projectRoles } = useProjectAppFormData(scope, projectId);
+  const { configuredProviders, connectionHrefByProvider } = useProjectOAuthConnectionNav(scope);
 
   const allowSignUp = form.watch('allowSignUp');
 
@@ -77,6 +79,8 @@ export function ProjectAppCreateOauthCard() {
           label={tProjectApps('form.enabledProviders')}
           items={providerItems}
           emptyText={tProjectApps('form.noProvidersAvailable')}
+          connectionHrefByProvider={connectionHrefByProvider}
+          configuredProviders={configuredProviders}
         />
         <div className="space-y-3">
           <FormLabel>{tProjectApps('form.signUp')}</FormLabel>

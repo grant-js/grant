@@ -44,6 +44,7 @@ export const RESOLVER_SECRET_KEYS = [
   'GITHUB_CLIENT_SECRET',
   'GOOGLE_CLIENT_SECRET',
   'AUTH_MFA_SECRET_ENCRYPTION_KEY',
+  'PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY',
 
   // Routed rather than refused since `apps/api/src/config/credentials.ts` began
   // overlaying resolver-provided values onto `config` in the composition root, before

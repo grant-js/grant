@@ -144,6 +144,13 @@ export const envSchema = z.object({
   PROJECT_OAUTH_STATE_TTL_SECONDS: optionalNumber(600),
   PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS: optionalNumber(600),
   PROJECT_OAUTH_CONSENT_TTL_SECONDS: optionalNumber(600),
+  /**
+   * AES-256-GCM key material for per-project BYO OAuth client secrets.
+   * Distinct from AUTH_MFA_SECRET_ENCRYPTION_KEY (different KDF salt).
+   */
+  PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: optionalString(''),
+  /** When true, project social OAuth requires a BYO connection (no platform fallback). */
+  PROJECT_OAUTH_REQUIRE_BYO_SOCIAL: optionalBoolean(false),
 
   // Pagination
   PAGINATION_DEFAULT_PAGE_SIZE: optionalNumber(50),

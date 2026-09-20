@@ -1,0 +1,8 @@
+"""
+Social identity providers that can have a per-project OAuth connection.
+Email magic-link is not a connection.
+"""
+enum ProjectOAuthConnectionProvider {
+  github
+  google
+}

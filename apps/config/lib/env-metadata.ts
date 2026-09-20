@@ -387,6 +387,27 @@ const META: EnvVarMeta[] = [
     critical: true,
   },
   {
+    key: 'PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY',
+    category: 'auth',
+    label: 'Project OAuth connection encryption key',
+    description:
+      'Encrypts per-project GitHub/Google OAuth client secrets at rest. Distinct from the MFA key.',
+    envFiles: ['.env'],
+    isPassword: true,
+    section: 'Project OAuth',
+    critical: true,
+  },
+  {
+    key: 'PROJECT_OAUTH_REQUIRE_BYO_SOCIAL',
+    category: 'auth',
+    label: 'Require BYO social OAuth',
+    description:
+      'When true, project apps must register their own GitHub/Google client; platform env credentials are not used as fallback (default: false).',
+    envFiles: ['.env'],
+    options: ['true', 'false'],
+    section: 'Project OAuth',
+  },
+  {
     key: 'AUTH_MIN_AAL_AT_LOGIN',
     category: 'auth',
     label: 'Minimum AAL at login',

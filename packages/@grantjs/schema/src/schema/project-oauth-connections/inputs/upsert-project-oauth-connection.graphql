@@ -1,0 +1,12 @@
+input UpsertProjectOAuthConnectionInput {
+  scope: Scope!
+  provider: ProjectOAuthConnectionProvider!
+  """
+  Public OAuth client id of the customer's GitHub or Google app.
+  """
+  clientId: String!
+  """
+  OAuth client secret. Write-only; never returned on the connection type or in logs.
+  """
+  clientSecret: String!
+}

@@ -1,0 +1,8 @@
+extend type Mutation {
+  """
+  Create or replace the project's GitHub or Google OAuth connection.
+  The client secret is write-only and is never returned.
+  Requires Project Update on the scoped project.
+  """
+  upsertProjectOAuthConnection(input: UpsertProjectOAuthConnectionInput!): ProjectOAuthConnection!
+}

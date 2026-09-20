@@ -29,6 +29,11 @@ export interface ProjectAppPublicInfo {
   showHelpPanel: boolean;
   themeMode: ProjectOAuthThemeMode | null;
   enabledProviders: string[] | null;
+  /**
+   * Social providers this project can offer (BYO connection and/or platform fallback).
+   * Hosted sign-in uses this instead of GET /api/auth/providers.
+   */
+  configuredProviders?: string[];
   scopes: ProjectAppScopeInfo[];
 }
 

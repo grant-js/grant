@@ -222,7 +222,8 @@
       "projectSyncJobs": "Import/Export",
       "webhooks": "Webhooks",
       "notifications": "Notifications",
-      "branding": "Branding"
+      "branding": "Branding",
+      "oauthConnections": "OAuth connections"
     }
   },
   "theme": {
@@ -1399,7 +1400,10 @@
     },
     "oauth": {
       "title": "OAuth",
-      "description": "Redirect URIs, auth providers, and sign-up settings."
+      "description": "Redirect URIs, auth providers, and sign-up settings.",
+      "configureConnection": "Configure a project connection",
+      "configureConnectionAria": "{provider} OAuth connection",
+      "usingPlatformCredentials": "Using platform credentials."
     },
     "scopes": {
       "title": "Scopes",
@@ -2878,6 +2882,39 @@
           "readFailed": "Failed to read the file. Please try again.",
           "uploadFailed": "Failed to upload the image. Please try again."
         }
+      }
+    },
+    "oauthConnections": {
+      "title": "OAuth connections",
+      "description": "Register your own GitHub or Google OAuth app for hosted project sign-in. Secrets are write-only and never shown again.",
+      "loadError": "Unable to load OAuth connections",
+      "docsLink": "Project OAuth documentation",
+      "configuredBadge": "Configured",
+      "notConfiguredBadge": "Not configured",
+      "clientId": "Client ID",
+      "clientSecret": "Client secret",
+      "clientSecretHint": "Required on every save. Stored encrypted and never returned.",
+      "clientSecretConfiguredPlaceholder": "Enter a new secret to update",
+      "clearConnection": "Remove connection",
+      "clearingConnection": "Removing…",
+      "providers": {
+        "github": "GitHub",
+        "google": "Google"
+      },
+      "callback": {
+        "title": "Grant callback URL",
+        "description": "Add this exact redirect URI to your GitHub or Google OAuth app (not your product SPA URLs).",
+        "hint": "Both providers use the same Grant broker callback."
+      },
+      "validation": {
+        "clientIdRequired": "Client ID is required",
+        "clientSecretRequired": "Client secret is required"
+      },
+      "notifications": {
+        "saveSuccess": "{provider} connection saved",
+        "saveError": "Failed to save OAuth connection",
+        "clearSuccess": "{provider} connection removed",
+        "clearError": "Failed to remove OAuth connection"
       }
     },
     "view": {

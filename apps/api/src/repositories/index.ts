@@ -31,6 +31,7 @@ import { ProjectAppRepository } from './project-apps.repository';
 import { ProjectExportRepository } from './project-export.repository';
 import { ProjectGroupRepository } from './project-groups.repository';
 import { ProjectImportRepository } from './project-import.repository';
+import { ProjectOAuthConnectionRepository } from './project-oauth-connections.repository';
 import { ProjectPermissionRepository } from './project-permissions.repository';
 import { ProjectResourceRepository } from './project-resources.repository';
 import { ProjectRolePermissionRepository } from './project-role-permissions.repository';
@@ -97,6 +98,7 @@ export function createRepositories(db: DbSchema) {
     projectSyncJobRepository: new ProjectSyncJobRepository(db),
     projectAppRepository: new ProjectAppRepository(db),
     projectAppTagRepository: new ProjectAppTagRepository(db),
+    projectOAuthConnectionRepository: new ProjectOAuthConnectionRepository(db),
     projectGroupRepository: new ProjectGroupRepository(db),
     projectPermissionRepository: new ProjectPermissionRepository(db),
     projectResourceRepository: new ProjectResourceRepository(db),
