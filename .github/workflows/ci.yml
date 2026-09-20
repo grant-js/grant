@@ -181,6 +181,10 @@ jobs:
       - name: Type check
         run: pnpm run type-check
 
+      # grant-web browser tests launch Playwright Firefox. The self-hosted runner
+      # is a headless Ubuntu without GTK/X11/ATK; `prepare-playwright-firefox.mjs`
+      # installs those host libraries when GITHUB_ACTIONS=true (not on local
+      # `pnpm test`, which would prompt for sudo).
       - name: Test
         run: pnpm test
 

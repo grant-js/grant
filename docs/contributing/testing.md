@@ -82,6 +82,8 @@ apps/api/tests/
 | **API** | `node`            | `apps/api/vitest.config.ts` — uses `vite-tsconfig-paths` for `@/` imports                                |
 | **Web** | `jsdom` + Firefox | `apps/web/vitest.config.ts` — component + hook tests in jsdom; `*.browser.test.ts` in Playwright Firefox |
 
+GitHub Actions installs Playwright Firefox with host libraries (`playwright install --with-deps firefox`) so the self-hosted runner can `browserType.launch`. Local `pnpm test` only downloads the browser.
+
 ## Security and Compliance Tests
 
 E2E tests create real tenant contexts (users, organizations, projects, tokens) and issue actual HTTP requests. Each test follows a positive/negative pattern:
