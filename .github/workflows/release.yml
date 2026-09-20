@@ -190,7 +190,9 @@ jobs:
     needs: prepare
     if: inputs.rebuild_release_images != true
     outputs:
-      published: ${{ steps.changesets.outputs.published }}
+      # True when npm published this run, or when the current platform
+      # version still has no v* git tag (npm may already have that semver).
+      published: ${{ steps.release-gate.outputs.published }}
     permissions:
       contents: write
       pull-requests: write
@@ -259,6 +261,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # No NPM_TOKEN / NODE_AUTH_TOKEN: npm CLI exchanges this job's OIDC
           # token. A classic token (even expired) skips trusted publishing.
+
+      # changesets/action sets published=false when every npm semver already
+      # exists. That happened for 1.10.0: packages were on npm, but
+      # apps/api/package.json was still 1.9.2 so the tag job refreshed v1.9.2.
+      # After the platform version is bumped, we still need v*, GH Release,
+      # and :semver images even if changeset publish is a no-op.
+      - name: Tag release when platform version is untagged
+        id: release-gate
+        env:
+          CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
+        run: |
+          set -euo pipefail
+          if [[ "${CHANGESETS_PUBLISHED}" == "true" ]]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VERSION="$(node -p "require('./apps/api/package.json').version")"
+          if git ls-remote --tags origin "refs/tags/v${VERSION}" | grep -q .; then
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
 
   docker:
     name: Build and push images

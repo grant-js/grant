@@ -3,6 +3,24 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.10.0
+
+### Platform
+
+**Docker images:** tagged `:1.10.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.10.0** (fixed group with apps).
+
+### Minor Changes
+
+- 3bcfc95: Add per-project GitHub and Google OAuth connections (bring-your-own IdP). Projects can store their own GitHub/Google client credentials; secrets are write-only and never returned on read. Hosted authorize and callback resolve the same project client.
+
+### Patch Changes
+
+- 6701cc2: Keep cropped profile, organization, and project pictures as the selected pixels instead of a blank PNG, including in Firefox.
+- 3bcfc95: Clarify Project App OAuth provider toggles versus project connections, and make stored connection status easier to scan (gear affordance, Configured badge, callback URL spacing).
+- c255dd3: Fix the Release workflow `create-github-releases` input so changesets/action v2 can version and publish again.
+
 ## 1.9.2
 
 ### Platform

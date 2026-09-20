@@ -1,5 +1,11 @@
 # grant-docs
 
+## 1.10.0
+
+### Minor Changes
+
+- 3bcfc95: Add per-project GitHub and Google OAuth connections (bring-your-own IdP). Projects can store their own GitHub/Google client credentials; secrets are write-only and never returned on read. Hosted authorize and callback resolve the same project client.
+
 ## 1.9.2
 
 ## 1.9.1
