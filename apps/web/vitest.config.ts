@@ -21,6 +21,9 @@ const shared = {
 
 export default defineConfig({
   ...shared,
+  optimizeDeps: {
+    include: ['react', 'react-dom/client', 'react-easy-crop'],
+  },
   test: {
     coverage: {
       provider: 'v8',
