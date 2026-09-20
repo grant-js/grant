@@ -1,4 +1,9 @@
-import type { IGitHubOAuthService, ISecretResolver, OAuthUserInfo } from '@grantjs/core';
+import type {
+  IGitHubOAuthService,
+  ISecretResolver,
+  OAuthClientCredentials,
+  OAuthUserInfo,
+} from '@grantjs/core';
 import {
   UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
@@ -101,16 +106,18 @@ export class GitHubOAuthService implements IGitHubOAuthService {
   /**
    * Build GitHub authorization URL for project OAuth flow.
    * Uses projectCallbackUrl so GitHub redirects to our project callback.
+   * Optional `credentials` are the project's BYO client; platform env is used otherwise.
    */
-  getProjectAuthorizationUrl(state: string): string {
+  getProjectAuthorizationUrl(state: string, credentials?: OAuthClientCredentials): string {
     const context = 'GitHubOAuthService.getProjectAuthorizationUrl';
     const validatedState = validateInput(oauthStateTokenSchema, state, context);
-    if (!config.githubOAuth.clientId) {
+    const clientId = credentials?.clientId ?? config.githubOAuth.clientId;
+    if (!clientId) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
     const projectCallbackUrl = this.getProjectCallbackUrl();
     const params = new URLSearchParams({
-      client_id: config.githubOAuth.clientId,
+      client_id: clientId,
       redirect_uri: projectCallbackUrl,
       scope: config.githubOAuth.scopes.join(' '),
       state: validatedState,
@@ -133,12 +140,18 @@ export class GitHubOAuthService implements IGitHubOAuthService {
   /**
    * Exchange authorization code for access token using a specific redirect_uri.
    * Used by project OAuth flow where redirect_uri is the project callback URL.
+   * Optional `credentials` must be the same client that started authorize.
    */
-  async exchangeCodeForTokenWithRedirect(code: string, redirectUri: string): Promise<string> {
+  async exchangeCodeForTokenWithRedirect(
+    code: string,
+    redirectUri: string,
+    credentials?: OAuthClientCredentials
+  ): Promise<string> {
     const context = 'GitHubOAuthService.exchangeCodeForTokenWithRedirect';
     const validatedCode = validateInput(githubAuthorizationCodeSchema, code, context);
-    const clientSecret = await this.resolveClientSecret();
-    if (!config.githubOAuth.clientId || !clientSecret) {
+    const clientId = credentials?.clientId ?? config.githubOAuth.clientId;
+    const clientSecret = credentials?.clientSecret ?? (await this.resolveClientSecret());
+    if (!clientId || !clientSecret) {
       throw new ConfigurationError('GitHub OAuth is not configured');
     }
 
@@ -150,7 +163,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
           Accept: 'application/json',
         },
         body: JSON.stringify({
-          client_id: config.githubOAuth.clientId,
+          client_id: clientId,
           client_secret: clientSecret,
           code: validatedCode,
           redirect_uri: redirectUri,
@@ -208,10 +221,6 @@ export class GitHubOAuthService implements IGitHubOAuthService {
     const context = 'GitHubOAuthService.getUserInfo';
 
     const validatedAccessToken = validateInput(githubAccessTokenSchema, accessToken, context);
-
-    if (!(await this.hasClientCredentials())) {
-      throw new ConfigurationError('GitHub OAuth is not configured');
-    }
 
     try {
       const userOctokit = new Octokit({

@@ -299,6 +299,15 @@ const PROJECT_OAUTH_CONFIG = {
 
   /** TTL in seconds for the post-auth consent token. */
   consentTtlSeconds: env.PROJECT_OAUTH_CONSENT_TTL_SECONDS,
+
+  /**
+   * Symmetric key used to encrypt persisted BYO GitHub/Google client secrets.
+   * Resolved at use time through ISecretResolver; this snapshot is for boot visibility.
+   */
+  connectionEncryptionKey: env.PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY || undefined,
+
+  /** When true, project social sign-in requires a BYO connection (no platform env fallback). */
+  requireByoSocial: env.PROJECT_OAUTH_REQUIRE_BYO_SOCIAL,
 } as const;
 
 // ============================================================================

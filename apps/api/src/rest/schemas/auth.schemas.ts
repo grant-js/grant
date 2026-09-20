@@ -400,6 +400,7 @@ export const projectAppInfoResponseSchema = z.object({
   showHelpPanel: z.boolean(),
   themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable(),
   enabledProviders: z.array(z.string()).nullable(),
+  configuredProviders: z.array(z.string()),
   scopes: z.array(projectAppInfoScopeSchema),
 });
 
