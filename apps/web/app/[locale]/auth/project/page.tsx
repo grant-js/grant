@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { getApiBaseUrl } from '@/lib/constants';
 import { oauthClientDisplayName } from '@/lib/oauth-branding';
+import { getProjectOAuthProviderVisibility } from '@/lib/project-oauth-entry.lib';
 import {
   getProjectAppPublicInfo,
   ProjectAppInfoError,
@@ -134,13 +135,7 @@ export default function ProjectOAuthEntryPage() {
     return `/auth/project/email${q.toString() ? `?${q.toString()}` : ''}`;
   }, [clientId, redirectUri, state, scopeParam]);
 
-  const configuredSocial = (appInfo?.configuredProviders ?? []).map((p) => p.toLowerCase());
-  const appAllows = (provider: string) =>
-    !appInfo?.enabledProviders?.length ||
-    appInfo.enabledProviders.some((p) => p.toLowerCase() === provider);
-  const showGithub = appAllows('github') && configuredSocial.includes('github');
-  const showGoogle = appAllows('google') && configuredSocial.includes('google');
-  const showEmail = appAllows('email');
+  const { showGithub, showGoogle, showEmail } = getProjectOAuthProviderVisibility(appInfo);
 
   if (displayLoading) {
     const loadingContent = (

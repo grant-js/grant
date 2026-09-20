@@ -336,6 +336,34 @@ describe('Project OAuth integration', () => {
         })
         .expect(400);
     });
+
+    it('returns 503 when require-BYO is on and no connection exists', async () => {
+      const cacheRequireByo = CacheFactory.createEntityCache({ strategy: 'memory' });
+      try {
+        mockConfig.projectOAuth.requireByoSocial = true;
+        const contextRequireByo = buildProjectOAuthContext(cacheRequireByo, {
+          githubIsConfigured: true,
+          googleIsConfigured: true,
+        });
+        const appRequireByo = express();
+        appRequireByo.use(express.json());
+        appRequireByo.use('/api/auth', createAuthRoutes(contextRequireByo));
+        appRequireByo.use(errorHandler);
+
+        await request(appRequireByo)
+          .get('/api/auth/project/authorize')
+          .query({
+            client_id: fixtureApp.clientId,
+            redirect_uri: 'https://example.com/callback',
+            state: 'test-state',
+            provider: UserAuthenticationMethodProvider.Google,
+          })
+          .expect(500);
+      } finally {
+        mockConfig.projectOAuth.requireByoSocial = false;
+        await CacheFactory.disconnect(cacheRequireByo);
+      }
+    });
   });
 
   describe('POST /api/auth/project/email/request', () => {
@@ -502,6 +530,16 @@ describe('Project OAuth integration', () => {
           redirect_uri: 'https://evil.com/callback',
         })
         .expect(400);
+    });
+
+    it('does not expose connection secrets or storage keys', async () => {
+      const res = await request(app)
+        .get('/api/auth/project/app-info')
+        .query({ client_id: fixtureApp.clientId })
+        .expect(200);
+
+      const body = JSON.stringify(res.body);
+      expect(body).not.toMatch(/clientSecret|encryptedSecret|secretIv|secretTag|picturePath/i);
     });
 
     it('includes BYO google in configuredProviders when platform Google is empty', async () => {

@@ -238,11 +238,7 @@ export class ProjectOAuthHandler {
       return undefined;
     }
 
-    const resolved = await this.resolveSocialCredentials(projectId, provider);
-    if (!resolved) {
-      throw new ConfigurationError(`${this.socialProviderLabel(provider)} OAuth is not configured`);
-    }
-    return resolved.source === 'byo' ? resolved.credentials : undefined;
+    throw new AuthenticationError('Invalid or expired state');
   }
 
   /**

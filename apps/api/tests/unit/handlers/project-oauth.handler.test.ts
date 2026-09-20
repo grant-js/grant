@@ -224,8 +224,13 @@ describe('ProjectOAuthHandler', () => {
           projectAppId: validApp.id,
           redirectUri: 'https://example.com/callback',
           provider: UserAuthenticationMethodProvider.Github,
+          credentialSource: 'platform',
         }),
         expect.any(Number)
+      );
+      expect(mockGithubOAuth.getProjectAuthorizationUrl).toHaveBeenCalledWith(
+        expect.any(String),
+        undefined
       );
     });
 
@@ -865,6 +870,8 @@ describe('ProjectOAuthHandler', () => {
       projectAppId: validApp.id,
       redirectUri: 'https://example.com/callback',
       clientState: 'client-state',
+      provider: UserAuthenticationMethodProvider.Github,
+      credentialSource: 'platform' as const,
     };
     const _scope: Scope = {
       tenant: Tenant.OrganizationProjectUser,
@@ -1013,6 +1020,33 @@ describe('ProjectOAuthHandler', () => {
       );
       expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).not.toHaveBeenCalled();
     });
+
+    it('exchanges with platform credentials when state says platform even if BYO exists', async () => {
+      mockProjectOAuthConnections.getDecryptedCredentials.mockResolvedValue({
+        clientId: 'byo-github-client',
+        clientSecret: 'byo-github-secret',
+      });
+      const handler = createHandler();
+      await handler.handleProjectCallback('code', stateId);
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).toHaveBeenCalledWith(
+        'code',
+        'https://api.example.com/api/auth/project/callback',
+        undefined
+      );
+    });
+
+    it('fails closed when callback state lacks credentialSource', async () => {
+      mockCacheOauth.get.mockResolvedValue({
+        projectAppId: validApp.id,
+        redirectUri: 'https://example.com/callback',
+        provider: UserAuthenticationMethodProvider.Github,
+      });
+      const handler = createHandler();
+      await expect(handler.handleProjectCallback('code', stateId)).rejects.toThrow(
+        'Invalid or expired state'
+      );
+      expect(mockGithubOAuth.exchangeCodeForTokenWithRedirect).not.toHaveBeenCalled();
+    });
   });
 
   describe('handleProjectCallback (Google)', () => {
@@ -1022,6 +1056,7 @@ describe('ProjectOAuthHandler', () => {
       redirectUri: 'https://example.com/callback',
       clientState: 'client-state',
       provider: UserAuthenticationMethodProvider.Google,
+      credentialSource: 'platform' as const,
     };
 
     beforeEach(() => {
