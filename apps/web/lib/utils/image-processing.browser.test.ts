@@ -164,6 +164,7 @@ async function cropWithDialog(imageSrc: string): Promise<{
       }, []);
 
       return createElement(Cropper, {
+        ...Cropper.defaultProps,
         image: imageSrc,
         crop: cropPosition,
         zoom,
