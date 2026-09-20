@@ -21,7 +21,9 @@ export function createProjectOAuthConnectionsRoutes(context: RequestContext): Ro
   router.get(
     '/',
     validate({ query: listProjectOAuthConnectionsQuerySchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     mfa(),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.Project,
       action: ResourceAction.Query,
@@ -43,12 +45,15 @@ export function createProjectOAuthConnectionsRoutes(context: RequestContext): Ro
   router.put(
     '/',
     validate({ body: upsertProjectOAuthConnectionRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     mfa(),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.Project,
       action: ResourceAction.Update,
       resourceResolver: 'projectApp',
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     async (
       req: TypedRequest<{ body: typeof upsertProjectOAuthConnectionRequestSchema }>,
       res: Response
@@ -63,12 +68,15 @@ export function createProjectOAuthConnectionsRoutes(context: RequestContext): Ro
   router.delete(
     '/',
     validate({ body: clearProjectOAuthConnectionRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     mfa(),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.Project,
       action: ResourceAction.Update,
       resourceResolver: 'projectApp',
     }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     async (
       req: TypedRequest<{ body: typeof clearProjectOAuthConnectionRequestSchema }>,
       res: Response
