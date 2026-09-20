@@ -17,6 +17,7 @@ import { OrganizationHandler } from './organizations.handler';
 import { PermissionHandler } from './permissions.handler';
 import { ProjectAppsHandler } from './project-apps.handler';
 import { ProjectOAuthHandler } from './project-oauth.handler';
+import { ProjectOAuthConnectionsHandler } from './project-oauth-connections.handler';
 import { ProjectHandler } from './projects.handler';
 import { ResourceHandler } from './resources.handler';
 import { RoleHandler } from './roles.handler';
@@ -125,6 +126,7 @@ export function createHandlers(
       authHandler,
       services.githubOAuth,
       services.googleOAuth,
+      services.projectOAuthConnections,
       grant,
       cache,
       services.email,
@@ -227,6 +229,12 @@ export function createHandlers(
       services,
       db,
       services.fileStorage
+    ),
+    projectOAuthConnections: new ProjectOAuthConnectionsHandler(
+      services.projectOAuthConnections,
+      cache,
+      services,
+      db
     ),
     resources: new ResourceHandler(
       services.resourceTags,

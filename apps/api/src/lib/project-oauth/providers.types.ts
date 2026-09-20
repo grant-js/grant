@@ -1,3 +1,5 @@
+import type { OAuthClientCredentials } from '@grantjs/core';
+
 /**
  * Project OAuth provider abstraction.
  * To add a new provider (e.g. Google): implement this interface, add the provider to
@@ -18,5 +20,6 @@ export interface IProjectOAuthProvider {
     stateId: string;
     clientState?: string;
     appName?: string;
+    credentials?: OAuthClientCredentials;
   }): string | Promise<string>;
 }

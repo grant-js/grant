@@ -12,6 +12,7 @@ export * from './organization.service.port';
 export * from './permission.service.port';
 export * from './project.service.port';
 export * from './project-app.service.port';
+export * from './project-oauth-connection.service.port';
 export * from './resource.service.port';
 export * from './role.service.port';
 export * from './tag.service.port';

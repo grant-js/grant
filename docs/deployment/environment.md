@@ -87,6 +87,11 @@ GOOGLE_CLIENT_SECRET=...
 GOOGLE_CALLBACK_URL=${APP_URL}/api/auth/google/callback
 GOOGLE_PROJECT_CALLBACK_URL=${APP_URL}/api/auth/project/callback
 
+# Per-project BYO OAuth connection secrets (required to save connections in the dashboard)
+PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY=...
+# Optional: require BYO for project social sign-in (no platform env fallback)
+PROJECT_OAUTH_REQUIRE_BYO_SOCIAL=false
+
 EMAIL_PROVIDER=ses
 EMAIL_FROM=noreply@yourdomain.com
 # ... EMAIL_SES_* or other provider vars

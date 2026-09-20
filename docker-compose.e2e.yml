@@ -139,6 +139,9 @@ services:
       AUTH_MFA_SECRET_ENCRYPTION_KEY: e2e-grant-mfa-secret-key-min-32-chars-long
       AUTH_MFA_TOTP_ISSUER: Grant-E2E
 
+      # Per-project OAuth BYO (required for connection upsert in E2E)
+      PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: e2e-grant-project-oauth-conn-key-min-32-chars
+
       # Email – console adapter (logs to stdout, no real emails)
       EMAIL_PROVIDER: console
       EMAIL_FROM_ADDRESS: noreply@e2e.grant.dev

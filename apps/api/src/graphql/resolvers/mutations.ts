@@ -17,6 +17,7 @@ import * as organizationMemberMutations from './organization-members/mutations';
 import * as organizationMutations from './organizations/mutations';
 import * as permissionMutations from './permissions/mutations';
 import * as projectAppMutations from './project-apps/mutations';
+import * as projectOAuthConnectionMutations from './project-oauth-connections/mutations';
 import * as projectMutations from './projects/mutations';
 import * as resourceMutations from './resources/mutations';
 import * as roleMutations from './roles/mutations';
@@ -350,6 +351,30 @@ export const Mutation = {
         resourceResolver: 'project',
       },
       projectMutations.updateProject!
+    )
+  ),
+  upsertProjectOAuthConnection: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      projectOAuthConnectionMutations.upsertProjectOAuthConnection!
+    )
+  ),
+  clearProjectOAuthConnection: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.Update,
+        resourceResolver: 'projectApp',
+      },
+      projectOAuthConnectionMutations.clearProjectOAuthConnection!
     )
   ),
   uploadProjectPicture: requireEmailThenMfaGraphQL(

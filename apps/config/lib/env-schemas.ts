@@ -246,6 +246,8 @@ const schemas: Record<string, z.ZodType<string>> = {
   AUTH_MFA_VERIFY_WINDOW_MINUTES: positiveIntSchema,
   AUTH_MFA_SESSION_TTL_MINUTES: positiveIntSchema,
   AUTH_MFA_SECRET_ENCRYPTION_KEY: optionalString,
+  PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: optionalString,
+  PROJECT_OAUTH_REQUIRE_BYO_SOCIAL: booleanSchema,
   AUTH_MIN_AAL_AT_LOGIN: minAalAtLoginSchema,
   AUTH_MFA_STEP_UP_MAX_AGE_SECONDS: positiveIntSchema,
   TOKEN_DEFAULT_VALIDITY_MINUTES: positiveIntSchema,

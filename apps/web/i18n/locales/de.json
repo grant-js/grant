@@ -220,7 +220,8 @@
       "projectSyncJobs": "Import/Export",
       "webhooks": "Webhooks",
       "notifications": "Benachrichtigungen",
-      "branding": "Branding"
+      "branding": "Branding",
+      "oauthConnections": "OAuth-Verbindungen"
     }
   },
   "theme": {
@@ -2576,6 +2577,39 @@
           "readFailed": "Datei konnte nicht gelesen werden. Bitte erneut versuchen.",
           "uploadFailed": "Bild konnte nicht hochgeladen werden. Bitte erneut versuchen."
         }
+      }
+    },
+    "oauthConnections": {
+      "title": "OAuth-Verbindungen",
+      "description": "Registrieren Sie Ihre eigene GitHub- oder Google-OAuth-App für die gehostete Projektanmeldung. Geheimnisse sind nur schreibbar und werden nicht erneut angezeigt.",
+      "loadError": "OAuth-Verbindungen konnten nicht geladen werden",
+      "docsLink": "Projekt-OAuth-Dokumentation",
+      "configuredBadge": "Konfiguriert",
+      "notConfiguredBadge": "Nicht konfiguriert",
+      "clientId": "Client-ID",
+      "clientSecret": "Client-Geheimnis",
+      "clientSecretHint": "Bei jedem Speichern erforderlich. Verschlüsselt gespeichert und nie zurückgegeben.",
+      "clientSecretConfiguredPlaceholder": "Neues Geheimnis zum Aktualisieren eingeben",
+      "clearConnection": "Verbindung entfernen",
+      "clearingConnection": "Wird entfernt…",
+      "providers": {
+        "github": "GitHub",
+        "google": "Google"
+      },
+      "callback": {
+        "title": "Grant-Callback-URL",
+        "description": "Fügen Sie diese exakte Redirect-URI in Ihrer GitHub- oder Google-OAuth-App hinzu (nicht die URLs Ihrer Produkt-SPA).",
+        "hint": "Beide Anbieter verwenden denselben Grant-Broker-Callback."
+      },
+      "validation": {
+        "clientIdRequired": "Client-ID ist erforderlich",
+        "clientSecretRequired": "Client-Geheimnis ist erforderlich"
+      },
+      "notifications": {
+        "saveSuccess": "{provider}-Verbindung gespeichert",
+        "saveError": "OAuth-Verbindung konnte nicht gespeichert werden",
+        "clearSuccess": "{provider}-Verbindung entfernt",
+        "clearError": "OAuth-Verbindung konnte nicht entfernt werden"
       }
     },
     "view": {

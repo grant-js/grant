@@ -183,4 +183,49 @@ describe('GoogleOAuthService', () => {
       email: 'user@example.com',
     });
   });
+
+  it('puts the BYO client_id on the project authorization URL', () => {
+    const url = service.getProjectAuthorizationUrl('csrf-state', {
+      clientId: 'byo-google-client',
+      clientSecret: 'byo-google-secret',
+    });
+    expect(url).toContain('client_id=byo-google-client');
+    expect(url).not.toContain('client_id=google-client-id');
+  });
+
+  it('exchanges a code with the BYO client, not the platform secret', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ access_token: 'ya29.token' }),
+    } as Response);
+
+    await service.exchangeCodeForTokenWithRedirect(
+      'auth-code',
+      'http://localhost:4000/api/auth/project/callback',
+      { clientId: 'byo-google-client', clientSecret: 'byo-google-secret' }
+    );
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(String(init.body)).toContain('client_id=byo-google-client');
+    expect(String(init.body)).toContain('client_secret=byo-google-secret');
+    expect(String(init.body)).not.toContain('client_secret=google-secret');
+    fetchMock.mockRestore();
+  });
+
+  it('fetches userinfo without platform client credentials', async () => {
+    secrets.resolve.mockResolvedValue(undefined);
+    mockConfig.googleOAuth.clientId = '';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        sub: 'google-sub-1',
+        email: 'user@example.com',
+        email_verified: true,
+      }),
+    } as Response);
+
+    await expect(service.getOAuthUserInfo('ya29.token')).resolves.toMatchObject({
+      id: 'google-sub-1',
+    });
+  });
 });

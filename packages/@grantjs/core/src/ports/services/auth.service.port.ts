@@ -71,6 +71,12 @@ export interface IAuthService {
 // IOAuthProviderService (GitHub, Google, …)
 // ---------------------------------------------------------------------------
 
+/** BYO GitHub/Google app credentials for project OAuth (never log these). */
+export interface OAuthClientCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
 export interface IOAuthProviderService {
   readonly provider: UserAuthenticationMethodProvider;
 
@@ -78,13 +84,17 @@ export interface IOAuthProviderService {
 
   getAuthorizationUrl(state: string, redirectUrl?: string): string;
 
-  getProjectAuthorizationUrl(state: string): string;
+  getProjectAuthorizationUrl(state: string, credentials?: OAuthClientCredentials): string;
 
   getProjectCallbackUrl(): string;
 
   exchangeCodeForToken(code: string): Promise<string>;
 
-  exchangeCodeForTokenWithRedirect(code: string, redirectUri: string): Promise<string>;
+  exchangeCodeForTokenWithRedirect(
+    code: string,
+    redirectUri: string,
+    credentials?: OAuthClientCredentials
+  ): Promise<string>;
 
   getOAuthUserInfo(accessToken: string): Promise<OAuthUserInfo>;
 

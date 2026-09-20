@@ -901,7 +901,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     tags: ['Authentication'],
     summary: 'Project app public info',
     description:
-      'Returns app name, enabled providers, and scopes with name/description for the OAuth entry or consent UI. If query param `scope` is provided (space-delimited), returned scopes are the intersection with the app-configured scopes. No authentication required.',
+      'Returns app name, enabled providers, configured social providers (BYO and/or platform), and scopes with name/description for the OAuth entry or consent UI. If query param `scope` is provided (space-delimited), returned scopes are the intersection with the app-configured scopes. No authentication required.',
     request: {
       query: projectAppInfoQuerySchema,
     },

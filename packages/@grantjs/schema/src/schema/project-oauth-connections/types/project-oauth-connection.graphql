@@ -1,0 +1,20 @@
+"""
+Per-project GitHub or Google OAuth app (Auth0-style connection).
+The client secret is write-only and is never returned.
+"""
+type ProjectOAuthConnection implements Auditable {
+  id: ID!
+  projectId: ID!
+  provider: ProjectOAuthConnectionProvider!
+  """
+  Public OAuth client id of the customer's GitHub or Google app. Not a secret.
+  """
+  clientId: String!
+  """
+  True when a BYO client secret is stored for this provider. The secret itself is never returned.
+  """
+  isConfigured: Boolean!
+  createdAt: Date!
+  updatedAt: Date!
+  deletedAt: Date
+}

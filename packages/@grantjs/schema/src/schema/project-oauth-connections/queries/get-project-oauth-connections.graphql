@@ -1,0 +1,8 @@
+extend type Query {
+  """
+  List GitHub/Google OAuth connections for the project in `scope`.
+  Secrets and ciphertext are never returned.
+  Allowed scopes: accountProject, organizationProject.
+  """
+  projectOAuthConnections(scope: Scope!): [ProjectOAuthConnection!]!
+}

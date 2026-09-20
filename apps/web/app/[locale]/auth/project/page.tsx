@@ -13,12 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { getApiBaseUrl } from '@/lib/constants';
 import { oauthClientDisplayName } from '@/lib/oauth-branding';
-import { getSocialOAuthProviders, type SocialOAuthProviderId } from '@/lib/oauth-providers';
 import {
   getProjectAppPublicInfo,
   ProjectAppInfoError,
   type ProjectAppPublicInfo,
 } from '@/lib/project-oauth-api';
+import { getProjectOAuthProviderVisibility } from '@/lib/project-oauth-entry.lib';
 
 const PROJECT_OAUTH_ERROR_CODES = [
   'accountCreationFailed',
@@ -57,7 +57,6 @@ export default function ProjectOAuthEntryPage() {
   const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [configuredSocial, setConfiguredSocial] = useState<SocialOAuthProviderId[]>([]);
   useSetOAuthBranding(
     appInfo
       ? {
@@ -103,20 +102,6 @@ export default function ProjectOAuthEntryPage() {
     };
   }, [clientId, scopeParam, redirectUri, t, tAuth]);
 
-  useEffect(() => {
-    let cancelled = false;
-    getSocialOAuthProviders()
-      .then((list) => {
-        if (!cancelled) setConfiguredSocial(list.map((p) => p.id));
-      })
-      .catch(() => {
-        if (!cancelled) setConfiguredSocial([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const hasMissingParams = !clientId || !redirectUri;
   const displayError = hasMissingParams
     ? !clientId
@@ -150,12 +135,7 @@ export default function ProjectOAuthEntryPage() {
     return `/auth/project/email${q.toString() ? `?${q.toString()}` : ''}`;
   }, [clientId, redirectUri, state, scopeParam]);
 
-  const appAllows = (provider: string) =>
-    !appInfo?.enabledProviders?.length ||
-    appInfo.enabledProviders.some((p) => p.toLowerCase() === provider);
-  const showGithub = appAllows('github') && configuredSocial.includes('github');
-  const showGoogle = appAllows('google') && configuredSocial.includes('google');
-  const showEmail = appAllows('email');
+  const { showGithub, showGoogle, showEmail } = getProjectOAuthProviderVisibility(appInfo);
 
   if (displayLoading) {
     const loadingContent = (

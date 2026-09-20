@@ -1,0 +1,8 @@
+extend type Mutation {
+  """
+  Remove the project's GitHub or Google OAuth connection.
+  Ciphertext is wiped; the secret is never returned.
+  Requires Project Update on the scoped project.
+  """
+  clearProjectOAuthConnection(input: ClearProjectOAuthConnectionInput!): Boolean!
+}

@@ -31,15 +31,15 @@ Layer order: **database → schema → api → web**, then tests and docs. Auth-
 
 If the API PR is not human-reviewable, Principal **splits slice 3** at Gate 2 into `…-api-connections` (CRUD + encryption) then `…-api-runtime` (authorize/callback/app-info) before anyone writes code — do not declare both branches up front.
 
-| #     | Branch                              | Base                         | Concern                                      | Owner role | Review bar             | PR  | Fan-out |
-| ----- | ----------------------------------- | ---------------------------- | -------------------------------------------- | ---------- | ---------------------- | --- | ------- |
-| 1     | `feat/project-oauth-per-app-db`     | `feat/project-oauth-per-app` | database                                     | Backend    | security-full          |     | Serial. Security reviews schema/ciphertext after Verifier, before Gate 3. |
-| 2     | `feat/project-oauth-per-app-schema` | slice 1                      | schema/codegen                               | Backend    | light                  |     | Serial. Architect checks public types leak no secrets. |
-| 3     | `feat/project-oauth-per-app-api`    | slice 2                      | API (ports, service, handler, GQL, REST)     | Backend    | security-full          |     | Serial write. Security + QA start after this PR exists (read-only). |
-| 4     | `feat/project-oauth-per-app-web`    | slice 3                      | web/i18n                                     | Frontend   | security-full          |     | Serial. Hosted sign-in is auth UI. |
-| 5     | `feat/project-oauth-per-app-tests`  | slice 4                      | tests                                        | QA         | security-full          |     | After slice 3, QA may **draft** cases in notes; code lands here on slice 4 tip. |
-| 6     | `feat/project-oauth-per-app-docs`   | slice 5                      | in-repo docs + ADR                           | Architect  | light                  |     | Can overlap review of slice 5; one writer. |
-| final | `feat/project-oauth-per-app`        | `main`                       | integration                                  | Principal  | deep + security-full   |     | After Gate 3; confirm trunk contains every slice. |
+| #     | Branch                              | Base                         | Concern                                  | Owner role | Review bar           | PR  | Fan-out                                                                         |
+| ----- | ----------------------------------- | ---------------------------- | ---------------------------------------- | ---------- | -------------------- | --- | ------------------------------------------------------------------------------- |
+| 1     | `feat/project-oauth-per-app-db`     | `feat/project-oauth-per-app` | database                                 | Backend    | security-full        |     | Serial. Security reviews schema/ciphertext after Verifier, before Gate 3.       |
+| 2     | `feat/project-oauth-per-app-schema` | slice 1                      | schema/codegen                           | Backend    | light                |     | Serial. Architect checks public types leak no secrets.                          |
+| 3     | `feat/project-oauth-per-app-api`    | slice 2                      | API (ports, service, handler, GQL, REST) | Backend    | security-full        |     | Serial write. Security + QA start after this PR exists (read-only).             |
+| 4     | `feat/project-oauth-per-app-web`    | slice 3                      | web/i18n                                 | Frontend   | security-full        |     | Serial. Hosted sign-in is auth UI.                                              |
+| 5     | `feat/project-oauth-per-app-tests`  | slice 4                      | tests                                    | QA         | security-full        |     | After slice 3, QA may **draft** cases in notes; code lands here on slice 4 tip. |
+| 6     | `feat/project-oauth-per-app-docs`   | slice 5                      | in-repo docs + ADR                       | Architect  | light                |     | Can overlap review of slice 5; one writer.                                      |
+| final | `feat/project-oauth-per-app`        | `main`                       | integration                              | Principal  | deep + security-full |     | After Gate 3; confirm trunk contains every slice.                               |
 
 Prefer layer order: **db → schema → api → web**. Adjust if the story is narrower.
 

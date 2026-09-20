@@ -9,6 +9,7 @@ export * from './organizations';
 export * from './permissions';
 export * from './privacy';
 export * from './project-apps';
+export * from './project-oauth-connections';
 export * from './projects';
 export * from './resources';
 export * from './roles';
