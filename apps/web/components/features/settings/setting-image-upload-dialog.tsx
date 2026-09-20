@@ -47,6 +47,7 @@ export function SettingImageUploadDialog({
   // the filename sent to the API is derived from that decision — the user's own
   // filename never reaches the storage path, which the server derives itself.
   const [sourceContentType, setSourceContentType] = useState<string>('image/jpeg');
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
 
   // Closing the dialog mid-transfer has to stop the transfer. Without this, a user who
   // pressed Escape would still overwrite their picture some seconds later.
@@ -75,6 +76,7 @@ export function SettingImageUploadDialog({
       }
 
       setSourceContentType(file.type);
+      setSourceFile(file);
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         setImageSrc(reader.result as string);
@@ -104,6 +106,7 @@ export function SettingImageUploadDialog({
     setCroppedAreaPixels(null);
     setError(null);
     setSourceContentType('image/jpeg');
+    setSourceFile(null);
     onOpenChange(false);
   };
 
@@ -121,7 +124,11 @@ export function SettingImageUploadDialog({
       // URL is minted for, and the extension the server derives the path from. Deciding
       // any of the three separately is how they come to disagree.
       const format = chooseOutputFormat(sourceContentType);
-      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels, format.contentType);
+      const croppedImage = await getCroppedImg(
+        sourceFile ?? imageSrc,
+        croppedAreaPixels,
+        format.contentType
+      );
       const resizedImage = await resizeImage(croppedImage, 600, 600, 0.85, format.contentType);
 
       await onUpload(
@@ -223,6 +230,7 @@ export function SettingImageUploadDialog({
                   setCroppedAreaPixels(null);
                   setError(null);
                   setSourceContentType('image/jpeg');
+                  setSourceFile(null);
                 }}
                 disabled={isUploading}
               >

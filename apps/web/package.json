@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "type-check": "tsc --noEmit",
-    "test": "playwright install chromium && NODE_ENV=test vitest",
+    "test": "playwright install firefox && NODE_ENV=test vitest",
     "measure:boot": "node tools/measure-boot.mjs",
     "test:ui": "NODE_ENV=test vitest --ui",
     "test:coverage": "NODE_ENV=test vitest run --coverage",

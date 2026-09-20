@@ -42,22 +42,6 @@ export function chooseOutputFormat(inputContentType: string): ProcessedImageForm
   return OUTPUT_FORMATS[inputContentType.toLowerCase()] ?? DEFAULT_OUTPUT_FORMAT;
 }
 
-/** Runs `fn` against a URL for `source`, revoking it after `fn` settles so draws can finish. */
-async function withSourceUrl<T>(
-  source: string | Blob,
-  fn: (url: string) => Promise<T>
-): Promise<T> {
-  if (typeof source === 'string') {
-    return fn(source);
-  }
-  const url = URL.createObjectURL(source);
-  try {
-    return await fn(url);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
 async function canvasToBlob(
   canvas: HTMLCanvasElement,
   contentType: string,
@@ -93,6 +77,34 @@ async function createImage(url: string): Promise<HTMLImageElement> {
   return image;
 }
 
+async function sourceToBitmap(source: string | Blob): Promise<ImageBitmap> {
+  if (typeof source !== 'string') {
+    return createImageBitmap(source);
+  }
+
+  if (source.startsWith('blob:') || source.startsWith('data:')) {
+    const response = await fetch(source);
+    if (!response.ok) {
+      throw new Error('Failed to read image source');
+    }
+    return createImageBitmap(await response.blob());
+  }
+
+  const image = await createImage(source);
+  return createImageBitmap(image);
+}
+
+function clampCropArea(crop: CropArea, width: number, height: number): CropArea {
+  const x = Math.min(Math.max(0, Math.round(crop.x)), Math.max(0, width - 1));
+  const y = Math.min(Math.max(0, Math.round(crop.y)), Math.max(0, height - 1));
+  return {
+    x,
+    y,
+    width: Math.min(Math.max(1, Math.round(crop.width)), width - x),
+    height: Math.min(Math.max(1, Math.round(crop.height)), height - y),
+  };
+}
+
 function getRadianAngle(degreeValue: number): number {
   return (degreeValue * Math.PI) / 180;
 }
@@ -103,6 +115,24 @@ function rotateSize(width: number, height: number, rotation: number): ImageDimen
     width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
     height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
   };
+}
+
+async function bitmapToBlob(
+  bitmap: ImageBitmap,
+  contentType: string,
+  quality?: number
+): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  ctx.drawImage(bitmap, 0, 0);
+  return canvasToBlob(canvas, contentType, quality);
 }
 
 /**
@@ -117,54 +147,61 @@ export async function getCroppedImg(
   rotation = 0,
   flip = { horizontal: false, vertical: false }
 ): Promise<Blob> {
-  return withSourceUrl(imageSrc, async (url) => {
-    const image = await createImage(url);
-    const sourceCanvas = document.createElement('canvas');
-    const sourceCtx = sourceCanvas.getContext('2d');
+  const bitmap = await sourceToBitmap(imageSrc);
 
-    if (!sourceCtx) {
-      throw new Error('No 2d context');
+  try {
+    if (bitmap.width < 1 || bitmap.height < 1) {
+      throw new Error('Image has no pixels');
     }
 
-    const rotRad = getRadianAngle(rotation);
-    const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-      image.width,
-      image.height,
-      rotation
-    );
+    const needsTransform = rotation !== 0 || flip.horizontal || flip.vertical;
+    const source = needsTransform ? await transformBitmap(bitmap, rotation, flip) : bitmap;
 
-    sourceCanvas.width = bBoxWidth;
-    sourceCanvas.height = bBoxHeight;
-
-    sourceCtx.translate(bBoxWidth / 2, bBoxHeight / 2);
-    sourceCtx.rotate(rotRad);
-    sourceCtx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
-    sourceCtx.translate(-image.width / 2, -image.height / 2);
-    sourceCtx.drawImage(image, 0, 0);
-
-    const cropCanvas = document.createElement('canvas');
-    const cropCtx = cropCanvas.getContext('2d');
-
-    if (!cropCtx) {
-      throw new Error('No 2d context');
+    try {
+      const crop = clampCropArea(pixelCrop, source.width, source.height);
+      const cropped = await createImageBitmap(source, crop.x, crop.y, crop.width, crop.height);
+      try {
+        return await bitmapToBlob(cropped, contentType);
+      } finally {
+        cropped.close();
+      }
+    } finally {
+      if (source !== bitmap) {
+        source.close();
+      }
     }
+  } finally {
+    bitmap.close();
+  }
+}
 
-    cropCanvas.width = pixelCrop.width;
-    cropCanvas.height = pixelCrop.height;
-    cropCtx.drawImage(
-      sourceCanvas,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      pixelCrop.width,
-      pixelCrop.height
-    );
+async function transformBitmap(
+  bitmap: ImageBitmap,
+  rotation: number,
+  flip: { horizontal: boolean; vertical: boolean }
+): Promise<ImageBitmap> {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
 
-    return canvasToBlob(cropCanvas, contentType);
-  });
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  const rotRad = getRadianAngle(rotation);
+  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
+    bitmap.width,
+    bitmap.height,
+    rotation
+  );
+
+  canvas.width = bBoxWidth;
+  canvas.height = bBoxHeight;
+  ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
+  ctx.rotate(rotRad);
+  ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
+  ctx.translate(-bitmap.width / 2, -bitmap.height / 2);
+  ctx.drawImage(bitmap, 0, 0);
+  return createImageBitmap(canvas);
 }
 
 export async function resizeImage(
@@ -174,16 +211,10 @@ export async function resizeImage(
   quality = 0.9,
   contentType: string = DEFAULT_OUTPUT_FORMAT.contentType
 ): Promise<Blob> {
-  return withSourceUrl(imageSrc, async (url) => {
-    const image = await createImage(url);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+  const bitmap = await sourceToBitmap(imageSrc);
 
-    if (!ctx) {
-      throw new Error('No 2d context');
-    }
-
-    let { width, height } = image;
+  try {
+    let { width, height } = bitmap;
 
     if (width > height) {
       if (width > maxWidth) {
@@ -195,10 +226,18 @@ export async function resizeImage(
       height = maxHeight;
     }
 
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+
     canvas.width = width;
     canvas.height = height;
-    ctx.drawImage(image, 0, 0, width, height);
-
+    ctx.drawImage(bitmap, 0, 0, width, height);
     return canvasToBlob(canvas, contentType, quality);
-  });
+  } finally {
+    bitmap.close();
+  }
 }
