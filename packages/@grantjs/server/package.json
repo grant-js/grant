@@ -1,6 +1,6 @@
 {
   "name": "@grantjs/server",
-  "version": "1.9.2",
+  "version": "1.10.0",
   "description": "Server SDK for Grant authorization - Middleware and guards for Express, Fastify, NestJS, and Next.js",
   "type": "module",
   "main": "./dist/index.cjs",
