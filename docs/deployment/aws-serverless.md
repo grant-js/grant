@@ -96,6 +96,7 @@ run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
 | --------------------------------- | ----------------------------------------------------------------- |
 | GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                            |
 | Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                            |
+| Project OAuth connections         | `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`                         |
 | MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                  |
 | Mailgun                           | `MAILGUN_API_KEY`                                                 |
 | Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                           |

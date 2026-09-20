@@ -194,7 +194,8 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 - **Branding:** `GET /api/auth/project/app-info` and consent-info are unauthenticated and return **resolved** branding only (`pictureUrl`, `projectName`, `primaryColor`, `showHelpPanel`, `themeMode`). Values resolve app → project → Grant defaults (help panel on, no custom color). `themeMode` is app-only (`light` / `dark` / `system`); null keeps the visitor's Grant theme. Organization logos are not in the fallback. Storage keys are tenant-scoped (`projects/{id}/picture`, `project-apps/{id}/picture`). Product surface: [Project OAuth](/core-concepts/project-oauth).
 - **redirect_uri** is validated strictly against the ProjectApp's allowed redirect URIs on both authorize and callback.
 - State is stored in cache with a short TTL (e.g. 10 minutes) and deleted after use.
-- The provider (e.g. GitHub) must have the platform callback URL(s) registered. See [Configuring the GitHub OAuth app](#configuring-the-github-oauth-app) below.
+- Social providers resolve **per-project OAuth connections** (BYO client id + secret) with optional fallback to platform env credentials. See [Configuring social OAuth for project apps](#configuring-social-oauth-for-project-apps).
+- `GET /api/auth/project/app-info` returns `configuredProviders` for hosted sign-in; do not use `GET /api/auth/providers` on project pages.
 - **Enabled providers:** Each ProjectApp can restrict which providers are allowed (e.g. GitHub, email). If set, only those are allowed for authorize; if empty or null, all configured providers are allowed. Configure **PROJECT_OAUTH_EMAIL_ENTRY_URL** for the email entry page (default: `{SECURITY_FRONTEND_URL}/auth/project/email`).
 - **Email flow:** For provider=email, authorize redirects to the email entry URL; the app posts to `POST /api/auth/project/email/request` with client_id, redirect_uri, state, email; the API sends a magic link; callback validates the one-time token and resolves the user by email.
 - **Project-app token type:** When the app has scopes configured (resource:action strings), the issued token has type **projectApp** and a **scopes** claim (intersection of app scopes and user's project permissions). Authorization is capped to those scopes; session and API key tokens are not capped.
@@ -202,47 +203,61 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 
 **Related:** ProjectApp is created via GraphQL **createProjectApp** (scope: accountProject or organizationProject). Multi-provider flow (GitHub, email magic link), optional enabled providers per app, and project-app token type with scope capping are described above.
 
-#### Configuring the GitHub OAuth app
+#### Configuring platform GitHub OAuth
 
-GitHub OAuth Apps allow only **one** Authorization callback URL. To support both platform sign-in and Project App sign-in with the same app, register the **base path** for auth; GitHub accepts that URL and any **subpath** ([Redirect URLs](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls)).
+Platform Grant login, register, Settings connect, and CLI OAuth use **env** credentials only (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CALLBACK_URL`).
+
+GitHub OAuth Apps allow only **one** Authorization callback URL. Register the **base path** for auth; GitHub accepts that URL and any **subpath** ([Redirect URLs](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls)).
 
 | Step | Action                                                                                                                           |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | In [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers), create or edit your OAuth App. |
 | 2    | Set **Authorization callback URL** to the API base path for auth (see table below), **not** a full callback path.                |
-| 3    | Ensure **GITHUB_CALLBACK_URL** and **GITHUB_PROJECT_CALLBACK_URL** in your API config use paths under that base.                 |
+| 3    | Ensure **GITHUB_CALLBACK_URL** defaults to `{APP_URL}/api/auth/github/callback` (a subpath of the base).                           |
 
-**Callback URL to set in GitHub:**
+**Callback URL to set in GitHub (platform app):**
 
 | Environment | Authorization callback URL                                                           |
 | ----------- | ------------------------------------------------------------------------------------ |
 | Local       | `http://localhost:4000/api/auth`                                                     |
 | Production  | `https://api.yourdomain.com/api/auth` (replace with your API base URL + `/api/auth`) |
 
-Default API config values are `{APP_URL}/api/auth/github/callback` and `{APP_URL}/api/auth/project/callback` — both are subpaths of the base path above.
+#### Configuring platform Google OAuth
 
-No separate OAuth app is needed per project-app; one GitHub OAuth app serves both platform and project-app flows.
-
-#### Configuring the Google OAuth client
-
-Google requires **exact** Authorized redirect URIs (no prefix match). One Web client can list both platform and project callbacks.
+Platform Grant login uses **env** credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`). Google requires **exact** Authorized redirect URIs (no prefix match).
 
 | Step | Action                                                                                                                                                                                                  |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create or select a project.                                                                                                |
 | 2    | Configure the **OAuth consent screen** (Internal or External).                                                                                                                                          |
 | 3    | Create an OAuth client ID of type **Web application**.                                                                                                                                                  |
-| 4    | Add both redirect URIs from the table below (exact match).                                                                                                                                              |
+| 4    | Add the platform redirect URI from the table below (exact match).                                                                                                                                       |
 | 5    | Copy the client ID and secret into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (or the platform secret store). Restart the API. Login/register show Google only after the client is fully configured. |
 
-**Redirect URIs to set in Google Cloud Console:**
+**Redirect URI to set in Google Cloud Console (platform client):**
 
-| Environment | Platform callback                                     | Project App callback                                   |
-| ----------- | ----------------------------------------------------- | ------------------------------------------------------ |
-| Local       | `http://localhost:4000/api/auth/google/callback`      | `http://localhost:4000/api/auth/project/callback`      |
-| Production  | `https://api.yourdomain.com/api/auth/google/callback` | `https://api.yourdomain.com/api/auth/project/callback` |
+| Environment | Platform callback                                |
+| ----------- | ------------------------------------------------ |
+| Local       | `http://localhost:4000/api/auth/google/callback` |
+| Production  | `https://api.yourdomain.com/api/auth/google/callback` |
 
-Default API config values match those paths. One Google Web client serves both platform and project-app flows.
+Do **not** add tenant product SPA URLs to this client. For multi-tenant SaaS, project apps should use BYO connections (below).
+
+#### Configuring social OAuth for project apps
+
+Project hosted sign-in uses **per-project OAuth connections** (customer BYO GitHub/Google apps) stored encrypted in `project_oauth_connections`. See [Project OAuth](/core-concepts/project-oauth#social-connections-github-and-google) and [ADR 0008](/decisions/0008-per-project-oauth-connections).
+
+| Layer | What to register | Where |
+| ----- | ---------------- | ----- |
+| **Customer IdP app** | Grant **broker** callback only | `GITHUB_PROJECT_CALLBACK_URL` / `GOOGLE_PROJECT_CALLBACK_URL` (default `{APP_URL}/api/auth/project/callback`) |
+| **ProjectApp** | Customer product callbacks | `redirectUris` on the app — validated on authorize and token handoff |
+| **Platform env** | Fallback credentials only | Used when the project has no BYO row and `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL` is false |
+
+**GitHub (customer app):** set Authorization callback URL to `{API}/api/auth` (prefix match) or the exact project callback URI.
+
+**Google (customer app):** add **one** exact Authorized redirect URI: `{APP_URL}/api/auth/project/callback`.
+
+Self-hosted single-tenant deployments may rely on platform env fallback (legacy behavior). Hosted multi-tenant operators should require BYO (`PROJECT_OAUTH_REQUIRE_BYO_SOCIAL=true`) and must not register every customer origin on Grant’s platform Google client.
 
 ### Configuration
 
