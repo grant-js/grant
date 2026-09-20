@@ -89,14 +89,14 @@ export function ProjectOAuthConnectionProviderSection({
   };
 
   return (
-    <section className="space-y-4 rounded-lg border p-4">
+    <section id={provider} className="scroll-mt-24 space-y-4 rounded-lg border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <OAuthProviderIcon provider={provider} />
           <h3 className="font-medium">{providerLabel}</h3>
         </div>
         {isConfigured ? (
-          <Badge variant="secondary">{t('configuredBadge')}</Badge>
+          <Badge variant="success">{t('configuredBadge')}</Badge>
         ) : (
           <Badge variant="outline">{t('notConfiguredBadge')}</Badge>
         )}

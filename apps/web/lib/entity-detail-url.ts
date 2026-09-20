@@ -137,3 +137,26 @@ export function getWebhookDetailUrl({
   }
   throw new Error('Invalid scope for webhook detail URL');
 }
+
+interface ProjectOAuthConnectionsUrlParams {
+  organizationId?: string;
+  accountId?: string;
+  projectId: string;
+  provider?: string;
+}
+
+export function getProjectOAuthConnectionsUrl({
+  organizationId,
+  accountId,
+  projectId,
+  provider,
+}: ProjectOAuthConnectionsUrlParams): string {
+  const hash = provider ? `#${provider}` : '';
+  if (organizationId) {
+    return `/dashboard/organizations/${organizationId}/projects/${projectId}/oauth-connections${hash}`;
+  }
+  if (accountId) {
+    return `/dashboard/accounts/${accountId}/projects/${projectId}/oauth-connections${hash}`;
+  }
+  throw new Error('Invalid scope for project OAuth connections URL');
+}
