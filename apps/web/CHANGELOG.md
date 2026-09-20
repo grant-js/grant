@@ -1,5 +1,21 @@
 # grant-web
 
+## 1.10.0
+
+### Minor Changes
+
+- 3bcfc95: Add per-project GitHub and Google OAuth connections (bring-your-own IdP). Projects can store their own GitHub/Google client credentials; secrets are write-only and never returned on read. Hosted authorize and callback resolve the same project client.
+
+### Patch Changes
+
+- 6701cc2: Keep cropped profile, organization, and project pictures as the selected pixels instead of a blank PNG, including in Firefox.
+- 3bcfc95: Clarify Project App OAuth provider toggles versus project connections, and make stored connection status easier to scan (gear affordance, Configured badge, callback URL spacing).
+- Updated dependencies [3bcfc95]
+  - @grantjs/schema@1.10.0
+  - @grantjs/client@1.10.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.9.2
 
 ### Patch Changes
