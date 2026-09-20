@@ -19,6 +19,8 @@ const shared = {
   },
 };
 
+const runFirefoxBrowserTests = process.env.GRANT_WEB_BROWSER_TESTS === '1';
+
 export default defineConfig({
   ...shared,
   optimizeDeps: {
@@ -50,19 +52,23 @@ export default defineConfig({
           exclude: ['node_modules', 'dist', '.next', '.vercel', '**/*.browser.test.ts'],
         },
       },
-      {
-        ...shared,
-        test: {
-          name: 'browser',
-          include: ['**/*.browser.test.ts'],
-          browser: {
-            enabled: true,
-            headless: true,
-            provider: playwright(),
-            instances: [{ browser: 'firefox' }],
-          },
-        },
-      },
+      ...(runFirefoxBrowserTests
+        ? [
+            {
+              ...shared,
+              test: {
+                name: 'browser',
+                include: ['**/*.browser.test.ts'],
+                browser: {
+                  enabled: true,
+                  headless: true,
+                  provider: playwright(),
+                  instances: [{ browser: 'firefox' as const }],
+                },
+              },
+            },
+          ]
+        : []),
     ],
   },
 });

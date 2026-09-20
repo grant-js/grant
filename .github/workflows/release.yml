@@ -163,7 +163,6 @@ jobs:
       - name: Check tag palette distance
         run: pnpm --filter @grantjs/constants run check:palette
 
-      # Same Playwright Firefox host-library install as ci.yml (`GITHUB_ACTIONS`).
       - name: Test
         run: pnpm test
 

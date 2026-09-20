@@ -77,12 +77,10 @@ apps/api/tests/
 
 ## Configuration
 
-| App     | Environment       | Config                                                                                                   |
-| ------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
-| **API** | `node`            | `apps/api/vitest.config.ts` — uses `vite-tsconfig-paths` for `@/` imports                                |
-| **Web** | `jsdom` + Firefox | `apps/web/vitest.config.ts` — component + hook tests in jsdom; `*.browser.test.ts` in Playwright Firefox |
-
-GitHub Actions installs Playwright Firefox with host libraries (`playwright install --with-deps firefox`) so the self-hosted runner can `browserType.launch`. Local `pnpm test` only downloads the browser.
+| App     | Environment                  | Config                                                                                                                                                                                                                     |
+| ------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **API** | `node`                       | `apps/api/vitest.config.ts` — uses `vite-tsconfig-paths` for `@/` imports                                                                                                                                                  |
+| **Web** | `jsdom` (+ optional Firefox) | `apps/web/vitest.config.ts` — default `pnpm test` is jsdom. `pnpm --filter grant-web test:browser` runs `*.browser.test.ts` in Playwright Firefox on a machine that already has GTK/X11/ATK. CI does not launch a browser. |
 
 ## Security and Compliance Tests
 

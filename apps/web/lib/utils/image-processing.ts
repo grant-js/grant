@@ -94,7 +94,7 @@ async function sourceToBitmap(source: string | Blob): Promise<ImageBitmap> {
   return createImageBitmap(image);
 }
 
-function clampCropArea(crop: CropArea, width: number, height: number): CropArea {
+export function clampCropArea(crop: CropArea, width: number, height: number): CropArea {
   const x = Math.min(Math.max(0, Math.round(crop.x)), Math.max(0, width - 1));
   const y = Math.min(Math.max(0, Math.round(crop.y)), Math.max(0, height - 1));
   return {
