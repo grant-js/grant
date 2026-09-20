@@ -10,6 +10,7 @@ import {
   Group,
   KeyRound,
   LayoutGrid,
+  Link2,
   Package,
   Palette,
   Shield,
@@ -74,6 +75,11 @@ export function PersonalProjectSidebar({ ...props }: ComponentProps<typeof Sideb
           title: t('branding'),
           url: `/dashboard/accounts/${accountId}/projects/${projectId}/branding`,
           icon: Palette,
+        },
+        {
+          title: t('oauthConnections'),
+          url: `/dashboard/accounts/${accountId}/projects/${projectId}/oauth-connections`,
+          icon: Link2,
         },
         {
           title: t('roles'),
