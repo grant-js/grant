@@ -213,7 +213,7 @@ GitHub OAuth Apps allow only **one** Authorization callback URL. Register the **
 | ---- | -------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | In [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers), create or edit your OAuth App. |
 | 2    | Set **Authorization callback URL** to the API base path for auth (see table below), **not** a full callback path.                |
-| 3    | Ensure **GITHUB_CALLBACK_URL** defaults to `{APP_URL}/api/auth/github/callback` (a subpath of the base).                           |
+| 3    | Ensure **GITHUB_CALLBACK_URL** defaults to `{APP_URL}/api/auth/github/callback` (a subpath of the base).                         |
 
 **Callback URL to set in GitHub (platform app):**
 
@@ -236,22 +236,22 @@ Platform Grant login uses **env** credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIEN
 
 **Redirect URI to set in Google Cloud Console (platform client):**
 
-| Environment | Platform callback                                |
-| ----------- | ------------------------------------------------ |
-| Local       | `http://localhost:4000/api/auth/google/callback` |
+| Environment | Platform callback                                     |
+| ----------- | ----------------------------------------------------- |
+| Local       | `http://localhost:4000/api/auth/google/callback`      |
 | Production  | `https://api.yourdomain.com/api/auth/google/callback` |
 
 Do **not** add tenant product SPA URLs to this client. For multi-tenant SaaS, project apps should use BYO connections (below).
 
 #### Configuring social OAuth for project apps
 
-Project hosted sign-in uses **per-project OAuth connections** (customer BYO GitHub/Google apps) stored encrypted in `project_oauth_connections`. See [Project OAuth](/core-concepts/project-oauth#social-connections-github-and-google) and [ADR 0008](/decisions/0008-per-project-oauth-connections).
+Project hosted sign-in uses **per-project OAuth connections** (customer BYO GitHub/Google apps) stored encrypted in `project_oauth_connections`. See [Project OAuth](/core-concepts/project-oauth#social-connections-github-and-google) and [ADR 0008](https://github.com/grant-js/grant/blob/main/decisions/0008-per-project-oauth-connections.md).
 
-| Layer | What to register | Where |
-| ----- | ---------------- | ----- |
+| Layer                | What to register               | Where                                                                                                         |
+| -------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | **Customer IdP app** | Grant **broker** callback only | `GITHUB_PROJECT_CALLBACK_URL` / `GOOGLE_PROJECT_CALLBACK_URL` (default `{APP_URL}/api/auth/project/callback`) |
-| **ProjectApp** | Customer product callbacks | `redirectUris` on the app — validated on authorize and token handoff |
-| **Platform env** | Fallback credentials only | Used when the project has no BYO row and `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL` is false |
+| **ProjectApp**       | Customer product callbacks     | `redirectUris` on the app — validated on authorize and token handoff                                          |
+| **Platform env**     | Fallback credentials only      | Used when the project has no BYO row and `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL` is false                          |
 
 **GitHub (customer app):** set Authorization callback URL to `{API}/api/auth` (prefix match) or the exact project callback URI.
 

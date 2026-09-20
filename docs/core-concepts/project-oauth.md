@@ -28,11 +28,11 @@ Both return **resolved** branding only. They never expose storage keys, inherit-
 
 Project apps can offer GitHub and Google sign-in. Unlike platform Grant login (which uses env vars — see [Sign-in providers](/core-concepts/sign-in-providers)), **social credentials for project apps are configured per Grant project** as **OAuth connections**.
 
-| Concept | Where it lives | Purpose |
-| ------- | -------------- | ------- |
-| **OAuth connection** | Project settings → **OAuth connections** | Customer’s GitHub or Google client id + secret for this project |
-| **ProjectApp** | App → OAuth card | Customer product `redirect_uris`, `enabledProviders`, scopes |
-| **Broker callback** | Grant API env (`GITHUB_PROJECT_CALLBACK_URL`, `GOOGLE_PROJECT_CALLBACK_URL`) | The **only** redirect URI registered on the customer’s GitHub/Google app |
+| Concept              | Where it lives                                                               | Purpose                                                                  |
+| -------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **OAuth connection** | Project settings → **OAuth connections**                                     | Customer’s GitHub or Google client id + secret for this project          |
+| **ProjectApp**       | App → OAuth card                                                             | Customer product `redirect_uris`, `enabledProviders`, scopes             |
+| **Broker callback**  | Grant API env (`GITHUB_PROJECT_CALLBACK_URL`, `GOOGLE_PROJECT_CALLBACK_URL`) | The **only** redirect URI registered on the customer’s GitHub/Google app |
 
 One connection per provider per project. All apps in that project share the same GitHub/Google client. Each app’s **enabled providers** list still controls which methods that app offers.
 
@@ -91,5 +91,5 @@ Long permission lists show the first five scopes, then **Show N more**.
 
 - [Project OAuth security](/architecture/security#project-oauth) — authorize/callback, tokens, redirect allowlists, IdP callback setup
 - [Sign-in providers](/core-concepts/sign-in-providers) — platform GitHub/Google env configuration (Grant account login)
-- [ADR 0008](/decisions/0008-per-project-oauth-connections) — why connections are per-project and BYO
+- [ADR 0008](https://github.com/grant-js/grant/blob/main/decisions/0008-per-project-oauth-connections.md) — why connections are per-project and BYO
 - [File storage](/advanced-topics/file-storage) — upload adapters and paths
