@@ -252,7 +252,8 @@ jobs:
           # Platform GitHub Releases are created as v* by release-git-tag.
           # Per-package releases are noisy (empty bodies for fixed-group bumps).
           # v2 creates git tags by default even when GitHub Releases are off.
-          createGithubReleases: false
+          # v2.1.2 rejects the old camelCase name and fails the job.
+          create-github-releases: false
           push-git-tags: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
