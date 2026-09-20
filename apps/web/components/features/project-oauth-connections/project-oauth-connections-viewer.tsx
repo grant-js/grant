@@ -8,7 +8,9 @@ import { ProjectOAuthConnectionProvider, Scope } from '@grantjs/schema';
 import { ExternalLink } from 'lucide-react';
 
 import { CopyToClipboard, FeatureModuleCard } from '@/components/common';
+import { FeatureDetailLayout } from '@/components/layout';
 import { useEmailVerified } from '@/hooks/auth';
+import { useProjectGrantContext } from '@/hooks/common';
 import {
   useProjectOAuthConnectionMutations,
   useProjectOAuthConnections,
@@ -31,12 +33,14 @@ export function ProjectOAuthConnectionsViewer({ scope }: ProjectOAuthConnections
   const t = useTranslations('projects.oauthConnections');
   const tCommon = useTranslations('common');
   const isEmailVerified = useEmailVerified();
+  const projectGrantContext = useProjectGrantContext();
   const { connections, loading, error } = useProjectOAuthConnections(scope);
   const { upsertProjectOAuthConnection, clearProjectOAuthConnection } =
     useProjectOAuthConnectionMutations();
 
   const canUpdate = useGrant(ResourceSlug.Project, ResourceAction.Update, {
     scope: scope!,
+    context: projectGrantContext,
     enabled: !!scope,
   });
 
@@ -65,7 +69,7 @@ export function ProjectOAuthConnectionsViewer({ scope }: ProjectOAuthConnections
   }
 
   return (
-    <div className="space-y-6">
+    <FeatureDetailLayout>
       <FeatureModuleCard title={t('callback.title')} description={t('callback.description')}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <code className="flex-1 rounded-md border bg-muted px-3 py-2 text-sm break-all">
@@ -108,6 +112,6 @@ export function ProjectOAuthConnectionsViewer({ scope }: ProjectOAuthConnections
           ))}
         </div>
       </FeatureModuleCard>
-    </div>
+    </FeatureDetailLayout>
   );
 }
