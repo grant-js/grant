@@ -62,6 +62,14 @@ async function canvasToBlob(
   });
 }
 
+function get2dContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+  return ctx;
+}
+
 async function createImage(url: string): Promise<HTMLImageElement> {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const element = new Image();
@@ -77,21 +85,22 @@ async function createImage(url: string): Promise<HTMLImageElement> {
   return image;
 }
 
-async function sourceToBitmap(source: string | Blob): Promise<ImageBitmap> {
+async function sourceToImage(source: string | Blob): Promise<{
+  image: HTMLImageElement;
+  dispose: () => void;
+}> {
   if (typeof source !== 'string') {
-    return createImageBitmap(source);
-  }
-
-  if (source.startsWith('blob:') || source.startsWith('data:')) {
-    const response = await fetch(source);
-    if (!response.ok) {
-      throw new Error('Failed to read image source');
+    const url = URL.createObjectURL(source);
+    try {
+      const image = await createImage(url);
+      return { image, dispose: () => URL.revokeObjectURL(url) };
+    } catch (error) {
+      URL.revokeObjectURL(url);
+      throw error;
     }
-    return createImageBitmap(await response.blob());
   }
 
-  const image = await createImage(source);
-  return createImageBitmap(image);
+  return { image: await createImage(source), dispose: () => undefined };
 }
 
 export function clampCropArea(crop: CropArea, width: number, height: number): CropArea {
@@ -117,22 +126,13 @@ function rotateSize(width: number, height: number, rotation: number): ImageDimen
   };
 }
 
-async function bitmapToBlob(
-  bitmap: ImageBitmap,
-  contentType: string,
-  quality?: number
-): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+type CropSource = HTMLImageElement | HTMLCanvasElement;
 
-  if (!ctx) {
-    throw new Error('No 2d context');
+function sourceSize(source: CropSource): ImageDimensions {
+  if (source instanceof HTMLImageElement) {
+    return { width: source.naturalWidth, height: source.naturalHeight };
   }
-
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
-  ctx.drawImage(bitmap, 0, 0);
-  return canvasToBlob(canvas, contentType, quality);
+  return { width: source.width, height: source.height };
 }
 
 /**
@@ -147,61 +147,51 @@ export async function getCroppedImg(
   rotation = 0,
   flip = { horizontal: false, vertical: false }
 ): Promise<Blob> {
-  const bitmap = await sourceToBitmap(imageSrc);
+  const { image, dispose } = await sourceToImage(imageSrc);
 
   try {
-    if (bitmap.width < 1 || bitmap.height < 1) {
+    const { width, height } = sourceSize(image);
+    if (width < 1 || height < 1) {
       throw new Error('Image has no pixels');
     }
 
     const needsTransform = rotation !== 0 || flip.horizontal || flip.vertical;
-    const source = needsTransform ? await transformBitmap(bitmap, rotation, flip) : bitmap;
-
-    try {
-      const crop = clampCropArea(pixelCrop, source.width, source.height);
-      const cropped = await createImageBitmap(source, crop.x, crop.y, crop.width, crop.height);
-      try {
-        return await bitmapToBlob(cropped, contentType);
-      } finally {
-        cropped.close();
-      }
-    } finally {
-      if (source !== bitmap) {
-        source.close();
-      }
-    }
+    const source = needsTransform ? transformImage(image, rotation, flip) : image;
+    const sourceDimensions = sourceSize(source);
+    const crop = clampCropArea(pixelCrop, sourceDimensions.width, sourceDimensions.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = get2dContext(canvas);
+    ctx.drawImage(source, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+    return canvasToBlob(canvas, contentType);
   } finally {
-    bitmap.close();
+    dispose();
   }
 }
 
-async function transformBitmap(
-  bitmap: ImageBitmap,
+function transformImage(
+  image: HTMLImageElement,
   rotation: number,
   flip: { horizontal: boolean; vertical: boolean }
-): Promise<ImageBitmap> {
+): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    throw new Error('No 2d context');
-  }
-
   const rotRad = getRadianAngle(rotation);
   const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
-    bitmap.width,
-    bitmap.height,
+    image.naturalWidth,
+    image.naturalHeight,
     rotation
   );
 
   canvas.width = bBoxWidth;
   canvas.height = bBoxHeight;
+  const ctx = get2dContext(canvas);
   ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
   ctx.rotate(rotRad);
   ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
-  ctx.translate(-bitmap.width / 2, -bitmap.height / 2);
-  ctx.drawImage(bitmap, 0, 0);
-  return createImageBitmap(canvas);
+  ctx.translate(-image.naturalWidth / 2, -image.naturalHeight / 2);
+  ctx.drawImage(image, 0, 0);
+  return canvas;
 }
 
 export async function resizeImage(
@@ -211,10 +201,10 @@ export async function resizeImage(
   quality = 0.9,
   contentType: string = DEFAULT_OUTPUT_FORMAT.contentType
 ): Promise<Blob> {
-  const bitmap = await sourceToBitmap(imageSrc);
+  const { image, dispose } = await sourceToImage(imageSrc);
 
   try {
-    let { width, height } = bitmap;
+    let { width, height } = sourceSize(image);
 
     if (width > height) {
       if (width > maxWidth) {
@@ -227,17 +217,12 @@ export async function resizeImage(
     }
 
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      throw new Error('No 2d context');
-    }
-
     canvas.width = width;
     canvas.height = height;
-    ctx.drawImage(bitmap, 0, 0, width, height);
+    const ctx = get2dContext(canvas);
+    ctx.drawImage(image, 0, 0, width, height);
     return canvasToBlob(canvas, contentType, quality);
   } finally {
-    bitmap.close();
+    dispose();
   }
 }
