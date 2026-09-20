@@ -175,4 +175,10 @@
     width: 0;
     height: 0;
   }
+
+  .reactEasyCrop_Image,
+  .reactEasyCrop_Video {
+    max-width: none;
+    height: unset;
+  }
 }

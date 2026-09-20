@@ -1,7 +1,8 @@
+import { playwright } from '@vitest/browser-playwright';
 import { resolve } from 'path';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
+const shared = {
   // The repo's tsconfig.json sets `jsx: "preserve"` for Next's SWC build; Vitest's Vite 8
   // transform is oxc-based by default and reads that same tsconfig value, so without this
   // override every `.tsx` file that renders JSX fails to parse under the test runner (JSX
@@ -9,14 +10,23 @@ export default defineConfig({
   // Scoped to `oxc` (not `esbuild`, which Vite 8 ignores once `oxc` is set) and to this
   // config only, so it doesn't affect the Next.js build.
   oxc: {
-    jsx: { runtime: 'automatic' },
+    jsx: { runtime: 'automatic' as const },
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './'),
+    },
+  },
+};
+
+const runFirefoxBrowserTests = process.env.GRANT_WEB_BROWSER_TESTS === '1';
+
+export default defineConfig({
+  ...shared,
+  optimizeDeps: {
+    include: ['react', 'react-dom/client', 'react-easy-crop'],
   },
   test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-    include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist', '.next', '.vercel'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -30,10 +40,35 @@ export default defineConfig({
         '**/*.setup.*',
       ],
     },
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './'),
-    },
+    projects: [
+      {
+        ...shared,
+        test: {
+          name: 'jsdom',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: ['./tests/setup.ts'],
+          include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+          exclude: ['node_modules', 'dist', '.next', '.vercel', '**/*.browser.test.ts'],
+        },
+      },
+      ...(runFirefoxBrowserTests
+        ? [
+            {
+              ...shared,
+              test: {
+                name: 'browser',
+                include: ['**/*.browser.test.ts'],
+                browser: {
+                  enabled: true,
+                  headless: true,
+                  provider: playwright(),
+                  instances: [{ browser: 'firefox' as const }],
+                },
+              },
+            },
+          ]
+        : []),
+    ],
   },
 });

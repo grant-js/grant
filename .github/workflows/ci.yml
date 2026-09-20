@@ -181,6 +181,8 @@ jobs:
       - name: Type check
         run: pnpm run type-check
 
+      # grant-web's Playwright Firefox project is `test:browser`, not `pnpm test`.
+      # This runner cannot sudo `playwright install-deps`, so default tests stay in jsdom.
       - name: Test
         run: pnpm test
 
