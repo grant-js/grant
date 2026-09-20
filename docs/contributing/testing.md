@@ -77,10 +77,10 @@ apps/api/tests/
 
 ## Configuration
 
-| App     | Environment | Config                                                                             |
-| ------- | ----------- | ---------------------------------------------------------------------------------- |
-| **API** | `node`      | `apps/api/vitest.config.ts` — uses `vite-tsconfig-paths` for `@/` imports          |
-| **Web** | `jsdom`     | `apps/web/vitest.config.ts` — component + hook tests (`**/*.{test,spec}.{ts,tsx}`) |
+| App     | Environment        | Config                                                                                                    |
+| ------- | ------------------ | --------------------------------------------------------------------------------------------------------- |
+| **API** | `node`             | `apps/api/vitest.config.ts` — uses `vite-tsconfig-paths` for `@/` imports                                 |
+| **Web** | `jsdom` + Chromium | `apps/web/vitest.config.ts` — component + hook tests in jsdom; `*.browser.test.ts` in Playwright Chromium |
 
 ## Security and Compliance Tests
 

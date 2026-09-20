@@ -42,7 +42,7 @@ export function chooseOutputFormat(inputContentType: string): ProcessedImageForm
   return OUTPUT_FORMATS[inputContentType.toLowerCase()] ?? DEFAULT_OUTPUT_FORMAT;
 }
 
-/** Runs `fn` against a URL for `source`, revoking it afterwards either way. */
+/** Runs `fn` against a URL for `source`, revoking it after `fn` settles so draws can finish. */
 async function withSourceUrl<T>(
   source: string | Blob,
   fn: (url: string) => Promise<T>
@@ -79,12 +79,18 @@ async function canvasToBlob(
 }
 
 async function createImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.addEventListener('load', () => resolve(image));
-    image.addEventListener('error', (error) => reject(error));
-    image.src = url;
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const element = new Image();
+    element.addEventListener('load', () => resolve(element));
+    element.addEventListener('error', (error) => reject(error));
+    element.src = url;
   });
+
+  if (typeof image.decode === 'function') {
+    await image.decode();
+  }
+
+  return image;
 }
 
 function getRadianAngle(degreeValue: number): number {
@@ -111,36 +117,54 @@ export async function getCroppedImg(
   rotation = 0,
   flip = { horizontal: false, vertical: false }
 ): Promise<Blob> {
-  const image = await withSourceUrl(imageSrc, createImage);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  return withSourceUrl(imageSrc, async (url) => {
+    const image = await createImage(url);
+    const sourceCanvas = document.createElement('canvas');
+    const sourceCtx = sourceCanvas.getContext('2d');
 
-  if (!ctx) {
-    throw new Error('No 2d context');
-  }
+    if (!sourceCtx) {
+      throw new Error('No 2d context');
+    }
 
-  const rotRad = getRadianAngle(rotation);
+    const rotRad = getRadianAngle(rotation);
+    const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
+      image.width,
+      image.height,
+      rotation
+    );
 
-  const { width: bBoxWidth, height: bBoxHeight } = rotateSize(image.width, image.height, rotation);
+    sourceCanvas.width = bBoxWidth;
+    sourceCanvas.height = bBoxHeight;
 
-  canvas.width = bBoxWidth;
-  canvas.height = bBoxHeight;
+    sourceCtx.translate(bBoxWidth / 2, bBoxHeight / 2);
+    sourceCtx.rotate(rotRad);
+    sourceCtx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
+    sourceCtx.translate(-image.width / 2, -image.height / 2);
+    sourceCtx.drawImage(image, 0, 0);
 
-  ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
-  ctx.rotate(rotRad);
-  ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
-  ctx.translate(-image.width / 2, -image.height / 2);
+    const cropCanvas = document.createElement('canvas');
+    const cropCtx = cropCanvas.getContext('2d');
 
-  ctx.drawImage(image, 0, 0);
+    if (!cropCtx) {
+      throw new Error('No 2d context');
+    }
 
-  const data = ctx.getImageData(pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height);
+    cropCanvas.width = pixelCrop.width;
+    cropCanvas.height = pixelCrop.height;
+    cropCtx.drawImage(
+      sourceCanvas,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
 
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-
-  ctx.putImageData(data, 0, 0);
-
-  return canvasToBlob(canvas, contentType);
+    return canvasToBlob(cropCanvas, contentType);
+  });
 }
 
 export async function resizeImage(
@@ -150,32 +174,31 @@ export async function resizeImage(
   quality = 0.9,
   contentType: string = DEFAULT_OUTPUT_FORMAT.contentType
 ): Promise<Blob> {
-  const image = await withSourceUrl(imageSrc, createImage);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  return withSourceUrl(imageSrc, async (url) => {
+    const image = await createImage(url);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  if (!ctx) {
-    throw new Error('No 2d context');
-  }
-
-  let { width, height } = image;
-
-  if (width > height) {
-    if (width > maxWidth) {
-      height = (height * maxWidth) / width;
-      width = maxWidth;
+    if (!ctx) {
+      throw new Error('No 2d context');
     }
-  } else {
-    if (height > maxHeight) {
+
+    let { width, height } = image;
+
+    if (width > height) {
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+    } else if (height > maxHeight) {
       width = (width * maxHeight) / height;
       height = maxHeight;
     }
-  }
 
-  canvas.width = width;
-  canvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(image, 0, 0, width, height);
 
-  ctx.drawImage(image, 0, 0, width, height);
-
-  return canvasToBlob(canvas, contentType, quality);
+    return canvasToBlob(canvas, contentType, quality);
+  });
 }
