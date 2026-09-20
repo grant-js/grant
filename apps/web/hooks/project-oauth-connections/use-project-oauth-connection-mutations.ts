@@ -53,7 +53,9 @@ export function useProjectOAuthConnectionMutations() {
   }) => {
     try {
       await clearMutation({ variables: { input } });
-      toast.success(t('notifications.clearSuccess', { provider: t(`providers.${input.provider}`) }));
+      toast.success(
+        t('notifications.clearSuccess', { provider: t(`providers.${input.provider}`) })
+      );
     } catch (error) {
       toast.error(t('notifications.clearError'), {
         description: error instanceof Error ? error.message : undefined,

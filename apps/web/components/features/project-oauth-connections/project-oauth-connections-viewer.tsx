@@ -9,7 +9,10 @@ import { ExternalLink } from 'lucide-react';
 
 import { CopyToClipboard, FeatureModuleCard } from '@/components/common';
 import { useEmailVerified } from '@/hooks/auth';
-import { useProjectOAuthConnectionMutations, useProjectOAuthConnections } from '@/hooks/project-oauth-connections';
+import {
+  useProjectOAuthConnectionMutations,
+  useProjectOAuthConnections,
+} from '@/hooks/project-oauth-connections';
 import { getDocsUrl } from '@/lib/constants';
 import { getProjectOAuthBrokerCallbackUrl } from '@/lib/project-oauth-callback-url';
 

@@ -1,17 +1,15 @@
 import { useMemo } from 'react';
 import { ApolloClient } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
-import {
-  GetProjectOAuthConnectionsDocument,
-  ProjectOAuthConnection,
-  Scope,
-} from '@grantjs/schema';
+import { GetProjectOAuthConnectionsDocument, ProjectOAuthConnection, Scope } from '@grantjs/schema';
 
 interface UseProjectOAuthConnectionsResult {
   connections: ProjectOAuthConnection[];
   loading: boolean;
   error: Error | undefined;
-  refetch: () => Promise<ApolloClient.QueryResult<{ projectOAuthConnections: ProjectOAuthConnection[] }>>;
+  refetch: () => Promise<
+    ApolloClient.QueryResult<{ projectOAuthConnections: ProjectOAuthConnection[] }>
+  >;
 }
 
 export function useProjectOAuthConnections(
