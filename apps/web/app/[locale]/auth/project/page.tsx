@@ -13,12 +13,12 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
 import { getApiBaseUrl } from '@/lib/constants';
 import { oauthClientDisplayName } from '@/lib/oauth-branding';
-import { getProjectOAuthProviderVisibility } from '@/lib/project-oauth-entry.lib';
 import {
   getProjectAppPublicInfo,
   ProjectAppInfoError,
   type ProjectAppPublicInfo,
 } from '@/lib/project-oauth-api';
+import { getProjectOAuthProviderVisibility } from '@/lib/project-oauth-entry.lib';
 
 const PROJECT_OAUTH_ERROR_CODES = [
   'accountCreationFailed',
