@@ -86,4 +86,10 @@ describe('ProjectOAuthConnectionsViewer', () => {
     const { container } = render(<ProjectOAuthConnectionsViewer scope={scope} />);
     expect(container.querySelector('.max-w-2xl')).toBeTruthy();
   });
+
+  it('keeps callback helper text spaced below the URL field', () => {
+    render(<ProjectOAuthConnectionsViewer scope={scope} />);
+    const hint = screen.getByText(/callback\.hint/);
+    expect(hint.className).toContain('mt-3');
+  });
 });

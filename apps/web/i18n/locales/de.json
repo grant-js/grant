@@ -1339,6 +1339,15 @@
       "organizationViewer": "Nur-Lese-Zugriff zum Anzeigen von Organisationsressourcen"
     }
   },
+  "projectApp": {
+    "oauth": {
+      "title": "OAuth",
+      "description": "Weiterleitungs-URIs, Anmeldeanbieter und Registrierungseinstellungen.",
+      "configureConnection": "Projektverbindung konfigurieren",
+      "configureConnectionAria": "{provider}-OAuth-Verbindung",
+      "usingPlatformCredentials": "Es werden Plattform-Anmeldedaten verwendet."
+    }
+  },
   "projectApps": {
     "common": {
       "yes": "Ja",

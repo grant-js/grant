@@ -1400,7 +1400,10 @@
     },
     "oauth": {
       "title": "OAuth",
-      "description": "Redirect URIs, auth providers, and sign-up settings."
+      "description": "Redirect URIs, auth providers, and sign-up settings.",
+      "configureConnection": "Configure a project connection",
+      "configureConnectionAria": "{provider} OAuth connection",
+      "usingPlatformCredentials": "Using platform credentials."
     },
     "scopes": {
       "title": "Scopes",

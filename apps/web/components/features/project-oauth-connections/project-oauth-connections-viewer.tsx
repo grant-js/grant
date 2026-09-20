@@ -77,7 +77,7 @@ export function ProjectOAuthConnectionsViewer({ scope }: ProjectOAuthConnections
           </code>
           <CopyToClipboard text={callbackUrl} variant="outline" showText />
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="mt-3 text-sm text-muted-foreground">
           {t('callback.hint')}{' '}
           <a
             href={docsUrl}
