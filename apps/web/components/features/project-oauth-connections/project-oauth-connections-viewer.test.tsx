@@ -26,7 +26,7 @@ const projectGrantContext = {
   resource: { id: 'project-1', scope: { projects: ['project-1'] } },
 };
 
-const useGrantMock = vi.fn(() => true);
+const useGrantMock = vi.fn((..._args: unknown[]) => true);
 vi.mock('@grantjs/client/react', () => ({
   useGrant: (...args: unknown[]) => useGrantMock(...args),
 }));
