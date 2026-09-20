@@ -26,7 +26,7 @@ export const clearProjectOAuthConnectionRequestSchema = z.object({
   provider: providerSchema,
 });
 
-export const projectOAuthConnectionSchema = z
+const projectOAuthConnectionSchema = z
   .object({
     id: z.string().uuid(),
     projectId: z.string().uuid(),
