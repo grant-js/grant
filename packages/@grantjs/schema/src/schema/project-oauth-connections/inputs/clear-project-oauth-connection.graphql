@@ -1,0 +1,4 @@
+input ClearProjectOAuthConnectionInput {
+  scope: Scope!
+  provider: ProjectOAuthConnectionProvider!
+}

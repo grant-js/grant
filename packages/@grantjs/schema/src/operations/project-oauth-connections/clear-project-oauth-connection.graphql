@@ -1,0 +1,3 @@
+mutation ClearProjectOAuthConnection($input: ClearProjectOAuthConnectionInput!) {
+  clearProjectOAuthConnection(input: $input)
+}

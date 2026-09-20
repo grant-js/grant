@@ -128,6 +128,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
     | Types.ProjectApp
     | Types.ProjectAppTag
     | Types.ProjectGroup
+    | Types.ProjectOAuthConnection
     | Types.ProjectPermission
     | Types.ProjectResource
     | Types.ProjectRole
@@ -238,6 +239,7 @@ export type ResolversTypes = ResolversObject<{
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: ResolverTypeWrapper<Types.ChangeMyPasswordResult>;
   ClearProjectAppPictureInput: Types.ClearProjectAppPictureInput;
+  ClearProjectOAuthConnectionInput: Types.ClearProjectOAuthConnectionInput;
   ClearProjectPictureInput: Types.ClearProjectPictureInput;
   ConfirmMyProjectMembershipPictureUploadInput: Types.ConfirmMyProjectMembershipPictureUploadInput;
   ConfirmMyUserPictureUploadInput: Types.ConfirmMyUserPictureUploadInput;
@@ -359,6 +361,8 @@ export type ResolversTypes = ResolversObject<{
   ProjectAppTag: ResolverTypeWrapper<Types.ProjectAppTag>;
   ProjectGroup: ResolverTypeWrapper<Types.ProjectGroup>;
   ProjectMembershipExportData: ResolverTypeWrapper<Types.ProjectMembershipExportData>;
+  ProjectOAuthConnection: ResolverTypeWrapper<Types.ProjectOAuthConnection>;
+  ProjectOAuthConnectionProvider: Types.ProjectOAuthConnectionProvider;
   ProjectPage: ResolverTypeWrapper<Types.ProjectPage>;
   ProjectPermission: ResolverTypeWrapper<Types.ProjectPermission>;
   ProjectResource: ResolverTypeWrapper<Types.ProjectResource>;
@@ -545,6 +549,7 @@ export type ResolversTypes = ResolversObject<{
   UploadUrlHeader: ResolverTypeWrapper<Types.UploadUrlHeader>;
   UploadUserPictureInput: Types.UploadUserPictureInput;
   UploadUserPictureResult: ResolverTypeWrapper<Types.UploadUserPictureResult>;
+  UpsertProjectOAuthConnectionInput: Types.UpsertProjectOAuthConnectionInput;
   User: ResolverTypeWrapper<Types.User>;
   UserApiKeyCdmInput: Types.UserApiKeyCdmInput;
   UserAuthenticationEmailProviderAction: Types.UserAuthenticationEmailProviderAction;
@@ -639,6 +644,7 @@ export type ResolversParentTypes = ResolversObject<{
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: Types.ChangeMyPasswordResult;
   ClearProjectAppPictureInput: Types.ClearProjectAppPictureInput;
+  ClearProjectOAuthConnectionInput: Types.ClearProjectOAuthConnectionInput;
   ClearProjectPictureInput: Types.ClearProjectPictureInput;
   ConfirmMyProjectMembershipPictureUploadInput: Types.ConfirmMyProjectMembershipPictureUploadInput;
   ConfirmMyUserPictureUploadInput: Types.ConfirmMyUserPictureUploadInput;
@@ -741,6 +747,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectAppTag: Types.ProjectAppTag;
   ProjectGroup: Types.ProjectGroup;
   ProjectMembershipExportData: Types.ProjectMembershipExportData;
+  ProjectOAuthConnection: Types.ProjectOAuthConnection;
   ProjectPage: Types.ProjectPage;
   ProjectPermission: Types.ProjectPermission;
   ProjectResource: Types.ProjectResource;
@@ -913,6 +920,7 @@ export type ResolversParentTypes = ResolversObject<{
   UploadUrlHeader: Types.UploadUrlHeader;
   UploadUserPictureInput: Types.UploadUserPictureInput;
   UploadUserPictureResult: Types.UploadUserPictureResult;
+  UpsertProjectOAuthConnectionInput: Types.UpsertProjectOAuthConnectionInput;
   User: Types.User;
   UserApiKeyCdmInput: Types.UserApiKeyCdmInput;
   UserAuthenticationMethod: Types.UserAuthenticationMethod;
@@ -1143,6 +1151,7 @@ export type AuditableResolvers<
     | 'ProjectApp'
     | 'ProjectAppTag'
     | 'ProjectGroup'
+    | 'ProjectOAuthConnection'
     | 'ProjectPermission'
     | 'ProjectResource'
     | 'ProjectRole'
@@ -1511,6 +1520,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<Types.MutationClearProjectAppPictureArgs, 'input'>
+  >;
+  clearProjectOAuthConnection?: Resolver<
+    ResolversTypes['Boolean'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationClearProjectOAuthConnectionArgs, 'input'>
   >;
   clearProjectPicture?: Resolver<
     ResolversTypes['Project'],
@@ -2029,6 +2044,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<Types.MutationUploadUserPictureArgs, 'input'>
+  >;
+  upsertProjectOAuthConnection?: Resolver<
+    ResolversTypes['ProjectOAuthConnection'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationUpsertProjectOAuthConnectionArgs, 'input'>
   >;
   verifyEmail?: Resolver<
     ResolversTypes['VerifyEmailResponse'],
@@ -2568,6 +2589,22 @@ export type ProjectMembershipExportDataResolvers<
   role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type ProjectOAuthConnectionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectOAuthConnection'] =
+    ResolversParentTypes['ProjectOAuthConnection'],
+> = ResolversObject<{
+  clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  isConfigured?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  provider?: Resolver<ResolversTypes['ProjectOAuthConnectionProvider'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type ProjectPageResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['ProjectPage'] = ResolversParentTypes['ProjectPage'],
@@ -2882,6 +2919,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<Types.QueryProjectAppsArgs, 'scope'>
+  >;
+  projectOAuthConnections?: Resolver<
+    Array<ResolversTypes['ProjectOAuthConnection']>,
+    ParentType,
+    ContextType,
+    RequireFields<Types.QueryProjectOAuthConnectionsArgs, 'scope'>
   >;
   projectSyncJob?: Resolver<
     ResolversTypes['ProjectSyncJob'],
@@ -3696,6 +3739,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   ProjectAppTag?: ProjectAppTagResolvers<ContextType>;
   ProjectGroup?: ProjectGroupResolvers<ContextType>;
   ProjectMembershipExportData?: ProjectMembershipExportDataResolvers<ContextType>;
+  ProjectOAuthConnection?: ProjectOAuthConnectionResolvers<ContextType>;
   ProjectPage?: ProjectPageResolvers<ContextType>;
   ProjectPermission?: ProjectPermissionResolvers<ContextType>;
   ProjectResource?: ProjectResourceResolvers<ContextType>;

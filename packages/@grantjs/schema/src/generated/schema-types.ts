@@ -488,6 +488,11 @@ export type ClearProjectAppPictureInput = {
   scope: Scope;
 };
 
+export type ClearProjectOAuthConnectionInput = {
+  provider: ProjectOAuthConnectionProvider;
+  scope: Scope;
+};
+
 export type ClearProjectPictureInput = {
   projectId: Scalars['ID']['input'];
   scope: Scope;
@@ -1038,6 +1043,12 @@ export type Mutation = {
   changeMyPassword: ChangeMyPasswordResult;
   /** Clear the project-app logo. Does not delete the stored object. */
   clearProjectAppPicture: ProjectApp;
+  /**
+   * Remove the project's GitHub or Google OAuth connection.
+   * Ciphertext is wiped; the secret is never returned.
+   * Requires Project Update on the scoped project.
+   */
+  clearProjectOAuthConnection: Scalars['Boolean']['output'];
   /** Clear the project logo. Does not delete the stored object. */
   clearProjectPicture: Project;
   /**
@@ -1254,6 +1265,12 @@ export type Mutation = {
   /** Upload a project logo and persist its public URL. */
   uploadProjectPicture: UploadProjectPictureResult;
   uploadUserPicture: UploadUserPictureResult;
+  /**
+   * Create or replace the project's GitHub or Google OAuth connection.
+   * The client secret is write-only and is never returned.
+   * Requires Project Update on the scoped project.
+   */
+  upsertProjectOAuthConnection: ProjectOAuthConnection;
   verifyEmail: VerifyEmailResponse;
   verifyMfa: MfaVerifyResponse;
   verifyMfaRecoveryCode: MfaVerifyResponse;
@@ -1284,6 +1301,10 @@ export type MutationChangeMyPasswordArgs = {
 
 export type MutationClearProjectAppPictureArgs = {
   input: ClearProjectAppPictureInput;
+};
+
+export type MutationClearProjectOAuthConnectionArgs = {
+  input: ClearProjectOAuthConnectionInput;
 };
 
 export type MutationClearProjectPictureArgs = {
@@ -1648,6 +1669,10 @@ export type MutationUploadProjectPictureArgs = {
 
 export type MutationUploadUserPictureArgs = {
   input: UploadUserPictureInput;
+};
+
+export type MutationUpsertProjectOAuthConnectionArgs = {
+  input: UpsertProjectOAuthConnectionInput;
 };
 
 export type MutationVerifyEmailArgs = {
@@ -2180,6 +2205,33 @@ export type ProjectMembershipExportData = {
   role: Scalars['String']['output'];
 };
 
+/**
+ * Per-project GitHub or Google OAuth app (Auth0-style connection).
+ * The client secret is write-only and is never returned.
+ */
+export type ProjectOAuthConnection = Auditable & {
+  __typename?: 'ProjectOAuthConnection';
+  /** Public OAuth client id of the customer's GitHub or Google app. Not a secret. */
+  clientId: Scalars['String']['output'];
+  createdAt: Scalars['Date']['output'];
+  deletedAt?: Maybe<Scalars['Date']['output']>;
+  id: Scalars['ID']['output'];
+  /** True when a BYO client secret is stored for this provider. The secret itself is never returned. */
+  isConfigured: Scalars['Boolean']['output'];
+  projectId: Scalars['ID']['output'];
+  provider: ProjectOAuthConnectionProvider;
+  updatedAt: Scalars['Date']['output'];
+};
+
+/**
+ * Social identity providers that can have a per-project OAuth connection.
+ * Email magic-link is not a connection.
+ */
+export enum ProjectOAuthConnectionProvider {
+  Github = 'github',
+  Google = 'google',
+}
+
 export type ProjectPage = PaginatedResults & {
   __typename?: 'ProjectPage';
   hasNextPage: Scalars['Boolean']['output'];
@@ -2421,6 +2473,12 @@ export type Query = {
   /** List OAuth apps for the given project scope. Allowed scopes: accountProject, organizationProject. */
   projectApps: ProjectAppPage;
   /**
+   * List GitHub/Google OAuth connections for the project in `scope`.
+   * Secrets and ciphertext are never returned.
+   * Allowed scopes: accountProject, organizationProject.
+   */
+  projectOAuthConnections: Array<ProjectOAuthConnection>;
+  /**
    * Read the current state of a project CDM sync job. Use this to poll
    * the lifecycle of a job started via `startProjectSync`.
    */
@@ -2539,6 +2597,10 @@ export type QueryProjectAppsArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<ProjectAppSortInput>;
   tagIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type QueryProjectOAuthConnectionsArgs = {
+  scope: Scope;
 };
 
 export type QueryProjectSyncJobArgs = {
@@ -3851,6 +3913,15 @@ export type UploadUserPictureResult = {
   __typename?: 'UploadUserPictureResult';
   path: Scalars['String']['output'];
   url: Scalars['String']['output'];
+};
+
+export type UpsertProjectOAuthConnectionInput = {
+  /** Public OAuth client id of the customer's GitHub or Google app. */
+  clientId: Scalars['String']['input'];
+  /** OAuth client secret. Write-only; never returned on the connection type or in logs. */
+  clientSecret: Scalars['String']['input'];
+  provider: ProjectOAuthConnectionProvider;
+  scope: Scope;
 };
 
 export type User = Auditable & {

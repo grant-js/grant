@@ -1,0 +1,11 @@
+mutation UpsertProjectOAuthConnection($input: UpsertProjectOAuthConnectionInput!) {
+  upsertProjectOAuthConnection(input: $input) {
+    id
+    projectId
+    provider
+    clientId
+    isConfigured
+    createdAt
+    updatedAt
+  }
+}
