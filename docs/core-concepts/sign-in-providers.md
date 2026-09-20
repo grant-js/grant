@@ -15,16 +15,16 @@ This page covers **platform** operator configuration, how Grant links identities
 
 Set credentials in the Config app (**GitHub OAuth** / **Google OAuth** categories) or in the root env file. Leave a provider’s client ID and secret empty to hide it on **platform** surfaces.
 
-| Variable                                    | Purpose                                                              |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App credentials                                         |
-| `GITHUB_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/github/callback`)     |
+| Variable                                    | Purpose                                                                                                                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth App credentials                                                                                                                      |
+| `GITHUB_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/github/callback`)                                                                                  |
 | `GITHUB_PROJECT_CALLBACK_URL`               | Grant broker callback for project OAuth (default `{APP_URL}/api/auth/project/callback`) — register on **customer** GitHub apps, not only platform |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Web client credentials                                  |
-| `GOOGLE_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/google/callback`)     |
-| `GOOGLE_PROJECT_CALLBACK_URL`               | Grant broker callback for project OAuth (default `{APP_URL}/api/auth/project/callback`) — register on **customer** Google clients when using BYO |
-| `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`   | Encrypts per-project BYO client secrets at rest (required to save connections) |
-| `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL`          | When `true`, project social sign-in requires BYO connections (no platform fallback; default `false`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Cloud Web client credentials                                                                                                               |
+| `GOOGLE_CALLBACK_URL`                       | Platform callback (default `{APP_URL}/api/auth/google/callback`)                                                                                  |
+| `GOOGLE_PROJECT_CALLBACK_URL`               | Grant broker callback for project OAuth (default `{APP_URL}/api/auth/project/callback`) — register on **customer** Google clients when using BYO  |
+| `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`   | Encrypts per-project BYO client secrets at rest (required to save connections)                                                                    |
+| `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL`          | When `true`, project social sign-in requires BYO connections (no platform fallback; default `false`)                                              |
 
 If either ID or secret is set, **both** are required; the API refuses to start with a half-configured provider.
 
