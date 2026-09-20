@@ -1,5 +1,11 @@
 # @grantjs/schema
 
+## 1.10.0
+
+### Minor Changes
+
+- 3bcfc95: Add GraphQL types and operations for per-project GitHub/Google OAuth connections. Client secrets are write-only and never returned on reads.
+
 ## 1.9.2
 
 ## 1.9.1
