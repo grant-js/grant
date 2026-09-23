@@ -30,7 +30,7 @@
     "vitepress": "^1.6.4",
     "vitepress-plugin-codeblocks-fold": "^1.2.35",
     "vitepress-plugin-mermaid": "2.0.17",
-    "vue": "^3.5.42"
+    "vue": "^3.5.43"
   },
   "keywords": [
     "documentation",

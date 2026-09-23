@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import dotenv from 'dotenv';
+import { config as dotenvConfig } from 'dotenv';
 import { expand } from 'dotenv-expand';
 
 /**
@@ -48,7 +48,7 @@ export function loadEnv(rootArg?: string): void {
   const files = ['.env', '.env.local', `.env.${env}`, `.env.${env}.local`];
 
   for (const file of files) {
-    const result = dotenv.config({
+    const result = dotenvConfig({
       path: path.join(root, file),
       override: true,
     });
@@ -60,7 +60,7 @@ export function loadEnv(rootArg?: string): void {
   // Optional extra .env path (e.g. file injected by a secrets sidecar). Set GRANT_ENV_FILE in the runtime environment; no default path.
   const extraEnvPath = process.env.GRANT_ENV_FILE;
   if (extraEnvPath && fs.existsSync(extraEnvPath)) {
-    const extraResult = dotenv.config({ path: extraEnvPath, override: true });
+    const extraResult = dotenvConfig({ path: extraEnvPath, override: true });
     if (extraResult.parsed) {
       expand(extraResult);
     }
