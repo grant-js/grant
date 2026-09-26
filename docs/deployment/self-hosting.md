@@ -20,7 +20,7 @@ The recommended way to run the **Grant Platform** is with **Docker**: build or p
 All of these services are described in:
 
 - **`docker-compose.yml`** — default stack for a single host
-- **`docker-compose.demo.yml`** — production-style stack used for `demo.grantjs.org` (API replicas, nginx LB)
+- **`docker-compose.demo.yml`** — stack used for `demo.grantjs.org` (nginx gateway, host Postgres and Redis, one API replica)
 
 ## Configuration checklist
 
@@ -52,7 +52,7 @@ Everything else has safe defaults; you can tighten it later (rate limits, Redis 
 4. **Put a reverse proxy in front**
    - Terminate TLS and route traffic to `web` (`3000`) and `api` (`4000`) or terminate TLS directly in your infrastructure (load balancer, ingress controller).
 
-For replicas with a load balancer, use the demo compose file (`docker-compose.demo.yml`). For Kubernetes, the same images and environment variables apply; use the [Kubernetes (Helm)](/deployment/kubernetes) guide and the `charts/grant-platform` chart.
+`demo.grantjs.org` uses `docker-compose.demo.yml`: an nginx gateway, one API replica, and Postgres and Redis on the host. Raise the API count with `--scale api=N` when clustering needs a live check. For Kubernetes, the same images and environment variables apply; use the [Kubernetes (Helm)](/deployment/kubernetes) guide and the `charts/grant-platform` chart.
 
 On **AWS**, a CDK app deploys the same platform as Lambda functions behind CloudFront, with Aurora Serverless v2 and DynamoDB in place of PostgreSQL and Redis — no host to patch and no idle compute. See [AWS (serverless)](/deployment/aws-serverless).
 
