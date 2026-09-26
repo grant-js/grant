@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.11.0
+
+### Platform
+
+**Docker images:** tagged `:1.11.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.11.0** (fixed group with apps).
+
+### Minor Changes
+
+- 517fd2d: Record activation and security milestones in product analytics when Umami is enabled, without emails, client ids, or error text.
+
 ## 1.10.0
 
 ### Platform
