@@ -6,7 +6,7 @@
 #   ./scripts/stack-deploy.sh up            # same
 #   ./scripts/stack-deploy.sh update       # rebuild + recreate changed services
 #   ./scripts/stack-deploy.sh down         # tear down (containers + default network)
-#   ./scripts/stack-deploy.sh down -v      # tear down and remove volumes (full reset)
+#   ./scripts/stack-deploy.sh down -v      # tear down and remove the API storage volume
 #   ./scripts/stack-deploy.sh logs         # tail api logs (follow)
 #   ./scripts/stack-deploy.sh env          # print computed env (no deploy)
 #

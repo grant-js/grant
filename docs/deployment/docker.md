@@ -15,7 +15,7 @@ This guide shows how to deploy the Grant Platform using **Docker Compose**: from
 | Compose file              | Env file                                                | Use case                                     |
 | ------------------------- | ------------------------------------------------------- | -------------------------------------------- |
 | `docker-compose.yml`      | `.env` (or `--env-file .env.demo` for a demo-style run) | Default full stack                           |
-| `docker-compose.demo.yml` | `.env.demo`                                             | Demo (replicas, LB, production-style)        |
+| `docker-compose.demo.yml` | `.env.demo`                                             | Demo (gateway, host Postgres and Redis)      |
 | `docker-compose.e2e.yml`  | `.env.test`                                             | E2E tests (minimal stack, ephemeral storage) |
 
 Compose resolves `${VAR}` in the YAML at **parse time** from the env passed to the process (e.g. `docker compose --env-file .env.test up`). Always pass `--env-file .env.<env>` when using a non-default env file so interpolation works. A minimal `.env` in the repo root (e.g. `COMPOSE_PROJECT_NAME=grant`) is kept for Compose and tooling; full config lives in `.env.test`, `.env.demo`, etc.
@@ -105,14 +105,14 @@ You can use nginx, Traefik, Caddy, or your cloud’s load balancer / ingress. Re
 
 For a single canonical APP_URL (e.g. `https://demo.grantjs.org`) that routes to api, web, docs, and the example app by path, see the sample `docs/deployment/nginx-gateway.conf.example` in the repo. Copy and adapt `server_name`, upstream ports, and SSL paths for your host; it is not required for deployment.
 
-## 7. Demo stack: replicas and load balancer
+## 7. Demo stack: gateway and host database
 
-The `docker-compose.demo.yml` file is the production-style stack used to run `demo.grantjs.org`:
+The `docker-compose.demo.yml` file is the stack used to run `demo.grantjs.org`:
 
-- `deploy.replicas: 2` for the API (Docker Compose v2 honors this natively)
-- A single nginx gateway container that handles path-based routing for all services and round-robins across API replicas via Docker's embedded DNS
-- `depends_on: condition: service_healthy` so the API waits for postgres and redis to be ready
-- Database bootstrap (migrations + core seed) runs automatically on API startup, serialized across replicas using a PostgreSQL advisory lock
+- `deploy.replicas: 1` for the API. Docker Compose v2 honors this natively; `--scale api=N` raises it when clustering needs a live check
+- A single nginx gateway container that handles path-based routing and, when more than one API replica is running, round-robins across them via Docker's embedded DNS
+- Postgres and Redis on the host. The API reaches them through `host.docker.internal`
+- Database bootstrap (migrations + core seed) runs automatically on API startup, serialized with a PostgreSQL advisory lock when more than one replica starts
 
 ### 7.1 Prepare env and deploy
 
@@ -126,7 +126,7 @@ This script wraps `docker compose` with the demo compose file and env:
 - `up` — build + start (detached)
 - `update` — rebuild + force-recreate changed services
 - `down` — tear down containers and network
-- `down -v` — tear down and remove volumes (full reset)
+- `down -v` — tear down and remove the API storage volume (the host database is untouched)
 - `logs` — tail API logs
 
 You can override defaults:
@@ -189,25 +189,17 @@ flowchart TD
   api --> redis
 ```
 
-### Demo stack with gateway and API replicas
+### Demo stack with gateway
 
 ```bmermaid diagram-narrow
 flowchart TD
-  gw[Gateway nginx :80] --> api1[API replica 1]
-  gw --> api2[API replica 2]
+  gw[Gateway nginx :80] --> api[API :4000]
   gw --> web[Web :3000]
   gw --> docs[Docs :8080]
   gw --> example[Example :3000]
 
-  subgraph db[PostgreSQL]
-  end
-  subgraph cache[Redis]
-  end
-
-  api1 --> db
-  api1 --> cache
-  api2 --> db
-  api2 --> cache
+  api --> pg[(Host PostgreSQL)]
+  api --> redis[(Host Redis)]
 ```
 
 ## 9. E2E tests (docker-compose.e2e.yml)
@@ -248,7 +240,7 @@ docker compose down
 
 **Scale API**
 
-The demo stack uses `deploy.replicas: 2` by default. To override:
+The demo stack uses `deploy.replicas: 1` by default. To override:
 
 ```bash
 docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --scale api=3
