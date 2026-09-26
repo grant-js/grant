@@ -1,4 +1,4 @@
-import type { IEventConsumer, IEventRelayService } from '@grantjs/core';
+import type { EventRelayBatch, IEventConsumer, IEventRelayService } from '@grantjs/core';
 
 import { mapEventLogToDomainEvent } from '@/lib/events';
 import { createLogger } from '@/lib/logger';
@@ -23,12 +23,12 @@ export class EventRelayService implements IEventRelayService<Transaction> {
    * Claim and dispatch one batch within the given transaction. Returns the
    * number of events processed (0 means the outbox is drained).
    */
-  async relayBatch(transaction: Transaction, limit: number): Promise<number> {
+  async relayBatch(transaction: Transaction, limit: number): Promise<EventRelayBatch> {
     const rows = await this.eventLogRepository.claimPendingBatch(limit, transaction);
-    if (rows.length === 0) return 0;
+    if (rows.length === 0) return { count: 0, events: [] };
 
-    for (const row of rows) {
-      const event = mapEventLogToDomainEvent(row);
+    const events = rows.map((row) => mapEventLogToDomainEvent(row));
+    for (const event of events) {
       for (const consumer of this.consumers) {
         await consumer.process(event, transaction);
       }
@@ -45,6 +45,6 @@ export class EventRelayService implements IEventRelayService<Transaction> {
       consumers: this.consumers.length,
     });
 
-    return rows.length;
+    return { count: rows.length, events };
   }
 }

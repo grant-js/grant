@@ -9,9 +9,36 @@ export interface UmamiAnalyticsConfig {
   hostname?: string;
 }
 
+function umamiEventData(event: AnalyticsEvent): Record<string, unknown> {
+  const data: Record<string, unknown> = {};
+
+  if (event.properties) {
+    for (const [key, value] of Object.entries(event.properties)) {
+      if (value !== undefined) {
+        data[key] = value;
+      }
+    }
+  }
+
+  if (event.userId) {
+    data.actorId = event.userId;
+  }
+  if (event.accountId) {
+    data.accountId = event.accountId;
+  }
+  if (event.organizationId) {
+    data.organizationId = event.organizationId;
+  }
+  if (event.requestId) {
+    data.requestId = event.requestId;
+  }
+
+  return data;
+}
+
 /**
- * Umami analytics adapter. Sends events to Umami's POST /api/send.
- * Requires a valid User-Agent header; no auth token for /api/send.
+ * Sends named events to Umami POST /api/send.
+ * Payload `id` stays unset: Umami uses it as a visitor cache key.
  */
 export class UmamiAnalyticsAdapter implements IAnalyticsAdapter {
   private readonly config: UmamiAnalyticsConfig;
@@ -24,6 +51,7 @@ export class UmamiAnalyticsAdapter implements IAnalyticsAdapter {
 
   async trackEvent(event: AnalyticsEvent): Promise<void> {
     const url = `${this.config.apiUrl.replace(/\/$/, '')}/api/send`;
+    const data = umamiEventData(event);
     const payload = {
       type: 'event' as const,
       payload: {
@@ -32,8 +60,7 @@ export class UmamiAnalyticsAdapter implements IAnalyticsAdapter {
         hostname: this.config.hostname ?? 'grant-api',
         url: '/',
         title: event.category ?? event.name,
-        data: event.properties ?? {},
-        ...(event.requestId && { id: event.requestId }),
+        data,
         ...(event.category && { tag: event.category }),
       },
     };

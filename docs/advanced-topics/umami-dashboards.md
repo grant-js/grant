@@ -42,35 +42,25 @@ Set environment variables and restart the API:
 
 If the API runs in Docker on the same network as Umami, use the service name for the URL (e.g. `http://umami:3000`). If the API runs on the host, use `http://localhost:3002`.
 
-## 4. Send events from Grant
+## 4. Produce events from Grant
 
-Handlers call `getAnalyticsAdapter().trackEvent({ name, category, ... })`; events are sent to Umami. Example:
+With the provider set to `umami`, the API emits the product-event allowlist on its own. See [Analytics](/advanced-topics/analytics) for the names and properties. Trigger a few console actions: register, log in with a bad password, create an organization, accept an invitation, finish a project sync. Events show up in Umami after a short delay.
 
-```typescript
-import { getAnalyticsAdapter } from '@/lib/analytics';
-
-const adapter = getAnalyticsAdapter();
-adapter
-  .trackEvent({
-    name: 'organization.created',
-    category: 'organization',
-    organizationId: organization.id,
-    properties: { name: organization.name },
-  })
-  .catch((err) => logger.error({ msg: 'Analytics track failed', err }));
-```
-
-Trigger some actions in your app (e.g. create an organization, log in); events will appear in Umami after a short delay.
+These are server-side custom events. The adapter sends a fixed user agent and the URL `/`, and it does not set Umami's visitor id. The Overview page (browsers, countries, referrers, page views) describes the API process. Read usage from the **Events** view.
 
 ## 5. Create a dashboard in Umami
 
 1. In Umami, open **Websites** and select the Grant API website.
-2. Use the default dashboard (page views, events, referrers) or create a custom dashboard.
-3. Add charts or tables; filter by event name (e.g. `organization.created`) to see server-side events sent by the Grant adapter.
+2. Open **Events** and filter by event name. Break down on the event data (`provider`, `reason`, `result`, `operation`).
+3. Four charts cover the first questions an operator asks:
+   - `account.registered` by `provider`
+   - `session.failed` by `reason`
+   - `invitation.sent` compared with `invitation.accepted`
+   - `project_sync.finished` by `result`
 
 ## 6. Save and iterate
 
-Save the dashboard. You can add more events in your handlers (see [Analytics](/advanced-topics/analytics) for event naming and best practices) and build additional views in Umami.
+Save the dashboard. New product events belong on the allowlist in [Analytics](/advanced-topics/analytics), not as one-off names in a handler.
 
 ---
 

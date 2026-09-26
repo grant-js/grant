@@ -40,6 +40,12 @@ import {
 
 import { config } from '@/config';
 import { translateStatic } from '@/i18n/helpers';
+import {
+  analyticsAuthProvider,
+  loginFailureReason,
+  trackProductEvent,
+  trackProductEventAfterCommit,
+} from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
@@ -213,7 +219,8 @@ export class AuthHandler extends CacheHandler {
     private readonly organizationInvitations: IOrganizationInvitationService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
-    private readonly db: ITransactionalConnection<Transaction>
+    private readonly db: ITransactionalConnection<Transaction>,
+    private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
   ) {
     super(cache, scopeServices);
   }
@@ -227,8 +234,9 @@ export class AuthHandler extends CacheHandler {
     requestBaseUrl?: string
   ): Promise<CreateAccountResult> {
     const { type, provider, providerId, providerData, emailVerificationProof } = params;
+    const registered: { actorId: string } = { actorId: '' };
 
-    return await this.db.withTransaction(async (tx: Transaction) => {
+    const result = await this.db.withTransaction(async (tx: Transaction) => {
       const existingAuthMethod =
         await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
           provider,
@@ -336,8 +344,24 @@ export class AuthHandler extends CacheHandler {
         email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
       };
 
+      registered.actorId = user.id;
       return result;
     });
+
+    const properties = {
+      provider: analyticsAuthProvider(provider),
+      actorId: registered.actorId,
+    };
+    trackProductEventAfterCommit(this.scheduleAfterCommit, {
+      name: 'account.registered',
+      properties,
+    });
+    trackProductEventAfterCommit(this.scheduleAfterCommit, {
+      name: 'session.started',
+      properties: { ...properties, stepUpRequired: false },
+    });
+
+    return result;
   }
 
   public async login(
@@ -347,158 +371,200 @@ export class AuthHandler extends CacheHandler {
     requestBaseUrl?: string
   ): Promise<LoginResponse> {
     const issuerBaseUrl = requestBaseUrl ?? config.app.url;
-    return await this.db.withTransaction(async (tx: Transaction) => {
-      const { provider, providerId, providerData, emailVerificationProof } = params.input;
-      const { providerData: processedProviderData } =
-        await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
+    const { provider } = params.input;
+    const started: { actorId: string; stepUpRequired: boolean } = {
+      actorId: '',
+      stepUpRequired: false,
+    };
+    let didStartSession = false;
 
-      let userAuthenticationMethod =
-        await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+    try {
+      const result = await this.db.withTransaction(async (tx: Transaction) => {
+        const { provider, providerId, providerData, emailVerificationProof } = params.input;
+        const { providerData: processedProviderData } =
+          await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
+
+        let userAuthenticationMethod =
+          await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+            provider,
+            providerId,
+            undefined,
+            tx
+          );
+
+        if (!userAuthenticationMethod) {
+          throw new AuthenticationError('User authentication method not found');
+        }
+
+        if (provider === UserAuthenticationMethodProvider.Email) {
+          const userAuthenticationMethodProviderData =
+            userAuthenticationMethod.providerData as unknown as { hashedPassword: string };
+          const storedHashedPassword = userAuthenticationMethodProviderData.hashedPassword;
+          if (
+            !storedHashedPassword ||
+            !verifySecret(processedProviderData.password as string, storedHashedPassword)
+          ) {
+            throw new AuthenticationError('Invalid credentials');
+          }
+        }
+
+        const isVerifiedByInvitationProof = await this.validatesInvitationEmailProof(
           provider,
           providerId,
-          undefined,
+          emailVerificationProof,
           tx
         );
 
-      if (!userAuthenticationMethod) {
-        throw new AuthenticationError('User authentication method not found');
-      }
+        if (!userAuthenticationMethod.isVerified && isVerifiedByInvitationProof) {
+          userAuthenticationMethod =
+            await this.userAuthenticationMethods.updateUserAuthenticationMethod(
+              userAuthenticationMethod.id,
+              {
+                isVerified: true,
+                providerData: this.removeEmailOtp(
+                  (userAuthenticationMethod.providerData as Record<string, unknown>) || {}
+                ),
+              },
+              tx
+            );
+        }
 
-      if (provider === UserAuthenticationMethodProvider.Email) {
-        const userAuthenticationMethodProviderData =
-          userAuthenticationMethod.providerData as unknown as { hashedPassword: string };
-        const storedHashedPassword = userAuthenticationMethodProviderData.hashedPassword;
+        const verificationCreatedAt = userAuthenticationMethod.createdAt
+          ? new Date(userAuthenticationMethod.createdAt)
+          : null;
+        const verificationExpirationMs = getVerificationExpirationMs();
+        const now = new Date();
+
         if (
-          !storedHashedPassword ||
-          !verifySecret(processedProviderData.password as string, storedHashedPassword)
+          !userAuthenticationMethod.isVerified &&
+          verificationCreatedAt &&
+          now.getTime() - verificationCreatedAt.getTime() > verificationExpirationMs
         ) {
-          throw new AuthenticationError('Invalid credentials');
+          throw new AuthenticationError('User not verified');
         }
-      }
 
-      const isVerifiedByInvitationProof = await this.validatesInvitationEmailProof(
-        provider,
-        providerId,
-        emailVerificationProof,
-        tx
-      );
-
-      if (!userAuthenticationMethod.isVerified && isVerifiedByInvitationProof) {
-        userAuthenticationMethod =
-          await this.userAuthenticationMethods.updateUserAuthenticationMethod(
-            userAuthenticationMethod.id,
-            {
-              isVerified: true,
-              providerData: this.removeEmailOtp(
-                (userAuthenticationMethod.providerData as Record<string, unknown>) || {}
-              ),
-            },
-            tx
-          );
-      }
-
-      const verificationCreatedAt = userAuthenticationMethod.createdAt
-        ? new Date(userAuthenticationMethod.createdAt)
-        : null;
-      const verificationExpirationMs = getVerificationExpirationMs();
-      const now = new Date();
-
-      if (
-        !userAuthenticationMethod.isVerified &&
-        verificationCreatedAt &&
-        now.getTime() - verificationCreatedAt.getTime() > verificationExpirationMs
-      ) {
-        throw new AuthenticationError('User not verified');
-      }
-
-      const usersResult = await this.users.getUsers(
-        {
-          ids: [userAuthenticationMethod.userId],
-          limit: 1,
-          requestedFields: ['accounts'],
-        },
-        tx
-      );
-
-      if (
-        usersResult.totalCount === 0 ||
-        !Array.isArray(usersResult.users) ||
-        usersResult.users.length === 0
-      ) {
-        throw new AuthenticationError('User not found');
-      }
-
-      let user = usersResult.users[0];
-
-      if (this.isSocialOAuthProvider(provider)) {
-        await this.bindVerifiedOauthContactEmailFromProviderData(
-          user.id,
-          processedProviderData,
-          tx
-        );
-      }
-
-      if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
-        // User has auth method but no account (e.g. created via project OAuth). Create default Personal account on first platform login.
-        const account = await this.accounts.createAccount(
-          { type: AccountType.Personal, ownerId: user.id },
-          tx
-        );
-        const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
-        const accountOwnerRole = seededRoles[0];
-        if (accountOwnerRole) {
-          await this.userRoles.addUserRole(
-            { userId: user.id, roleId: accountOwnerRole.role.id },
-            tx
-          );
-        }
-        const usersResultAfter = await this.users.getUsers(
-          { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
-          tx
-        );
-        user = usersResultAfter.users?.[0] ?? user;
-      }
-
-      // Check for existing non-expired sessions (without requiring exact userAgent/ipAddress match)
-      const userSessionsResult = await this.userSessions.getUserSessions(
-        {
-          userId: user.id,
-          audience: issuerBaseUrl,
-          expiresAtMin: new Date(),
-          userAgent,
-          ipAddress,
-          limit: 1,
-          sort: {
-            field: UserSessionSortableField.LastUsedAt,
-            order: SortOrder.Desc,
+        const usersResult = await this.users.getUsers(
+          {
+            ids: [userAuthenticationMethod.userId],
+            limit: 1,
+            requestedFields: ['accounts'],
           },
-        },
-        tx
-      );
-
-      const matchingSession = userSessionsResult.userSessions[0];
-
-      if (matchingSession) {
-        await this.userSessions.refreshSessionLastUsed(matchingSession.id, tx);
-
-        const mfaVerifiedSession = Boolean(
-          (matchingSession as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt
+          tx
         );
-        const { accessToken, refreshToken } = await this.userSessions.signSession(
-          matchingSession,
-          userAuthenticationMethod.isVerified,
-          mfaVerifiedSession,
+
+        if (
+          usersResult.totalCount === 0 ||
+          !Array.isArray(usersResult.users) ||
+          usersResult.users.length === 0
+        ) {
+          throw new AuthenticationError('User not found');
+        }
+
+        let user = usersResult.users[0];
+
+        if (this.isSocialOAuthProvider(provider)) {
+          await this.bindVerifiedOauthContactEmailFromProviderData(
+            user.id,
+            processedProviderData,
+            tx
+          );
+        }
+
+        if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
+          // User has auth method but no account (e.g. created via project OAuth). Create default Personal account on first platform login.
+          const account = await this.accounts.createAccount(
+            { type: AccountType.Personal, ownerId: user.id },
+            tx
+          );
+          const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
+          const accountOwnerRole = seededRoles[0];
+          if (accountOwnerRole) {
+            await this.userRoles.addUserRole(
+              { userId: user.id, roleId: accountOwnerRole.role.id },
+              tx
+            );
+          }
+          const usersResultAfter = await this.users.getUsers(
+            { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
+            tx
+          );
+          user = usersResultAfter.users?.[0] ?? user;
+        }
+
+        // Check for existing non-expired sessions (without requiring exact userAgent/ipAddress match)
+        const userSessionsResult = await this.userSessions.getUserSessions(
+          {
+            userId: user.id,
+            audience: issuerBaseUrl,
+            expiresAtMin: new Date(),
+            userAgent,
+            ipAddress,
+            limit: 1,
+            sort: {
+              field: UserSessionSortableField.LastUsedAt,
+              order: SortOrder.Desc,
+            },
+          },
+          tx
+        );
+
+        const matchingSession = userSessionsResult.userSessions[0];
+
+        if (matchingSession) {
+          await this.userSessions.refreshSessionLastUsed(matchingSession.id, tx);
+
+          const mfaVerifiedSession = Boolean(
+            (matchingSession as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt
+          );
+          const { accessToken, refreshToken } = await this.userSessions.signSession(
+            matchingSession,
+            userAuthenticationMethod.isVerified,
+            mfaVerifiedSession,
+            requestBaseUrl
+          );
+          const requiresMfaStepUp = await this.computeRequiresMfaStepUp(
+            user.id,
+            mfaVerifiedSession,
+            tx
+          );
+          return {
+            accessToken,
+            refreshToken,
+            mfaVerified: mfaVerifiedSession,
+            requiresMfaStepUp,
+            accounts: user.accounts ?? [],
+            requiresEmailVerification: !userAuthenticationMethod.isVerified,
+            verificationExpiry: userAuthenticationMethod.isVerified
+              ? null
+              : verificationCreatedAt
+                ? getVerificationExpiryDate(verificationCreatedAt)
+                : null,
+            email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
+          };
+        }
+
+        const session = await this.userSessions.createSession(
+          {
+            userId: user.id,
+            userAuthenticationMethodId: userAuthenticationMethod.id,
+            userAgent: userAgent || null,
+            ipAddress: ipAddress || null,
+            isVerified: userAuthenticationMethod.isVerified,
+          },
+          tx,
           requestBaseUrl
         );
-        const requiresMfaStepUp = await this.computeRequiresMfaStepUp(
-          user.id,
-          mfaVerifiedSession,
-          tx
-        );
+
+        const requiresMfaStepUp = await this.computeRequiresMfaStepUp(user.id, false, tx);
+
+        didStartSession = true;
+        started.actorId = user.id;
+        started.stepUpRequired = requiresMfaStepUp;
+
         return {
-          accessToken,
-          refreshToken,
-          mfaVerified: mfaVerifiedSession,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          mfaVerified: false,
           requiresMfaStepUp,
           accounts: user.accounts ?? [],
           requiresEmailVerification: !userAuthenticationMethod.isVerified,
@@ -509,37 +575,33 @@ export class AuthHandler extends CacheHandler {
               : null,
           email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
         };
+      });
+
+      if (didStartSession) {
+        trackProductEventAfterCommit(this.scheduleAfterCommit, {
+          name: 'session.started',
+          properties: {
+            provider: analyticsAuthProvider(provider),
+            stepUpRequired: started.stepUpRequired,
+            actorId: started.actorId,
+          },
+        });
       }
 
-      const session = await this.userSessions.createSession(
-        {
-          userId: user.id,
-          userAuthenticationMethodId: userAuthenticationMethod.id,
-          userAgent: userAgent || null,
-          ipAddress: ipAddress || null,
-          isVerified: userAuthenticationMethod.isVerified,
-        },
-        tx,
-        requestBaseUrl
-      );
-
-      const requiresMfaStepUp = await this.computeRequiresMfaStepUp(user.id, false, tx);
-
-      return {
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
-        mfaVerified: false,
-        requiresMfaStepUp,
-        accounts: user.accounts ?? [],
-        requiresEmailVerification: !userAuthenticationMethod.isVerified,
-        verificationExpiry: userAuthenticationMethod.isVerified
-          ? null
-          : verificationCreatedAt
-            ? getVerificationExpiryDate(verificationCreatedAt)
-            : null,
-        email: provider === UserAuthenticationMethodProvider.Email ? providerId : null,
-      };
-    });
+      return result;
+    } catch (error) {
+      const reason = loginFailureReason(error);
+      if (reason) {
+        trackProductEvent({
+          name: 'session.failed',
+          properties: {
+            provider: analyticsAuthProvider(provider),
+            reason,
+          },
+        });
+      }
+      throw error;
+    }
   }
 
   public async refreshSession(
@@ -586,20 +648,30 @@ export class AuthHandler extends CacheHandler {
     code: string,
     requestBaseUrl?: string
   ): Promise<{ accessToken: string; refreshToken: string; mfaVerified: boolean }> {
-    return this.db.withTransaction(async (tx: Transaction) => {
-      const result = await this.userMfa.verifyTotp(userId, code, tx);
-      if (!result.verified) {
-        throw new AuthenticationError('Invalid MFA code');
+    try {
+      return await this.db.withTransaction(async (tx: Transaction) => {
+        const result = await this.userMfa.verifyTotp(userId, code, tx);
+        if (!result.verified) {
+          throw new AuthenticationError('Invalid MFA code');
+        }
+        await this.userSessions.markMfaVerified(sessionId, tx);
+        const session = await this.userSessions.getUserSession(sessionId, tx);
+        const signed = await this.userSessions.signSession(session, true, true, requestBaseUrl);
+        return {
+          accessToken: signed.accessToken,
+          refreshToken: signed.refreshToken,
+          mfaVerified: true,
+        };
+      });
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        trackProductEvent({
+          name: 'session.failed',
+          properties: { reason: 'mfa', actorId: userId },
+        });
       }
-      await this.userSessions.markMfaVerified(sessionId, tx);
-      const session = await this.userSessions.getUserSession(sessionId, tx);
-      const signed = await this.userSessions.signSession(session, true, true, requestBaseUrl);
-      return {
-        accessToken: signed.accessToken,
-        refreshToken: signed.refreshToken,
-        mfaVerified: true,
-      };
-    });
+      throw error;
+    }
   }
 
   /**
@@ -611,20 +683,30 @@ export class AuthHandler extends CacheHandler {
     code: string,
     requestBaseUrl?: string
   ): Promise<{ accessToken: string; refreshToken: string; mfaVerified: boolean }> {
-    return this.db.withTransaction(async (tx: Transaction) => {
-      const ok = await this.userMfa.verifyRecoveryCode(userId, code, tx);
-      if (!ok) {
-        throw new AuthenticationError('Invalid recovery code');
+    try {
+      return await this.db.withTransaction(async (tx: Transaction) => {
+        const ok = await this.userMfa.verifyRecoveryCode(userId, code, tx);
+        if (!ok) {
+          throw new AuthenticationError('Invalid recovery code');
+        }
+        await this.userSessions.markMfaVerified(sessionId, tx);
+        const session = await this.userSessions.getUserSession(sessionId, tx);
+        const signed = await this.userSessions.signSession(session, true, true, requestBaseUrl);
+        return {
+          accessToken: signed.accessToken,
+          refreshToken: signed.refreshToken,
+          mfaVerified: true,
+        };
+      });
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        trackProductEvent({
+          name: 'session.failed',
+          properties: { reason: 'mfa', actorId: userId },
+        });
       }
-      await this.userSessions.markMfaVerified(sessionId, tx);
-      const session = await this.userSessions.getUserSession(sessionId, tx);
-      const signed = await this.userSessions.signSession(session, true, true, requestBaseUrl);
-      return {
-        accessToken: signed.accessToken,
-        refreshToken: signed.refreshToken,
-        mfaVerified: true,
-      };
-    });
+      throw error;
+    }
   }
 
   public async logout(refreshToken: string): Promise<boolean> {

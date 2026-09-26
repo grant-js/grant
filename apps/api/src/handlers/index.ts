@@ -71,7 +71,8 @@ export function createHandlers(
     services.organizationInvitations,
     cache,
     services,
-    db
+    db,
+    options?.scheduleAfterCommit
   );
 
   return {
@@ -110,7 +111,8 @@ export function createHandlers(
       services.webhookSubscriptions,
       cache,
       services,
-      db
+      db,
+      options?.scheduleAfterCommit
     ),
     auth: authHandler,
     projectOAuth: new ProjectOAuthHandler(
@@ -189,7 +191,8 @@ export function createHandlers(
       services.fileStorage,
       cache,
       services,
-      db
+      db,
+      options?.scheduleAfterCommit
     ),
     permissions: new PermissionHandler(
       services.permissionTags,

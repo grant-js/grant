@@ -54,6 +54,7 @@ vi.mock('@/config', () => ({ config: mockConfig }));
 
 vi.mock('@/lib/logger', () => ({
   logger: noopLogger,
+  createLogger: () => noopLogger,
   loggerFactory: { createLogger: () => noopLogger },
 }));
 

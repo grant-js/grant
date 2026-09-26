@@ -139,7 +139,7 @@ Distributed tracing via OpenTelemetry. **Implemented.** Spans include `http.requ
 
 ## Analytics
 
-Optional event tracking. Port: `IAnalyticsAdapter` ([@grantjs/core](packages/@grantjs/core)); adapters in [@grantjs/analytics](packages/@grantjs/analytics) (noop, Umami). Grant does not store events; adapters forward to the backend of your choice.
+Optional product-usage tracking for the operator of this deployment. Port: `IAnalyticsAdapter` ([@grantjs/core](packages/@grantjs/core)); adapters in [@grantjs/analytics](packages/@grantjs/analytics) (noop, Umami). Grant does not store events; adapters forward a fixed allowlist (authentication, activation, security, integrations) to the backend of your choice. This is separate from telemetry: telemetry ships a log line for every HTTP request, and analytics records product milestones. Audit logs and domain-event webhooks stay the compliance and tenant-integration feeds.
 
 | Variable                     | Default     | Description           |
 | ---------------------------- | ----------- | --------------------- |
@@ -149,7 +149,7 @@ Optional event tracking. Port: `IAnalyticsAdapter` ([@grantjs/core](packages/@gr
 | `ANALYTICS_UMAMI_WEBSITE_ID` | —           | Website ID from Umami |
 | `ANALYTICS_UMAMI_HOSTNAME`   | `grant-api` | Hostname per event    |
 
-**Wired in:** [lib/analytics](apps/api/src/lib/analytics/). Handlers call `getAnalyticsAdapter().trackEvent(...)` (fire-and-forget). Usage: [Analytics](/advanced-topics/analytics). First dashboard: [Umami dashboards](/advanced-topics/umami-dashboards).
+**Wired in:** [lib/analytics](apps/api/src/lib/analytics/). Domain-event milestones are projected after the event relay commits. Console registration, session start and failure, and organization, project, and webhook creation are emitted from the handler after its transaction commits. Usage: [Analytics](/advanced-topics/analytics). First dashboard: [Umami dashboards](/advanced-topics/umami-dashboards).
 
 ---
 
