@@ -9,6 +9,7 @@ import type {
 } from '@grantjs/schema';
 import { Tenant } from '@grantjs/schema';
 
+import { trackProductEventAfterCommit } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
 import { tryProjectIdFromScope } from '@/lib/scope.lib';
@@ -23,7 +24,8 @@ export class WebhookSubscriptionsHandler extends CacheHandler {
     private readonly webhookSubscriptions: IWebhookSubscriptionService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
-    private readonly db: ITransactionalConnection<Transaction>
+    private readonly db: ITransactionalConnection<Transaction>,
+    private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
   ) {
     super(cache, scopeServices);
   }
@@ -56,9 +58,20 @@ export class WebhookSubscriptionsHandler extends CacheHandler {
     input: CreateWebhookSubscriptionInput
   ): Promise<WebhookSubscriptionWithSecret> {
     const projectId = this.resolveProjectId(scope);
-    return this.db.withTransaction((tx) =>
+    const created = await this.db.withTransaction((tx) =>
       this.webhookSubscriptions.create({ scope, projectId, input }, tx)
     );
+
+    trackProductEventAfterCommit(this.scheduleAfterCommit, {
+      name: 'webhook_subscription.created',
+      properties: {
+        projectId,
+        scopeTenant: scope.tenant,
+        scopeId: scope.id,
+      },
+    });
+
+    return created;
   }
 
   async update(

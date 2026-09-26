@@ -26,6 +26,7 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { trackProductEventAfterCommit } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, ConfigurationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -46,7 +47,8 @@ export class OrganizationHandler extends CacheHandler {
     private readonly fileStorage: IFileStorageServicePort,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
-    private readonly db: ITransactionalConnection<Transaction>
+    private readonly db: ITransactionalConnection<Transaction>,
+    private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
   ) {
     super(cache, scopeServices);
   }
@@ -72,7 +74,7 @@ export class OrganizationHandler extends CacheHandler {
     params: MutationCreateOrganizationArgs,
     userId: string
   ): Promise<Organization> {
-    return await this.db.withTransaction(async (tx: Transaction) => {
+    const organization = await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name } = input;
 
@@ -94,6 +96,17 @@ export class OrganizationHandler extends CacheHandler {
 
       return organization;
     });
+
+    trackProductEventAfterCommit(this.scheduleAfterCommit, {
+      name: 'organization.created',
+      properties: {
+        actorId: userId,
+        scopeTenant: Tenant.Organization,
+        scopeId: organization.id,
+      },
+    });
+
+    return organization;
   }
 
   public async updateOrganization(params: MutationUpdateOrganizationArgs): Promise<Organization> {
