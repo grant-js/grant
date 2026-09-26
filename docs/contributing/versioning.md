@@ -31,6 +31,8 @@ All of these bump together when you add a changeset for any member of the fixed 
 
 The root `grant` package is private and not in the pnpm workspace, so changesets cannot target it by name.
 
+`grant-api`, `grant-web`, and `grant-docs` are private too. Changesets skips private packages unless `privatePackages.version` is set, and a changeset that only names a skipped package makes the release job open an empty "version packages" pull request instead of publishing. [`.changeset/config.json`](../../.changeset/config.json) sets `privatePackages.version` so a changeset for any fixed-group app still bumps the whole group. `tag` stays false: platform tags come from the release workflow, and private packages are not published to npm.
+
 Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples remain in the [changeset ignore list](.changeset/config.json). **Do not add a changeset for an ignored package** — Changesets will not version it, and the leftover file makes the release job try to open an empty version PR instead of publishing.
 
 ## How Changesets work
