@@ -6,7 +6,7 @@
  */
 
 export interface AnalyticsEvent {
-  /** Event name (e.g. 'organization.created', 'user.login') */
+  /** Event name. Grant's own emits use the names in `product-analytics.ts`. */
   name: string;
   /** Optional category (e.g. 'user', 'feature') */
   category?: string;

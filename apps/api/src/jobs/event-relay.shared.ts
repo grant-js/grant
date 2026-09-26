@@ -1,6 +1,7 @@
 import type { ILogger } from '@grantjs/core';
 
 import { config } from '@/config';
+import { trackProjectedDomainEvents } from '@/lib/analytics';
 import { DrizzleTransactionalConnection } from '@/lib/transaction-manager.lib';
 import type { AppContext } from '@/types';
 
@@ -16,11 +17,20 @@ export async function drainEventRelay(appContext: AppContext, logger: ILogger): 
 
   let total = 0;
   for (let i = 0; i < maxBatches; i++) {
-    const processed = await txConn.withTransaction((tx) =>
+    const batch = await txConn.withTransaction((tx) =>
       appContext.services.eventRelay.relayBatch(tx, batchSize)
     );
-    total += processed;
-    if (processed < batchSize) break;
+    total += batch.count;
+
+    if (batch.events.length > 0) {
+      try {
+        await trackProjectedDomainEvents(batch.events);
+      } catch (err: unknown) {
+        logger.error({ msg: 'Analytics projection failed', err });
+      }
+    }
+
+    if (batch.count < batchSize) break;
   }
 
   if (total > 0) {

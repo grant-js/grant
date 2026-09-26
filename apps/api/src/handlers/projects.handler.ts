@@ -47,6 +47,7 @@ import {
 import { config } from '@/config';
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
+import { trackProductEventAfterCommit } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, ConfigurationError, NotFoundError, ValidationError } from '@/lib/errors';
 import { intersectScopedIds } from '@/lib/scope.lib';
@@ -453,7 +454,8 @@ export class ProjectHandler extends CacheHandler {
   }
 
   public async createProject(params: MutationCreateProjectArgs): Promise<Project> {
-    return await this.db.withTransaction(async (tx: Transaction) => {
+    const scope = params.input.scope;
+    const project = await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { name, description, scope, tagIds, primaryTagId } = input;
 
@@ -499,6 +501,17 @@ export class ProjectHandler extends CacheHandler {
 
       return project;
     });
+
+    trackProductEventAfterCommit(this.scheduleAfterCommit, {
+      name: 'project.created',
+      properties: {
+        projectId: project.id,
+        scopeTenant: scope.tenant,
+        scopeId: scope.id,
+      },
+    });
+
+    return project;
   }
 
   public async updateProject(params: MutationUpdateProjectArgs): Promise<Project> {

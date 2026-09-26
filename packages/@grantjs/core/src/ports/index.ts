@@ -5,6 +5,7 @@ export * from './email.port';
 export * from './event.port';
 export * from './job.port';
 export * from './logger.port';
+export * from './product-analytics';
 export * from './repositories';
 export * from './scoped-id-provider.port';
 export * from './secret.port';

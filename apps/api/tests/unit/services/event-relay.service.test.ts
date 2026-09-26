@@ -39,7 +39,9 @@ describe('EventRelayService', () => {
 
     const processed = await service.relayBatch(tx, 100);
 
-    expect(processed).toBe(2);
+    expect(processed.count).toBe(2);
+    expect(processed.events).toHaveLength(2);
+    expect(processed.events.map((event) => event.type)).toEqual(['role.created', 'role.created']);
     expect(repo.claimPendingBatch).toHaveBeenCalledWith(100, tx);
     expect(consumerA.process).toHaveBeenCalledTimes(2);
     expect(consumerB.process).toHaveBeenCalledTimes(2);
@@ -56,7 +58,7 @@ describe('EventRelayService', () => {
 
     const processed = await service.relayBatch({} as never, 100);
 
-    expect(processed).toBe(0);
+    expect(processed).toEqual({ count: 0, events: [] });
     expect(repo.markDispatched).not.toHaveBeenCalled();
   });
 
