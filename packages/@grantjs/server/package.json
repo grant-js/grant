@@ -87,19 +87,19 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
-    "@types/node": "^26.6.2",
-    "@vitest/coverage-v8": "^5.0.1",
+    "@types/node": "^26.6.4",
+    "@vitest/coverage-v8": "^5.0.3",
     "eslint": "^10.11.0",
     "express": "^5.1.0",
     "fastify": "^5.12.5",
-    "next": "^16.3.6",
-    "@nestjs/common": "^12.1.0",
-    "@nestjs/core": "^12.1.0",
+    "next": "^16.3.8",
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vite": "^8.3.1",
+    "vite": "^8.3.2",
     "vite-plugin-dts": "^5.1.1",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.3"
   },
   "peerDependencies": {
     "express": "^4 || ^5",
