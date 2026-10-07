@@ -101,9 +101,27 @@ For production, terminate TLS and route traffic through a reverse proxy or load 
 - Route `/api/**`, `/graphql`, `/health`, `/api-docs`, `/storage/**` → **api** (`api:4000`)
 - Optionally route `docs.yourdomain.com` → **docs** (`docs:8080`)
 
-You can use nginx, Traefik, Caddy, or your cloud’s load balancer / ingress. Reuse the URLs you configured in `.env` to keep CORS and redirects consistent.
+You can use nginx, Traefik, Caddy, or your cloud’s load balancer / ingress. Reuse the URLs you configured in `.env` to keep CORS and redirects consistent. For a closed install with origin-verify, see [Closed install](#closed-install-origin-verify-and-public-signup): do not publish the API port; either let Next inject `x-origin-verify` or add `proxy_set_header` on API locations.
 
 For a single canonical APP_URL (e.g. `https://demo.grantjs.org`) that routes to api, web, docs, and the example app by path, see the sample `docs/deployment/nginx-gateway.conf.example` in the repo. Copy and adapt `server_name`, upstream ports, and SSL paths for your host; it is not required for deployment.
+
+## Closed install: origin verify and public signup
+
+A company can run this stack on the public internet without a VPN. Two independent controls (full reference: [Configuration](/getting-started/configuration#closed-install-public-signup-and-origin-verify)):
+
+| Variable                          | Closed-install value | Role                                                                                                                                                      |
+| --------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_PUBLIC_SIGNUP_ENABLED`      | `false`              | First human may self-register; after that, platform register and GitHub/Google **new** users are refused. Invitations and Project App `allowSignUp` stay. |
+| `ORIGIN_VERIFY_SECRET`            | a long random secret | Shared by API and the **Next.js server**. Never `NEXT_PUBLIC_*`.                                                                                          |
+| `SECURITY_ORIGIN_VERIFY_REQUIRED` | `true`               | Missing secret refuses every API request (fail closed).                                                                                                   |
+
+`SECURITY_API_KEY` is unused and is **not** this gate.
+
+**Who attaches `x-origin-verify`:** Next.js **server** `proxy.ts` (rewrites cannot add headers). Publish **only the web origin**. Do not publish `API_PORT` to the host when the gate is on — remove or comment the `api.ports` mapping in `docker-compose.yml` so the API stays on the Compose network.
+
+Set `APP_URL` and `SECURITY_FRONTEND_URL` to that public web URL so OAuth callbacks and the [CLI](/integration/cli#closed-install-and-origin-verify) go through Next. The web service reads `ORIGIN_VERIFY_SECRET` from `.env` at **runtime** (`env_file`); the secret never ships in the image.
+
+If a reverse proxy **does** route `/api` and `/graphql` straight to the API (as `nginx-gateway.conf.example` does), that proxy is the front: add `proxy_set_header x-origin-verify …` on those locations. Then Next does not need the secret. Direct `curl` against the unpublished API still must send the header; `curl` against the web origin must not.
 
 ## 7. Demo stack: gateway and host database
 

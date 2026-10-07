@@ -26,15 +26,17 @@ All of these services are described in:
 
 Start from `.env.example`, copy it to `.env`, and make sure these are correct:
 
-| Category         | Key(s)                                              | Description                                                                                      |
-| ---------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Database & cache | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | PostgreSQL database name, user, and password.                                                    |
-|                  | `REDIS_PASSWORD`                                    | Password for the Redis instance.                                                                 |
-| Public URLs      | `APP_URL`                                           | Single public base URL; web proxies `/api`, `/graphql`, `/example`, etc. to API and example app. |
-| CORS             | `SECURITY_FRONTEND_URL`                             | Must match the web app URL.                                                                      |
-|                  | `SECURITY_ADDITIONAL_ORIGINS`                       | Extra origins such as `https://docs.yourdomain.com`.                                             |
-| System user      | `SYSTEM_USER_ID`                                    | Must match the system user created during database seeding.                                      |
-| Demo mode        | `DEMO_MODE_ENABLED`                                 | **Keep `false`** for real deployments.                                                           |
+| Category         | Key(s)                                                    | Description                                                                                                                                     |
+| ---------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database & cache | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`       | PostgreSQL database name, user, and password.                                                                                                   |
+|                  | `REDIS_PASSWORD`                                          | Password for the Redis instance.                                                                                                                |
+| Public URLs      | `APP_URL`                                                 | Single public base URL; web proxies `/api`, `/graphql`, `/example`, etc. to API and example app.                                                |
+| CORS             | `SECURITY_FRONTEND_URL`                                   | Must match the web app URL.                                                                                                                     |
+|                  | `SECURITY_ADDITIONAL_ORIGINS`                             | Extra origins such as `https://docs.yourdomain.com`.                                                                                            |
+| System user      | `SYSTEM_USER_ID`                                          | Must match the system user created during database seeding.                                                                                     |
+| Demo mode        | `DEMO_MODE_ENABLED`                                       | **Keep `false`** for real deployments.                                                                                                          |
+| Closed install   | `AUTH_PUBLIC_SIGNUP_ENABLED`                              | Default `true` (open SaaS). Set `false` so only the first human self-registers.                                                                 |
+| Origin verify    | `ORIGIN_VERIFY_SECRET`, `SECURITY_ORIGIN_VERIFY_REQUIRED` | Shared secret on the trusted front (Next / Ingress / CloudFront origin **custom** header). Never `NEXT_PUBLIC_*`. `SECURITY_API_KEY` is unused. |
 
 Everything else has safe defaults; you can tighten it later (rate limits, Redis TLS, email provider, etc.) using [Configuration](/getting-started/configuration).
 

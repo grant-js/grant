@@ -5,6 +5,13 @@
 #
 # Copy and adapt server_name, upstream ports, and SSL paths for your host.
 # Not required for deployment — use any reverse proxy (nginx, Traefik, Caddy, etc.).
+#
+# Closed install / origin-verify: this gateway talks to the API without going
+# through Next, so it must attach x-origin-verify itself (same as K8s split
+# Ingress). Uncomment the proxy_set_header lines and load the secret from a
+# file or envsubst — never a CloudFront Function, never NEXT_PUBLIC_*.
+# Preferred Docker closed-install: do not publish the API port and do not route
+# /api here; publish only web and let Next inject the header.
 
 upstream grant_api {
     server 127.0.0.1:4000;
@@ -48,6 +55,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # proxy_set_header x-origin-verify $origin_verify_secret;
         proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
@@ -67,6 +75,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # proxy_set_header x-origin-verify $origin_verify_secret;
         proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;

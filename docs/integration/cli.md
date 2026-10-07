@@ -321,6 +321,29 @@ app.get(
 
 :::
 
+## Closed install and origin-verify
+
+When the API requires `ORIGIN_VERIFY_SECRET` (`SECURITY_ORIGIN_VERIFY_REQUIRED=true`), it refuses requests that did not come through a trusted front. The CLI does **not** send `x-origin-verify`.
+
+| You run Grant behind…      | Set **Grant API base URL** to…                     | Why                                                                                         |
+| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Docker (Next is the front) | Public `APP_URL` (web origin, typically port 3000) | Next `proxy.ts` attaches the header. Do not use `http://host:4000`.                         |
+| Kubernetes (Ingress → web) | `global.appUrl`                                    | Same as Docker.                                                                             |
+| Kubernetes (split Ingress) | The Ingress host                                   | Ingress `proxy_set_header` / Traefik headers attach the secret.                             |
+| AWS CloudFront             | `-c appUrl=` / `APP_URL`                           | CloudFront **origin custom headers** attach it. Never the API Function URL.                 |
+| Local, gate off (default)  | `http://localhost:4000`                            | Empty `ORIGIN_VERIFY_SECRET` and `SECURITY_ORIGIN_VERIFY_REQUIRED=false` is a pass-through. |
+
+```bash
+grant start
+# ? Grant API base URL: https://grant.example.com
+
+grant config set api-url https://grant.example.com -p production
+```
+
+Direct `curl` against the API origin must send the header (`-H "x-origin-verify: $ORIGIN_VERIFY_SECRET"`). Direct `curl` against the web origin must not — the front attaches it. The secret must never appear as `NEXT_PUBLIC_*`. `SECURITY_API_KEY` is unused and is not this gate.
+
+See [Configuration](/getting-started/configuration#closed-install-public-signup-and-origin-verify), [Docker](/deployment/docker#closed-install-origin-verify-and-public-signup), [Kubernetes](/deployment/kubernetes#closed-install-origin-verify-and-public-signup), [AWS](/deployment/aws-serverless#security-model).
+
 ---
 
 **Related:**

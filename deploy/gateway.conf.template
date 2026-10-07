@@ -24,6 +24,10 @@ server {
                image/svg+xml;
 
     # ── API routes ────────────────────────────────────────────────────
+    # Closed install: this gateway is a split front (API is reached without Next).
+    # Attach origin-verify here, e.g. proxy_set_header x-origin-verify $origin_verify_secret;
+    # on every API location, or do not route /api here — publish only web and let Next inject.
+    # Never NEXT_PUBLIC_*; never a CloudFront Function. SECURITY_API_KEY is unused.
 
     location /graphql {
         proxy_pass http://$upstream_api;

@@ -106,6 +106,17 @@ Optional `serviceAccount.annotations` for `eks.amazonaws.com/role-arn` when the 
 
 - **`STORAGE_PROVIDER=local`** with multiple API replicas requires **ReadWriteMany** storage or **S3**; default `readOnlyRootFilesystem` is compatible with a writable volume mount for `api.persistence`.
 
+## Closed install (origin-verify)
+
+`ORIGIN_VERIFY_SECRET` is a ConfigMap secret key (never emitted). `SECURITY_ORIGIN_VERIFY_REQUIRED` defaults to `false` in `files/api-configmap-env-defaults.yaml`. `SECURITY_API_KEY` is unused.
+
+| Front         | Who attaches `x-origin-verify`                                                     | API reachability             |
+| ------------- | ---------------------------------------------------------------------------------- | ---------------------------- |
+| Preferred     | Next.js server (`web.extraEnv` with `ORIGIN_VERIFY_SECRET`, never `NEXT_PUBLIC_*`) | API Service ClusterIP only   |
+| Split Ingress | ingress-nginx `proxy-set-headers` / Traefik `customRequestHeaders`                 | Ingress-only with the header |
+
+Worked examples: [`docs/deployment/kubernetes.md`](../../docs/deployment/kubernetes.md#closed-install-origin-verify-and-public-signup). Set `AUTH_PUBLIC_SIGNUP_ENABLED=false` for a closed company install.
+
 ## Ingress paths
 
 Main Ingress routes (see [`deploy/gateway.conf.template`](../../deploy/gateway.conf.template)): API under `/graphql`, `/api`, `/api-docs`, `/.well-known`, `/org`, `/acc`, `/health`, `/storage`; example under `/example`; web catch-all `/`. Docs are routed under `/docs` (Traefik: strip prefix; nginx: regex rewrite).

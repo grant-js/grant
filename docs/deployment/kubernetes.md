@@ -66,6 +66,67 @@ This matches the single-host model documented in [Environment setup](/deployment
 
 Configure proxy body size and timeouts for your controller (e.g. nginx annotations in `ingress.annotations`, or Traefik `Middleware` / annotations) via `ingress.annotations` and `ingress.extraAnnotations`.
 
+## Closed install: origin verify and public signup
+
+Same two controls as Docker ([Configuration](/getting-started/configuration#closed-install-public-signup-and-origin-verify)). Set `AUTH_PUBLIC_SIGNUP_ENABLED=false` on the API ConfigMap (`config.env` or `files/api-configmap-env-defaults.yaml`). Put `ORIGIN_VERIFY_SECRET` in the runtime Secret (`api.existingSecretEnv` / External Secrets) — it is already excluded from the ConfigMap. `SECURITY_API_KEY` is unused and is **not** this gate.
+
+The API Service is **ClusterIP** by default. Two valid fronts (never a CloudFront Function; never `NEXT_PUBLIC_*`):
+
+### Preferred: Ingress to web, Next injects the header
+
+1. Leave the API Service ClusterIP. Ingress `/` to web as today; you can drop the `/api`, `/graphql`, `/health`, `/storage`, `/.well-known`, `/org`, `/acc` Ingress paths so the API is not on the public Ingress at all.
+2. Give the web Deployment the secret at **server** runtime (`web.extraEnv` in `values.yaml`):
+
+```yaml
+web:
+  extraEnv:
+    - name: ORIGIN_VERIFY_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: grant-runtime # or api.existingSecretEnv
+          key: ORIGIN_VERIFY_SECRET
+```
+
+Next `proxy.ts` attaches `x-origin-verify` on proxied paths. Set `SECURITY_ORIGIN_VERIFY_REQUIRED=true` on the API.
+
+### Split Ingress: Ingress attaches the header
+
+Ingress still routes `/api` and `/graphql` to the API Service and **adds** the request header. Then Next does not need the secret. OAuth callback URLs still use `global.appUrl`.
+
+**ingress-nginx** (`proxy_set_header` via a headers ConfigMap referenced from the Ingress — do not put the secret in a committed annotation if you can avoid it):
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grant-origin-verify-headers
+data:
+  x-origin-verify: '<from a Secret, not git>'
+---
+# on the main Ingress:
+ingress:
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-set-headers: grant/grant-origin-verify-headers
+```
+
+**Traefik** (custom request headers Middleware):
+
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: grant-origin-verify
+spec:
+  headers:
+    customRequestHeaders:
+      x-origin-verify: '<from a Secret, not git>'
+```
+
+Point the API paths at that middleware. Gateway API uses an HTTPRoute header modifier the same way.
+
+Direct `kubectl port-forward` / CLI against the **API Service** must send `x-origin-verify`. Against the **Ingress host** (web origin) it must not — the front attaches it. See [CLI](/integration/cli#closed-install-and-origin-verify).
+
 ## TLS (cert-manager)
 
 For automatic TLS, add annotations such as:
