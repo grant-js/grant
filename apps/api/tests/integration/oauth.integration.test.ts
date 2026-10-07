@@ -31,6 +31,7 @@ const { mockConfig } = vi.hoisted(() => ({
     i18n: { defaultLocale: 'en' as const, supportedLocales: ['en'] as const },
     logging: { level: 'silent' as const, prettyPrint: false },
     security: { frontendUrl: 'https://app.example.com' },
+    auth: { publicSignupEnabled: true },
   },
 }));
 
