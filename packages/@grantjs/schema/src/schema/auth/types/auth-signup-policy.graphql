@@ -1,0 +1,13 @@
+"""
+Public flags the unauthenticated UI uses to hide or show platform registration.
+"""
+type AuthSignupPolicy {
+  """
+  True when AUTH_PUBLIC_SIGNUP_ENABLED is on (open SaaS).
+  """
+  publicSignupEnabled: Boolean!
+  """
+  True when no human user exists yet (first-operator bootstrap).
+  """
+  bootstrapOpen: Boolean!
+}

@@ -392,6 +392,15 @@ export type Auditable = {
   updatedAt: Scalars['Date']['output'];
 };
 
+/** Public flags the unauthenticated UI uses to hide or show platform registration. */
+export type AuthSignupPolicy = {
+  __typename?: 'AuthSignupPolicy';
+  /** True when no human user exists yet (first-operator bootstrap). */
+  bootstrapOpen: Scalars['Boolean']['output'];
+  /** True when AUTH_PUBLIC_SIGNUP_ENABLED is on (open SaaS). */
+  publicSignupEnabled: Scalars['Boolean']['output'];
+};
+
 export type AuthenticationMethodExportData = {
   __typename?: 'AuthenticationMethodExportData';
   createdAt: Scalars['Date']['output'];
@@ -2449,6 +2458,8 @@ export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
   apiKeys: ApiKeyPage;
+  /** Public signup policy. No authentication required. */
+  authSignupPolicy: AuthSignupPolicy;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
   /** Evaluate authorization for the current session or API key token. */

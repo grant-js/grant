@@ -314,6 +314,14 @@ export const listAuthProvidersResponseSchema = z.object({
       configured: z.boolean(),
     })
   ),
+  publicSignupEnabled: z.boolean().openapi({
+    description:
+      'True when AUTH_PUBLIC_SIGNUP_ENABLED is on. Closed installs set this false after bootstrap.',
+  }),
+  bootstrapOpen: z.boolean().openapi({
+    description:
+      'True when no human user exists yet (system user excluded). First-operator register is allowed.',
+  }),
 });
 
 export const cliCallbackRequestSchema = z.object({

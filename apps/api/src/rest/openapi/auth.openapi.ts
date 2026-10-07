@@ -469,7 +469,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
     tags: ['Authentication'],
     summary: 'List OAuth providers',
     description:
-      'Public list of social OAuth providers. Frontends should only render providers with `configured: true`.',
+      'Public list of social OAuth providers plus signup policy. Frontends should only render providers with `configured: true`. Use `publicSignupEnabled` and `bootstrapOpen` to hide platform registration when a closed install is past first-operator bootstrap.',
     responses: {
       200: {
         description: 'Social OAuth providers and configuration status',

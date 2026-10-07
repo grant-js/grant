@@ -112,6 +112,8 @@ describe('OAuth auth REST integration', () => {
           { id: UserAuthenticationMethodProvider.Github, configured: true },
           { id: UserAuthenticationMethodProvider.Google, configured: true },
         ],
+        publicSignupEnabled: true,
+        bootstrapOpen: false,
       },
     });
   });
