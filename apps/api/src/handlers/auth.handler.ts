@@ -48,10 +48,10 @@ import {
 } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/errors';
-import { assertPlatformSelfSignupAllowed } from '@/lib/signup-policy.lib';
 import { createLogger } from '@/lib/logger';
 import { contactEmailFromOAuthProviderData } from '@/lib/oauth-contact-email.lib';
 import { oauthPictureUrlFromProviderData, userPictureUrlIsEmpty } from '@/lib/oauth-picture.lib';
+import { assertPlatformSelfSignupAllowed } from '@/lib/signup-policy.lib';
 import { verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { getVerificationExpirationMs, getVerificationExpiryDate } from '@/lib/verification.lib';

@@ -17,12 +17,12 @@ import {
 
 import { config } from '@/config';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
-import { assertNotLastHumanUser } from '@/lib/signup-policy.lib';
 import {
   hydratePictureUrl,
   hydratePictureUrls,
   picturePathWhenSettingUrl,
 } from '@/lib/picture-url.lib';
+import { assertNotLastHumanUser } from '@/lib/signup-policy.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
