@@ -75,6 +75,11 @@ export interface IUserRepository extends IEntityExistence {
     params: Omit<MutationDeleteUserArgs, 'scope'>,
     transaction?: unknown
   ): Promise<User>;
+
+  /**
+   * Non-deleted users excluding the seeded system user (not an operator).
+   */
+  countHumanUsers(systemUserId: string, transaction?: unknown): Promise<number>;
 }
 
 export interface IUserRoleRepository {

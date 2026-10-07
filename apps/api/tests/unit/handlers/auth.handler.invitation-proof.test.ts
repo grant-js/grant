@@ -31,7 +31,12 @@ const mockUserAuthenticationMethods = {
   invalidateAllUserSessions: vi.fn(),
   ensureVerifiedContactEmail: vi.fn(),
 };
-const mockUsers = { createUser: vi.fn(), getUsers: vi.fn(), deleteOwnUser: vi.fn() };
+const mockUsers = {
+  createUser: vi.fn(),
+  getUsers: vi.fn(),
+  deleteOwnUser: vi.fn(),
+  countHumanUsers: vi.fn(),
+};
 const mockAccounts = { createAccount: vi.fn(), getOwnerAccounts: vi.fn(), deleteAccount: vi.fn() };
 const mockAccountRoles = { seedAccountRoles: vi.fn() };
 const mockUserRoles = { addUserRole: vi.fn(), getUserRoles: vi.fn() };

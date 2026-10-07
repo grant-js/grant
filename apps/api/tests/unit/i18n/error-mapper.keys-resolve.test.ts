@@ -44,6 +44,8 @@ const STATIC_KEY_ERRORS: GrantException[] = [
   new InvalidOrUsedVerificationTokenError(),
   new AuthenticationError(),
   new AuthorizationError(),
+  new AuthorizationError('Public signup is disabled', 'PUBLIC_SIGNUP_DISABLED'),
+  new AuthorizationError('Cannot delete the last human user', 'LAST_HUMAN_USER'),
   new PayloadTooLargeError('Request body is too large', 5_242_880, 11_534_336),
   new ConfigurationError('Missing env var'),
   new NotFoundError('User'),

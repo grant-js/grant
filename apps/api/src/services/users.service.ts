@@ -15,7 +15,9 @@ import {
   UserPage,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
+import { assertNotLastHumanUser } from '@/lib/signup-policy.lib';
 import {
   hydratePictureUrl,
   hydratePictureUrls,
@@ -172,6 +174,15 @@ export class UserService implements IUserService {
     const { id, hardDelete } = validatedParams;
 
     const oldUser = await this.getUser(id);
+    const humanUserCount = await this.userRepository.countHumanUsers(
+      config.system.systemUserId,
+      transaction
+    );
+    assertNotLastHumanUser({
+      userId: id,
+      systemUserId: config.system.systemUserId,
+      humanUserCount,
+    });
     const isHardDelete = hardDelete === true;
 
     const oldValues = {
@@ -221,6 +232,10 @@ export class UserService implements IUserService {
     }
 
     return this.deleteUser({ id, hardDelete }, transaction);
+  }
+
+  public async countHumanUsers(transaction?: Transaction): Promise<number> {
+    return this.userRepository.countHumanUsers(config.system.systemUserId, transaction);
   }
 
   public async getEmailVerificationStatus(
