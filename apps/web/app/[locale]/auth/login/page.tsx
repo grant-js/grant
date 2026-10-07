@@ -19,8 +19,9 @@ import {
   TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuthMutations, usePageTitle } from '@/hooks';
+import { useAuthMutations, useAuthSignupPolicy, usePageTitle } from '@/hooks';
 import { Link, useRouter } from '@/i18n/navigation';
+import { canShowPlatformRegister } from '@/lib/platform-register-access';
 import {
   buildAuthHref,
   emailFromSearchParam,
@@ -48,6 +49,16 @@ export default function LoginPage() {
   const errorParam = searchParams.get('error');
   const invitationToken = getInvitationTokenFromRedirectUrl(redirectParam);
   const invitationProof = getInvitationProofFromRedirectUrl(redirectParam);
+  const {
+    publicSignupEnabled,
+    bootstrapOpen,
+    loading: signupPolicyLoading,
+  } = useAuthSignupPolicy();
+  const showRegister = canShowPlatformRegister({
+    publicSignupEnabled,
+    bootstrapOpen,
+    hasInvitation: Boolean(invitationToken || invitationProof),
+  });
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -190,12 +201,14 @@ export default function LoginPage() {
           </Button>
         </form>
       </Form>
-      <div className="text-sm">
-        {t('login.noAccount')}{' '}
-        <Link href={registerUrl} className="text-primary hover:text-primary/80">
-          {t('login.register')}
-        </Link>
-      </div>
+      {!signupPolicyLoading && showRegister ? (
+        <div className="text-sm">
+          {t('login.noAccount')}{' '}
+          <Link href={registerUrl} className="text-primary hover:text-primary/80">
+            {t('login.register')}
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

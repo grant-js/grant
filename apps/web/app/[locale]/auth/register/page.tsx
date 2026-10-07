@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AccountType, EmailVerificationProofType } from '@grantjs/schema';
@@ -32,8 +32,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useAuthMutations, usePageTitle } from '@/hooks';
+import { useAuthMutations, useAuthSignupPolicy, usePageTitle } from '@/hooks';
 import { Link, useRouter } from '@/i18n/navigation';
+import { canShowPlatformRegister } from '@/lib/platform-register-access';
 import {
   buildAuthHref,
   emailFromSearchParam,
@@ -58,6 +59,26 @@ export default function RegisterPage() {
 
   const invitationToken = getInvitationTokenFromRedirectUrl(redirectParam);
   const invitationProof = getInvitationProofFromRedirectUrl(redirectParam);
+  const {
+    publicSignupEnabled,
+    bootstrapOpen,
+    loading: signupPolicyLoading,
+  } = useAuthSignupPolicy();
+  const allowRegister = canShowPlatformRegister({
+    publicSignupEnabled,
+    bootstrapOpen,
+    hasInvitation: Boolean(invitationToken || invitationProof),
+  });
+  const loginHref = useMemo(
+    () => buildAuthHref('/auth/login', { email: emailParam, redirect: redirectParam }),
+    [emailParam, redirectParam]
+  );
+
+  useEffect(() => {
+    if (!signupPolicyLoading && !allowRegister) {
+      router.replace(loginHref);
+    }
+  }, [allowRegister, loginHref, router, signupPolicyLoading]);
 
   const defaultAccountType = invitationToken ? AccountType.Organization : AccountType.Personal;
 
@@ -106,7 +127,7 @@ export default function RegisterPage() {
 
   const passwordValue = form.watch('password') || '';
 
-  if (isAuthSuccess) {
+  if (isAuthSuccess || signupPolicyLoading || !allowRegister) {
     return <FullPageLoader />;
   }
 

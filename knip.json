@@ -33,7 +33,7 @@
       ]
     },
     "apps/web": {
-      "entry": ["app/**/*.{ts,tsx}", "middleware.ts"],
+      "entry": ["app/**/*.{ts,tsx}"],
       "project": ["**/*.{ts,tsx}"],
       // shadcn/ui generates a component's full API (e.g. AlertDialogPortal, SheetFooter,
       // SidebarMenuBadge) so consumers can compose freely; unused parts are normal for a
