@@ -100,3 +100,56 @@ describe('UserService.deleteUser last human', () => {
     await expect(svc().deleteUser({ id: HUMAN_ID })).rejects.toBeInstanceOf(AuthorizationError);
   });
 });
+
+describe('UserService.deleteOwnUser last human', () => {
+  const audit = {
+    logUpdate: vi.fn(),
+    logCreate: vi.fn(),
+    logSoftDelete: vi.fn(),
+    logHardDelete: vi.fn(),
+  };
+  const userRepository = {
+    getUsers: vi.fn(),
+    updateUser: vi.fn(),
+    countHumanUsers: vi.fn(),
+    softDeleteUser: vi.fn(),
+    hardDeleteUser: vi.fn(),
+  };
+  const fileStorage = { getUrl: vi.fn() };
+
+  function svc() {
+    return new UserService(
+      userRepository as never,
+      { userId: HUMAN_ID } as never,
+      audit as never,
+      fileStorage as never
+    );
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    userRepository.getUsers.mockResolvedValue({
+      users: [user(HUMAN_ID)],
+      totalCount: 1,
+      hasNextPage: false,
+    });
+    userRepository.softDeleteUser.mockResolvedValue(user(HUMAN_ID));
+  });
+
+  it('refuses privacy delete of the last human user', async () => {
+    userRepository.countHumanUsers.mockResolvedValue(1);
+
+    await expect(svc().deleteOwnUser({})).rejects.toMatchObject({
+      reason: LAST_HUMAN_USER_REASON,
+    });
+    expect(userRepository.softDeleteUser).not.toHaveBeenCalled();
+  });
+
+  it('deletes own user when another human remains', async () => {
+    userRepository.countHumanUsers.mockResolvedValue(2);
+
+    await svc().deleteOwnUser({});
+
+    expect(userRepository.softDeleteUser).toHaveBeenCalled();
+  });
+});

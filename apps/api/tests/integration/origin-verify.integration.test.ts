@@ -92,4 +92,20 @@ describe('originVerifyMiddleware HTTP', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
   });
+
+  it('returns 403 when the origin-verify header is the wrong secret', async () => {
+    const res = await request(appWith(resolverWith(SECRET)))
+      .get('/health')
+      .set('x-origin-verify', 'not-the-secret');
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('FORBIDDEN');
+  });
+
+  it('returns 403 when the secret is required but none resolved', async () => {
+    const res = await request(appWith(resolverWith(undefined))).get('/health');
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('FORBIDDEN');
+  });
 });
