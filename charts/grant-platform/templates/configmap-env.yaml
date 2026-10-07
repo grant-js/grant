@@ -43,6 +43,7 @@
   "STORAGE_S3_ACCESS_KEY_ID"
   "STORAGE_S3_SECRET_ACCESS_KEY"
   "SECURITY_API_KEY"
+  "ORIGIN_VERIFY_SECRET"
 ) (.Values.config.envSecretKeys | default list) }}
 apiVersion: v1
 kind: ConfigMap

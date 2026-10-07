@@ -92,19 +92,19 @@ Lambda has no equivalent of the ECS task's `Secrets`/`ValueFrom`, where the temp
 carries only an ARN. So the sixteen keys below are routed instead: put them in `.env`,
 run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
 
-| Provider                          | Keys                                                              |
-| --------------------------------- | ----------------------------------------------------------------- |
-| GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                            |
-| Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                            |
-| Project OAuth connections         | `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`                         |
-| MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                  |
-| Mailgun                           | `MAILGUN_API_KEY`                                                 |
-| Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                           |
-| SMTP                              | `SMTP_PASSWORD`                                                   |
-| SES (static keys)                 | `EMAIL_SES_CLIENT_SECRET`                                         |
-| Redis                             | `REDIS_PASSWORD`                                                  |
-| S3 / DynamoDB / SQS (static keys) | `STORAGE_S3_*`, `CACHE_DYNAMODB_*`, `JOBS_AWS_*` access-key pairs |
-| API                               | `SECURITY_API_KEY`                                                |
+| Provider                          | Keys                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                                         |
+| Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                                         |
+| Project OAuth connections         | `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`                                      |
+| MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                               |
+| Mailgun                           | `MAILGUN_API_KEY`                                                              |
+| Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                                        |
+| SMTP                              | `SMTP_PASSWORD`                                                                |
+| SES (static keys)                 | `EMAIL_SES_CLIENT_SECRET`                                                      |
+| Redis                             | `REDIS_PASSWORD`                                                               |
+| S3 / DynamoDB / SQS (static keys) | `STORAGE_S3_*`, `CACHE_DYNAMODB_*`, `JOBS_AWS_*` access-key pairs              |
+| API                               | `SECURITY_API_KEY` (declared only; **unused at runtime**, not the origin gate) |
 
 The AWS access-key pairs are usually the wrong choice here: leave them blank and the
 SDK's default credential chain uses the function's execution role, which the stack has

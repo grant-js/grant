@@ -54,6 +54,11 @@ AUTH_MFA_VERIFY_WINDOW_MINUTES: '15'
 AUTH_MFA_SESSION_TTL_MINUTES: '1440'
 AUTH_MIN_AAL_AT_LOGIN: aal1
 AUTH_MFA_STEP_UP_MAX_AGE_SECONDS: '0'
+# Open SaaS default. Closed installs set false (first human may register, then invitations).
+AUTH_PUBLIC_SIGNUP_ENABLED: 'true'
+SECURITY_ORIGIN_VERIFY_HEADER: x-origin-verify
+# Fail-open until ORIGIN_VERIFY_SECRET is set on the API and the front (Next or Ingress).
+SECURITY_ORIGIN_VERIFY_REQUIRED: 'false'
 TOKEN_DEFAULT_VALIDITY_MINUTES: '60'
 TOKEN_DEFAULT_LENGTH: '32'
 TOKEN_BCRYPT_ROUNDS: '10'

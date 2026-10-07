@@ -117,6 +117,13 @@ export const envSchema = z.object({
     .transform((s) => (s === 'aal2' ? 'aal2' : 'aal1')),
   /** When > 0, session `auth_time` older than this (seconds) may require step-up (future enforcement). */
   AUTH_MFA_STEP_UP_MAX_AGE_SECONDS: optionalNumber(0),
+  /**
+   * Allow unauthenticated platform self-signup (email/password register and GitHub/Google
+   * first-time users). Default true keeps today’s open SaaS behaviour. Closed company
+   * installs set false: only the first human may register, then invitations (and Project
+   * App `allowSignUp`) remain the way in.
+   */
+  AUTH_PUBLIC_SIGNUP_ENABLED: optionalBoolean(true),
   TOKEN_DEFAULT_VALIDITY_MINUTES: optionalNumber(60),
   TOKEN_DEFAULT_LENGTH: optionalNumber(32),
   TOKEN_BCRYPT_ROUNDS: optionalNumber(10),
@@ -212,6 +219,13 @@ export const envSchema = z.object({
    * so a secret that goes missing fails closed instead of silently opening the origin.
    */
   SECURITY_ORIGIN_VERIFY_REQUIRED: optionalBoolean(false),
+  /**
+   * Shared secret proving a request arrived through a trusted front (CloudFront origin
+   * custom header, Next server middleware, or Ingress). Empty is the local/Docker default
+   * (origin-verify is then a pass-through unless REQUIRED is true). Never expose as
+   * `NEXT_PUBLIC_*`. Not the unused `SECURITY_API_KEY`.
+   */
+  ORIGIN_VERIFY_SECRET: optionalString(''),
   /** When undefined, API config derives from NODE_ENV (production -> true) */
   SECURITY_ENABLE_RATE_LIMIT: z
     .union([z.string(), z.undefined()])
