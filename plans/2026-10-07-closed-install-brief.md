@@ -20,17 +20,17 @@ A company can run Grant on the public internet **without a VPN**, for **their ow
 
 ## What already exists
 
-| Piece | State |
-| ----- | ----- |
-| `originVerifyMiddleware` in [`apps/api/src/middleware/origin-verify.middleware.ts`](../apps/api/src/middleware/origin-verify.middleware.ts) | Wired first in the API pipeline. Compares header `SECURITY_ORIGIN_VERIFY_HEADER` (default `x-origin-verify`) to `ORIGIN_VERIFY_SECRET`. **No exempt paths** on the public API. |
-| AWS CloudFront | Attaches the secret as an **origin custom header** on the API Function URL origin ([`deploy/aws/lib/edge/distribution.ts`](../deploy/aws/lib/edge/distribution.ts) `customHeaders`). **Not** a CloudFront Function. |
-| `SECURITY_ORIGIN_VERIFY_REQUIRED` | Fail-closed when the secret is missing. AWS sets `true`. Docker/K8s default `false` (pass-through). |
-| `SECURITY_API_KEY` | In env schema / `SECURITY_CONFIG.apiKey` only. **No runtime consumer.** Leave it unwired; do not create a second gate. |
-| Next.js rewrites | Proxy `/api`, `/graphql`, `/health`, `/storage` to the API. **Do not** attach the secret today. |
-| Public `register` | Always on (GraphQL/REST + `/auth/register` + OAuth first-time). |
-| System user | Seeded `SYSTEM_USER_ID` (default `00000000-0000-0000-0000-000000000000`). Not an operator. |
-| Invitations | Can create a user on accept ([`organization-invitations.handler.ts`](../apps/api/src/handlers/organization-invitations.handler.ts)). |
-| Project App `allowSignUp` | Already gates project hosted sign-in user creation. |
+| Piece                                                                                                                                       | State                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `originVerifyMiddleware` in [`apps/api/src/middleware/origin-verify.middleware.ts`](../apps/api/src/middleware/origin-verify.middleware.ts) | Wired first in the API pipeline. Compares header `SECURITY_ORIGIN_VERIFY_HEADER` (default `x-origin-verify`) to `ORIGIN_VERIFY_SECRET`. **No exempt paths** on the public API.                                      |
+| AWS CloudFront                                                                                                                              | Attaches the secret as an **origin custom header** on the API Function URL origin ([`deploy/aws/lib/edge/distribution.ts`](../deploy/aws/lib/edge/distribution.ts) `customHeaders`). **Not** a CloudFront Function. |
+| `SECURITY_ORIGIN_VERIFY_REQUIRED`                                                                                                           | Fail-closed when the secret is missing. AWS sets `true`. Docker/K8s default `false` (pass-through).                                                                                                                 |
+| `SECURITY_API_KEY`                                                                                                                          | In env schema / `SECURITY_CONFIG.apiKey` only. **No runtime consumer.** Leave it unwired; do not create a second gate.                                                                                              |
+| Next.js rewrites                                                                                                                            | Proxy `/api`, `/graphql`, `/health`, `/storage` to the API. **Do not** attach the secret today.                                                                                                                     |
+| Public `register`                                                                                                                           | Always on (GraphQL/REST + `/auth/register` + OAuth first-time).                                                                                                                                                     |
+| System user                                                                                                                                 | Seeded `SYSTEM_USER_ID` (default `00000000-0000-0000-0000-000000000000`). Not an operator.                                                                                                                          |
+| Invitations                                                                                                                                 | Can create a user on accept ([`organization-invitations.handler.ts`](../apps/api/src/handlers/organization-invitations.handler.ts)).                                                                                |
+| Project App `allowSignUp`                                                                                                                   | Already gates project hosted sign-in user creation.                                                                                                                                                                 |
 
 ## How the origin secret is attached (not a CloudFront Function)
 
@@ -82,14 +82,14 @@ New env (name in implementation; default keeps today’s open SaaS behaviour):
 
 When `false`:
 
-| Path | Behaviour |
-| ---- | --------- |
-| Platform email/password `register` | Allowed **only** if human user count is 0 (exclude system user). After that: 403/`Forbidden` with a stable error code. |
-| Platform GitHub/Google **new** user | Same as register. Existing users still log in / link. |
-| Org / account invitation accept | **Allowed** (creates the invited user if needed). |
-| Project App hosted sign-in | Unchanged: create user when `allowSignUp` is true. |
-| `/auth/register` UI | Hidden unless bootstrap is open (no human users yet) or the visitor has an invitation token. |
-| Last non-system user delete | `deleteUser` / privacy delete-my-accounts **refused**. |
+| Path                                | Behaviour                                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Platform email/password `register`  | Allowed **only** if human user count is 0 (exclude system user). After that: 403/`Forbidden` with a stable error code. |
+| Platform GitHub/Google **new** user | Same as register. Existing users still log in / link.                                                                  |
+| Org / account invitation accept     | **Allowed** (creates the invited user if needed).                                                                      |
+| Project App hosted sign-in          | Unchanged: create user when `allowSignUp` is true.                                                                     |
+| `/auth/register` UI                 | Hidden unless bootstrap is open (no human users yet) or the visitor has an invitation token.                           |
+| Last non-system user delete         | `deleteUser` / privacy delete-my-accounts **refused**.                                                                 |
 
 Expose bootstrap + public-signup flags on the existing public auth surface (e.g. `GET /api/auth/providers`) so the web can hide register without a circular call that needs a session.
 

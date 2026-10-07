@@ -14,15 +14,15 @@ No database migration. Env + schema/API + web + tests.
 
 ## Ordered slices (PRs into `feat/closed-install`)
 
-| # | Branch | Concern | Review bar |
-| - | ------ | ------- | ---------- |
-| 1 | `feat/closed-install-env` | Env: `AUTH_PUBLIC_SIGNUP_ENABLED`; document origin-verify for Docker/K8s/AWS; Config app; note `SECURITY_API_KEY` unused | light |
-| 2 | `feat/closed-install-schema` | Public auth policy on providers/app-info (or dedicated query): `publicSignupEnabled`, `bootstrapOpen` | light |
-| 3 | `feat/closed-install-api` | Enforce signup policy + first-user exception + last-human delete; origin-verify tests for required/missing header | security-full |
-| 4 | `feat/closed-install-web` | Next middleware injects `x-origin-verify` from server env on proxied paths; hide `/auth/register` unless bootstrap or invitation | security-full |
-| 5 | `feat/closed-install-docs` | Docker Compose / K8s Ingress examples; AWS already-correct origin custom headers; CLI must use web origin or send the header | light |
-| 6 | `feat/closed-install-tests` | Unit + e2e: 403 without header, first register, second blocked, invite allowed, project allowSignUp, last-user delete | light |
-| final | `feat/closed-install` → `main` | Integration | deep + security-full |
+| #     | Branch                         | Concern                                                                                                                          | Review bar           |
+| ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| 1     | `feat/closed-install-env`      | Env: `AUTH_PUBLIC_SIGNUP_ENABLED`; document origin-verify for Docker/K8s/AWS; Config app; note `SECURITY_API_KEY` unused         | light                |
+| 2     | `feat/closed-install-schema`   | Public auth policy on providers/app-info (or dedicated query): `publicSignupEnabled`, `bootstrapOpen`                            | light                |
+| 3     | `feat/closed-install-api`      | Enforce signup policy + first-user exception + last-human delete; origin-verify tests for required/missing header                | security-full        |
+| 4     | `feat/closed-install-web`      | Next middleware injects `x-origin-verify` from server env on proxied paths; hide `/auth/register` unless bootstrap or invitation | security-full        |
+| 5     | `feat/closed-install-docs`     | Docker Compose / K8s Ingress examples; AWS already-correct origin custom headers; CLI must use web origin or send the header     | light                |
+| 6     | `feat/closed-install-tests`    | Unit + e2e: 403 without header, first register, second blocked, invite allowed, project allowSignUp, last-user delete            | light                |
+| final | `feat/closed-install` → `main` | Integration                                                                                                                      | deep + security-full |
 
 ## Slice notes
 
@@ -48,11 +48,11 @@ No database migration. Env + schema/API + web + tests.
 
 ### 5 — docs (must spell out the three fronts)
 
-| Target | Who attaches `x-origin-verify` | API reachability |
-| ------ | ------------------------------ | ---------------- |
+| Target         | Who attaches `x-origin-verify`                                                      | API reachability                                |
+| -------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- |
 | AWS CloudFront | Origin **custom header** on API origin (already in CDK). Not a CloudFront Function. | Function URL is public; middleware is the guard |
-| Docker | Next server middleware | Do not publish API port |
-| K8s | Next middleware **or** Ingress `proxy_set_header` | API ClusterIP (or Ingress-only with header) |
+| Docker         | Next server middleware                                                              | Do not publish API port                         |
+| K8s            | Next middleware **or** Ingress `proxy_set_header`                                   | API ClusterIP (or Ingress-only with header)     |
 
 ## Human gates
 
