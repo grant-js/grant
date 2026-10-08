@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.12.0
+
+### Platform
+
+**Docker images:** tagged `:1.12.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.12.0** (fixed group with apps).
+
+### Minor Changes
+
+- 6425580: Closed install — origin-verify on Docker/K8s via Next inject, AUTH_PUBLIC_SIGNUP_ENABLED with first-human bootstrap, invitations and Project App allowSignUp unchanged, last human cannot delete account.
+
 ## 1.11.0
 
 ### Platform
