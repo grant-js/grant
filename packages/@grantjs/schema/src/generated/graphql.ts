@@ -122,6 +122,12 @@ export type RotateApiKeyMutation = {
   };
 };
 
+export type AuthSignupPolicyQueryVariables = Exact<{ [key: string]: never }>;
+
+export type AuthSignupPolicyQuery = {
+  authSignupPolicy: { publicSignupEnabled: boolean; bootstrapOpen: boolean };
+};
+
 export type LoginMutationVariables = Exact<{
   input: Types.LoginInput;
 }>;
@@ -2690,6 +2696,32 @@ export const RotateApiKeyDocument = {
     },
   ],
 } as unknown as DocumentNode<RotateApiKeyMutation, RotateApiKeyMutationVariables>;
+export const AuthSignupPolicyDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'AuthSignupPolicy' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'authSignupPolicy' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'publicSignupEnabled' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'bootstrapOpen' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AuthSignupPolicyQuery, AuthSignupPolicyQueryVariables>;
 export const LoginDocument = {
   kind: 'Document',
   definitions: [

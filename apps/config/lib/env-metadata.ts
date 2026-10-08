@@ -428,6 +428,17 @@ const META: EnvVarMeta[] = [
     section: 'MFA',
   },
   {
+    key: 'AUTH_PUBLIC_SIGNUP_ENABLED',
+    category: 'auth',
+    label: 'Public platform signup',
+    description:
+      'Allow unauthenticated platform self-signup (email/password and GitHub/Google first-time users). Default true (open SaaS). Set false for a closed company install: the first human may register, then only invitations (and Project App allowSignUp) create users.',
+    envFiles: ['.env'],
+    options: ['true', 'false'],
+    section: 'Authentication',
+    critical: true,
+  },
+  {
     key: 'TOKEN_DEFAULT_VALIDITY_MINUTES',
     category: 'auth',
     label: 'Default token validity (min)',
@@ -771,6 +782,37 @@ const META: EnvVarMeta[] = [
     critical: true,
   },
   {
+    key: 'ORIGIN_VERIFY_SECRET',
+    category: 'security',
+    label: 'Origin verify secret',
+    description:
+      'Shared secret that proves a request arrived through a trusted front (CloudFront origin custom header, Next.js server middleware, or Ingress). Server-side only — never NEXT_PUBLIC_*. Empty disables the gate unless origin verify is required. This is the origin gate; SECURITY_API_KEY is unused.',
+    envFiles: ['.env'],
+    isPassword: true,
+    section: 'Origin verify',
+    critical: true,
+  },
+  {
+    key: 'SECURITY_ORIGIN_VERIFY_HEADER',
+    category: 'security',
+    label: 'Origin verify header',
+    description:
+      'Header that carries ORIGIN_VERIFY_SECRET (default: x-origin-verify). Must match what CloudFront, Next middleware, or Ingress attach.',
+    envFiles: ['.env'],
+    section: 'Origin verify',
+  },
+  {
+    key: 'SECURITY_ORIGIN_VERIFY_REQUIRED',
+    category: 'security',
+    label: 'Require origin verify secret',
+    description:
+      'When true, a missing ORIGIN_VERIFY_SECRET refuses every API request (fail closed). AWS sets true. Docker/Kubernetes default false (pass-through until you set the secret).',
+    envFiles: ['.env'],
+    options: ['true', 'false'],
+    section: 'Origin verify',
+    critical: true,
+  },
+  {
     key: 'SECURITY_ENABLE_RATE_LIMIT',
     category: 'security',
     label: 'Enable rate limiting',
@@ -848,7 +890,8 @@ const META: EnvVarMeta[] = [
     key: 'SECURITY_API_KEY',
     category: 'security',
     label: 'API key',
-    description: 'Optional API key for external service authentication.',
+    description:
+      'Declared in env schema and config only. Unused at runtime — not the origin gate. Origin verification uses ORIGIN_VERIFY_SECRET. Leave empty; do not wire a second gate.',
     envFiles: ['.env'],
     section: 'API key',
   },

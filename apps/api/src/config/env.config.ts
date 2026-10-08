@@ -184,6 +184,13 @@ const AUTH_CONFIG = {
 
   /** When &gt; 0, MFA step-up max age via `mfa_auth_time` (0 = disabled). */
   mfaStepUpMaxAgeSeconds: env.AUTH_MFA_STEP_UP_MAX_AGE_SECONDS,
+
+  /**
+   * When false, platform self-signup (email/password register and GitHub/Google new users)
+   * is allowed only while no human user exists. Invitations and Project App `allowSignUp`
+   * are unchanged. From `AUTH_PUBLIC_SIGNUP_ENABLED`.
+   */
+  publicSignupEnabled: env.AUTH_PUBLIC_SIGNUP_ENABLED,
 } as const;
 
 // ============================================================================

@@ -13,6 +13,8 @@
     "sessionNotFound": "User session not found",
     "unauthorized": "You are not authorized to perform this action",
     "forbidden": "Access forbidden",
+    "publicSignupDisabled": "Public signup is disabled",
+    "lastHumanUser": "Cannot delete the last human user",
     "emailVerificationRequired": "Please verify your email to perform this action",
     "passwordRequired": "Password is required and must be a string",
     "emailRequired": "Email is required and must be a string",

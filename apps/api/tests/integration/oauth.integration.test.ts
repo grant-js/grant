@@ -31,6 +31,7 @@ const { mockConfig } = vi.hoisted(() => ({
     i18n: { defaultLocale: 'en' as const, supportedLocales: ['en'] as const },
     logging: { level: 'silent' as const, prettyPrint: false },
     security: { frontendUrl: 'https://app.example.com' },
+    auth: { publicSignupEnabled: true },
   },
 }));
 
@@ -76,6 +77,10 @@ function buildContext(): RequestContext {
         login: vi.fn(),
         register: vi.fn(),
         refreshSession: vi.fn(),
+        getSignupPolicy: vi.fn().mockResolvedValue({
+          publicSignupEnabled: true,
+          bootstrapOpen: false,
+        }),
       },
     } as never,
     resourceResolvers: {} as never,
@@ -112,6 +117,8 @@ describe('OAuth auth REST integration', () => {
           { id: UserAuthenticationMethodProvider.Github, configured: true },
           { id: UserAuthenticationMethodProvider.Google, configured: true },
         ],
+        publicSignupEnabled: true,
+        bootstrapOpen: false,
       },
     });
   });

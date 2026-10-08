@@ -256,8 +256,14 @@ export function createAuthRoutes(context: RequestContext) {
   );
 
   router.get('/providers', async (_req: TypedRequest<Record<string, never>>, res: Response) => {
-    const providers = await context.handlers.oauth.listProviders();
-    sendSuccessResponse(res, { providers });
+    const [providers, signupPolicy] = await Promise.all([
+      context.handlers.oauth.listProviders(),
+      context.handlers.auth.getSignupPolicy(),
+    ]);
+    sendSuccessResponse(res, {
+      providers,
+      ...signupPolicy,
+    });
   });
 
   for (const socialProvider of SOCIAL_OAUTH_PROVIDERS) {

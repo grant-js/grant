@@ -51,6 +51,7 @@ import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/error
 import { createLogger } from '@/lib/logger';
 import { contactEmailFromOAuthProviderData } from '@/lib/oauth-contact-email.lib';
 import { oauthPictureUrlFromProviderData, userPictureUrlIsEmpty } from '@/lib/oauth-picture.lib';
+import { assertPlatformSelfSignupAllowed } from '@/lib/signup-policy.lib';
 import { verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { getVerificationExpirationMs, getVerificationExpiryDate } from '@/lib/verification.lib';
@@ -256,6 +257,16 @@ export class AuthHandler extends CacheHandler {
         tx
       );
 
+      if (!isVerifiedByInvitationProof) {
+        const humanUserCount = config.auth.publicSignupEnabled
+          ? 0
+          : await this.users.countHumanUsers(tx);
+        assertPlatformSelfSignupAllowed({
+          invitationProofValid: false,
+          humanUserCount,
+        });
+      }
+
       const {
         providerData: processedProviderData,
         isVerified,
@@ -362,6 +373,17 @@ export class AuthHandler extends CacheHandler {
     });
 
     return result;
+  }
+
+  public async getSignupPolicy(transaction?: Transaction): Promise<{
+    publicSignupEnabled: boolean;
+    bootstrapOpen: boolean;
+  }> {
+    const humanUserCount = await this.users.countHumanUsers(transaction);
+    return {
+      publicSignupEnabled: config.auth.publicSignupEnabled,
+      bootstrapOpen: humanUserCount === 0,
+    };
   }
 
   public async login(

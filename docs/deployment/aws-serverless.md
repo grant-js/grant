@@ -92,19 +92,19 @@ Lambda has no equivalent of the ECS task's `Secrets`/`ValueFrom`, where the temp
 carries only an ARN. So the sixteen keys below are routed instead: put them in `.env`,
 run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
 
-| Provider                          | Keys                                                              |
-| --------------------------------- | ----------------------------------------------------------------- |
-| GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                            |
-| Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                            |
-| Project OAuth connections         | `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`                         |
-| MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                  |
-| Mailgun                           | `MAILGUN_API_KEY`                                                 |
-| Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                           |
-| SMTP                              | `SMTP_PASSWORD`                                                   |
-| SES (static keys)                 | `EMAIL_SES_CLIENT_SECRET`                                         |
-| Redis                             | `REDIS_PASSWORD`                                                  |
-| S3 / DynamoDB / SQS (static keys) | `STORAGE_S3_*`, `CACHE_DYNAMODB_*`, `JOBS_AWS_*` access-key pairs |
-| API                               | `SECURITY_API_KEY`                                                |
+| Provider                          | Keys                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                                         |
+| Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                                         |
+| Project OAuth connections         | `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`                                      |
+| MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                               |
+| Mailgun                           | `MAILGUN_API_KEY`                                                              |
+| Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                                        |
+| SMTP                              | `SMTP_PASSWORD`                                                                |
+| SES (static keys)                 | `EMAIL_SES_CLIENT_SECRET`                                                      |
+| Redis                             | `REDIS_PASSWORD`                                                               |
+| S3 / DynamoDB / SQS (static keys) | `STORAGE_S3_*`, `CACHE_DYNAMODB_*`, `JOBS_AWS_*` access-key pairs              |
+| API                               | `SECURITY_API_KEY` (declared only; **unused at runtime**, not the origin gate) |
 
 The AWS access-key pairs are usually the wrong choice here: leave them blank and the
 SDK's default credential chain uses the function's execution role, which the stack has
@@ -252,7 +252,11 @@ Two CloudFront Functions close the gaps between CloudFront and nginx: one resolv
 ## Security model
 
 - **The API and web Function URLs are public endpoints.** They are protected by a shared secret CloudFront attaches to every origin request, and `SECURITY_ORIGIN_VERIFY_REQUIRED=true` means a missing secret **refuses** every request rather than admitting everyone. Reaching a function URL directly without the header gets you nothing, but the endpoint does answer.
-- **The jobs function has no endpoint at all.** It is invoked only by EventBridge and the SQS event-source mapping.
+- **Origin custom headers, not a CloudFront Function.** The stack already sets `x-origin-verify` on the API origin via `FunctionUrlOrigin` `customHeaders` in [`deploy/aws/lib/edge/distribution.ts`](https://github.com/grant-js/grant/blob/main/deploy/aws/lib/edge/distribution.ts). The viewer never sees it. The CloudFront **Function** on the web behaviour is trailing-slash redirect only (and the S3 docs function is directory indexes). Do **not** put `ORIGIN_VERIFY_SECRET` in Function code or KeyValueStore.
+- **Closed company install.** Set `AUTH_PUBLIC_SIGNUP_ENABLED=false` (default remains `true` for open SaaS). The first human may register; after that, platform self-signup is off. Invitations and Project App `allowSignUp` are unchanged. Full table: [Configuration](/getting-started/configuration#closed-install-public-signup-and-origin-verify).
+- **`SECURITY_API_KEY` is unused** at runtime and is **not** the origin gate. Do not wire a second secret.
+- **CLI and curl** must use the CloudFront URL (`APP_URL`), not the Function URL. Direct origin calls need `x-origin-verify`; the [CLI](/integration/cli#closed-install-and-origin-verify) has no header flag, so point it at the public web origin.
+- **The jobs function has no endpoint at all.** It is invoked only by EventBridge and the SQS event-source mapping. Jobs event-dispatch is mounted **ahead** of origin-verify and **only** on the jobs Lambda (no Function URL). Do not copy that exemption onto the public API.
 - **No long-lived credential exists in the stack.** S3, SES and Secrets Manager access all go through the execution role.
 - **The database is in isolated subnets** with no route to the internet, reachable only from the functions' security group.
 

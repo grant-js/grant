@@ -9,6 +9,8 @@
  *   ConflictError { resource: 'ProjectTag' }   → 'errors.conflict.projectTag'
  *   AuthenticationError                        → 'errors.auth.notAuthenticated'
  *   AuthorizationError                         → 'errors.auth.forbidden'
+ *     reason PUBLIC_SIGNUP_DISABLED            → 'errors.auth.publicSignupDisabled'
+ *     reason LAST_HUMAN_USER                   → 'errors.auth.lastHumanUser'
  *   ValidationError                            → 'errors.validation.invalid'
  *   BadRequestError                            → 'errors.validation.badRequest'
  *   PayloadTooLargeError                       → 'errors.common.payloadTooLarge'
@@ -125,8 +127,14 @@ export function mapDomainToHttp(error: GrantException): HttpException {
     const extensions: Record<string, unknown> = {};
     if (error.reason) extensions.reason = error.reason;
     if (error.metadata) Object.assign(extensions, error.metadata);
+    const authorizationKeys: Record<string, string> = {
+      PUBLIC_SIGNUP_DISABLED: 'errors.auth.publicSignupDisabled',
+      LAST_HUMAN_USER: 'errors.auth.lastHumanUser',
+    };
+    const translationKey =
+      (error.reason && authorizationKeys[error.reason]) || 'errors.auth.forbidden';
     return new HttpForbiddenError(error.message, {
-      translationKey: 'errors.auth.forbidden',
+      translationKey,
       extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
     });
   }

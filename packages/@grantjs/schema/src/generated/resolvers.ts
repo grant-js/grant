@@ -226,6 +226,7 @@ export type ResolversTypes = ResolversObject<{
   AssignRolePermissionInput: Types.AssignRolePermissionInput;
   AssignUserPermissionInput: Types.AssignUserPermissionInput;
   Auditable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Auditable']>;
+  AuthSignupPolicy: ResolverTypeWrapper<Types.AuthSignupPolicy>;
   AuthenticationMethodExportData: ResolverTypeWrapper<Types.AuthenticationMethodExportData>;
   AuthorizationReason: Types.AuthorizationReason;
   AuthorizationResult: ResolverTypeWrapper<Types.AuthorizationResult>;
@@ -636,6 +637,7 @@ export type ResolversParentTypes = ResolversObject<{
   AssignRolePermissionInput: Types.AssignRolePermissionInput;
   AssignUserPermissionInput: Types.AssignUserPermissionInput;
   Auditable: ResolversInterfaceTypes<ResolversParentTypes>['Auditable'];
+  AuthSignupPolicy: Types.AuthSignupPolicy;
   AuthenticationMethodExportData: Types.AuthenticationMethodExportData;
   AuthorizationResult: Types.AuthorizationResult;
   Boolean: Types.Scalars['Boolean']['output'];
@@ -1179,6 +1181,15 @@ export type AuditableResolvers<
     ParentType,
     ContextType
   >;
+}>;
+
+export type AuthSignupPolicyResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['AuthSignupPolicy'] =
+    ResolversParentTypes['AuthSignupPolicy'],
+> = ResolversObject<{
+  bootstrapOpen?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  publicSignupEnabled?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
 export type AuthenticationMethodExportDataResolvers<
@@ -2825,6 +2836,7 @@ export type QueryResolvers<
     ContextType,
     RequireFields<Types.QueryApiKeysArgs, 'scope'>
   >;
+  authSignupPolicy?: Resolver<ResolversTypes['AuthSignupPolicy'], ParentType, ContextType>;
   groups?: Resolver<
     ResolversTypes['GroupPage'],
     ParentType,
@@ -3684,6 +3696,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   ApiKey?: ApiKeyResolvers<ContextType>;
   ApiKeyPage?: ApiKeyPageResolvers<ContextType>;
   Auditable?: AuditableResolvers<ContextType>;
+  AuthSignupPolicy?: AuthSignupPolicyResolvers<ContextType>;
   AuthenticationMethodExportData?: AuthenticationMethodExportDataResolvers<ContextType>;
   AuthorizationResult?: AuthorizationResultResolvers<ContextType>;
   ChangeMyPasswordResult?: ChangeMyPasswordResultResolvers<ContextType>;

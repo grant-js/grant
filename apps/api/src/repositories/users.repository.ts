@@ -20,7 +20,7 @@ import {
   UserSearchableField,
   UserTag,
 } from '@grantjs/schema';
-import { and, isNull, sql } from 'drizzle-orm';
+import { and, count, isNull, ne, sql } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { EntityRepository, RelationsConfig } from '@/repositories/common';
@@ -121,5 +121,14 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
     transaction?: Transaction
   ): Promise<User> {
     return this.hardDelete(params, transaction);
+  }
+
+  public async countHumanUsers(systemUserId: string, transaction?: Transaction): Promise<number> {
+    const dbInstance = transaction ?? this.db;
+    const [row] = await dbInstance
+      .select({ value: count() })
+      .from(users)
+      .where(and(isNull(users.deletedAt), ne(users.id, systemUserId)));
+    return Number(row?.value ?? 0);
   }
 }

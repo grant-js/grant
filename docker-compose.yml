@@ -178,6 +178,8 @@ services:
       CACHE_STRATEGY: redis
     volumes:
       - api_storage:/app/apps/api/storage
+    # Closed install with origin-verify on: omit this host publish so the API is
+    # reachable only on grant-network. Next injects x-origin-verify; CLI uses APP_URL.
     ports:
       - '${API_PORT:-4000}:4000'
     healthcheck:
@@ -198,6 +200,9 @@ services:
     container_name: grant-web
     depends_on:
       - api
+    # ORIGIN_VERIFY_SECRET from .env is server-side only (never NEXT_PUBLIC_*).
+    env_file:
+      - .env
     ports:
       - '${WEB_PORT:-3000}:3000'
     environment:
