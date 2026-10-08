@@ -92,6 +92,20 @@ describe('mapDomainToHttp translationKey', () => {
     expect(http.translationKey).toBe('errors.auth.forbidden');
   });
 
+  it('maps PUBLIC_SIGNUP_DISABLED to errors.auth.publicSignupDisabled', () => {
+    const err = new AuthorizationError('Public signup is disabled', 'PUBLIC_SIGNUP_DISABLED');
+    const http = mapDomainToHttp(err);
+    expect(http.translationKey).toBe('errors.auth.publicSignupDisabled');
+    expect(http.extensions).toEqual({ reason: 'PUBLIC_SIGNUP_DISABLED' });
+  });
+
+  it('maps LAST_HUMAN_USER to errors.auth.lastHumanUser', () => {
+    const err = new AuthorizationError('Cannot delete the last human user', 'LAST_HUMAN_USER');
+    const http = mapDomainToHttp(err);
+    expect(http.translationKey).toBe('errors.auth.lastHumanUser');
+    expect(http.extensions).toEqual({ reason: 'LAST_HUMAN_USER' });
+  });
+
   it('maps ConflictError with resource to errors.conflict.<segment>', () => {
     const err = new ConflictError('Duplicate entry', 'ProjectTag');
     const http = mapDomainToHttp(err);

@@ -77,6 +77,10 @@ function buildContext(): RequestContext {
         login: vi.fn(),
         register: vi.fn(),
         refreshSession: vi.fn(),
+        getSignupPolicy: vi.fn().mockResolvedValue({
+          publicSignupEnabled: true,
+          bootstrapOpen: false,
+        }),
       },
     } as never,
     resourceResolvers: {} as never,

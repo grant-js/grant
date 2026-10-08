@@ -66,6 +66,9 @@ export interface IUserService {
   ): Promise<User>;
 
   deleteOwnUser(params: DeleteParams, transaction?: unknown): Promise<User>;
+
+  /** Non-deleted users excluding the seeded system user. */
+  countHumanUsers(transaction?: unknown): Promise<number>;
 }
 
 // ---------------------------------------------------------------------------

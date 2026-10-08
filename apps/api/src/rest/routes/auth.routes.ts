@@ -256,11 +256,13 @@ export function createAuthRoutes(context: RequestContext) {
   );
 
   router.get('/providers', async (_req: TypedRequest<Record<string, never>>, res: Response) => {
-    const providers = await context.handlers.oauth.listProviders();
+    const [providers, signupPolicy] = await Promise.all([
+      context.handlers.oauth.listProviders(),
+      context.handlers.auth.getSignupPolicy(),
+    ]);
     sendSuccessResponse(res, {
       providers,
-      publicSignupEnabled: config.auth.publicSignupEnabled,
-      bootstrapOpen: false,
+      ...signupPolicy,
     });
   });
 

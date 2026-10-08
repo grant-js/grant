@@ -13,6 +13,8 @@
     "sessionNotFound": "Benutzersitzung nicht gefunden",
     "unauthorized": "Sie sind nicht berechtigt, diese Aktion auszuführen",
     "forbidden": "Zugriff verboten",
+    "publicSignupDisabled": "Öffentliche Registrierung ist deaktiviert",
+    "lastHumanUser": "Der letzte menschliche Benutzer kann nicht gelöscht werden",
     "emailVerificationRequired": "Bitte verifizieren Sie Ihre E-Mail, um diese Aktion auszuführen",
     "passwordRequired": "Passwort ist erforderlich und muss eine Zeichenkette sein",
     "emailRequired": "E-Mail ist erforderlich und muss eine Zeichenkette sein",
