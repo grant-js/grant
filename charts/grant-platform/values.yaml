@@ -145,6 +145,14 @@ web:
   extraVolumes:
     - name: tmp
       emptyDir: {}
+  # Closed install, Next-as-front: pass ORIGIN_VERIFY_SECRET (server-side only,
+  # never NEXT_PUBLIC_*). Example:
+  # extraEnv:
+  #   - name: ORIGIN_VERIFY_SECRET
+  #     valueFrom:
+  #       secretKeyRef:
+  #         name: grant-runtime
+  #         key: ORIGIN_VERIFY_SECRET
   extraEnv: []
   podAnnotations: {}
 

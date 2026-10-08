@@ -74,6 +74,17 @@ SYSTEM_USER_ID=00000000-0000-0000-0000-000000000000
 
 Must match the user created by the seed scripts. For most setups, use the default and run the provided seed.
 
+## Closed install (optional)
+
+```bash
+AUTH_PUBLIC_SIGNUP_ENABLED=false
+ORIGIN_VERIFY_SECRET=  # openssl rand -base64 32 — server-side only, never NEXT_PUBLIC_*
+SECURITY_ORIGIN_VERIFY_HEADER=x-origin-verify
+SECURITY_ORIGIN_VERIFY_REQUIRED=true
+```
+
+Default `AUTH_PUBLIC_SIGNUP_ENABLED=true` is open SaaS. Origin-verify is a pass-through until the secret is set. Who attaches `x-origin-verify` (never a CloudFront Function): [Docker](/deployment/docker#closed-install-origin-verify-and-public-signup) (Next; do not publish the API port), [Kubernetes](/deployment/kubernetes#closed-install-origin-verify-and-public-signup) (Next or Ingress `proxy_set_header`), [AWS](/deployment/aws-serverless#security-model) (origin custom headers, already in CDK). The [CLI](/integration/cli#closed-install-and-origin-verify) must use the web origin. `SECURITY_API_KEY` is unused.
+
 ## 6. OAuth and email
 
 ```bash
