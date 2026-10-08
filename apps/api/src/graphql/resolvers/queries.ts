@@ -32,6 +32,8 @@ function detailFetchActions(args: Record<string, unknown>): ResourceAction[] {
 export const Query = {
   _empty: () => null,
 
+  // Auth (public signup policy for login/register UI)
+  authSignupPolicy: authQueries.authSignupPolicy!,
   // Auth (authenticated)
   isAuthorized: authenticateGraphQLResolver(authQueries.isAuthorized!),
   // Me (authenticated)

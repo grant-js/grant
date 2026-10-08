@@ -1,0 +1,6 @@
+query AuthSignupPolicy {
+  authSignupPolicy {
+    publicSignupEnabled
+    bootstrapOpen
+  }
+}

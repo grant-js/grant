@@ -257,7 +257,11 @@ export function createAuthRoutes(context: RequestContext) {
 
   router.get('/providers', async (_req: TypedRequest<Record<string, never>>, res: Response) => {
     const providers = await context.handlers.oauth.listProviders();
-    sendSuccessResponse(res, { providers });
+    sendSuccessResponse(res, {
+      providers,
+      publicSignupEnabled: config.auth.publicSignupEnabled,
+      bootstrapOpen: false,
+    });
   });
 
   for (const socialProvider of SOCIAL_OAUTH_PROVIDERS) {

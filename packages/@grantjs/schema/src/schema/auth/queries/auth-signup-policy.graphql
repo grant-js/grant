@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  Public signup policy. No authentication required.
+  """
+  authSignupPolicy: AuthSignupPolicy!
+}
