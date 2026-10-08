@@ -91,6 +91,29 @@ Callback URLs default from `APP_URL`. Register platform IdP callbacks as describ
 
 Session access tokens include `amr`, `acr`, and `auth_time` claims. Prefer `config.auth.minAalAtLogin` in code (derived from the above).
 
+### Closed install: public signup and origin verify
+
+A company can run Grant on the public internet without a VPN. Two independent controls:
+
+| Variable                          | Default           | Purpose                                                                                                                                                                                                                                                               |
+| --------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_PUBLIC_SIGNUP_ENABLED`      | `true`            | Open SaaS self-signup. Set `false` for a closed install: the first human may register; after that, platform email/password register and GitHub/Google **new** users are refused. Organization invitations still create users. Project App `allowSignUp` is unchanged. |
+| `ORIGIN_VERIFY_SECRET`            | empty             | Shared secret that proves a request arrived through a trusted front. **Server-side only** — never `NEXT_PUBLIC_*`.                                                                                                                                                    |
+| `SECURITY_ORIGIN_VERIFY_HEADER`   | `x-origin-verify` | Header that carries the secret.                                                                                                                                                                                                                                       |
+| `SECURITY_ORIGIN_VERIFY_REQUIRED` | `false`           | When `true`, a missing secret **refuses** every API request (fail closed). AWS sets `true`.                                                                                                                                                                           |
+
+`SECURITY_API_KEY` is declared in env schema and config only. It has **no runtime consumer** and is **not** the origin gate. Do not wire a second gate.
+
+Who attaches `x-origin-verify` (never a CloudFront Function):
+
+| Target         | Who attaches the header                                                                                                         | API reachability                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| AWS CloudFront | Origin **custom header** on the API origin (CDK). The CloudFront Function on the web behaviour is trailing-slash redirect only. | Function URL is public; `originVerifyMiddleware` is the guard |
+| Docker         | Next.js **server** middleware (rewrites cannot add headers)                                                                     | Do not publish the API port when the gate is on               |
+| Kubernetes     | Next middleware **or** Ingress `proxy_set_header` / equivalent                                                                  | API ClusterIP (or Ingress-only with the header)               |
+
+Web needs `ORIGIN_VERIFY_SECRET` at **server** runtime when Next is the front. Direct `curl` against the API origin must send the header; against the web origin it must not — the front attaches it. Deploy notes: [Docker](/deployment/docker), [Kubernetes](/deployment/kubernetes), [AWS](/deployment/aws-serverless#security-model).
+
 ## Using config in code
 
 The API reads env via a centralized, type-safe config:
