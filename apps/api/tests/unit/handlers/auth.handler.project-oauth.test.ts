@@ -28,6 +28,7 @@ const mockUsers = {
   getUsers: vi.fn(),
   updateUser: vi.fn(),
   deleteOwnUser: vi.fn(),
+  countHumanUsers: vi.fn(),
 };
 const mockAccounts = { createAccount: vi.fn(), getOwnerAccounts: vi.fn(), deleteAccount: vi.fn() };
 const mockAccountRoles = { seedAccountRoles: vi.fn() };
@@ -285,6 +286,7 @@ describe('AuthHandler project OAuth resolution', () => {
       );
       expect(userId).toBe('new-email-user-id');
       expect(mockUsers.createUser).toHaveBeenCalledWith({ name: 'newuser' }, tx);
+      expect(mockUsers.countHumanUsers).not.toHaveBeenCalled();
       expect(mockUserAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'new-email-user-id',

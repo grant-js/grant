@@ -152,6 +152,28 @@ describe('AuthHandler closed-install signup policy', () => {
     expect(mockUsers.createUser).toHaveBeenCalled();
   });
 
+  it('blocks a second platform GitHub/Google new user when public signup is off', async () => {
+    mockAuthCfg.publicSignupEnabled = false;
+    mockUsers.countHumanUsers.mockResolvedValue(1);
+    mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+
+    try {
+      await createHandler().register({
+        type: AccountType.Personal,
+        provider: UserAuthenticationMethodProvider.Github,
+        providerId: 'gh-42',
+        providerData: { login: 'ada' },
+      });
+      expect.unreachable();
+    } catch (err) {
+      expect(err).toBeInstanceOf(AuthorizationError);
+      expect((err as AuthorizationError).reason).toBe(PUBLIC_SIGNUP_DISABLED_REASON);
+    }
+
+    expect(mockUsers.createUser).not.toHaveBeenCalled();
+    expect(mockUserAuthenticationMethods.processProvider).not.toHaveBeenCalled();
+  });
+
   it('blocks a second platform self-signup when public signup is off', async () => {
     mockAuthCfg.publicSignupEnabled = false;
     mockUsers.countHumanUsers.mockResolvedValue(1);
