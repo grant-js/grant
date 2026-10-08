@@ -92,7 +92,7 @@
     "eslint": "^10.11.0",
     "express": "^5.1.0",
     "fastify": "^5.12.5",
-    "next": "^16.3.6",
+    "next": "^16.3.8",
     "@nestjs/common": "^12.1.0",
     "@nestjs/core": "^12.1.0",
     "@typescript/native": "npm:typescript@^7.0.2",
