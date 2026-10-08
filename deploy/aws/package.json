@@ -17,16 +17,16 @@
     "smoke": "tsx scripts/smoke.ts"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
-    "aws-cdk": "^2.1143.0",
+    "@types/node": "^26.6.4",
+    "aws-cdk": "^2.1144.0",
     "tsx": "^4.23.15",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.3"
   },
   "license": "MIT",
   "dependencies": {
-    "aws-cdk-lib": "^2.270.0",
+    "aws-cdk-lib": "^2.272.0",
     "constructs": "^10.5.0"
   }
 }
