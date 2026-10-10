@@ -4,6 +4,7 @@ import { Command } from 'commander';
 
 import { createApiCommand } from './commands/api.js';
 import { createConfigCommand } from './commands/config-cmd.js';
+import { createSpecCommands } from './commands/from-spec.js';
 import { createGenerateTypesCommand } from './commands/generate-types.js';
 import { createStartCommand } from './commands/start.js';
 import { createVersionCommand } from './commands/version.js';
@@ -26,6 +27,7 @@ Examples:
   grant config set api-url http://localhost:4000 --profile default
   grant whoami --profile ci --output json
   grant api get /api/users --profile ci
+  grant users list --output json
   grant generate-types --profile staging   Generate types for a profile
   grant --help                        Show this help
   grant config set --help             Show help for config set subcommands
@@ -38,5 +40,6 @@ createStartCommand(program);
 createGenerateTypesCommand(program);
 createWhoamiCommand(program);
 createApiCommand(program);
+createSpecCommands(program);
 
 program.parse();
