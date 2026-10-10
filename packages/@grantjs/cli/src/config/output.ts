@@ -1,6 +1,6 @@
 export type OutputFormat = 'json' | 'text';
 
-export function defaultOutputFormat(): OutputFormat {
+function defaultOutputFormat(): OutputFormat {
   return process.stdout.isTTY ? 'text' : 'json';
 }
 
