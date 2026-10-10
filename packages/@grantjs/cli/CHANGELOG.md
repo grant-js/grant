@@ -1,5 +1,11 @@
 # @grantjs/cli
 
+## 1.13.0
+
+### Minor Changes
+
+- 70afd4e: Agent-first CLI: profile/env credentials, `grant whoami`, `grant api`, OpenAPI-named REST commands, optional origin-verify header, and body refresh tokens for session profiles.
+
 ## 1.12.0
 
 No changes in this release.

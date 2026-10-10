@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.13.0
+
+### Platform
+
+**Docker images:** tagged `:1.13.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.13.0** (fixed group with apps).
+
+### Minor Changes
+
+- 70afd4e: Agent-first CLI: profile/env credentials, `grant whoami`, `grant api`, OpenAPI-named REST commands, optional origin-verify header, and body refresh tokens for session profiles.
+
 ## 1.12.0
 
 ### Platform

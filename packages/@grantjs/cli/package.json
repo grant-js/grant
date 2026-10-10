@@ -1,6 +1,6 @@
 {
   "name": "@grantjs/cli",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Grant CLI — profiles, REST API, and typings generation",
   "type": "module",
   "main": "./dist/index.mjs",
