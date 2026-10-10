@@ -36,6 +36,7 @@ export function registerResourcesOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/resources',
+    operationId: 'getApiResources',
     tags: ['Resources'],
     summary: 'List resources',
     description: `
@@ -113,6 +114,7 @@ Custom actions can be defined when creating or updating a resource.
   registry.registerPath({
     method: 'post',
     path: '/api/resources',
+    operationId: 'postApiResources',
     tags: ['Resources'],
     summary: 'Create a new resource',
     description: `
@@ -199,6 +201,7 @@ The slug must be URL-friendly:
   registry.registerPath({
     method: 'patch',
     path: '/api/resources/{id}',
+    operationId: 'patchApiResourcesById',
     tags: ['Resources'],
     summary: 'Update a resource',
     description: `
@@ -282,6 +285,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'delete',
     path: '/api/resources/{id}',
+    operationId: 'deleteApiResourcesById',
     tags: ['Resources'],
     summary: 'Delete a resource',
     description: `

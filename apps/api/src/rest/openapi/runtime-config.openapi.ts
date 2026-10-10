@@ -22,6 +22,7 @@ export function registerRuntimeConfigOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/config',
+    operationId: 'getApiConfig',
     tags: ['Config'],
     summary: 'Get runtime config',
     description:

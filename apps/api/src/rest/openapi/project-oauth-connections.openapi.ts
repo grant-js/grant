@@ -13,6 +13,7 @@ export function registerProjectOAuthConnectionsOpenApi(registry: OpenAPIRegistry
   registry.registerPath({
     method: 'get',
     path: '/api/project-oauth-connections',
+    operationId: 'getApiProjectOauthConnections',
     tags: ['Project OAuth Connections'],
     summary: 'List project OAuth connections',
     description:
@@ -36,6 +37,7 @@ export function registerProjectOAuthConnectionsOpenApi(registry: OpenAPIRegistry
   registry.registerPath({
     method: 'put',
     path: '/api/project-oauth-connections',
+    operationId: 'putApiProjectOauthConnections',
     tags: ['Project OAuth Connections'],
     summary: 'Upsert a project OAuth connection',
     description:
@@ -63,6 +65,7 @@ export function registerProjectOAuthConnectionsOpenApi(registry: OpenAPIRegistry
   registry.registerPath({
     method: 'delete',
     path: '/api/project-oauth-connections',
+    operationId: 'deleteApiProjectOauthConnections',
     tags: ['Project OAuth Connections'],
     summary: 'Clear a project OAuth connection',
     description:

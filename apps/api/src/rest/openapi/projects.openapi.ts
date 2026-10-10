@@ -68,6 +68,7 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/projects',
+    operationId: 'getApiProjects',
     tags: ['Projects'],
     summary: 'List projects',
     description: `
@@ -153,6 +154,7 @@ Projects are scoped to a parent tenant context. You must provide:
   registry.registerPath({
     method: 'post',
     path: '/api/projects',
+    operationId: 'postApiProjects',
     tags: ['Projects'],
     summary: 'Create a new project',
     description: `
@@ -242,6 +244,7 @@ Projects are ideal for:
   registry.registerPath({
     method: 'post',
     path: '/api/projects/{id}/sync/jobs',
+    operationId: 'postApiProjectsByIdSyncJobs',
     tags: ['Projects'],
     summary: 'Start an asynchronous CDM import job',
     description: `
@@ -383,6 +386,7 @@ the global catalog.
   registry.registerPath({
     method: 'post',
     path: '/api/projects/{id}/sync/jobs/export',
+    operationId: 'postApiProjectsByIdSyncJobsExport',
     tags: ['Projects'],
     summary: 'Enqueue an asynchronous CDM export job',
     description: `
@@ -464,6 +468,7 @@ Optional \`jobName\` provides idempotency: an active job with the same
   registry.registerPath({
     method: 'get',
     path: '/api/projects/{id}/sync/jobs',
+    operationId: 'getApiProjectsByIdSyncJobs',
     tags: ['Projects'],
     summary: 'List project sync jobs',
     description: `
@@ -538,6 +543,7 @@ job's lifecycle.
   registry.registerPath({
     method: 'get',
     path: '/api/projects/{id}/sync/jobs/{jobId}/payload',
+    operationId: 'getApiProjectsByIdSyncJobsByJobIdPayload',
     tags: ['Projects'],
     summary: 'Download the original CDM JSON payload for a sync job',
     description: `
@@ -607,6 +613,7 @@ sync job was enqueued. The response uses \`Content-Type: application/json\` and 
   registry.registerPath({
     method: 'get',
     path: '/api/projects/{id}/sync/jobs/{jobId}/snapshot',
+    operationId: 'getApiProjectsByIdSyncJobsByJobIdSnapshot',
     tags: ['Projects'],
     summary: 'Download the CDM JSON snapshot attached to a sync job',
     description: `
@@ -683,6 +690,7 @@ attachment\` header so browsers prompt for a save.
   registry.registerPath({
     method: 'get',
     path: '/api/projects/{id}/sync/jobs/{jobId}',
+    operationId: 'getApiProjectsByIdSyncJobsByJobId',
     tags: ['Projects'],
     summary: 'Get the status of a project sync job',
     description: `
@@ -763,6 +771,7 @@ Statuses:
   registry.registerPath({
     method: 'delete',
     path: '/api/projects/{id}/sync/jobs/{jobId}',
+    operationId: 'deleteApiProjectsByIdSyncJobsByJobId',
     tags: ['Projects'],
     summary: 'Cancel a project sync job',
     description: `
@@ -844,6 +853,7 @@ MFA gate as \`POST .../sync/jobs\`.
   registry.registerPath({
     method: 'patch',
     path: '/api/projects/{id}',
+    operationId: 'patchApiProjectsById',
     tags: ['Projects'],
     summary: 'Update a project',
     description: `
@@ -926,6 +936,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'post',
     path: '/api/projects/{id}/picture',
+    operationId: 'postApiProjectsByIdPicture',
     tags: ['Projects'],
     summary: 'Upload a project picture',
     description:
@@ -971,6 +982,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'post',
     path: '/api/projects/{id}/picture/upload-url',
+    operationId: 'postApiProjectsByIdPictureUploadUrl',
     tags: ['Projects'],
     summary: 'Request a direct-upload URL for a project picture',
     description:
@@ -1012,6 +1024,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'post',
     path: '/api/projects/{id}/picture/confirm',
+    operationId: 'postApiProjectsByIdPictureConfirm',
     tags: ['Projects'],
     summary: 'Record a completed direct upload of a project picture',
     request: {
@@ -1051,6 +1064,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'delete',
     path: '/api/projects/{id}/picture',
+    operationId: 'deleteApiProjectsByIdPicture',
     tags: ['Projects'],
     summary: 'Clear a project picture',
     description:
@@ -1099,6 +1113,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'delete',
     path: '/api/projects/{id}',
+    operationId: 'deleteApiProjectsById',
     tags: ['Projects'],
     summary: 'Delete a project',
     description: `

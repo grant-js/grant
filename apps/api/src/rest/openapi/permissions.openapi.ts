@@ -36,6 +36,7 @@ export function registerPermissionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/permissions',
+    operationId: 'getApiPermissions',
     tags: ['Permissions'],
     summary: 'List permissions',
     description: `
@@ -114,6 +115,7 @@ Permissions are scoped to a tenant context. You must provide:
   registry.registerPath({
     method: 'post',
     path: '/api/permissions',
+    operationId: 'postApiPermissions',
     tags: ['Permissions'],
     summary: 'Create a new permission',
     description: `
@@ -187,6 +189,7 @@ You can optionally assign tags to the permission:
   registry.registerPath({
     method: 'patch',
     path: '/api/permissions/{id}',
+    operationId: 'patchApiPermissionsById',
     tags: ['Permissions'],
     summary: 'Update a permission',
     description: `
@@ -264,6 +267,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'delete',
     path: '/api/permissions/{id}',
+    operationId: 'deleteApiPermissionsById',
     tags: ['Permissions'],
     summary: 'Delete a permission',
     description: `

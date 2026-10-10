@@ -25,6 +25,7 @@ export function registerJwksOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/.well-known/jwks.json',
+    operationId: 'get.wellKnownJwks.json',
     tags: ['JWKS'],
     summary: 'Get system JWKS',
     description:
@@ -50,6 +51,7 @@ export function registerJwksOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/org/{orgId}/prj/{projectId}/.well-known/jwks.json',
+    operationId: 'getOrgByOrgIdPrjByProjectId.wellKnownJwks.json',
     tags: ['JWKS'],
     summary: 'Get organization project JWKS',
     description:
@@ -83,6 +85,7 @@ export function registerJwksOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/acc/{accId}/prj/{projectId}/.well-known/jwks.json',
+    operationId: 'getAccByAccIdPrjByProjectId.wellKnownJwks.json',
     tags: ['JWKS'],
     summary: 'Get account project JWKS',
     description:

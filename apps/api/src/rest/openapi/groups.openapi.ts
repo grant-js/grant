@@ -33,6 +33,7 @@ export function registerGroupsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/groups',
+    operationId: 'getApiGroups',
     tags: ['Groups'],
     summary: 'List groups',
     description: `
@@ -113,6 +114,7 @@ Groups are scoped to a tenant context. You must provide:
   registry.registerPath({
     method: 'post',
     path: '/api/groups',
+    operationId: 'postApiGroups',
     tags: ['Groups'],
     summary: 'Create a new group',
     description: `
@@ -186,6 +188,7 @@ You can optionally assign tags to the group:
   registry.registerPath({
     method: 'patch',
     path: '/api/groups/{id}',
+    operationId: 'patchApiGroupsById',
     tags: ['Groups'],
     summary: 'Update a group',
     description: `
@@ -263,6 +266,7 @@ Optional key-value metadata can be provided via \`metadata\` (JSON object).
   registry.registerPath({
     method: 'delete',
     path: '/api/groups/{id}',
+    operationId: 'deleteApiGroupsById',
     tags: ['Groups'],
     summary: 'Delete a group',
     description: `

@@ -37,6 +37,7 @@ export function registerSigningKeysOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/signing-keys',
+    operationId: 'getApiSigningKeys',
     tags: ['Signing Keys'],
     summary: 'List signing keys',
     description:
@@ -70,6 +71,7 @@ export function registerSigningKeysOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/signing-keys/rotate',
+    operationId: 'postApiSigningKeysRotate',
     tags: ['Signing Keys'],
     summary: 'Rotate signing key',
     description:

@@ -72,6 +72,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/webhook-subscriptions',
+    operationId: 'getApiWebhookSubscriptions',
     tags: [TAG],
     summary: 'List webhook subscriptions',
     description: 'Lists webhook subscriptions for a project scope.',
@@ -88,6 +89,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/webhook-subscriptions',
+    operationId: 'postApiWebhookSubscriptions',
     tags: [TAG],
     summary: 'Create webhook subscription',
     description:
@@ -109,6 +111,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/webhook-subscriptions/deliveries',
+    operationId: 'getApiWebhookSubscriptionsDeliveries',
     tags: [TAG],
     summary: 'List webhook delivery attempts',
     security,
@@ -124,6 +127,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/webhook-subscriptions/deliveries/{deliveryId}/replay',
+    operationId: 'postApiWebhookSubscriptionsDeliveriesByDeliveryIdReplay',
     tags: [TAG],
     summary: 'Replay a webhook delivery',
     security,
@@ -142,6 +146,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/webhook-subscriptions/{id}',
+    operationId: 'getApiWebhookSubscriptionsById',
     tags: [TAG],
     summary: 'Get a webhook subscription',
     security,
@@ -157,6 +162,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'patch',
     path: '/api/webhook-subscriptions/{id}',
+    operationId: 'patchApiWebhookSubscriptionsById',
     tags: [TAG],
     summary: 'Update a webhook subscription',
     security,
@@ -175,6 +181,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/webhook-subscriptions/{id}/rotate-secret',
+    operationId: 'postApiWebhookSubscriptionsByIdRotateSecret',
     tags: [TAG],
     summary: 'Rotate a webhook subscription secret',
     description: 'Generates a new signing secret and returns it once.',
@@ -194,6 +201,7 @@ export function registerWebhookSubscriptionsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'delete',
     path: '/api/webhook-subscriptions/{id}',
+    operationId: 'deleteApiWebhookSubscriptionsById',
     tags: [TAG],
     summary: 'Delete a webhook subscription',
     security,

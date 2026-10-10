@@ -72,6 +72,7 @@ export function registerApiKeysOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/api-keys',
+    operationId: 'getApiApiKeys',
     tags: ['API Keys'],
     summary: 'List API keys',
     description: `
@@ -165,6 +166,7 @@ List API keys with optional filtering, pagination, and scope-based filtering.
   registry.registerPath({
     method: 'post',
     path: '/api/api-keys',
+    operationId: 'postApiApiKeys',
     tags: ['API Keys'],
     summary: 'Create a new API key',
     description: `
@@ -305,6 +307,7 @@ Create a new API key for a specific scope. The API key consists of:
   registry.registerPath({
     method: 'post',
     path: '/api/auth/token',
+    operationId: 'postApiAuthToken',
     tags: ['API Keys', 'Authentication'],
     summary: 'Exchange API key for access token',
     description: `
@@ -404,6 +407,7 @@ that can be used to make authenticated requests to the platform.
   registry.registerPath({
     method: 'post',
     path: '/api/api-keys/{id}/revoke',
+    operationId: 'postApiApiKeysByIdRevoke',
     tags: ['API Keys'],
     summary: 'Revoke an API key',
     description: `
@@ -480,6 +484,7 @@ Revoke an API key, preventing it from being used to exchange for tokens.
   registry.registerPath({
     method: 'post',
     path: '/api/api-keys/{id}/rotate',
+    operationId: 'postApiApiKeysByIdRotate',
     tags: ['API Keys'],
     summary: 'Rotate an API key secret',
     description: `
@@ -547,6 +552,7 @@ immediately. Revoked keys cannot be rotated.
   registry.registerPath({
     method: 'delete',
     path: '/api/api-keys/{id}',
+    operationId: 'deleteApiApiKeysById',
     tags: ['API Keys'],
     summary: 'Delete an API key',
     description: `
