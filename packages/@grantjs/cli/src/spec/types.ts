@@ -6,9 +6,3 @@ export interface CliOperation {
   summary: string;
   pathParams: string[];
 }
-
-export interface MappedCommand {
-  group: string;
-  verb: string;
-  operation: CliOperation;
-}
