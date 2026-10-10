@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { GRANT_PRIMARY_COLOR } from '@/lib/oauth-branding';
@@ -97,19 +95,8 @@ describe('project OAuth branding cache', () => {
     ).toBeNull();
   });
 
-  it('keeps consent-token keys in memory and never writes them to sessionStorage', () => {
+  it('does not cache consent-token keys', () => {
     writeProjectOAuthBrandingCache('consent:secret-consent-token', branding);
-    expect(readProjectOAuthBrandingCache('consent:secret-consent-token')).toEqual(branding);
-    expect(sessionStorage.getItem('grant.project-oauth-branding')).toBeNull();
-  });
-
-  it('persists only public client-keyed chrome', () => {
-    writeProjectOAuthBrandingCache('client:app_1', branding);
-    const raw = sessionStorage.getItem('grant.project-oauth-branding');
-    expect(raw).toBeTruthy();
-    const stored = JSON.parse(raw!) as { cacheKey: string; branding: typeof branding };
-    expect(stored.cacheKey).toBe('client:app_1');
-    expect(stored.branding).toEqual(branding);
-    expect(JSON.stringify(stored)).not.toMatch(/consent:/);
+    expect(readProjectOAuthBrandingCache('consent:secret-consent-token')).toBeNull();
   });
 });

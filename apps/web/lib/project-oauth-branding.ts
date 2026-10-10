@@ -2,8 +2,6 @@ import type { ProjectOAuthThemeMode } from '@grantjs/schema';
 
 import { GRANT_PRIMARY_COLOR } from '@/lib/oauth-branding';
 
-export const PROJECT_OAUTH_BRANDING_STORAGE_KEY = 'grant.project-oauth-branding';
-
 export type ProjectOAuthBranding = {
   pictureUrl: string | null;
   projectName: string | null;
@@ -13,11 +11,6 @@ export type ProjectOAuthBranding = {
 };
 
 export type ProjectOAuthBrandingCacheKey = `client:${string}` | `consent:${string}`;
-
-type StoredBranding = {
-  cacheKey: ProjectOAuthBrandingCacheKey;
-  branding: ProjectOAuthBranding;
-};
 
 const memoryCache = new Map<ProjectOAuthBrandingCacheKey, ProjectOAuthBranding>();
 
@@ -83,68 +76,18 @@ export function resolveAuthLayoutChrome(
   };
 }
 
-function isProjectOAuthBranding(value: unknown): value is ProjectOAuthBranding {
-  if (!value || typeof value !== 'object') return false;
-  return typeof (value as { showHelpPanel?: unknown }).showHelpPanel === 'boolean';
-}
-
 export function readProjectOAuthBrandingCache(
   cacheKey: ProjectOAuthBrandingCacheKey
 ): ProjectOAuthBranding | null {
-  const memory = memoryCache.get(cacheKey);
-  if (memory) return memory;
-  if (typeof sessionStorage === 'undefined') return null;
-  try {
-    const raw = sessionStorage.getItem(PROJECT_OAUTH_BRANDING_STORAGE_KEY);
-    if (!raw) return null;
-    const stored = JSON.parse(raw) as StoredBranding;
-    if (stored?.cacheKey !== cacheKey || !isProjectOAuthBranding(stored.branding)) return null;
-    memoryCache.set(cacheKey, stored.branding);
-    return stored.branding;
-  } catch {
-    return null;
-  }
-}
-
-function isClientBrandingCacheKey(
-  cacheKey: ProjectOAuthBrandingCacheKey
-): cacheKey is `client:${string}` {
-  return cacheKey.startsWith('client:');
-}
-
-function persistPublicClientBranding(
-  cacheKey: `client:${string}`,
-  branding: ProjectOAuthBranding
-): void {
-  if (typeof sessionStorage === 'undefined') return;
-  try {
-    const stored: StoredBranding = {
-      cacheKey,
-      branding: {
-        pictureUrl: branding.pictureUrl,
-        projectName: branding.projectName,
-        primaryColor: branding.primaryColor,
-        showHelpPanel: branding.showHelpPanel,
-        themeMode: branding.themeMode,
-      },
-    };
-    // codeql[js/clear-text-storage-of-sensitive-data]: Public hosted-page chrome
-    // from unauthenticated GET /api/auth/project/app-info (color, help panel,
-    // theme, display names, picture URL). Consent tokens are never written.
-    sessionStorage.setItem(PROJECT_OAUTH_BRANDING_STORAGE_KEY, JSON.stringify(stored));
-  } catch {
-    // Private mode / quota should not block sign-in.
-  }
+  return memoryCache.get(cacheKey) ?? null;
 }
 
 export function writeProjectOAuthBrandingCache(
   cacheKey: ProjectOAuthBrandingCacheKey,
   branding: ProjectOAuthBranding
 ): void {
+  if (!cacheKey.startsWith('client:')) return;
   memoryCache.set(cacheKey, branding);
-  if (isClientBrandingCacheKey(cacheKey)) {
-    persistPublicClientBranding(cacheKey, branding);
-  }
 }
 
 export function readProjectOAuthBrandingForLocation(href?: string): ProjectOAuthBranding | null {
@@ -161,10 +104,4 @@ export function readProjectOAuthBrandingForLocation(href?: string): ProjectOAuth
 
 export function clearProjectOAuthBrandingCacheForTests(): void {
   memoryCache.clear();
-  if (typeof sessionStorage === 'undefined') return;
-  try {
-    sessionStorage.removeItem(PROJECT_OAUTH_BRANDING_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
 }
