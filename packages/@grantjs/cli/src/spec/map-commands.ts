@@ -1,4 +1,10 @@
-import type { CliOperation, MappedCommand } from './types.js';
+import type { CliOperation } from './types.js';
+
+export interface MappedCommand {
+  group: string;
+  verb: string;
+  operation: CliOperation;
+}
 
 function kebab(value: string): string {
   return value
