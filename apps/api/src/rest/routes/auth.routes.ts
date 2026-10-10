@@ -23,6 +23,7 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectEmailRequestSchema,
+  refreshSessionRequestSchema,
   registerRequestSchema,
   requestPasswordResetRequestSchema,
   resendVerificationRequestSchema,
@@ -169,26 +170,34 @@ export function createAuthRoutes(context: RequestContext) {
     }
   );
 
-  router.post('/refresh', async (req: TypedRequest<Record<string, never>>, res: Response) => {
-    const refreshTokenFromCookie = getRefreshTokenFromCookie(req);
-    if (!refreshTokenFromCookie) {
-      throw new AuthenticationError('Invalid or expired refresh token');
+  router.post(
+    '/refresh',
+    validateBody(refreshSessionRequestSchema),
+    async (req: TypedRequest<{ body: typeof refreshSessionRequestSchema }>, res: Response) => {
+      const refreshTokenFromCookie = getRefreshTokenFromCookie(req);
+      const refreshToken = refreshTokenFromCookie ?? req.body.refreshToken;
+      if (!refreshToken) {
+        throw new AuthenticationError('Invalid or expired refresh token');
+      }
+      try {
+        const result = await context.handlers.auth.refreshSession(
+          refreshToken,
+          context.userAgent,
+          context.ipAddress,
+          context.requestBaseUrl
+        );
+        setRefreshTokenCookie(res, result.refreshToken);
+        sendSuccessResponse(res, {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        });
+      } catch (err) {
+        clearRefreshTokenCookie(res);
+        if (err instanceof AuthenticationError) throw err;
+        throw new AuthenticationError('Invalid or expired refresh token');
+      }
     }
-    try {
-      const result = await context.handlers.auth.refreshSession(
-        refreshTokenFromCookie,
-        context.userAgent,
-        context.ipAddress,
-        context.requestBaseUrl
-      );
-      setRefreshTokenCookie(res, result.refreshToken);
-      sendSuccessResponse(res, { accessToken: result.accessToken });
-    } catch (err) {
-      clearRefreshTokenCookie(res);
-      if (err instanceof AuthenticationError) throw err;
-      throw new AuthenticationError('Invalid or expired refresh token');
-    }
-  });
+  );
 
   router.post(
     '/verify-email',

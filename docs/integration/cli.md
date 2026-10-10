@@ -33,7 +33,7 @@ API commands accept **`-p, --profile <name>`** (or `GRANT_PROFILE`) and **`--out
 
 ## Agents and scripts
 
-Prefer an **api-key** profile or environment credentials. Session profiles are for humans (`grant start`); when the access token expires, run `grant start` again.
+Prefer an **api-key** profile or environment credentials. Session profiles are for humans (`grant start`); they refresh once via `POST /api/auth/refresh` with the stored refresh token in the JSON body. Cookie still wins when both are present.
 
 ```bash
 export GRANT_PROFILE=ci

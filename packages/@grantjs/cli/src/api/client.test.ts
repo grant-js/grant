@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { exchangeApiKey, exchangeCliCallback, fetchPermissions, fetchResources } from './client.js';
+import {
+  exchangeApiKey,
+  exchangeCliCallback,
+  fetchPermissions,
+  fetchResources,
+  refreshSession,
+} from './client.js';
 
 describe('exchangeApiKey', () => {
   beforeEach(() => {
@@ -290,5 +296,37 @@ describe('fetchPermissions', () => {
     expect(items).toHaveLength(2);
     expect(items[0]!.action).toBe('Create');
     expect(items[1]!.action).toBe('Read');
+  });
+});
+
+describe('refreshSession', () => {
+  it('posts the refresh token in the body and returns rotated tokens', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: { accessToken: 'new-access', refreshToken: 'new-refresh' },
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        )
+      )
+    );
+    const result = await refreshSession('http://localhost:4000', 'old-refresh', 'ov');
+    expect(result).toEqual({ accessToken: 'new-access', refreshToken: 'new-refresh' });
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledWith(
+      'http://localhost:4000/api/auth/refresh',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'x-origin-verify': 'ov',
+        }),
+        body: JSON.stringify({ refreshToken: 'old-refresh' }),
+      })
+    );
   });
 });

@@ -134,6 +134,15 @@ export const registerResponseSchema = createSuccessResponseSchema(
   'Successfully registered new user'
 );
 
+export const refreshSessionRequestSchema = z
+  .object({
+    refreshToken: z.string().min(1).optional().openapi({
+      description:
+        'Refresh token for CLI and other non-browser clients. Browsers should omit this and send the HttpOnly cookie instead. Cookie wins when both are present.',
+    }),
+  })
+  .default({});
+
 export const refreshSessionResponseSchema = createSuccessResponseSchema(
   authTokensSchema,
   'Successfully refreshed session tokens'

@@ -3,6 +3,8 @@
  * Used by start (token exchange) and generate-types (resources/permissions).
  */
 
+import { apiRequest } from './transport.js';
+
 interface TokenExchangeScope {
   id: string;
   tenant: string;
@@ -138,6 +140,27 @@ export async function exchangeApiKey(
     throw new Error('Invalid token response: missing accessToken');
   }
   return data.data;
+}
+
+/**
+ * Refresh a session. Cookie is preferred by browsers; CLI sends the stored refresh token in the body.
+ */
+export async function refreshSession(
+  baseUrl: string,
+  refreshToken: string,
+  originVerifySecret?: string
+): Promise<{ accessToken: string; refreshToken?: string }> {
+  const { data } = await apiRequest<{ accessToken?: string; refreshToken?: string }>({
+    apiUrl: baseUrl,
+    method: 'POST',
+    path: '/api/auth/refresh',
+    originVerifySecret,
+    body: { refreshToken },
+  });
+  if (!data?.accessToken) {
+    throw new Error('Invalid refresh response: missing accessToken');
+  }
+  return { accessToken: data.accessToken, refreshToken: data.refreshToken };
 }
 
 /**

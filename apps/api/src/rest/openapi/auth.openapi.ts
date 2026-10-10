@@ -19,6 +19,7 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectConsentInfoResponseSchema,
+  refreshSessionRequestSchema,
   refreshSessionResponseSchema,
   registerRequestSchema,
   registerResponseSchema,
@@ -176,7 +177,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
 
   /**
    * POST /api/auth/refresh
-   * Refresh session using refresh token from HttpOnly cookie (no request body).
+   * Refresh session using refresh token from HttpOnly cookie or optional JSON body.
    */
   registry.registerPath({
     method: 'post',
@@ -185,7 +186,17 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
     tags: ['Authentication'],
     summary: 'Refresh session',
     description:
-      'Refresh access token using the refresh token sent in an HttpOnly cookie. No request body. Responds with new accessToken; refresh cookie is rotated on success.',
+      'Refresh access token using the HttpOnly refresh cookie (browsers) or an optional refreshToken JSON body (CLI). Cookie wins when both are present. Responds with new accessToken and refreshToken; the refresh cookie is rotated on success.',
+    request: {
+      body: {
+        required: false,
+        content: {
+          'application/json': {
+            schema: refreshSessionRequestSchema,
+          },
+        },
+      },
+    },
     responses: {
       200: {
         description: 'Successfully refreshed tokens',
