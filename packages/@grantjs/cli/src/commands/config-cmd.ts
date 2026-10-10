@@ -104,12 +104,15 @@ export function createConfigCommand(program: Command): void {
       if (config.generateTypesOutputPath) {
         console.log('Generate-types output:', config.generateTypesOutputPath);
       }
+      if (config.originVerifySecret) {
+        console.log('Origin-verify: set');
+      }
     });
 
   const setCmd = configCmd
     .command('set')
     .description(
-      'Set a config value for a profile (use a subcommand: api-url, auth-method, credentials, scope, generate-types-output, default-profile)'
+      'Set a config value for a profile (use a subcommand: api-url, auth-method, credentials, scope, generate-types-output, origin-verify, default-profile)'
     )
     .option('-p, --profile <name>', 'Profile to update (default: default profile)');
 
@@ -279,6 +282,28 @@ export function createConfigCommand(program: Command): void {
         '(profile:',
         profileName + ')'
       );
+    });
+
+  setCmd
+    .command('origin-verify [secret]')
+    .description(
+      'Set x-origin-verify secret (only when apiUrl is the raw API origin). Empty clears it.'
+    )
+    .action(async (secret: string | undefined, cmd: Command) => {
+      const profileFlag = cmd.parent?.opts?.()?.profile;
+      const { file, config, profileName } = await requireProfile(profileFlag);
+      const trimmed = secret?.trim() ?? '';
+      if (!trimmed) {
+        delete config.originVerifySecret;
+        file.profiles[profileName] = config;
+        await saveConfigFile(file);
+        console.log('origin-verify cleared (profile:', profileName + ')');
+        return;
+      }
+      config.originVerifySecret = trimmed;
+      file.profiles[profileName] = config;
+      await saveConfigFile(file);
+      console.log('origin-verify set (profile:', profileName + ')');
     });
 
   setCmd

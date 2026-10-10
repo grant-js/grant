@@ -14,6 +14,22 @@ describe('resolveAccessToken', () => {
     vi.mocked(exchangeApiKey).mockReset();
   });
 
+  it('returns GRANT_ACCESS_TOKEN when set', async () => {
+    const previous = process.env.GRANT_ACCESS_TOKEN;
+    process.env.GRANT_ACCESS_TOKEN = 'from-env';
+    try {
+      const token = await resolveAccessToken({
+        apiUrl: 'http://localhost',
+        authMethod: 'api-key',
+      });
+      expect(token).toBe('from-env');
+      expect(exchangeApiKey).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.GRANT_ACCESS_TOKEN;
+      else process.env.GRANT_ACCESS_TOKEN = previous;
+    }
+  });
+
   it('returns session token when authMethod is session', async () => {
     const config: GrantConfig = {
       apiUrl: 'http://localhost',

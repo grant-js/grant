@@ -16,13 +16,33 @@ import {
 } from './storage.js';
 
 describe('resolveProfileName', () => {
+  const originalProfile = process.env.GRANT_PROFILE;
+
+  afterEach(() => {
+    if (originalProfile === undefined) delete process.env.GRANT_PROFILE;
+    else process.env.GRANT_PROFILE = originalProfile;
+  });
+
   it('returns profile flag when provided', () => {
     const file: GrantConfigFile = { defaultProfile: 'default', profiles: {} };
     expect(resolveProfileName(file, 'staging')).toBe('staging');
     expect(resolveProfileName(file, '  staging  ')).toBe('staging');
   });
 
+  it('returns GRANT_PROFILE when flag is omitted', () => {
+    process.env.GRANT_PROFILE = 'ci';
+    const file: GrantConfigFile = { defaultProfile: 'default', profiles: {} };
+    expect(resolveProfileName(file, undefined)).toBe('ci');
+  });
+
+  it('prefers the flag over GRANT_PROFILE', () => {
+    process.env.GRANT_PROFILE = 'ci';
+    const file: GrantConfigFile = { defaultProfile: 'default', profiles: {} };
+    expect(resolveProfileName(file, 'staging')).toBe('staging');
+  });
+
   it('returns defaultProfile when flag is undefined', () => {
+    delete process.env.GRANT_PROFILE;
     const file: GrantConfigFile = { defaultProfile: 'staging', profiles: {} };
     expect(resolveProfileName(file, undefined)).toBe('staging');
   });

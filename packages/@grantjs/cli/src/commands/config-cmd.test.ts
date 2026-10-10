@@ -107,6 +107,16 @@ describe('grant config show', () => {
     expect(logs.join('\n')).toContain('No config or profile not found');
     expect(exitCode).toBeUndefined();
   });
+
+  it('prints origin-verify as set without the secret', async () => {
+    vi.mocked(storage.loadProfile).mockResolvedValue(
+      profile({ originVerifySecret: 'SUPER_SECRET_ORIGIN' }) as never
+    );
+    await run('show');
+    const out = logs.join('\n');
+    expect(out).toContain('Origin-verify: set');
+    expect(out).not.toContain('SUPER_SECRET_ORIGIN');
+  });
 });
 
 describe('grant config set api-url', () => {
@@ -178,6 +188,25 @@ describe('grant config set auth-method', () => {
     await expect(run('set', 'auth-method', 'oauth')).rejects.toThrow('process.exit');
     expect(exitCode).toBe(1);
     expect(storage.saveConfigFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('grant config set origin-verify', () => {
+  beforeEach(() => vi.mocked(storage.loadProfile).mockResolvedValue(profile() as never));
+
+  it('saves a secret', async () => {
+    await run('set', 'origin-verify', 'ov-secret');
+    const saved = vi.mocked(storage.saveConfigFile).mock.calls[0][0];
+    expect(saved.profiles.default.originVerifySecret).toBe('ov-secret');
+  });
+
+  it('clears the secret when empty', async () => {
+    vi.mocked(storage.loadProfile).mockResolvedValue(
+      profile({ originVerifySecret: 'ov-secret' }) as never
+    );
+    await run('set', 'origin-verify');
+    const saved = vi.mocked(storage.saveConfigFile).mock.calls[0][0];
+    expect(saved.profiles.default.originVerifySecret).toBeUndefined();
   });
 });
 

@@ -6,6 +6,7 @@ import { createConfigCommand } from './commands/config-cmd.js';
 import { createGenerateTypesCommand } from './commands/generate-types.js';
 import { createStartCommand } from './commands/start.js';
 import { createVersionCommand } from './commands/version.js';
+import { createWhoamiCommand } from './commands/whoami.js';
 
 const program = new Command();
 
@@ -22,6 +23,7 @@ Examples:
   grant config list                   List profiles and default
   grant config show --profile staging Show config for a profile
   grant config set api-url http://localhost:4000 --profile default
+  grant whoami --profile ci --output json
   grant generate-types --profile staging   Generate types for a profile
   grant --help                        Show this help
   grant config set --help             Show help for config set subcommands
@@ -32,5 +34,6 @@ createVersionCommand(program);
 createConfigCommand(program);
 createStartCommand(program);
 createGenerateTypesCommand(program);
+createWhoamiCommand(program);
 
 program.parse();

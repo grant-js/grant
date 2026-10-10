@@ -269,7 +269,8 @@ export async function exchangeCliCallback(baseUrl: string, code: string): Promis
 export async function fetchOrganizations(
   baseUrl: string,
   accessToken: string,
-  scope: ApiScope
+  scope: ApiScope,
+  originVerifySecret?: string
 ): Promise<OrganizationItem[]> {
   const items: OrganizationItem[] = [];
   let page = 1;
@@ -282,9 +283,9 @@ export async function fetchOrganizations(
     url.searchParams.set('page', String(page));
     url.searchParams.set('limit', String(DEFAULT_PAGE_SIZE));
 
-    const res = await fetch(url.href, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (originVerifySecret) headers['x-origin-verify'] = originVerifySecret;
+    const res = await fetch(url.href, { headers });
 
     if (!res.ok) {
       const text = await res.text();
@@ -325,7 +326,8 @@ export async function fetchOrganizations(
 export async function fetchProjects(
   baseUrl: string,
   accessToken: string,
-  scope: ApiScope
+  scope: ApiScope,
+  originVerifySecret?: string
 ): Promise<ProjectItem[]> {
   const items: ProjectItem[] = [];
   let page = 1;
@@ -338,9 +340,9 @@ export async function fetchProjects(
     url.searchParams.set('page', String(page));
     url.searchParams.set('limit', String(DEFAULT_PAGE_SIZE));
 
-    const res = await fetch(url.href, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (originVerifySecret) headers['x-origin-verify'] = originVerifySecret;
+    const res = await fetch(url.href, { headers });
 
     if (!res.ok) {
       const text = await res.text();
@@ -402,7 +404,8 @@ const DEFAULT_PAGE_SIZE = 50;
 export async function fetchResources(
   baseUrl: string,
   accessToken: string,
-  scope: ApiScope
+  scope: ApiScope,
+  originVerifySecret?: string
 ): Promise<ResourceItem[]> {
   const items: ResourceItem[] = [];
   let page = 1;
@@ -415,9 +418,9 @@ export async function fetchResources(
     url.searchParams.set('page', String(page));
     url.searchParams.set('limit', String(DEFAULT_PAGE_SIZE));
 
-    const res = await fetch(url.href, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (originVerifySecret) headers['x-origin-verify'] = originVerifySecret;
+    const res = await fetch(url.href, { headers });
 
     if (!res.ok) {
       const text = await res.text();
@@ -452,7 +455,8 @@ export async function fetchResources(
 export async function fetchPermissions(
   baseUrl: string,
   accessToken: string,
-  scope: ApiScope
+  scope: ApiScope,
+  originVerifySecret?: string
 ): Promise<PermissionItem[]> {
   const items: PermissionItem[] = [];
   let page = 1;
@@ -465,9 +469,9 @@ export async function fetchPermissions(
     url.searchParams.set('page', String(page));
     url.searchParams.set('limit', String(DEFAULT_PAGE_SIZE));
 
-    const res = await fetch(url.href, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (originVerifySecret) headers['x-origin-verify'] = originVerifySecret;
+    const res = await fetch(url.href, { headers });
 
     if (!res.ok) {
       const text = await res.text();

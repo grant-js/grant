@@ -4,7 +4,9 @@ import { resolve } from 'node:path';
 import type { Command } from 'commander';
 
 import { fetchPermissions, fetchResources } from '../api/client.js';
-import { loadProfile, resolveAccessToken } from '../config/index.js';
+import { handleCliError } from '../api/errors.js';
+import { resolveRuntimeContext } from '../config/credentials.js';
+import { resolveAccessToken } from '../config/resolve-token.js';
 import { generateTypesContent } from './generate-types-impl.js';
 
 const DEFAULT_OUTPUT = './grant-types.ts';
@@ -26,16 +28,22 @@ export function createGenerateTypesCommand(program: Command): void {
       '\nExample:\n  grant generate-types --profile staging -o ./src/grant-types.ts\n'
     )
     .action(async (options: { output?: string; dryRun?: boolean; profile?: string }) => {
-      const result = await loadProfile(options.profile);
-      if (!result?.config?.selectedScope) {
+      let config;
+      let scope;
+      try {
+        const ctx = await resolveRuntimeContext({ profile: options.profile });
+        config = ctx.config;
+        scope = ctx.scope;
+      } catch (err) {
+        handleCliError(err);
+      }
+      if (!config || !scope) {
         console.error(
-          'No project selected for this profile. Run "grant start" first or use --profile <name>.'
+          'No project selected for this profile. Run "grant start" first or set GRANT_SCOPE_ID and GRANT_SCOPE_TENANT.'
         );
         process.exitCode = 1;
         return;
       }
-      const config = result.config;
-      const scope = result.config.selectedScope;
 
       const outputPath = resolve(
         process.cwd(),
@@ -47,8 +55,8 @@ export function createGenerateTypesCommand(program: Command): void {
         const accessToken = await resolveAccessToken(config);
 
         const [resources, permissions] = await Promise.all([
-          fetchResources(config.apiUrl, accessToken, scope),
-          fetchPermissions(config.apiUrl, accessToken, scope),
+          fetchResources(config.apiUrl, accessToken, scope, config.originVerifySecret),
+          fetchPermissions(config.apiUrl, accessToken, scope, config.originVerifySecret),
         ]);
 
         const slugs = resources.map((r) => r.slug).filter(Boolean);
