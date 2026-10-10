@@ -1,5 +1,15 @@
 # grant-web
 
+## 1.13.1
+
+### Patch Changes
+
+- 8952623: Hold hosted project sign-in until app-info branding resolves so the help panel and colors do not flash Grant defaults.
+- @grantjs/client@1.13.1
+  - @grantjs/schema@1.13.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.13.0
 
 ### Patch Changes
