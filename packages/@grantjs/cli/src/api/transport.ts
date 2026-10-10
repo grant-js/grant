@@ -45,7 +45,9 @@ function parseErrorMessage(status: number, text: string): string {
   return message;
 }
 
-export async function apiRequest<T = unknown>(req: TransportRequest): Promise<TransportResponse<T>> {
+export async function apiRequest<T = unknown>(
+  req: TransportRequest
+): Promise<TransportResponse<T>> {
   const url = joinUrl(req.apiUrl, req.path);
   if (req.query) {
     for (const [key, value] of Object.entries(req.query)) {

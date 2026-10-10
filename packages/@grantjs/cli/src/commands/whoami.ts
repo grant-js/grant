@@ -14,12 +14,7 @@ export function createWhoamiCommand(program: Command): void {
     .option('--scope-id <id>', 'Override selected scope id')
     .option('--tenant <tenant>', 'Override selected scope tenant')
     .action(
-      async (options: {
-        profile?: string;
-        output?: string;
-        scopeId?: string;
-        tenant?: string;
-      }) => {
+      async (options: { profile?: string; output?: string; scopeId?: string; tenant?: string }) => {
         try {
           const format = parseOutputFormat(options.output);
           const ctx = await resolveRuntimeContext({
