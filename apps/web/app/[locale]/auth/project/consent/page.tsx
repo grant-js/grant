@@ -8,7 +8,6 @@ import { User } from 'lucide-react';
 import { OAuthAppHeading } from '@/components/auth/oauth-app-heading';
 import { OAuthPermissionsCard } from '@/components/auth/oauth-permissions-card';
 import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
-import { useSetOAuthBranding } from '@/components/layout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -17,6 +16,7 @@ import {
   approveProjectConsent,
   denyProjectConsent,
   getProjectConsentInfo,
+  peekProjectConsentInfo,
   type ProjectConsentInfo,
 } from '@/lib/project-oauth-api';
 
@@ -25,27 +25,18 @@ export default function ProjectOAuthConsentPage() {
   const searchParams = useSearchParams();
   const consentToken = searchParams.get('consent_token');
 
-  const [info, setInfo] = useState<ProjectConsentInfo | null>(null);
+  const peekedInfo = consentToken ? peekProjectConsentInfo(consentToken) : null;
+  const [info, setInfo] = useState<ProjectConsentInfo | null>(peekedInfo);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(consentToken && !peekedInfo));
   const [actionLoading, setActionLoading] = useState<'allow' | 'deny' | null>(null);
-  useSetOAuthBranding(
-    info
-      ? {
-          pictureUrl: info.pictureUrl,
-          projectName: info.projectName,
-          primaryColor: info.primaryColor,
-          showHelpPanel: info.showHelpPanel,
-          themeMode: info.themeMode,
-        }
-      : null
-  );
 
   useEffect(() => {
     if (!consentToken) return;
     let cancelled = false;
+    const alreadyHave = peekProjectConsentInfo(consentToken);
     queueMicrotask(() => {
-      if (!cancelled) {
+      if (!cancelled && !alreadyHave) {
         setLoading(true);
         setError(null);
       }

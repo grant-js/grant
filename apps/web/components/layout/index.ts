@@ -7,3 +7,4 @@ export * from './feature-detail-layout';
 export * from './feature-detail-skeleton';
 export * from './header';
 export * from './oauth-branding-context';
+export * from './project-oauth-branding-gate';

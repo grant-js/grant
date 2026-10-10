@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { OAuthAppHeading } from '@/components/auth/oauth-app-heading';
-import { useSetOAuthBranding } from '@/components/layout';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -23,6 +22,7 @@ import { Link } from '@/i18n/navigation';
 import { oauthClientDisplayName, oauthPrimaryButtonStyle } from '@/lib/oauth-branding';
 import {
   getProjectAppPublicInfo,
+  peekProjectAppPublicInfo,
   type ProjectAppPublicInfo,
   requestProjectEmailLink,
 } from '@/lib/project-oauth-api';
@@ -41,7 +41,9 @@ export default function ProjectOAuthEmailPage() {
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(null);
+  const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(() =>
+    clientId ? peekProjectAppPublicInfo(clientId, scopeParam, redirectUri) : null
+  );
   const tEntry = useTranslations('auth.projectOAuth.entry');
 
   useEffect(() => {
@@ -58,18 +60,6 @@ export default function ProjectOAuthEmailPage() {
       cancelled = true;
     };
   }, [clientId, scopeParam, redirectUri]);
-
-  useSetOAuthBranding(
-    appInfo
-      ? {
-          pictureUrl: appInfo.pictureUrl,
-          projectName: appInfo.projectName,
-          primaryColor: appInfo.primaryColor,
-          showHelpPanel: appInfo.showHelpPanel,
-          themeMode: appInfo.themeMode,
-        }
-      : null
-  );
 
   const schema = useMemo(
     () =>

@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { OAuthAppHeading } from '@/components/auth/oauth-app-heading';
 import { OAuthPermissionsCard } from '@/components/auth/oauth-permissions-card';
 import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
-import { AuthLayoutStandalone, useSetOAuthBranding } from '@/components/layout';
+import { AuthLayoutStandalone } from '@/components/layout';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
@@ -15,6 +15,7 @@ import { getApiBaseUrl } from '@/lib/constants';
 import { oauthClientDisplayName } from '@/lib/oauth-branding';
 import {
   getProjectAppPublicInfo,
+  peekProjectAppPublicInfo,
   ProjectAppInfoError,
   type ProjectAppPublicInfo,
 } from '@/lib/project-oauth-api';
@@ -54,26 +55,19 @@ export default function ProjectOAuthEntryPage() {
       ? tAuth(`login.oauthErrors.${errorParam}`)
       : null;
 
-  const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(null);
+  const peekedAppInfo = clientId
+    ? peekProjectAppPublicInfo(clientId, scopeParam, redirectUri)
+    : null;
+  const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(peekedAppInfo);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  useSetOAuthBranding(
-    appInfo
-      ? {
-          pictureUrl: appInfo.pictureUrl,
-          projectName: appInfo.projectName,
-          primaryColor: appInfo.primaryColor,
-          showHelpPanel: appInfo.showHelpPanel,
-          themeMode: appInfo.themeMode,
-        }
-      : null
-  );
+  const [loading, setLoading] = useState(() => Boolean(clientId && !peekedAppInfo));
 
   useEffect(() => {
     if (!clientId) return;
     let cancelled = false;
+    const alreadyHave = peekProjectAppPublicInfo(clientId, scopeParam, redirectUri);
     queueMicrotask(() => {
-      if (!cancelled) {
+      if (!cancelled && !alreadyHave) {
         setLoading(true);
         setError(null);
       }

@@ -53,29 +53,89 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (data.success && data.data ? data.data : data) as T;
 }
 
+const appInfoResolved = new Map<string, ProjectAppPublicInfo>();
+const appInfoInflight = new Map<string, Promise<ProjectAppPublicInfo>>();
+const consentInfoResolved = new Map<string, ProjectConsentInfo>();
+const consentInfoInflight = new Map<string, Promise<ProjectConsentInfo>>();
+
+function appInfoCacheKey(
+  clientId: string,
+  scope?: string | null,
+  redirectUri?: string | null
+): string {
+  return `${clientId}\0${scope?.trim() ?? ''}\0${redirectUri?.trim() ?? ''}`;
+}
+
+function remember<T>(
+  resolved: Map<string, T>,
+  inflight: Map<string, Promise<T>>,
+  key: string,
+  load: () => Promise<T>
+): Promise<T> {
+  const cached = resolved.get(key);
+  if (cached) return Promise.resolve(cached);
+  const pending = inflight.get(key);
+  if (pending) return pending;
+  const promise = load().then(
+    (value) => {
+      resolved.set(key, value);
+      inflight.delete(key);
+      return value;
+    },
+    (error: unknown) => {
+      inflight.delete(key);
+      throw error;
+    }
+  );
+  inflight.set(key, promise);
+  return promise;
+}
+
+export function peekProjectAppPublicInfo(
+  clientId: string,
+  scope?: string | null,
+  redirectUri?: string | null
+): ProjectAppPublicInfo | null {
+  return appInfoResolved.get(appInfoCacheKey(clientId, scope, redirectUri)) ?? null;
+}
+
+export function peekProjectConsentInfo(consentToken: string): ProjectConsentInfo | null {
+  return consentInfoResolved.get(consentToken) ?? null;
+}
+
 export async function getProjectAppPublicInfo(
   clientId: string,
   scope?: string | null,
   redirectUri?: string | null
 ): Promise<ProjectAppPublicInfo> {
-  const apiBase = getApiBaseUrl();
-  const params = new URLSearchParams({ client_id: clientId });
-  if (scope?.trim()) params.set('scope', scope.trim());
-  if (redirectUri?.trim()) params.set('redirect_uri', redirectUri.trim());
-  const url = `${apiBase}/api/auth/project/app-info?${params.toString()}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody;
-    throw new ProjectOAuthApiError(body.error ?? body.details ?? res.statusText, res.status, body);
-  }
-  const data = await res.json();
-  return (data.success && data.data ? data.data : data) as ProjectAppPublicInfo;
+  return remember(
+    appInfoResolved,
+    appInfoInflight,
+    appInfoCacheKey(clientId, scope, redirectUri),
+    () => {
+      const apiBase = getApiBaseUrl();
+      const params = new URLSearchParams({ client_id: clientId });
+      if (scope?.trim()) params.set('scope', scope.trim());
+      if (redirectUri?.trim()) params.set('redirect_uri', redirectUri.trim());
+      const url = `${apiBase}/api/auth/project/app-info?${params.toString()}`;
+      return fetchJson<ProjectAppPublicInfo>(url);
+    }
+  );
 }
 
 export async function getProjectConsentInfo(consentToken: string): Promise<ProjectConsentInfo> {
   const apiBase = getApiBaseUrl();
   const url = `${apiBase}/api/auth/project/consent-info?consent_token=${encodeURIComponent(consentToken)}`;
-  return fetchJson<ProjectConsentInfo>(url);
+  return remember(consentInfoResolved, consentInfoInflight, consentToken, () =>
+    fetchJson<ProjectConsentInfo>(url)
+  );
+}
+
+export function clearProjectOAuthPublicInfoCacheForTests(): void {
+  appInfoResolved.clear();
+  appInfoInflight.clear();
+  consentInfoResolved.clear();
+  consentInfoInflight.clear();
 }
 
 export async function approveProjectConsent(
