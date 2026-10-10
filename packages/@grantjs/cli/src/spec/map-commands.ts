@@ -77,10 +77,6 @@ export function mapOperations(operations: CliOperation[]): MappedCommand[] {
   });
 }
 
-export function pathParams(path: string): string[] {
-  return [...path.matchAll(/\{([^}]+)\}/g)].map((match) => match[1] ?? '').filter(Boolean);
-}
-
 export function applyPathParams(path: string, values: Record<string, string>): string {
   return path.replace(/\{([^}]+)\}/g, (_all, name: string) => {
     const value = values[name];
