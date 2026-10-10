@@ -1,6 +1,6 @@
 # @grantjs/cli
 
-Grant CLI for setup, authentication, profiles, and typings generation.
+Grant CLI for profiles, REST API access, and typings generation. Agents and scripts should use `grant api` or `grant <resource> <verb>` with `--output json` (or `GRANT_*` environment variables).
 
 ## Install
 
@@ -17,13 +17,25 @@ npm install -g @grantjs/cli
 | `grant version`               | Show CLI version (`-j, --json` for JSON)                                                       |
 | `grant help` / `grant --help` | Show help                                                                                      |
 | `grant start`                 | Interactive setup (API URL, auth, profile, scope); alias: `grant setup`                        |
+| `grant whoami`                | Show the authenticated caller (`GET /api/me`)                                                  |
+| `grant api <method> <path>`   | Call any REST path with the resolved profile                                                   |
+| `grant <resource> <verb>`     | Named REST commands from OpenAPI (e.g. `grant users list`)                                     |
 | `grant generate-types`        | Generate project-scoped `ResourceSlug` and `ResourceAction` TypeScript (uses selected profile) |
 | `grant config path`           | Print path to the config file                                                                  |
 | `grant config list`           | List profiles and which is default                                                             |
 | `grant config show`           | Show config summary for a profile (no secrets)                                                 |
 | `grant config set <key>`      | Set a config value for a profile (see below)                                                   |
 
-All commands that use config accept **`-p, --profile <name>`** to target a profile (default: the configured default profile).
+All commands that use config accept **`-p, --profile <name>`** (or `GRANT_PROFILE`). API commands also accept `--output json|text` (JSON when stdout is not a TTY).
+
+Environment: `GRANT_API_URL`, `GRANT_ACCESS_TOKEN`, `GRANT_CLIENT_ID`, `GRANT_CLIENT_SECRET`, `GRANT_SCOPE_TENANT`, `GRANT_SCOPE_ID`, `GRANT_ORIGIN_VERIFY`. Flags win over env, env over the profile file.
+
+```bash
+export GRANT_PROFILE=ci
+grant whoami --output json
+grant users list --output json
+grant api post /api/roles --body '{"name":"Reviewer"}'
+```
 
 ---
 
@@ -99,6 +111,7 @@ Set a value for a profile. Use **`-p, --profile <name>`** to target a profile (d
 | `grant config set credentials`                      | Set API key and scope (see options below)                           |
 | `grant config set scope`                            | Set selected project scope only                                     |
 | `grant config set generate-types-output <path>`     | Set default output path for `grant generate-types` (empty to clear) |
+| `grant config set origin-verify [secret]`           | Set `x-origin-verify` when `apiUrl` is the raw API origin           |
 | `grant config set default-profile <name>`           | Set which profile is used when `--profile` is omitted               |
 
 **Credentials options** (all required for `credentials`):
