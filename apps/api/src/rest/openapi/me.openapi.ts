@@ -89,6 +89,7 @@ export function registerMeEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/me',
+    operationId: 'getApiMe',
     tags: ['Me'],
     summary: 'Get current user information',
     description: `
@@ -165,6 +166,7 @@ Returns user account information including:
   registry.registerPath({
     method: 'post',
     path: '/api/me/accounts',
+    operationId: 'postApiMeAccounts',
     tags: ['Me'],
     summary: 'Create a secondary account for the current user',
     description: `
@@ -250,6 +252,7 @@ Users can have a maximum of 2 accounts (one Personal and one Organization).
   registry.registerPath({
     method: 'delete',
     path: '/api/me/accounts',
+    operationId: 'deleteApiMeAccounts',
     tags: ['Me'],
     summary: 'Delete all current user accounts and user',
     description: `
@@ -358,6 +361,7 @@ Users can only delete their own accounts.
   registry.registerPath({
     method: 'get',
     path: '/api/me/export',
+    operationId: 'getApiMeExport',
     tags: ['Me'],
     summary: 'Export current user data',
     description: `
@@ -507,6 +511,7 @@ This endpoint supports the GDPR "Right to Data Portability" requirement, allowin
   registry.registerPath({
     method: 'post',
     path: '/api/me/picture/upload-url',
+    operationId: 'postApiMePictureUploadUrl',
     tags: ['Me'],
     summary: 'Request a direct-upload URL for the current user picture',
     description: `
@@ -588,6 +593,7 @@ expires, and it cannot be revoked. It is also not single-use.
   registry.registerPath({
     method: 'post',
     path: '/api/me/picture/confirm',
+    operationId: 'postApiMePictureConfirm',
     tags: ['Me'],
     summary: 'Record a completed direct upload of the current user picture',
     description: `
@@ -651,6 +657,7 @@ this at another user's object.
   registry.registerPath({
     method: 'post',
     path: '/api/me/picture',
+    operationId: 'postApiMePicture',
     tags: ['Me'],
     summary: 'Upload current user profile picture',
     description: `
@@ -745,6 +752,7 @@ Returns the public URL and storage path of the uploaded file. The user's \`pictu
   registry.registerPath({
     method: 'get',
     path: '/api/me/authentication-methods',
+    operationId: 'getApiMeAuthenticationMethods',
     tags: ['Me'],
     summary: 'Get current user authentication methods',
     description: `
@@ -804,6 +812,7 @@ Users can only query their own authentication methods.
   registry.registerPath({
     method: 'post',
     path: '/api/me/authentication-methods',
+    operationId: 'postApiMeAuthenticationMethods',
     tags: ['Me'],
     summary: 'Create a new authentication method for the current user',
     description: `
@@ -890,6 +899,7 @@ The \`providerData\` field contains provider-specific information:
   registry.registerPath({
     method: 'post',
     path: '/api/me/change-password',
+    operationId: 'postApiMeChangePassword',
     tags: ['Me'],
     summary: 'Change current user password',
     description: `
@@ -966,6 +976,7 @@ Users can only change their own password.
   registry.registerPath({
     method: 'get',
     path: '/api/me/sessions',
+    operationId: 'getApiMeSessions',
     tags: ['Me'],
     summary: 'Get current user sessions',
     description: `
@@ -1032,6 +1043,7 @@ Users can only query their own sessions.
   registry.registerPath({
     method: 'delete',
     path: '/api/me/sessions/{sessionId}',
+    operationId: 'deleteApiMeSessionsBySessionId',
     tags: ['Me'],
     summary: 'Revoke a specific session for the current user',
     description: `
@@ -1097,6 +1109,7 @@ Users can only revoke their own sessions.
   registry.registerPath({
     method: 'get',
     path: '/api/me/mfa/recovery-codes/status',
+    operationId: 'getApiMeMfaRecoveryCodesStatus',
     tags: ['Me'],
     summary: 'MFA recovery code status (metadata only)',
     description:
@@ -1143,6 +1156,7 @@ Users can only revoke their own sessions.
   registry.registerPath({
     method: 'post',
     path: '/api/me/logout',
+    operationId: 'postApiMeLogout',
     tags: ['Me'],
     summary: 'Logout current user and revoke session',
     description: `
@@ -1233,6 +1247,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'get',
     path: '/api/me/notifications',
+    operationId: 'getApiMeNotifications',
     tags: ['Me'],
     summary: 'List my in-app notifications',
     request: { query: listMyNotificationsQuerySchema },
@@ -1263,6 +1278,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'get',
     path: '/api/me/notifications/unread-count',
+    operationId: 'getApiMeNotificationsUnreadCount',
     tags: ['Me'],
     summary: 'Get my unread notification count',
     request: {},
@@ -1288,6 +1304,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'post',
     path: '/api/me/notifications/read-all',
+    operationId: 'postApiMeNotificationsReadAll',
     tags: ['Me'],
     summary: 'Mark all my notifications as read',
     request: {},
@@ -1313,6 +1330,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'post',
     path: '/api/me/notifications/{id}/read',
+    operationId: 'postApiMeNotificationsByIdRead',
     tags: ['Me'],
     summary: 'Mark a notification as read',
     request: { params: myNotificationParamsSchema },
@@ -1342,6 +1360,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'get',
     path: '/api/me/notification-preferences',
+    operationId: 'getApiMeNotificationPreferences',
     tags: ['Me'],
     summary: 'List my notification preferences for a tenant',
     request: { query: listMyNotificationPreferencesQuerySchema },
@@ -1367,6 +1386,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'put',
     path: '/api/me/notification-preferences',
+    operationId: 'putApiMeNotificationPreferences',
     tags: ['Me'],
     summary: 'Set one of my notification preferences',
     request: {
@@ -1405,6 +1425,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'get',
     path: '/api/me/project-memberships',
+    operationId: 'getApiMeProjectMemberships',
     tags: ['Me'],
     summary: 'List my project memberships',
     responses: {
@@ -1422,6 +1443,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'get',
     path: '/api/me/project-memberships/{projectId}',
+    operationId: 'getApiMeProjectMembershipsByProjectId',
     tags: ['Me'],
     summary: 'Get one of my project memberships',
     request: { params: myProjectMembershipParamsSchema },
@@ -1440,6 +1462,7 @@ This endpoint automatically identifies and revokes the session associated with t
   registry.registerPath({
     method: 'patch',
     path: '/api/me/project-memberships/{projectId}',
+    operationId: 'patchApiMeProjectMembershipsByProjectId',
     tags: ['Me'],
     summary: 'Update my project membership profile',
     request: {

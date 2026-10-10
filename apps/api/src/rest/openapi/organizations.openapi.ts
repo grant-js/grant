@@ -55,6 +55,7 @@ export function registerOrganizationsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/organizations',
+    operationId: 'getApiOrganizations',
     tags: ['Organizations'],
     summary: 'List organizations',
     description: `
@@ -116,6 +117,7 @@ Example: \`?relations=projects,users\`
   registry.registerPath({
     method: 'get',
     path: '/api/organizations/{id}',
+    operationId: 'getApiOrganizationsById',
     tags: ['Organizations'],
     summary: 'Get organization by ID',
     description: `
@@ -186,6 +188,7 @@ Example: \`?relations=projects,users\`
   registry.registerPath({
     method: 'post',
     path: '/api/organizations',
+    operationId: 'postApiOrganizations',
     tags: ['Organizations'],
     summary: 'Create organization',
     description: 'Create a new organization',
@@ -240,6 +243,7 @@ Example: \`?relations=projects,users\`
   registry.registerPath({
     method: 'patch',
     path: '/api/organizations/{id}',
+    operationId: 'patchApiOrganizationsById',
     tags: ['Organizations'],
     summary: 'Update organization',
     description: 'Update an existing organization',
@@ -303,6 +307,7 @@ Example: \`?relations=projects,users\`
   registry.registerPath({
     method: 'post',
     path: '/api/organizations/{id}/picture',
+    operationId: 'postApiOrganizationsByIdPicture',
     tags: ['Organizations'],
     summary: 'Upload organization logo',
     description: `
@@ -381,6 +386,7 @@ The file must be provided as a base64-encoded string (optional data URI prefix).
   registry.registerPath({
     method: 'post',
     path: '/api/organizations/{id}/picture/upload-url',
+    operationId: 'postApiOrganizationsByIdPictureUploadUrl',
     tags: ['Organizations'],
     summary: 'Request a direct-upload URL for an organization logo',
     description: `
@@ -451,6 +457,7 @@ Nothing is recorded against the organization until you do.
   registry.registerPath({
     method: 'post',
     path: '/api/organizations/{id}/picture/confirm',
+    operationId: 'postApiOrganizationsByIdPictureConfirm',
     tags: ['Organizations'],
     summary: 'Record a completed direct upload of an organization logo',
     description: `
@@ -520,6 +527,7 @@ Confirm writes \`picture_path\`; the public \`pictureUrl\` is derived on read.
   registry.registerPath({
     method: 'delete',
     path: '/api/organizations/{id}',
+    operationId: 'deleteApiOrganizationsById',
     tags: ['Organizations'],
     summary: 'Delete organization',
     description:

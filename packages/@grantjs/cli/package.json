@@ -47,6 +47,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "vitest",
     "test:run": "vitest run",
+    "vendor-openapi": "node ../../../scripts/vendor-cli-openapi.mjs",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm run build && pnpm test:run"
