@@ -3,9 +3,14 @@ import type { Command } from 'commander';
 import { authenticatedRequest } from '../api/authenticated.js';
 import { handleCliError } from '../api/errors.js';
 import { parseOutputFormat, printOutput } from '../config/output.js';
-import { applyPathParams, flagName, mapOperations } from '../spec/map-commands.js';
+import {
+  applyPathParams,
+  flagName,
+  mapOperations,
+  type MappedCommand,
+} from '../spec/map-commands.js';
 import { vendoredOperations } from '../spec/operations.js';
-import type { CliOperation, MappedCommand } from '../spec/types.js';
+import type { CliOperation } from '../spec/types.js';
 
 const SKIP_PATHS = new Set([
   '/api/auth/login',
