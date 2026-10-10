@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { GRANT_PRIMARY_COLOR } from '@/lib/oauth-branding';
@@ -81,7 +83,7 @@ describe('resolveAuthLayoutChrome', () => {
 });
 
 describe('project OAuth branding cache', () => {
-  it('returns a cached theme only for the matching client or consent key', () => {
+  it('returns a cached theme only for the matching client key', () => {
     writeProjectOAuthBrandingCache('client:app_1', branding);
     expect(readProjectOAuthBrandingCache('client:app_1')).toEqual(branding);
     expect(readProjectOAuthBrandingCache('client:other')).toBeNull();
@@ -93,5 +95,21 @@ describe('project OAuth branding cache', () => {
     expect(
       readProjectOAuthBrandingForLocation('http://localhost/en/auth/project?client_id=other')
     ).toBeNull();
+  });
+
+  it('keeps consent-token keys in memory and never writes them to sessionStorage', () => {
+    writeProjectOAuthBrandingCache('consent:secret-consent-token', branding);
+    expect(readProjectOAuthBrandingCache('consent:secret-consent-token')).toEqual(branding);
+    expect(sessionStorage.getItem('grant.project-oauth-branding')).toBeNull();
+  });
+
+  it('persists only public client-keyed chrome', () => {
+    writeProjectOAuthBrandingCache('client:app_1', branding);
+    const raw = sessionStorage.getItem('grant.project-oauth-branding');
+    expect(raw).toBeTruthy();
+    const stored = JSON.parse(raw!) as { cacheKey: string; branding: typeof branding };
+    expect(stored.cacheKey).toBe('client:app_1');
+    expect(stored.branding).toEqual(branding);
+    expect(JSON.stringify(stored)).not.toMatch(/consent:/);
   });
 });
