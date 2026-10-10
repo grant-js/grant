@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import type { ReactNode } from 'react';
 
 import { FullPageLoader } from '@/components/common';
 import {
@@ -11,8 +10,8 @@ import {
 } from '@/components/layout/oauth-branding-context';
 import { getProjectAppPublicInfo, getProjectConsentInfo } from '@/lib/project-oauth-api';
 import {
-  type ProjectOAuthBranding,
   isProjectOAuthBrandingPath,
+  type ProjectOAuthBranding,
   projectOAuthBrandingCacheKey,
   projectOAuthBrandingFromPublicInfo,
   readProjectOAuthBrandingCache,
