@@ -67,5 +67,6 @@ describe('project OAuth hosted entry page', () => {
     expect(pageSource).not.toMatch(/oauth-providers/);
     expect(pageSource).not.toMatch(/getSocialOAuthProviders/);
     expect(pageSource).toMatch(/getProjectAppPublicInfo/);
+    expect(pageSource).not.toMatch(/useSetOAuthBranding/);
   });
 });

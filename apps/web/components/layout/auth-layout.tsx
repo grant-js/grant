@@ -4,7 +4,12 @@ import { usePathname } from 'next/navigation';
 
 import { AuthAssistant, type AuthPageId } from '@/components/auth/auth-assistant';
 import { ParticleMesh } from '@/components/auth/particle-mesh';
-import { GRANT_PRIMARY_COLOR, radialGradientFromHex } from '@/lib/oauth-branding';
+import { radialGradientFromHex } from '@/lib/oauth-branding';
+import {
+  isProjectOAuthBrandingPath,
+  readProjectOAuthBrandingForLocation,
+  resolveAuthLayoutChrome,
+} from '@/lib/project-oauth-branding';
 import { cn } from '@/lib/utils';
 
 import { useOAuthBrandingTheme } from './oauth-branding-context';
@@ -60,9 +65,11 @@ export function AuthLayoutStandalone({ children }: { children: React.ReactNode }
 export function AuthLayout({ children, title, description }: AuthLayoutProps) {
   const pathname = usePathname();
   const pageId = getAuthPageId(pathname);
-  const branding = useOAuthBrandingTheme();
-  const showHelpPanel = branding?.showHelpPanel ?? true;
-  const panelColor = branding?.primaryColor ?? GRANT_PRIMARY_COLOR;
+  const isProjectOAuth = isProjectOAuthBrandingPath(pathname);
+  const contextBranding = useOAuthBrandingTheme();
+  const branding =
+    contextBranding ?? (isProjectOAuth ? readProjectOAuthBrandingForLocation() : null);
+  const { showHelpPanel, panelColor } = resolveAuthLayoutChrome(branding, isProjectOAuth);
 
   return (
     <div
@@ -83,7 +90,7 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
         </div>
       </div>
 
-      {showHelpPanel ? (
+      {showHelpPanel && panelColor ? (
         <div
           className="hidden lg:flex flex-col items-center justify-center p-8 relative overflow-hidden"
           style={{ background: radialGradientFromHex(panelColor) }}

@@ -1,16 +1,14 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import type { ProjectOAuthThemeMode } from '@grantjs/schema';
+import { createContext, useContext, useLayoutEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
-export type OAuthBrandingTheme = {
-  pictureUrl: string | null;
-  projectName: string | null;
-  primaryColor: string | null;
-  showHelpPanel: boolean;
-  themeMode: ProjectOAuthThemeMode | null;
-};
+import {
+  type ProjectOAuthBranding,
+  readProjectOAuthBrandingForLocation,
+} from '@/lib/project-oauth-branding';
+
+export type OAuthBrandingTheme = ProjectOAuthBranding;
 
 interface OAuthBrandingContextValue {
   branding: OAuthBrandingTheme | null;
@@ -20,7 +18,9 @@ interface OAuthBrandingContextValue {
 const OAuthBrandingContext = createContext<OAuthBrandingContextValue | null>(null);
 
 export function OAuthBrandingProvider({ children }: { children: ReactNode }) {
-  const [branding, setBranding] = useState<OAuthBrandingTheme | null>(null);
+  const [branding, setBranding] = useState<OAuthBrandingTheme | null>(
+    readProjectOAuthBrandingForLocation
+  );
   const value = useMemo(() => ({ branding, setBranding }), [branding]);
   return <OAuthBrandingContext.Provider value={value}>{children}</OAuthBrandingContext.Provider>;
 }
@@ -38,19 +38,22 @@ export function useSetOAuthBranding(branding: OAuthBrandingTheme | null) {
   const themeMode = branding?.themeMode ?? null;
   const hasBranding = branding != null;
 
-  useEffect(() => {
-    if (!setBranding) return;
-    setBranding(
-      hasBranding
-        ? {
-            pictureUrl,
-            projectName,
-            primaryColor,
-            showHelpPanel: showHelpPanel ?? true,
-            themeMode,
-          }
-        : null
-    );
-    return () => setBranding(null);
+  useLayoutEffect(() => {
+    if (!setBranding || !hasBranding) return;
+    setBranding({
+      pictureUrl,
+      projectName,
+      primaryColor,
+      showHelpPanel: showHelpPanel ?? true,
+      themeMode,
+    });
   }, [setBranding, hasBranding, pictureUrl, projectName, primaryColor, showHelpPanel, themeMode]);
+}
+
+export function useClearOAuthBrandingWhen(shouldClear: boolean) {
+  const setBranding = useContext(OAuthBrandingContext)?.setBranding;
+  useLayoutEffect(() => {
+    if (!setBranding || !shouldClear) return;
+    setBranding(null);
+  }, [setBranding, shouldClear]);
 }
