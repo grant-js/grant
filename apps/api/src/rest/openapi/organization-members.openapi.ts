@@ -33,6 +33,7 @@ export function registerOrganizationMembersOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/organization-members',
+    operationId: 'getApiOrganizationMembers',
     tags: ['Organization Members'],
     summary: 'List organization members',
     description: `
@@ -112,6 +113,7 @@ Returns a unified list of members and invitations with the following fields:
   registry.registerPath({
     method: 'patch',
     path: '/api/organization-members/{userId}',
+    operationId: 'patchApiOrganizationMembersByUserId',
     tags: ['Organization Members'],
     summary: 'Update organization member role',
     description: `
@@ -205,6 +207,7 @@ Only Organization Owners and Admins can update member roles.
   registry.registerPath({
     method: 'delete',
     path: '/api/organization-members/{userId}',
+    operationId: 'deleteApiOrganizationMembersByUserId',
     tags: ['Organization Members'],
     summary: 'Remove organization member',
     description: `

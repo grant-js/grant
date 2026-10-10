@@ -33,6 +33,7 @@ export function registerRolesOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/roles',
+    operationId: 'getApiRoles',
     tags: ['Roles'],
     summary: 'List roles',
     description: `
@@ -114,6 +115,7 @@ Roles are scoped to a tenant context. You must provide:
   registry.registerPath({
     method: 'post',
     path: '/api/roles',
+    operationId: 'postApiRoles',
     tags: ['Roles'],
     summary: 'Create a new role',
     description: `
@@ -187,6 +189,7 @@ Optional key-value metadata can be provided via \`metadata\` (JSON object).
   registry.registerPath({
     method: 'patch',
     path: '/api/roles/{id}',
+    operationId: 'patchApiRolesById',
     tags: ['Roles'],
     summary: 'Update a role',
     description: `
@@ -264,6 +267,7 @@ Optional key-value metadata can be provided via \`metadata\` (JSON object).
   registry.registerPath({
     method: 'delete',
     path: '/api/roles/{id}',
+    operationId: 'deleteApiRolesById',
     tags: ['Roles'],
     summary: 'Delete a role',
     description: `

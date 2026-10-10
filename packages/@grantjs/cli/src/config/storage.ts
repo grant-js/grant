@@ -95,6 +95,8 @@ export async function saveConfigFile(file: GrantConfigFile): Promise<void> {
  */
 export function resolveProfileName(file: GrantConfigFile, profileFlag: string | undefined): string {
   if (profileFlag?.trim()) return profileFlag.trim();
+  const fromEnv = process.env.GRANT_PROFILE?.trim();
+  if (fromEnv) return fromEnv;
   return file.defaultProfile || DEFAULT_PROFILE_NAME;
 }
 

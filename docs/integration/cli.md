@@ -1,11 +1,11 @@
 ---
 title: Grant CLI
-description: Interactive setup, multi-profile configuration, and TypeScript type generation
+description: Profile-based REST CLI for agents and humans, plus TypeScript type generation
 ---
 
 # Grant CLI
 
-The **Grant CLI** (`@grantjs/cli`) is the fastest way to connect your project to a Grant instance. It walks you through authentication, account/project selection, and stores everything in a local config file — ready for type generation and SDK usage.
+The **Grant CLI** (`@grantjs/cli`) is the Grant API client for agents and scripts, plus an interactive setup wizard. It stores named profiles (or reads `GRANT_*` environment variables) and calls the REST API — no MCP server required.
 
 ## Installation
 
@@ -17,16 +17,46 @@ npm install -g @grantjs/cli
 
 ## Commands
 
-| Command                | Description                                             |
-| ---------------------- | ------------------------------------------------------- |
-| `grant start`          | Interactive setup wizard (API URL, auth, scope)         |
-| `grant generate-types` | Generate TypeScript types from your project's resources |
-| `grant config list`    | List all profiles                                       |
-| `grant config show`    | Show current profile details                            |
-| `grant config set ...` | Update profile settings                                 |
-| `grant version`        | Show CLI version                                        |
+| Command                     | Description                                                    |
+| --------------------------- | -------------------------------------------------------------- |
+| `grant start`               | Interactive setup wizard (API URL, auth, scope)                |
+| `grant whoami`              | Show the authenticated caller (`GET /api/me`)                  |
+| `grant api <method> <path>` | Call any REST path with the resolved profile                   |
+| `grant <resource> <verb>`   | Named REST commands generated from OpenAPI (e.g. `users list`) |
+| `grant generate-types`      | Generate TypeScript types from your project's resources        |
+| `grant config list`         | List all profiles                                              |
+| `grant config show`         | Show current profile details                                   |
+| `grant config set ...`      | Update profile settings                                        |
+| `grant version`             | Show CLI version                                               |
 
-All commands support **`-p, --profile <name>`** to target a specific profile.
+API commands accept **`-p, --profile <name>`** (or `GRANT_PROFILE`) and **`--output json|text`**. Non-TTY stdout defaults to JSON.
+
+## Agents and scripts
+
+Prefer an **api-key** profile or environment credentials. Session profiles are for humans (`grant start`); they refresh once via `POST /api/auth/refresh` with the stored refresh token in the JSON body. Cookie still wins when both are present.
+
+```bash
+export GRANT_PROFILE=ci
+grant whoami --output json
+grant users list --output json
+grant api post /api/roles --body '{"name":"Reviewer"}' --output json
+```
+
+Credential order: command flags → `GRANT_*` environment variables → `~/.config/grant/config.json`.
+
+| Variable              | Purpose                                              |
+| --------------------- | ---------------------------------------------------- |
+| `GRANT_PROFILE`       | Profile name when `--profile` is omitted             |
+| `GRANT_API_URL`       | API base URL                                         |
+| `GRANT_ACCESS_TOKEN`  | Bearer token (skips exchange)                        |
+| `GRANT_CLIENT_ID`     | API key client id                                    |
+| `GRANT_CLIENT_SECRET` | API key client secret                                |
+| `GRANT_SCOPE_TENANT`  | Scope tenant (e.g. `organizationProject`)            |
+| `GRANT_SCOPE_ID`      | Scope id (`accountId:projectId` or org form)         |
+| `GRANT_ORIGIN_VERIFY` | `x-origin-verify` when talking to the raw API origin |
+| `GRANT_CLI_DEBUG`     | `1` to log request URLs                              |
+
+Exit codes: `0` success, `1` API/validation error, `2` authentication/authorization.
 
 ## Interactive Setup: `grant start`
 
@@ -200,6 +230,9 @@ grant config set scope \
 
 # Update generate-types output path
 grant config set generate-types-output ./src/types/grant.ts -p default
+
+# Only when apiUrl is the raw API origin (closed install)
+grant config set origin-verify "$ORIGIN_VERIFY_SECRET" -p production
 ```
 
 ### Config File Structure
@@ -323,7 +356,17 @@ app.get(
 
 ## Closed install and origin-verify
 
-When the API requires `ORIGIN_VERIFY_SECRET` (`SECURITY_ORIGIN_VERIFY_REQUIRED=true`), it refuses requests that did not come through a trusted front. The CLI does **not** send `x-origin-verify`.
+When the API requires `ORIGIN_VERIFY_SECRET` (`SECURITY_ORIGIN_VERIFY_REQUIRED=true`), it refuses requests that did not come through a trusted front.
+
+Prefer pointing `apiUrl` at the public front so CloudFront / Next / Ingress attach the header. If the CLI must call the **raw API origin**, set the secret (never `NEXT_PUBLIC_*`):
+
+```bash
+export GRANT_ORIGIN_VERIFY="$ORIGIN_VERIFY_SECRET"
+# or
+grant config set origin-verify "$ORIGIN_VERIFY_SECRET" -p production
+```
+
+Do not send the secret when `apiUrl` is the web origin — the front already injects it.
 
 | You run Grant behind…      | Set **Grant API base URL** to…                     | Why                                                                                         |
 | -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |

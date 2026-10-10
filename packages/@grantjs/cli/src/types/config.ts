@@ -42,6 +42,11 @@ export interface GrantConfig {
   selectedScope?: GrantScope;
   /** Default output path for generate-types (e.g. ./src/grant-types.ts). Optional. */
   generateTypesOutputPath?: string;
+  /**
+   * Optional origin-verify secret sent as `x-origin-verify`.
+   * Use only when apiUrl is the raw API origin. Prefer the public front URL instead.
+   */
+  originVerifySecret?: string;
 }
 
 /** Name of a profile (key in profiles). */

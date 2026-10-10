@@ -37,6 +37,7 @@ export function registerOrganizationInvitationsOpenApi(registry: OpenAPIRegistry
   registry.registerPath({
     method: 'post',
     path: '/api/organization-invitations/invite',
+    operationId: 'postApiOrganizationInvitationsInvite',
     tags: ['Organization Invitations'],
     summary: 'Invite member to organization',
     description: `
@@ -118,6 +119,7 @@ Invite a new or existing user to join an organization with a specific role.
   registry.registerPath({
     method: 'post',
     path: '/api/organization-invitations/accept',
+    operationId: 'postApiOrganizationInvitationsAccept',
     tags: ['Organization Invitations'],
     summary: 'Accept organization invitation',
     description: `
@@ -212,6 +214,7 @@ Accept an organization invitation using the token received via email.
   registry.registerPath({
     method: 'get',
     path: '/api/organization-invitations/{token}',
+    operationId: 'getApiOrganizationInvitationsByToken',
     tags: ['Organization Invitations'],
     summary: 'Get invitation by token',
     description: `
@@ -270,6 +273,7 @@ Example: \`/api/organization-invitations/{token}?relations=organization,role,inv
   registry.registerPath({
     method: 'get',
     path: '/api/organization-invitations',
+    operationId: 'getApiOrganizationInvitations',
     tags: ['Organization Invitations'],
     summary: 'List organization invitations',
     description: `
@@ -333,6 +337,7 @@ List all invitations for a specific organization with optional status filtering.
   registry.registerPath({
     method: 'post',
     path: '/api/organization-invitations/{id}/resend-email',
+    operationId: 'postApiOrganizationInvitationsByIdResendEmail',
     tags: ['Organization Invitations'],
     summary: 'Resend invitation email',
     description: `
@@ -416,6 +421,7 @@ Use this when:
   registry.registerPath({
     method: 'post',
     path: '/api/organization-invitations/{id}/renew',
+    operationId: 'postApiOrganizationInvitationsByIdRenew',
     tags: ['Organization Invitations'],
     summary: 'Renew expired invitation',
     description: `
@@ -499,6 +505,7 @@ Use this when:
   registry.registerPath({
     method: 'delete',
     path: '/api/organization-invitations/{id}',
+    operationId: 'deleteApiOrganizationInvitationsById',
     tags: ['Organization Invitations'],
     summary: 'Revoke invitation',
     description: `

@@ -29,6 +29,7 @@ export function registerTagsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/tags',
+    operationId: 'getApiTags',
     tags: ['Tags'],
     summary: 'List tags',
     description: `
@@ -96,6 +97,7 @@ Tags use hex color codes (e.g., \`#FF5733\`) for visual categorization in the UI
   registry.registerPath({
     method: 'post',
     path: '/api/tags',
+    operationId: 'postApiTags',
     tags: ['Tags'],
     summary: 'Create a new tag',
     description: `
@@ -168,6 +170,7 @@ Tags can be assigned to multiple resources (users, groups, roles, permissions, p
   registry.registerPath({
     method: 'patch',
     path: '/api/tags/{id}',
+    operationId: 'patchApiTagsById',
     tags: ['Tags'],
     summary: 'Update a tag',
     description: `
@@ -243,6 +246,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'delete',
     path: '/api/tags/{id}',
+    operationId: 'deleteApiTagsById',
     tags: ['Tags'],
     summary: 'Delete a tag',
     description: `

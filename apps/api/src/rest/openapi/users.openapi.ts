@@ -33,6 +33,7 @@ export function registerUserEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/users',
+    operationId: 'getApiUsers',
     tags: ['Users'],
     summary: 'List users',
     description: `
@@ -117,6 +118,7 @@ Users are scoped to a tenant context. You must provide:
   registry.registerPath({
     method: 'post',
     path: '/api/users',
+    operationId: 'postApiUsers',
     tags: ['Users'],
     summary: 'Create a new user',
     description: `
@@ -191,6 +193,7 @@ You can optionally assign tags to the user:
   registry.registerPath({
     method: 'patch',
     path: '/api/users/{id}',
+    operationId: 'patchApiUsersById',
     tags: ['Users'],
     summary: 'Update a user',
     description: `
@@ -268,6 +271,7 @@ All fields are optional - only provide the fields you want to update.
   registry.registerPath({
     method: 'delete',
     path: '/api/users/{id}',
+    operationId: 'deleteApiUsersById',
     tags: ['Users'],
     summary: 'Delete a user',
     description: `

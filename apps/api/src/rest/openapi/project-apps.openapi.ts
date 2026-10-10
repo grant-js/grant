@@ -62,6 +62,7 @@ export function registerProjectAppsOpenApi(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/project-apps',
+    operationId: 'getApiProjectApps',
     tags: ['Project Apps'],
     summary: 'List project apps',
     description: `
@@ -123,6 +124,7 @@ List OAuth project apps for the given project scope.
   registry.registerPath({
     method: 'post',
     path: '/api/project-apps',
+    operationId: 'postApiProjectApps',
     tags: ['Project Apps'],
     summary: 'Create a project app',
     description: `
@@ -197,6 +199,7 @@ Returned only once on create. Store it securely; it cannot be retrieved later.
   registry.registerPath({
     method: 'patch',
     path: '/api/project-apps/{id}',
+    operationId: 'patchApiProjectAppsById',
     tags: ['Project Apps'],
     summary: 'Update a project app',
     description: `
@@ -269,6 +272,7 @@ Provide \`scope\` in the body (same format as create) to authorize the update.
   registry.registerPath({
     method: 'delete',
     path: '/api/project-apps/{id}',
+    operationId: 'deleteApiProjectAppsById',
     tags: ['Project Apps'],
     summary: 'Delete a project app',
     description: `
@@ -329,6 +333,7 @@ Delete a project app. Scope is provided via query parameters.
   registry.registerPath({
     method: 'post',
     path: '/api/project-apps/{id}/picture',
+    operationId: 'postApiProjectAppsByIdPicture',
     tags: ['Project Apps'],
     summary: 'Upload a project-app picture',
     description:
@@ -374,6 +379,7 @@ Delete a project app. Scope is provided via query parameters.
   registry.registerPath({
     method: 'post',
     path: '/api/project-apps/{id}/picture/upload-url',
+    operationId: 'postApiProjectAppsByIdPictureUploadUrl',
     tags: ['Project Apps'],
     summary: 'Request a direct-upload URL for a project-app picture',
     request: {
@@ -415,6 +421,7 @@ Delete a project app. Scope is provided via query parameters.
   registry.registerPath({
     method: 'post',
     path: '/api/project-apps/{id}/picture/confirm',
+    operationId: 'postApiProjectAppsByIdPictureConfirm',
     tags: ['Project Apps'],
     summary: 'Record a completed direct upload of a project-app picture',
     request: {
@@ -454,6 +461,7 @@ Delete a project app. Scope is provided via query parameters.
   registry.registerPath({
     method: 'delete',
     path: '/api/project-apps/{id}/picture',
+    operationId: 'deleteApiProjectAppsByIdPicture',
     tags: ['Project Apps'],
     summary: 'Clear a project-app picture',
     description: 'Nulls picture_path and picture_url so the app inherits the project picture.',

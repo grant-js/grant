@@ -19,6 +19,7 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectConsentInfoResponseSchema,
+  refreshSessionRequestSchema,
   refreshSessionResponseSchema,
   registerRequestSchema,
   registerResponseSchema,
@@ -48,6 +49,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/login',
+    operationId: 'postApiAuthLogin',
     tags: ['Authentication'],
     summary: 'Login user',
     description:
@@ -131,6 +133,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/register',
+    operationId: 'postApiAuthRegister',
     tags: ['Authentication'],
     summary: 'Register new user',
     description:
@@ -174,15 +177,26 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
 
   /**
    * POST /api/auth/refresh
-   * Refresh session using refresh token from HttpOnly cookie (no request body).
+   * Refresh session using refresh token from HttpOnly cookie or optional JSON body.
    */
   registry.registerPath({
     method: 'post',
     path: '/api/auth/refresh',
+    operationId: 'postApiAuthRefresh',
     tags: ['Authentication'],
     summary: 'Refresh session',
     description:
-      'Refresh access token using the refresh token sent in an HttpOnly cookie. No request body. Responds with new accessToken; refresh cookie is rotated on success.',
+      'Refresh access token using the HttpOnly refresh cookie (browsers) or an optional refreshToken JSON body (CLI). Cookie wins when both are present. Responds with new accessToken and refreshToken; the refresh cookie is rotated on success.',
+    request: {
+      body: {
+        required: false,
+        content: {
+          'application/json': {
+            schema: refreshSessionRequestSchema,
+          },
+        },
+      },
+    },
     responses: {
       200: {
         description: 'Successfully refreshed tokens',
@@ -218,6 +232,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/logout',
+    operationId: 'postApiAuthLogout',
     tags: ['Authentication'],
     summary: 'Logout user',
     description: 'Logout the current user and invalidate their session',
@@ -265,6 +280,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/request-password-reset',
+    operationId: 'postApiAuthRequestPasswordReset',
     tags: ['Authentication'],
     summary: 'Request password reset',
     description: 'Request a password reset email to be sent to the specified email address',
@@ -315,6 +331,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/reset-password',
+    operationId: 'postApiAuthResetPassword',
     tags: ['Authentication'],
     summary: 'Reset password',
     description: 'Reset the password for an account using a token received via email',
@@ -366,6 +383,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/verify-email',
+    operationId: 'postApiAuthVerifyEmail',
     tags: ['Authentication'],
     summary: 'Verify email address',
     description: 'Verify an email address using a verification token received via email',
@@ -416,6 +434,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'post',
     path: '/api/auth/resend-verification',
+    operationId: 'postApiAuthResendVerification',
     tags: ['Authentication'],
     summary: 'Resend verification email',
     description: 'Resend a verification email to the specified email address',
@@ -466,6 +485,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/auth/providers',
+    operationId: 'getApiAuthProviders',
     tags: ['Authentication'],
     summary: 'List OAuth providers',
     description:
@@ -492,6 +512,7 @@ export function registerAuthEndpoints(registry: OpenAPIRegistry) {
   registry.registerPath({
     method: 'get',
     path: '/api/auth/github',
+    operationId: 'getApiAuthGithub',
     tags: ['Authentication'],
     summary: 'Initiate GitHub OAuth',
     description: `
@@ -559,6 +580,7 @@ user's ID is automatically used, and the redirect URL defaults to the security s
   registry.registerPath({
     method: 'get',
     path: '/api/auth/github/callback',
+    operationId: 'getApiAuthGithubCallback',
     tags: ['Authentication'],
     summary: 'GitHub OAuth callback',
     description: `
@@ -654,6 +676,7 @@ and either logs in an existing user or creates a new account.
   registry.registerPath({
     method: 'get',
     path: '/api/auth/google',
+    operationId: 'getApiAuthGoogle',
     tags: ['Authentication'],
     summary: 'Initiate Google OAuth',
     description:
@@ -677,6 +700,7 @@ and either logs in an existing user or creates a new account.
   registry.registerPath({
     method: 'get',
     path: '/api/auth/google/callback',
+    operationId: 'getApiAuthGoogleCallback',
     tags: ['Authentication'],
     summary: 'Google OAuth callback',
     description:
@@ -701,6 +725,7 @@ and either logs in an existing user or creates a new account.
   registry.registerPath({
     method: 'get',
     path: '/api/auth/project/authorize',
+    operationId: 'getApiAuthProjectAuthorize',
     tags: ['Authentication'],
     summary: 'Initiate project OAuth',
     description: `
@@ -772,6 +797,7 @@ The user is redirected to the provider; after authorization, the provider redire
   registry.registerPath({
     method: 'post',
     path: '/api/auth/project/email/request',
+    operationId: 'postApiAuthProjectEmailRequest',
     tags: ['Authentication'],
     summary: 'Request project OAuth magic link',
     description: `
@@ -827,6 +853,7 @@ Sends an email containing a one-time link to \`/api/auth/project/callback?token=
   registry.registerPath({
     method: 'get',
     path: '/api/auth/project/callback',
+    operationId: 'getApiAuthProjectCallback',
     tags: ['Authentication'],
     summary: 'Project OAuth callback',
     description: `
@@ -898,6 +925,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
   registry.registerPath({
     method: 'get',
     path: '/api/auth/project/app-info',
+    operationId: 'getApiAuthProjectAppInfo',
     tags: ['Authentication'],
     summary: 'Project app public info',
     description:
@@ -935,6 +963,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
   registry.registerPath({
     method: 'get',
     path: '/api/auth/project/consent-info',
+    operationId: 'getApiAuthProjectConsentInfo',
     tags: ['Authentication'],
     summary: 'Consent info',
     description:
@@ -972,6 +1001,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
   registry.registerPath({
     method: 'post',
     path: '/api/auth/project/consent/approve',
+    operationId: 'postApiAuthProjectConsentApprove',
     tags: ['Authentication'],
     summary: 'Approve consent',
     description:
@@ -1015,6 +1045,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
   registry.registerPath({
     method: 'post',
     path: '/api/auth/project/consent/deny',
+    operationId: 'postApiAuthProjectConsentDeny',
     tags: ['Authentication'],
     summary: 'Deny consent',
     description:
@@ -1058,6 +1089,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
   registry.registerPath({
     method: 'post',
     path: '/api/auth/is-authorized',
+    operationId: 'postApiAuthIsAuthorized',
     tags: ['Authentication'],
     summary: 'Check if user is authorized',
     description: `
@@ -1132,6 +1164,7 @@ You can provide additional context to help with condition evaluation:
   registry.registerPath({
     method: 'post',
     path: '/api/auth/mfa/setup',
+    operationId: 'postApiAuthMfaSetup',
     tags: ['Authentication'],
     summary: 'Initialize TOTP MFA enrollment',
     description:
@@ -1164,6 +1197,7 @@ You can provide additional context to help with condition evaluation:
   registry.registerPath({
     method: 'post',
     path: '/api/auth/mfa/verify',
+    operationId: 'postApiAuthMfaVerify',
     tags: ['Authentication'],
     summary: 'Complete MFA challenge with TOTP',
     description: 'Marks session MFA-verified and returns rotated tokens; sets refresh cookie.',
@@ -1203,6 +1237,7 @@ You can provide additional context to help with condition evaluation:
   registry.registerPath({
     method: 'post',
     path: '/api/auth/mfa/recovery/verify',
+    operationId: 'postApiAuthMfaRecoveryVerify',
     tags: ['Authentication'],
     summary: 'Complete MFA challenge with recovery code',
     description:
@@ -1241,6 +1276,7 @@ You can provide additional context to help with condition evaluation:
   registry.registerPath({
     method: 'post',
     path: '/api/auth/cli-callback',
+    operationId: 'postApiAuthCliCallback',
     tags: ['Authentication'],
     summary: 'Exchange CLI one-time code for session tokens',
     description:
