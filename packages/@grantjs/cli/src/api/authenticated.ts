@@ -1,5 +1,5 @@
 import { resolveRuntimeContext, type RuntimeFlags } from '../config/credentials.js';
-import { resolveAccessToken } from '../config/resolve-token.js';
+import { refreshAndPersistSession, resolveAccessToken } from '../config/resolve-token.js';
 import { CliError, EXIT_AUTH } from './errors.js';
 import { apiRequest, type TransportResponse } from './transport.js';
 
@@ -25,9 +25,8 @@ export async function authenticatedRequest<T = unknown>(
     query.tenant ??= ctx.scope.tenant;
   }
 
-  const token = await resolveAccessToken(ctx.config);
-  try {
-    return await apiRequest<T>({
+  const send = (token: string) =>
+    apiRequest<T>({
       apiUrl: ctx.apiUrl,
       method: req.method,
       path: req.path,
@@ -36,10 +35,30 @@ export async function authenticatedRequest<T = unknown>(
       query,
       body: req.body,
     });
+
+  let token = await resolveAccessToken(ctx.config);
+  try {
+    return await send(token);
   } catch (err) {
-    if (err instanceof CliError && err.exitCode === EXIT_AUTH) {
-      throw new CliError(REAUTH_HINT, EXIT_AUTH);
+    const canRefresh =
+      err instanceof CliError &&
+      err.exitCode === EXIT_AUTH &&
+      ctx.config.authMethod === 'session' &&
+      Boolean(ctx.config.session?.refreshToken);
+    if (!canRefresh) {
+      if (err instanceof CliError && err.exitCode === EXIT_AUTH) {
+        throw new CliError(REAUTH_HINT, EXIT_AUTH);
+      }
+      throw err;
     }
-    throw err;
+    try {
+      token = await refreshAndPersistSession(ctx.config, ctx.profileName);
+      return await send(token);
+    } catch (refreshErr) {
+      if (refreshErr instanceof CliError && refreshErr.exitCode === EXIT_AUTH) {
+        throw new CliError(REAUTH_HINT, EXIT_AUTH);
+      }
+      throw refreshErr;
+    }
   }
 }
