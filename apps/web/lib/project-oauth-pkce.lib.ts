@@ -119,8 +119,21 @@ export async function ensureProjectOAuthPkceSession(input: {
   clientId: string;
   redirectUri: string;
   state: string;
+  challenge?: string;
 }): Promise<ProjectOAuthPkceSession> {
+  const incomingChallenge = input.challenge?.trim();
   const existing = loadProjectOAuthPkceSession(input.state);
+  if (incomingChallenge) {
+    const session: ProjectOAuthPkceSession = {
+      verifier: existing?.verifier ?? '',
+      challenge: incomingChallenge,
+      clientId: input.clientId,
+      redirectUri: input.redirectUri,
+      state: input.state,
+    };
+    persistProjectOAuthPkceSession(session);
+    return session;
+  }
   if (
     existing &&
     existing.clientId === input.clientId &&

@@ -47,6 +47,8 @@ export default function ProjectOAuthEmailPage() {
   const state = searchParams.get('state');
   const clientState = searchParams.get('client_state');
   const scopeParam = searchParams.get('scope');
+  const incomingChallenge = searchParams.get('code_challenge');
+  const incomingChallengeMethod = searchParams.get('code_challenge_method');
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,10 +89,14 @@ export default function ProjectOAuthEmailPage() {
       }
 
       const oauthState = (clientState ?? state)?.trim() || createProjectOAuthState();
+      const useIncoming =
+        Boolean(incomingChallenge?.trim()) &&
+        (!incomingChallengeMethod || incomingChallengeMethod === 'S256');
       const session = await ensureProjectOAuthPkceSession({
         clientId,
         redirectUri,
         state: oauthState,
+        ...(useIncoming && incomingChallenge ? { challenge: incomingChallenge.trim() } : {}),
       });
       markProjectOAuthEmailViaAuthorize();
       if (cancelled) return;
@@ -110,7 +116,16 @@ export default function ProjectOAuthEmailPage() {
     return () => {
       cancelled = true;
     };
-  }, [clientId, redirectUri, state, clientState, scopeParam, locale]);
+  }, [
+    clientId,
+    redirectUri,
+    state,
+    clientState,
+    scopeParam,
+    locale,
+    incomingChallenge,
+    incomingChallengeMethod,
+  ]);
 
   const schema = useMemo(
     () =>

@@ -44,6 +44,10 @@ export interface SignInWithProjectAppOptions {
   state?: string;
   /** Locale for entry URL (e.g. 'en'). Default 'en'. */
   locale?: string;
+  /** S256 PKCE challenge generated on the client origin. Hosted pages pass this through to authorize. */
+  codeChallenge?: string;
+  /** Only `S256` is supported. Default `S256` when `codeChallenge` is set. */
+  codeChallengeMethod?: 'S256';
 }
 
 /**

@@ -31,6 +31,7 @@ Brief: [2026-10-11-project-app-oauth-brief.md](./2026-10-11-project-app-oauth-br
 | 3     | `feat/project-app-oauth-metadata` | slice 2                  | RFC 8414 + twin openid-configuration     | Backend    | security-full        |     |
 | 4     | `feat/project-app-oauth-web`      | slice 3                  | Hosted + Test OAuth PKCE/code            | Frontend   | security-full        |     |
 | 5     | `feat/project-app-oauth-docs`     | slice 4                  | Docs, e2e, minor BREAKING changeset      | QA / docs  | light                |     |
+| 6     | `feat/project-app-oauth-example`  | slice 5                  | `@grantjs/client` Next.js PKCE example   | Frontend   | light                |     |
 | final | `feat/project-app-oauth`          | `main`                   | integration (Gate 4 — human)             | Principal  | deep + security-full |     |
 
 ### Slice intent (in scope / out of scope)
@@ -44,6 +45,8 @@ Brief: [2026-10-11-project-app-oauth-brief.md](./2026-10-11-project-app-oauth-br
 **4 — web.** Hosted sign-in/consent and dashboard Test OAuth switch to PKCE + authorization code. i18n as needed. **Out:** platform login/register OAuth.
 
 **5 — docs / e2e / changeset.** Update `docs/architecture/security.md`, `docs/core-concepts/project-oauth.md`, configuration tables. Extend `project-oauth.e2e.test.ts`. Minor BREAKING changeset (not major).
+
+**6 — client example.** `@grantjs/client` Next.js example generates S256 PKCE, persists the verifier by state, sends `code_challenge` through `signInWithProjectApp`, and exchanges `?code=` at `POST /api/auth/project/token`. Hosted entry forwards a tenant challenge. No fragment tokens. Refresh token stays off the example page. **Out:** DPoP, `id_token`, production httpOnly cookie store.
 
 Each slice: Verifier (typecheck, lint, tests, layers, OpenAPI as applicable). Slices 1–4: Senior Security (not the author).
 
