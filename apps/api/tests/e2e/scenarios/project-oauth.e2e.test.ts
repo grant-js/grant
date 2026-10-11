@@ -4,7 +4,7 @@
  * Covers:
  *   - GET /api/auth/project/authorize → 302 with Location (GitHub or email entry URL)
  *   - POST /api/auth/project/email/request → 202
- *   - GET /api/auth/project/callback (email flow) → 302 with access_token in fragment
+ *   - GET /api/auth/project/callback (email flow) → 302 to consent, then code + token exchange
  *
  * Uses Redis helper to read the one-time token after email request and drive the callback.
  * Prerequisites: E2E stack (docker-compose.e2e.yml), DB migrated and seeded.
@@ -16,6 +16,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { apiClient } from '../helpers/api-client';
 import { addProjectUserForE2e, closeDbHelper } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
+import { generateE2ePkce } from '../helpers/project-oauth-pkce';
 import { closeRedisHelper, getProjectOAuthEmailTokenFromRedis } from '../helpers/redis-e2e';
 import { TestUser } from '../helpers/test-user';
 
@@ -23,6 +24,7 @@ interface CreateProjectAppData {
   createProjectApp?: {
     id: string;
     clientId: string;
+    clientSecret: string | null;
     name: string;
     redirectUris: string[];
   };
@@ -46,7 +48,9 @@ describe('Project OAuth E2E', () => {
   let projectId: string;
   let projectAppId: string;
   let projectAppClientId: string;
+  let projectAppClientSecret: string;
   const redirectUri = 'https://example.com/oauth/callback';
+  const pkce = generateE2ePkce();
 
   it('Setup: create user, org, project, and project app with email enabled', async () => {
     owner = await TestUser.create({ withOrgAccount: true });
@@ -75,6 +79,8 @@ describe('Project OAuth E2E', () => {
     expect(res.body.data?.createProjectApp).toBeDefined();
     projectAppId = res.body.data!.createProjectApp!.id;
     projectAppClientId = res.body.data!.createProjectApp!.clientId;
+    expect(res.body.data!.createProjectApp!.clientSecret).toBeTruthy();
+    projectAppClientSecret = res.body.data!.createProjectApp!.clientSecret!;
   });
 
   it('Add owner to project_users so callback can resolve membership', async () => {
@@ -163,6 +169,8 @@ describe('Project OAuth E2E', () => {
           redirect_uri: redirectUri,
           state: 'e2e-state-github',
           provider: 'github',
+          code_challenge: pkce.challenge,
+          code_challenge_method: 'S256',
         })
         .redirects(0)
         .expect(302);
@@ -182,6 +190,8 @@ describe('Project OAuth E2E', () => {
           redirect_uri: redirectUri,
           state: 'e2e-state-google',
           provider: 'google',
+          code_challenge: pkce.challenge,
+          code_challenge_method: 'S256',
         })
         .redirects(0)
         .expect(302);
@@ -199,6 +209,8 @@ describe('Project OAuth E2E', () => {
         redirect_uri: redirectUri,
         state: 'e2e-state-email',
         provider: 'email',
+        code_challenge: pkce.challenge,
+        code_challenge_method: 'S256',
       })
       .redirects(0)
       .expect(302);
@@ -211,13 +223,28 @@ describe('Project OAuth E2E', () => {
 
   it('POST /api/auth/project/email/request → 202', async () => {
     const email = owner.email;
+    const authorizeRes = await apiClient()
+      .get('/api/auth/project/authorize')
+      .query({
+        client_id: projectAppClientId,
+        redirect_uri: redirectUri,
+        state: 'e2e-state-callback',
+        provider: 'email',
+        code_challenge: pkce.challenge,
+        code_challenge_method: 'S256',
+      })
+      .redirects(0)
+      .expect(302);
+    const authorizeUrl = new URL(authorizeRes.headers.location, 'http://localhost');
+    const stateId = authorizeUrl.searchParams.get('state');
+    expect(stateId).toBeTruthy();
 
     const res = await apiClient()
       .post('/api/auth/project/email/request')
       .send({
         client_id: projectAppClientId,
         redirect_uri: redirectUri,
-        state: 'e2e-state-callback',
+        state: stateId,
         email,
       })
       .expect(202);
@@ -225,7 +252,7 @@ describe('Project OAuth E2E', () => {
     expect(res.status).toBe(202);
   });
 
-  it('GET /api/auth/project/callback (email) → 302 to consent, then approve → redirectUrl with access_token', async () => {
+  it('GET /api/auth/project/callback (email) → consent code, token exchange, refresh rotation', async () => {
     const found = await getProjectOAuthEmailTokenFromRedis();
     expect(found).not.toBeNull();
     const { token, payload } = found!;
@@ -256,9 +283,54 @@ describe('Project OAuth E2E', () => {
     expect(approveRes.body.data?.redirectUrl).toBeDefined();
     const redirectUrl = approveRes.body.data.redirectUrl as string;
     expect(redirectUrl).toContain(redirectUri);
-    expect(redirectUrl).toContain('access_token=');
-    expect(redirectUrl).toContain('expires_in=');
-    expect(redirectUrl).toContain('token_type=Bearer');
+    const approved = new URL(redirectUrl);
+    const code = approved.searchParams.get('code');
+    expect(code).toBeTruthy();
+    expect(approved.hash).toBe('');
+    expect(redirectUrl).not.toContain('access_token=');
+
+    const tokenRes = await apiClient()
+      .post('/api/auth/project/token')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: projectAppClientId,
+        client_secret: projectAppClientSecret,
+        redirect_uri: redirectUri,
+        code,
+        code_verifier: pkce.verifier,
+      })
+      .expect(200);
+
+    expect(tokenRes.body.success).toBe(true);
+    expect(tokenRes.body.data.accessToken).toBeTruthy();
+    expect(tokenRes.body.data.tokenType).toBe('Bearer');
+    expect(tokenRes.body.data.refreshToken).toBeTruthy();
+    expect(tokenRes.body.data.expiresIn).toBeGreaterThan(0);
+    const firstRefresh = tokenRes.body.data.refreshToken as string;
+
+    const refreshRes = await apiClient()
+      .post('/api/auth/project/token')
+      .send({
+        grant_type: 'refresh_token',
+        client_id: projectAppClientId,
+        client_secret: projectAppClientSecret,
+        refresh_token: firstRefresh,
+      })
+      .expect(200);
+
+    expect(refreshRes.body.data.accessToken).toBeTruthy();
+    expect(refreshRes.body.data.refreshToken).toBeTruthy();
+    expect(refreshRes.body.data.refreshToken).not.toBe(firstRefresh);
+
+    await apiClient()
+      .post('/api/auth/project/token')
+      .send({
+        grant_type: 'refresh_token',
+        client_id: projectAppClientId,
+        client_secret: projectAppClientSecret,
+        refresh_token: firstRefresh,
+      })
+      .expect(401);
   });
 
   it('POST /api/auth/project/consent/deny → redirectUrl with error=access_denied', async () => {

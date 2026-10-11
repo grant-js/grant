@@ -128,6 +128,10 @@ export class ProjectAppService implements IProjectAppService {
     return app;
   }
 
+  public async getClientSecretHash(id: string, transaction?: Transaction): Promise<string | null> {
+    return this.projectAppRepository.getClientSecretHash(id, transaction);
+  }
+
   public async updateProjectApp(
     params: { id: string; projectId: string } & Omit<UpdateProjectAppInput, 'scope'>,
     transaction?: Transaction

@@ -23,6 +23,7 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectEmailRequestSchema,
+  projectTokenBodySchema,
   refreshSessionRequestSchema,
   registerRequestSchema,
   requestPasswordResetRequestSchema,
@@ -513,14 +514,29 @@ export function createAuthRoutes(context: RequestContext) {
     '/project/authorize',
     validateQuery(projectAuthorizeQuerySchema),
     async (req: TypedRequest<{ query: typeof projectAuthorizeQuerySchema }>, res: Response) => {
-      const { client_id, redirect_uri, state, provider, scope, locale } = req.query;
+      const {
+        client_id,
+        redirect_uri,
+        state,
+        provider,
+        scope,
+        locale,
+        response_type,
+        code_challenge,
+        code_challenge_method,
+      } = req.query;
       const result = await context.handlers.projectOAuth.initiateProjectAuthorize(
         client_id,
         redirect_uri,
         state,
         provider as ProjectOAuthProvider,
         scope,
-        locale
+        locale,
+        {
+          responseType: response_type,
+          codeChallenge: code_challenge,
+          codeChallengeMethod: code_challenge_method,
+        }
       );
       res.redirect(result.authorizationUrl);
     }
@@ -559,10 +575,7 @@ export function createAuthRoutes(context: RequestContext) {
           res.redirect(result.consentUrl);
           return;
         }
-        const url = new URL(result.redirectUri);
-        url.hash = `access_token=${encodeURIComponent(result.accessToken)}&expires_in=${result.expiresIn}&token_type=Bearer`;
-        if (result.clientState) url.hash += `&state=${encodeURIComponent(result.clientState)}`;
-        res.redirect(url.toString());
+        throw new AuthenticationError('Consent required');
       } catch (err) {
         const errorCode = determineErrorCode(err);
         const frontendUrl = config.security.frontendUrl;
@@ -650,6 +663,25 @@ export function createAuthRoutes(context: RequestContext) {
       const { redirectUrl } =
         await context.handlers.projectOAuth.handleProjectConsentApprove(consent_token);
       sendSuccessResponse(res, { redirectUrl });
+    }
+  );
+
+  router.post(
+    '/project/token',
+    validate({ body: projectTokenBodySchema }),
+    async (req: TypedRequest<{ body: typeof projectTokenBodySchema }>, res: Response) => {
+      const result = await context.handlers.projectOAuth.handleProjectToken({
+        grantType: req.body.grant_type,
+        clientId: req.body.client_id,
+        redirectUri: req.body.redirect_uri,
+        code: req.body.code,
+        codeVerifier: req.body.code_verifier,
+        refreshToken: req.body.refresh_token,
+        clientSecret: req.body.client_secret,
+        userAgent: context.userAgent,
+        ipAddress: context.ipAddress,
+      });
+      sendSuccessResponse(res, result);
     }
   );
 

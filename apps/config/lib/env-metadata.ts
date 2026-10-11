@@ -418,6 +418,16 @@ const META: EnvVarMeta[] = [
     section: 'Project OAuth',
   },
   {
+    key: 'PROJECT_OAUTH_AUTHORIZATION_CODE_TTL_SECONDS',
+    category: 'auth',
+    label: 'Project OAuth authorization code TTL (seconds)',
+    description:
+      'Lifetime of one-time authorization codes exchanged at POST /api/auth/project/token. Default: 60.',
+    envFiles: ['.env'],
+    digitsOnly: true,
+    section: 'Project OAuth',
+  },
+  {
     key: 'AUTH_MIN_AAL_AT_LOGIN',
     category: 'auth',
     label: 'Minimum AAL at login',

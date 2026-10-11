@@ -28,6 +28,7 @@ import {
   projectAuditLogs,
   projectGroupAuditLogs,
   projectOAuthConnectionAuditLogs,
+  projectOAuthGrantAuditLogs,
   projectPermissionsAuditLogs,
   projectResourceAuditLogs,
   projectRoleAuditLogs,
@@ -107,6 +108,7 @@ import { ProjectExportService } from './project-export.service';
 import { ProjectGroupService } from './project-groups.service';
 import { ProjectImportService } from './project-import.service';
 import { ProjectOAuthConnectionService } from './project-oauth-connections.service';
+import { ProjectOAuthGrantService } from './project-oauth-grants.service';
 import { ProjectPermissionService } from './project-permissions.service';
 import { ProjectResourceService } from './project-resources.service';
 import { ProjectRolePermissionService } from './project-role-permissions.service';
@@ -369,6 +371,10 @@ export function createServices(
       repositories.projectOAuthConnectionRepository,
       audit(projectOAuthConnectionAuditLogs, 'projectOAuthConnectionId', user, db),
       secrets
+    ),
+    projectOAuthGrants: new ProjectOAuthGrantService(
+      repositories.projectOAuthGrantRepository,
+      audit(projectOAuthGrantAuditLogs, 'projectOAuthGrantId', user, db)
     ),
     projectAppTags: new ProjectAppTagService(
       repositories.projectAppRepository,

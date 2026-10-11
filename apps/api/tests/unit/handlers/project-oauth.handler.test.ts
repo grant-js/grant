@@ -9,11 +9,22 @@ import { Scope, Tenant, UserAuthenticationMethodProvider } from '@grantjs/schema
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  PROJECT_OAUTH_CODE_KEY_PREFIX,
   PROJECT_OAUTH_CONSENT_KEY_PREFIX,
   PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX,
   PROJECT_OAUTH_STATE_KEY_PREFIX,
 } from '@/constants/cache.constants';
 import { ProjectOAuthHandler } from '@/handlers/project-oauth.handler';
+import { hashSecret } from '@/lib/token.lib';
+
+const RFC_PKCE = {
+  verifier: 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
+  challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+};
+const authorizePkce = {
+  codeChallenge: RFC_PKCE.challenge,
+  codeChallengeMethod: 'S256' as const,
+};
 
 const { mockConfig } = vi.hoisted(() => ({
   mockConfig: {
@@ -23,6 +34,8 @@ const { mockConfig } = vi.hoisted(() => ({
       stateTtlSeconds: 600,
       emailTokenTtlSeconds: 600,
       consentTtlSeconds: 600,
+      authorizationCodeTtlSeconds: 60,
+      refreshTokenExpirationDays: 30,
       requireByoSocial: false,
     },
     app: {
@@ -32,7 +45,7 @@ const { mockConfig } = vi.hoisted(() => ({
       version: 'test',
     },
     jwt: { accessTokenExpirationMinutes: 15 },
-    token: { defaultValidityMinutes: 10, defaultTokenLength: 32 },
+    token: { defaultValidityMinutes: 10, defaultTokenLength: 32, bcryptRounds: 4 },
     githubOAuth: {
       projectCallbackUrl: 'https://api.example.com/api/auth/project/callback',
       callbackUrl: 'https://api.example.com/api/auth/callback',
@@ -48,6 +61,7 @@ vi.mock('@/config', () => ({ config: mockConfig }));
 const mockProjectApps = {
   getProjectAppByClientId: vi.fn(),
   getProjectAppById: vi.fn(),
+  getClientSecretHash: vi.fn(),
 };
 const mockProjects = {
   getProjects: vi.fn().mockResolvedValue({ projects: [], totalCount: 0, hasNextPage: false }),
@@ -117,6 +131,12 @@ const mockProjectPermissions = {
   getScopeSlugLabelsForProject: vi.fn(),
   getAllowedScopeSlugsForProject: vi.fn(),
 };
+const mockProjectOAuthGrants = {
+  createGrant: vi.fn(),
+  rotateByRefreshToken: vi.fn(),
+  revokeGrant: vi.fn(),
+  revokeByRefreshToken: vi.fn(),
+};
 
 function createHandler(): ProjectOAuthHandler {
   return new ProjectOAuthHandler(
@@ -138,7 +158,8 @@ function createHandler(): ProjectOAuthHandler {
     mockEmail as never,
     mockUsers as never,
     mockUserAuthenticationMethods as never,
-    mockUsersScopeCacheUpdater as never
+    mockUsersScopeCacheUpdater as never,
+    mockProjectOAuthGrants as never
   );
 }
 
@@ -172,6 +193,24 @@ describe('ProjectOAuthHandler', () => {
     mockGrant.signProjectAppToken.mockResolvedValue('jwt-project-app');
     mockGrant.getGrantedScopeSlugs.mockResolvedValue([]);
     mockEmail.sendProjectOAuthMagicLink.mockResolvedValue(undefined);
+    mockProjectApps.getClientSecretHash.mockResolvedValue(null);
+    mockProjectOAuthGrants.createGrant.mockResolvedValue({
+      grant: { id: 'grant-id', projectAppId: validApp.id, userId: 'user-id' },
+      refreshToken: 'new-refresh-token',
+    });
+    mockProjectOAuthGrants.rotateByRefreshToken.mockResolvedValue({
+      grant: {
+        id: 'grant-id',
+        projectAppId: validApp.id,
+        userId: 'user-id',
+        scopeTenant: Tenant.OrganizationProject,
+        scopeId: 'org-id:project-id',
+        scopes: null,
+      },
+      refreshToken: 'rotated-refresh-token',
+    });
+    mockProjectOAuthGrants.revokeGrant.mockResolvedValue(undefined);
+    mockUsers.getUsers.mockResolvedValue({ users: [], totalCount: 0, hasNextPage: false });
   });
 
   describe('initiateProjectAuthorize', () => {
@@ -215,7 +254,10 @@ describe('ProjectOAuthHandler', () => {
         validApp.clientId,
         'https://example.com/callback',
         undefined,
-        UserAuthenticationMethodProvider.Github
+        UserAuthenticationMethodProvider.Github,
+        undefined,
+        undefined,
+        authorizePkce
       );
       expect(result.authorizationUrl).toBe('https://github.com/login/oauth/authorize?state=abc');
       expect(mockCacheOauth.set).toHaveBeenCalledWith(
@@ -225,6 +267,8 @@ describe('ProjectOAuthHandler', () => {
           redirectUri: 'https://example.com/callback',
           provider: UserAuthenticationMethodProvider.Github,
           credentialSource: 'platform',
+          codeChallenge: RFC_PKCE.challenge,
+          codeChallengeMethod: 'S256',
         }),
         expect.any(Number)
       );
@@ -244,7 +288,10 @@ describe('ProjectOAuthHandler', () => {
         validApp.clientId,
         'https://example.com/callback',
         undefined,
-        UserAuthenticationMethodProvider.Google
+        UserAuthenticationMethodProvider.Google,
+        undefined,
+        undefined,
+        authorizePkce
       );
       expect(result.authorizationUrl).toBe(
         'https://accounts.google.com/o/oauth2/v2/auth?state=abc'
@@ -266,7 +313,10 @@ describe('ProjectOAuthHandler', () => {
         validApp.clientId,
         'https://example.com/callback',
         'client-state',
-        UserAuthenticationMethodProvider.Email
+        UserAuthenticationMethodProvider.Email,
+        undefined,
+        undefined,
+        authorizePkce
       );
       expect(result.authorizationUrl).toContain('/en/auth/project/email');
       expect(result.authorizationUrl).toContain('https://app.example.com');
@@ -289,7 +339,10 @@ describe('ProjectOAuthHandler', () => {
           validApp.clientId,
           'https://example.com/callback',
           undefined,
-          UserAuthenticationMethodProvider.Github
+          UserAuthenticationMethodProvider.Github,
+          undefined,
+          undefined,
+          authorizePkce
         )
       ).rejects.toThrow('GitHub OAuth is not configured');
     });
@@ -308,7 +361,10 @@ describe('ProjectOAuthHandler', () => {
         validApp.clientId,
         'https://example.com/callback',
         undefined,
-        UserAuthenticationMethodProvider.Github
+        UserAuthenticationMethodProvider.Github,
+        undefined,
+        undefined,
+        authorizePkce
       );
       expect(result.authorizationUrl).toContain('client_id=byo-github-client');
       expect(mockGithubOAuth.getProjectAuthorizationUrl).toHaveBeenCalledWith(expect.any(String), {
@@ -331,7 +387,10 @@ describe('ProjectOAuthHandler', () => {
           validApp.clientId,
           'https://example.com/callback',
           undefined,
-          UserAuthenticationMethodProvider.Github
+          UserAuthenticationMethodProvider.Github,
+          undefined,
+          undefined,
+          authorizePkce
         )
       ).rejects.toThrow('GitHub OAuth is not configured');
       mockConfig.projectOAuth.requireByoSocial = false;
@@ -348,7 +407,9 @@ describe('ProjectOAuthHandler', () => {
         'https://example.com/callback',
         undefined,
         UserAuthenticationMethodProvider.Github,
-        'read write'
+        'read write',
+        undefined,
+        authorizePkce
       );
       expect(mockCacheOauth.set).toHaveBeenCalledWith(
         expect.stringMatching(new RegExp(`^${PROJECT_OAUTH_STATE_KEY_PREFIX}`)),
@@ -360,6 +421,48 @@ describe('ProjectOAuthHandler', () => {
         }),
         expect.any(Number)
       );
+    });
+
+    it('throws BadRequestError when response_type is token', async () => {
+      const handler = createHandler();
+      await expect(
+        handler.initiateProjectAuthorize(
+          validApp.clientId,
+          'https://example.com/callback',
+          undefined,
+          UserAuthenticationMethodProvider.Github,
+          undefined,
+          undefined,
+          { responseType: 'token', codeChallenge: RFC_PKCE.challenge, codeChallengeMethod: 'S256' }
+        )
+      ).rejects.toThrow('response_type must be code');
+    });
+
+    it('throws BadRequestError when PKCE is missing', async () => {
+      const handler = createHandler();
+      await expect(
+        handler.initiateProjectAuthorize(
+          validApp.clientId,
+          'https://example.com/callback',
+          undefined,
+          UserAuthenticationMethodProvider.Github
+        )
+      ).rejects.toThrow('code_challenge is required');
+    });
+
+    it('throws BadRequestError when code_challenge_method is plain', async () => {
+      const handler = createHandler();
+      await expect(
+        handler.initiateProjectAuthorize(
+          validApp.clientId,
+          'https://example.com/callback',
+          undefined,
+          UserAuthenticationMethodProvider.Github,
+          undefined,
+          undefined,
+          { codeChallenge: RFC_PKCE.challenge, codeChallengeMethod: 'plain' }
+        )
+      ).rejects.toThrow('code_challenge_method must be S256');
     });
   });
 
@@ -786,6 +889,8 @@ describe('ProjectOAuthHandler', () => {
       userId: 'user-id',
       scope: { tenant: Tenant.OrganizationProjectUser, id: 'org-id:project-id:user-id' },
       signingScope: { tenant: Tenant.OrganizationProject, id: 'org-id:project-id' },
+      codeChallenge: RFC_PKCE.challenge,
+      codeChallengeMethod: 'S256' as const,
     };
 
     it('throws AuthenticationError when consent token is invalid or expired', async () => {
@@ -796,31 +901,50 @@ describe('ProjectOAuthHandler', () => {
       );
     });
 
-    it('deletes consent key and returns redirectUrl with access_token in fragment', async () => {
+    it('throws BadRequestError when consent payload lacks codeChallenge', async () => {
+      mockCacheOauth.get.mockResolvedValue({ ...consentPayload, codeChallenge: undefined });
+      const handler = createHandler();
+      await expect(handler.handleProjectConsentApprove('consent-token-123')).rejects.toThrow(
+        'code_challenge is required'
+      );
+    });
+
+    it('deletes consent key and returns redirectUrl with code in the query string', async () => {
       mockCacheOauth.get.mockResolvedValue(consentPayload);
       const handler = createHandler();
       const result = await handler.handleProjectConsentApprove('consent-token-123');
-      expect(result.redirectUrl).toContain('https://example.com/callback');
-      expect(result.redirectUrl).toContain('access_token=');
-      expect(result.redirectUrl).toContain('expires_in=');
-      expect(result.redirectUrl).toContain('token_type=Bearer');
-      expect(result.redirectUrl).toContain('state=client-state');
+      const redirect = new URL(result.redirectUrl);
+      expect(redirect.origin + redirect.pathname).toBe('https://example.com/callback');
+      expect(redirect.searchParams.get('code')).toBeTruthy();
+      expect(redirect.searchParams.get('state')).toBe('client-state');
+      expect(redirect.hash).toBe('');
+      expect(result.redirectUrl).not.toContain('access_token=');
       expect(mockCacheOauth.get).toHaveBeenCalledWith(
         `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}consent-token-123`
       );
       expect(mockCacheOauth.delete).toHaveBeenCalledWith(
         `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}consent-token-123`
       );
-      expect(mockGrant.signApiKeyToken).toHaveBeenCalled();
+      expect(mockCacheOauth.set).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^${PROJECT_OAUTH_CODE_KEY_PREFIX}`)),
+        expect.objectContaining({
+          userId: 'user-id',
+          projectAppId: validApp.id,
+          codeChallenge: RFC_PKCE.challenge,
+          clientId: validApp.clientId,
+        }),
+        60
+      );
+      expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
     });
 
-    it('includes state in fragment when clientState is present', async () => {
+    it('includes state in the query string when clientState is present', async () => {
       mockCacheOauth.get.mockResolvedValue(consentPayload);
       const handler = createHandler();
       const result = await handler.handleProjectConsentApprove('token');
-      const hash = new URL(result.redirectUrl).hash;
-      expect(hash).toContain('state=');
-      expect(hash).toContain('client-state');
+      const redirect = new URL(result.redirectUrl);
+      expect(redirect.searchParams.get('state')).toBe('client-state');
+      expect(redirect.hash).toBe('');
     });
   });
 
@@ -842,25 +966,27 @@ describe('ProjectOAuthHandler', () => {
       );
     });
 
-    it('deletes consent key and returns redirectUrl with error=access_denied in fragment', async () => {
+    it('deletes consent key and returns redirectUrl with error=access_denied in the query string', async () => {
       mockCacheOauth.get.mockResolvedValue(consentPayload);
       const handler = createHandler();
       const result = await handler.handleProjectConsentDeny('consent-token-123');
-      expect(result.redirectUrl).toContain('https://example.com/callback');
-      expect(result.redirectUrl).toContain('error=access_denied');
-      expect(result.redirectUrl).toContain('error_description=');
+      const redirect = new URL(result.redirectUrl);
+      expect(redirect.origin + redirect.pathname).toBe('https://example.com/callback');
+      expect(redirect.searchParams.get('error')).toBe('access_denied');
+      expect(redirect.searchParams.get('error_description')).toBeTruthy();
+      expect(redirect.hash).toBe('');
       expect(mockCacheOauth.delete).toHaveBeenCalledWith(
         `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}consent-token-123`
       );
     });
 
-    it('includes state in fragment when clientState is present', async () => {
+    it('includes state in the query string when clientState is present', async () => {
       mockCacheOauth.get.mockResolvedValue(consentPayload);
       const handler = createHandler();
       const result = await handler.handleProjectConsentDeny('token');
-      const hash = new URL(result.redirectUrl).hash;
-      expect(hash).toContain('state=');
-      expect(hash).toContain('client-state');
+      const redirect = new URL(result.redirectUrl);
+      expect(redirect.searchParams.get('state')).toBe('client-state');
+      expect(redirect.hash).toBe('');
     });
   });
 
@@ -1222,6 +1348,140 @@ describe('ProjectOAuthHandler', () => {
         { allowSignUp: true }
       );
       expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleProjectToken', () => {
+    const codePayload = {
+      userId: 'user-id',
+      projectAppId: validApp.id,
+      redirectUri: 'https://example.com/callback',
+      scope: { tenant: Tenant.OrganizationProjectUser, id: 'org-id:project-id:user-id' },
+      signingScope: { tenant: Tenant.OrganizationProject, id: 'org-id:project-id' },
+      codeChallenge: RFC_PKCE.challenge,
+      codeChallengeMethod: 'S256' as const,
+      clientId: validApp.clientId,
+    };
+
+    beforeEach(() => {
+      mockProjectUsers.getProjectUsers.mockResolvedValue([
+        { userId: 'user-id', projectId: validApp.projectId },
+      ]);
+      mockOrganizationProjects.getOrganizationProject.mockResolvedValue({
+        organizationId: 'org-id',
+      });
+      mockAccountProjects.getAccountProject.mockRejectedValue(new Error('not account'));
+      mockUsers.getUsers.mockResolvedValue({
+        users: [{ id: 'user-id' }],
+        totalCount: 1,
+        hasNextPage: false,
+      });
+    });
+
+    it('exchanges an authorization code for access and refresh tokens (public + PKCE)', async () => {
+      mockCacheOauth.get.mockResolvedValue(codePayload);
+      const handler = createHandler();
+      const result = await handler.handleProjectToken({
+        grantType: 'authorization_code',
+        clientId: validApp.clientId,
+        redirectUri: 'https://example.com/callback',
+        code: 'auth-code',
+        codeVerifier: RFC_PKCE.verifier,
+      });
+      expect(result.accessToken).toBe('jwt-token');
+      expect(result.tokenType).toBe('Bearer');
+      expect(result.refreshToken).toBe('new-refresh-token');
+      expect(result.expiresIn).toBe(15 * 60);
+      expect(mockCacheOauth.delete).toHaveBeenCalledWith(
+        `${PROJECT_OAUTH_CODE_KEY_PREFIX}auth-code`
+      );
+      expect(mockProjectOAuthGrants.createGrant).toHaveBeenCalled();
+      expect(mockGrant.signApiKeyToken).toHaveBeenCalledWith(
+        expect.objectContaining({ jti: 'grant-id', aud: validApp.clientId }),
+        expect.anything()
+      );
+    });
+
+    it('rejects a wrong PKCE verifier with invalid_grant', async () => {
+      mockCacheOauth.get.mockResolvedValue(codePayload);
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'authorization_code',
+          clientId: validApp.clientId,
+          redirectUri: 'https://example.com/callback',
+          code: 'auth-code',
+          codeVerifier: 'a'.repeat(43),
+        })
+      ).rejects.toThrow('invalid_grant');
+      expect(mockProjectOAuthGrants.createGrant).not.toHaveBeenCalled();
+    });
+
+    it('rejects a reused authorization code with invalid_grant', async () => {
+      mockCacheOauth.get.mockResolvedValue(null);
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'authorization_code',
+          clientId: validApp.clientId,
+          redirectUri: 'https://example.com/callback',
+          code: 'already-used',
+          codeVerifier: RFC_PKCE.verifier,
+        })
+      ).rejects.toThrow('invalid_grant');
+    });
+
+    it('rotates a refresh token and returns a new refresh token', async () => {
+      const handler = createHandler();
+      const result = await handler.handleProjectToken({
+        grantType: 'refresh_token',
+        clientId: validApp.clientId,
+        refreshToken: 'current-refresh',
+      });
+      expect(result.refreshToken).toBe('rotated-refresh-token');
+      expect(result.accessToken).toBe('jwt-token');
+      expect(mockProjectOAuthGrants.rotateByRefreshToken).toHaveBeenCalledWith(
+        'current-refresh',
+        expect.anything()
+      );
+    });
+
+    it('fails closed when an old refresh token is reused', async () => {
+      mockProjectOAuthGrants.rotateByRefreshToken.mockResolvedValue(null);
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'refresh_token',
+          clientId: validApp.clientId,
+          refreshToken: 'old-refresh',
+        })
+      ).rejects.toThrow('invalid_grant');
+    });
+
+    it('requires client_secret for confidential apps', async () => {
+      mockProjectApps.getClientSecretHash.mockResolvedValue(
+        hashSecret('confidential-secret-value')
+      );
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'authorization_code',
+          clientId: validApp.clientId,
+          redirectUri: 'https://example.com/callback',
+          code: 'auth-code',
+          codeVerifier: RFC_PKCE.verifier,
+        })
+      ).rejects.toThrow('invalid_client');
+    });
+
+    it('rejects unsupported grant types', async () => {
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'client_credentials',
+          clientId: validApp.clientId,
+        })
+      ).rejects.toThrow('unsupported_grant_type');
     });
   });
 });
