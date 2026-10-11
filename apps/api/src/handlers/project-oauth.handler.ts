@@ -1145,7 +1145,14 @@ export class ProjectOAuthHandler {
         tenant: issued.grant.scopeTenant as Scope['tenant'],
         id: issued.grant.scopeId,
       };
-      const candidateSlugs = issued.grant.scopes?.length ? issued.grant.scopes : (app.scopes ?? []);
+      const appSlugs = app.scopes ?? [];
+      const grantSlugs = issued.grant.scopes ?? [];
+      const candidateSlugs =
+        grantSlugs.length > 0 && appSlugs.length > 0
+          ? grantSlugs.filter((slug) => appSlugs.includes(slug))
+          : grantSlugs.length > 0
+            ? grantSlugs
+            : appSlugs;
       const accessToken = await this.signProjectScopedToken(
         issued.grant.userId,
         app,
