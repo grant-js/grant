@@ -408,6 +408,16 @@ const META: EnvVarMeta[] = [
     section: 'Project OAuth',
   },
   {
+    key: 'PROJECT_OAUTH_REFRESH_TOKEN_EXPIRATION_DAYS',
+    category: 'auth',
+    label: 'Project OAuth refresh expiration (days)',
+    description:
+      'Refresh token lifetime for ProjectApp grants. Distinct from JWT_REFRESH_TOKEN_EXPIRATION_DAYS (platform sessions). Default: 30.',
+    envFiles: ['.env'],
+    digitsOnly: true,
+    section: 'Project OAuth',
+  },
+  {
     key: 'AUTH_MIN_AAL_AT_LOGIN',
     category: 'auth',
     label: 'Minimum AAL at login',

@@ -24,14 +24,14 @@ Brief: [2026-10-11-project-app-oauth-brief.md](./2026-10-11-project-app-oauth-br
 
 ## Ordered slices (PRs)
 
-| #     | Branch                           | Base                      | Concern                                      | Owner role | Review bar    | PR  |
-| ----- | -------------------------------- | ------------------------- | -------------------------------------------- | ---------- | ------------- | --- |
-| 1     | `feat/project-app-oauth-db`      | `feat/project-app-oauth`  | `project_oauth_grants` + refresh TTL env     | Backend    | security-full |     |
-| 2     | `feat/project-app-oauth-api`     | slice 1                   | PKCE, code, token endpoint, OpenAPI          | Backend    | security-full |     |
-| 3     | `feat/project-app-oauth-metadata`| slice 2                   | RFC 8414 + twin openid-configuration         | Backend    | security-full |     |
-| 4     | `feat/project-app-oauth-web`     | slice 3                   | Hosted + Test OAuth PKCE/code                | Frontend   | security-full |     |
-| 5     | `feat/project-app-oauth-docs`    | slice 4                   | Docs, e2e, minor BREAKING changeset          | QA / docs  | light         |     |
-| final | `feat/project-app-oauth`         | `main`                    | integration (Gate 4 — human)                 | Principal  | deep + security-full |     |
+| #     | Branch                            | Base                     | Concern                                  | Owner role | Review bar           | PR  |
+| ----- | --------------------------------- | ------------------------ | ---------------------------------------- | ---------- | -------------------- | --- |
+| 1     | `feat/project-app-oauth-db`       | `feat/project-app-oauth` | `project_oauth_grants` + refresh TTL env | Backend    | security-full        |     |
+| 2     | `feat/project-app-oauth-api`      | slice 1                  | PKCE, code, token endpoint, OpenAPI      | Backend    | security-full        |     |
+| 3     | `feat/project-app-oauth-metadata` | slice 2                  | RFC 8414 + twin openid-configuration     | Backend    | security-full        |     |
+| 4     | `feat/project-app-oauth-web`      | slice 3                  | Hosted + Test OAuth PKCE/code            | Frontend   | security-full        |     |
+| 5     | `feat/project-app-oauth-docs`     | slice 4                  | Docs, e2e, minor BREAKING changeset      | QA / docs  | light                |     |
+| final | `feat/project-app-oauth`          | `main`                   | integration (Gate 4 — human)             | Principal  | deep + security-full |     |
 
 ### Slice intent (in scope / out of scope)
 
