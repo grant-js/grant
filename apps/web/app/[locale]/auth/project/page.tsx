@@ -55,6 +55,8 @@ export default function ProjectOAuthEntryPage() {
   const redirectUri = searchParams.get('redirect_uri');
   const state = searchParams.get('state');
   const scopeParam = searchParams.get('scope');
+  const incomingChallenge = searchParams.get('code_challenge');
+  const incomingChallengeMethod = searchParams.get('code_challenge_method');
   const errorParam = searchParams.get('error');
   const oauthErrorMessage =
     errorParam &&
@@ -108,17 +110,21 @@ export default function ProjectOAuthEntryPage() {
     if (!clientId || !redirectUri) return;
     let cancelled = false;
     const clientState = state?.trim() || createProjectOAuthState();
+    const useIncoming =
+      Boolean(incomingChallenge?.trim()) &&
+      (!incomingChallengeMethod || incomingChallengeMethod === 'S256');
     void ensureProjectOAuthPkceSession({
       clientId,
       redirectUri,
       state: clientState,
+      ...(useIncoming && incomingChallenge ? { challenge: incomingChallenge.trim() } : {}),
     }).then((session) => {
       if (!cancelled) setPkce(session);
     });
     return () => {
       cancelled = true;
     };
-  }, [clientId, redirectUri, state]);
+  }, [clientId, redirectUri, state, incomingChallenge, incomingChallengeMethod]);
 
   const hasMissingParams = !clientId || !redirectUri;
   const displayError = hasMissingParams

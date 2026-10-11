@@ -54,6 +54,18 @@ describe('project OAuth PKCE session storage', () => {
     expect(loadProjectOAuthPkceSession()).toEqual(session);
   });
 
+  it('stores a tenant-supplied code_challenge without rotating a local verifier', async () => {
+    const session = await ensureProjectOAuthPkceSession({
+      clientId: 'app_1',
+      redirectUri: 'https://app.example/cb',
+      state: 'state-ext',
+      challenge: RFC_CHALLENGE,
+    });
+    expect(session.challenge).toBe(RFC_CHALLENGE);
+    expect(session.verifier).toBe('');
+    expect(loadProjectOAuthPkceSession('state-ext')?.challenge).toBe(RFC_CHALLENGE);
+  });
+
   it('reuses a matching stored session instead of rotating the verifier', async () => {
     persistProjectOAuthPkceSession({
       verifier: RFC_VERIFIER,

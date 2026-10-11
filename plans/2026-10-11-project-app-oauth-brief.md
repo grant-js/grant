@@ -25,6 +25,7 @@ Project apps stop receiving an access JWT in the URL fragment (implicit). Hosted
 - [ ] Per-project `iss` and `jwks_uri` stay the existing project JWKS issuers. Metadata: RFC 8414 well-known is inserted **before** the issuer path, plus a twin `{iss}/.well-known/openid-configuration` that returns the **same JSON** (not an OP).
 - [ ] Hosted pages and dashboard **Test OAuth** use PKCE + code exchange. OpenAPI stays in sync.
 - [ ] Docs and e2e cover the new flow. Publishable change is a **minor BREAKING** changeset (not major).
+- [ ] `@grantjs/client` Next.js example generates S256 PKCE, persists the verifier, and exchanges `?code=` at the token endpoint (no `#access_token=` fragment).
 
 ## Non-goals
 

@@ -84,6 +84,7 @@ describe('project OAuth hosted entry page', () => {
     expect(pageSource).toMatch(/buildProjectAuthorizeUrl/);
     expect(pageSource).toMatch(/ensureProjectOAuthPkceSession/);
     expect(pageSource).toMatch(/codeChallenge/);
+    expect(pageSource).toMatch(/code_challenge/);
     expect(pageSource).not.toMatch(/useSetOAuthBranding/);
     expect(pageSource).not.toMatch(/access_token/);
   });
