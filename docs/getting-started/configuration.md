@@ -73,12 +73,14 @@ Full list, descriptions, and defaults: Config app (all categories) or root **`.e
 
 Leave client ID and secret empty to hide that provider on **platform** login and register. If either value is set, both are required. Project-app social sign-in uses per-project OAuth connections; see [Project OAuth](/core-concepts/project-oauth#social-connections-github-and-google).
 
-| Variable                                    | Purpose                                                                              |
-| ------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Platform GitHub OAuth App                                                            |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Platform Google Cloud Web client                                                     |
-| `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`   | Encrypts per-project BYO GitHub/Google client secrets (required to save connections) |
-| `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL`          | When `true`, project social sign-in requires BYO connections (default `false`)       |
+| Variable                                       | Purpose                                                                                             |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`    | Platform GitHub OAuth App                                                                           |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`    | Platform Google Cloud Web client                                                                    |
+| `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`      | Encrypts per-project BYO GitHub/Google client secrets (required to save connections)                |
+| `PROJECT_OAUTH_REQUIRE_BYO_SOCIAL`             | When `true`, project social sign-in requires BYO connections (default `false`)                      |
+| `PROJECT_OAUTH_REFRESH_TOKEN_EXPIRATION_DAYS`  | ProjectApp grant refresh lifetime (default `30`). Distinct from `JWT_REFRESH_TOKEN_EXPIRATION_DAYS` |
+| `PROJECT_OAUTH_AUTHORIZATION_CODE_TTL_SECONDS` | One-time authorization code TTL in seconds (default `60`)                                           |
 
 Callback URLs default from `APP_URL`. Register platform IdP callbacks as described in [Sign-in providers](/core-concepts/sign-in-providers) and [Security](/architecture/security#configuring-platform-github-oauth). Customer BYO apps register Grant’s project broker callback only — see [Configuring social OAuth for project apps](/architecture/security#configuring-social-oauth-for-project-apps).
 

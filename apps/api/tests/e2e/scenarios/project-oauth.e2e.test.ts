@@ -370,4 +370,35 @@ describe('Project OAuth E2E', () => {
     expect(redirectUrl).toContain(redirectUri);
     expect(redirectUrl).toContain('error=access_denied');
   });
+
+  it('RFC 8414 metadata matches the OpenID configuration twin', async () => {
+    const rfcPath = `/.well-known/oauth-authorization-server/org/${org.id}/prj/${projectId}`;
+    const oidcPath = `/org/${org.id}/prj/${projectId}/.well-known/openid-configuration`;
+
+    const rfc = await apiClient().get(rfcPath).expect(200);
+    const oidc = await apiClient().get(oidcPath).expect(200);
+
+    expect(rfc.body).toEqual(oidc.body);
+    expect(rfc.body.issuer).toContain(`/org/${org.id}/prj/${projectId}`);
+    expect(rfc.body.jwks_uri).toContain(`/org/${org.id}/prj/${projectId}/.well-known/jwks.json`);
+    expect(rfc.body.authorization_endpoint).toMatch(/\/api\/auth\/project\/authorize$/);
+    expect(rfc.body.token_endpoint).toMatch(/\/api\/auth\/project\/token$/);
+    expect(rfc.body.response_types_supported).toEqual(['code']);
+    expect(rfc.body.grant_types_supported).toEqual(['authorization_code', 'refresh_token']);
+    expect(rfc.body.code_challenge_methods_supported).toEqual(['S256']);
+  });
+
+  it('POST /api/auth/project/token rejects client_credentials', async () => {
+    const res = await apiClient()
+      .post('/api/auth/project/token')
+      .send({
+        grant_type: 'client_credentials',
+        client_id: projectAppClientId,
+        client_secret: projectAppClientSecret,
+      })
+      .expect(400);
+
+    expect(typeof res.body.translationKey).toBe('string');
+    expect(res.body.translationKey).toMatch(/^errors\.validation\./);
+  });
 });
