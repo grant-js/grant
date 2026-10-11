@@ -92,6 +92,7 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "POST /api/auth/project/consent/approve",
   "POST /api/auth/project/consent/deny",
   "POST /api/auth/project/email/request",
+  "POST /api/auth/project/token",
   "POST /api/auth/refresh",
   "POST /api/auth/register",
   "POST /api/auth/request-password-reset",

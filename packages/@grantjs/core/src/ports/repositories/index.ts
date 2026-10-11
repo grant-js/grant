@@ -7,6 +7,7 @@ export * from './organization.repository.port';
 export * from './permission.repository.port';
 export * from './project.repository.port';
 export * from './project-oauth-connection.repository.port';
+export * from './project-oauth-grant.repository.port';
 export * from './resource.repository.port';
 export * from './role.repository.port';
 export * from './tag.repository.port';

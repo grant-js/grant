@@ -134,7 +134,8 @@ export function createHandlers(
       services.email,
       services.users,
       services.userAuthenticationMethods,
-      userHandler
+      userHandler,
+      services.projectOAuthGrants
     ),
     groups: new GroupHandler(
       services.groupTags,

@@ -17,6 +17,7 @@ export const AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS = [
   'POST /api/auth/refresh',
   'POST /api/auth/cli-callback',
   'POST /api/auth/token',
+  'POST /api/auth/project/token',
   'POST /api/auth/mfa/setup',
   'POST /api/auth/mfa/verify',
   'POST /api/auth/mfa/recovery/verify',

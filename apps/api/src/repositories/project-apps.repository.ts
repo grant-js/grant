@@ -1,6 +1,7 @@
 import type { IProjectAppRepository } from '@grantjs/core';
 import type { ProjectAppModel } from '@grantjs/database';
 import { projectApps, projectAppTags } from '@grantjs/database';
+import { and, eq, isNull } from 'drizzle-orm';
 import {
   type CreateProjectAppInput,
   type CreateProjectAppResult,
@@ -155,6 +156,18 @@ export class ProjectAppRepository
     const result = await this.query({ filters, limit: 1 }, transaction);
     const row = this.first(result.items);
     return row ? toProjectApp(row as ProjectAppModel & { tags?: ProjectApp['tags'] }) : null;
+  }
+
+  public async getClientSecretHash(id: string, transaction?: Transaction): Promise<string | null> {
+    const dbInstance = transaction ?? this.db;
+    const result = await dbInstance
+      .select({ clientSecretHash: this.table.clientSecretHash })
+      .from(this.table)
+      .where(and(eq(this.table.id, id), isNull(this.table.deletedAt)))
+      .limit(1);
+
+    const hash = result[0]?.clientSecretHash;
+    return hash ? hash : null;
   }
 
   public async updateProjectApp(

@@ -33,6 +33,9 @@ export const PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX = 'oauth:project-email-token:'
 /** Prefix for project OAuth consent token (post-auth consent screen). Full key: oauth:project-consent:{consentToken} */
 export const PROJECT_OAUTH_CONSENT_KEY_PREFIX = 'oauth:project-consent:';
 
+/** Prefix for one-time ProjectApp authorization codes. Full key: oauth:project-code:{code} */
+export const PROJECT_OAUTH_CODE_KEY_PREFIX = 'oauth:project-code:';
+
 // TTLs for these flows live in `config.projectOAuth.*TtlSeconds`. This module is
 // imported transitively by most handlers, so it stays free of config reads —
 // evaluating config at module scope here crashes any consumer that mocks it partially.
