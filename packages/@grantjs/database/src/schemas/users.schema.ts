@@ -24,6 +24,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   roles: many(userRoles),
   authenticationMethods: many(userAuthenticationMethods),
   sessions: many(userSessions),
+  oauthGrants: many(projectOAuthGrants),
   accounts: many(accounts),
 }));
 
@@ -54,6 +55,7 @@ export type UserAuditLogModel = typeof userAuditLogs.$inferSelect;
 export type NewUserAuditLogModel = typeof userAuditLogs.$inferInsert;
 
 import { accounts } from './accounts.schema';
+import { projectOAuthGrants } from './project-oauth-grants.schema';
 import { userAuthenticationMethods } from './user-authentication-methods.schema';
 import { userRoles } from './user-roles.schema';
 import { userSessions } from './user-sessions.schema';

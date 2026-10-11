@@ -152,6 +152,11 @@ export const envSchema = z.object({
   PROJECT_OAUTH_EMAIL_TOKEN_TTL_SECONDS: optionalNumber(600),
   PROJECT_OAUTH_CONSENT_TTL_SECONDS: optionalNumber(600),
   /**
+   * Refresh token lifetime for ProjectApp grants (`project_oauth_grants`).
+   * Distinct from JWT_REFRESH_TOKEN_EXPIRATION_DAYS (platform user_sessions).
+   */
+  PROJECT_OAUTH_REFRESH_TOKEN_EXPIRATION_DAYS: optionalNumber(30),
+  /**
    * AES-256-GCM key material for per-project BYO OAuth client secrets.
    * Distinct from AUTH_MFA_SECRET_ENCRYPTION_KEY (different KDF salt).
    */

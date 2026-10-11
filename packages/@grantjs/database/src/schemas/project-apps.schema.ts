@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import { projectAppTags } from './project-app-tags.schema';
+import { projectOAuthGrants } from './project-oauth-grants.schema';
 import { projects } from './projects.schema';
 import { roles } from './roles.schema';
 import { users } from './users.schema';
@@ -55,6 +56,7 @@ export const projectAppsRelations = relations(projectApps, ({ one, many }) => ({
     references: [projects.id],
   }),
   tags: many(projectAppTags),
+  oauthGrants: many(projectOAuthGrants),
 }));
 
 export const projectAppAuditLogs = pgTable(
