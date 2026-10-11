@@ -27,6 +27,10 @@ export function verifyPkceS256(verifier: string, challenge: string): boolean {
 }
 
 export function hashProjectOAuthRefreshToken(token: string): string {
+  // codeql[js/insufficient-password-hash]: Not a password. SHA-256 hex of a
+  // 256-bit random refresh secret for indexed lookup on project_oauth_grants
+  // (same pattern as documented token hashes; bcrypt cannot be the lookup key).
+  // Low-entropy secrets use hashSecret() in token.lib.ts after id lookup.
   return createHash('sha256').update(token).digest('hex');
 }
 

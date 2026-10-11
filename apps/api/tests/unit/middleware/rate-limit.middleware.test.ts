@@ -278,13 +278,19 @@ describe('rateLimitMiddleware', () => {
     });
   });
 
-  it('exports auth-sensitive paths including MFA routes (single source for rate-limit integration)', () => {
+  it('exports auth-sensitive paths including MFA and project OAuth routes (single source for rate-limit integration)', () => {
     expect([...AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS]).toEqual(
       expect.arrayContaining([
         'POST /api/auth/mfa/setup',
         'POST /api/auth/mfa/verify',
         'POST /api/auth/mfa/recovery/verify',
         'GET /api/me/mfa/recovery-codes/status',
+        'GET /api/auth/project/authorize',
+        'POST /api/auth/project/email/request',
+        'GET /api/auth/project/consent-info',
+        'POST /api/auth/project/consent/approve',
+        'POST /api/auth/project/consent/deny',
+        'POST /api/auth/project/token',
       ])
     );
   });

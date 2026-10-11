@@ -57,9 +57,16 @@ export function createProjectOAuthMetadataRouter(): Router {
     );
   }
 
+  // Public discovery JSON only (RFC 8414 / OIDC twin). Global rateLimitMiddleware
+  // in create-app already covers these; they are not auth-sensitive (no codes,
+  // secrets, or redirects). CodeQL matches "authorization" in the well-known path.
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/.well-known/oauth-authorization-server/org/:orgId/prj/:projectId', handleOrgProject);
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/.well-known/oauth-authorization-server/acc/:accId/prj/:projectId', handleAccProject);
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/org/:orgId/prj/:projectId/.well-known/openid-configuration', handleOrgProject);
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/acc/:accId/prj/:projectId/.well-known/openid-configuration', handleAccProject);
 
   return router;

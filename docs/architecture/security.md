@@ -481,7 +481,7 @@ Name-based min-AAL enforcement uses the GraphQL **`operationName`**. Clients tha
 
 ### Rate limiting
 
-MFA **setup**, **verify**, **recovery verify**, and recovery **status** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
+MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
 
 ### Automated testing and recovery
 
@@ -497,7 +497,7 @@ Three layers are available:
 | Layer                     | Scope                                                      | Default                                |
 | ------------------------- | ---------------------------------------------------------- | -------------------------------------- |
 | **Global**                | All requests, keyed by IP                                  | 100 req / 15 min                       |
-| **Auth endpoints**        | Login, refresh, token exchange, CLI callback — keyed by IP | 20 req / 15 min                        |
+| **Auth endpoints**        | Login, refresh, token exchange, CLI callback, project OAuth authorize/consent/token — keyed by IP | 20 req / 15 min                        |
 | **Per-tenant** (optional) | Authenticated requests keyed by tenant scope               | 200 req / 15 min (disabled by default) |
 
 The `/health` endpoint is always excluded. Storage uses the same cache backend as the rest of the app (in-memory or Redis).
