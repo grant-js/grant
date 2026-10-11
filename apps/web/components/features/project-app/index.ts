@@ -11,5 +11,6 @@ export * from './project-app-tags';
 export * from './project-app-test-oauth-card';
 export * from './project-app-test-scopes';
 export * from './project-app-test-summary-card';
+export * from './project-app-test-tokens-card';
 export * from './project-app-test-types';
 export * from './project-app-test-viewer';

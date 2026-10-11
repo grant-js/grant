@@ -19,7 +19,14 @@ import {
   ProjectAppInfoError,
   type ProjectAppPublicInfo,
 } from '@/lib/project-oauth-api';
+import { buildProjectAuthorizeUrl } from '@/lib/project-oauth-authorize.lib';
 import { getProjectOAuthProviderVisibility } from '@/lib/project-oauth-entry.lib';
+import {
+  createProjectOAuthState,
+  ensureProjectOAuthPkceSession,
+  markProjectOAuthEmailViaAuthorize,
+  type ProjectOAuthPkceSession,
+} from '@/lib/project-oauth-pkce.lib';
 
 const PROJECT_OAUTH_ERROR_CODES = [
   'accountCreationFailed',
@@ -61,6 +68,7 @@ export default function ProjectOAuthEntryPage() {
   const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(peekedAppInfo);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(() => Boolean(clientId && !peekedAppInfo));
+  const [pkce, setPkce] = useState<ProjectOAuthPkceSession | null>(null);
 
   useEffect(() => {
     if (!clientId) return;
@@ -96,38 +104,47 @@ export default function ProjectOAuthEntryPage() {
     };
   }, [clientId, scopeParam, redirectUri, t, tAuth]);
 
+  useEffect(() => {
+    if (!clientId || !redirectUri) return;
+    let cancelled = false;
+    const clientState = state?.trim() || createProjectOAuthState();
+    void ensureProjectOAuthPkceSession({
+      clientId,
+      redirectUri,
+      state: clientState,
+    }).then((session) => {
+      if (!cancelled) setPkce(session);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, redirectUri, state]);
+
   const hasMissingParams = !clientId || !redirectUri;
   const displayError = hasMissingParams
     ? !clientId
       ? t('missingClientId')
       : t('missingParams')
     : error;
-  const displayLoading = !hasMissingParams && loading;
+  const displayLoading = !hasMissingParams && (loading || !pkce);
 
-  const authorizeUrl = useCallback(
+  const startAuthorize = useCallback(
     (provider: string) => {
-      const apiBase = getApiBaseUrl();
-      const q = new URLSearchParams({
-        client_id: clientId!,
-        redirect_uri: redirectUri!,
-        state: state ?? '',
+      if (!clientId || !redirectUri || !pkce) return;
+      if (provider === 'email') markProjectOAuthEmailViaAuthorize();
+      window.location.href = buildProjectAuthorizeUrl({
+        apiBase: getApiBaseUrl(),
+        clientId,
+        redirectUri,
+        state: pkce.state,
         provider,
+        locale,
+        scope: scopeParam,
+        codeChallenge: pkce.challenge,
       });
-      if (scopeParam?.trim()) q.set('scope', scopeParam.trim());
-      q.set('locale', locale);
-      return `${apiBase}/api/auth/project/authorize?${q.toString()}`;
     },
-    [clientId, redirectUri, state, scopeParam, locale]
+    [clientId, redirectUri, pkce, scopeParam, locale]
   );
-
-  const emailPageUrl = useCallback(() => {
-    const q = new URLSearchParams();
-    if (clientId) q.set('client_id', clientId);
-    if (redirectUri) q.set('redirect_uri', redirectUri);
-    if (state) q.set('state', state);
-    if (scopeParam?.trim()) q.set('scope', scopeParam.trim());
-    return `/auth/project/email${q.toString() ? `?${q.toString()}` : ''}`;
-  }, [clientId, redirectUri, state, scopeParam]);
 
   const { showGithub, showGoogle, showEmail } = getProjectOAuthProviderVisibility(appInfo);
 
@@ -207,9 +224,7 @@ export default function ProjectOAuthEntryPage() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => {
-              window.location.href = authorizeUrl('github');
-            }}
+            onClick={() => startAuthorize('github')}
           >
             <OAuthProviderIcon provider="github" />
             {t('github')}
@@ -220,21 +235,22 @@ export default function ProjectOAuthEntryPage() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => {
-              window.location.href = authorizeUrl('google');
-            }}
+            onClick={() => startAuthorize('google')}
           >
             <OAuthProviderIcon provider="google" />
             {t('google')}
           </Button>
         )}
         {showEmail && (
-          <Link href={emailPageUrl()}>
-            <Button type="button" variant="outline" className="w-full">
-              <OAuthProviderIcon provider="email" />
-              {t('email')}
-            </Button>
-          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => startAuthorize('email')}
+          >
+            <OAuthProviderIcon provider="email" />
+            {t('email')}
+          </Button>
         )}
       </div>
     </div>

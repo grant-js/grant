@@ -721,6 +721,7 @@
         "sending": "Wird gesendet…",
         "checkEmailTitle": "E-Mail prüfen",
         "checkEmailDescription": "Wir haben Ihnen einen Anmeldelink gesendet. Klicken Sie auf den Link in der E-Mail, um fortzufahren.",
+        "preparing": "Anmeldung wird vorbereitet…",
         "missingParams": "client_id oder redirect_uri fehlt.",
         "backToLogin": "Zurück zur Anmeldung",
         "requestFailed": "Anfrage fehlgeschlagen",
@@ -749,10 +750,16 @@
       },
       "relay": {
         "completing": "Anmeldung wird abgeschlossen…",
+        "exchanging": "Autorisierungscode wird ausgetauscht…",
         "complete": "Anmeldung abgeschlossen. Dieses Fenster wird geschlossen.",
         "noOpener": "Diese Seite sollte als Popup der App geöffnet werden.",
         "closeTab": "Sie können diesen Tab schließen.",
-        "error": "Ergebnis konnte nicht gesendet werden"
+        "error": "Ergebnis konnte nicht gesendet werden",
+        "missingCode": "Autorisierungscode fehlt.",
+        "missingVerifier": "PKCE-Verifier fehlt. Starten Sie den Anmeldevorgang erneut.",
+        "exchangeFailed": "Der Autorisierungscode konnte nicht ausgetauscht werden.",
+        "accessToken": "Zugriffstoken",
+        "refreshToken": "Aktualisierungstoken"
       }
     },
     "mfaStepUp": {
@@ -1346,6 +1353,40 @@
       "configureConnection": "Projektverbindung konfigurieren",
       "configureConnectionAria": "{provider}-OAuth-Verbindung",
       "usingPlatformCredentials": "Es werden Plattform-Anmeldedaten verwendet."
+    },
+    "test": {
+      "title": "App testen",
+      "loading": "App wird geladen...",
+      "error": "Fehler beim Laden der App",
+      "summary": {
+        "title": "App",
+        "description": "Der OAuth-Client, der für diesen Testflow verwendet wird.",
+        "name": "Name",
+        "clientId": "Client-ID"
+      },
+      "configuration": {
+        "title": "OAuth-Flow",
+        "description": "Wählen Sie die Weiterleitungs-URI für den Authorization-Code- + PKCE-Test. Nutzen Sie den Grant-Callback, um Zugriffs- und Aktualisierungstoken hier zu sehen."
+      },
+      "redirectUri": "Weiterleitungs-URI",
+      "redirectUriPlaceholder": "Weiterleitungs-URI wählen",
+      "scopes": "Bereiche (optional)",
+      "scopesLoading": "Bereiche werden geladen...",
+      "noScopesAvailable": "Keine Bereiche verfügbar",
+      "noRedirectUris": "Diese App hat keine Weiterleitungs-URIs. Fügen Sie mindestens eine in den App-Einstellungen hinzu, um den OAuth-Flow zu testen.",
+      "confirm": "App testen",
+      "useGrantCallback": "Der Grant-Callback tauscht den Autorisierungscode mit PKCE und gibt die Token an diese Seite zurück.",
+      "grantCallbackMissing": "Fügen Sie {url} zu den Weiterleitungs-URIs dieser App hinzu, um den Code hier auszutauschen und Token anzuzeigen.",
+      "tokens": {
+        "title": "Token",
+        "description": "Zugriffs- und Aktualisierungstoken aus dem Authorization-Code-Austausch.",
+        "waiting": "Warten auf den Grant-Callback, der den Autorisierungscode austauscht…",
+        "accessToken": "Zugriffstoken",
+        "refreshToken": "Aktualisierungstoken",
+        "expiresIn": "Läuft in {seconds} Sekunden ab",
+        "scope": "Bereich",
+        "exchangeFailed": "Der Autorisierungscode konnte nicht ausgetauscht werden."
+      }
     }
   },
   "projectApps": {

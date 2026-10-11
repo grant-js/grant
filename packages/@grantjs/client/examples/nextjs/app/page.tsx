@@ -56,7 +56,7 @@ export default function Home() {
         <h2 className="section-title">Sign in with Project App</h2>
         <p className="section-desc">
           Start the Project OAuth redirect flow. After authentication, Grant redirects back to the
-          callback page with an access token in the URL fragment.
+          callback page with an authorization code in the query (`?code=&state=`).
         </p>
 
         <div className="tip">

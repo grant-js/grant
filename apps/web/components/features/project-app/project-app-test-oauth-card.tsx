@@ -19,9 +19,15 @@ import type { ProjectAppTestFormValues } from './project-app-test-types';
 
 interface ProjectAppTestOauthCardProps {
   projectApp: ProjectApp;
+  grantCallbackUrl?: string;
+  grantCallbackMissing?: boolean;
 }
 
-export function ProjectAppTestOauthCard({ projectApp }: ProjectAppTestOauthCardProps) {
+export function ProjectAppTestOauthCard({
+  projectApp,
+  grantCallbackUrl,
+  grantCallbackMissing,
+}: ProjectAppTestOauthCardProps) {
   const t = useTranslations('projectApp.test');
   const form = useFormContext<ProjectAppTestFormValues>();
 
@@ -57,6 +63,13 @@ export function ProjectAppTestOauthCard({ projectApp }: ProjectAppTestOauthCardP
                 ))}
               </SelectContent>
             </Select>
+            {grantCallbackMissing && grantCallbackUrl ? (
+              <p className="text-sm text-muted-foreground">
+                {t('grantCallbackMissing', { url: grantCallbackUrl })}
+              </p>
+            ) : grantCallbackUrl ? (
+              <p className="text-sm text-muted-foreground">{t('useGrantCallback')}</p>
+            ) : null}
           </FormItem>
         )}
       />
