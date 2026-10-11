@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.14.0
+
+### Platform
+
+**Docker images:** tagged `:1.14.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.14.0** (fixed group with apps).
+
+### Minor Changes
+
+- 7c06af4: **BREAKING** Project apps use authorization-code + PKCE. Consent redirects with `?code=&state=` (the `#access_token=` fragment is gone). Exchange at `POST /api/auth/project/token` (`authorization_code` and rotating `refresh_token`). Discovery: RFC 8414 well-known before the issuer path, plus `{iss}/.well-known/openid-configuration` (same JSON; Grant is not an OpenID Provider).
+
 ## 1.13.1
 
 ### Platform
