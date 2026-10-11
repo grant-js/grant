@@ -1,8 +1,8 @@
 const PKCE_UNRESERVED = /^[A-Za-z0-9\-._~]{43,128}$/;
 
-export const PROJECT_OAUTH_PKCE_CURRENT_KEY = 'grant:project-oauth:pkce:current';
-export const PROJECT_OAUTH_PKCE_STATE_PREFIX = 'grant:project-oauth:pkce:';
-export const PROJECT_OAUTH_EMAIL_VIA_AUTHORIZE_KEY = 'grant:project-oauth:email-via-authorize';
+const PROJECT_OAUTH_PKCE_CURRENT_KEY = 'grant:project-oauth:pkce:current';
+const PROJECT_OAUTH_PKCE_STATE_PREFIX = 'grant:project-oauth:pkce:';
+const PROJECT_OAUTH_EMAIL_VIA_AUTHORIZE_KEY = 'grant:project-oauth:email-via-authorize';
 export const PROJECT_OAUTH_TEST_TOKENS_PREFIX = 'grant:project-oauth:tokens:';
 
 export interface ProjectOAuthPkcePair {
@@ -50,7 +50,7 @@ export function createProjectOAuthState(): string {
   return createPkceVerifier();
 }
 
-export function createPkceVerifier(byteLength = 32): string {
+function createPkceVerifier(byteLength = 32): string {
   const bytes = new Uint8Array(byteLength);
   if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
     throw new Error('Web Crypto getRandomValues is required to generate a PKCE verifier');
@@ -76,7 +76,7 @@ export async function generatePkcePair(): Promise<ProjectOAuthPkcePair> {
   return { verifier, challenge };
 }
 
-export function pkceStateStorageKey(state: string): string {
+function pkceStateStorageKey(state: string): string {
   return `${PROJECT_OAUTH_PKCE_STATE_PREFIX}${state}`;
 }
 

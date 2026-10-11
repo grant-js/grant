@@ -1,5 +1,5 @@
-export const PROJECT_OAUTH_RELAY_PATH = '/auth/project/relay';
-export const PROJECT_OAUTH_ENTRY_PATH = '/auth/project';
+const PROJECT_OAUTH_RELAY_PATH = '/auth/project/relay';
+const PROJECT_OAUTH_ENTRY_PATH = '/auth/project';
 export const PROJECT_OAUTH_MESSAGE_TYPE = 'grant-project-oauth';
 
 export interface ProjectAuthorizeUrlInput {
@@ -48,7 +48,7 @@ export function buildProjectOAuthEntryPath(input: ProjectOAuthEntryUrlInput): st
   return `/${input.locale}${PROJECT_OAUTH_ENTRY_PATH}?${query.toString()}`;
 }
 
-export function getProjectOAuthRelayPath(locale: string): string {
+function getProjectOAuthRelayPath(locale: string): string {
   return `/${locale}${PROJECT_OAUTH_RELAY_PATH}`;
 }
 
