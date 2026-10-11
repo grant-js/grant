@@ -72,8 +72,12 @@ export class GrantClient {
 
   /**
    * Start project-app OAuth flow (redirect only).
-   * Navigates the current window to the Grant OAuth entry page; after sign-in and consent,
-   * the user is redirected to the app's `redirect_uri` with token in the URL fragment.
+   * Navigates the current window to the Grant OAuth entry page. Hosted pages attach
+   * PKCE (S256) to `GET /api/auth/project/authorize`. After sign-in and consent,
+   * the user is redirected to the app's `redirect_uri` with `?code=` and `state`
+   * (authorization code, not a fragment token). Exchange the code at
+   * `POST /api/auth/project/token` with `grant_type=authorization_code` and the
+   * PKCE `code_verifier` (same-origin Grant relay does this for Test OAuth).
    *
    * Requires `config.frontendUrl` and `redirectUri`.
    */

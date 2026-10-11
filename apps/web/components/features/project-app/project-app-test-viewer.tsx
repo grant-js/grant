@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,11 +11,26 @@ import { FeatureDetailLayout } from '@/components/layout';
 import { Form } from '@/components/ui/form';
 import { useScopeFromParams } from '@/hooks/common';
 import { useProjectApps } from '@/hooks/project-apps';
+import {
+  buildProjectOAuthEntryPath,
+  getProjectOAuthRelayUrl,
+  isProjectOAuthRelayRedirectUri,
+  pickProjectOAuthTestRedirectUri,
+  PROJECT_OAUTH_MESSAGE_TYPE,
+} from '@/lib/project-oauth-authorize.lib';
+import {
+  createProjectOAuthState,
+  ensureProjectOAuthPkceSession,
+  loadProjectOAuthTestTokens,
+  PROJECT_OAUTH_TEST_TOKENS_PREFIX,
+  type ProjectOAuthTokenSnapshot,
+} from '@/lib/project-oauth-pkce.lib';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
 import { ProjectAppTestOauthCard } from './project-app-test-oauth-card';
 import { ProjectAppTestScopes } from './project-app-test-scopes';
 import { ProjectAppTestSummaryCard } from './project-app-test-summary-card';
+import { ProjectAppTestTokensCard } from './project-app-test-tokens-card';
 import {
   PROJECT_APP_TEST_FORM_ID,
   type ProjectAppTestFormValues,
@@ -23,18 +38,6 @@ import {
 } from './project-app-test-types';
 
 export type { ProjectAppTestFormValues } from './project-app-test-types';
-
-function generateState(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
 
 export function ProjectAppTestViewer() {
   const t = useTranslations('projectApp.test');
@@ -51,9 +54,17 @@ export function ProjectAppTestViewer() {
 
   const projectApp = useMemo(() => projectApps[0], [projectApps]);
   const setCurrentProjectApp = useProjectAppsStore((state) => state.setCurrentProjectApp);
+  const [tokens, setTokens] = useState<ProjectOAuthTokenSnapshot | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [waitingForTokens, setWaitingForTokens] = useState(false);
+  const [flowState, setFlowState] = useState<string | null>(null);
 
   const redirectUris = useMemo(() => projectApp?.redirectUris ?? [], [projectApp?.redirectUris]);
   const hasRedirectUris = redirectUris.length > 0;
+  const [grantCallbackUrl, setGrantCallbackUrl] = useState(`/${locale}/auth/project/relay`);
+  const grantCallbackMissing = !redirectUris.some((uri) =>
+    isProjectOAuthRelayRedirectUri(uri, locale)
+  );
 
   const form = useForm<ProjectAppTestFormValues>({
     resolver: zodResolver(testAppSchema),
@@ -69,24 +80,89 @@ export function ProjectAppTestViewer() {
   }, [projectApp, setCurrentProjectApp]);
 
   useEffect(() => {
-    if (projectApp && hasRedirectUris) {
-      const first = redirectUris[0];
-      form.reset({ redirectUri: first ?? '', scopes: [] });
-    }
-  }, [projectApp, hasRedirectUris, redirectUris, form]);
+    setGrantCallbackUrl(getProjectOAuthRelayUrl(locale));
+  }, [locale]);
 
-  const handleSubmit = (values: ProjectAppTestFormValues) => {
+  useEffect(() => {
+    if (projectApp && hasRedirectUris) {
+      const preferred = pickProjectOAuthTestRedirectUri(redirectUris, locale);
+      form.reset({ redirectUri: preferred || redirectUris[0] || '', scopes: [] });
+    }
+  }, [projectApp, hasRedirectUris, redirectUris, form, locale]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as Record<string, unknown> | null;
+      if (!data || data.type !== PROJECT_OAUTH_MESSAGE_TYPE) return;
+      if (flowState && data.state && data.state !== flowState) return;
+      if (typeof data.error === 'string') {
+        setTokenError(
+          typeof data.error_description === 'string' ? data.error_description : data.error
+        );
+        setWaitingForTokens(false);
+        return;
+      }
+      if (typeof data.access_token === 'string') {
+        setTokens({
+          accessToken: data.access_token,
+          refreshToken: typeof data.refresh_token === 'string' ? data.refresh_token : '',
+          tokenType: typeof data.token_type === 'string' ? data.token_type : 'Bearer',
+          expiresIn: typeof data.expires_in === 'number' ? data.expires_in : 0,
+          scope: typeof data.scope === 'string' ? data.scope : undefined,
+          state: typeof data.state === 'string' ? data.state : (flowState ?? undefined),
+        });
+        setTokenError(null);
+        setWaitingForTokens(false);
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [flowState]);
+
+  useEffect(() => {
+    if (!flowState) return;
+    const stored = loadProjectOAuthTestTokens(flowState);
+    if (stored) {
+      setTokens(stored);
+      setWaitingForTokens(false);
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== `${PROJECT_OAUTH_TEST_TOKENS_PREFIX}${flowState}` || !event.newValue)
+        return;
+      const storedTokens = loadProjectOAuthTestTokens(flowState);
+      if (storedTokens) {
+        setTokens(storedTokens);
+        setWaitingForTokens(false);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [flowState]);
+
+  const handleSubmit = async (values: ProjectAppTestFormValues) => {
     if (!projectApp?.clientId) return;
-    const state = generateState();
-    const scopeParam = values.scopes?.length ? values.scopes.join(' ') : '';
-    const searchParams = new URLSearchParams({
-      client_id: projectApp.clientId,
-      redirect_uri: values.redirectUri,
-      state,
+    const oauthState = createProjectOAuthState();
+    await ensureProjectOAuthPkceSession({
+      clientId: projectApp.clientId,
+      redirectUri: values.redirectUri,
+      state: oauthState,
     });
-    if (scopeParam) searchParams.set('scope', scopeParam);
-    const path = `/${locale}/auth/project?${searchParams.toString()}`;
-    window.open(path, '_blank', 'noopener,noreferrer');
+    setFlowState(oauthState);
+    setTokens(null);
+    setTokenError(null);
+    setWaitingForTokens(isProjectOAuthRelayRedirectUri(values.redirectUri, locale));
+    const path = buildProjectOAuthEntryPath({
+      locale,
+      clientId: projectApp.clientId,
+      redirectUri: values.redirectUri,
+      state: oauthState,
+      scope: values.scopes?.length ? values.scopes.join(' ') : undefined,
+    });
+    if (isProjectOAuthRelayRedirectUri(values.redirectUri, locale)) {
+      window.open(path, 'grant-project-oauth-test', 'width=480,height=720');
+    } else {
+      window.open(path, '_blank', 'noopener,noreferrer');
+    }
   };
 
   if (loading && !projectApp) {
@@ -116,8 +192,19 @@ export function ProjectAppTestViewer() {
             onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-6"
           >
-            <ProjectAppTestOauthCard projectApp={projectApp} />
+            <ProjectAppTestOauthCard
+              projectApp={projectApp}
+              grantCallbackUrl={grantCallbackUrl}
+              grantCallbackMissing={grantCallbackMissing}
+            />
             <ProjectAppTestScopes />
+            {(waitingForTokens || tokens || tokenError) && (
+              <ProjectAppTestTokensCard
+                tokens={tokens}
+                error={tokenError}
+                waiting={waitingForTokens}
+              />
+            )}
           </form>
         </Form>
       )}

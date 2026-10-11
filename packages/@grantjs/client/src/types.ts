@@ -36,7 +36,7 @@ export type AuthorizationResult = Omit<SchemaAuthorizationResult, 'reason'> & {
 export interface SignInWithProjectAppOptions {
   /** Project app client_id */
   clientId: string;
-  /** Callback URL; user is redirected here with token in the URL fragment after consent */
+  /** Callback URL; after consent the user is redirected here with `?code=&state=` (authorization code + PKCE). */
   redirectUri: string;
   /** Optional scope (if app supports dynamic scope) */
   scope?: string;
