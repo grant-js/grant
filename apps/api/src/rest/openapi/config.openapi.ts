@@ -25,6 +25,7 @@ import { registerOrganizationsOpenApi } from './organizations.openapi';
 import { registerPermissionsOpenApi } from './permissions.openapi';
 import { registerProjectAppsOpenApi } from './project-apps.openapi';
 import { registerProjectOAuthConnectionsOpenApi } from './project-oauth-connections.openapi';
+import { registerProjectOAuthMetadataOpenApi } from './project-oauth-metadata.openapi';
 import { registerProjectsOpenApi } from './projects.openapi';
 import { registerResourcesOpenApi } from './resources.openapi';
 import { registerRolesOpenApi } from './roles.openapi';
@@ -79,6 +80,7 @@ function registerAllEndpoints() {
   registerResourcesOpenApi(registry);
   registerTagsOpenApi(registry);
   registerJwksOpenApi(registry);
+  registerProjectOAuthMetadataOpenApi(registry);
   registerSigningKeysOpenApi(registry);
   registerWebhookSubscriptionsOpenApi(registry);
 }

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Link } from '@/i18n/navigation';
+import { getApiBaseUrl } from '@/lib/constants';
 import { oauthClientDisplayName, oauthPrimaryButtonStyle } from '@/lib/oauth-branding';
 import {
   getProjectAppPublicInfo,
@@ -26,6 +27,14 @@ import {
   type ProjectAppPublicInfo,
   requestProjectEmailLink,
 } from '@/lib/project-oauth-api';
+import { buildProjectAuthorizeUrl } from '@/lib/project-oauth-authorize.lib';
+import {
+  createProjectOAuthState,
+  ensureProjectOAuthPkceSession,
+  isProjectOAuthEmailViaAuthorize,
+  loadProjectOAuthPkceSession,
+  markProjectOAuthEmailViaAuthorize,
+} from '@/lib/project-oauth-pkce.lib';
 
 type FormValues = { email: string };
 
@@ -38,9 +47,12 @@ export default function ProjectOAuthEmailPage() {
   const state = searchParams.get('state');
   const clientState = searchParams.get('client_state');
   const scopeParam = searchParams.get('scope');
+  const incomingChallenge = searchParams.get('code_challenge');
+  const incomingChallengeMethod = searchParams.get('code_challenge_method');
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(() => Boolean(clientId && redirectUri));
   const [appInfo, setAppInfo] = useState<ProjectAppPublicInfo | null>(() =>
     clientId ? peekProjectAppPublicInfo(clientId, scopeParam, redirectUri) : null
   );
@@ -60,6 +72,60 @@ export default function ProjectOAuthEmailPage() {
       cancelled = true;
     };
   }, [clientId, scopeParam, redirectUri]);
+
+  useEffect(() => {
+    if (!clientId || !redirectUri) return;
+    let cancelled = false;
+
+    const preparePkce = async () => {
+      const existing = loadProjectOAuthPkceSession(clientState ?? state);
+      const matches =
+        existing?.clientId === clientId &&
+        existing.redirectUri === redirectUri &&
+        isProjectOAuthEmailViaAuthorize();
+      if (matches) {
+        if (!cancelled) setPreparing(false);
+        return;
+      }
+
+      const oauthState = (clientState ?? state)?.trim() || createProjectOAuthState();
+      const useIncoming =
+        Boolean(incomingChallenge?.trim()) &&
+        (!incomingChallengeMethod || incomingChallengeMethod === 'S256');
+      const session = await ensureProjectOAuthPkceSession({
+        clientId,
+        redirectUri,
+        state: oauthState,
+        ...(useIncoming && incomingChallenge ? { challenge: incomingChallenge.trim() } : {}),
+      });
+      markProjectOAuthEmailViaAuthorize();
+      if (cancelled) return;
+      window.location.href = buildProjectAuthorizeUrl({
+        apiBase: getApiBaseUrl(),
+        clientId,
+        redirectUri,
+        state: session.state,
+        provider: 'email',
+        locale,
+        scope: scopeParam,
+        codeChallenge: session.challenge,
+      });
+    };
+
+    void preparePkce();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    clientId,
+    redirectUri,
+    state,
+    clientState,
+    scopeParam,
+    locale,
+    incomingChallenge,
+    incomingChallengeMethod,
+  ]);
 
   const schema = useMemo(
     () =>
@@ -105,6 +171,14 @@ export default function ProjectOAuthEmailPage() {
         <Link href="/auth/login">
           <Button variant="outline">{t('backToLogin')}</Button>
         </Link>
+      </div>
+    );
+  }
+
+  if (preparing) {
+    return (
+      <div className="space-y-6">
+        <p className="text-muted-foreground">{t('preparing')}</p>
       </div>
     );
   }

@@ -1,0 +1,115 @@
+import type { IProjectOAuthGrantRepository, ProjectOAuthGrantRecord } from '@grantjs/core';
+import type { ProjectOAuthGrantModel } from '@grantjs/database';
+import { projectOAuthGrants } from '@grantjs/database';
+
+import { Transaction } from '@/lib/transaction-manager.lib';
+import {
+  EntityRepository,
+  type FilterCondition,
+  type RelationsConfig,
+} from '@/repositories/common';
+
+function toGrantRecord(row: ProjectOAuthGrantModel): ProjectOAuthGrantRecord {
+  return {
+    id: row.id,
+    projectAppId: row.projectAppId,
+    userId: row.userId,
+    scopeTenant: row.scopeTenant,
+    scopeId: row.scopeId,
+    scopes: row.scopes ?? null,
+    expiresAt: row.expiresAt,
+    lastUsedAt: row.lastUsedAt ?? null,
+    userAgent: row.userAgent ?? null,
+    ipAddress: row.ipAddress ?? null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    deletedAt: row.deletedAt ?? null,
+  };
+}
+
+export class ProjectOAuthGrantRepository
+  extends EntityRepository<ProjectOAuthGrantModel, ProjectOAuthGrantModel>
+  implements IProjectOAuthGrantRepository
+{
+  protected table = projectOAuthGrants;
+  protected schemaName = 'projectOAuthGrants' as const;
+  protected searchFields: Array<keyof ProjectOAuthGrantModel> = ['projectAppId', 'userId'];
+  protected defaultSortField: keyof ProjectOAuthGrantModel = 'createdAt';
+  protected relations: RelationsConfig<ProjectOAuthGrantModel> = {};
+
+  async createGrant(
+    params: {
+      projectAppId: string;
+      userId: string;
+      scopeTenant: string;
+      scopeId: string;
+      scopes?: string[] | null;
+      tokenHash: string;
+      expiresAt: Date;
+      userAgent?: string | null;
+      ipAddress?: string | null;
+    },
+    transaction?: Transaction
+  ): Promise<ProjectOAuthGrantRecord> {
+    const row = await this.create(
+      {
+        projectAppId: params.projectAppId,
+        userId: params.userId,
+        scopeTenant: params.scopeTenant,
+        scopeId: params.scopeId,
+        scopes: params.scopes ?? null,
+        token: params.tokenHash,
+        expiresAt: params.expiresAt,
+        lastUsedAt: new Date(),
+        userAgent: params.userAgent ?? null,
+        ipAddress: params.ipAddress ?? null,
+      },
+      transaction
+    );
+    return toGrantRecord(row as ProjectOAuthGrantModel);
+  }
+
+  async findActiveByTokenHash(
+    tokenHash: string,
+    transaction?: Transaction
+  ): Promise<ProjectOAuthGrantRecord | null> {
+    const filters: FilterCondition<ProjectOAuthGrantModel>[] = [
+      { field: 'token', operator: 'eq', value: tokenHash },
+      { field: 'expiresAt', operator: 'gte', value: new Date() },
+    ];
+    const result = await this.query({ filters, limit: 1 }, transaction);
+    const row = this.first(result.items);
+    return row ? toGrantRecord(row as ProjectOAuthGrantModel) : null;
+  }
+
+  async rotateGrant(
+    params: {
+      id: string;
+      tokenHash: string;
+      expiresAt: Date;
+      lastUsedAt: Date;
+      userAgent?: string | null;
+      ipAddress?: string | null;
+    },
+    transaction?: Transaction
+  ): Promise<ProjectOAuthGrantRecord> {
+    const row = await this.update(
+      {
+        id: params.id,
+        input: {
+          token: params.tokenHash,
+          expiresAt: params.expiresAt,
+          lastUsedAt: params.lastUsedAt,
+          userAgent: params.userAgent ?? null,
+          ipAddress: params.ipAddress ?? null,
+        },
+      },
+      transaction
+    );
+    return toGrantRecord(row as ProjectOAuthGrantModel);
+  }
+
+  async softDeleteGrant(id: string, transaction?: Transaction): Promise<void> {
+    await this.softDelete({ id }, transaction);
+  }
+}

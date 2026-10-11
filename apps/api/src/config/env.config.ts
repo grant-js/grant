@@ -308,6 +308,15 @@ const PROJECT_OAUTH_CONFIG = {
   consentTtlSeconds: env.PROJECT_OAUTH_CONSENT_TTL_SECONDS,
 
   /**
+   * Refresh token lifetime for ProjectApp grants (`project_oauth_grants`).
+   * Distinct from JWT_CONFIG.refreshTokenExpirationDays (platform sessions).
+   */
+  refreshTokenExpirationDays: env.PROJECT_OAUTH_REFRESH_TOKEN_EXPIRATION_DAYS,
+
+  /** TTL in seconds for one-time ProjectApp authorization codes (cache). */
+  authorizationCodeTtlSeconds: env.PROJECT_OAUTH_AUTHORIZATION_CODE_TTL_SECONDS,
+
+  /**
    * Symmetric key used to encrypt persisted BYO GitHub/Google client secrets.
    * Resolved at use time through ISecretResolver; this snapshot is for boot visibility.
    */

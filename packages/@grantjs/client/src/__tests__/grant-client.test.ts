@@ -496,4 +496,40 @@ describe('GrantClient', () => {
       expect(callBody.scope).toBeUndefined();
     });
   });
+
+  describe('signInWithProjectApp', () => {
+    it('redirects to hosted entry with S256 code_challenge', async () => {
+      const hrefSetter = vi.fn();
+      vi.stubGlobal('window', {
+        location: {
+          set href(value: string) {
+            hrefSetter(value);
+          },
+        },
+      });
+      const oauthClient = new GrantClient({
+        apiUrl: 'https://api.example.com',
+        frontendUrl: 'https://app.example.com',
+      });
+      await oauthClient.signInWithProjectApp({
+        clientId: 'app_1',
+        redirectUri: 'https://tenant.example/example/callback',
+        state: 'state-1',
+        scope: 'document:read',
+        codeChallenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+      });
+      expect(hrefSetter).toHaveBeenCalledTimes(1);
+      const url = new URL(hrefSetter.mock.calls[0][0] as string);
+      expect(url.origin + url.pathname).toBe('https://app.example.com/en/auth/project');
+      expect(url.searchParams.get('client_id')).toBe('app_1');
+      expect(url.searchParams.get('redirect_uri')).toBe('https://tenant.example/example/callback');
+      expect(url.searchParams.get('state')).toBe('state-1');
+      expect(url.searchParams.get('scope')).toBe('document:read');
+      expect(url.searchParams.get('code_challenge')).toBe(
+        'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM'
+      );
+      expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+      vi.unstubAllGlobals();
+    });
+  });
 });

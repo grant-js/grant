@@ -76,6 +76,12 @@ import {
   projectOAuthConnections,
   projectOAuthConnectionsRelations,
 } from './project-oauth-connections.schema';
+import {
+  projectOAuthGrantAuditLogs,
+  projectOAuthGrantAuditLogsRelations,
+  projectOAuthGrants,
+  projectOAuthGrantsRelations,
+} from './project-oauth-grants.schema';
 import { projectPermissions, projectPermissionsRelations } from './project-permissions.schema';
 import {
   projectResourceAuditLogs,
@@ -201,6 +207,8 @@ export const schema = {
   projectApps,
   projectOAuthConnectionAuditLogs,
   projectOAuthConnections,
+  projectOAuthGrantAuditLogs,
+  projectOAuthGrants,
   projectGroups,
   projectRolePermissions,
   projectRolePermissionAuditLogs,
@@ -272,6 +280,8 @@ export const schema = {
   projectAppsRelations,
   projectOAuthConnectionAuditLogsRelations,
   projectOAuthConnectionsRelations,
+  projectOAuthGrantAuditLogsRelations,
+  projectOAuthGrantsRelations,
   projectGroupsRelations,
   projectRolePermissionsRelations,
   projectUserPermissionsRelations,

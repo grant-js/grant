@@ -184,6 +184,21 @@ export async function denyProjectConsent(
   return (data.success && data.data ? data.data : data) as ProjectConsentRedirectResult;
 }
 
+export interface ProjectOAuthTokenResult {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  refreshToken: string;
+  scope?: string;
+}
+
+export interface ExchangeProjectOAuthCodeInput {
+  clientId: string;
+  redirectUri: string;
+  code: string;
+  codeVerifier: string;
+}
+
 export interface ProjectEmailLinkRequestInput {
   clientId: string;
   redirectUri: string;
@@ -192,6 +207,35 @@ export interface ProjectEmailLinkRequestInput {
   state?: string | null;
   clientState?: string | null;
   scope?: string | null;
+}
+
+export async function exchangeProjectOAuthCode(
+  input: ExchangeProjectOAuthCodeInput
+): Promise<ProjectOAuthTokenResult> {
+  const apiBase = getApiBaseUrl();
+  const res = await fetch(`${apiBase}/api/auth/project/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'authorization_code',
+      client_id: input.clientId,
+      redirect_uri: input.redirectUri,
+      code: input.code,
+      code_verifier: input.codeVerifier,
+    }),
+  });
+  const data = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody & {
+    success?: boolean;
+    data?: ProjectOAuthTokenResult;
+  };
+  if (!res.ok) {
+    throw new ProjectOAuthApiError(
+      data.error ?? data.details ?? data.message ?? 'Token exchange failed',
+      res.status,
+      data
+    );
+  }
+  return (data.success && data.data ? data.data : data) as ProjectOAuthTokenResult;
 }
 
 /** Requests a project-scoped magic-link email for the OAuth email-first login flow. */

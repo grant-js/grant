@@ -20,6 +20,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { apiClient } from '../helpers/api-client';
 import { addProjectUserForE2e, closeDbHelper } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
+import { generateE2ePkce } from '../helpers/project-oauth-pkce';
 import { TestUser } from '../helpers/test-user';
 
 const PLATFORM_GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -28,7 +29,7 @@ const BYO_GOOGLE_CLIENT_SECRET = 'e2e-byo-google-client-secret-value';
 const redirectUri = 'https://example.com/oauth/byo-callback';
 
 interface CreateProjectAppData {
-  createProjectApp?: { id: string; clientId: string; name: string };
+  createProjectApp?: { id: string; clientId: string; clientSecret: string | null; name: string };
 }
 
 interface UpsertConnectionData {
@@ -57,7 +58,9 @@ describe('Project OAuth BYO E2E', () => {
   let org: { id: string; name: string; slug: string };
   let projectId: string;
   let projectAppClientId: string;
+  let projectAppClientSecret: string;
   let scopeId: string;
+  const pkce = generateE2ePkce();
 
   it('Setup: org, project, app, membership, and BYO Google connection', async () => {
     owner = await TestUser.create({ withOrgAccount: true });
@@ -82,6 +85,8 @@ describe('Project OAuth BYO E2E', () => {
     });
     expect(appRes.body.data?.createProjectApp).toBeDefined();
     projectAppClientId = appRes.body.data!.createProjectApp!.clientId;
+    expect(appRes.body.data!.createProjectApp!.clientSecret).toBeTruthy();
+    projectAppClientSecret = appRes.body.data!.createProjectApp!.clientSecret!;
 
     const profile = await owner.getProfile();
     const userId = (profile.body as MeProfileBody).data?.accounts?.[0]?.owner?.id;
@@ -123,6 +128,8 @@ describe('Project OAuth BYO E2E', () => {
         redirect_uri: redirectUri,
         state: 'e2e-byo-google',
         provider: 'google',
+        code_challenge: pkce.challenge,
+        code_challenge_method: 'S256',
       })
       .redirects(0)
       .expect(302);
@@ -146,13 +153,30 @@ describe('Project OAuth BYO E2E', () => {
     }
   );
 
-  it('POST consent approve returns fragment token with aud = ProjectApp client_id', async () => {
+  it('POST consent approve + token exchange returns JWT with aud = ProjectApp client_id', async () => {
+    const authorizeRes = await apiClient()
+      .get('/api/auth/project/authorize')
+      .query({
+        client_id: projectAppClientId,
+        redirect_uri: redirectUri,
+        state: 'e2e-aud-state',
+        provider: 'email',
+        code_challenge: pkce.challenge,
+        code_challenge_method: 'S256',
+      })
+      .redirects(0)
+      .expect(302);
+    const stateId = new URL(authorizeRes.headers.location, 'http://localhost').searchParams.get(
+      'state'
+    );
+    expect(stateId).toBeTruthy();
+
     const emailRes = await apiClient()
       .post('/api/auth/project/email/request')
       .send({
         client_id: projectAppClientId,
         redirect_uri: redirectUri,
-        state: 'e2e-aud-state',
+        state: stateId,
         email: owner.email,
       })
       .expect(202);
@@ -180,10 +204,25 @@ describe('Project OAuth BYO E2E', () => {
       .expect(200);
 
     const redirectUrl = approveRes.body.data.redirectUrl as string;
-    const hash = new URL(redirectUrl).hash.replace(/^#/, '');
-    const accessToken = new URLSearchParams(hash).get('access_token');
+    const code = new URL(redirectUrl).searchParams.get('code');
+    expect(code).toBeTruthy();
+
+    const tokenRes = await apiClient()
+      .post('/api/auth/project/token')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: projectAppClientId,
+        client_secret: projectAppClientSecret,
+        redirect_uri: redirectUri,
+        code,
+        code_verifier: pkce.verifier,
+      })
+      .expect(200);
+
+    const accessToken = tokenRes.body.data.accessToken as string;
     expect(accessToken).toBeTruthy();
-    expect(decodeJwtPayload(accessToken!).aud).toBe(projectAppClientId);
+    expect(decodeJwtPayload(accessToken).aud).toBe(projectAppClientId);
+    expect(decodeJwtPayload(accessToken).jti).toBeTruthy();
   });
 });
 

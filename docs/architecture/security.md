@@ -154,26 +154,58 @@ Projects can register **OAuth apps** (ProjectApp) so that project users can sign
 
 #### Flow
 
-| Step             | Endpoint                          | What happens                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ---------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. Authorize** | `GET /api/auth/project/authorize` | Tenant app (SPA) redirects the user here with query params **client_id**, **redirect_uri** (must be in the app's allowed list), and optional **state**. The API loads the ProjectApp by client_id, stores state in cache, and redirects the user to the provider (e.g. GitHub).                                                                                                                                                  |
-| **2. Callback**  | `GET /api/auth/project/callback`  | Provider redirects back with **code** and **state**. The API decodes state, loads the ProjectApp, exchanges the code for a provider token, resolves the global user (find by provider, link by email, or create), checks project membership, resolves scope (account or organization project user), signs a JWT with the project signing key, and redirects to the app's redirect_uri with the access token in the URL fragment. |
+Authorize and token URLs are **shared** (`/api/auth/project/authorize`, `/api/auth/project/token`). Per-project values are **iss** and **jwks_uri** only. There is no implicit fragment handoff and no dual mode.
 
-Query parameters for **Authorize:** `client_id`, `redirect_uri`, `state` (optional). For **Callback:** `code`, `state`.
+| Step             | Endpoint                                 | What happens                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Authorize** | `GET /api/auth/project/authorize`        | Tenant app or hosted sign-in redirects here with **client_id**, **redirect_uri** (allowlisted), **response_type=code**, S256 **code_challenge**, and optional **state** / **scope**. The API loads the ProjectApp, stores state + PKCE challenge in cache, and redirects to the provider (or email entry).                                                    |
+| **2. Callback**  | `GET /api/auth/project/callback`         | Provider redirects back with **code** and **state**. The API exchanges the provider code, resolves the global user, checks project membership, and redirects to hosted **consent** (not the tenant `redirect_uri`).                                                                                                                                           |
+| **3. Consent**   | `POST /api/auth/project/consent/approve` | On allow, Grant issues a one-time authorization code (cache, TTL `PROJECT_OAUTH_AUTHORIZATION_CODE_TTL_SECONDS`) and redirects to `redirect_uri?code=&state=`. Deny uses the query string (`error=access_denied`). The access JWT is **not** placed in the URL.                                                                                               |
+| **4. Token**     | `POST /api/auth/project/token`           | `grant_type=authorization_code` exchanges **code** + **code_verifier** (+ **client_secret** for confidential apps) for a project-scoped access JWT and a rotating **refresh_token**. `grant_type=refresh_token` rotates the refresh secret and re-checks membership + scopes. Refresh rows live in `project_oauth_grants` (SHA-256 hex), not `user_sessions`. |
+
+Query parameters for **Authorize:** `client_id`, `redirect_uri`, `response_type=code`, `code_challenge`, `code_challenge_method=S256`, `state` (optional), `scope` (optional), `provider`. For **Callback:** provider `code`, `state`. For **Token:** see [Token endpoint](#project-oauth-token-endpoint).
 
 ```bmermaid
 sequenceDiagram
-    participant SPA as Tenant app (SPA)
+    participant SPA as Tenant app
     participant API as Grant API
     participant Provider as OAuth provider (e.g. GitHub)
 
-    SPA->>API: GET /api/auth/project/authorize?client_id=&redirect_uri=&state=
-    API->>API: Load ProjectApp, store state in cache
+    SPA->>API: GET /api/auth/project/authorize?response_type=code&code_challenge=...
+    API->>API: Load ProjectApp, store state and PKCE challenge
     API->>Provider: Redirect to provider
-    Provider->>API: Redirect with code & state
-    API->>API: Exchange code, resolve user, check project membership
-    API->>SPA: Redirect to redirect_uri#access_token=...
+    Provider->>API: Redirect with provider code and state
+    API->>API: Resolve user, check membership, show consent
+    API->>SPA: Redirect to redirect_uri?code=&state=
+    SPA->>API: POST /api/auth/project/token (authorization_code + code_verifier)
+    API->>SPA: access_token, refresh_token, expires_in
 ```
+
+#### Token endpoint {#project-oauth-token-endpoint}
+
+`POST /api/auth/project/token` is the only ProjectApp token mint. It is **not** `POST /api/auth/refresh` and does **not** write platform `user_sessions`.
+
+| `grant_type`         | Required fields                                                                 | Result                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `authorization_code` | `client_id`, `code`, `code_verifier`, `redirect_uri`, `client_secret` if hashed | One-time code; PKCE S256; new grant row; access JWT + refresh                                  |
+| `refresh_token`      | `client_id`, `refresh_token`, `client_secret` if hashed                         | Rotate hash on the same grant; new access JWT; membership and `scopes ∩ app.scopes` recomputed |
+
+Public apps (no `clientSecretHash`) authenticate with PKCE only. Confidential apps must send `client_secret`. The endpoint rejects `client_credentials`, does not issue `id_token`, and does not implement DPoP.
+
+Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails. Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
+
+JSON envelope: `{ success, data: { accessToken, tokenType, expiresIn, refreshToken, scope? } }`.
+
+#### Discovery {#project-oauth-discovery}
+
+Each project publishes RFC 8414 authorization-server metadata. The well-known prefix is inserted **before** the issuer path. A twin OpenID configuration URL returns the **same JSON**. Grant is **not** an OpenID Provider (no UserInfo, no `id_token`, no OP features).
+
+| Document | URL                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------- |
+| RFC 8414 | `{APP_URL}/.well-known/oauth-authorization-server/org/{orgId}/prj/{projectId}` (or `…/acc/{accId}/prj/{projectId}`) |
+| Twin     | `{iss}/.well-known/openid-configuration`                                                                            |
+
+`iss` and `jwks_uri` stay the existing project JWKS issuers (`{APP_URL}/org/{orgId}/prj/{projectId}` or account equivalent; `jwks_uri` = `{iss}/.well-known/jwks.json`). `authorization_endpoint` and `token_endpoint` are the shared Project OAuth URLs above. Metadata advertises `response_types_supported: ["code"]`, `grant_types_supported: ["authorization_code", "refresh_token"]`, and `code_challenge_methods_supported: ["S256"]`.
 
 #### Token shape (project OAuth)
 
@@ -187,12 +219,13 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 | **scope**                 | Tenant scope: accountProjectUser or organizationProjectUser with id `accountId:projectId:userId` or `orgId:projectId:userId`. |
 | **type**                  | **projectApp** when the app has scopes (authorization capped by **scopes**); otherwise **apiKey**.                            |
 | **scopes**                | When type is projectApp: consented resource:action list (intersection of app scopes and user's project permissions).          |
-| **exp**, **iat**, **jti** | Standard expiration, issued-at, and token id.                                                                                 |
+| **exp**, **iat**, **jti** | Standard expiration and issued-at. For project OAuth, **jti** is the `project_oauth_grants` row id.                           |
 
 #### Security
 
 - **Branding:** `GET /api/auth/project/app-info` and consent-info are unauthenticated and return **resolved** branding only (`pictureUrl`, `projectName`, `primaryColor`, `showHelpPanel`, `themeMode`). Values resolve app → project → Grant defaults (help panel on, no custom color). `themeMode` is app-only (`light` / `dark` / `system`); null keeps the visitor's Grant theme. Organization logos are not in the fallback. Storage keys are tenant-scoped (`projects/{id}/picture`, `project-apps/{id}/picture`). Product surface: [Project OAuth](/core-concepts/project-oauth).
-- **redirect_uri** is validated strictly against the ProjectApp's allowed redirect URIs on both authorize and callback.
+- **redirect_uri** is validated strictly against the ProjectApp's allowed redirect URIs on authorize, callback, consent, and token exchange.
+- Authorize requires S256 PKCE. Authorization codes are one-time cache values (default 60s).
 - State is stored in cache with a short TTL (e.g. 10 minutes) and deleted after use.
 - Social providers resolve **per-project OAuth connections** (BYO client id + secret) with optional fallback to platform env credentials. See [Configuring social OAuth for project apps](#configuring-social-oauth-for-project-apps).
 - `GET /api/auth/project/app-info` returns `configuredProviders` for hosted sign-in; do not use `GET /api/auth/providers` on project pages.
@@ -261,14 +294,16 @@ Self-hosted single-tenant deployments may rely on platform env fallback (legacy 
 
 ### Configuration
 
-| Variable                                    | Default      | Description                                  |
-| ------------------------------------------- | ------------ | -------------------------------------------- |
-| `JWT_ACCESS_TOKEN_EXPIRATION_MINUTES`       | `15`         | Access token lifetime                        |
-| `JWT_REFRESH_TOKEN_EXPIRATION_DAYS`         | `30`         | Refresh token lifetime                       |
-| `JWT_JWKS_MAX_AGE_SECONDS`                  | `3600`       | Cache-Control max-age for JWKS responses     |
-| `JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS`  | `300`        | TTL for cached signing and verification keys |
-| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_ENABLED`  | `false`      | Enable automatic system key rotation         |
-| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE` | Monthly cron | Rotation schedule                            |
+| Variable                                       | Default      | Description                                             |
+| ---------------------------------------------- | ------------ | ------------------------------------------------------- |
+| `JWT_ACCESS_TOKEN_EXPIRATION_MINUTES`          | `15`         | Access token lifetime                                   |
+| `JWT_REFRESH_TOKEN_EXPIRATION_DAYS`            | `30`         | Platform session refresh lifetime                       |
+| `PROJECT_OAUTH_REFRESH_TOKEN_EXPIRATION_DAYS`  | `30`         | ProjectApp grant refresh lifetime (not JWT session TTL) |
+| `PROJECT_OAUTH_AUTHORIZATION_CODE_TTL_SECONDS` | `60`         | One-time authorization code cache TTL                   |
+| `JWT_JWKS_MAX_AGE_SECONDS`                     | `3600`       | Cache-Control max-age for JWKS responses                |
+| `JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS`     | `300`        | TTL for cached signing and verification keys            |
+| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_ENABLED`     | `false`      | Enable automatic system key rotation                    |
+| `JOBS_SYSTEM_SIGNING_KEY_ROTATION_SCHEDULE`    | Monthly cron | Rotation schedule                                       |
 
 ## Password Policy
 
@@ -446,7 +481,7 @@ Name-based min-AAL enforcement uses the GraphQL **`operationName`**. Clients tha
 
 ### Rate limiting
 
-MFA **setup**, **verify**, **recovery verify**, and recovery **status** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
+MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
 
 ### Automated testing and recovery
 
@@ -459,11 +494,11 @@ Rate limiting protects against brute force, abuse, and noisy-neighbor scenarios 
 
 Three layers are available:
 
-| Layer                     | Scope                                                      | Default                                |
-| ------------------------- | ---------------------------------------------------------- | -------------------------------------- |
-| **Global**                | All requests, keyed by IP                                  | 100 req / 15 min                       |
-| **Auth endpoints**        | Login, refresh, token exchange, CLI callback — keyed by IP | 20 req / 15 min                        |
-| **Per-tenant** (optional) | Authenticated requests keyed by tenant scope               | 200 req / 15 min (disabled by default) |
+| Layer                     | Scope                                                                                             | Default                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Global**                | All requests, keyed by IP                                                                         | 100 req / 15 min                       |
+| **Auth endpoints**        | Login, refresh, token exchange, CLI callback, project OAuth authorize/consent/token — keyed by IP | 20 req / 15 min                        |
+| **Per-tenant** (optional) | Authenticated requests keyed by tenant scope                                                      | 200 req / 15 min (disabled by default) |
 
 The `/health` endpoint is always excluded. Storage uses the same cache backend as the rest of the app (in-memory or Redis).
 

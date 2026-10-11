@@ -5,17 +5,20 @@ description: Hosted sign-in for project apps, consent, branding, and social conn
 
 # Project OAuth
 
-Projects can register **OAuth apps** (ProjectApp) so a tenant product can send users through Grant’s hosted sign-in and consent pages, then receive a project-scoped JWT. The security model — global user resolution, project membership, token claims — is in [Project OAuth](/architecture/security#project-oauth). This page covers the hosted UI, branding, and how social providers are configured.
+Projects can register **OAuth apps** (ProjectApp) so a tenant product can send users through Grant’s hosted sign-in and consent pages, then receive a project-scoped JWT. Consent returns an authorization **code** (query string), not an access token in the URL fragment. Exchange the code at `POST /api/auth/project/token` with S256 PKCE. The security model — global user resolution, project membership, token claims, discovery — is in [Project OAuth](/architecture/security#project-oauth). This page covers the hosted UI, branding, and how social providers are configured.
 
 ## Hosted pages
 
-| Page      | Route                   | Purpose                                                                 |
-| --------- | ----------------------- | ----------------------------------------------------------------------- |
-| Sign-in   | `/auth/project`         | Choose a provider (GitHub, Google, email) and see requested permissions |
-| Email     | `/auth/project/email`   | Request a magic-link when email is enabled                              |
-| Authorize | `/auth/project/consent` | Confirm the signed-in account and allow or deny access                  |
+| Page      | Route                   | Purpose                                                                                                                                                |
+| --------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sign-in   | `/auth/project`         | Choose a provider (GitHub, Google, email) and see requested permissions                                                                                |
+| Email     | `/auth/project/email`   | Request a magic-link when email is enabled                                                                                                             |
+| Authorize | `/auth/project/consent` | Confirm the signed-in account and allow or deny access                                                                                                 |
+| Relay     | `/auth/project/relay`   | Grant-hosted callback for **Test OAuth**: exchanges `?code=` and postMessages tokens to the same-origin opener. Tokens are never painted on this page. |
 
-Grant’s header stays visible. The client brand is the page subject: app mark, title, and theme. Use **Test OAuth** on the app to check the live pages.
+Grant’s header stays visible. The client brand is the page subject: app mark, title, and theme. Use **Test OAuth** on the app to check the live pages. Hosted sign-in and Test OAuth attach S256 PKCE before calling authorize.
+
+Tenant products should generate PKCE on their own origin, send the user through hosted sign-in (or directly to authorize), keep the `code_verifier`, and exchange at the token endpoint. Register the product callback on the ProjectApp `redirectUris` list. Do not use the Grant relay URL as a production client redirect.
 
 Public metadata for those pages comes from unauthenticated REST:
 
@@ -87,9 +90,22 @@ The authorize page shows who is consenting and **which provider** they used for 
 
 Long permission lists show the first five scopes, then **Show N more**.
 
+## Authorization code and tokens
+
+After **Allow**, Grant redirects to `redirect_uri?code=&state=`. `POST /api/auth/project/token` supports:
+
+- `grant_type=authorization_code` — `code`, `code_verifier`, `redirect_uri`, `client_id`, plus `client_secret` when the app is confidential
+- `grant_type=refresh_token` — rotating refresh; membership and granted scopes are recomputed
+
+The token endpoint does not accept `client_credentials`, does not issue `id_token`, and is not `POST /api/auth/refresh`. Refresh secrets live in `project_oauth_grants` (hashed). See [Security § Token endpoint](/architecture/security#project-oauth-token-endpoint).
+
+## Discovery
+
+RFC 8414 metadata is published with well-known **before** the issuer path. `{iss}/.well-known/openid-configuration` returns the same JSON. Grant is not an OpenID Provider. Shared authorize/token URLs; per-project `iss` and `jwks_uri`. See [Security § Discovery](/architecture/security#project-oauth-discovery).
+
 ## Related
 
-- [Project OAuth security](/architecture/security#project-oauth) — authorize/callback, tokens, redirect allowlists, IdP callback setup
+- [Project OAuth security](/architecture/security#project-oauth) — authorize, consent `?code=`, token endpoint, discovery, redirect allowlists, IdP callback setup
 - [Sign-in providers](/core-concepts/sign-in-providers) — platform GitHub/Google env configuration (Grant account login)
 - [ADR 0008](https://github.com/grant-js/grant/blob/main/decisions/0008-per-project-oauth-connections.md) — why connections are per-project and BYO
 - [File storage](/advanced-topics/file-storage) — upload adapters and paths

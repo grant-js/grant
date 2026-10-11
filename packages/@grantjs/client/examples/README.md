@@ -25,9 +25,16 @@ pnpm dev
 
 Then open the example app at the origin you set in `NEXT_PUBLIC_EXAMPLE_APP_ORIGIN` (default `http://localhost:3004`; the app is served under base path `/example`). Implement `getAccessToken` in the example's Grant config to return the token from your secure auth store so permission checks work.
 
-### Project OAuth (redirect flow)
+### Project OAuth (authorization-code + PKCE)
 
-Add your app's callback URL (`${NEXT_PUBLIC_EXAMPLE_APP_ORIGIN}/example/callback`, e.g. `http://localhost:3004/example/callback`) to the project app's **allowed redirect URIs** in the Grant dashboard. After sign-in and consent, the user is redirected back with the token in the URL fragment; your backend should establish a secure session (e.g. httpOnly cookie) and redirect the user.
+Add your app's callback URL (`${NEXT_PUBLIC_EXAMPLE_APP_ORIGIN}/example/callback`, e.g. `http://localhost:3004/example/callback`) to the project app's **allowed redirect URIs**. The example:
+
+1. Generates an S256 PKCE pair and stores the **verifier** in sessionStorage keyed by `state`
+2. Calls `signInWithProjectApp` with `codeChallenge` so hosted sign-in forwards it to authorize
+3. On `/example/callback`, reads `?code=` (not `#access_token=`), POSTs `grant_type=authorization_code` to `{NEXT_PUBLIC_GRANT_API_URL}/api/auth/project/token` with `code`, `code_verifier`, `client_id`, and `redirect_uri`
+4. Shows the access token only (refresh token stays off the page)
+
+Set `NEXT_PUBLIC_GRANT_API_URL` (default `http://localhost:4000`) and `NEXT_PUBLIC_GRANT_FRONTEND_URL` (default `http://localhost:3000`). Then establish a secure session in production (e.g. httpOnly cookie). Public ProjectApps use PKCE only; confidential apps must send `client_secret` from a backend.
 
 ## Examples
 

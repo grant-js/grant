@@ -19,6 +19,8 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectConsentInfoResponseSchema,
+  projectTokenBodySchema,
+  projectTokenResponseSchema,
   refreshSessionRequestSchema,
   refreshSessionResponseSchema,
   registerRequestSchema,
@@ -38,6 +40,7 @@ import {
   verifyMfaRequestSchema,
   verifyMfaResponseSchema,
 } from '@/rest/schemas';
+import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 /**
  * Register authentication endpoints in the OpenAPI registry
  */
@@ -729,9 +732,7 @@ and either logs in an existing user or creates a new account.
     tags: ['Authentication'],
     summary: 'Initiate project OAuth',
     description: `
-Initiate the project-scoped OAuth flow. Used by project applications (ProjectApp) to let end users sign in with a provider (e.g. GitHub) and receive a JWT scoped to that project.
-
-The user is redirected to the provider; after authorization, the provider redirects to \`/api/auth/project/callback\` with an authorization code.
+Initiate the project-scoped authorization-code + PKCE flow. Used by project applications (ProjectApp) to let end users sign in with a provider (e.g. GitHub). Consent returns a one-time \`code\`; the app exchanges it at \`POST /api/auth/project/token\`.
 
 ### Query Parameters
 - \`client_id\` (required): The project app client ID (from ProjectApp).
@@ -740,12 +741,16 @@ The user is redirected to the provider; after authorization, the provider redire
 - \`scope\` (optional): Space-delimited scopes to request; must be a subset of the app's configured scopes. If omitted, all app scopes are used.
 - \`provider\` (optional): Auth provider (e.g. \`github\`, \`email\`). Default: \`github\`.
 - \`locale\` (optional): Frontend locale for the consent redirect (e.g. \`en\`, \`de\`). When provided, the callback redirects to \`/{locale}/auth/project/consent\`.
+- \`response_type\` (optional): Must be \`code\` (default). Implicit \`token\` is rejected.
+- \`code_challenge\` (required): PKCE S256 challenge (43–128 unreserved characters).
+- \`code_challenge_method\` (optional): Must be \`S256\` (default).
 
 ### Flow
-1. Validates client_id and redirect_uri against the project app.
-2. Stores state in cache and redirects to the provider (e.g. GitHub).
-3. User authorizes; provider redirects to \`/api/auth/project/callback\` with code and state.
-4. Callback exchanges code, resolves/creates user, checks project membership, issues project-scoped JWT, redirects to \`redirect_uri\` with token in fragment.
+1. Validates client_id, redirect_uri, response_type=code, and PKCE S256.
+2. Stores state (including the code challenge) in cache and redirects to the provider.
+3. User authorizes; provider redirects to \`/api/auth/project/callback\`.
+4. Callback resolves the user, checks project membership, and redirects to the consent page.
+5. Consent approve returns \`redirect_uri?code=&state=\`. Exchange the code at \`POST /api/auth/project/token\`.
     `.trim(),
     request: {
       query: z.object({
@@ -772,6 +777,18 @@ The user is redirected to the provider; after authorization, the provider redire
         locale: z.string().min(1).optional().openapi({
           description: 'Frontend locale for consent redirect (e.g. en, de)',
           example: 'en',
+        }),
+        response_type: z.enum(['code']).optional().openapi({
+          description: 'OAuth response type. Only code is supported.',
+          default: 'code',
+        }),
+        code_challenge: z.string().min(43).max(128).openapi({
+          description: 'PKCE S256 code challenge',
+          example: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+        }),
+        code_challenge_method: z.literal('S256').optional().openapi({
+          description: 'PKCE challenge method. Only S256 is supported.',
+          default: 'S256',
         }),
       }),
     },
@@ -1005,7 +1022,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     tags: ['Authentication'],
     summary: 'Approve consent',
     description:
-      'Consumes the consent token, issues the project-scoped JWT, and returns the redirect URL to the app with access_token in fragment.',
+      'Consumes the consent token, mints a one-time authorization code, and returns the redirect URL to the app with `code` and optional `state` in the query string.',
     request: {
       body: {
         content: {
@@ -1017,7 +1034,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     },
     responses: {
       200: {
-        description: 'Redirect URL to app with token in fragment',
+        description: 'Redirect URL to app with authorization code in the query string',
         content: {
           'application/json': {
             schema: z.object({
@@ -1049,7 +1066,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     tags: ['Authentication'],
     summary: 'Deny consent',
     description:
-      'Consumes the consent token and returns the redirect URL to the app with error=access_denied in fragment.',
+      'Consumes the consent token and returns the redirect URL to the app with error=access_denied in the query string.',
     request: {
       body: {
         content: {
@@ -1061,7 +1078,7 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
     },
     responses: {
       200: {
-        description: 'Redirect URL to app with error in fragment',
+        description: 'Redirect URL to app with error in the query string',
         content: {
           'application/json': {
             schema: z.object({
@@ -1073,6 +1090,56 @@ After authentication, redirects to the consent page (\`PROJECT_OAUTH_CONSENT_URL
       },
       401: {
         description: 'Invalid or expired consent token',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/api/auth/project/token',
+    operationId: 'postApiAuthProjectToken',
+    tags: ['Authentication'],
+    summary: 'Project OAuth token',
+    description: `
+Exchange a ProjectApp authorization code or rotating refresh token for a project-scoped access JWT.
+
+Supports \`grant_type=authorization_code\` (code, code_verifier, redirect_uri, client_id) and \`grant_type=refresh_token\`. PKCE S256 is required for every client. Confidential apps (those with a stored client secret hash) must also send \`client_secret\`. Public apps omit it.
+
+Does not issue \`id_token\`, does not accept \`client_credentials\`, and does not write platform \`user_sessions\`.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: projectTokenBodySchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Access and refresh tokens',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(projectTokenResponseSchema),
+          },
+        },
+      },
+      400: {
+        description: 'Validation error or unsupported grant_type',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'invalid_client or invalid_grant',
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,

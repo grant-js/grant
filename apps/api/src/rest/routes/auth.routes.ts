@@ -23,6 +23,7 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectEmailRequestSchema,
+  projectTokenBodySchema,
   refreshSessionRequestSchema,
   registerRequestSchema,
   requestPasswordResetRequestSchema,
@@ -512,15 +513,31 @@ export function createAuthRoutes(context: RequestContext) {
   router.get(
     '/project/authorize',
     validateQuery(projectAuthorizeQuerySchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ query: typeof projectAuthorizeQuerySchema }>, res: Response) => {
-      const { client_id, redirect_uri, state, provider, scope, locale } = req.query;
+      const {
+        client_id,
+        redirect_uri,
+        state,
+        provider,
+        scope,
+        locale,
+        response_type,
+        code_challenge,
+        code_challenge_method,
+      } = req.query;
       const result = await context.handlers.projectOAuth.initiateProjectAuthorize(
         client_id,
         redirect_uri,
         state,
         provider as ProjectOAuthProvider,
         scope,
-        locale
+        locale,
+        {
+          responseType: response_type,
+          codeChallenge: code_challenge,
+          codeChallengeMethod: code_challenge_method,
+        }
       );
       res.redirect(result.authorizationUrl);
     }
@@ -529,6 +546,7 @@ export function createAuthRoutes(context: RequestContext) {
   router.post(
     '/project/email/request',
     validateBody(projectEmailRequestSchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectEmailRequestSchema }>, res: Response) => {
       const { client_id, redirect_uri, state, email, client_state, scope, locale } = req.body;
       await context.handlers.projectOAuth.requestProjectEmailMagicLink(
@@ -559,10 +577,7 @@ export function createAuthRoutes(context: RequestContext) {
           res.redirect(result.consentUrl);
           return;
         }
-        const url = new URL(result.redirectUri);
-        url.hash = `access_token=${encodeURIComponent(result.accessToken)}&expires_in=${result.expiresIn}&token_type=Bearer`;
-        if (result.clientState) url.hash += `&state=${encodeURIComponent(result.clientState)}`;
-        res.redirect(url.toString());
+        throw new AuthenticationError('Consent required');
       } catch (err) {
         const errorCode = determineErrorCode(err);
         const frontendUrl = config.security.frontendUrl;
@@ -632,6 +647,7 @@ export function createAuthRoutes(context: RequestContext) {
   router.get(
     '/project/consent-info',
     validateQuery(projectConsentInfoQuerySchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ query: typeof projectConsentInfoQuerySchema }>, res: Response) => {
       const { consent_token } = req.query;
       const info = await context.handlers.projectOAuth.getProjectConsentInfo(
@@ -645,6 +661,7 @@ export function createAuthRoutes(context: RequestContext) {
   router.post(
     '/project/consent/approve',
     validateBody(projectConsentApproveBodySchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectConsentApproveBodySchema }>, res: Response) => {
       const { consent_token } = req.body;
       const { redirectUrl } =
@@ -654,8 +671,29 @@ export function createAuthRoutes(context: RequestContext) {
   );
 
   router.post(
+    '/project/token',
+    validate({ body: projectTokenBodySchema }),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
+    async (req: TypedRequest<{ body: typeof projectTokenBodySchema }>, res: Response) => {
+      const result = await context.handlers.projectOAuth.handleProjectToken({
+        grantType: req.body.grant_type,
+        clientId: req.body.client_id,
+        redirectUri: req.body.redirect_uri,
+        code: req.body.code,
+        codeVerifier: req.body.code_verifier,
+        refreshToken: req.body.refresh_token,
+        clientSecret: req.body.client_secret,
+        userAgent: context.userAgent,
+        ipAddress: context.ipAddress,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
     '/project/consent/deny',
     validateBody(projectConsentDenyBodySchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectConsentDenyBodySchema }>, res: Response) => {
       const { consent_token } = req.body;
       const { redirectUrl } =

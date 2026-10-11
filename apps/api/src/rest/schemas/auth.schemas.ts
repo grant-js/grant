@@ -351,6 +351,8 @@ const projectOAuthProviderSchema = z.enum(
   PROJECT_OAUTH_PROVIDERS as unknown as [string, ...string[]]
 );
 
+const pkceUnreserved = /^[A-Za-z0-9\-._~]{43,128}$/;
+
 export const projectAuthorizeQuerySchema = z.object({
   client_id: z.string().min(1, 'client_id required'),
   redirect_uri: z.string().url('redirect_uri must be a valid URL'),
@@ -361,6 +363,63 @@ export const projectAuthorizeQuerySchema = z.object({
   scope: z.string().optional(),
   /** Frontend locale for consent redirect (e.g. en, de). */
   locale: z.string().min(1).optional(),
+  response_type: z.enum(['code']).optional().default('code'),
+  code_challenge: z
+    .string()
+    .min(43, 'code_challenge must be at least 43 characters')
+    .max(128)
+    .regex(pkceUnreserved, 'code_challenge must be unreserved PKCE characters'),
+  code_challenge_method: z.literal('S256').optional().default('S256'),
+});
+
+export const projectTokenBodySchema = z
+  .object({
+    grant_type: z.enum(['authorization_code', 'refresh_token']),
+    client_id: z.string().min(1, 'client_id required'),
+    redirect_uri: z.string().url().optional(),
+    code: z.string().min(1).optional(),
+    code_verifier: z
+      .string()
+      .regex(pkceUnreserved, 'code_verifier must be 43-128 unreserved characters')
+      .optional(),
+    refresh_token: z.string().min(1).optional(),
+    client_secret: z.string().min(1).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.grant_type === 'authorization_code') {
+      if (!data.code) {
+        ctx.addIssue({ code: 'custom', path: ['code'], message: 'code is required' });
+      }
+      if (!data.code_verifier) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['code_verifier'],
+          message: 'code_verifier is required',
+        });
+      }
+      if (!data.redirect_uri) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['redirect_uri'],
+          message: 'redirect_uri is required',
+        });
+      }
+    }
+    if (data.grant_type === 'refresh_token' && !data.refresh_token) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['refresh_token'],
+        message: 'refresh_token is required',
+      });
+    }
+  });
+
+export const projectTokenResponseSchema = z.object({
+  accessToken: z.string(),
+  tokenType: z.literal('Bearer'),
+  expiresIn: z.number().int().positive(),
+  refreshToken: z.string(),
+  scope: z.string().optional(),
 });
 
 export const projectCallbackQuerySchema = z

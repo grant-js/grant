@@ -27,6 +27,11 @@ const { mockConfig } = vi.hoisted(() => ({
       emailEntryUrl: 'https://app.example.com/auth/project/email',
       consentUrl: 'https://app.example.com/auth/project/consent',
       requireByoSocial: false,
+      stateTtlSeconds: 600,
+      emailTokenTtlSeconds: 600,
+      consentTtlSeconds: 600,
+      authorizationCodeTtlSeconds: 60,
+      refreshTokenExpirationDays: 30,
     },
     app: {
       url: 'https://api.example.com',
@@ -35,7 +40,7 @@ const { mockConfig } = vi.hoisted(() => ({
       version: 'test',
     },
     jwt: { accessTokenExpirationMinutes: 15 },
-    token: { defaultValidityMinutes: 10, defaultTokenLength: 32 },
+    token: { defaultValidityMinutes: 10, defaultTokenLength: 32, bcryptRounds: 4 },
     githubOAuth: {
       isConfigured: () => true,
       projectCallbackUrl: 'https://api.example.com/api/auth/project/callback',
@@ -64,6 +69,22 @@ const fixtureApp = {
   scopes: null as string[] | null,
   name: 'Test App',
 };
+
+const RFC_PKCE = {
+  verifier: 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
+  challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+};
+
+function authorizeQuery(extra: Record<string, string> = {}) {
+  return {
+    client_id: fixtureApp.clientId,
+    redirect_uri: 'https://example.com/callback',
+    state: 'test-state',
+    code_challenge: RFC_PKCE.challenge,
+    code_challenge_method: 'S256',
+    ...extra,
+  };
+}
 
 interface ProjectOAuthContextOverrides {
   getProjectAppByClientId?: () => Promise<typeof fixtureApp | null>;
@@ -99,6 +120,16 @@ function buildProjectOAuthContext(
         () => overrides?.getProjectAppByClientId?.() ?? Promise.resolve(fixtureApp)
       ),
     getProjectAppById: vi.fn().mockResolvedValue(fixtureApp),
+    getClientSecretHash: vi.fn().mockResolvedValue(null),
+  };
+  const projectOAuthGrants = {
+    createGrant: vi.fn().mockResolvedValue({
+      grant: { id: 'grant-id', projectAppId: fixtureApp.id, userId: 'user-1' },
+      refreshToken: 'refresh-token',
+    }),
+    rotateByRefreshToken: vi.fn(),
+    revokeGrant: vi.fn(),
+    revokeByRefreshToken: vi.fn(),
   };
   const projects = {
     getProjects: vi.fn().mockResolvedValue({ projects: [], totalCount: 0, hasNextPage: false }),
@@ -202,7 +233,8 @@ function buildProjectOAuthContext(
     email as never,
     users as never,
     userAuthenticationMethods as never,
-    usersScopeCacheUpdater as never
+    usersScopeCacheUpdater as never,
+    projectOAuthGrants as never
   );
 
   return {
@@ -252,12 +284,7 @@ describe('Project OAuth integration', () => {
     it('returns 302 with Location to GitHub when provider=github', async () => {
       const res = await request(app)
         .get('/api/auth/project/authorize')
-        .query({
-          client_id: fixtureApp.clientId,
-          redirect_uri: 'https://example.com/callback',
-          state: 'test-state',
-          provider: UserAuthenticationMethodProvider.Github,
-        })
+        .query(authorizeQuery({ provider: UserAuthenticationMethodProvider.Github }))
         .expect(302);
 
       expect(res.headers.location).toContain('github.com');
@@ -267,12 +294,7 @@ describe('Project OAuth integration', () => {
     it('returns 302 with Location to email entry URL when provider=email', async () => {
       const res = await request(app)
         .get('/api/auth/project/authorize')
-        .query({
-          client_id: fixtureApp.clientId,
-          redirect_uri: 'https://example.com/callback',
-          state: 'test-state',
-          provider: UserAuthenticationMethodProvider.Email,
-        })
+        .query(authorizeQuery({ provider: UserAuthenticationMethodProvider.Email }))
         .expect(302);
 
       expect(res.headers.location).toContain('/en/auth/project/email');
@@ -284,12 +306,7 @@ describe('Project OAuth integration', () => {
     it('returns 302 with Location to Google when provider=google', async () => {
       const res = await request(app)
         .get('/api/auth/project/authorize')
-        .query({
-          client_id: fixtureApp.clientId,
-          redirect_uri: 'https://example.com/callback',
-          state: 'test-state',
-          provider: UserAuthenticationMethodProvider.Google,
-        })
+        .query(authorizeQuery({ provider: UserAuthenticationMethodProvider.Google }))
         .expect(302);
 
       expect(res.headers.location).toContain('accounts.google.com');
@@ -311,12 +328,7 @@ describe('Project OAuth integration', () => {
 
         const res = await request(appByo)
           .get('/api/auth/project/authorize')
-          .query({
-            client_id: fixtureApp.clientId,
-            redirect_uri: 'https://example.com/callback',
-            state: 'test-state',
-            provider: UserAuthenticationMethodProvider.Github,
-          })
+          .query(authorizeQuery({ provider: UserAuthenticationMethodProvider.Github }))
           .expect(302);
 
         expect(res.headers.location).toContain('client_id=byo-github-client');
@@ -329,11 +341,7 @@ describe('Project OAuth integration', () => {
     it('returns 400 when redirect_uri is not in allowlist', async () => {
       await request(app)
         .get('/api/auth/project/authorize')
-        .query({
-          client_id: fixtureApp.clientId,
-          redirect_uri: 'https://evil.com/callback',
-          state: 'test-state',
-        })
+        .query(authorizeQuery({ redirect_uri: 'https://evil.com/callback' }))
         .expect(400);
     });
 
@@ -352,12 +360,7 @@ describe('Project OAuth integration', () => {
 
         await request(appRequireByo)
           .get('/api/auth/project/authorize')
-          .query({
-            client_id: fixtureApp.clientId,
-            redirect_uri: 'https://example.com/callback',
-            state: 'test-state',
-            provider: UserAuthenticationMethodProvider.Google,
-          })
+          .query(authorizeQuery({ provider: UserAuthenticationMethodProvider.Google }))
           .expect(500);
       } finally {
         mockConfig.projectOAuth.requireByoSocial = false;
@@ -660,6 +663,8 @@ describe('Project OAuth integration', () => {
           redirectUri: 'https://example.com/callback',
           stateId,
           email: 'user@example.com',
+          codeChallenge: RFC_PKCE.challenge,
+          codeChallengeMethod: 'S256',
         },
         600
       );
@@ -682,8 +687,10 @@ describe('Project OAuth integration', () => {
       expect(approveRes.body.success).toBe(true);
       expect(approveRes.body.data.redirectUrl).toBeDefined();
       expect(approveRes.body.data.redirectUrl).toContain('https://example.com/callback');
-      expect(approveRes.body.data.redirectUrl).toContain('access_token=');
-      expect(approveRes.body.data.redirectUrl).toContain('token_type=Bearer');
+      const redirect = new URL(approveRes.body.data.redirectUrl);
+      expect(redirect.searchParams.get('code')).toBeTruthy();
+      expect(redirect.hash).toBe('');
+      expect(approveRes.body.data.redirectUrl).not.toContain('access_token=');
     });
   });
 

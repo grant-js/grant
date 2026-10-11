@@ -72,8 +72,11 @@ export class GrantClient {
 
   /**
    * Start project-app OAuth flow (redirect only).
-   * Navigates the current window to the Grant OAuth entry page; after sign-in and consent,
-   * the user is redirected to the app's `redirect_uri` with token in the URL fragment.
+   * Navigates the current window to the Grant OAuth entry page. Pass a client-generated
+   * S256 `codeChallenge`; hosted pages forward it to `GET /api/auth/project/authorize`.
+   * After consent the user returns to `redirect_uri?code=&state=`. Exchange the code at
+   * `POST /api/auth/project/token` with `grant_type=authorization_code` and the PKCE
+   * `code_verifier` you stored (do not expect `#access_token=`).
    *
    * Requires `config.frontendUrl` and `redirectUri`.
    */
@@ -95,6 +98,10 @@ export class GrantClient {
       state: options.state ?? '',
     });
     if (options.scope) params.set('scope', options.scope);
+    if (options.codeChallenge?.trim()) {
+      params.set('code_challenge', options.codeChallenge.trim());
+      params.set('code_challenge_method', options.codeChallengeMethod ?? 'S256');
+    }
 
     const entryUrl = `${frontendUrl.replace(/\/$/, '')}${entryPath}?${params.toString()}`;
     if (typeof window !== 'undefined') {

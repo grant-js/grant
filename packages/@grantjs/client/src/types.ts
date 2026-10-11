@@ -36,7 +36,7 @@ export type AuthorizationResult = Omit<SchemaAuthorizationResult, 'reason'> & {
 export interface SignInWithProjectAppOptions {
   /** Project app client_id */
   clientId: string;
-  /** Callback URL; user is redirected here with token in the URL fragment after consent */
+  /** Callback URL; after consent the user is redirected here with `?code=&state=` (authorization code + PKCE). */
   redirectUri: string;
   /** Optional scope (if app supports dynamic scope) */
   scope?: string;
@@ -44,6 +44,10 @@ export interface SignInWithProjectAppOptions {
   state?: string;
   /** Locale for entry URL (e.g. 'en'). Default 'en'. */
   locale?: string;
+  /** S256 PKCE challenge generated on the client origin. Hosted pages pass this through to authorize. */
+  codeChallenge?: string;
+  /** Only `S256` is supported. Default `S256` when `codeChallenge` is set. */
+  codeChallengeMethod?: 'S256';
 }
 
 /**

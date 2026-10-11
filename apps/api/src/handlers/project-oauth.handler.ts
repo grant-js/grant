@@ -7,6 +7,7 @@ import type {
   IOrganizationUserService,
   IProjectAppService,
   IProjectOAuthConnectionService,
+  IProjectOAuthGrantService,
   IProjectPermissionService,
   IProjectService,
   IProjectUserService,
@@ -29,6 +30,7 @@ import {
 import { config } from '@/config';
 import { PROJECT_OAUTH_PROVIDERS, type ProjectOAuthProvider } from '@/config/env.config';
 import {
+  PROJECT_OAUTH_CODE_KEY_PREFIX,
   PROJECT_OAUTH_CONSENT_KEY_PREFIX,
   PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX,
   PROJECT_OAUTH_STATE_KEY_PREFIX,
@@ -39,13 +41,19 @@ import {
   BadRequestError,
   ConfigurationError,
   NotFoundError,
+  ValidationError,
 } from '@/lib/errors';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { createLogger } from '@/lib/logger';
 import { resolveOAuthBranding } from '@/lib/oauth-branding.lib';
 import { oauthPictureUrlFromProviderData } from '@/lib/oauth-picture.lib';
 import type { IProjectOAuthProvider } from '@/lib/project-oauth';
-import { generateSecureToken } from '@/lib/token.lib';
+import {
+  generateAuthorizationCode,
+  isValidPkceChallenge,
+  verifyPkceS256,
+} from '@/lib/project-oauth-pkce.lib';
+import { generateSecureToken, verifySecret } from '@/lib/token.lib';
 
 import type { AuthHandler } from './auth.handler';
 
@@ -65,6 +73,8 @@ interface ProjectOAuthState {
   locale?: string;
   /** Which client started this flow; callback must reuse the same source. Never store secrets. */
   credentialSource?: 'byo' | 'platform';
+  codeChallenge?: string;
+  codeChallengeMethod?: 'S256';
 }
 
 interface ProjectOAuthEmailTokenPayload {
@@ -77,6 +87,8 @@ interface ProjectOAuthEmailTokenPayload {
   requestedScopeSlugs?: string[];
   /** Frontend locale for consent redirect and email content (e.g. en, de). */
   locale?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: 'S256';
 }
 
 export interface InitiateProjectAuthorizeResult {
@@ -106,6 +118,47 @@ interface ProjectOAuthConsentPayload {
   requestedScopeSlugs?: string[];
   /** Provider used for this sign-in (email, github, google). */
   provider?: ProjectOAuthProvider;
+  codeChallenge?: string;
+  codeChallengeMethod?: 'S256';
+}
+
+interface ProjectOAuthAuthorizationCodePayload {
+  userId: string;
+  projectAppId: string;
+  redirectUri: string;
+  clientState?: string;
+  scope: Scope;
+  signingScope: Scope;
+  requestedScopeSlugs?: string[];
+  codeChallenge: string;
+  codeChallengeMethod?: 'S256';
+  clientId: string;
+}
+
+export interface HandleProjectTokenParams {
+  grantType: string;
+  clientId: string;
+  redirectUri?: string;
+  code?: string;
+  codeVerifier?: string;
+  refreshToken?: string;
+  clientSecret?: string;
+  userAgent?: string | null;
+  ipAddress?: string | null;
+}
+
+export interface HandleProjectTokenResult {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  refreshToken: string;
+  scope?: string;
+}
+
+export interface InitiateProjectAuthorizePkce {
+  responseType?: string | null;
+  codeChallenge?: string | null;
+  codeChallengeMethod?: string | null;
 }
 
 export class ProjectOAuthHandler {
@@ -130,7 +183,8 @@ export class ProjectOAuthHandler {
     private readonly email: IEmailService,
     private readonly users: IUserService,
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
-    private readonly usersScopeCacheUpdater: IUsersScopeCacheUpdater
+    private readonly usersScopeCacheUpdater: IUsersScopeCacheUpdater,
+    private readonly projectOAuthGrants: IProjectOAuthGrantService
   ) {}
 
   /** Parse OAuth scope param (space-delimited) into slug array. */
@@ -313,7 +367,8 @@ export class ProjectOAuthHandler {
     clientState?: string,
     provider: ProjectOAuthProvider = UserAuthenticationMethodProvider.Github,
     scopeParam?: string | null,
-    locale?: string | null
+    locale?: string | null,
+    pkce?: InitiateProjectAuthorizePkce
   ): Promise<InitiateProjectAuthorizeResult> {
     const app = await this.projectApps.getProjectAppByClientId(clientId);
     if (!app) {
@@ -333,6 +388,8 @@ export class ProjectOAuthHandler {
     if (!PROJECT_OAUTH_PROVIDERS.includes(provider)) {
       throw new BadRequestError(`Unknown provider: ${provider}`);
     }
+
+    const { codeChallenge, codeChallengeMethod } = this.requireAuthorizePkce(pkce);
 
     const appScopeSlugs = app.scopes ?? [];
     const requestedSlugs = this.parseScopeParam(scopeParam);
@@ -366,6 +423,8 @@ export class ProjectOAuthHandler {
       redirectUri,
       clientState,
       provider,
+      codeChallenge,
+      codeChallengeMethod,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
       ...(locale?.trim() ? { locale: locale.trim() } : {}),
       ...(credentialSource ? { credentialSource } : {}),
@@ -455,6 +514,7 @@ export class ProjectOAuthHandler {
         : undefined;
 
     let effectiveStateId = stateId?.trim();
+    let pkceFromState: { codeChallenge?: string; codeChallengeMethod?: 'S256' } = {};
     if (!effectiveStateId) {
       const stateToken = generateSecureToken(
         Math.max(1, Math.floor(config.projectOAuth.stateTtlSeconds / 60)),
@@ -467,6 +527,17 @@ export class ProjectOAuthHandler {
       };
       const stateKey = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${effectiveStateId}` as CacheKey;
       await this.cache.oauth.set(stateKey, statePayload, config.projectOAuth.stateTtlSeconds);
+    } else {
+      const stateKey = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${effectiveStateId}` as CacheKey;
+      const existingState = await this.cache.oauth.get<ProjectOAuthState>(stateKey);
+      if (existingState?.codeChallenge) {
+        pkceFromState = {
+          codeChallenge: existingState.codeChallenge,
+          ...(existingState.codeChallengeMethod
+            ? { codeChallengeMethod: existingState.codeChallengeMethod }
+            : {}),
+        };
+      }
     }
 
     const oneTimeToken = generateSecureToken(
@@ -482,6 +553,7 @@ export class ProjectOAuthHandler {
       clientState,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
       ...(effectiveLocale ? { locale: effectiveLocale } : {}),
+      ...pkceFromState,
     };
     const key = `${PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX}${oneTimeToken.token}` as CacheKey;
     await this.cache.oauth.set(key, payload, config.projectOAuth.emailTokenTtlSeconds);
@@ -585,6 +657,8 @@ export class ProjectOAuthHandler {
       requestedScopeSlugs: state.requestedScopeSlugs,
       locale: state.locale,
       provider,
+      codeChallenge: state.codeChallenge,
+      codeChallengeMethod: state.codeChallengeMethod,
     });
     await this.cache.oauth.delete(key);
     return result;
@@ -621,6 +695,15 @@ export class ProjectOAuthHandler {
       { allowSignUp: app.allowSignUp ?? true }
     );
 
+    let codeChallenge = payload.codeChallenge;
+    let codeChallengeMethod = payload.codeChallengeMethod;
+    if (!codeChallenge) {
+      const stateKey = `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey;
+      const state = await this.cache.oauth.get<ProjectOAuthState>(stateKey);
+      codeChallenge = state?.codeChallenge;
+      codeChallengeMethod = state?.codeChallengeMethod;
+    }
+
     return this.ensureProjectMembershipAndBuildConsentRedirect({
       userId,
       app,
@@ -629,6 +712,8 @@ export class ProjectOAuthHandler {
       requestedScopeSlugs: payload.requestedScopeSlugs,
       locale: payload.locale,
       provider: UserAuthenticationMethodProvider.Email,
+      codeChallenge,
+      codeChallengeMethod,
     });
   }
 
@@ -650,8 +735,20 @@ export class ProjectOAuthHandler {
     /** Frontend locale for consent page URL (e.g. en, de). */
     locale?: string | null;
     provider: ProjectOAuthProvider;
+    codeChallenge?: string;
+    codeChallengeMethod?: 'S256';
   }): Promise<HandleProjectCallbackConsentRedirectResult> {
-    const { userId, app, redirectUri, clientState, requestedScopeSlugs, locale, provider } = params;
+    const {
+      userId,
+      app,
+      redirectUri,
+      clientState,
+      requestedScopeSlugs,
+      locale,
+      provider,
+      codeChallenge,
+      codeChallengeMethod,
+    } = params;
 
     const projectUsers = await this.projectUsers.getProjectUsers({
       projectId: app.projectId,
@@ -704,6 +801,7 @@ export class ProjectOAuthHandler {
       signingScope,
       provider,
       ...(requestedScopeSlugs?.length ? { requestedScopeSlugs } : {}),
+      ...(codeChallenge ? { codeChallenge, codeChallengeMethod } : {}),
     };
     const consentKey = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
     await this.cache.oauth.set(consentKey, consentPayload, config.projectOAuth.consentTtlSeconds);
@@ -828,9 +926,6 @@ export class ProjectOAuthHandler {
     });
   }
 
-  /**
-   * Approve consent: issue token and return redirect URL to app with token in fragment.
-   */
   async handleProjectConsentApprove(consentToken: string): Promise<{ redirectUrl: string }> {
     const key = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
     const payload = await this.cache.oauth.get<ProjectOAuthConsentPayload>(key);
@@ -838,30 +933,44 @@ export class ProjectOAuthHandler {
     if (!payload) {
       throw new AuthenticationError('Invalid or expired consent token');
     }
+    if (!payload.codeChallenge) {
+      throw new BadRequestError('code_challenge is required');
+    }
     const app = await this.projectApps.getProjectAppById(payload.projectAppId);
     if (!app) {
       throw new NotFoundError('ProjectApp');
     }
-    const effectiveScopeSlugs = payload.requestedScopeSlugs?.length
-      ? payload.requestedScopeSlugs
-      : undefined;
-    const accessToken = await this.signProjectScopedToken(
-      payload.userId,
-      app,
-      payload.scope,
-      payload.signingScope,
-      effectiveScopeSlugs
-    );
-    const expiresIn = (config.jwt?.accessTokenExpirationMinutes ?? 60) * 60;
+
+    const code = generateAuthorizationCode();
+    const codeTtl = config.projectOAuth.authorizationCodeTtlSeconds;
+    if (codeTtl <= 0) {
+      throw new ConfigurationError(
+        'PROJECT_OAUTH_AUTHORIZATION_CODE_TTL_SECONDS must be greater than 0'
+      );
+    }
+    const codePayload: ProjectOAuthAuthorizationCodePayload = {
+      userId: payload.userId,
+      projectAppId: payload.projectAppId,
+      redirectUri: payload.redirectUri,
+      clientState: payload.clientState,
+      scope: payload.scope,
+      signingScope: payload.signingScope,
+      requestedScopeSlugs: payload.requestedScopeSlugs,
+      codeChallenge: payload.codeChallenge,
+      codeChallengeMethod: payload.codeChallengeMethod,
+      clientId: app.clientId,
+    };
+    const codeKey = `${PROJECT_OAUTH_CODE_KEY_PREFIX}${code}` as CacheKey;
+    await this.cache.oauth.set(codeKey, codePayload, codeTtl);
+
     const url = new URL(payload.redirectUri);
-    url.hash = `access_token=${encodeURIComponent(accessToken)}&expires_in=${expiresIn}&token_type=Bearer`;
-    if (payload.clientState) url.hash += `&state=${encodeURIComponent(payload.clientState)}`;
+    url.searchParams.set('code', code);
+    if (payload.clientState) {
+      url.searchParams.set('state', payload.clientState);
+    }
     return { redirectUrl: url.toString() };
   }
 
-  /**
-   * Deny consent: return redirect URL to app with error in fragment.
-   */
   async handleProjectConsentDeny(consentToken: string): Promise<{ redirectUrl: string }> {
     const key = `${PROJECT_OAUTH_CONSENT_KEY_PREFIX}${consentToken}` as CacheKey;
     const payload = await this.cache.oauth.get<ProjectOAuthConsentPayload>(key);
@@ -870,28 +979,223 @@ export class ProjectOAuthHandler {
       throw new AuthenticationError('Invalid or expired consent token');
     }
     const url = new URL(payload.redirectUri);
-    url.hash = `error=access_denied&error_description=${encodeURIComponent('User denied consent')}`;
-    if (payload.clientState) url.hash += `&state=${encodeURIComponent(payload.clientState)}`;
+    url.searchParams.set('error', 'access_denied');
+    url.searchParams.set('error_description', 'User denied consent');
+    if (payload.clientState) {
+      url.searchParams.set('state', payload.clientState);
+    }
     return { redirectUrl: url.toString() };
   }
 
-  /**
-   * Sign a project-scoped token. If the app has scopes configured (or effectiveScopeSlugs from
-   * the authorize request), issues a project-app token with granted scopes (intersection of
-   * effective scopes and user's project permissions); otherwise issues an API key-style token.
-   * JWT scope is the project-level scope (signingScope) so authorization uses accountProject/
-   * organizationProject directly; user is identified by sub.
-   */
+  async handleProjectToken(params: HandleProjectTokenParams): Promise<HandleProjectTokenResult> {
+    if (params.grantType === 'authorization_code') {
+      return this.exchangeAuthorizationCode(params);
+    }
+    if (params.grantType === 'refresh_token') {
+      return this.exchangeRefreshToken(params);
+    }
+    throw new ValidationError('unsupported_grant_type', ['unsupported_grant_type']);
+  }
+
+  private requireAuthorizePkce(pkce?: InitiateProjectAuthorizePkce): {
+    codeChallenge: string;
+    codeChallengeMethod: 'S256';
+  } {
+    const responseType = pkce?.responseType?.trim() || 'code';
+    if (responseType !== 'code') {
+      throw new BadRequestError('response_type must be code');
+    }
+    const codeChallenge = pkce?.codeChallenge?.trim() ?? '';
+    if (!codeChallenge) {
+      throw new BadRequestError('code_challenge is required');
+    }
+    const codeChallengeMethod = (pkce?.codeChallengeMethod?.trim() || 'S256') as string;
+    if (codeChallengeMethod !== 'S256') {
+      throw new BadRequestError('code_challenge_method must be S256');
+    }
+    if (!isValidPkceChallenge(codeChallenge)) {
+      throw new BadRequestError('code_challenge is invalid');
+    }
+    return { codeChallenge, codeChallengeMethod: 'S256' };
+  }
+
+  private async authenticateProjectAppClient(
+    clientId: string,
+    clientSecret?: string
+  ): Promise<{
+    id: string;
+    clientId: string;
+    projectId: string;
+    scopes?: string[] | null;
+    allowSignUp?: boolean | null;
+    signUpRoleId?: string | null;
+    redirectUris?: string[] | null;
+  }> {
+    const app = await this.projectApps.getProjectAppByClientId(clientId);
+    if (!app) {
+      throw new AuthenticationError('invalid_client');
+    }
+    const clientSecretHash = await this.projectApps.getClientSecretHash(app.id);
+    if (clientSecretHash) {
+      if (!clientSecret || !verifySecret(clientSecret, clientSecretHash)) {
+        throw new AuthenticationError('invalid_client');
+      }
+    }
+    return app;
+  }
+
+  private async assertActiveProjectMembership(userId: string, projectId: string): Promise<Scope> {
+    const userPage = await this.users.getUsers({
+      ids: [userId],
+      limit: 1,
+      requestedFields: ['id'],
+    });
+    if (!userPage.users?.length) {
+      throw new AuthenticationError('invalid_grant');
+    }
+    const scope = await this.resolveScopeForUserAndProject(userId, projectId);
+    if (!scope) {
+      throw new AuthenticationError('invalid_grant');
+    }
+    return scope;
+  }
+
+  private async exchangeAuthorizationCode(
+    params: HandleProjectTokenParams
+  ): Promise<HandleProjectTokenResult> {
+    if (!params.code || !params.codeVerifier || !params.redirectUri) {
+      throw new ValidationError('invalid_request', [
+        'code, code_verifier, and redirect_uri are required',
+      ]);
+    }
+    const app = await this.authenticateProjectAppClient(params.clientId, params.clientSecret);
+
+    const codeKey = `${PROJECT_OAUTH_CODE_KEY_PREFIX}${params.code}` as CacheKey;
+    const payload = await this.cache.oauth.get<ProjectOAuthAuthorizationCodePayload>(codeKey);
+    await this.cache.oauth.delete(codeKey);
+    if (!payload || payload.clientId !== app.clientId || payload.projectAppId !== app.id) {
+      throw new AuthenticationError('invalid_grant');
+    }
+    if (payload.redirectUri !== params.redirectUri) {
+      throw new AuthenticationError('invalid_grant');
+    }
+    if (!verifyPkceS256(params.codeVerifier, payload.codeChallenge)) {
+      throw new AuthenticationError('invalid_grant');
+    }
+
+    let userScope: Scope;
+    try {
+      userScope = await this.assertActiveProjectMembership(payload.userId, app.projectId);
+    } catch (err) {
+      if (err instanceof AuthenticationError) {
+        throw err;
+      }
+      throw new AuthenticationError('invalid_grant');
+    }
+
+    const issued = await this.projectOAuthGrants.createGrant({
+      projectAppId: app.id,
+      userId: payload.userId,
+      scopeTenant: payload.signingScope.tenant,
+      scopeId: payload.signingScope.id,
+      scopes: payload.requestedScopeSlugs ?? app.scopes ?? null,
+      userAgent: params.userAgent,
+      ipAddress: params.ipAddress,
+    });
+
+    const accessToken = await this.signProjectScopedToken(
+      payload.userId,
+      app,
+      userScope,
+      payload.signingScope,
+      payload.requestedScopeSlugs,
+      issued.grant.id
+    );
+    return this.toTokenResult(
+      accessToken,
+      issued.refreshToken,
+      payload.requestedScopeSlugs ?? app.scopes
+    );
+  }
+
+  private async exchangeRefreshToken(
+    params: HandleProjectTokenParams
+  ): Promise<HandleProjectTokenResult> {
+    if (!params.refreshToken) {
+      throw new ValidationError('invalid_request', ['refresh_token is required']);
+    }
+    const app = await this.authenticateProjectAppClient(params.clientId, params.clientSecret);
+    const issued = await this.projectOAuthGrants.rotateByRefreshToken(params.refreshToken, {
+      userAgent: params.userAgent,
+      ipAddress: params.ipAddress,
+    });
+    if (!issued || issued.grant.projectAppId !== app.id) {
+      if (issued) {
+        await this.projectOAuthGrants.revokeGrant(issued.grant.id);
+      }
+      throw new AuthenticationError('invalid_grant');
+    }
+
+    try {
+      const userScope = await this.assertActiveProjectMembership(
+        issued.grant.userId,
+        app.projectId
+      );
+      const signingScope: Scope = {
+        tenant: issued.grant.scopeTenant as Scope['tenant'],
+        id: issued.grant.scopeId,
+      };
+      const appSlugs = app.scopes ?? [];
+      const grantSlugs = issued.grant.scopes ?? [];
+      const candidateSlugs =
+        grantSlugs.length > 0 && appSlugs.length > 0
+          ? grantSlugs.filter((slug) => appSlugs.includes(slug))
+          : grantSlugs.length > 0
+            ? grantSlugs
+            : appSlugs;
+      const accessToken = await this.signProjectScopedToken(
+        issued.grant.userId,
+        app,
+        userScope,
+        signingScope,
+        candidateSlugs.length ? candidateSlugs : undefined,
+        issued.grant.id
+      );
+      return this.toTokenResult(accessToken, issued.refreshToken, candidateSlugs);
+    } catch (err) {
+      await this.projectOAuthGrants.revokeGrant(issued.grant.id);
+      if (err instanceof AuthenticationError) {
+        throw err;
+      }
+      throw new AuthenticationError('invalid_grant');
+    }
+  }
+
+  private toTokenResult(
+    accessToken: string,
+    refreshToken: string,
+    scopeSlugs?: string[] | null
+  ): HandleProjectTokenResult {
+    const expiresIn = (config.jwt?.accessTokenExpirationMinutes ?? 60) * 60;
+    return {
+      accessToken,
+      tokenType: 'Bearer',
+      expiresIn,
+      refreshToken,
+      ...(scopeSlugs?.length ? { scope: scopeSlugs.join(' ') } : {}),
+    };
+  }
+
   private async signProjectScopedToken(
     userId: string,
     app: { clientId: string; scopes?: string[] | null },
     userScope: Scope,
     signingScope: Scope,
-    effectiveScopeSlugs?: string[]
+    effectiveScopeSlugs?: string[],
+    jti?: string
   ): Promise<string> {
     const iat = Math.floor(Date.now() / 1000);
     const exp = iat + (config.jwt?.accessTokenExpirationMinutes ?? 60) * 60;
-    const jtiToken = generateSecureToken(1, 16);
     const iss = buildJwksIssuerUrl(signingScope);
     const basePayload = {
       sub: userId,
@@ -899,7 +1203,7 @@ export class ProjectOAuthHandler {
       iss,
       exp,
       iat,
-      jti: jtiToken.token,
+      jti: jti ?? generateSecureToken(1, 16).token,
       scope: signingScope,
     };
 

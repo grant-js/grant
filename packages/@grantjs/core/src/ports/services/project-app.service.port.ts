@@ -36,6 +36,8 @@ export interface IProjectAppService {
 
   getProjectAppByClientId(clientId: string, transaction?: unknown): Promise<ProjectApp | null>;
 
+  getClientSecretHash(id: string, transaction?: unknown): Promise<string | null>;
+
   updateProjectApp(
     params: { id: string; projectId: string } & Omit<UpdateProjectAppInput, 'scope'>,
     transaction?: unknown

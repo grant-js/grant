@@ -5,14 +5,12 @@ import { useMemo } from 'react';
 import { GrantProvider, type GrantClientConfig } from '@grantjs/client/react';
 
 import { getOAuthCallbackToken } from '@/lib/oauth-callback-token';
-import { useOrigin } from '@/lib/use-origin';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  const origin = useOrigin();
   const config = useMemo<GrantClientConfig>(
     () => ({
-      apiUrl: '',
-      frontendUrl: origin || 'http://localhost:3004',
+      apiUrl: process.env.NEXT_PUBLIC_GRANT_API_URL || 'http://localhost:4000',
+      frontendUrl: process.env.NEXT_PUBLIC_GRANT_FRONTEND_URL || 'http://localhost:3000',
       getAccessToken: () => {
         if (typeof window === 'undefined') return null;
         // In this example, the callback page sets the token from the OAuth redirect so useGrant/GrantGate can use it.
@@ -31,7 +29,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         prefix: 'grant',
       },
     }),
-    [origin]
+    []
   );
 
   return <GrantProvider config={config}>{children}</GrantProvider>;
