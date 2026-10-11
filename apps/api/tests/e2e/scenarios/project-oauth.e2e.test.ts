@@ -398,6 +398,7 @@ describe('Project OAuth E2E', () => {
       })
       .expect(400);
 
-    expect(res.body.success).toBe(false);
+    expect(typeof res.body.translationKey).toBe('string');
+    expect(res.body.translationKey).toMatch(/^errors\.validation\./);
   });
 });
