@@ -116,7 +116,7 @@ Project OAuth is documented in [Project OAuth](/core-concepts/project-oauth). Su
 - **Credentials** — per-project **OAuth connections** (BYO GitHub/Google client id + secret), with optional fallback to platform env vars.
 - **Per app** — `ProjectApp.enabledProviders` subsets which methods each app offers; `redirectUris` hold customer product callbacks only.
 - **Linking** — same global user resolution as platform OAuth, then project membership is checked.
-- **Tokens and callbacks** — [Security § Project OAuth](/architecture/security#project-oauth).
+- **Tokens and callbacks** — authorization-code + PKCE; [Security § Project OAuth](/architecture/security#project-oauth).
 
 For multi-tenant SaaS, plan BYO connections per customer project rather than relying on one platform Google/GitHub app for all tenant products.
 
