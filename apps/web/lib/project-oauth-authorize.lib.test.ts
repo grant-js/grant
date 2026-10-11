@@ -81,6 +81,13 @@ describe('Grant relay redirect helpers', () => {
     expect(
       isProjectOAuthRelayRedirectUri('https://tenant.example/callback', 'en', 'https://app.example')
     ).toBe(false);
+    expect(
+      isProjectOAuthRelayRedirectUri(
+        'https://evil.example/en/auth/project/relay',
+        'en',
+        'https://app.example'
+      )
+    ).toBe(false);
   });
 
   it('prefers the Grant callback when it is allowlisted', () => {

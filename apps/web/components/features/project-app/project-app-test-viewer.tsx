@@ -92,6 +92,7 @@ export function ProjectAppTestViewer() {
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
       const data = event.data as Record<string, unknown> | null;
       if (!data || data.type !== PROJECT_OAUTH_MESSAGE_TYPE) return;
       if (flowState && data.state && data.state !== flowState) return;

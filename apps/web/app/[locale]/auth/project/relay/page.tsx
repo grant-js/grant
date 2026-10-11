@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { exchangeProjectOAuthCode, type ProjectOAuthTokenResult } from '@/lib/project-oauth-api';
+import { exchangeProjectOAuthCode } from '@/lib/project-oauth-api';
 import { PROJECT_OAUTH_MESSAGE_TYPE } from '@/lib/project-oauth-authorize.lib';
 import {
   clearProjectOAuthPkceSession,
@@ -17,14 +17,13 @@ type RelayStatus = 'reading' | 'exchanging' | 'sent' | 'complete' | 'no_opener' 
 /**
  * Relay page for project OAuth authorization-code callbacks.
  * Reads `code` + `state` from the query, exchanges them with the stored PKCE verifier,
- * then postMessages tokens to window.opener (popup) or shows them when opened as a tab.
+ * then postMessages tokens to the same-origin opener. Tokens are never painted here.
  */
 export default function ProjectOAuthRelayPage() {
   const t = useTranslations('auth.projectOAuth.relay');
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<RelayStatus>('reading');
   const [message, setMessage] = useState<string | null>(null);
-  const [tokens, setTokens] = useState<ProjectOAuthTokenResult | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -36,7 +35,7 @@ export default function ProjectOAuthRelayPage() {
 
     const postToOpener = (payload: Record<string, unknown>) => {
       if (!window.opener) return false;
-      window.opener.postMessage(payload, '*');
+      window.opener.postMessage(payload, window.location.origin);
       return true;
     };
 
@@ -106,8 +105,7 @@ export default function ProjectOAuthRelayPage() {
           ...(state && { state }),
         };
         const sent = postToOpener(payload);
-        setTokens(result);
-        setStatus(sent ? 'sent' : window.opener ? 'sent' : 'complete');
+        setStatus(sent ? 'sent' : 'complete');
         setMessage(t('complete'));
         if (sent) window.close();
       })
@@ -137,20 +135,8 @@ export default function ProjectOAuthRelayPage() {
         {(status === 'sent' || status === 'no_opener' || status === 'complete') && (
           <>
             <p className="text-muted-foreground">{message ?? t('complete')}</p>
-            {status === 'no_opener' && (
+            {(status === 'no_opener' || status === 'complete') && (
               <p className="text-sm text-muted-foreground">{t('closeTab')}</p>
-            )}
-            {tokens && status !== 'sent' && (
-              <div className="space-y-2 text-left text-sm">
-                <p className="font-medium">{t('accessToken')}</p>
-                <p className="break-all font-mono text-xs text-muted-foreground">
-                  {tokens.accessToken}
-                </p>
-                <p className="font-medium">{t('refreshToken')}</p>
-                <p className="break-all font-mono text-xs text-muted-foreground">
-                  {tokens.refreshToken}
-                </p>
-              </div>
             )}
           </>
         )}

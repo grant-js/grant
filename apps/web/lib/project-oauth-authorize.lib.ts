@@ -69,8 +69,11 @@ export function isProjectOAuthRelayRedirectUri(
     const resolvedOrigin =
       origin ?? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
     const url = new URL(uri, resolvedOrigin);
+    const expectedOrigin = new URL(resolvedOrigin).origin;
     return (
-      url.pathname === getProjectOAuthRelayPath(locale) || url.pathname === PROJECT_OAUTH_RELAY_PATH
+      url.origin === expectedOrigin &&
+      (url.pathname === getProjectOAuthRelayPath(locale) ||
+        url.pathname === PROJECT_OAUTH_RELAY_PATH)
     );
   } catch {
     return false;
