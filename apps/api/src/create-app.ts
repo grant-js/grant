@@ -66,6 +66,7 @@ import { createRestRouter } from '@/rest';
 import { getOpenApiDocument } from '@/rest/openapi';
 import { createEventDispatchRouter } from '@/rest/routes/event-dispatch.routes';
 import { createJwksRouter } from '@/rest/routes/jwks.routes';
+import { createProjectOAuthMetadataRouter } from '@/rest/routes/project-oauth-metadata.routes';
 import { ContextRequest } from '@/types';
 
 /**
@@ -260,6 +261,7 @@ export async function createApp(): Promise<CreatedApp> {
   }
 
   app.use(createJwksRouter());
+  app.use(createProjectOAuthMetadataRouter());
 
   app.use(errorHandler);
 
