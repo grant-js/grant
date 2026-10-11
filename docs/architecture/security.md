@@ -494,11 +494,11 @@ Rate limiting protects against brute force, abuse, and noisy-neighbor scenarios 
 
 Three layers are available:
 
-| Layer                     | Scope                                                      | Default                                |
-| ------------------------- | ---------------------------------------------------------- | -------------------------------------- |
-| **Global**                | All requests, keyed by IP                                  | 100 req / 15 min                       |
+| Layer                     | Scope                                                                                             | Default                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Global**                | All requests, keyed by IP                                                                         | 100 req / 15 min                       |
 | **Auth endpoints**        | Login, refresh, token exchange, CLI callback, project OAuth authorize/consent/token — keyed by IP | 20 req / 15 min                        |
-| **Per-tenant** (optional) | Authenticated requests keyed by tenant scope               | 200 req / 15 min (disabled by default) |
+| **Per-tenant** (optional) | Authenticated requests keyed by tenant scope                                                      | 200 req / 15 min (disabled by default) |
 
 The `/health` endpoint is always excluded. Storage uses the same cache backend as the rest of the app (in-memory or Redis).
 
