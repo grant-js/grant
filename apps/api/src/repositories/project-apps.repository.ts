@@ -1,7 +1,6 @@
 import type { IProjectAppRepository } from '@grantjs/core';
 import type { ProjectAppModel } from '@grantjs/database';
 import { projectApps, projectAppTags } from '@grantjs/database';
-import { and, eq, isNull } from 'drizzle-orm';
 import {
   type CreateProjectAppInput,
   type CreateProjectAppResult,
@@ -14,6 +13,7 @@ import {
   Tag,
   type UpdateProjectAppInput,
 } from '@grantjs/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
