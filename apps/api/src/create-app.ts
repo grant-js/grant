@@ -117,8 +117,9 @@ export async function createApp(): Promise<CreatedApp> {
     locales: config.i18n.supportedLocales,
   });
 
+  const databaseUrl = await resolveDatabaseConnectionString();
   const db = initializeDBConnection({
-    connectionString: await resolveDatabaseConnectionString(),
+    connectionString: databaseUrl,
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
@@ -137,6 +138,7 @@ export async function createApp(): Promise<CreatedApp> {
   if (config.db.bootstrapOnBoot) {
     await bootstrapDatabase(db, config.system.systemUserId, {
       migrationsFolder: config.db.migrationsDir,
+      databaseUrl,
     });
   } else {
     logger.info({

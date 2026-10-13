@@ -31,8 +31,9 @@ import { resolveDatabaseConnectionString } from '@/lib/secrets';
 async function runMigrations(): Promise<void> {
   validateConfig();
 
+  const databaseUrl = await resolveDatabaseConnectionString();
   const db = initializeDBConnection({
-    connectionString: await resolveDatabaseConnectionString(),
+    connectionString: databaseUrl,
     max: config.db.poolMax,
     idleTimeout: config.db.idleTimeout,
     connectTimeout: config.db.connectionTimeout,
@@ -44,6 +45,7 @@ async function runMigrations(): Promise<void> {
   try {
     await bootstrapDatabase(db, config.system.systemUserId, {
       migrationsFolder: config.db.migrationsDir,
+      databaseUrl,
     });
     logger.info({ msg: 'Database bootstrap complete' });
   } finally {
