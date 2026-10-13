@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.14.1
+
+### Platform
+
+**Docker images:** tagged `:1.14.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.14.1** (fixed group with apps).
+
+### Patch Changes
+
+- 946fbfc: Run the RLS role grant during bootstrap with the database URL the app resolved, so `DB_BOOTSTRAP_ON_BOOT` works when `DB_URL` comes from AWS Secrets Manager.
+
 ## 1.14.0
 
 ### Platform

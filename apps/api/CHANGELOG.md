@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.14.1
+
+### Patch Changes
+
+- 946fbfc: Run the RLS role grant during bootstrap with the database URL the app resolved, so `DB_BOOTSTRAP_ON_BOOT` works when `DB_URL` comes from AWS Secrets Manager.
+- @grantjs/schema@1.14.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.14.0
 
 ### Patch Changes
