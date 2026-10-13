@@ -49,7 +49,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "eslint": "^10.12.0",
     "jsonwebtoken": "^9.0.2",
     "@typescript/native": "npm:typescript@^7.0.2",

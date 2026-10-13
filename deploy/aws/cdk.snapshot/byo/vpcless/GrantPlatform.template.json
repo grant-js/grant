@@ -1675,6 +1675,42 @@
         "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Origin1/InvokeFromApiForGrantPlatformGrantEdgeDistributionOrigin101758DB2"
       }
     },
+    "GrantEdgeDistributionOrigin1InvokeFunctionFromCloudFrontForGrantPlatformGrantEdgeDistributionOrigin101758DB24BAC2B39": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "GrantWebFunctionFunctionUrl15112144",
+            "FunctionArn"
+          ]
+        },
+        "InvokedViaFunctionUrl": true,
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":cloudfront::",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":distribution/",
+              {
+                "Ref": "GrantEdgeDistribution4016EFC4"
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "GrantPlatform/Grant/Edge/Distribution/Origin1/InvokeFunctionFromCloudFrontForGrantPlatformGrantEdgeDistributionOrigin101758DB2"
+      }
+    },
     "GrantEdgeDistributionOrigin3S3OriginAccessControl94321902": {
       "Type": "AWS::CloudFront::OriginAccessControl",
       "Properties": {
