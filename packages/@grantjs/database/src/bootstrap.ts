@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { getEnv } from '@grantjs/env';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 import type { PooledDatabase } from './connection';
@@ -29,6 +30,14 @@ function resolveMigrationsFolder(override?: string): string {
 export type BootstrapOptions = {
   /** Absolute path to the Drizzle migrations folder. */
   readonly migrationsFolder?: string;
+  /**
+   * The database URL `db` was opened with. The RLS grant opens its own connection and
+   * derives the login user from a URL, and without this it reads `DB_URL` from the
+   * environment — empty when the URL comes from a secret resolver, which sends the grant
+   * to the `POSTGRES_*` defaults. `DB_GRANT_ROLE_URL` still takes precedence when set.
+   * Never logged.
+   */
+  readonly databaseUrl?: string;
 };
 
 /**
@@ -50,7 +59,9 @@ export async function bootstrapDatabase(
     await migrate(db, { migrationsFolder });
 
     // Match CLI `db:migrate`: migration 0042+ does not GRANT the restricted role to a login user.
-    await ensureRlsRestrictedRoleMembership();
+    await ensureRlsRestrictedRoleMembership(
+      options.databaseUrl ? { env: { ...getEnv(), DB_URL: options.databaseUrl } } : undefined
+    );
 
     // Ensure we never end up with a half-seeded core model.
     await db.transaction(async (tx) => {

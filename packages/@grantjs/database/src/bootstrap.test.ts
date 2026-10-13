@@ -163,6 +163,18 @@ describe('bootstrapDatabase', () => {
     expect(ensureRlsRestrictedRoleMembership).toHaveBeenCalledWith(undefined);
   });
 
+  it('hands the RLS grant the database URL the caller connected with, over the ambient env', async () => {
+    await bootstrapDatabase(db as unknown as Db, SYSTEM_USER_ID, {
+      databaseUrl: 'postgresql://resolved_user:pw@db.example:5432/grant_db',
+    });
+
+    expect(ensureRlsRestrictedRoleMembership).toHaveBeenCalledOnce();
+    const [opts] = ensureRlsRestrictedRoleMembership.mock.calls[0]!;
+    expect((opts as { env: { DB_URL: string } }).env.DB_URL).toBe(
+      'postgresql://resolved_user:pw@db.example:5432/grant_db'
+    );
+  });
+
   it('prefers the original work error when unlock fails', async () => {
     migrate.mockRejectedValue(new Error('migration failed'));
     const unlockFailure = new Error('unlock failed');
