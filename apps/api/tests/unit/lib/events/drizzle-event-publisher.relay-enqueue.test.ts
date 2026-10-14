@@ -6,6 +6,11 @@ vi.mock('@grantjs/database', () => ({
   eventLog: { __table: 'event_log' },
 }));
 
+const { loggerError } = vi.hoisted(() => ({ loggerError: vi.fn() }));
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({ error: loggerError, warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+}));
+
 const enqueue = vi.fn().mockResolvedValue(undefined);
 const getJobAdapter = vi.fn((): IJobAdapter | null => ({ enqueue }) as unknown as IJobAdapter);
 
@@ -67,5 +72,53 @@ describe('DrizzleEventPublisher post-commit relay enqueue', () => {
     });
 
     expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it('hands the after-commit runner a promise that settles only once the enqueue has', async () => {
+    let finishEnqueue!: () => void;
+    enqueue.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishEnqueue = resolve;
+      })
+    );
+    const deferred: Array<() => void | Promise<void>> = [];
+    const publisher = new DrizzleEventPublisher(user, db as never, {
+      scheduleAfterCommit: (fn) => {
+        deferred.push(fn);
+      },
+    });
+    await publisher.publish({ type: 'role.created', data: { after: { name: 'Admin' } } });
+
+    let settled = false;
+    const running = Promise.resolve(deferred[0]?.()).then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(false);
+
+    finishEnqueue();
+    await running;
+    expect(settled).toBe(true);
+  });
+
+  it('logs and swallows a failed relay enqueue', async () => {
+    const sendFailure = new Error('SQS down');
+    enqueue.mockRejectedValueOnce(sendFailure);
+    const deferred: Array<() => void | Promise<void>> = [];
+    const publisher = new DrizzleEventPublisher(user, db as never, {
+      scheduleAfterCommit: (fn) => {
+        deferred.push(fn);
+      },
+    });
+    await publisher.publish({ type: 'role.created', data: { after: { name: 'Admin' } } });
+
+    await expect(Promise.resolve(deferred[0]?.())).resolves.toBeUndefined();
+    expect(loggerError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: 'Failed to enqueue event-relay after publish',
+        err: sendFailure,
+      })
+    );
   });
 });

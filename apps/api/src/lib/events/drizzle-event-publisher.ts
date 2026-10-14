@@ -51,17 +51,20 @@ export class DrizzleEventPublisher implements IEventPublisher {
       return;
     }
     this.relayEnqueueScheduled = true;
-    scheduleAfterCommit(() => {
+    // Returned so the after-commit runner awaits the enqueue before the response is flushed.
+    scheduleAfterCommit(async () => {
       const jobs = getJobAdapter();
       if (!jobs?.enqueue) {
         return;
       }
-      void jobs.enqueue(EVENT_RELAY_JOB_ID).catch((err: unknown) => {
+      try {
+        await jobs.enqueue(EVENT_RELAY_JOB_ID);
+      } catch (err: unknown) {
         logger.error({
           msg: 'Failed to enqueue event-relay after publish',
           err,
         });
-      });
+      }
     });
   }
 

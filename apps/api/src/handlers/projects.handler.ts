@@ -50,11 +50,14 @@ import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
 import { trackProductEventAfterCommit } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, ConfigurationError, NotFoundError, ValidationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
 import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+const logger = createLogger('ProjectHandler');
 
 export class ProjectHandler extends CacheHandler {
   constructor(
@@ -194,7 +197,7 @@ export class ProjectHandler extends CacheHandler {
       enqueuedById: params.enqueuedById,
     });
 
-    this.enqueueProjectSyncJobAfterCommit(enqueueJob, params.scope, job.id);
+    await this.enqueueProjectSyncJobAfterCommit(enqueueJob, params.scope, job.id);
     return job;
   }
 
@@ -273,24 +276,43 @@ export class ProjectHandler extends CacheHandler {
       enqueuedById: params.enqueuedById,
     });
 
-    this.enqueueProjectSyncJobAfterCommit(enqueueJob, params.scope, job.id);
+    await this.enqueueProjectSyncJobAfterCommit(enqueueJob, params.scope, job.id);
     return job;
   }
 
-  private enqueueProjectSyncJobAfterCommit(
-    enqueueJob: (jobId: string, data: { scope: Scope; payload: { jobRecordId: string } }) => void,
+  /**
+   * Hand the job to the queue once the request transaction has committed.
+   *
+   * The enqueue is returned to the after-commit runner, which awaits it before the response is
+   * flushed (a message sent after the response is lost where the runtime freezes, e.g. Lambda).
+   * With no after-commit hook there is no surrounding transaction, so it is awaited here.
+   * A failed enqueue is logged with the job id and does not fail the request: the row is
+   * committed and the caller still gets the pending job back.
+   */
+  private async enqueueProjectSyncJobAfterCommit(
+    enqueueJob: (
+      jobId: string,
+      data: { scope: Scope; payload: { jobRecordId: string } }
+    ) => void | Promise<unknown>,
     scope: Scope,
     jobRecordId: string
-  ): void {
-    const runEnqueue = (): void => {
-      void enqueueJob(PROJECT_SYNC_JOB_ID, { scope, payload: { jobRecordId } });
+  ): Promise<void> {
+    const runEnqueue = async (): Promise<void> => {
+      try {
+        await enqueueJob(PROJECT_SYNC_JOB_ID, { scope, payload: { jobRecordId } });
+      } catch (err: unknown) {
+        logger.error({
+          msg: 'Failed to enqueue project sync job; the job stays pending',
+          jobRecordId,
+          err,
+        });
+      }
     };
-    const defer =
-      this.scheduleAfterCommit ??
-      ((fn: () => void | Promise<void>) => {
-        void Promise.resolve(fn());
-      });
-    defer(runEnqueue);
+    if (this.scheduleAfterCommit) {
+      this.scheduleAfterCommit(runEnqueue);
+      return;
+    }
+    await runEnqueue();
   }
 
   private async resolveProjectDisplayName(projectId: string): Promise<string | null> {
