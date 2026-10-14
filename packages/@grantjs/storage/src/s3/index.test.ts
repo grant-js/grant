@@ -1,6 +1,6 @@
-import type { S3Client } from '@aws-sdk/client-s3';
-import { noopLogger } from '@grantjs/core';
-import { describe, expect, it } from 'vitest';
+import { GetObjectCommand, type S3Client } from '@aws-sdk/client-s3';
+import { GrantException, noopLogger, NotFoundError, ValidationError } from '@grantjs/core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { S3StorageAdapter } from './index';
 
@@ -97,5 +97,106 @@ describe('S3 presigned upload URLs', () => {
     const [first, second] = await Promise.all([mint(), mint()]);
 
     expect(first.url).toBe(second.url);
+  });
+});
+
+/**
+ * `download()` against a mocked client. The S3 SDK is the thing under test only in
+ * the integration lane; what is checkable offline is which client is used, what is
+ * sent, and how each failure is classified.
+ */
+describe('S3 download', () => {
+  const shared = () => adapter['s3Client'] as S3Client;
+  const presign = () => adapter['presignClient'] as S3Client;
+
+  const body = (bytes: Uint8Array) => ({ transformToByteArray: async () => bytes });
+  const httpError = (name: string, httpStatusCode: number) =>
+    Object.assign(new Error(name), { name, $metadata: { httpStatusCode } });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns the object body as a Buffer', async () => {
+    vi.spyOn(shared(), 'send').mockResolvedValue({
+      Body: body(Uint8Array.from([0, 1, 255])),
+    } as never);
+
+    const downloaded = await adapter.download('imports/p1/u1.json');
+
+    expect(Buffer.isBuffer(downloaded)).toBe(true);
+    expect([...downloaded]).toEqual([0, 1, 255]);
+  });
+
+  it('sends a GetObject for the configured bucket and the requested key', async () => {
+    const send = vi
+      .spyOn(shared(), 'send')
+      .mockResolvedValue({ Body: body(new Uint8Array()) } as never);
+
+    await adapter.download('imports/p1/u1.json');
+
+    const command = send.mock.calls[0]?.[0] as GetObjectCommand;
+    expect(command).toBeInstanceOf(GetObjectCommand);
+    expect(command.input).toEqual({ Bucket: 'grant-offline', Key: 'imports/p1/u1.json' });
+  });
+
+  it('uses the shared client, not the presign client', async () => {
+    // The presign client drops checksum calculation to keep presigned PUTs valid.
+    // A real GET has no such need, and silently routing it there would be the same
+    // "extend, do not replace" slip the presign client's own comment warns about.
+    const sharedSend = vi
+      .spyOn(shared(), 'send')
+      .mockResolvedValue({ Body: body(new Uint8Array()) } as never);
+    const presignSend = vi.spyOn(presign(), 'send');
+
+    await adapter.download('imports/p1/u1.json');
+
+    expect(sharedSend).toHaveBeenCalledTimes(1);
+    expect(presignSend).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['NoSuchKey', httpError('NoSuchKey', 404)],
+    ['a bare 404', Object.assign(new Error('missing'), { $metadata: { httpStatusCode: 404 } })],
+  ])('maps %s to NotFoundError', async (_label, error) => {
+    vi.spyOn(shared(), 'send').mockRejectedValue(error);
+
+    await expect(adapter.download('imports/p1/gone.json')).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it.each([
+    ['AccessDenied', httpError('AccessDenied', 403)],
+    ['InternalError', httpError('InternalError', 500)],
+    ['a network failure', new Error('socket hang up')],
+  ])('maps %s to a STORAGE_ERROR, not to NotFoundError', async (_label, error) => {
+    // A 403 means the role cannot read the bucket. Reporting it as "not found"
+    // would send an operator looking for an object that is there.
+    vi.spyOn(shared(), 'send').mockRejectedValue(error);
+
+    const outcome = await adapter.download('imports/p1/u1.json').catch((caught: unknown) => caught);
+
+    expect(outcome).toBeInstanceOf(GrantException);
+    expect(outcome).not.toBeInstanceOf(NotFoundError);
+    expect((outcome as GrantException).code).toBe('STORAGE_ERROR');
+  });
+
+  it('fails as a STORAGE_ERROR when S3 returns no body', async () => {
+    vi.spyOn(shared(), 'send').mockResolvedValue({} as never);
+
+    const outcome = await adapter.download('imports/p1/u1.json').catch((caught: unknown) => caught);
+
+    expect(outcome).toBeInstanceOf(GrantException);
+    expect((outcome as GrantException).code).toBe('STORAGE_ERROR');
+  });
+
+  it('refuses a malformed path before calling S3', async () => {
+    const send = vi.spyOn(shared(), 'send');
+
+    await expect(adapter.download('imports/../other-tenant/u1.json')).rejects.toBeInstanceOf(
+      ValidationError
+    );
+    await expect(adapter.download('/imports/p1/u1.json')).rejects.toBeInstanceOf(ValidationError);
+
+    expect(send).not.toHaveBeenCalled();
   });
 });

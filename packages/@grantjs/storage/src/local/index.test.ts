@@ -1,7 +1,13 @@
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { AuthorizationError, GrantException, noopLogger, ValidationError } from '@grantjs/core';
+import {
+  AuthorizationError,
+  GrantException,
+  noopLogger,
+  NotFoundError,
+  ValidationError,
+} from '@grantjs/core';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
@@ -228,5 +234,81 @@ describe('local upload signing key', () => {
 
     expect(metadata?.size).toBe(1);
     expect(metadata?.contentType).toBeUndefined();
+  });
+});
+
+/**
+ * `download()` is the first method on this adapter that returns bytes, so a path
+ * that escapes `basePath` is a read of the host filesystem rather than a write
+ * into it. The shared suite asserts the refusals by message; what only a real
+ * filesystem can show is that the planted bytes stay unread.
+ */
+describe('local download path guards', () => {
+  const planted = path.join(path.dirname(basePath), `grant-planted-${process.pid}.txt`);
+  const secret = 'bytes-outside-the-storage-root';
+
+  const settle = async (promise: Promise<Buffer>) => {
+    try {
+      return { value: await promise };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  it('refuses a ../ path to a file that exists outside basePath, and never reads it', async () => {
+    await fs.writeFile(planted, secret);
+
+    try {
+      const outcome = await settle(adapter.download(`../${path.basename(planted)}`));
+
+      expect(outcome.value).toBeUndefined();
+      expect(outcome.error).toBeInstanceOf(ValidationError);
+      expect(String((outcome.error as Error).message)).not.toContain(secret);
+    } finally {
+      await fs.rm(planted, { force: true });
+    }
+  });
+
+  it('refuses an absolute path to a file that exists', async () => {
+    await fs.writeFile(planted, secret);
+
+    try {
+      const outcome = await settle(adapter.download(planted));
+
+      expect(outcome.value).toBeUndefined();
+      expect(outcome.error).toBeInstanceOf(ValidationError);
+    } finally {
+      await fs.rm(planted, { force: true });
+    }
+  });
+
+  it('refuses to read the upload signing key even though it exists', async () => {
+    // The key is the one file under basePath that must never leave it: whoever
+    // reads it can mint a URL for any path. `express.static` denies dotfiles over
+    // HTTP; this is the same guarantee through the port.
+    await adapter.getUploadUrl('download-guard/key-exists.png', {
+      contentLength: 1,
+      contentType: 'image/png',
+      expiresInSeconds: 60,
+    });
+    await fs.stat(path.join(basePath, '.grant-upload-key'));
+
+    const outcome = await settle(adapter.download('.grant-upload-key'));
+
+    expect(outcome.value).toBeUndefined();
+    expect(outcome.error).toBeInstanceOf(ValidationError);
+  });
+
+  it('reports a directory as a storage failure, not as a missing file', async () => {
+    // ENOENT is the only code that means "nothing there". A directory at the path
+    // is something there, and answering NotFoundError would tell a worker its
+    // object was never uploaded when the store is in fact inconsistent.
+    await fs.mkdir(path.join(basePath, 'download-guard/a-directory'), { recursive: true });
+
+    const outcome = await settle(adapter.download('download-guard/a-directory'));
+
+    expect(outcome.error).toBeInstanceOf(GrantException);
+    expect(outcome.error).not.toBeInstanceOf(NotFoundError);
+    expect((outcome.error as GrantException).code).toBe('STORAGE_ERROR');
   });
 });

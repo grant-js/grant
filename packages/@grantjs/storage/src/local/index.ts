@@ -9,7 +9,7 @@ import type {
   UploadUrlOptions,
   UploadUrlResult,
 } from '@grantjs/core';
-import { AuthorizationError, GrantException, ValidationError } from '@grantjs/core';
+import { AuthorizationError, GrantException, NotFoundError, ValidationError } from '@grantjs/core';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -181,6 +181,32 @@ export class LocalStorageAdapter implements IFileStorageService {
       });
       throw new GrantException(
         `Failed to read file metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'STORAGE_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async download(filePath: string): Promise<Buffer> {
+    // `resolveUnderBase` refuses `..`, a leading separator, empty and dot-prefixed
+    // segments, and anything that resolves outside `basePath`. The dot rule is what
+    // keeps `.grant-upload-key` unreadable through this method: a path outside the
+    // root, or the signing key, throws before any read is attempted.
+    const fullPath = this.resolveUnderBase(filePath);
+
+    try {
+      return await fs.readFile(fullPath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new NotFoundError('File', filePath, error as Error);
+      }
+      this.logger.error({
+        msg: 'Failed to download file from local storage',
+        err: error,
+        path: filePath,
+      });
+      throw new GrantException(
+        `Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'STORAGE_ERROR',
         error instanceof Error ? error : undefined
       );

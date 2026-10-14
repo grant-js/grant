@@ -64,6 +64,10 @@ export class FileStorageService implements IFileStorageServicePort {
     return this.storageAdapter.getMetadata(path);
   }
 
+  public async download(path: string): Promise<Buffer> {
+    return this.storageAdapter.download(path);
+  }
+
   public async exists(path: string): Promise<boolean> {
     return this.storageAdapter.exists(path);
   }

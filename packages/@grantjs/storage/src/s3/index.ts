@@ -16,9 +16,9 @@ import type {
   UploadUrlOptions,
   UploadUrlResult,
 } from '@grantjs/core';
-import { GrantException } from '@grantjs/core';
+import { GrantException, NotFoundError } from '@grantjs/core';
 
-import { assertUploadTarget } from '../upload-url';
+import { assertUploadPath, assertUploadTarget } from '../upload-url';
 
 export interface S3Config {
   bucket: string;
@@ -166,6 +166,45 @@ export class S3StorageAdapter implements IFileStorageService {
       });
       throw new GrantException(
         `Failed to read file metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'STORAGE_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async download(filePath: string): Promise<Buffer> {
+    // Same guard as `getUploadUrl`, so the port's path contract is one contract.
+    // S3 keys are flat and `..` means nothing to the store; this is parity, which
+    // the shared suite can then assert without knowing the adapter.
+    assertUploadPath(filePath);
+
+    try {
+      // The shared client, not `presignClient`: this is a real request carrying a
+      // real response, so the default checksum behaviour is exactly what is wanted.
+      const object = await this.s3Client.send(
+        new GetObjectCommand({ Bucket: this.config.bucket, Key: filePath })
+      );
+
+      if (!object.Body) {
+        throw new Error('S3 returned no body for the object');
+      }
+
+      return Buffer.from(await object.Body.transformToByteArray());
+    } catch (error) {
+      if (
+        (error as { name?: string }).name === 'NoSuchKey' ||
+        (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
+      ) {
+        throw new NotFoundError('File', filePath, error instanceof Error ? error : undefined);
+      }
+      this.logger.error({
+        msg: 'Failed to download file from S3',
+        err: error,
+        path: filePath,
+        bucket: this.config.bucket,
+      });
+      throw new GrantException(
+        `Failed to download file from S3: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'STORAGE_ERROR',
         error instanceof Error ? error : undefined
       );

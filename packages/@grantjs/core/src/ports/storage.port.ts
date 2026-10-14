@@ -132,4 +132,36 @@ export interface IFileStorageService {
    * @returns The stored object's metadata, or null if nothing is stored there
    */
   getMetadata(path: string): Promise<StoredObjectMetadata | null>;
+
+  /**
+   * Read the whole object stored at `path` into memory.
+   *
+   * Returns a `Buffer`, not a stream, on purpose: the only consumer today is the
+   * project-sync worker, which parses the entire document before it does anything
+   * with it, so a stream would be buffered by the first caller anyway. A streaming
+   * variant can be added beside this method later without breaking any caller.
+   *
+   * There is no size limit here. A caller that cannot afford an arbitrary object
+   * in memory must read `getMetadata()` first and refuse on `size`.
+   *
+   * Required of every adapter, for the reason ADR 0007 gives for `getUploadUrl()`:
+   * a capability the port promises and one adapter cannot honour makes ports leak.
+   * See ADR 0009.
+   *
+   * SECURITY: `path` is the tenancy boundary, exactly as for `getUploadUrl()`. A
+   * client-supplied path is a cross-tenant read; derive it server-side. Adapters
+   * apply the same path guards as `getUploadUrl()`, so a path that could never
+   * have been minted is never read either.
+   *
+   * @param path - Storage path to read
+   * @returns The stored bytes
+   * @throws NotFoundError when nothing is stored at `path`. Unlike `getMetadata()`,
+   *   which answers `null`, a method that returns bytes has no empty value to
+   *   return, and unlike `delete()` a missing object is not an already-satisfied
+   *   intent.
+   * @throws ValidationError on a path containing a `..` segment, a leading
+   *   separator, an empty segment or a dot-prefixed segment
+   * @throws GrantException (`STORAGE_ERROR`) on any other store failure
+   */
+  download(path: string): Promise<Buffer>;
 }
