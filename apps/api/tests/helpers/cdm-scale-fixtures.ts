@@ -12,13 +12,15 @@
  * Generation is deterministic — same profile in, same bytes out — so a recorded
  * measurement can be reproduced and re-checked when the CDM shape changes.
  *
- * `searchable` is omitted throughout: `startProjectSyncRequestSchema` does not
- * accept it, and REST ingress is the constraint being measured. A GraphQL client
+ * `searchable` is omitted throughout, which keeps the recorded measurements
+ * comparable with the ones taken before the REST body schema accepted it. A client
  * that sends it pays more than the numbers here.
  */
 
 import { TAG_COLORS } from '@grantjs/constants';
-import { CdmFindBy, CdmModeStrategy, type SyncProjectInput } from '@grantjs/schema';
+import { CdmFindBy, CdmModeStrategy } from '@grantjs/schema';
+
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 
 export interface CdmScaleProfile {
   /** Stable identifier used as the row label in measurement output. */
@@ -297,7 +299,7 @@ function entityMetadata(rand: () => number): Record<string, unknown> {
  * Build a CDM document matching `profile`. Two calls with the same profile and
  * seed produce byte-identical JSON.
  */
-export function generateCdmAtScale(profile: CdmScaleProfile, seed = 0x5ea1): SyncProjectInput {
+export function generateCdmAtScale(profile: CdmScaleProfile, seed = 0x5ea1): CdmDocumentInput {
   const rand = createRandom(seed);
 
   const tags = Array.from({ length: profile.tags }, (_, i) => {

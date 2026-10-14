@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type {
   IAccountProjectService,
   IAccountProjectTagService,
@@ -14,9 +16,9 @@ import type {
   IProjectUserService,
   ITransactionalConnection,
   ProjectSyncJobExportPayload,
+  ProjectSyncJobPayloadReference,
 } from '@grantjs/core';
 import {
-  CdmFindBy,
   CdmModeStrategy,
   CdmOnConflict,
   ClearProjectPictureInput,
@@ -24,6 +26,7 @@ import {
   MutationCancelProjectSyncArgs,
   MutationCreateProjectArgs,
   MutationDeleteProjectArgs,
+  MutationRequestProjectSyncUploadUrlArgs,
   MutationStartProjectExportArgs,
   MutationStartProjectSyncArgs,
   MutationUpdateProjectArgs,
@@ -33,6 +36,7 @@ import {
   ProjectSyncJobOperation,
   ProjectSyncJobPage,
   ProjectSyncJobStatus,
+  ProjectSyncUploadUrl,
   QueryProjectsArgs,
   QueryProjectSyncJobArgs,
   QueryProjectSyncJobsArgs,
@@ -50,7 +54,23 @@ import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
 import { type ScheduleAfterCommit } from '@/lib/after-commit.lib';
 import { trackProductEventAfterCommit } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { BadRequestError, ConfigurationError, NotFoundError, ValidationError } from '@/lib/errors';
+import {
+  MODE_REPLACE_REQUIRES_CONFIRMATION,
+  validateSyncInput,
+} from '@/lib/cdm/cdm-document.schemas';
+import {
+  baseMediaType,
+  CDM_IMPORT_CONTENT_TYPE,
+  cdmImportObjectKey,
+  normalizeUploadId,
+} from '@/lib/cdm/cdm-import-upload.lib';
+import {
+  BadRequestError,
+  ConfigurationError,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -169,9 +189,16 @@ export class ProjectHandler extends CacheHandler {
         'scope id must contain the same projectId as the projectId argument'
       );
     }
-    this.validateSyncInput(params.input);
+    const { input } = params;
+    const { source: sourceInput, ...document } = input;
+    const source = sourceInput ?? null;
+    if (source) {
+      this.assertByReferenceInput(input);
+    } else {
+      this.assertInlineInput(input);
+    }
 
-    const jobName = params.input.id ?? null;
+    const jobName = input.id ?? null;
     if (jobName !== null) {
       const inflight = await this.projectSyncJobs.findActiveByJobKey({
         projectId: params.id,
@@ -185,21 +212,184 @@ export class ProjectHandler extends CacheHandler {
     }
 
     const modeStrategyDb: 'merge' | 'replace' =
-      params.input.mode.strategy === CdmModeStrategy.Merge ? 'merge' : 'replace';
+      input.mode.strategy === CdmModeStrategy.Merge ? 'merge' : 'replace';
 
-    const job = await this.projectSyncJobs.create({
-      projectId: params.id,
-      scope: params.scope,
-      cdmVersion: params.input.version,
-      jobName,
-      operation: 'import',
-      modeStrategy: modeStrategyDb,
-      payload: params.input,
-      enqueuedById: params.enqueuedById,
-    });
+    const job = source
+      ? await this.projectSyncJobs.create({
+          projectId: params.id,
+          scope: params.scope,
+          cdmVersion: input.version ?? 1,
+          jobName,
+          operation: 'import',
+          modeStrategy: modeStrategyDb,
+          payload: null,
+          payloadRef: await this.resolveImportUpload(params.id, source),
+          enqueuedById: params.enqueuedById,
+        })
+      : await this.projectSyncJobs.create({
+          projectId: params.id,
+          scope: params.scope,
+          cdmVersion: input.version as number,
+          jobName,
+          operation: 'import',
+          modeStrategy: modeStrategyDb,
+          payload: document,
+          enqueuedById: params.enqueuedById,
+        });
 
     await this.enqueueProjectSyncJobAfterCommit(enqueueJob, params.scope, job.id);
     return job;
+  }
+
+  /**
+   * Ask for a URL to upload a CDM import document to (ADR 0009).
+   *
+   * Authorized exactly like `startProjectSync`. The key is derived from the project in the
+   * authorized scope and a uuid minted here; nothing the client sends reaches it. The
+   * policy is the CDM one, selected by purpose, and the URL commits to the exact length
+   * claimed, so a document cannot grow past what was validated here.
+   */
+  public async requestProjectSyncUploadUrl(
+    params: MutationRequestProjectSyncUploadUrlArgs
+  ): Promise<ProjectSyncUploadUrl> {
+    this.assertProjectScope(params.scope);
+    const projectId = this.projectIdFromScope(params.scope);
+    if (projectId !== params.id) {
+      throw new ValidationError(
+        'scope id must contain the same projectId as the projectId argument'
+      );
+    }
+
+    const policy = config.storage.cdmImport;
+    const { contentLength } = params.input;
+    const contentType = params.input.contentType ?? CDM_IMPORT_CONTENT_TYPE;
+
+    if (!(policy.contentTypes as readonly string[]).includes(contentType)) {
+      throw new ValidationError(
+        `Invalid content type for a CDM import. Allowed types: ${policy.contentTypes.join(', ')}`
+      );
+    }
+    if (!Number.isInteger(contentLength) || contentLength <= 0) {
+      throw new ValidationError('contentLength must be a positive whole number of bytes');
+    }
+    if (contentLength > policy.maxBytes) {
+      throw new PayloadTooLargeError(
+        `CDM import exceeds the maximum of ${policy.maxBytes} bytes (CDM_UPLOAD_MAX_BYTES)`,
+        policy.maxBytes,
+        contentLength
+      );
+    }
+
+    const uploadId = randomUUID();
+    const minted = await this.fileStorage.getUploadUrl(cdmImportObjectKey(projectId, uploadId), {
+      contentType,
+      contentLength,
+      expiresInSeconds: policy.expirySeconds,
+    });
+
+    return {
+      uploadId,
+      url: minted.url,
+      method: minted.method,
+      expiresAt: minted.expiresAt,
+      headers: Object.entries(minted.headers).map(([name, value]) => ({ name, value })),
+    };
+  }
+
+  /**
+   * The inline shape: the document is the input, so the pieces GraphQL made optional (to
+   * leave room for `source`) are required again, and the rules every document obeys apply.
+   */
+  private assertInlineInput(input: MutationStartProjectSyncArgs['input']): void {
+    for (const field of ['version', 'roles', 'users'] as const) {
+      if (input[field] == null) {
+        throw new ValidationError(`${field} is required when source is absent`);
+      }
+    }
+    validateSyncInput({
+      version: input.version as number,
+      mode: input.mode,
+      roles: input.roles as NonNullable<typeof input.roles>,
+      users: input.users as NonNullable<typeof input.users>,
+    });
+  }
+
+  /**
+   * The by-reference shape: the request carries only what the caller is asking for. The
+   * document is not here to validate; the worker validates it, with the same schema and
+   * rules, before the import transaction opens.
+   */
+  private assertByReferenceInput(input: MutationStartProjectSyncArgs['input']): void {
+    for (const field of ['roles', 'users', 'resources', 'permissions', 'groups', 'tags'] as const) {
+      if (input[field] != null) {
+        throw new ValidationError(`${field} must be absent when source is present`);
+      }
+    }
+    if (input.version != null && input.version !== 1) {
+      throw new ValidationError('Unsupported version; only 1 is allowed');
+    }
+    if (input.mode.strategy === CdmModeStrategy.Replace && input.mode.confirmDestructive !== true) {
+      throw new ValidationError(MODE_REPLACE_REQUIRES_CONFIRMATION);
+    }
+  }
+
+  private entityCountHint(value: number | null | undefined): number | null {
+    if (value == null) return null;
+    if (!Number.isInteger(value) || value < 0 || value > 2_147_483_647) {
+      throw new ValidationError('source.entityCount must be a whole number of at least 0');
+    }
+    return value;
+  }
+
+  /**
+   * Check the upload a by-reference start names, and describe where it is.
+   *
+   * The key is re-derived from the project and the id; the client never supplies a path.
+   * Asks the store exactly one question, `getMetadata()`: it must exist, be non-empty, be
+   * within the policy size, and be JSON where the store records a type (S3 does, the local
+   * adapter does not). The document is neither downloaded nor parsed here: that is the
+   * worker's job, off the request path.
+   *
+   * What it reads is not trusted as proof of content or size: a presigned URL can be replayed
+   * inside its window, so the worker's own `maxBytes` and full validation are what hold.
+   */
+  private async resolveImportUpload(
+    projectId: string,
+    source: NonNullable<MutationStartProjectSyncArgs['input']['source']>
+  ): Promise<ProjectSyncJobPayloadReference> {
+    const uploadId = normalizeUploadId(source.uploadId);
+    const path = cdmImportObjectKey(projectId, uploadId);
+    const policy = config.storage.cdmImport;
+
+    const metadata = await this.fileStorage.getMetadata(path);
+    if (!metadata) {
+      throw new NotFoundError('ProjectSyncUpload', uploadId);
+    }
+    if (metadata.size <= 0) {
+      throw new ValidationError('The uploaded CDM document is empty');
+    }
+    if (metadata.size > policy.maxBytes) {
+      throw new PayloadTooLargeError(
+        `The uploaded CDM document exceeds the maximum of ${policy.maxBytes} bytes (CDM_UPLOAD_MAX_BYTES)`,
+        policy.maxBytes,
+        metadata.size
+      );
+    }
+    if (
+      metadata.contentType !== undefined &&
+      !(policy.contentTypes as readonly string[]).includes(baseMediaType(metadata.contentType))
+    ) {
+      throw new ValidationError(
+        `The uploaded CDM document is ${metadata.contentType}; only ${policy.contentTypes.join(', ')} is accepted`
+      );
+    }
+
+    return {
+      path,
+      sizeBytes: metadata.size,
+      // GraphQL `Int` is 32-bit like the column; REST is bounded by its schema. Refuse anything else.
+      entityCountHint: this.entityCountHint(source.entityCount),
+    };
   }
 
   public async startProjectExport(
@@ -354,11 +544,20 @@ export class ProjectHandler extends CacheHandler {
     });
   }
 
-  public async getProjectSyncJobPayload(params: QueryProjectSyncJobArgs): Promise<{
-    payload: unknown;
-    jobName: string | null;
-    cdmVersion: number;
-  }> {
+  /**
+   * The document that started an import, for the REST download.
+   *
+   * A by-reference job answers `{ byReference: true, sizeBytes }` and nothing else: the
+   * document is unredacted (it can carry bring-your-own API key secrets), was never
+   * readable through this endpoint before, and must not become readable through it now.
+   * Inline jobs are unchanged. See ADR 0009.
+   */
+  public async getProjectSyncJobPayload(
+    params: QueryProjectSyncJobArgs
+  ): Promise<
+    | { byReference: false; payload: unknown; jobName: string | null; cdmVersion: number }
+    | { byReference: true; sizeBytes: number; jobName: string | null; cdmVersion: number }
+  > {
     this.assertProjectScope(params.scope);
     const scopeProjectId = this.projectIdFromScope(params.scope);
     if (scopeProjectId !== params.id) {
@@ -366,10 +565,14 @@ export class ProjectHandler extends CacheHandler {
         'scope id must contain the same projectId as the projectId argument'
       );
     }
-    return this.projectSyncJobs.getPayload({
+    const { payload, payloadRef, jobName, cdmVersion } = await this.projectSyncJobs.getPayload({
       projectId: params.id,
       jobId: params.jobId,
     });
+    if (payloadRef) {
+      return { byReference: true, sizeBytes: payloadRef.sizeBytes, jobName, cdmVersion };
+    }
+    return { byReference: false, payload, jobName, cdmVersion };
   }
 
   public async cancelProjectSync(params: MutationCancelProjectSyncArgs): Promise<ProjectSyncJob> {
@@ -444,35 +647,6 @@ export class ProjectHandler extends CacheHandler {
       throw new ValidationError(
         'mode.confirmDestructive must be true when mode.strategy is replace'
       );
-    }
-  }
-
-  private validateSyncInput(input: MutationStartProjectSyncArgs['input']): void {
-    if (input.version !== 1) {
-      throw new ValidationError('Unsupported version; only 1 is allowed');
-    }
-    if (input.mode?.strategy === 'replace' && input.mode.confirmDestructive !== true) {
-      throw new ValidationError(
-        'mode.confirmDestructive must be true when mode.strategy is replace'
-      );
-    }
-
-    const roleKeys = new Set<string>();
-    for (const r of input.roles) {
-      if (roleKeys.has(r.key)) {
-        throw new ValidationError(`Duplicate role key: ${r.key}`);
-      }
-      roleKeys.add(r.key);
-    }
-
-    const userSeen = new Set<string>();
-    for (const u of input.users) {
-      const isId = u.key.findBy === CdmFindBy.Id;
-      const dedupe = isId ? `id:${u.key.value}` : `key:${u.key.value}`;
-      if (userSeen.has(dedupe)) {
-        throw new ValidationError(`Duplicate user entry: ${dedupe}`);
-      }
-      userSeen.add(dedupe);
     }
   }
 

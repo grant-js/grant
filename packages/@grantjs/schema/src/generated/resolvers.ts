@@ -378,6 +378,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectSyncJobSortInput: Types.ProjectSyncJobSortInput;
   ProjectSyncJobSortableField: Types.ProjectSyncJobSortableField;
   ProjectSyncJobStatus: Types.ProjectSyncJobStatus;
+  ProjectSyncUploadUrl: ResolverTypeWrapper<Types.ProjectSyncUploadUrl>;
   ProjectTag: ResolverTypeWrapper<Types.ProjectTag>;
   ProjectUser: ResolverTypeWrapper<Types.ProjectUser>;
   ProjectUserApiKey: ResolverTypeWrapper<Types.ProjectUserApiKey>;
@@ -464,6 +465,7 @@ export type ResolversTypes = ResolversObject<{
   RequestPasswordResetResponse: ResolverTypeWrapper<Types.RequestPasswordResetResponse>;
   RequestProjectAppPictureUploadUrlInput: Types.RequestProjectAppPictureUploadUrlInput;
   RequestProjectPictureUploadUrlInput: Types.RequestProjectPictureUploadUrlInput;
+  RequestProjectSyncUploadUrlInput: Types.RequestProjectSyncUploadUrlInput;
   RequestUserPictureUploadUrlInput: Types.RequestUserPictureUploadUrlInput;
   ResendVerificationInput: Types.ResendVerificationInput;
   ResendVerificationResponse: ResolverTypeWrapper<Types.ResendVerificationResponse>;
@@ -502,6 +504,7 @@ export type ResolversTypes = ResolversObject<{
   String: ResolverTypeWrapper<Types.Scalars['String']['output']>;
   SyncProjectInput: Types.SyncProjectInput;
   SyncProjectResult: ResolverTypeWrapper<Types.SyncProjectResult>;
+  SyncProjectSourceInput: Types.SyncProjectSourceInput;
   Tag: ResolverTypeWrapper<Types.Tag>;
   TagCdmInput: Types.TagCdmInput;
   TagPage: ResolverTypeWrapper<Types.TagPage>;
@@ -759,6 +762,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectSyncJob: Types.ProjectSyncJob;
   ProjectSyncJobPage: Types.ProjectSyncJobPage;
   ProjectSyncJobSortInput: Types.ProjectSyncJobSortInput;
+  ProjectSyncUploadUrl: Types.ProjectSyncUploadUrl;
   ProjectTag: Types.ProjectTag;
   ProjectUser: Types.ProjectUser;
   ProjectUserApiKey: Types.ProjectUserApiKey;
@@ -845,6 +849,7 @@ export type ResolversParentTypes = ResolversObject<{
   RequestPasswordResetResponse: Types.RequestPasswordResetResponse;
   RequestProjectAppPictureUploadUrlInput: Types.RequestProjectAppPictureUploadUrlInput;
   RequestProjectPictureUploadUrlInput: Types.RequestProjectPictureUploadUrlInput;
+  RequestProjectSyncUploadUrlInput: Types.RequestProjectSyncUploadUrlInput;
   RequestUserPictureUploadUrlInput: Types.RequestUserPictureUploadUrlInput;
   ResendVerificationInput: Types.ResendVerificationInput;
   ResendVerificationResponse: Types.ResendVerificationResponse;
@@ -878,6 +883,7 @@ export type ResolversParentTypes = ResolversObject<{
   String: Types.Scalars['String']['output'];
   SyncProjectInput: Types.SyncProjectInput;
   SyncProjectResult: Types.SyncProjectResult;
+  SyncProjectSourceInput: Types.SyncProjectSourceInput;
   Tag: Types.Tag;
   TagCdmInput: Types.TagCdmInput;
   TagPage: Types.TagPage;
@@ -1839,6 +1845,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationRequestProjectPictureUploadUrlArgs, 'input'>
   >;
+  requestProjectSyncUploadUrl?: Resolver<
+    ResolversTypes['ProjectSyncUploadUrl'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationRequestProjectSyncUploadUrlArgs, 'id' | 'input' | 'scope'>
+  >;
   requestUserPictureUploadUrl?: Resolver<
     ResolversTypes['UploadUrl'],
     ParentType,
@@ -2731,6 +2743,18 @@ export type ProjectSyncJobPageResolvers<
   jobs?: Resolver<Array<ResolversTypes['ProjectSyncJob']>, ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ProjectSyncUploadUrlResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectSyncUploadUrl'] =
+    ResolversParentTypes['ProjectSyncUploadUrl'],
+> = ResolversObject<{
+  expiresAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  headers?: Resolver<Array<ResolversTypes['UploadUrlHeader']>, ParentType, ContextType>;
+  method?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  uploadId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  url?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type ProjectTagResolvers<
@@ -3760,6 +3784,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   ProjectRolePermission?: ProjectRolePermissionResolvers<ContextType>;
   ProjectSyncJob?: ProjectSyncJobResolvers<ContextType>;
   ProjectSyncJobPage?: ProjectSyncJobPageResolvers<ContextType>;
+  ProjectSyncUploadUrl?: ProjectSyncUploadUrlResolvers<ContextType>;
   ProjectTag?: ProjectTagResolvers<ContextType>;
   ProjectUser?: ProjectUserResolvers<ContextType>;
   ProjectUserApiKey?: ProjectUserApiKeyResolvers<ContextType>;

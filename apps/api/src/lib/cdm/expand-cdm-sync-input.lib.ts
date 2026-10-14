@@ -11,6 +11,7 @@ import { CdmFindBy } from '@grantjs/schema';
 import { ValidationError } from '@/lib/errors';
 import { readCdmInputSearchable } from '@/lib/search-document.lib';
 
+import type { CdmDocumentInput } from './cdm-document.schemas';
 import type {
   CdmPermissionRefInternal,
   CdmProjectUserApiKeyInternal,
@@ -46,7 +47,7 @@ export interface ExpandedCdmSyncPayload {
 /**
  * Expand the ubiquitous CDM document into handler-owned slices.
  */
-export function expandCdmSyncInput(input: SyncProjectInput): ExpandedCdmSyncPayload {
+export function expandCdmSyncInput(input: CdmDocumentInput): ExpandedCdmSyncPayload {
   const version = input.version;
   const id = input.id ?? null;
   const mode = input.mode;

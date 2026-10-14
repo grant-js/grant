@@ -8,11 +8,16 @@ import {
   ProjectSyncJobDocument,
   ProjectSyncJobOperation,
   ProjectSyncJobStatus,
+  RequestProjectSyncUploadUrlDocument,
+  type RequestProjectSyncUploadUrlMutation,
   Scope,
   StartProjectExportDocument,
   StartProjectSyncDocument,
   SyncProjectInput,
 } from '@grantjs/schema';
+
+import { CDM_UPLOAD_CONTENT_TYPE } from '@/lib/cdm-import';
+import { DirectUploadError, sendDirectUpload } from '@/lib/direct-upload';
 
 import { evictApiKeysCache } from '../api-keys/cache';
 import { evictGroupsCache } from '../groups/cache';
@@ -53,7 +58,7 @@ function evictAffectedCaches(cache: ApolloCache, jobId: string) {
  * Mutation hook to enqueue an async CDM import job.
  * Returns the persisted job row including its id and current status.
  */
-export function useStartProjectSync() {
+function useStartProjectSync() {
   const [start, state] = useMutation<{ startProjectSync: ProjectSyncJob }>(
     StartProjectSyncDocument
   );
@@ -74,6 +79,77 @@ export function useStartProjectSync() {
     job: state.data?.startProjectSync,
     reset: state.reset,
   };
+}
+
+export interface ImportProjectSyncByReferenceParams {
+  id: string;
+  scope: Scope;
+  /** The CDM file, sent as it is: its bytes never pass through a FileReader or JSON.parse. */
+  file: File;
+  /** Idempotency key for the job (`SyncProjectInput.id`). */
+  jobName: string;
+  /** How to apply the document. Must agree with the document's own `mode.strategy`. */
+  mode: CdmModeInput;
+  /** Only when the client parsed the document; the server checks it against the file. */
+  version?: number;
+  /** A hint for the job list; the worker counts the document itself. */
+  entityCount?: number;
+  signal?: AbortSignal;
+}
+
+/**
+ * Start a CDM import by reference (ADR 0009): ask the API for an upload URL, PUT the file
+ * straight to storage with exactly the headers it named, then start the job from the
+ * returned `uploadId`.
+ *
+ * The three steps fail in different ways and the caller needs to tell them apart, so each
+ * error is left as it came: a refused mint is an Apollo error (a size refusal carries the
+ * domain code `PAYLOAD_TOO_LARGE`), a failed transfer is a `DirectUploadError`, and a
+ * refused start is an Apollo error again. After a failed start the object is still in
+ * storage; it is expired by the `imports/` lifecycle rule, and a retry mints a new upload.
+ */
+export function useImportProjectSyncByReference() {
+  const [requestUploadUrl] = useMutation<RequestProjectSyncUploadUrlMutation>(
+    RequestProjectSyncUploadUrlDocument
+  );
+  const { startSync } = useStartProjectSync();
+
+  const importByReference = useCallback(
+    async (params: ImportProjectSyncByReferenceParams) => {
+      const { id, scope, file, jobName, mode, version, entityCount, signal } = params;
+
+      const minted = await requestUploadUrl({
+        variables: {
+          id,
+          scope,
+          input: { contentLength: file.size, contentType: CDM_UPLOAD_CONTENT_TYPE },
+        },
+      });
+      const ticket = minted.data?.requestProjectSyncUploadUrl;
+      if (!ticket) {
+        throw new DirectUploadError('rejected', 'The API did not issue an upload URL');
+      }
+
+      await sendDirectUpload({ ticket, body: file, signal });
+
+      return startSync({
+        id,
+        scope,
+        input: {
+          id: jobName,
+          mode,
+          ...(version !== undefined ? { version } : {}),
+          source: {
+            uploadId: ticket.uploadId,
+            ...(entityCount !== undefined ? { entityCount } : {}),
+          },
+        },
+      });
+    },
+    [requestUploadUrl, startSync]
+  );
+
+  return { importByReference };
 }
 
 /** Enqueue an async CDM export job (same pipeline as import; artifact in job snapshot). */

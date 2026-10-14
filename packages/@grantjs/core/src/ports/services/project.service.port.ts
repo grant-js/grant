@@ -57,6 +57,7 @@ import type {
 
 import type { SelectedFields } from '../repositories/common';
 import type { DeleteParams } from '../repositories/common';
+import type { ProjectSyncJobPayloadReference } from '../repositories/project.repository.port';
 
 // ---------------------------------------------------------------------------
 // IProjectService
@@ -467,8 +468,13 @@ export interface ProjectSyncJobExportPayload {
  */
 export interface ProjectSyncJobExecutionData {
   job: ProjectSyncJob;
-  /** Import: `SyncProjectInput`. Export: {@link ProjectSyncJobExportPayload}. */
+  /**
+   * Import: `SyncProjectInput`, or `null` when the document travelled by reference.
+   * Export: {@link ProjectSyncJobExportPayload}.
+   */
   payload: unknown;
+  /** Set when the import document is an object in the store rather than in the row (ADR 0009). */
+  payloadRef: ProjectSyncJobPayloadReference | null;
   scope: Scope;
   /** Whether `cancel()` has been invoked while the job was RUNNING. */
   cancelRequested: boolean;
@@ -488,7 +494,9 @@ export interface IProjectSyncJobService {
       jobName: string | null;
       operation: 'import' | 'export';
       modeStrategy: 'merge' | 'replace' | null;
+      /** The document, or `null` when `payloadRef` says where it is. Exactly one is set. */
       payload: unknown;
+      payloadRef?: ProjectSyncJobPayloadReference | null;
       enqueuedById: string;
     },
     transaction?: unknown
@@ -529,6 +537,8 @@ export interface IProjectSyncJobService {
     transaction?: unknown
   ): Promise<{
     payload: unknown;
+    /** Set for a by-reference import, whose `payload` is `null`. Never expose `path`. */
+    payloadRef: ProjectSyncJobPayloadReference | null;
     jobName: string | null;
     cdmVersion: number;
   }>;

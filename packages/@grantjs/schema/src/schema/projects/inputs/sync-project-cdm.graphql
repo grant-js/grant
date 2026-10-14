@@ -154,17 +154,51 @@ input UserCdmInput {
 }
 
 """
+Where the CDM document of a by-reference import is: an upload made through
+`requestProjectSyncUploadUrl`. See `SyncProjectInput.source`.
+"""
+input SyncProjectSourceInput {
+  """
+  The `uploadId` returned by `requestProjectSyncUploadUrl`. The server derives the
+  storage key from the project and this id; the client never supplies a path.
+  """
+  uploadId: ID!
+  """
+  How many entities (roles, users, resources, permissions, groups and tags) the
+  uploaded document holds. A hint, recorded for the job list and never trusted: the
+  worker counts the document itself.
+  """
+  entityCount: Int
+}
+
+"""
 Versioned canonical project document (CDM) for export/import: roles, users,
 resources, permissions, groups, and tags scoped to one project.
+
+Two shapes. **Inline**: `version`, `roles` and `users` are required and the document is
+the input. **By reference**: `source` is set, `mode` still says how to apply it, and
+`version` is optional and the entity arrays (`roles`, `users`, `resources`,
+`permissions`, `groups`, `tags`) must be absent: the document is the file uploaded
+through `requestProjectSyncUploadUrl`, and the worker validates it, so a schema error or
+an over-limit entity count surfaces as a `FAILED` job, not as an error on the mutation.
 """
 input SyncProjectInput {
-  version: Int!
+  "Required inline; optional with `source`, where the uploaded document carries it."
+  version: Int
   id: String
   mode: CdmModeInput!
-  roles: [RoleCdmInput!]!
-  users: [UserCdmInput!]!
+  "Required inline; must be absent with `source`."
+  roles: [RoleCdmInput!]
+  "Required inline; must be absent with `source`."
+  users: [UserCdmInput!]
   resources: [ResourceCdmInput!]
   permissions: [PermissionCdmInput!]
   groups: [GroupCdmInput!]
   tags: [TagCdmInput!]
+  """
+  Import the document uploaded through `requestProjectSyncUploadUrl` instead of sending
+  it inline. The entity arrays must then be absent, and `mode` (and `version`, if
+  given) must match the uploaded document.
+  """
+  source: SyncProjectSourceInput
 }

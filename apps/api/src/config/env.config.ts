@@ -765,6 +765,22 @@ const STORAGE_CONFIG = {
      */
     urlExpirySeconds: env.STORAGE_UPLOAD_URL_EXPIRY_SECONDS,
   },
+
+  /**
+   * Upload policy for a CDM import document sent by reference (ADR 0009).
+   *
+   * Selected by purpose rather than widening `upload`, which is image-only: a CDM import
+   * has its own size ceiling and content type, and widening the image policy would let a
+   * picture URL carry a CDM-sized body.
+   */
+  cdmImport: {
+    /** Largest accepted document in bytes (default: 64 MiB). */
+    maxBytes: env.CDM_UPLOAD_MAX_BYTES,
+    /** The document is JSON and nothing else. */
+    contentTypes: ['application/json'] as const,
+    /** Same short expiry as picture uploads. */
+    expirySeconds: env.STORAGE_UPLOAD_URL_EXPIRY_SECONDS,
+  },
 } as const;
 
 // ============================================================================
@@ -1059,6 +1075,13 @@ const CDM_CONFIG = {
 
   /** Maximum nesting depth of a single `JSON` scalar value. */
   maxJsonDepth: env.CDM_MAX_JSON_DEPTH,
+
+  /**
+   * Most entities an import by reference may carry; `0` is unlimited. Enforced by the
+   * worker before the import transaction opens, so for by-reference jobs the refusal is
+   * an asynchronous `FAILED` job, not a synchronous 4xx (ADR 0009).
+   */
+  maxImportEntities: env.CDM_IMPORT_MAX_ENTITIES,
 } as const;
 
 // ============================================================================
@@ -1124,6 +1147,18 @@ export function validateConfig(): void {
         }
         break;
     }
+  }
+
+  if (
+    !Number.isInteger(STORAGE_CONFIG.cdmImport.maxBytes) ||
+    STORAGE_CONFIG.cdmImport.maxBytes < 1 ||
+    // Recorded in an `integer` column (`payload_size_bytes`) and bounded by GraphQL's 32-bit `Int`.
+    STORAGE_CONFIG.cdmImport.maxBytes > 2_147_483_647
+  ) {
+    errors.push('CDM_UPLOAD_MAX_BYTES must be a whole number of bytes between 1 and 2147483647');
+  }
+  if (!Number.isInteger(CDM_CONFIG.maxImportEntities) || CDM_CONFIG.maxImportEntities < 0) {
+    errors.push('CDM_IMPORT_MAX_ENTITIES must be a whole number, 0 or greater (0 is unlimited)');
   }
 
   // Validate storage configuration

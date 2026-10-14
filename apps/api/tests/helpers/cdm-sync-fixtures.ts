@@ -1,25 +1,27 @@
 /**
  * Shared CDM payloads and export inputs for project sync job tests.
  */
-import { CdmFindBy, CdmModeStrategy, type SyncProjectInput } from '@grantjs/schema';
+import { CdmFindBy, CdmModeStrategy } from '@grantjs/schema';
+
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 
 export const FIXTURE_PROJECT_ID = '00000000-0000-4000-8000-000000000011';
 export const FIXTURE_ACCOUNT_ID = '00000000-0000-4000-8000-000000000020';
 export const FIXTURE_JOB_ID = '40000000-0000-4000-8000-000000000077';
 
-export const mergeMode: NonNullable<SyncProjectInput['mode']> = {
+export const mergeMode: NonNullable<CdmDocumentInput['mode']> = {
   strategy: CdmModeStrategy.Merge,
   onConflict: null,
   confirmDestructive: false,
 };
 
-export const replaceMode = (confirmDestructive = true): NonNullable<SyncProjectInput['mode']> => ({
+export const replaceMode = (confirmDestructive = true): NonNullable<CdmDocumentInput['mode']> => ({
   strategy: CdmModeStrategy.Replace,
   onConflict: null,
   confirmDestructive,
 });
 
-export function minimalCdm(overrides: Partial<SyncProjectInput> = {}): SyncProjectInput {
+export function minimalCdm(overrides: Partial<CdmDocumentInput> = {}): CdmDocumentInput {
   return {
     version: 1,
     mode: mergeMode,
@@ -38,8 +40,8 @@ export function minimalCdm(overrides: Partial<SyncProjectInput> = {}): SyncProje
  * GraphQL allows omitted/null `id`; use the raw `cdm` for GraphQL variables.
  */
 export function cdmRestPayload(
-  cdm: SyncProjectInput
-): Omit<SyncProjectInput, 'id'> & { id?: string } {
+  cdm: CdmDocumentInput
+): Omit<CdmDocumentInput, 'id'> & { id?: string } {
   const { id, ...rest } = cdm;
   return id != null && id !== '' ? { ...rest, id } : rest;
 }
@@ -87,15 +89,15 @@ function cdmRoleResourceBundle(roleKey: string, displayName: string) {
 
 export function cdmWithRoleTemplate(
   roleKey = 'e2e-viewer',
-  overrides: Partial<SyncProjectInput> = {}
-): SyncProjectInput {
+  overrides: Partial<CdmDocumentInput> = {}
+): CdmDocumentInput {
   return minimalCdm({
     ...cdmRoleResourceBundle(roleKey, 'E2E Viewer'),
     ...overrides,
   });
 }
 
-export function cdmWithCustomResourceAndPermission(): SyncProjectInput {
+export function cdmWithCustomResourceAndPermission(): CdmDocumentInput {
   return minimalCdm({
     resources: [
       {
@@ -124,7 +126,7 @@ export function cdmWithCustomResourceAndPermission(): SyncProjectInput {
 export function replaceCdm(options?: {
   confirmDestructive?: boolean;
   roleKey?: string;
-}): SyncProjectInput {
+}): CdmDocumentInput {
   const confirmDestructive = options?.confirmDestructive ?? true;
   const roleKey = options?.roleKey ?? 'replace-only-role';
   return {
@@ -222,7 +224,7 @@ function richCdmEntityBundle(prefix: string, userId: string) {
   };
 }
 
-export function richMergeCdm(prefix: string, userId: string): SyncProjectInput {
+export function richMergeCdm(prefix: string, userId: string): CdmDocumentInput {
   const bundle = richCdmEntityBundle(prefix, userId);
   return {
     version: 1,
@@ -237,7 +239,7 @@ export function richMergeCdm(prefix: string, userId: string): SyncProjectInput {
   };
 }
 
-export function richReplaceCdm(prefix: string, userId: string): SyncProjectInput {
+export function richReplaceCdm(prefix: string, userId: string): CdmDocumentInput {
   const replacePrefix = `${prefix}-repl`;
   const bundle = richCdmEntityBundle(replacePrefix, userId);
   return {
@@ -254,7 +256,7 @@ export function richReplaceCdm(prefix: string, userId: string): SyncProjectInput
 }
 
 /** Minimal CDM for direct user.groups → group → permission authorization E2E. */
-export function cdmDirectGroupAuth(userId: string): SyncProjectInput {
+export function cdmDirectGroupAuth(userId: string): CdmDocumentInput {
   return minimalCdm({
     resources: [
       {
@@ -321,11 +323,11 @@ export function invalidCdmMissingVersion(): Record<string, unknown> {
   };
 }
 
-export function invalidCdmUnsupportedVersion(): SyncProjectInput {
+export function invalidCdmUnsupportedVersion(): CdmDocumentInput {
   return { ...minimalCdm(), version: 2 };
 }
 
-export function invalidCdmDuplicateRoleKeys(): SyncProjectInput {
+export function invalidCdmDuplicateRoleKeys(): CdmDocumentInput {
   return minimalCdm({
     roles: [
       {
@@ -352,7 +354,7 @@ export function invalidCdmDuplicateRoleKeys(): SyncProjectInput {
   });
 }
 
-export function cdmWithUserById(userId: string): SyncProjectInput {
+export function cdmWithUserById(userId: string): CdmDocumentInput {
   return cdmWithRoleTemplate('linked-viewer', {
     users: [
       {
@@ -375,7 +377,7 @@ export interface ExportInputOptions {
   jobName?: string;
   sections?: string[];
   includeUserApiKeys?: boolean;
-  mode?: SyncProjectInput['mode'];
+  mode?: CdmDocumentInput['mode'];
 }
 
 export function exportInput(options: ExportInputOptions = {}): {
@@ -383,7 +385,7 @@ export function exportInput(options: ExportInputOptions = {}): {
   jobName?: string;
   sections?: string[];
   includeUserApiKeys?: boolean;
-  mode?: SyncProjectInput['mode'];
+  mode?: CdmDocumentInput['mode'];
 } {
   return {
     version: options.version ?? 1,

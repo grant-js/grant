@@ -1,0 +1,24 @@
+"""
+A bounded, time-limited URL to PUT a CDM import document to, and the id to start the
+import from. Same commitments as `UploadUrl`: exactly `contentLength` bytes of exactly
+`contentType`, at a path derived on the server from the project, until `expiresAt`.
+"""
+type ProjectSyncUploadUrl {
+  "Pass as `source.uploadId` to `startProjectSync`."
+  uploadId: ID!
+
+  """
+  Absolute for object stores; application-relative for targets this API serves
+  itself. Resolve it against the API origin before using it.
+  """
+  url: String!
+
+  "HTTP method the client must use. Always PUT today."
+  method: String!
+
+  "Headers the client must set verbatim. `Content-Length` is deliberately absent."
+  headers: [UploadUrlHeader!]!
+
+  "Instant after which the store refuses the URL."
+  expiresAt: Date!
+}

@@ -279,6 +279,17 @@ interface StorageProps {
    * stack deletion. Both are off for a bucket holding real uploads.
    */
   readonly destroyOnRemoval?: boolean;
+
+  /**
+   * Days after which a CDM import document uploaded by reference expires from the
+   * `imports/` prefix. Default **7**.
+   *
+   * A backstop, not the cleanup: the worker deletes the object when its job ends. It must
+   * outlast the longest possible run plus a retry (the longest measured container import
+   * is 220 minutes), which is why the default is days and not hours. Applies only to a
+   * bucket the stack creates; an imported `uploadsBucket` needs the rule added out of band.
+   */
+  readonly cdmImportObjectTtlDays?: number;
 }
 
 /** The cache and session store. */

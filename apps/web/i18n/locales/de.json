@@ -4088,16 +4088,16 @@
     },
     "startDialog": {
       "title": "Berechtigungs-Sync starten",
-      "description": "Lege eine CDM-JSON-Datei ab oder klicke zum Auswählen. Die Originaldatei wird gespeichert, damit du sie später ansehen und herunterladen kannst.",
+      "description": "Lege eine CDM-JSON-Datei ab oder klicke zum Auswählen. Die Datei wird direkt in den Speicher hochgeladen und beim Ausführen des Jobs geprüft; nach Abschluss des Jobs wird sie gelöscht.",
       "dropzone": {
         "active": "Lege die JSON-Datei hier ab",
         "idle": "JSON-Datei ablegen oder klicken, um zu durchsuchen",
-        "hint": "Nur .json-Dateien bis 25 MB werden unterstützt",
+        "hint": "Nur .json-Dateien bis {maxSize} MiB werden unterstützt",
         "browse": "Datei auswählen"
       },
       "errors": {
         "invalidType": "Nur .json-Dateien werden akzeptiert.",
-        "fileTooLarge": "Datei ist zu groß. Maximale Größe ist {maxSize} MB.",
+        "fileTooLarge": "Datei ist zu groß. Maximale Größe ist {maxSize} MiB.",
         "invalidJson": "Die Datei ist kein gültiges JSON.",
         "invalidShape": "Das JSON sieht nicht wie ein CDM-Payload aus (fehlende oder ungültige version, mode.strategy, roles[] oder users[]; optionale resources/permissions/groups/tags müssen Arrays sein, falls gesetzt).",
         "readFailed": "Fehler beim Lesen der Datei."
@@ -4138,7 +4138,12 @@
       "permissionDeniedTitle": "Sync kann nicht gestartet werden",
       "permissionDeniedDescription": "Zum Importieren von CDM und Einreihen eines Sync-Jobs brauchst du die Berechtigung, dieses Projekt zu aktualisieren.",
       "emailVerificationTitle": "E-Mail bestätigen",
-      "emailVerificationDescription": "Bestätige deine E-Mail-Adresse, bevor du einen Berechtigungs-Sync startest."
+      "emailVerificationDescription": "Bestätige deine E-Mail-Adresse, bevor du einen Berechtigungs-Sync startest.",
+      "largeFile": {
+        "note": "Diese Datei ist größer als {threshold} MiB und wird daher nicht im Browser gelesen. Sie wird unverändert hochgeladen und beim Ausführen des Jobs auf dem Server geprüft; Probleme erscheinen am Job.",
+        "modeHint": "Muss dem Modus in der Datei entsprechen, sonst schlägt der Job fehl.",
+        "confirmDestructive": "Ich bestätige, dass CDM-verwaltete Entitäten durch diesen Replace-Import gelöscht und neu erstellt werden."
+      }
     },
     "viewDialog": {
       "title": "Sync-Job",
@@ -4210,7 +4215,8 @@
         "loading": "Lade Payload…",
         "notAvailable": "Payload konnte nicht geladen werden.",
         "reload": "Neu laden",
-        "download": "Payload herunterladen"
+        "download": "Payload herunterladen",
+        "byReference": "Als Referenz gespeichert ({size} MiB). Die Datei wurde direkt in den Speicher hochgeladen und wird nach Abschluss des Jobs gelöscht, daher wird sie hier nicht angezeigt."
       },
       "snapshot": {
         "exportSummary": "Dies ist das generierte CDM-Exportdokument nach Abschluss des Jobs. Laden Sie es herunter, um das Berechtigungsmodell zu sichern oder zu klonen.",
@@ -4237,6 +4243,15 @@
       "exportError": "Export konnte nicht gestartet werden",
       "cancelSuccess": "Sync-Job abgebrochen",
       "cancelError": "Sync-Job konnte nicht abgebrochen werden"
+    },
+    "importErrors": {
+      "CDM_IMPORT_TOO_MANY_ENTITIES": "Die Datei enthält mehr Entitäten, als diese Installation in einem Job importiert. Teile sie in kleinere Dateien auf.",
+      "CDM_IMPORT_DOCUMENT_INVALID": "Die Datei ist kein gültiges CDM-Dokument. Es wurde nichts importiert.",
+      "CDM_IMPORT_DOCUMENT_NOT_JSON": "Die hochgeladene Datei ist kein gültiges JSON. Es wurde nichts importiert.",
+      "CDM_IMPORT_REQUEST_MISMATCH": "Modus oder Version in der Datei weichen von der Anfrage ab. Es wurde nichts importiert.",
+      "CDM_IMPORT_UPLOAD_MISSING": "Die hochgeladene Datei ist nicht mehr im Speicher, möglicherweise abgelaufen. Lade sie erneut hoch und starte einen neuen Import.",
+      "CDM_IMPORT_DOCUMENT_TOO_LARGE": "Die hochgeladene Datei ist größer als die maximal zulässige Größe dieser Installation.",
+      "CDM_IMPORT_STORAGE_FAILURE": "Die hochgeladene Datei konnte nicht aus dem Speicher gelesen werden. Versuche es später erneut."
     }
   }
 }

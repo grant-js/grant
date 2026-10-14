@@ -1,0 +1,19 @@
+extend type Mutation {
+  """
+  Ask for a URL to upload a CDM import document directly to storage, so it can be
+  imported without passing through this API's request body (and its size limit).
+
+  Requires Project sync job update permission in the given project scope, like
+  `startProjectSync`. The server derives the storage key from the project and a
+  server-minted `uploadId`; the client never supplies a path. The URL commits to exactly
+  `input.contentLength` bytes of `application/json`, up to `CDM_UPLOAD_MAX_BYTES`.
+
+  PUT the file, then call `startProjectSync` with `input.source.uploadId`. An upload
+  that is never started is expired by the storage lifecycle rule.
+  """
+  requestProjectSyncUploadUrl(
+    id: ID!
+    scope: Scope!
+    input: RequestProjectSyncUploadUrlInput!
+  ): ProjectSyncUploadUrl!
+}

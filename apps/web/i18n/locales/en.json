@@ -4363,16 +4363,16 @@
     },
     "startDialog": {
       "title": "Start permission sync",
-      "description": "Drop a CDM JSON file or click to browse. The original payload is stored so you can review and download it later.",
+      "description": "Drop a CDM JSON file or click to browse. The file is uploaded directly to storage and validated when the job runs; it is deleted once the job finishes.",
       "dropzone": {
         "active": "Drop the JSON file here",
         "idle": "Drag and drop a JSON file, or click to browse",
-        "hint": "Only .json files up to 25 MB are supported",
+        "hint": "Only .json files up to {maxSize} MiB are supported",
         "browse": "Choose a file"
       },
       "errors": {
         "invalidType": "Only .json files are accepted.",
-        "fileTooLarge": "File is too large. Maximum size is {maxSize} MB.",
+        "fileTooLarge": "File is too large. Maximum size is {maxSize} MiB.",
         "invalidJson": "The file is not valid JSON.",
         "invalidShape": "The JSON does not look like a CDM payload (missing or invalid version, mode.strategy, roles[], or users[]; optional resources/permissions/groups/tags must be arrays when present).",
         "readFailed": "Failed to read the file."
@@ -4413,7 +4413,12 @@
       "permissionDeniedTitle": "You can't start a sync",
       "permissionDeniedDescription": "You need permission to update this project to import CDM and enqueue a sync job.",
       "emailVerificationTitle": "Verify your email",
-      "emailVerificationDescription": "Verify your email address before starting a permission sync."
+      "emailVerificationDescription": "Verify your email address before starting a permission sync.",
+      "largeFile": {
+        "note": "This file is larger than {threshold} MiB, so it is not read in the browser. It is uploaded as it is and checked on the server when the job runs; any problem shows up on the job.",
+        "modeHint": "Must match the mode in the file; otherwise the job fails.",
+        "confirmDestructive": "I confirm that CDM-managed entities are deleted and recreated by this replace import."
+      }
     },
     "viewDialog": {
       "title": "Sync job",
@@ -4485,7 +4490,8 @@
         "loading": "Loading payload…",
         "notAvailable": "Payload could not be loaded.",
         "reload": "Reload",
-        "download": "Download payload"
+        "download": "Download payload",
+        "byReference": "Stored by reference ({size} MiB). The file was uploaded directly to storage and is deleted when the job finishes, so it is not shown here."
       },
       "snapshot": {
         "exportSummary": "This is the generated CDM export produced when the job completed. Download it to clone or back up the project's permission model.",
@@ -4512,6 +4518,15 @@
       "exportError": "Failed to start export",
       "cancelSuccess": "Sync job cancelled",
       "cancelError": "Failed to cancel sync"
+    },
+    "importErrors": {
+      "CDM_IMPORT_TOO_MANY_ENTITIES": "The file has more entities than this deployment imports in one job. Split it into smaller files.",
+      "CDM_IMPORT_DOCUMENT_INVALID": "The file is not a valid CDM document. Nothing was imported.",
+      "CDM_IMPORT_DOCUMENT_NOT_JSON": "The uploaded file is not valid JSON. Nothing was imported.",
+      "CDM_IMPORT_REQUEST_MISMATCH": "The mode or version in the file differs from what was requested. Nothing was imported.",
+      "CDM_IMPORT_UPLOAD_MISSING": "The uploaded file is no longer in storage, possibly because it expired. Upload it again and start a new import.",
+      "CDM_IMPORT_DOCUMENT_TOO_LARGE": "The uploaded file is larger than the maximum size this deployment accepts.",
+      "CDM_IMPORT_STORAGE_FAILURE": "The uploaded file could not be read from storage. Try again later."
     }
   }
 }

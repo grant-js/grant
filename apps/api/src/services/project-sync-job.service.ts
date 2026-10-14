@@ -3,6 +3,7 @@ import type {
   IEventPublisher,
   IProjectSyncJobService,
   ProjectSyncJobExecutionData,
+  ProjectSyncJobPayloadReference,
 } from '@grantjs/core';
 import {
   ProjectSyncJob,
@@ -98,6 +99,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       operation: 'import' | 'export';
       modeStrategy: 'merge' | 'replace' | null;
       payload: unknown;
+      payloadRef?: ProjectSyncJobPayloadReference | null;
       enqueuedById: string;
     },
     transaction?: Transaction
@@ -121,6 +123,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
         operation: params.operation,
         modeStrategy: params.modeStrategy,
         payload: params.payload,
+        payloadRef: params.payloadRef ?? null,
         enqueuedById: params.enqueuedById,
       },
       transaction
@@ -195,6 +198,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     transaction?: Transaction
   ): Promise<{
     payload: unknown;
+    payloadRef: ProjectSyncJobPayloadReference | null;
     jobName: string | null;
     cdmVersion: number;
   }> {
@@ -204,6 +208,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     }
     return {
       payload: row.payload,
+      payloadRef: row.payloadRef,
       jobName: row.jobName,
       cdmVersion: row.cdmVersion,
     };
@@ -220,6 +225,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     return {
       job: full.job,
       payload: full.payload,
+      payloadRef: full.payloadRef,
       scope: { tenant: full.scopeTenant as Tenant, id: full.scopeId },
       cancelRequested: full.cancelRequested,
     };

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Runtime config: demo mode, privacy retention, app version.
+ * Runtime config: demo mode, privacy retention, app version, CDM upload limit.
  * Client loads from GET /api/config; server fallback from env (SSR/build).
  */
 
@@ -10,6 +10,8 @@ export interface RuntimeConfig {
   demoModeDbRefreshSchedule: string;
   accountDeletionRetentionDays: string;
   appVersion: string;
+  /** Largest CDM import file, in bytes, the API will mint an upload URL for. */
+  cdmUploadMaxBytes: number;
 }
 
 const DEFAULTS: RuntimeConfig = {
@@ -17,6 +19,9 @@ const DEFAULTS: RuntimeConfig = {
   demoModeDbRefreshSchedule: '0 0 */2 * *',
   accountDeletionRetentionDays: '30',
   appVersion: 'dev',
+  // Mirrors the API's `CDM_UPLOAD_MAX_BYTES` default (64 MiB), used until `/api/config`
+  // answers and when it cannot be reached.
+  cdmUploadMaxBytes: 64 * 1024 * 1024,
 };
 
 let runtimeConfig: RuntimeConfig = DEFAULTS;

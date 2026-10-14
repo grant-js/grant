@@ -17,7 +17,7 @@
  *      ref errors, and the resulting fresh ids are different from project A's.
  */
 import type { CdmExportContext, ICdmEntityHandler } from '@grantjs/core';
-import { CdmModeStrategy, type Scope, type SyncProjectInput, Tenant } from '@grantjs/schema';
+import { CdmModeStrategy, type Scope, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CDM_IMPORT_METADATA_KEY } from '@/constants/cdm-import.constants';
@@ -30,6 +30,7 @@ import {
   TagCdmEntity,
   UserAssignmentCdmEntity,
 } from '@/lib/cdm';
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 
 const projectAId = 'aaaa0000-0000-4000-8000-000000000001';
 const projectBId = 'bbbb0000-0000-4000-8000-000000000002';
@@ -186,7 +187,7 @@ function buildHandlers(exportRepo: ReturnType<typeof buildExportRepoForProjectA>
 
 async function exportProjectA(
   handlers: ReturnType<typeof buildHandlers>
-): Promise<SyncProjectInput> {
+): Promise<CdmDocumentInput> {
   const ctx: CdmExportContext = { projectId: projectAId, scope: scopeA };
   const [resources, permissions, tags, roleTemplates, userAssignments] = await Promise.all([
     handlers.resource.export(ctx),

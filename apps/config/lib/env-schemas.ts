@@ -304,6 +304,8 @@ const schemas: Record<string, z.ZodType<string>> = {
   GITHUB_OAUTH_STATE_VALIDITY_MINUTES: positiveIntSchema,
   OAUTH_CLI_CALLBACK_TTL_SECONDS: positiveIntSchema,
   STORAGE_UPLOAD_MAX_FILE_SIZE: positiveIntSchema,
+  CDM_UPLOAD_MAX_BYTES: positiveIntSchema,
+  CDM_IMPORT_MAX_ENTITIES: positiveIntSchema,
   SMTP_PORT: portSchema,
 };
 

@@ -688,6 +688,16 @@
             }
           ]
         },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": 7,
+              "Id": "ExpireCdmImportUploads",
+              "Prefix": "imports/",
+              "Status": "Enabled"
+            }
+          ]
+        },
         "PublicAccessBlockConfiguration": {
           "BlockPublicAcls": true,
           "BlockPublicPolicy": true,

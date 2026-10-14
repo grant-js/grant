@@ -1505,6 +1505,22 @@ export type ProjectSyncJobsQuery = {
   };
 };
 
+export type RequestProjectSyncUploadUrlMutationVariables = Exact<{
+  id: string | number;
+  scope: Types.Scope;
+  input: Types.RequestProjectSyncUploadUrlInput;
+}>;
+
+export type RequestProjectSyncUploadUrlMutation = {
+  requestProjectSyncUploadUrl: {
+    uploadId: string;
+    url: string;
+    method: string;
+    expiresAt: Date;
+    headers: Array<{ name: string; value: string }>;
+  };
+};
+
 export type StartProjectExportMutationVariables = Exact<{
   id: string | number;
   scope: Types.Scope;
@@ -8153,6 +8169,94 @@ export const ProjectSyncJobsDocument = {
     },
   ],
 } as unknown as DocumentNode<ProjectSyncJobsQuery, ProjectSyncJobsQueryVariables>;
+export const RequestProjectSyncUploadUrlDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'RequestProjectSyncUploadUrl' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'RequestProjectSyncUploadUrlInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'requestProjectSyncUploadUrl' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'id' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'uploadId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'method' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'headers' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'value' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  RequestProjectSyncUploadUrlMutation,
+  RequestProjectSyncUploadUrlMutationVariables
+>;
 export const StartProjectExportDocument = {
   kind: 'Document',
   definitions: [

@@ -1,13 +1,8 @@
-import {
-  CdmFindBy,
-  CdmModeStrategy,
-  type Scope,
-  type SyncProjectInput,
-  Tenant,
-} from '@grantjs/schema';
+import { CdmFindBy, CdmModeStrategy, type Scope, Tenant } from '@grantjs/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CDM_IMPORT_METADATA_KEY, CDM_SOURCE_METADATA_KEY } from '@/constants/cdm-import.constants';
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import { ProjectImportService } from '@/services/project-import.service';
 
 const accountId = '10000000-0000-4000-8000-000000000020';
@@ -180,7 +175,7 @@ describe('ProjectImportService CDM metadata', () => {
   });
 
   it('merges template metadata into role create payload (direct permissions path)', async () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode: {
@@ -248,7 +243,7 @@ describe('ProjectImportService CDM metadata', () => {
 
   it('calls mergeProjectUserCdmMetadata when user assignment includes metadata', async () => {
     const userId = '20000000-0000-4000-8000-000000000033';
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode: {
@@ -324,7 +319,7 @@ describe('ProjectImportService CDM metadata', () => {
   });
 
   it('imports findBy=email users as unverified email identities and project members', async () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode: {
@@ -474,7 +469,7 @@ describe('ProjectImportService CDM metadata', () => {
       '40000000-0000-4000-8000-000000000001',
     ]);
     const userId = '20000000-0000-4000-8000-000000000033';
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode: {

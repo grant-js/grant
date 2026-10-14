@@ -27,6 +27,7 @@ import {
   projectSyncJobParamsSchema,
   projectSyncJobScopeQuerySchema,
   requestProjectPictureUploadUrlRequestSchema,
+  requestProjectSyncUploadUrlRequestSchema,
   startProjectExportJobRequestSchema,
   startProjectSyncRequestSchema,
   updateProjectRequestSchema,
@@ -89,6 +90,35 @@ export function createProjectsRouter(context: RequestContext): Router {
       const project: Project = await context.handlers.projects.createProject(variables);
 
       sendSuccessResponse(res, project, 201);
+    }
+  );
+
+  router.post(
+    '/:id/sync/upload-url',
+    validate({ params: projectParamsSchema, body: requestProjectSyncUploadUrlRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectSyncJob,
+      action: ResourceAction.Update,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof requestProjectSyncUploadUrlRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { scope, contentLength, contentType } = req.body;
+
+      const result = await context.handlers.projects.requestProjectSyncUploadUrl({
+        id,
+        scope,
+        input: { contentLength, contentType },
+      });
+
+      sendSuccessResponse(res, result);
     }
   );
 
@@ -233,16 +263,23 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id, jobId } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const { payload, jobName } = await context.handlers.projects.getProjectSyncJobPayload({
+      const result = await context.handlers.projects.getProjectSyncJobPayload({
         id,
         jobId,
         scope: { id: scopeId, tenant },
       });
 
-      const filename = `cdm-${jobName ?? jobId}.json`;
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      if (result.byReference) {
+        // The document is an object in the store, unredacted, and was never readable here:
+        // describe it, do not re-hydrate it, and do not offer it as a download (ADR 0009).
+        res.status(200).send(JSON.stringify({ byReference: true, sizeBytes: result.sizeBytes }));
+        return;
+      }
+
+      const filename = `cdm-${result.jobName ?? jobId}.json`;
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.status(200).send(JSON.stringify(payload));
+      res.status(200).send(JSON.stringify(result.payload));
     }
   );
 

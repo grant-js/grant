@@ -1466,6 +1466,26 @@ const META: EnvVarMeta[] = [
     section: 'File Storage',
   },
   {
+    key: 'CDM_UPLOAD_MAX_BYTES',
+    category: 'main',
+    label: 'Max CDM import upload (bytes)',
+    description:
+      'Largest CDM import document, in bytes, that may be sent by reference through a presigned upload (default: 67108864, 64 MiB).',
+    envFiles: ['.env'],
+    digitsOnly: true,
+    section: 'File Storage',
+  },
+  {
+    key: 'CDM_IMPORT_MAX_ENTITIES',
+    category: 'main',
+    label: 'Max entities per CDM import',
+    description:
+      'Most entities (roles, users, resources, permissions, groups, tags) an import by reference may carry; a larger one fails before it is applied. 0 is unlimited (default: 5000).',
+    envFiles: ['.env'],
+    digitsOnly: true,
+    section: 'File Storage',
+  },
+  {
     key: 'STORAGE_LOCAL_BASE_PATH',
     category: 'main',
     label: 'Local base path',

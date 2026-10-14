@@ -437,6 +437,18 @@ export const Mutation = {
       projectMutations.startProjectExport!
     )
   ),
+  requestProjectSyncUploadUrl: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.ProjectSyncJob,
+        action: ResourceAction.Update,
+        resourceResolver: 'project',
+      },
+      projectMutations.requestProjectSyncUploadUrl!
+    )
+  ),
   startProjectSync: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

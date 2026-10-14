@@ -42,7 +42,18 @@ export const projectSyncJobs = pgTable(
       length: 20,
     }).$type<ProjectSyncJobModeStrategy | null>(),
     status: varchar('status', { length: 50 }).notNull().default('pending'),
-    payload: jsonb('payload').notNull(),
+    /**
+     * The CDM document, for an inline import and for an export's request. NULL for a
+     * by-reference import, whose document is the object at `payloadPath` (ADR 0009); the
+     * CHECK below makes sure exactly that case, and no other, leaves it empty.
+     */
+    payload: jsonb('payload'),
+    /** Server-derived object key of a by-reference import. Unique: one upload, one job. */
+    payloadPath: text('payload_path'),
+    /** Size the store reported when the job was started. */
+    payloadSizeBytes: integer('payload_size_bytes'),
+    /** The client's own, untrusted entity count; the worker counts for itself. */
+    entityCountHint: integer('entity_count_hint'),
     result: jsonb('result'),
     warnings: jsonb('warnings').default([]).notNull(),
     errorMessage: text('error_message'),
@@ -67,9 +78,19 @@ export const projectSyncJobs = pgTable(
       'project_sync_jobs_mode_strategy_check',
       sql`("mode_strategy" IS NULL OR "mode_strategy" IN ('merge', 'replace'))`
     ),
+    check(
+      'project_sync_jobs_payload_present_check',
+      sql`("payload" IS NOT NULL OR "payload_path" IS NOT NULL)`
+    ),
     index('project_sync_jobs_project_id_idx').on(table.projectId),
     index('project_sync_jobs_status_idx').on(table.status),
     index('project_sync_jobs_project_status_idx').on(table.projectId, table.status),
+    // One upload, one job, except that a FAILED job releases it: the worker leaves the object in
+    // place when the store itself failed, and a retry must be able to start from the same upload.
+    // A job that failed over the document itself deleted its object, so a retry finds nothing.
+    uniqueIndex('project_sync_jobs_payload_path_unique')
+      .on(table.payloadPath)
+      .where(sql`${table.payloadPath} IS NOT NULL AND ${table.status} <> 'failed'`),
     uniqueIndex('project_sync_jobs_project_operation_job_name_unique')
       .on(table.projectId, table.operation, table.jobName)
       .where(
