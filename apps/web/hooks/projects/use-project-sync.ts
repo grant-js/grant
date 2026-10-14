@@ -58,7 +58,7 @@ function evictAffectedCaches(cache: ApolloCache, jobId: string) {
  * Mutation hook to enqueue an async CDM import job.
  * Returns the persisted job row including its id and current status.
  */
-export function useStartProjectSync() {
+function useStartProjectSync() {
   const [start, state] = useMutation<{ startProjectSync: ProjectSyncJob }>(
     StartProjectSyncDocument
   );

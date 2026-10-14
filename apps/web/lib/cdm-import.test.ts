@@ -1,3 +1,4 @@
+import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -102,6 +103,14 @@ describe('readPayloadTooLarge', () => {
     expect(
       readPayloadTooLarge(refusal({ code: 'PAYLOAD_TOO_LARGE', limitBytes: 67108864 }))
     ).toEqual({ limitBytes: 67108864 });
+  });
+
+  it('reads it off the error Apollo Client really throws for a GraphQL refusal', () => {
+    const error = new CombinedGraphQLErrors({
+      errors: [{ message: 'too big', extensions: { code: 'PAYLOAD_TOO_LARGE', limitBytes: 5 } }],
+    } as never);
+
+    expect(readPayloadTooLarge(error)).toEqual({ limitBytes: 5 });
   });
 
   it('reports the refusal without a limit when the server did not name one', () => {

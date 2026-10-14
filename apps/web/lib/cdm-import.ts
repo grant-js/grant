@@ -91,7 +91,7 @@ export const CDM_IMPORT_ERROR_CODES = [
   'CDM_IMPORT_STORAGE_FAILURE',
 ] as const;
 
-export type CdmImportErrorCode = (typeof CDM_IMPORT_ERROR_CODES)[number];
+type CdmImportErrorCode = (typeof CDM_IMPORT_ERROR_CODES)[number];
 
 export interface ParsedCdmImportError {
   code: CdmImportErrorCode;
