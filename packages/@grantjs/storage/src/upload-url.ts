@@ -71,3 +71,16 @@ export function assertUploadTarget(path: string, options: UploadUrlOptions): voi
   assertUploadPath(path);
   assertUploadUrlOptions(options);
 }
+
+/**
+ * `download()`'s cap is required so a caller cannot omit it; this is what stops it
+ * being `0`, negative or fractional, which would either refuse everything or let a
+ * comparison against it quietly pass.
+ */
+export function assertDownloadMaxBytes(maxBytes: number): void {
+  if (!Number.isInteger(maxBytes) || maxBytes <= 0) {
+    throw new ValidationError(
+      `Download maxBytes must be a positive integer, received: ${maxBytes}`
+    );
+  }
+}

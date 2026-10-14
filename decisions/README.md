@@ -31,3 +31,4 @@ record _why_ it became that way.
 | [0006](./0006-typescript-7-dual-install.md)                       | Accepted | `tsc` is TypeScript 7; `import 'typescript'` stays the 6.x API until 7.1         |
 | [0007](./0007-presigned-uploads-as-a-required-port-capability.md) | Accepted | Direct upload is required of every `IFileStorageService`, local adapter included |
 | [0008](./0008-per-project-oauth-connections.md)                   | Accepted | Per-project BYO OAuth connections for project-app social sign-in                 |
+| [0009](./0009-cdm-import-by-reference.md)                         | Proposed | CDM import payloads may travel by reference through the presigned-upload port    |

@@ -1,5 +1,10 @@
 import type { IFileStorageService } from '@grantjs/core';
-import { GrantException, ValidationError } from '@grantjs/core';
+import {
+  GrantException,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from '@grantjs/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -16,11 +21,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  * for the behaviours where the existing adapters disagree and the port is
  * therefore silent.
  *
- * **The port has no read method.** `getUrl()` hands out a URL; nothing on the
- * interface returns bytes. So "the bytes that came back are the bytes that went
- * in" cannot be asserted through the port at all, and the harness supplies
- * `readBack` to reach around it. That is not a convenience — without it the suite
- * could not tell a correct `upload()` from one that stored an empty file.
+ * **`readBack` is still the independent witness, now that the port can read.**
+ * `download()` (ADR 0009) lets the suite assert "the bytes that came back are the
+ * bytes that went in" through the port itself — but a suite that checked `upload()`
+ * only by calling `download()` could not tell a correct pair from two methods that
+ * are wrong in a matching way. So the harness keeps `readBack`, which reaches around
+ * the port into each adapter's own storage: `upload()` is checked against it, and
+ * `download()` is checked against bytes it did not write.
  */
 
 export interface StorageConformanceHarness {
@@ -82,6 +89,9 @@ const runId = `${process.pid}-${Date.now()}`;
 const uniquePath = (name: string) => `conformance/${runId}/${(counter += 1)}-${name}`;
 
 const bytes = (n: number, fill = 'a') => Buffer.from(fill.repeat(n));
+
+/** Comfortably above every object the happy-path download tests store. */
+const DOWNLOAD_MAX_BYTES = 64 * 1024;
 
 export function runFileStorageConformance(
   label: string,
@@ -165,6 +175,163 @@ export function runFileStorageConformance(
         await storage.upload(bytes(8, 'b'), path);
 
         expect(await harness.readBack(path)).toEqual(bytes(8, 'b'));
+      });
+    });
+
+    describe('download', () => {
+      it('returns a Buffer holding the exact bytes that were uploaded', async () => {
+        const path = uniquePath('download-roundtrip.bin');
+        const content = bytes(1024, 'd');
+        await storage.upload(content, path);
+
+        const downloaded = await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES });
+
+        expect(Buffer.isBuffer(downloaded)).toBe(true);
+        expect(downloaded).toEqual(content);
+      });
+
+      it('preserves binary content, not just text', async () => {
+        // Every byte value once, so an adapter that decodes through a string
+        // (UTF-8 would mangle everything above 0x7f) cannot pass by accident.
+        const path = uniquePath('download-binary.bin');
+        const content = Buffer.from(Array.from({ length: 256 }, (_, value) => value));
+        await storage.upload(content, path);
+
+        expect(await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).toEqual(content);
+      });
+
+      it('returns an empty Buffer for an empty object', async () => {
+        const path = uniquePath('download-empty.bin');
+        await storage.upload(Buffer.alloc(0), path);
+
+        const downloaded = await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES });
+
+        expect(downloaded.length).toBe(0);
+      });
+
+      it('reads a path with directory separators', async () => {
+        const path = uniquePath('download/nested/deeper.bin');
+        const content = bytes(32, 'n');
+        await storage.upload(content, path);
+
+        expect(await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).toEqual(content);
+      });
+
+      it('reads what a client wrote through a presigned URL', async () => {
+        // The by-reference import path in one test: the bytes arrive via
+        // `getUploadUrl()` and never through `upload()`, then are read back through
+        // the port. Checked against `readBack` too, so a broken `download()` and a
+        // broken PUT cannot cancel out.
+        const path = uniquePath('download-after-put.json');
+        const content = Buffer.from(JSON.stringify({ entities: [1, 2, 3] }));
+        const minted = await storage.getUploadUrl(path, {
+          contentLength: content.length,
+          contentType: 'application/json',
+          expiresInSeconds: 900,
+        });
+        const response = await harness.put(minted.url, minted.method, minted.headers, content);
+        expect(response.status).toBeLessThan(300);
+
+        const downloaded = await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES });
+
+        expect(downloaded).toEqual(content);
+        expect(downloaded).toEqual(await harness.readBack(path));
+      });
+
+      it('returns the latest bytes after an overwrite', async () => {
+        const path = uniquePath('download-overwritten.bin');
+        await storage.upload(bytes(64, 'a'), path);
+        await storage.upload(bytes(8, 'b'), path);
+
+        expect(await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).toEqual(
+          bytes(8, 'b')
+        );
+      });
+
+      it('throws NotFoundError for a path holding nothing', async () => {
+        // Unlike getMetadata (null) there is no empty value to return, and unlike
+        // delete a missing object is not an already-satisfied intent: a worker told
+        // to import an object that is not there must fail, not import nothing.
+        await expect(
+          storage.download(uniquePath('download-absent.bin'), { maxBytes: DOWNLOAD_MAX_BYTES })
+        ).rejects.toBeInstanceOf(NotFoundError);
+      });
+
+      it('throws NotFoundError after the object was deleted', async () => {
+        const path = uniquePath('download-deleted.bin');
+        await storage.upload(bytes(8), path);
+        await storage.delete(path);
+
+        await expect(
+          storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })
+        ).rejects.toBeInstanceOf(NotFoundError);
+      });
+
+      it('accepts an object of exactly maxBytes', async () => {
+        const path = uniquePath('download-at-cap.bin');
+        const content = bytes(512, 'c');
+        await storage.upload(content, path);
+
+        expect(await storage.download(path, { maxBytes: 512 })).toEqual(content);
+      });
+
+      it('refuses an object one byte over maxBytes with PayloadTooLargeError', async () => {
+        const path = uniquePath('download-over-cap.bin');
+        await storage.upload(bytes(513, 'o'), path);
+
+        const outcome = await storage
+          .download(path, { maxBytes: 512 })
+          .catch((caught: unknown) => caught);
+
+        expect(outcome).toBeInstanceOf(PayloadTooLargeError);
+        expect((outcome as PayloadTooLargeError).limitBytes).toBe(512);
+      });
+
+      it('refuses an oversize object without returning any of its bytes', async () => {
+        // Whether the body was *ingested* is asserted per adapter, where the read
+        // path can be observed (`s3/index.test.ts`, `local/index.test.ts`); what the
+        // port can show is that the caller gets an error and no data.
+        const path = uniquePath('download-huge.bin');
+        await storage.upload(bytes(64 * 1024, 'h'), path);
+
+        await expect(storage.download(path, { maxBytes: 1024 })).rejects.toBeInstanceOf(
+          PayloadTooLargeError
+        );
+      });
+
+      it('checks the cap on the read, not against an earlier answer: a larger object written after getMetadata is still refused', async () => {
+        // The TOCTOU the cap lives inside the method for. HEAD says small; the object
+        // at the same key is replaced before the GET.
+        const path = uniquePath('download-swapped.bin');
+        await storage.upload(bytes(100, 's'), path);
+        expect((await storage.getMetadata(path))?.size).toBe(100);
+
+        await storage.upload(bytes(4096, 'L'), path);
+
+        await expect(storage.download(path, { maxBytes: 1024 })).rejects.toBeInstanceOf(
+          PayloadTooLargeError
+        );
+      });
+
+      it.each([0, -1, 1.5, Number.NaN])('refuses a maxBytes of %s', async (maxBytes) => {
+        const path = uniquePath('download-bad-cap.bin');
+        await storage.upload(bytes(8), path);
+
+        await expect(storage.download(path, { maxBytes })).rejects.toBeInstanceOf(ValidationError);
+      });
+
+      it.each([
+        ['a traversing segment', 'tenants/../../etc/passwd', /traverse/i],
+        ['a leading separator', '/tenants/t1/import.json', /relative/i],
+        ['an empty segment', 'tenants//import.json', /empty segment/i],
+        ['a dot-prefixed segment', 'tenants/.grant-upload-key', /dot-prefixed/i],
+      ])('refuses a path with %s, as getUploadUrl does', async (_label, path, message) => {
+        await expect(storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).rejects.toThrow(
+          expect.objectContaining({ message: expect.stringMatching(message) })
+        );
+        await expect(
+          storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })
+        ).rejects.toBeInstanceOf(ValidationError);
       });
     });
 
@@ -610,4 +777,13 @@ export function runFileStorageConformance(
  *    Nothing in this repository demonstrates that S3 refuses an oversized,
  *    mistyped, expired, forged or path-rewritten PUT; slice 16's recorded deploy is
  *    where that gets demonstrated.
+ *
+ * 10. **What a refused `download()` path proves.** Both adapters refuse the same
+ *    malformed paths with `ValidationError` — asserted in the shared suite — but
+ *    only `local` has anything to protect: a path that escapes `basePath` would be
+ *    a read of the host filesystem, and `.grant-upload-key` is the signing key.
+ *    The S3 refusal is parity, not safety (a key is a flat string to the store). The
+ *    escape-and-key cases are therefore proved against the real filesystem in
+ *    `local/index.test.ts`, where a file planted outside `basePath` must stay
+ *    unread. ADR 0009.
  */

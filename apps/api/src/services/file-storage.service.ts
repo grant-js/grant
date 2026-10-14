@@ -1,4 +1,5 @@
 import type {
+  DownloadOptions,
   IFileStorageService,
   IFileStorageServicePort,
   StoredObjectMetadata,
@@ -62,6 +63,10 @@ export class FileStorageService implements IFileStorageServicePort {
 
   public async getMetadata(path: string): Promise<StoredObjectMetadata | null> {
     return this.storageAdapter.getMetadata(path);
+  }
+
+  public async download(path: string, options: DownloadOptions): Promise<Buffer> {
+    return this.storageAdapter.download(path, options);
   }
 
   public async exists(path: string): Promise<boolean> {

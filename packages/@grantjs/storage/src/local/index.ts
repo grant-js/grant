@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 import type {
+  DownloadOptions,
   IFileStorageService,
   ILogger,
   StoredObjectMetadata,
@@ -9,11 +10,17 @@ import type {
   UploadUrlOptions,
   UploadUrlResult,
 } from '@grantjs/core';
-import { AuthorizationError, GrantException, ValidationError } from '@grantjs/core';
+import {
+  AuthorizationError,
+  GrantException,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from '@grantjs/core';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { assertUploadPath, assertUploadTarget } from '../upload-url';
+import { assertDownloadMaxBytes, assertUploadPath, assertUploadTarget } from '../upload-url';
 
 export interface LocalConfig {
   basePath: string;
@@ -181,6 +188,48 @@ export class LocalStorageAdapter implements IFileStorageService {
       });
       throw new GrantException(
         `Failed to read file metadata: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'STORAGE_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async download(filePath: string, options: DownloadOptions): Promise<Buffer> {
+    // `resolveUnderBase` refuses `..`, a leading separator, empty and dot-prefixed
+    // segments, and anything that resolves outside `basePath`. The dot rule is what
+    // keeps `.grant-upload-key` unreadable through this method: a path outside the
+    // root, or the signing key, throws before any read is attempted.
+    const fullPath = this.resolveUnderBase(filePath);
+    assertDownloadMaxBytes(options.maxBytes);
+
+    try {
+      // Stat first and refuse before `readFile`, which would pull the whole file into
+      // memory before the caller could object. A directory stats fine and then fails
+      // in `readFile` (EISDIR), which stays a storage failure below.
+      const stats = await fs.stat(fullPath);
+      if (stats.isFile() && stats.size > options.maxBytes) {
+        throw new PayloadTooLargeError(
+          `Stored object exceeds the ${options.maxBytes}-byte download limit`,
+          options.maxBytes,
+          stats.size
+        );
+      }
+
+      return await fs.readFile(fullPath);
+    } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        throw error;
+      }
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new NotFoundError('File', filePath, error as Error);
+      }
+      this.logger.error({
+        msg: 'Failed to download file from local storage',
+        err: error,
+        path: filePath,
+      });
+      throw new GrantException(
+        `Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'STORAGE_ERROR',
         error instanceof Error ? error : undefined
       );

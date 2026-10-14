@@ -60,8 +60,13 @@ interface IFileStorageService {
   getUrl(path: string): Promise<string>;
   exists(path: string): Promise<boolean>;
   copy(sourcePath: string, destinationPath: string): Promise<void>;
+  getUploadUrl(path: string, options: UploadUrlOptions): Promise<UploadUrlResult>;
+  getMetadata(path: string): Promise<StoredObjectMetadata | null>;
+  download(path: string, options: { maxBytes: number }): Promise<Buffer>;
 }
 ```
+
+`getUploadUrl`, `getMetadata` and `download` are required of every adapter, not optional: see [ADR 0007](https://github.com/grant-js/grant/blob/main/decisions/0007-presigned-uploads-as-a-required-port-capability.md) and [ADR 0009](https://github.com/grant-js/grant/blob/main/decisions/0009-cdm-import-by-reference.md). `download` reads a whole object into a `Buffer`. `maxBytes` is required and enforced inside the method: an object over it throws `PayloadTooLargeError` before it is buffered. It throws `NotFoundError` when nothing is stored at the path, and refuses the same malformed paths as `getUploadUrl`.
 
 The API wraps this in a `FileStorageService` (`apps/api/src/services/file-storage.service.ts`) that adds validation (file type, extension, size) and base64 decoding before delegating to the adapter.
 
