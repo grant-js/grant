@@ -24,6 +24,8 @@ import {
   projectWithRelationsSchema,
   requestProjectPictureUploadUrlRequestSchema,
   requestProjectPictureUploadUrlResponseSchema,
+  requestProjectSyncUploadUrlRequestSchema,
+  requestProjectSyncUploadUrlResponseSchema,
   startProjectExportJobRequestSchema,
   startProjectSyncRequestSchema,
   updateProjectRequestSchema,
@@ -61,6 +63,11 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
     requestProjectPictureUploadUrlResponseSchema
   );
   registry.register('ConfirmProjectPictureUploadRequest', confirmProjectPictureUploadRequestSchema);
+  registry.register('RequestProjectSyncUploadUrlRequest', requestProjectSyncUploadUrlRequestSchema);
+  registry.register(
+    'RequestProjectSyncUploadUrlResponse',
+    requestProjectSyncUploadUrlResponseSchema
+  );
 
   /**
    * GET /api/projects
@@ -266,6 +273,25 @@ assignment fields. Supported paths:
 Synthetic per-user roles are **not** generated. Legacy \`synthetic:role:user:*:direct\` keys
 in \`users.roles\` are stripped with an import warning — use \`users.permissions\` instead.
 
+### Large documents: import by reference
+
+A document too large for a request body (the API Gateway and Lambda cap is about 5 MiB on
+AWS) is sent by reference: \`POST /api/projects/{id}/sync/upload-url\` returns a presigned
+\`PUT\` URL and an \`uploadId\`; \`PUT\` the JSON document to that URL, then call this endpoint
+with \`source: { uploadId }\`, the \`mode\` the document was written for, and **none** of the
+entity arrays (\`roles\`, \`users\`, \`resources\`, \`permissions\`, \`groups\`, \`tags\`). The
+inline shape is unchanged and stays the default.
+
+The request is validated for authorization, \`mode\` and the upload itself (it exists, is
+non-empty, is within \`CDM_UPLOAD_MAX_BYTES\` and is JSON). **The document is not read on
+the request path.** The worker downloads it, validates it with the same schema and rules as an
+inline body, and refuses it if it holds more than \`CDM_IMPORT_MAX_ENTITIES\` entities (default
+5,000; \`0\` is unlimited), all before the import transaction opens. So for a by-reference job a
+schema error, a \`mode\` or \`version\` that differs from the request's, or an over-limit entity
+count is a \`FAILED\` job whose \`errorMessage\` starts with a code (for example
+\`CDM_IMPORT_TOO_MANY_ENTITIES\`), **not** a synchronous \`4xx\`. The uploaded object is deleted
+when the job reaches a terminal state. An upload can start one job only.
+
 ### Idempotency
 
 Pass optional \`id\` on the CDM body as a stable **job name** for idempotent retries: if an active job (\`PENDING\`,
@@ -361,10 +387,27 @@ the global catalog.
         },
       },
       404: {
-        description: 'Project not found',
+        description: 'Project not found, or the `source.uploadId` names no upload',
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      409: {
+        description: 'The `source.uploadId` is already attached to another sync job',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      413: {
+        description:
+          'The uploaded document exceeds the maximum upload size (`CDM_UPLOAD_MAX_BYTES`)',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },
@@ -550,6 +593,10 @@ job's lifecycle.
 Download the original \`SyncProjectInput\` JSON body that was submitted when the
 sync job was enqueued. The response uses \`Content-Type: application/json\` and a
 \`Content-Disposition: attachment\` header so browsers prompt for a save.
+
+A job started **by reference** has no body in the database, and the uploaded document is
+deleted when the job ends, so this endpoint does not return it. It answers
+\`{ "byReference": true, "sizeBytes": <bytes> }\` instead, with no attachment header.
     `.trim(),
     request: {
       params: projectSyncJobParamsSchema,
@@ -971,6 +1018,65 @@ All fields are optional - only provide the fields you want to update.
       404: {
         description: 'Project not found',
         content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+      500: {
+        description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  /**
+   * POST /api/projects/:id/sync/upload-url
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/projects/{id}/sync/upload-url',
+    operationId: 'postApiProjectsByIdSyncUploadUrl',
+    tags: ['Projects'],
+    summary: 'Request a direct-upload URL for a CDM import document',
+    description: `
+Mint a presigned URL to \`PUT\` a CDM import document to storage directly, so it does not
+pass through this API's request body and its size limit. Start the import from it with
+\`POST /api/projects/{id}/sync/jobs\` and \`source.uploadId\`.
+
+Authorized like starting an import: \`ProjectSyncJob:update\`, a verified email and the
+same MFA policy. The storage key is derived on the server from the project in \`scope\` and
+a server-minted \`uploadId\`; the client never supplies a path. The URL commits to exactly
+\`contentLength\` bytes of \`application/json\` (at most \`CDM_UPLOAD_MAX_BYTES\`, default
+64 MiB) and expires after \`STORAGE_UPLOAD_URL_EXPIRY_SECONDS\` (default 5 minutes). Send the
+returned \`headers\` verbatim with the \`PUT\`.
+    `.trim(),
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: requestProjectSyncUploadUrlRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Upload URL issued',
+        content: { 'application/json': { schema: requestProjectSyncUploadUrlResponseSchema } },
+      },
+      400: {
+        description: 'Invalid content type, length, or scope',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      413: {
+        description: '`contentLength` exceeds the maximum upload size (`CDM_UPLOAD_MAX_BYTES`)',
+        content: { 'application/json': { schema: errorResponseSchema } },
       },
       500: {
         description: 'Internal server error',

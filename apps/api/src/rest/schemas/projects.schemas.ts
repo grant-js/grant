@@ -1,15 +1,19 @@
 import {
   CDM_EXPORT_SECTIONS,
-  CdmFindBy,
-  CdmIfMissing,
   CdmModeStrategy,
-  CdmOnConflict,
   ProjectSortableField,
   ProjectSyncJobSortableField,
   SortOrder,
 } from '@grantjs/schema';
 
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
+import {
+  CDM_ENTITY_COLLECTIONS,
+  cdmDocumentHeaderFields,
+  cdmEntityCollectionFields,
+  cdmModeSchema,
+  MODE_REPLACE_REQUIRES_CONFIRMATION,
+} from '@/lib/cdm/cdm-document.schemas';
 import { z } from '@/lib/zod-openapi.lib';
 import {
   createSuccessResponseSchema,
@@ -170,97 +174,26 @@ export const deleteProjectQuerySchema = z.object({
 
 export const deleteProjectResponseSchema = createSuccessResponseSchema(projectSchema);
 
-const cdmKeyResolverSchema = z.object({
-  value: z.string().min(1),
-  findBy: z.nativeEnum(CdmFindBy).optional(),
-  ifMissing: z.nativeEnum(CdmIfMissing).optional(),
-});
+/**
+ * Where a by-reference import's document is: an upload the caller made through
+ * `POST /api/projects/:id/sync/upload-url` (ADR 0009).
+ */
+/** The hint is stored in an `integer` column; a larger value would be a 500, not a 400. */
+const INT32_MAX = 2_147_483_647;
 
-const resourceCdmSchema = z.object({
-  key: z.string().min(1),
-  slug: z.string().min(1).optional(),
-  name: z.string().min(1).max(255),
-  description: z.string().optional().nullable(),
-  actions: z.array(z.string().min(1)).min(1),
-  tags: z.array(z.string().min(1)).optional(),
-  primaryTag: z.string().min(1).optional().nullable(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-});
-
-const permissionCdmSchema = z.object({
-  key: z.string().min(1),
-  resource: z.string().min(1),
-  action: z.string().min(1),
-  name: z.string().min(1).max(255),
-  description: z.string().optional().nullable(),
-  condition: z.record(z.string(), z.unknown()).optional().nullable(),
-  groups: z.array(z.string().min(1)).optional(),
-  tags: z.array(z.string().min(1)).optional(),
-  primaryTag: z.string().min(1).optional().nullable(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-});
-
-const tagCdmSchema = z.object({
-  key: z.string().min(1),
-  name: z.string().min(1).max(255),
-  color: z.string().min(1).max(50),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-});
-
-const groupCdmSchema = z.object({
-  key: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().optional().nullable(),
-  permissions: z.array(z.string().min(1)).optional(),
-  tags: z.array(z.string().min(1)).optional(),
-  primaryTag: z.string().min(1).optional().nullable(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-});
-
-const roleCdmSchema = z.object({
-  key: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string().optional().nullable(),
-  groups: z.array(z.string().min(1)).optional(),
-  permissions: z.array(z.string().min(1)).optional().openapi({
-    description:
-      'Opaque keys matching `permissions[].key` in this document, or catalog grants as `resourceSlug:action` (normalized; slug must not contain `:`).',
+const startProjectSyncSourceSchema = z.object({
+  uploadId: z.uuid('errors.validation.invalidUploadId').openapi({
+    description: 'The `uploadId` returned by `POST /api/projects/{id}/sync/upload-url`.',
+    example: '123e4567-e89b-12d3-a456-426614174077',
   }),
-  tags: z.array(z.string().min(1)).optional(),
-  primaryTag: z.string().min(1).optional().nullable(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-});
-
-const userApiKeyCdmSchema = z.object({
-  key: z.string().min(1).optional().nullable(),
-  clientId: z.string().optional().nullable(),
-  clientSecret: z.string().min(32, 'errors.validation.clientSecretMin32').optional(),
-  name: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  expiresAt: z.string().optional().nullable(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-});
-
-const userCdmSchema = z.object({
-  key: cdmKeyResolverSchema,
-  name: z.string().min(1),
-  roles: z.array(z.string().min(1)).optional(),
-  groups: z.array(z.string().min(1)).optional(),
-  permissions: z.array(z.string().min(1)).optional().openapi({
+  entityCount: z.number().int().min(0).max(INT32_MAX).optional().openapi({
     description:
-      'Direct permission keys or catalog `resourceSlug:action` strings not already implied by the user roles (see role `permissions`).',
+      'How many entities (roles, users, resources, permissions, groups, tags) the uploaded document holds. A hint, recorded for the job list and never trusted: the worker counts the document itself.',
   }),
-  tags: z.array(z.string().min(1)).optional(),
-  primaryTag: z.string().min(1).optional().nullable(),
-  apiKeys: z.array(userApiKeyCdmSchema).optional(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
-const cdmModeSchema = z.object({
-  strategy: z.nativeEnum(CdmModeStrategy),
-  onConflict: z.nativeEnum(CdmOnConflict).optional().nullable(),
-  confirmDestructive: z.boolean().optional(),
-});
+const BY_REFERENCE_FORBIDS_INLINE = 'must be absent when `source` is present';
+const INLINE_REQUIRES = 'is required when `source` is absent';
 
 /**
  * Body for POST /api/projects/:id/sync/jobs.
@@ -270,37 +203,85 @@ const cdmModeSchema = z.object({
  * for status. Pass `id` to make the request idempotent — if an active
  * job already exists for the same `(project, id)` it is returned instead
  * of creating a new one.
+ *
+ * Two shapes, one endpoint. Inline (the default, unchanged) carries the whole document in
+ * the body. By reference carries `source` and omits `version` and the entity arrays: the
+ * document is the file the caller uploaded, and it is validated asynchronously by the worker,
+ * so its schema and entity-count errors surface as a `FAILED` job rather than a 4xx here.
  */
 export const startProjectSyncRequestSchema = z
   .object({
     scope: scopeSchema,
-    version: z.number().int().openapi({ example: 1 }),
-    id: z.string().optional(),
-    mode: cdmModeSchema,
-    roles: z.array(roleCdmSchema),
-    users: z.array(userCdmSchema),
-    resources: z.array(resourceCdmSchema).optional().openapi({
+    ...cdmDocumentHeaderFields,
+    // Optional here and required below when `source` is absent: a by-reference request
+    // carries no document, only the `mode` it asks to apply under.
+    version: cdmDocumentHeaderFields.version.optional(),
+    ...cdmEntityCollectionFields,
+    roles: cdmEntityCollectionFields.roles.optional(),
+    users: cdmEntityCollectionFields.users.optional(),
+    source: startProjectSyncSourceSchema.optional().openapi({
       description:
-        'Optional custom resources. Permissions in this document reference them by opaque `resource` keys.',
-    }),
-    permissions: z.array(permissionCdmSchema).optional().openapi({
-      description:
-        'Optional custom permissions for this project, each referencing a `resource` key from the same document.',
-    }),
-    groups: z.array(groupCdmSchema).optional(),
-    tags: z.array(tagCdmSchema).optional().openapi({
-      description:
-        'Optional CDM tags; role and user `tags` reference these keys. `user_tags` are global rows.',
+        'Import a document uploaded beforehand through `POST /api/projects/{id}/sync/upload-url` instead of sending it inline. When present, the entity arrays must be absent; `mode` is still required and must match the uploaded document.',
     }),
   })
   .superRefine((data, ctx) => {
     if (data.mode.strategy === CdmModeStrategy.Replace && data.mode.confirmDestructive !== true) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'mode.confirmDestructive must be true when mode.strategy is replace',
+        message: MODE_REPLACE_REQUIRES_CONFIRMATION,
       });
     }
+
+    if (data.source) {
+      for (const field of CDM_ENTITY_COLLECTIONS) {
+        if (data[field] !== undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: `${field} ${BY_REFERENCE_FORBIDS_INLINE}`,
+          });
+        }
+      }
+      return;
+    }
+
+    for (const field of ['version', 'roles', 'users'] as const) {
+      if (data[field] === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field} ${INLINE_REQUIRES}`,
+        });
+      }
+    }
   });
+
+/** Body for POST /api/projects/:id/sync/upload-url. */
+export const requestProjectSyncUploadUrlRequestSchema = z.object({
+  scope: scopeSchema,
+  contentLength: z.number().int().positive().openapi({
+    description:
+      'Exact byte length of the CDM JSON file the client will PUT. The URL commits to it, and it may not exceed `CDM_UPLOAD_MAX_BYTES` (default 64 MiB).',
+    example: 6291456,
+  }),
+  contentType: z.string().min(1).optional().openapi({
+    description: 'Defaults to `application/json`, the only type accepted.',
+    example: 'application/json',
+  }),
+});
+
+export const requestProjectSyncUploadUrlResponseSchema = createSuccessResponseSchema(
+  z.object({
+    uploadId: z.string().openapi({
+      description: 'Pass as `source.uploadId` to `POST /api/projects/{id}/sync/jobs`.',
+    }),
+    url: z.string(),
+    method: z.string(),
+    headers: z.array(z.object({ name: z.string(), value: z.string() })),
+    expiresAt: z.string(),
+  }),
+  'Direct-upload URL issued for a CDM import document'
+);
 
 export const projectSyncJobParamsSchema = z.object({
   id: z.uuid('errors.validation.invalidProjectId').openapi({

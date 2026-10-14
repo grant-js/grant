@@ -1,6 +1,7 @@
-import { CdmFindBy, CdmModeStrategy, type SyncProjectInput } from '@grantjs/schema';
+import { CdmFindBy, CdmModeStrategy } from '@grantjs/schema';
 import { describe, expect, it } from 'vitest';
 
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import {
   canonicalPermissionDocumentString,
   parseCdmPermissionDocumentString,
@@ -87,7 +88,7 @@ describe('cdm-permission-document-ref.lib', () => {
 
 describe('expandCdmSyncInput catalog permission strings', () => {
   it('expands role.permissions catalog refs into internal slug+action refs', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -126,7 +127,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
   });
 
   it('expands document permission keys alongside catalog refs', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -169,7 +170,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
   });
 
   it('dedupes equivalent catalog refs', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -196,7 +197,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
   });
 
   it('user.permissions catalog strings become directPermissionRefs on assignment', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -229,7 +230,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
   });
 
   it('marks findBy=email users as email identities and normalizes the email key', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -270,7 +271,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
   });
 
   it('marks findBy=key users as project-local CDM keys', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -305,7 +306,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
   });
 
   it('rejects invalid findBy=email values', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -334,7 +335,7 @@ describe('expandCdmSyncInput catalog permission strings', () => {
 
   it('strips legacy synthetic role keys and emits a warning', () => {
     const syntheticKey = 'synthetic:role:user:u1:direct';
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -369,7 +370,7 @@ describe('expandCdmSyncInput nested api keys', () => {
     const uid = '30000000-0000-4000-8000-000000000099';
     const clientId = 'bd92d4e7-eb30-4c6b-8a49-9c32d89ccf3a';
     const secret = 'x'.repeat(32);
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -448,7 +449,7 @@ describe('expandCdmSyncInput nested api keys', () => {
 
 describe('expandCdmSyncInput role ↔ group document fields', () => {
   it('maps first linked group name/description and group tag keys onto roleTemplates', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,
@@ -522,7 +523,7 @@ describe('expandCdmSyncInput role ↔ group document fields', () => {
 
 describe('expandCdmSyncInput user.groups direct assignment', () => {
   it('maps user.groups to directGroupKeys instead of synthetic roles', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       id: null,
       mode,

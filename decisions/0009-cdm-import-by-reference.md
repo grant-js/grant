@@ -83,7 +83,8 @@ The flow, with each step's owner:
 
 1. **Request an upload.** The client asks for an import upload for a project. The server
    authorizes it as it authorizes `startProjectSync` today, mints an `uploadId` of its own,
-   **derives the key** `projects/<projectId>/imports/<uploadId>.json` from the validated
+   **derives the key** `imports/projects/<projectId>/<uploadId>.json` (`imports/` first, so
+   one S3 lifecycle rule can filter by prefix and match nothing else) from the validated
    project scope, and calls `getUploadUrl()` with a **per-purpose upload policy**:
    `application/json` only, a maximum size of `CDM_UPLOAD_MAX_BYTES` (**default 64 MiB**; the
    largest measured profile is 17 MiB raw, `2026-08-21-aws-lambda-runtime-measurements.md`
@@ -269,7 +270,7 @@ of this decision.
 
 **Notes for the security review.**
 
-- **The key is derived, never accepted.** `projects/<projectId>/imports/<uploadId>.json`,
+- **The key is derived, never accepted.** `imports/projects/<projectId>/<uploadId>.json`,
   from the validated project scope and a server-minted id. `download` applies the same path
   guards as `getUploadUrl` on both adapters (`..`, leading separator, empty and dot-prefixed
   segments), and the local adapter additionally refuses anything resolving outside
@@ -287,6 +288,24 @@ of this decision.
   § What CI can prove about enforcement is asymmetric), so the by-reference tests can show
   the round trip and the validation but not that S3 refuses an oversize PUT. Slice 2's
   recorded deploy is where that is demonstrated for this purpose.
+
+**Slice 2, as built.** Decisions the text above left to the implementation:
+
+- **One upload, one job** is a partial unique index on `project_sync_jobs.payload_path`
+  (migration 0085); the second start answers `409`. It is not scoped to non-terminal rows: the
+  object is deleted at a terminal state, so a reused id would find nothing anyway.
+- **The worker claims `RUNNING` first, then reads.** `transitionToRunning` is what refuses a
+  redelivered message, so a second consumer never reaches the download and cannot fail a job the
+  first is importing. Everything the document can be refused for is still decided before the import
+  transaction opens, and the job is marked `FAILED` with a code (`CDM_IMPORT_*`) as the first token
+  of `errorMessage`, which is what a polling client can read.
+- **The document's `mode.strategy` and `version` must equal the request's.** Only those two are
+  persisted on the row, so `onConflict` and `confirmDestructive` are not compared; the document's
+  own `confirmDestructive` is still required for `replace` by the shared validation.
+- **Abandoned local uploads are not reclaimed.** A job's object is deleted at every terminal state
+  and a cancelled job's at its (skipped) delivery. An upload that never reached a job is expired by
+  the S3 lifecycle rule, and on the local adapter it stays until someone removes it: the port
+  has no way to list, and a sweep over `basePath/imports/` is a follow-on, not part of this slice.
 
 **Program order.** This ADR, and the `download` port method, land first and alone because
 `@grantjs/core` is the deep-reviewed surface (Part A, slice 1). Then: the upload-URL and

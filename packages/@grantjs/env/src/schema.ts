@@ -176,6 +176,21 @@ export const envSchema = z.object({
   CDM_MAX_JSON_BYTES: optionalNumber(64 * 1024),
   CDM_MAX_JSON_DEPTH: optionalNumber(16),
 
+  /**
+   * Largest CDM import document, in bytes, that may be sent by reference through a
+   * presigned upload (ADR 0009). Bounds the mint request, the stored object checked at
+   * start, and the worker's `download()` cap. Default 64 MiB: the largest measured
+   * profile is 17 MiB raw.
+   */
+  CDM_UPLOAD_MAX_BYTES: optionalNumber(64 * 1024 * 1024),
+  /**
+   * Most entities (roles, users, resources, permissions, groups and tags) an import by
+   * reference may carry. A larger document is refused by the worker before the import
+   * transaction opens (ADR 0009). Default 5,000 sits inside the 900 s in-process ceiling;
+   * `0` is unlimited, for container-runtime deployments.
+   */
+  CDM_IMPORT_MAX_ENTITIES: optionalNumber(5000),
+
   // Cache / Redis
   CACHE_STRATEGY: z.enum(['memory', 'redis', 'dynamodb']).optional().default('memory'),
   CACHE_DEFAULT_TTL: optionalNumber(3600),

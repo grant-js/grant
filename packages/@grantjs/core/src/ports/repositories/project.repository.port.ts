@@ -455,11 +455,33 @@ export interface IProjectUserApiKeyRepository {
   ): Promise<Map<string, number>>;
 }
 
+/**
+ * Where a by-reference import's CDM document lives (ADR 0009). Stored instead of the
+ * document: the row carries `payload_path`, `payload_size_bytes` and `entity_count_hint`
+ * and its `payload` is NULL.
+ */
+export interface ProjectSyncJobPayloadReference {
+  /**
+   * Server-derived object key (`imports/projects/<projectId>/<uploadId>.json`). Never
+   * client-supplied, and never passed to `getUrl()`: the document is unredacted.
+   */
+  path: string;
+  /** Size the store reported when the job was started; the worker's `maxBytes` is what is enforced. */
+  sizeBytes: number;
+  /** The client's own, untrusted entity count. Informational; the worker counts for itself. */
+  entityCountHint: number | null;
+}
+
 /** Worker-internal view of a sync job, including the persisted payload + scope. */
 export interface ProjectSyncJobFull {
   job: ProjectSyncJob;
-  /** Import: full `SyncProjectInput`. Export: `ProjectSyncJobExportPayload` JSON. */
+  /**
+   * Import: full `SyncProjectInput`, or `null` for a by-reference job (see
+   * `payloadRef`). Export: `ProjectSyncJobExportPayload` JSON.
+   */
   payload: unknown;
+  /** Set for a by-reference import; the document is then in the object store. */
+  payloadRef: ProjectSyncJobPayloadReference | null;
   scopeTenant: string;
   scopeId: string;
   /** True when `cancel()` was invoked while the job was already running. */
@@ -480,8 +502,13 @@ export interface ListProjectSyncJobsParams {
 
 /** Result row for the payload endpoint: stored CDM body + lightweight identifiers. */
 export interface ProjectSyncJobPayloadRow {
-  /** Import: `SyncProjectInput`. Export: `ProjectSyncJobExportPayload`. */
+  /**
+   * Import: `SyncProjectInput`. Export: `ProjectSyncJobExportPayload`. `null` for a
+   * by-reference import, whose document is not in the row.
+   */
   payload: unknown;
+  /** Set for a by-reference import. */
+  payloadRef: ProjectSyncJobPayloadReference | null;
   jobName: string | null;
   cdmVersion: number;
   projectId: string;
@@ -505,7 +532,9 @@ export interface IProjectSyncJobRepository {
       jobName: string | null;
       operation: 'import' | 'export';
       modeStrategy: 'merge' | 'replace' | null;
+      /** The document, or `null` when `payloadRef` says where it is. Exactly one is set. */
       payload: unknown;
+      payloadRef?: ProjectSyncJobPayloadReference | null;
       enqueuedById: string;
     },
     transaction?: unknown

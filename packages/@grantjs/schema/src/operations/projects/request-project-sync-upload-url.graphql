@@ -1,0 +1,16 @@
+mutation RequestProjectSyncUploadUrl(
+  $id: ID!
+  $scope: Scope!
+  $input: RequestProjectSyncUploadUrlInput!
+) {
+  requestProjectSyncUploadUrl(id: $id, scope: $scope, input: $input) {
+    uploadId
+    url
+    method
+    expiresAt
+    headers {
+      name
+      value
+    }
+  }
+}

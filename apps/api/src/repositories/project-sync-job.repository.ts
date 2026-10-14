@@ -2,6 +2,7 @@ import type {
   IProjectSyncJobRepository,
   ListProjectSyncJobsParams,
   ProjectSyncJobFull,
+  ProjectSyncJobPayloadReference,
   ProjectSyncJobPayloadRow,
   ProjectSyncJobSnapshotRow,
 } from '@grantjs/core';
@@ -35,7 +36,7 @@ import {
 import type { PgColumn } from 'drizzle-orm/pg-core';
 
 import { config } from '@/config';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 const STATUS_DB_TO_GQL: Record<string, ProjectSyncJobStatus> = {
@@ -142,6 +143,36 @@ type ProjectSyncJobListRow = {
   snapshotSizeBytes: number | null;
 };
 
+const PAYLOAD_PATH_UNIQUE_INDEX = 'project_sync_jobs_payload_path_unique';
+
+/**
+ * Whether `error` is Postgres' unique violation on the by-reference payload path, whether
+ * the driver raised it directly or Drizzle wrapped it as a `cause`.
+ */
+function isPayloadPathConflict(error: unknown): boolean {
+  for (let current = error, depth = 0; current && depth < 3; depth++) {
+    const candidate = current as { code?: unknown; constraint_name?: unknown; cause?: unknown };
+    if (candidate.code === '23505' && candidate.constraint_name === PAYLOAD_PATH_UNIQUE_INDEX) {
+      return true;
+    }
+    current = candidate.cause;
+  }
+  return false;
+}
+
+function toPayloadReference(row: {
+  payloadPath: string | null;
+  payloadSizeBytes: number | null;
+  entityCountHint: number | null;
+}): ProjectSyncJobPayloadReference | null {
+  if (row.payloadPath == null) return null;
+  return {
+    path: row.payloadPath,
+    sizeBytes: row.payloadSizeBytes ?? 0,
+    entityCountHint: row.entityCountHint ?? null,
+  };
+}
+
 function toEntity(row: ProjectSyncJobModel): ProjectSyncJob {
   const status = STATUS_DB_TO_GQL[row.status] ?? ProjectSyncJobStatus.Pending;
   const operation = OPERATION_DB_TO_GQL[row.operation] ?? ProjectSyncJobOperation.Import;
@@ -203,6 +234,7 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
       operation: 'import' | 'export';
       modeStrategy: 'merge' | 'replace' | null;
       payload: unknown;
+      payloadRef?: ProjectSyncJobPayloadReference | null;
       enqueuedById: string;
     },
     transaction?: Transaction
@@ -217,11 +249,28 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
       operation: params.operation,
       modeStrategy: params.modeStrategy,
       status: 'pending',
-      payload: params.payload as unknown as NewProjectSyncJobModel['payload'],
+      payload: (params.payloadRef
+        ? null
+        : params.payload) as unknown as NewProjectSyncJobModel['payload'],
+      payloadPath: params.payloadRef?.path ?? null,
+      payloadSizeBytes: params.payloadRef?.sizeBytes ?? null,
+      entityCountHint: params.payloadRef?.entityCountHint ?? null,
       warnings: [] as unknown as NewProjectSyncJobModel['warnings'],
       enqueuedById: params.enqueuedById,
     };
-    const [row] = await dbInstance.insert(projectSyncJobs).values(values).returning();
+    let row: ProjectSyncJobModel | undefined;
+    try {
+      [row] = await dbInstance.insert(projectSyncJobs).values(values).returning();
+    } catch (error) {
+      if (isPayloadPathConflict(error)) {
+        throw new ConflictError(
+          'This upload is already attached to a sync job. Request a new upload URL for each import.',
+          'ProjectSyncJob',
+          'source.uploadId'
+        );
+      }
+      throw error;
+    }
     if (!row) {
       throw new ValidationError('Failed to persist project sync job');
     }
@@ -253,6 +302,7 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
     return {
       job: toEntity(row),
       payload: row.payload as unknown,
+      payloadRef: toPayloadReference(row),
       scopeTenant: row.scopeTenant,
       scopeId: row.scopeId,
       cancelRequested: row.cancelRequested != null,
@@ -295,6 +345,9 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
     const rows = await dbInstance
       .select({
         payload: projectSyncJobs.payload,
+        payloadPath: projectSyncJobs.payloadPath,
+        payloadSizeBytes: projectSyncJobs.payloadSizeBytes,
+        entityCountHint: projectSyncJobs.entityCountHint,
         jobName: projectSyncJobs.jobName,
         cdmVersion: projectSyncJobs.cdmVersion,
         projectId: projectSyncJobs.projectId,
@@ -306,6 +359,7 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
     if (!row) return null;
     return {
       payload: row.payload as unknown,
+      payloadRef: toPayloadReference(row),
       jobName: row.jobName ?? null,
       cdmVersion: row.cdmVersion,
       projectId: row.projectId,

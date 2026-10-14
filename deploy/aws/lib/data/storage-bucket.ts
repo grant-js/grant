@@ -33,6 +33,27 @@ import { Construct } from 'constructs';
  */
 const UPLOAD_PREFLIGHT_MAX_AGE = Duration.hours(1);
 
+/**
+ * Key prefix of CDM import documents uploaded by reference (ADR 0009). The API derives
+ * every such key as `imports/projects/<projectId>/<uploadId>.json`, with `imports/` first
+ * precisely so that one lifecycle rule can address them and nothing else in the bucket.
+ * Must match `CDM_IMPORT_KEY_PREFIX` in `apps/api/src/lib/cdm/cdm-import-upload.lib.ts`.
+ */
+export const CDM_IMPORT_KEY_PREFIX = 'imports/';
+
+/**
+ * How long an object under {@link CDM_IMPORT_KEY_PREFIX} lives, in days. Seven.
+ *
+ * The worker deletes the object when its job reaches a terminal state, so this is the
+ * **backstop** for an upload that was never attached to a job, not the cleanup. It is
+ * also a floor under the object of a job that has *not* finished: a retried or queued
+ * import must still find its document, and the longest measured container import is
+ * 220.4 minutes. Seven days leaves that run, a retry and a long weekend of queue backlog
+ * well inside the window without an exemption mechanism for keys still referenced by
+ * `PENDING` or `RUNNING` rows.
+ */
+export const DEFAULT_CDM_IMPORT_OBJECT_TTL_DAYS = 7;
+
 export interface StorageBucketProps {
   /**
    * Existing bucket to use. Omit to create one.
@@ -69,6 +90,18 @@ export interface StorageBucketProps {
    * Omit only where the browser never talks to the bucket.
    */
   readonly uploadOrigin?: string;
+
+  /**
+   * Days after which an object under `imports/` is expired. Defaults to **7**; see
+   * {@link DEFAULT_CDM_IMPORT_OBJECT_TTL_DAYS} for why that, and why it must outlast the
+   * longest run.
+   *
+   * Like CORS, a lifecycle rule can only be added to a bucket this construct creates:
+   * `IBucket` has no way to add one. An operator bringing their own `bucket` has to expire
+   * the `imports/` prefix there, or abandoned uploads accumulate. The worker's own delete
+   * at a terminal state still covers every upload that reached a job.
+   */
+  readonly cdmImportObjectTtlDays?: number;
 }
 
 export class StorageBucket extends Construct {
@@ -82,6 +115,12 @@ export class StorageBucket extends Construct {
 
     this.ownsBucket = props.bucket === undefined;
     const destroy = props.destroyOnRemoval ?? false;
+    const importTtlDays = props.cdmImportObjectTtlDays ?? DEFAULT_CDM_IMPORT_OBJECT_TTL_DAYS;
+    if (!Number.isInteger(importTtlDays) || importTtlDays < 1) {
+      throw new Error(
+        `storage.cdmImportObjectTtlDays must be a whole number of days, 1 or more (got ${importTtlDays}).`
+      );
+    }
 
     this.bucket =
       props.bucket ??
@@ -97,6 +136,16 @@ export class StorageBucket extends Construct {
         publicReadAccess: false,
         removalPolicy: destroy ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
         autoDeleteObjects: destroy,
+        // Scoped to `imports/` and to nothing else: the bucket also holds pictures, which
+        // must never expire. The rule is the backstop for an import upload that was never
+        // started, since the worker deletes the ones that were (ADR 0009).
+        lifecycleRules: [
+          {
+            id: 'ExpireCdmImportUploads',
+            prefix: CDM_IMPORT_KEY_PREFIX,
+            expiration: Duration.days(importTtlDays),
+          },
+        ],
         // One method and one header, because that is the whole of what a minted URL
         // permits: the API signs a `PUT` whose only client-set header is `Content-Type`
         // (`Content-Length` is the browser's to set and cannot be set by hand). Reads

@@ -7,8 +7,10 @@
  *
  * Prerequisites: E2E stack with JOBS_ENABLED=true and JOB_PROVIDER=node-cron.
  */
-import { CdmFindBy, ProjectSyncJobStatus, type SyncProjectInput } from '@grantjs/schema';
+import { CdmFindBy, ProjectSyncJobStatus } from '@grantjs/schema';
 import { afterAll, describe, expect, it } from 'vitest';
+
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 
 import { cdmWithRoleTemplate } from '../../helpers/cdm-sync-fixtures';
 import { apiClient } from '../helpers/api-client';
@@ -29,7 +31,7 @@ type ImportedEmailIdentityRow = Record<string, unknown> & {
   project_ids: string[];
 };
 
-function cdmWithEmailUser(roleKey: string, email: string): SyncProjectInput {
+function cdmWithEmailUser(roleKey: string, email: string): CdmDocumentInput {
   return cdmWithRoleTemplate(roleKey, {
     users: [
       {

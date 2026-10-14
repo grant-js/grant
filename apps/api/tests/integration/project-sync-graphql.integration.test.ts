@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { config } from '@/config';
 import { cancelProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/cancel-project-sync.resolver';
+import { requestProjectSyncUploadUrlResolver } from '@/graphql/resolvers/projects/mutations/request-project-sync-upload-url.resolver';
 import { startProjectExportResolver } from '@/graphql/resolvers/projects/mutations/start-project-export.resolver';
 import { startProjectSyncResolver } from '@/graphql/resolvers/projects/mutations/start-project-sync.resolver';
 import { projectSyncJobResolver } from '@/graphql/resolvers/projects/queries/project-sync-job.resolver';
@@ -125,6 +126,49 @@ describe('project sync GraphQL resolvers', () => {
         enqueuedById: userId,
       })
     );
+  });
+
+  it('startProjectSync forwards a by-reference source untouched, with no entity arrays', async () => {
+    const ctx = buildContext({ startProjectSync } as never);
+    const input = {
+      id: 'nightly',
+      mode: { strategy: CdmModeStrategy.Merge, onConflict: null, confirmDestructive: false },
+      source: { uploadId: '123e4567-e89b-42d3-a456-426614174077', entityCount: 42 },
+    };
+
+    await invokeRootResolver(startProjectSyncResolver, { id: projectId, scope, input }, ctx);
+
+    expect(startProjectSync).toHaveBeenCalledWith({
+      id: projectId,
+      scope,
+      input,
+      enqueuedById: userId,
+    });
+  });
+
+  it('requestProjectSyncUploadUrl passes id, scope and input to the handler as they arrived', async () => {
+    const minted = {
+      uploadId: '123e4567-e89b-42d3-a456-426614174077',
+      url: 'https://bucket.example/x',
+      method: 'PUT',
+      headers: [{ name: 'Content-Type', value: 'application/json' }],
+      expiresAt: new Date(),
+    };
+    const requestProjectSyncUploadUrl = vi.fn().mockResolvedValue(minted);
+    const ctx = buildContext({ requestProjectSyncUploadUrl } as never);
+
+    const result = await invokeRootResolver(
+      requestProjectSyncUploadUrlResolver,
+      { id: projectId, scope, input: { contentLength: 1024, contentType: 'application/json' } },
+      ctx
+    );
+
+    expect(result).toBe(minted);
+    expect(requestProjectSyncUploadUrl).toHaveBeenCalledWith({
+      id: projectId,
+      scope,
+      input: { contentLength: 1024, contentType: 'application/json' },
+    });
   });
 
   it('startProjectSync maps project-level API key auth to system user for enqueuedById', async () => {

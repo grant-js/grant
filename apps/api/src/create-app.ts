@@ -58,6 +58,7 @@ import {
 } from '@/lib/secrets';
 import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
+import { jsonBodyParser } from '@/middleware/json-body.middleware';
 import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
 import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
@@ -201,7 +202,7 @@ export async function createApp(): Promise<CreatedApp> {
 
   app.use(cors<cors.CorsRequest>(config.cors));
   app.use(helmet(config.helmet));
-  app.use(express.json({ limit: config.app.jsonBodyLimitBytes }));
+  app.use(jsonBodyParser());
   app.use(i18nMiddleware);
   if (config.storage.provider === 'local') {
     // Write before read: `storageMiddleware` is `express.static`, which answers

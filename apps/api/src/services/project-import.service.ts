@@ -40,7 +40,6 @@ import {
   PermissionCdmInput,
   ResourceCdmInput,
   Scope,
-  SyncProjectInput,
   SyncProjectResult,
   Tenant,
 } from '@grantjs/schema';
@@ -54,6 +53,7 @@ import {
   resolveAllPermissionRefs,
   validateCdmJsonFields,
 } from '@/lib/cdm';
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import type { ExpandedCdmSyncPayload } from '@/lib/cdm/expand-cdm-sync-input.lib';
 import { ConfigurationError, ConflictError, ValidationError } from '@/lib/errors';
 import { runWithEventSuppression } from '@/lib/events';
@@ -250,7 +250,7 @@ export class ProjectImportService implements IProjectImportService {
     params: {
       projectId: string;
       scope: Scope;
-      input: SyncProjectInput;
+      input: CdmDocumentInput;
     },
     transaction: unknown
   ): Promise<SyncProjectResult> {
@@ -261,7 +261,7 @@ export class ProjectImportService implements IProjectImportService {
     params: {
       projectId: string;
       scope: Scope;
-      input: SyncProjectInput;
+      input: CdmDocumentInput;
     },
     transaction: unknown
   ): Promise<SyncProjectResult> {

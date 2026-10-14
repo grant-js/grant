@@ -1,13 +1,13 @@
-import type { SyncProjectInput } from '@grantjs/schema';
 import { CdmFindBy, CdmModeStrategy } from '@grantjs/schema';
 import { describe, expect, it } from 'vitest';
 
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import { assembleExportedSyncProjectInput } from '@/lib/cdm/cdm-export-assemble.lib';
 import { expandCdmSyncInput } from '@/lib/cdm/expand-cdm-sync-input.lib';
 
 describe('CDM searchable round-trip', () => {
   it('preserves searchable through expand and assemble', () => {
-    const input: SyncProjectInput = {
+    const input: CdmDocumentInput = {
       version: 1,
       mode: { strategy: CdmModeStrategy.Merge },
       roles: [

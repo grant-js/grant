@@ -133,6 +133,7 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "POST /api/projects/{id}/picture/upload-url",
   "POST /api/projects/{id}/sync/jobs",
   "POST /api/projects/{id}/sync/jobs/export",
+  "POST /api/projects/{id}/sync/upload-url",
   "POST /api/resources",
   "POST /api/roles",
   "POST /api/signing-keys/rotate",

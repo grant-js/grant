@@ -1,22 +1,36 @@
 import type {
+  IFileStorageServicePort,
   IProjectExportService,
   IProjectSyncJobService,
   ProjectSyncJobExecutionData,
   ProjectSyncJobExportPayload,
+  ProjectSyncJobPayloadReference,
 } from '@grantjs/core';
 import {
   CdmFindBy,
   ProjectSyncJobOperation,
   ProjectSyncJobStatus,
   type Scope,
-  type SyncProjectInput,
   type SyncProjectResult,
 } from '@grantjs/schema';
 
 import { config } from '@/config';
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
-import { ConfigurationError, ConflictError, ValidationError } from '@/lib/errors';
+import {
+  type CdmDocumentInput,
+  countCdmEntities,
+  parseCdmDocument,
+  validateSyncInput,
+} from '@/lib/cdm/cdm-document.schemas';
+import { CdmImportRefusal, CdmImportRefusedError } from '@/lib/cdm/cdm-import-upload.lib';
+import {
+  ConfigurationError,
+  ConflictError,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from '@/lib/errors';
 import {
   assertTenantActive,
   type JobExecutionContext,
@@ -119,6 +133,11 @@ export default class ProjectSyncJob extends Job {
         jobRecordId,
         msg: 'Skipping project sync job because it was cancelled before execution',
       });
+      // Only a job that is itself terminal gives its document up: `cancelRequested` is also
+      // set on a RUNNING job, whose own run deletes the object when it reaches a terminal state.
+      if (execData.job.status === ProjectSyncJobStatus.Cancelled) {
+        await this.deleteImportObject(execData.payloadRef, jobRecordId);
+      }
       return {
         success: true,
         message: 'Cancelled before execution',
@@ -145,7 +164,30 @@ export default class ProjectSyncJob extends Job {
       });
     }
 
-    const importPayload = execData.payload as SyncProjectInput;
+    /**
+     * A by-reference document is fetched, validated and counted after the job has claimed
+     * RUNNING and **before the import transaction opens** (ADR 0009): everything the document
+     * can be refused for is decided while nothing has been touched, and a refusal marks the
+     * job FAILED with a specific code.
+     *
+     * After the claim, not before it, on purpose. `transitionToRunning` is what refuses a
+     * redelivered message, so a second consumer never gets as far as the download, and
+     * cannot fail a job the first is still importing. Inline imports have no such step; their
+     * document was validated when it was accepted.
+     */
+    let importPayload: CdmDocumentInput;
+    if (execData.payloadRef) {
+      try {
+        importPayload = await this.loadReferencedDocument(execData);
+      } catch (error) {
+        await this.markJobFailedSafe(enqueueScope, jobRecordId, jobService, error);
+        await this.deleteImportObject(execData.payloadRef, jobRecordId);
+        throw error;
+      }
+    } else {
+      importPayload = execData.payload as CdmDocumentInput;
+    }
+
     let result: SyncProjectResult;
     try {
       const txConn = new DrizzleTransactionalConnection(this.appContext.db);
@@ -201,6 +243,7 @@ export default class ProjectSyncJob extends Job {
           msg: 'Failed to mark project-sync job as failed; original error will still be rethrown',
         });
       }
+      await this.deleteImportObject(execData.payloadRef, jobRecordId);
       throw error;
     }
 
@@ -216,7 +259,9 @@ export default class ProjectSyncJob extends Job {
       )
     );
 
-    const userIds = this.collectUserIds(execData);
+    await this.deleteImportObject(execData.payloadRef, jobRecordId);
+
+    const userIds = this.collectUserIds(execData, importPayload);
     try {
       await projectImport.invalidateCachesForImportResult({
         scope: execData.scope,
@@ -370,13 +415,15 @@ export default class ProjectSyncJob extends Job {
     }
   }
 
-  private collectUserIds(execData: ProjectSyncJobExecutionData): string[] {
+  private collectUserIds(
+    execData: ProjectSyncJobExecutionData,
+    importPayload: CdmDocumentInput
+  ): string[] {
     if (execData.job.operation !== ProjectSyncJobOperation.Import) {
       return [];
     }
     const ids = new Set<string>();
-    const payload = execData.payload as SyncProjectInput;
-    for (const u of payload.users ?? []) {
+    for (const u of importPayload.users) {
       if (u.key.findBy === CdmFindBy.Id) {
         ids.add(u.key.value);
       }
@@ -384,7 +431,170 @@ export default class ProjectSyncJob extends Job {
     return Array.from(ids);
   }
 
+  /**
+   * Read a by-reference import's document out of the store and decide whether it may be
+   * applied. Throws {@link CdmImportRefusedError} for every way it may not; nothing here
+   * touches the database, so a refusal changes nothing.
+   *
+   * The object is treated as untrusted input. The mint and start checks bound its size and
+   * type, but a presigned URL is replayable inside its window, so the bytes are capped again
+   * by `download()` itself, parsed, and held to the same schema and `validateSyncInput` rules
+   * as an inline body, with the same document the REST layer describes.
+   */
+  private async loadReferencedDocument(
+    execData: ProjectSyncJobExecutionData
+  ): Promise<CdmDocumentInput> {
+    const reference = execData.payloadRef!;
+    const { maxBytes } = config.storage.cdmImport;
+    const fileStorage = this.appContext.services.fileStorage as IFileStorageServicePort;
+
+    let bytes: Buffer;
+    try {
+      bytes = await fileStorage.download(reference.path, { maxBytes });
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw new CdmImportRefusedError(
+          CdmImportRefusal.UploadMissing,
+          'The uploaded CDM document no longer exists (it may have expired). Upload it again and start a new import.',
+          {},
+          error
+        );
+      }
+      if (error instanceof PayloadTooLargeError) {
+        throw new CdmImportRefusedError(
+          CdmImportRefusal.DocumentTooLarge,
+          `The uploaded CDM document is larger than the ${maxBytes}-byte maximum (CDM_UPLOAD_MAX_BYTES).`,
+          { maxBytes },
+          error
+        );
+      }
+      throw new CdmImportRefusedError(
+        CdmImportRefusal.StorageFailure,
+        'The uploaded CDM document could not be read from storage.',
+        {},
+        error instanceof Error ? error : undefined
+      );
+    }
+
+    let raw: unknown;
+    try {
+      raw = JSON.parse(bytes.toString('utf8'));
+    } catch (error) {
+      throw new CdmImportRefusedError(
+        CdmImportRefusal.DocumentNotJson,
+        `The uploaded CDM document is not valid JSON (${error instanceof Error ? error.message : 'parse error'}).`,
+        {},
+        error instanceof Error ? error : undefined
+      );
+    }
+
+    let document: CdmDocumentInput;
+    try {
+      const parsed = parseCdmDocument(raw);
+      validateSyncInput(parsed);
+      document = parsed as unknown as CdmDocumentInput;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw new CdmImportRefusedError(
+          CdmImportRefusal.DocumentInvalid,
+          error.message,
+          { violations: error.violations },
+          error
+        );
+      }
+      throw error;
+    }
+
+    this.assertDocumentMatchesRequest(document, execData.job);
+    this.assertWithinEntityLimit(document);
+
+    return document;
+  }
+
+  /**
+   * The request carried `mode` (and optionally `version`); the document carries its own.
+   * They must agree: the synchronous `replace` confirmation was checked against the
+   * request, and an upload must not be able to widen what was confirmed. Only the strategy
+   * and version are persisted on the job row, so those are what can be compared here.
+   */
+  private assertDocumentMatchesRequest(
+    document: CdmDocumentInput,
+    job: ProjectSyncJobExecutionData['job']
+  ): void {
+    const requestStrategy = job.modeStrategy;
+    if (requestStrategy != null && document.mode.strategy !== requestStrategy) {
+      throw new CdmImportRefusedError(
+        CdmImportRefusal.RequestMismatch,
+        `The document's mode.strategy is '${document.mode.strategy}' but the import was requested as '${requestStrategy}'.`,
+        { requestStrategy, documentStrategy: document.mode.strategy }
+      );
+    }
+    if (document.version !== job.cdmVersion) {
+      throw new CdmImportRefusedError(
+        CdmImportRefusal.RequestMismatch,
+        `The document's version is ${document.version} but the import was requested as version ${job.cdmVersion}.`,
+        { requestVersion: job.cdmVersion, documentVersion: document.version }
+      );
+    }
+  }
+
+  /**
+   * The in-process runtime cannot finish an import of unbounded size inside its ceiling,
+   * and by-reference removes the body limit that used to refuse such documents by accident.
+   * Refuse here, before the import transaction, rather than after a 15-minute run that
+   * rolls back. `0` is unlimited, for container-runtime deployments.
+   */
+  private assertWithinEntityLimit(document: CdmDocumentInput): void {
+    const limit = config.cdm.maxImportEntities;
+    if (limit === 0) {
+      return;
+    }
+    const entityCount = countCdmEntities(document);
+    if (entityCount > limit) {
+      throw new CdmImportRefusedError(
+        CdmImportRefusal.TooManyEntities,
+        `The document holds ${entityCount} entities but this deployment accepts at most ${limit} per import (CDM_IMPORT_MAX_ENTITIES). Split it, or raise the limit where the import runs in a container.`,
+        { entityCount, limit }
+      );
+    }
+  }
+
+  /**
+   * Delete a by-reference import's object once its job is terminal. Best effort and never
+   * thrown: a failed delete must not turn a finished import into a failed job, and the
+   * lifecycle rule on `imports/` is the backstop for the object that survives.
+   */
+  private async deleteImportObject(
+    reference: ProjectSyncJobPayloadReference | null,
+    jobRecordId: string
+  ): Promise<void> {
+    if (!reference) {
+      return;
+    }
+    try {
+      await this.appContext.services.fileStorage.delete(reference.path);
+      this.logger.info({
+        jobRecordId,
+        msg: 'Deleted the CDM import object after the job reached a terminal state',
+      });
+    } catch (error) {
+      this.logger.warn({
+        jobRecordId,
+        err: error,
+        msg: 'Could not delete the CDM import object; the storage lifecycle rule will expire it',
+      });
+    }
+  }
+
   private serializeErrorDetails(error: unknown): Record<string, unknown> {
+    if (error instanceof CdmImportRefusedError) {
+      return {
+        name: error.name,
+        code: error.refusal,
+        message: error.message,
+        details: error.details,
+      };
+    }
     if (error instanceof Error) {
       return {
         name: error.name,

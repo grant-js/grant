@@ -5,6 +5,8 @@ import type { ProjectSyncJob, SyncProjectInput } from '@grantjs/schema';
 import { ProjectSyncJobStatus, Tenant } from '@grantjs/schema';
 import type supertest from 'supertest';
 
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
+
 import { cdmRestPayload } from '../../helpers/cdm-sync-fixtures';
 import { apiClient } from './api-client';
 
@@ -36,7 +38,7 @@ export async function postImport(
   authHeader: string,
   projectId: string,
   scope: SyncScope,
-  cdm: SyncProjectInput
+  cdm: CdmDocumentInput
 ): Promise<{ status: number; body: SyncJobResponseBody; job?: ProjectSyncJob }> {
   const res = await apiClient()
     .post(`/api/projects/${projectId}/sync/jobs`)

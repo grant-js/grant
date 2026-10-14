@@ -35,12 +35,13 @@
 import { performance } from 'node:perf_hooks';
 
 import { accountProjects, accounts, initializeDBConnection, projects } from '@grantjs/database';
-import { type Scope, type SyncProjectInput, type SyncProjectResult, Tenant } from '@grantjs/schema';
+import { type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
 import { eq } from 'drizzle-orm';
 
 import { config } from '@/config';
 import { createAppContext } from '@/lib/app-context.lib';
 import { CacheFactory } from '@/lib/cache';
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import { scopeToRlsContext, setRlsContext } from '@/lib/rls';
 
 import { CDM_SCALE_PROFILES, generateCdmAtScale } from '../helpers/cdm-scale-fixtures';
@@ -58,7 +59,7 @@ interface PassResult {
   applied: number;
 }
 
-function entityCount(cdm: SyncProjectInput): number {
+function entityCount(cdm: CdmDocumentInput): number {
   return (
     (cdm.roles?.length ?? 0) +
     (cdm.users?.length ?? 0) +

@@ -1192,6 +1192,19 @@ export type Mutation = {
    */
   requestProjectPictureUploadUrl: UploadUrl;
   /**
+   * Ask for a URL to upload a CDM import document directly to storage, so it can be
+   * imported without passing through this API's request body (and its size limit).
+   *
+   * Requires Project sync job update permission in the given project scope, like
+   * `startProjectSync`. The server derives the storage key from the project and a
+   * server-minted `uploadId`; the client never supplies a path. The URL commits to exactly
+   * `input.contentLength` bytes of `application/json`, up to `CDM_UPLOAD_MAX_BYTES`.
+   *
+   * PUT the file, then call `startProjectSync` with `input.source.uploadId`. An upload
+   * that is never started is expired by the storage lifecycle rule.
+   */
+  requestProjectSyncUploadUrl: ProjectSyncUploadUrl;
+  /**
    * Ask for a URL to upload another user's picture directly to storage.
    *
    * Unlike the `me` variants, the storage path here is derived from the **target**
@@ -1517,6 +1530,12 @@ export type MutationRequestProjectAppPictureUploadUrlArgs = {
 
 export type MutationRequestProjectPictureUploadUrlArgs = {
   input: RequestProjectPictureUploadUrlInput;
+};
+
+export type MutationRequestProjectSyncUploadUrlArgs = {
+  id: Scalars['ID']['input'];
+  input: RequestProjectSyncUploadUrlInput;
+  scope: Scope;
 };
 
 export type MutationRequestUserPictureUploadUrlArgs = {
@@ -2382,6 +2401,28 @@ export enum ProjectSyncJobStatus {
   Running = 'RUNNING',
 }
 
+/**
+ * A bounded, time-limited URL to PUT a CDM import document to, and the id to start the
+ * import from. Same commitments as `UploadUrl`: exactly `contentLength` bytes of exactly
+ * `contentType`, at a path derived on the server from the project, until `expiresAt`.
+ */
+export type ProjectSyncUploadUrl = {
+  __typename?: 'ProjectSyncUploadUrl';
+  /** Instant after which the store refuses the URL. */
+  expiresAt: Scalars['Date']['output'];
+  /** Headers the client must set verbatim. `Content-Length` is deliberately absent. */
+  headers: Array<UploadUrlHeader>;
+  /** HTTP method the client must use. Always PUT today. */
+  method: Scalars['String']['output'];
+  /** Pass as `source.uploadId` to `startProjectSync`. */
+  uploadId: Scalars['ID']['output'];
+  /**
+   * Absolute for object stores; application-relative for targets this API serves
+   * itself. Resolve it against the API origin before using it.
+   */
+  url: Scalars['String']['output'];
+};
+
 export type ProjectTag = Auditable & {
   __typename?: 'ProjectTag';
   createdAt: Scalars['Date']['output'];
@@ -3144,6 +3185,16 @@ export type RequestProjectPictureUploadUrlInput = {
   scope: Scope;
 };
 
+export type RequestProjectSyncUploadUrlInput = {
+  /**
+   * Exact byte length of the CDM JSON file the client will PUT. The URL commits to it,
+   * and it may not exceed `CDM_UPLOAD_MAX_BYTES` (default 64 MiB).
+   */
+  contentLength: Scalars['Int']['input'];
+  /** Defaults to `application/json`, the only type accepted. */
+  contentType?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type RequestUserPictureUploadUrlInput = {
   /**
    * Exact byte length the client will send. Validated against the upload policy
@@ -3499,6 +3550,13 @@ export type StartProjectExportInput = {
 /**
  * Versioned canonical project document (CDM) for export/import: roles, users,
  * resources, permissions, groups, and tags scoped to one project.
+ *
+ * Two shapes. **Inline**: `version`, `roles` and `users` are required and the document is
+ * the input. **By reference**: `source` is set, `mode` still says how to apply it, and
+ * `version` is optional and the entity arrays (`roles`, `users`, `resources`,
+ * `permissions`, `groups`, `tags`) must be absent: the document is the file uploaded
+ * through `requestProjectSyncUploadUrl`, and the worker validates it, so a schema error or
+ * an over-limit entity count surfaces as a `FAILED` job, not as an error on the mutation.
  */
 export type SyncProjectInput = {
   groups?: InputMaybe<Array<GroupCdmInput>>;
@@ -3506,10 +3564,19 @@ export type SyncProjectInput = {
   mode: CdmModeInput;
   permissions?: InputMaybe<Array<PermissionCdmInput>>;
   resources?: InputMaybe<Array<ResourceCdmInput>>;
-  roles: Array<RoleCdmInput>;
+  /** Required inline; must be absent with `source`. */
+  roles?: InputMaybe<Array<RoleCdmInput>>;
+  /**
+   * Import the document uploaded through `requestProjectSyncUploadUrl` instead of sending
+   * it inline. The entity arrays must then be absent, and `mode` (and `version`, if
+   * given) must match the uploaded document.
+   */
+  source?: InputMaybe<SyncProjectSourceInput>;
   tags?: InputMaybe<Array<TagCdmInput>>;
-  users: Array<UserCdmInput>;
-  version: Scalars['Int']['input'];
+  /** Required inline; must be absent with `source`. */
+  users?: InputMaybe<Array<UserCdmInput>>;
+  /** Required inline; optional with `source`, where the uploaded document carries it. */
+  version?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Counters and warnings from a completed CDM import. */
@@ -3537,6 +3604,24 @@ export type SyncProjectResult = {
   userTagsLinked: Scalars['Int']['output'];
   usersCreated: Scalars['Int']['output'];
   warnings: Array<Scalars['String']['output']>;
+};
+
+/**
+ * Where the CDM document of a by-reference import is: an upload made through
+ * `requestProjectSyncUploadUrl`. See `SyncProjectInput.source`.
+ */
+export type SyncProjectSourceInput = {
+  /**
+   * How many entities (roles, users, resources, permissions, groups and tags) the
+   * uploaded document holds. A hint, recorded for the job list and never trusted: the
+   * worker counts the document itself.
+   */
+  entityCount?: InputMaybe<Scalars['Int']['input']>;
+  /**
+   * The `uploadId` returned by `requestProjectSyncUploadUrl`. The server derives the
+   * storage key from the project and this id; the client never supplies a path.
+   */
+  uploadId: Scalars['ID']['input'];
 };
 
 export type Tag = Auditable & {

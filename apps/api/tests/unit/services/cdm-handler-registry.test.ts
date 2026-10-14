@@ -26,11 +26,11 @@ import {
   type CdmHandlerInputKey,
   CdmModeStrategy,
   type Scope,
-  type SyncProjectInput,
   Tenant,
 } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import { ProjectImportService } from '@/services/project-import.service';
 
 const accountId = '10000000-0000-4000-8000-000000000020';
@@ -135,7 +135,7 @@ function buildService(handlers: ReadonlyArray<ICdmEntityHandler>) {
   return { svc, importRepo };
 }
 
-const baseInput: SyncProjectInput = {
+const baseInput: CdmDocumentInput = {
   version: 1,
   id: null,
   mode: {
@@ -204,7 +204,7 @@ describe('ICdmEntityHandler registry contract', () => {
     const userAssignment = createRecordingHandler('userAssignment', 'userAssignments', 200, log);
 
     const { svc, importRepo } = buildService([roleTemplate, userAssignment]);
-    const replaceInput: SyncProjectInput = {
+    const replaceInput: CdmDocumentInput = {
       ...baseInput,
       mode: {
         strategy: CdmModeStrategy.Replace,

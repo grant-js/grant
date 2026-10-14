@@ -1,0 +1,9 @@
+input RequestProjectSyncUploadUrlInput {
+  """
+  Exact byte length of the CDM JSON file the client will PUT. The URL commits to it,
+  and it may not exceed `CDM_UPLOAD_MAX_BYTES` (default 64 MiB).
+  """
+  contentLength: Int!
+  "Defaults to `application/json`, the only type accepted."
+  contentType: String
+}

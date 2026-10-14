@@ -8,6 +8,7 @@ import {
 
 import { extractCdmSearchableFromMetadata } from '@/lib/search-document.lib';
 
+import type { CdmDocumentInput } from './cdm-document.schemas';
 import type {
   CdmProjectUserApiKeyInternal,
   CdmRoleTemplateInternal,
@@ -116,7 +117,7 @@ export function assembleExportedSyncProjectInput(params: {
   resourcesSlice: readonly ResourceCdmInput[];
   permissionsSlice: readonly PermissionCdmInput[];
   tagsSlice: readonly TagCdmInput[];
-}): Pick<SyncProjectInput, 'roles' | 'users' | 'groups' | 'resources' | 'permissions' | 'tags'> {
+}): Pick<CdmDocumentInput, 'roles' | 'users' | 'groups' | 'resources' | 'permissions' | 'tags'> {
   const {
     roleTemplates,
     userAssignments,

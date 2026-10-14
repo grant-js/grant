@@ -2,6 +2,7 @@
  * Integration: REST routes for the async CDM import/export job flow:
  *   POST   /api/projects/:id/sync/jobs                  — enqueue import job
  *   POST   /api/projects/:id/sync/jobs/export           — enqueue export job
+ *   POST   /api/projects/:id/sync/upload-url            — mint a CDM import upload URL (by reference)
  *   GET    /api/projects/:id/sync/jobs                  — paginated list
  *   GET    /api/projects/:id/sync/jobs/:jobId           — poll status
  *   GET    /api/projects/:id/sync/jobs/:jobId/payload   — download original CDM JSON
@@ -53,6 +54,7 @@ const accountId = '00000000-0000-4000-8000-000000000020';
 const userId = '30000000-0000-4000-8000-000000000099';
 const jobId = '40000000-0000-4000-8000-000000000077';
 const enqueuedAt = '2026-05-02T10:00:00.000Z';
+const uploadId = '123e4567-e89b-42d3-a456-426614174077';
 
 const canonicalMode: SyncProjectInput['mode'] = {
   strategy: CdmModeStrategy.Merge,
@@ -106,6 +108,7 @@ describe('project CDM sync REST (async jobs)', () => {
   let getProjectSyncJobSnapshot: ReturnType<typeof vi.fn>;
   let startProjectExport: ReturnType<typeof vi.fn>;
   let cancelProjectSync: ReturnType<typeof vi.fn>;
+  let requestProjectSyncUploadUrl: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -118,6 +121,7 @@ describe('project CDM sync REST (async jobs)', () => {
       hasNextPage: false,
     });
     getProjectSyncJobPayload = vi.fn().mockResolvedValue({
+      byReference: false,
       payload: emptyCdm({ id: 'imp-1' }),
       jobName: 'imp-1',
       cdmVersion: 1,
@@ -146,6 +150,13 @@ describe('project CDM sync REST (async jobs)', () => {
       modeStrategy: null,
     });
     cancelProjectSync = vi.fn().mockResolvedValue(buildJobResponse('CANCELLED'));
+    requestProjectSyncUploadUrl = vi.fn().mockResolvedValue({
+      uploadId: uploadId,
+      url: '/storage/imports/projects/p/u.json?exp=1&len=2&ct=application%2Fjson&sig=x',
+      method: 'PUT',
+      headers: [{ name: 'Content-Type', value: 'application/json' }],
+      expiresAt: new Date('2026-10-14T12:05:00.000Z'),
+    });
 
     const context = {
       user: { userId },
@@ -158,6 +169,7 @@ describe('project CDM sync REST (async jobs)', () => {
           getProjectSyncJobSnapshot,
           startProjectExport,
           cancelProjectSync,
+          requestProjectSyncUploadUrl,
         },
       },
     } as unknown as RequestContext;
@@ -460,6 +472,7 @@ describe('project CDM sync REST (async jobs)', () => {
 
   it('GET /sync/jobs/:jobId/payload falls back to jobId in filename when payload id is null', async () => {
     getProjectSyncJobPayload.mockResolvedValueOnce({
+      byReference: false,
       payload: emptyCdm(),
       jobName: null,
       cdmVersion: 1,
@@ -471,6 +484,161 @@ describe('project CDM sync REST (async jobs)', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-disposition']).toBe(`attachment; filename="cdm-${jobId}.json"`);
+  });
+
+  describe('by reference (ADR 0009)', () => {
+    const scope = { tenant: 'accountProject', id: `${accountId}:${projectId}` };
+
+    it('POST /sync/upload-url mints a URL for the project in the path and the scope in the body', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${projectId}/sync/upload-url`)
+        .send({ scope, contentLength: 6 * 1024 * 1024 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toMatchObject({
+        uploadId,
+        method: 'PUT',
+        headers: [{ name: 'Content-Type', value: 'application/json' }],
+      });
+      expect(requestProjectSyncUploadUrl).toHaveBeenCalledWith({
+        id: projectId,
+        scope,
+        input: { contentLength: 6 * 1024 * 1024, contentType: undefined },
+      });
+    });
+
+    it('POST /sync/upload-url forwards an explicit content type for the handler to judge', async () => {
+      await request(app)
+        .post(`/api/projects/${projectId}/sync/upload-url`)
+        .send({ scope, contentLength: 10, contentType: 'image/png' })
+        .expect(200);
+
+      expect(requestProjectSyncUploadUrl.mock.calls[0][0]).toMatchObject({
+        input: { contentType: 'image/png' },
+      });
+    });
+
+    it.each([
+      ['a missing length', { scope }],
+      ['a zero length', { scope, contentLength: 0 }],
+      ['a fractional length', { scope, contentLength: 1.5 }],
+      ['a negative length', { scope, contentLength: -4 }],
+      ['no scope', { contentLength: 10 }],
+    ])('POST /sync/upload-url answers 400 for %s, before the handler', async (_label, body) => {
+      const res = await request(app).post(`/api/projects/${projectId}/sync/upload-url`).send(body);
+
+      expect(res.status).toBe(400);
+      expect(requestProjectSyncUploadUrl).not.toHaveBeenCalled();
+    });
+
+    it('POST /sync/upload-url refuses a project id in the path that is not a uuid', async () => {
+      const res = await request(app)
+        .post('/api/projects/not-a-uuid/sync/upload-url')
+        .send({ scope, contentLength: 10 });
+
+      expect(res.status).toBe(400);
+      expect(requestProjectSyncUploadUrl).not.toHaveBeenCalled();
+    });
+
+    it('POST /sync/jobs accepts a body that carries only mode and source, and forwards it', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${projectId}/sync/jobs`)
+        .send({
+          scope,
+          id: 'nightly',
+          mode: canonicalMode,
+          source: { uploadId, entityCount: 4200 },
+        });
+
+      expect(res.status).toBe(202);
+      expect(startProjectSync.mock.calls[0][0]).toMatchObject({
+        id: projectId,
+        enqueuedById: userId,
+        input: {
+          id: 'nightly',
+          mode: canonicalMode,
+          source: { uploadId, entityCount: 4200 },
+        },
+      });
+      expect(startProjectSync.mock.calls[0][0].input).not.toHaveProperty('roles');
+      expect(startProjectSync.mock.calls[0][0].input).not.toHaveProperty('users');
+    });
+
+    it('POST /sync/jobs refuses entity arrays beside a source with 400, before the handler', async () => {
+      const res = await request(app).post(`/api/projects/${projectId}/sync/jobs`).send({
+        scope,
+        version: 1,
+        mode: canonicalMode,
+        roles: [],
+        users: [],
+        source: { uploadId },
+      });
+
+      expect(res.status).toBe(400);
+      expect(startProjectSync).not.toHaveBeenCalled();
+    });
+
+    it('POST /sync/jobs refuses a source whose upload id is not a uuid', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${projectId}/sync/jobs`)
+        .send({ scope, mode: canonicalMode, source: { uploadId: '../../x' } });
+
+      expect(res.status).toBe(400);
+      expect(startProjectSync).not.toHaveBeenCalled();
+    });
+
+    it('POST /sync/jobs still refuses an inline body with no roles, as before', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${projectId}/sync/jobs`)
+        .send({ scope, version: 1, mode: canonicalMode, users: [] });
+
+      expect(res.status).toBe(400);
+      expect(startProjectSync).not.toHaveBeenCalled();
+    });
+
+    it('POST /sync/jobs keeps `searchable` from an inline body, which the REST schema used to strip', async () => {
+      await request(app)
+        .post(`/api/projects/${projectId}/sync/jobs`)
+        .send({
+          scope,
+          version: 1,
+          mode: canonicalMode,
+          roles: [{ key: 'r', name: 'R', searchable: ['legacy-1'] }],
+          users: [
+            {
+              key: { value: 'a@example.com', findBy: CdmFindBy.Email },
+              name: 'A',
+              searchable: { email: 'a@example.com' },
+            },
+          ],
+          groups: [{ key: 'g', name: 'G', searchable: ['g-1'] }],
+        })
+        .expect(202);
+
+      expect(startProjectSync.mock.calls[0][0].input).toMatchObject({
+        roles: [expect.objectContaining({ searchable: ['legacy-1'] })],
+        users: [expect.objectContaining({ searchable: { email: 'a@example.com' } })],
+        groups: [expect.objectContaining({ searchable: ['g-1'] })],
+      });
+    });
+
+    it('GET /sync/jobs/:jobId/payload describes a by-reference job and offers no download', async () => {
+      getProjectSyncJobPayload.mockResolvedValueOnce({
+        byReference: true,
+        sizeBytes: 6_291_456,
+        jobName: 'nightly',
+        cdmVersion: 1,
+      });
+
+      const res = await request(app)
+        .get(`/api/projects/${projectId}/sync/jobs/${jobId}/payload`)
+        .query({ scopeId: `${accountId}:${projectId}`, tenant: 'accountProject' });
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/json/);
+      expect(res.headers['content-disposition']).toBeUndefined();
+      expect(res.body).toEqual({ byReference: true, sizeBytes: 6_291_456 });
+    });
   });
 
   it('GET /sync/jobs/:jobId/snapshot streams the rollback snapshot with attachment headers', async () => {

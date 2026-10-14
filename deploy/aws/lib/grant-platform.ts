@@ -455,6 +455,7 @@ export class GrantPlatform extends Construct {
       this.uploads = new StorageBucket(this, 'Uploads', {
         bucket: props.storage?.uploadsBucket,
         destroyOnRemoval: props.storage?.destroyOnRemoval,
+        cdmImportObjectTtlDays: props.storage?.cdmImportObjectTtlDays,
         // The browser PUTs straight to the bucket, from this origin and no other.
         uploadOrigin: props.appUrl,
       });

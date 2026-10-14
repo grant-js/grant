@@ -8,7 +8,8 @@ import type {
 } from '@grantjs/core';
 
 import { config } from '@/config';
-import { BadRequestError } from '@/lib/errors';
+import { isCdmImportKey } from '@/lib/cdm/cdm-import-upload.lib';
+import { BadRequestError, ValidationError } from '@/lib/errors';
 import { loggerFactory } from '@/lib/logger';
 import { StorageFactory, UploadOptions, UploadResult } from '@/lib/storage';
 
@@ -53,7 +54,19 @@ export class FileStorageService implements IFileStorageServicePort {
     return this.storageAdapter.delete(path);
   }
 
+  /**
+   * Refuses an `imports/` key outright (ADR 0009).
+   *
+   * A CDM import document is unredacted and is read only by the worker, through
+   * `download()`. `getUrl()` would hand out a bearer URL to it: on S3 with no public base
+   * URL a one-hour presigned GET, on the local adapter a `/storage/...` path. No caller
+   * has a reason to ask, so the one that does is a bug, and it fails here instead of
+   * quietly minting the URL.
+   */
   public async getUrl(path: string): Promise<string> {
+    if (isCdmImportKey(path)) {
+      throw new ValidationError('A CDM import object has no URL; it is read through download()');
+    }
     return this.storageAdapter.getUrl(path);
   }
 
