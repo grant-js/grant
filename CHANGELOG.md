@@ -3,6 +3,26 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.15.0
+
+### Platform
+
+**Docker images:** tagged `:1.15.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.15.0** (fixed group with apps).
+
+### Minor Changes
+
+- 65d1ec4: CDM imports can travel by reference, so their size is no longer bounded by the API's request body (ADR 0009). `POST /api/projects/{id}/sync/upload-url` (GraphQL `requestProjectSyncUploadUrl`) mints a presigned PUT and an `uploadId`; `PUT` the JSON file there, then start the import with `source: { uploadId }` on `POST /api/projects/{id}/sync/jobs` (GraphQL `startProjectSync`), keeping `mode` and omitting the entity arrays. The inline path is unchanged and stays the default.
+
+  By reference, the document is read and validated by the worker, with the same schema and rules as an inline body, so a schema error, a `mode` or `version` that differs from the request's, or more entities than `CDM_IMPORT_MAX_ENTITIES` (default 5,000; `0` is unlimited) is an asynchronous `FAILED` job whose `errorMessage` starts with a code such as `CDM_IMPORT_TOO_MANY_ENTITIES`, not a synchronous 4xx. The uploaded object is deleted when the job ends, `GET .../sync/jobs/{jobId}/payload` answers `{ byReference: true, sizeBytes }` for such a job, and the local `/storage` mount never serves `imports/`. New settings: `CDM_UPLOAD_MAX_BYTES` (default 64 MiB) and `CDM_IMPORT_MAX_ENTITIES`. Migration 0085 makes `project_sync_jobs.payload` nullable and adds `payload_path`, `payload_size_bytes` and `entity_count_hint`.
+
+  `SyncProjectInput` (GraphQL) gains `source`, and its `version`, `roles` and `users` become optional, to be required again unless `source` is set. The REST import body now keeps `searchable` on groups, roles and users, which it used to drop silently while the GraphQL input kept it.
+
+- 65d1ec4: The web import dialog uploads the CDM file by reference (ADR 0009): it asks for an upload URL, PUTs the file's bytes straight to storage, and starts the job from the returned `uploadId`, so a file is no longer limited by the API's request body. The dropzone limit is no longer a hard-coded 25 MiB: `GET /api/config` now reports `cdmUploadMaxBytes` (`CDM_UPLOAD_MAX_BYTES`, default 64 MiB) and the dialog uses it; a refusal for size is shown as its own message with the limit. Files up to 8 MiB are still parsed in the browser for the preview, job name and entity-count hint; larger files go up unread, and the dialog asks for the import mode (merge or replace, with the replace confirmation) because it cannot read it from the file.
+
+  The job detail shows the async import failure codes (`CDM_IMPORT_TOO_MANY_ENTITIES`, `_DOCUMENT_INVALID`, `_DOCUMENT_NOT_JSON`, `_REQUEST_MISMATCH`, `_UPLOAD_MISSING`, `_DOCUMENT_TOO_LARGE`, `_STORAGE_FAILURE`) as translated text (English and German), and shows a by-reference payload as "stored by reference, N MiB" instead of a JSON dump. `proxyClientMaxBodySize` is raised to 64 MB so an upload to local storage through the Next dev/standalone server is not cut at the 10 MB default.
+
 ## 1.14.3
 
 ### Platform
