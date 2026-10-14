@@ -18,6 +18,8 @@ import {
   projectParamsSchema,
   projectSchema,
   projectSyncJobParamsSchema,
+  projectSyncJobPayloadByReferenceSchema,
+  projectSyncJobPayloadResponseSchema,
   projectSyncJobResponseSchema,
   projectSyncJobSchema,
   projectSyncJobScopeQuerySchema,
@@ -52,6 +54,8 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
   registry.register('ProjectSyncJobParams', projectSyncJobParamsSchema);
   registry.register('ProjectSyncJobScopeQuery', projectSyncJobScopeQuerySchema);
   registry.register('CdmJsonArtifact', cdmJsonArtifactSchema);
+  registry.register('ProjectSyncJobPayloadByReference', projectSyncJobPayloadByReferenceSchema);
+  registry.register('ProjectSyncJobPayloadResponse', projectSyncJobPayloadResponseSchema);
   registry.register('UploadProjectPictureRequest', uploadProjectPictureRequestSchema);
   registry.register('UploadProjectPictureResponse', uploadProjectPictureResponseSchema);
   registry.register(
@@ -591,7 +595,7 @@ job's lifecycle.
     summary: 'Download the original CDM JSON payload for a sync job',
     description: `
 Download the original \`SyncProjectInput\` JSON body that was submitted when the
-sync job was enqueued. The response uses \`Content-Type: application/json\` and a
+sync job was enqueued. For an inline job the response uses \`Content-Type: application/json\` and a
 \`Content-Disposition: attachment\` header so browsers prompt for a save.
 
 A job started **by reference** has no body in the database, and the uploaded document is
@@ -604,10 +608,11 @@ deleted when the job ends, so this endpoint does not return it. It answers
     },
     responses: {
       200: {
-        description: 'Original CDM payload as a downloadable JSON file',
+        description:
+          'Inline job: the original CDM payload as a downloadable JSON file (`Content-Disposition: attachment`). Job started by reference: `{ byReference: true, sizeBytes }`, with no attachment header and no document.',
         content: {
           'application/json': {
-            schema: cdmJsonArtifactSchema,
+            schema: projectSyncJobPayloadResponseSchema,
           },
         },
       },

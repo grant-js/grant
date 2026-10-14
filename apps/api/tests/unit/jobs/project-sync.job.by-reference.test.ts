@@ -505,6 +505,54 @@ describe('ProjectSyncJob, importing by reference', () => {
   });
 
   describe('cleanup at a terminal state', () => {
+    it('deletes a refused document before marking the job FAILED, not after', async () => {
+      // FAILED releases the upload from the unique index on `payload_path`. Deleting after it
+      // leaves a window in which a new start attaches a job to this uploadId and loses its object.
+      const { mocks, run, calls } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      mocks.download.mockResolvedValue(asBytes(document(9))); // over the cap
+
+      await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+      expect(calls).toEqual(['transitionToRunning', 'delete', 'markFailed']);
+    });
+
+    it('deletes the object before marking the job FAILED when the import itself fails', async () => {
+      const { mocks, run, calls } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      mocks.importProjectCdm.mockRejectedValue(new Error('constraint violation'));
+
+      await expect(run()).rejects.toThrow('constraint violation');
+
+      expect(calls.indexOf('delete')).toBeGreaterThan(calls.indexOf('importProjectCdm'));
+      expect(calls.indexOf('delete')).toBeLessThan(calls.indexOf('markFailed'));
+      expect(calls.filter((call) => call === 'delete')).toHaveLength(1);
+    });
+
+    it('still marks the job FAILED, and never deletes, when the store itself failed', async () => {
+      // The one exception: the object is left for a retry, and FAILED is what releases the index.
+      const { mocks, run, calls } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      mocks.download.mockRejectedValue(new Error('socket hang up'));
+
+      await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+      expect(calls).toEqual(['transitionToRunning', 'markFailed']);
+    });
+
+    it('marks the job FAILED even when the delete throws', async () => {
+      const { mocks, run, calls } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      mocks.download.mockResolvedValue(asBytes('nope'));
+      mocks.delete.mockRejectedValue(new Error('AccessDenied'));
+
+      await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+      // (the throwing delete replaces the tracked mock, so only the claim and the failure show)
+      expect(mocks.delete).toHaveBeenCalledTimes(1);
+      expect(calls).toEqual(['transitionToRunning', 'markFailed']);
+    });
+
     it('deletes the object when the import itself fails', async () => {
       const { mocks, run } = build();
       mocks.loadForExecution.mockResolvedValue(execData());

@@ -29,6 +29,24 @@ export const cdmJsonArtifactSchema = jsonSchema.openapi({
     'CDM JSON document with the same logical shape as SyncProjectInput (version, mode, roles, users, optional resources, permissions, groups, tags).',
 });
 
+/**
+ * What `GET .../sync/jobs/{jobId}/payload` answers for a job started **by reference** (ADR 0009):
+ * a description of the document, never the document, which is unredacted and deleted when the
+ * job ends.
+ */
+export const projectSyncJobPayloadByReferenceSchema = z.object({
+  byReference: z.literal(true),
+  sizeBytes: z.number().int().openapi({
+    description: 'Size in bytes of the uploaded document, as the store reported it at start.',
+  }),
+});
+
+/** The `/payload` 200 body: the CDM document for an inline job, the description above by reference. */
+export const projectSyncJobPayloadResponseSchema = z.union([
+  cdmJsonArtifactSchema,
+  projectSyncJobPayloadByReferenceSchema,
+]);
+
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string(),

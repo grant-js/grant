@@ -180,13 +180,18 @@ export default class ProjectSyncJob extends Job {
       try {
         importPayload = await this.loadReferencedDocument(execData);
       } catch (error) {
-        await this.markJobFailedSafe(enqueueScope, jobRecordId, jobService, error);
+        // Delete first, while the row is still RUNNING. `markFailed` releases the upload from
+        // the unique index on `payload_path`; deleting after it leaves a window in which a new
+        // start can attach a job to this uploadId and then lose its object.
+        //
         // A store that failed to answer is not a verdict on the document: it may be there and
-        // intact. Leave it for a retry; the lifecycle rule is the backstop. Every other refusal
-        // is about the document itself, which no retry changes, so it goes.
+        // intact. Leave it for a retry (marking it FAILED is what releases the index for one);
+        // the lifecycle rule is the backstop. Every other refusal is about the document itself,
+        // which no retry changes, so it goes.
         if (!this.isStorageFailure(error)) {
           await this.deleteImportObject(execData.payloadRef, jobRecordId);
         }
+        await this.markJobFailedSafe(enqueueScope, jobRecordId, jobService, error);
         throw error;
       }
     } else {
@@ -230,6 +235,9 @@ export default class ProjectSyncJob extends Job {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const details = this.serializeErrorDetails(error);
+      // Before `markFailed`, for the reason given at the refusal path above: FAILED releases the
+      // upload, so the object must already be gone when it does.
+      await this.deleteImportObject(execData.payloadRef, jobRecordId);
       try {
         await this.withEnqueueScopeRls(enqueueScope, (tx) =>
           jobService.markFailed(
@@ -248,7 +256,6 @@ export default class ProjectSyncJob extends Job {
           msg: 'Failed to mark project-sync job as failed; original error will still be rethrown',
         });
       }
-      await this.deleteImportObject(execData.payloadRef, jobRecordId);
       throw error;
     }
 

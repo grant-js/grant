@@ -305,7 +305,10 @@ of this decision.
   let a redelivered message fail, through `markFailed`, a job another consumer is mid-import on.
 - **Deletion has one exception.** The object is deleted at every terminal state except
   `CDM_IMPORT_STORAGE_FAILURE`, a store that failed to answer: that says nothing about the document,
-  so it is left for a retry and, failing that, the lifecycle rule. A refusal stored on the row
+  so it is left for a retry and, failing that, the lifecycle rule. **The delete comes before `markFailed`**,
+  while the row is still `RUNNING`: `FAILED` releases the upload from the unique index, and deleting
+  after it would let a new start attach to the same `uploadId` and lose its object. On a store failure
+  there is nothing to delete, and `markFailed` is what releases the index for the retry. A refusal stored on the row
   never carries a user key value (`Duplicate user key at users[<index>]`): the row and the
   `project_sync.failed` event outlive the request, unlike the inline `400`.
 - **The document's `mode.strategy` and `version` must equal the request's.** Only those two are

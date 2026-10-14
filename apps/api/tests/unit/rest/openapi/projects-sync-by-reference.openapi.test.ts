@@ -123,4 +123,27 @@ describe('the by-reference contract is described', () => {
 
     expect(operation?.description).toContain('"byReference": true');
   });
+
+  it('declares both shapes in the payload 200 response, so a generated client is not lied to', () => {
+    const operation = paths['/api/projects/{id}/sync/jobs/{jobId}/payload']?.get as unknown as {
+      responses: Record<
+        string,
+        { description: string; content: Record<string, { schema: Record<string, unknown> }> }
+      >;
+    };
+    const ok = operation.responses['200'];
+    const schema = ok?.content['application/json']?.schema ?? {};
+
+    expect(Object.keys(schema)).toContain('anyOf');
+    const members = (schema.anyOf as Record<string, unknown>[]).map((member) => {
+      const resolved = member.$ref
+        ? schemas[String(member.$ref).split('/').pop() as string]
+        : member;
+      return resolved as { properties?: Record<string, unknown> };
+    });
+    expect(members.some((member) => member.properties && 'byReference' in member.properties)).toBe(
+      true
+    );
+    expect(ok?.description).toContain('{ byReference: true, sizeBytes }');
+  });
 });
