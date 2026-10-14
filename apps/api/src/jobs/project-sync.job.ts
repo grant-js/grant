@@ -181,7 +181,12 @@ export default class ProjectSyncJob extends Job {
         importPayload = await this.loadReferencedDocument(execData);
       } catch (error) {
         await this.markJobFailedSafe(enqueueScope, jobRecordId, jobService, error);
-        await this.deleteImportObject(execData.payloadRef, jobRecordId);
+        // A store that failed to answer is not a verdict on the document: it may be there and
+        // intact. Leave it for a retry; the lifecycle rule is the backstop. Every other refusal
+        // is about the document itself, which no retry changes, so it goes.
+        if (!this.isStorageFailure(error)) {
+          await this.deleteImportObject(execData.payloadRef, jobRecordId);
+        }
         throw error;
       }
     } else {
@@ -491,7 +496,7 @@ export default class ProjectSyncJob extends Job {
     let document: CdmDocumentInput;
     try {
       const parsed = parseCdmDocument(raw);
-      validateSyncInput(parsed);
+      validateSyncInput(parsed, { redactUserKeys: true });
       document = parsed as unknown as CdmDocumentInput;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -557,6 +562,12 @@ export default class ProjectSyncJob extends Job {
         { entityCount, limit }
       );
     }
+  }
+
+  private isStorageFailure(error: unknown): boolean {
+    return (
+      error instanceof CdmImportRefusedError && error.refusal === CdmImportRefusal.StorageFailure
+    );
   }
 
   /**

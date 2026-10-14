@@ -445,6 +445,50 @@ describe('ProjectSyncJob, importing by reference', () => {
       expectNothingApplied(mocks);
     });
 
+    it('leaves the object in place when the store itself failed, so a retry can find it', async () => {
+      // The store not answering is no verdict on the document. Every other refusal below deletes.
+      const { mocks, run } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      mocks.download.mockRejectedValue(new Error('socket hang up'));
+
+      await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+      expect(mocks.markFailed).toHaveBeenCalledTimes(1);
+      expect(mocks.delete).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['vanished', () => new NotFoundError('File', uploadPath)],
+      ['over the cap', () => new PayloadTooLargeError('big', limits.maxBytes, limits.maxBytes + 1)],
+    ])('still deletes the object when the download says it %s', async (_label, failure) => {
+      const { mocks, run } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      mocks.download.mockRejectedValue(failure());
+
+      await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+      expect(mocks.delete).toHaveBeenCalledWith(uploadPath);
+    });
+
+    it('keeps a duplicated user key out of the stored message, the details and the event', async () => {
+      // An email is the usual user key. The inline 400 may echo it; the job row and the
+      // project_sync.failed event it feeds must not.
+      const { mocks, run } = build();
+      mocks.loadForExecution.mockResolvedValue(execData());
+      const dup = { key: { value: 'jane.doe@example.com', findBy: CdmFindBy.Email }, name: 'J' };
+      mocks.download.mockResolvedValue(asBytes(document(1, { users: [dup, dup] })));
+
+      await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+      const [params] = mocks.markFailed.mock.calls[0] as unknown as [
+        { errorMessage: string; errorDetails: unknown },
+      ];
+      expect(params.errorMessage).toBe(
+        'CDM_IMPORT_DOCUMENT_INVALID: Duplicate user key at users[1]'
+      );
+      expect(JSON.stringify(params)).not.toContain('jane.doe');
+    });
+
     it.each([
       ['over the entity cap', () => asBytes(document(9))],
       ['not JSON', () => asBytes('nope')],

@@ -228,9 +228,13 @@ export interface SyncInputUnderValidation {
 
 /**
  * Rules a typed document still has to satisfy, shared by the inline start (handler) and
- * the by-reference worker so the two cannot accept different documents.
+ * the by-reference worker so the two cannot accept different documents. `redactUserKeys`
+ * keeps user key values out of the message, for a caller that persists it.
  */
-export function validateSyncInput(input: SyncInputUnderValidation): void {
+export function validateSyncInput(
+  input: SyncInputUnderValidation,
+  options: { redactUserKeys?: boolean } = {}
+): void {
   if (input.version !== 1) {
     throw new ValidationError('Unsupported version; only 1 is allowed');
   }
@@ -247,11 +251,18 @@ export function validateSyncInput(input: SyncInputUnderValidation): void {
   }
 
   const userSeen = new Set<string>();
-  for (const u of input.users) {
+  for (const [index, u] of input.users.entries()) {
     const isId = u.key.findBy === CdmFindBy.Id;
     const dedupe = isId ? `id:${u.key.value}` : `key:${u.key.value}`;
     if (userSeen.has(dedupe)) {
-      throw new ValidationError(`Duplicate user entry: ${dedupe}`);
+      // A user key is usually an email. The inline caller gets it back in a 400 it can act on;
+      // a by-reference refusal is stored on the job row and published as an event, where it
+      // must not outlive the request, so it names the position and never the value.
+      throw new ValidationError(
+        options.redactUserKeys
+          ? `Duplicate user key at users[${index}]`
+          : `Duplicate user entry: ${dedupe}`
+      );
     }
     userSeen.add(dedupe);
   }

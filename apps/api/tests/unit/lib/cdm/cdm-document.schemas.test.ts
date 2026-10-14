@@ -112,6 +112,18 @@ describe('validateSyncInput', () => {
     expect(() => validateSyncInput({ ...base, users: [key, key] })).toThrow(/Duplicate user entry/);
     expect(() => validateSyncInput({ ...base, users: [id, key] })).not.toThrow();
   });
+
+  it('names the position and never the value when asked to redact user keys', () => {
+    const dup = { key: { value: 'jane.doe@example.com', findBy: 'email' } };
+
+    expect(() =>
+      validateSyncInput({ ...base, users: [dup, dup] }, { redactUserKeys: true })
+    ).toThrow('Duplicate user key at users[1]');
+    // Not redacted by default: the inline 400 keeps telling the caller which entry it is.
+    expect(() => validateSyncInput({ ...base, users: [dup, dup] })).toThrow(
+      /jane\.doe@example\.com/
+    );
+  });
 });
 
 describe('countCdmEntities', () => {

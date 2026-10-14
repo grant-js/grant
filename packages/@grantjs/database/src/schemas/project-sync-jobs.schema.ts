@@ -85,9 +85,12 @@ export const projectSyncJobs = pgTable(
     index('project_sync_jobs_project_id_idx').on(table.projectId),
     index('project_sync_jobs_status_idx').on(table.status),
     index('project_sync_jobs_project_status_idx').on(table.projectId, table.status),
+    // One upload, one job, except that a FAILED job releases it: the worker leaves the object in
+    // place when the store itself failed, and a retry must be able to start from the same upload.
+    // A job that failed over the document itself deleted its object, so a retry finds nothing.
     uniqueIndex('project_sync_jobs_payload_path_unique')
       .on(table.payloadPath)
-      .where(sql`${table.payloadPath} IS NOT NULL`),
+      .where(sql`${table.payloadPath} IS NOT NULL AND ${table.status} <> 'failed'`),
     uniqueIndex('project_sync_jobs_project_operation_job_name_unique')
       .on(table.projectId, table.operation, table.jobName)
       .where(

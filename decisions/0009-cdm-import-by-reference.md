@@ -292,13 +292,22 @@ of this decision.
 **Slice 2, as built.** Decisions the text above left to the implementation:
 
 - **One upload, one job** is a partial unique index on `project_sync_jobs.payload_path`
-  (migration 0085); the second start answers `409`. It is not scoped to non-terminal rows: the
-  object is deleted at a terminal state, so a reused id would find nothing anyway.
+  (migration 0085); the second start answers `409`. A `FAILED` job releases its upload (the index
+  excludes `status = 'failed'`), because of the next bullet but one: when the store itself failed
+  the object is kept, and a retry has to be able to start from it. A job that failed over the
+  document deleted its object, so a retry from that id is a `404`.
 - **The worker claims `RUNNING` first, then reads.** `transitionToRunning` is what refuses a
   redelivered message, so a second consumer never reaches the download and cannot fail a job the
   first is importing. Everything the document can be refused for is still decided before the import
   transaction opens, and the job is marked `FAILED` with a code (`CDM_IMPORT_*`) as the first token
-  of `errorMessage`, which is what a polling client can read.
+  of `errorMessage`, which is what a polling client can read. **This ordering is deliberate and is
+  not the one the program brief sketched** (refuse before `transitionToRunning`): reading first would
+  let a redelivered message fail, through `markFailed`, a job another consumer is mid-import on.
+- **Deletion has one exception.** The object is deleted at every terminal state except
+  `CDM_IMPORT_STORAGE_FAILURE`, a store that failed to answer: that says nothing about the document,
+  so it is left for a retry and, failing that, the lifecycle rule. A refusal stored on the row
+  never carries a user key value (`Duplicate user key at users[<index>]`): the row and the
+  `project_sync.failed` event outlive the request, unlike the inline `400`.
 - **The document's `mode.strategy` and `version` must equal the request's.** Only those two are
   persisted on the row, so `onConflict` and `confirmDestructive` are not compared; the document's
   own `confirmDestructive` is still required for `replace` by the shared validation.

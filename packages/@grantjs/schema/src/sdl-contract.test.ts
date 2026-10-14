@@ -50,10 +50,11 @@ describe('operation documents', () => {
   // project-app pictures (eight operation documents).
   // 135 after project OAuth connections: get/upsert/clear (three operation documents).
   // 136 after closed-install: AuthSignupPolicyDocument (publicSignupEnabled, bootstrapOpen).
+  // 137 after CDM imports by reference: RequestProjectSyncUploadUrlDocument.
   // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(136);
+    expect(files).toHaveLength(137);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {
