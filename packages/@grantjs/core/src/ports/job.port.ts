@@ -62,13 +62,18 @@ export interface IJobAdapter {
   /**
    * Enqueue a one-off job (e.g. from a request handler).
    * For tenant-scoped jobs, pass scope from authenticated context only.
+   *
+   * Resolves once the job is **accepted**, never once it has run: callers (e.g. request
+   * handlers that await it before responding) must not pay for the job body.
    * - BullMQ: adds job to Redis queue, returns immediately; worker runs it asynchronously.
-   * - Node-cron: runs the handler synchronously (request waits until job completes); no queue persistence.
+   * - AWS: resolves when SQS has accepted the message.
+   * - Node-cron: dispatches the handler in this process after the current tick and resolves
+   *   at once; handler errors are logged by the adapter, there is no queue persistence.
+   * Use `trigger()` to run a job and get its result.
    * @param jobId - Registered job id
    * @param data - Optional scope and payload (scope from auth only)
-   * @returns BullMQ: void after enqueue. Node-cron: JobResult (runs synchronously).
    */
-  enqueue?(jobId: string, data?: EnqueueJobData): Promise<JobResult | void>;
+  enqueue?(jobId: string, data?: EnqueueJobData): Promise<void>;
 
   /**
    * Cancel/remove a scheduled job

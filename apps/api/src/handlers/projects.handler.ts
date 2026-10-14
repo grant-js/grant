@@ -47,6 +47,7 @@ import {
 import { config } from '@/config';
 import { assertValidCdmExportSections } from '@/constants/cdm-export.constants';
 import { PROJECT_SYNC_JOB_ID } from '@/constants/project-sync.constants';
+import { type ScheduleAfterCommit } from '@/lib/after-commit.lib';
 import { trackProductEventAfterCommit } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, ConfigurationError, NotFoundError, ValidationError } from '@/lib/errors';
@@ -77,7 +78,7 @@ export class ProjectHandler extends CacheHandler {
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
     private readonly fileStorage: IFileStorageServicePort,
-    private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
+    private readonly scheduleAfterCommit?: ScheduleAfterCommit
   ) {
     super(cache, scopeServices);
   }
@@ -309,7 +310,7 @@ export class ProjectHandler extends CacheHandler {
       }
     };
     if (this.scheduleAfterCommit) {
-      this.scheduleAfterCommit(runEnqueue);
+      this.scheduleAfterCommit(runEnqueue, `${PROJECT_SYNC_JOB_ID}:${jobRecordId}`);
       return;
     }
     await runEnqueue();

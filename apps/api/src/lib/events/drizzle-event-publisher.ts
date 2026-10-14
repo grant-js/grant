@@ -4,6 +4,7 @@ import { type DomainEventInput, getEventCatalogEntry, type Scope, Tenant } from 
 
 import { config } from '@/config';
 import { EVENT_RELAY_JOB_ID } from '@/constants/event-relay.constants';
+import type { ScheduleAfterCommit } from '@/lib/after-commit.lib';
 import { isEventPublishingSuppressed } from '@/lib/events/event-suppression.lib';
 import { getJobAdapter } from '@/lib/jobs/initialize';
 import { createLogger } from '@/lib/logger';
@@ -13,7 +14,7 @@ const logger = createLogger('EventPublisher');
 
 const SYSTEM_SCOPE: Scope = { tenant: Tenant.System, id: 'system' };
 
-export type ScheduleAfterCommit = (fn: () => void | Promise<void>) => void;
+export type { ScheduleAfterCommit };
 
 export interface DrizzleEventPublisherOptions {
   /** When set, schedules a coalesced EVENT_RELAY enqueue after the surrounding TX commits. */
@@ -65,7 +66,7 @@ export class DrizzleEventPublisher implements IEventPublisher {
           err,
         });
       }
-    });
+    }, EVENT_RELAY_JOB_ID);
   }
 
   async publish(event: DomainEventInput, transaction?: unknown): Promise<void> {

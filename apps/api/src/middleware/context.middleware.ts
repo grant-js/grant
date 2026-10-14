@@ -80,13 +80,15 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
     const rlsCtx = scope && scope.tenant !== Tenant.System ? scopeToRlsContext(scope) : null;
     const useRls = config.security.enableRls && rlsCtx && hasRlsKeys(rlsCtx);
 
+    const afterCommitOptions = { timeoutMs: config.jobs.afterCommitTimeoutMs };
+
     if (useRls) {
       // Scoped request: wrap in a transaction with RLS enforcement.
       // SET LOCAL ROLE + set_config are transaction-scoped — no leaking.
       // The transaction stays open until the handler ends the response (commit) or
       // an unrecoverable error occurs (rollback).
       const requestLogger = getRequestLogger(req);
-      const afterCommit = createAfterCommitQueue(requestLogger);
+      const afterCommit = createAfterCommitQueue(requestLogger, afterCommitOptions);
       const scheduleAfterCommit = afterCommit.schedule;
 
       let releaseTransaction: () => void = () => undefined;
@@ -159,7 +161,7 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
     } else {
       // Unscoped / system / RLS-disabled: no transaction, use global db.
       const requestLogger = getRequestLogger(req);
-      const afterCommit = createImmediateAfterCommit(requestLogger);
+      const afterCommit = createImmediateAfterCommit(requestLogger, afterCommitOptions);
       const scheduleAfterCommit = afterCommit.schedule;
       // No transaction here, so callbacks run at once. The response still waits for them: on
       // Lambda an unfinished SQS SendMessage is lost once the response is returned.

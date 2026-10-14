@@ -22,6 +22,7 @@ const mockConfig = {
   security: { enableRls: true },
   jwt: { systemSigningKeyCacheTtlSeconds: 60 },
   system: { systemUserId: 'system-user' },
+  jobs: { afterCommitTimeoutMs: 5000 },
 };
 
 const db = {
@@ -73,6 +74,7 @@ vi.mock('@grantjs/core', async (importOriginal) => ({
 }));
 
 const { contextMiddleware } = await import('@/middleware/context.middleware');
+const { NodeCronJobAdapter } = await import('@grantjs/jobs/node-cron');
 
 function buildApp(route: (req: Request, res: Response) => void) {
   const app = express();
@@ -94,6 +96,7 @@ describe('contextMiddleware after-commit callbacks', () => {
     events.length = 0;
     dbState.commitFails = false;
     mockConfig.security.enableRls = true;
+    mockConfig.jobs.afterCommitTimeoutMs = 5000;
     vi.clearAllMocks();
   });
 
@@ -155,7 +158,10 @@ describe('contextMiddleware after-commit callbacks', () => {
     expect(response.status).toBe(202);
     expect(second).toHaveBeenCalledTimes(1);
     expect(requestLogger.error).toHaveBeenCalledWith(
-      { err: expect.objectContaining({ message: 'SQS unavailable' }) },
+      {
+        err: expect.objectContaining({ message: 'SQS unavailable' }),
+        label: 'unlabelled callback',
+      },
       'scheduleAfterCommit callback failed'
     );
   });
@@ -190,5 +196,75 @@ describe('contextMiddleware after-commit callbacks', () => {
     expect(response.status).toBe(202);
     expect(db.transaction).not.toHaveBeenCalled();
     expect(events).toEqual(['enqueue-start', 'enqueue-done', 'response-flushed']);
+  });
+
+  it('stops waiting for a stalled callback after the timeout, names it, and still flushes', async () => {
+    mockConfig.jobs.afterCommitTimeoutMs = 50;
+    let neverSettles = false;
+
+    const app = buildApp((req, res) => {
+      (
+        req as unknown as {
+          context: { scheduleAfterCommit: (f: () => Promise<void>, label: string) => void };
+        }
+      ).context.scheduleAfterCommit(() => {
+        neverSettles = true;
+        return new Promise<void>(() => undefined); // e.g. BullMQ add against an unreachable Redis
+      }, 'project-sync:job-1');
+      res.on('finish', () => events.push('response-flushed'));
+      res.status(202).json({ status: 'pending' });
+    });
+
+    const startedAt = Date.now();
+    const response = await request(app).post('/enqueue');
+
+    expect(response.status).toBe(202);
+    expect(neverSettles).toBe(true);
+    expect(Date.now() - startedAt).toBeLessThan(2000);
+    expect(events).toEqual(['begin', 'commit', 'response-flushed']);
+    expect(requestLogger.warn).toHaveBeenCalledWith(
+      { pending: ['project-sync:job-1'], timeoutMs: 50 },
+      expect.stringContaining('still pending at the timeout')
+    );
+  });
+
+  describe('with the in-process node-cron provider', () => {
+    it('accepts the job before the response but does not wait for the job body', async () => {
+      const adapterLogger = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
+      const jobs = new NodeCronJobAdapter(adapterLogger as never);
+      let finishJobBody!: () => void;
+      const bodyGate = new Promise<void>((resolve) => {
+        finishJobBody = resolve;
+      });
+      await jobs.schedule(
+        { id: 'event-relay', schedule: '', enabled: true, enqueueOnly: true },
+        async () => {
+          events.push('job-body-start');
+          await bodyGate; // a whole outbox drain / CDM import
+          events.push('job-body-done');
+          return { success: true };
+        }
+      );
+
+      const app = buildApp((req, res) => {
+        schedule(req, async () => {
+          await jobs.enqueue('event-relay');
+          events.push('accepted');
+        });
+        res.on('finish', () => events.push('response-flushed'));
+        res.status(202).json({ status: 'pending' });
+      });
+
+      const response = await request(app).post('/enqueue');
+
+      // The 202 arrived while the job body is still blocked on its gate.
+      expect(response.status).toBe(202);
+      expect(events).not.toContain('job-body-done');
+      expect(events.slice(0, 4)).toEqual(['begin', 'commit', 'accepted', 'response-flushed']);
+
+      finishJobBody();
+      await jobs.shutdown();
+      expect(events).toContain('job-body-done');
+    });
   });
 });

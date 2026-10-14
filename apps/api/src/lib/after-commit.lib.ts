@@ -4,57 +4,94 @@ import type { Response } from 'express';
 export type AfterCommitCallback = () => void | Promise<void>;
 
 /**
- * Callbacks queued with `scheduleAfterCommit`, run once the request transaction has committed.
- *
- * `run()` awaits every callback and never rejects: a failing callback is logged and does not
- * stop the others, because the work it follows is already committed.
+ * Queue work until the request transaction has committed. `label` names the work in logs
+ * when it is still pending at the timeout: a job id or job name, never a payload.
  */
-export function createAfterCommitQueue(logger: ILogger) {
-  const callbacks: AfterCommitCallback[] = [];
+export type ScheduleAfterCommit = (fn: AfterCommitCallback, label?: string) => void;
+
+export interface AfterCommitOptions {
+  /** Longest the response waits for the callbacks. They keep running after it. */
+  timeoutMs: number;
+}
+
+const UNLABELLED = 'unlabelled callback';
+
+/**
+ * Tracks callbacks so the response can wait for them, for at most `timeoutMs`.
+ *
+ * Each callback logs its own failure, so one that fails after the wait was given up is still
+ * visible, and a failure never stops the others: the work they follow is already committed.
+ */
+function createTracker(logger: ILogger, { timeoutMs }: AfterCommitOptions) {
+  const pending = new Map<Promise<void>, string>();
 
   return {
-    schedule(fn: AfterCommitCallback): void {
-      callbacks.push(fn);
-    },
-    async run(): Promise<void> {
-      const results = await Promise.allSettled(
-        callbacks.splice(0).map(async (fn) => {
-          await fn();
+    start(fn: AfterCommitCallback, label = UNLABELLED): void {
+      const tracked: Promise<void> = Promise.resolve()
+        .then(fn)
+        .catch((err: unknown) => {
+          logger.error({ err, label }, 'scheduleAfterCommit callback failed');
         })
-      );
-      for (const result of results) {
-        if (result.status === 'rejected') {
-          logger.error({ err: result.reason }, 'scheduleAfterCommit callback failed');
-        }
+        .finally(() => {
+          pending.delete(tracked);
+        });
+      pending.set(tracked, label);
+    },
+    async settled(): Promise<void> {
+      if (pending.size === 0) return;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timedOut = await Promise.race([
+        Promise.all([...pending.keys()]).then(() => false),
+        new Promise<boolean>((resolve) => {
+          timer = setTimeout(() => resolve(true), timeoutMs);
+        }),
+      ]);
+      clearTimeout(timer);
+      if (timedOut) {
+        logger.warn(
+          { pending: [...pending.values()], timeoutMs },
+          'scheduleAfterCommit callbacks still pending at the timeout; sending the response anyway'
+        );
       }
     },
   };
 }
 
 /**
- * For requests with no transaction: runs each callback immediately and tracks it, so the
- * response can wait for it (`settled()`) instead of leaving it in flight.
+ * Callbacks queued with `scheduleAfterCommit`, run once the request transaction has committed.
+ *
+ * `run()` starts every callback and waits for them (bounded by `timeoutMs`); it never rejects.
+ * Nothing runs unless `run()` is called, so a rolled-back transaction enqueues nothing.
  */
-export function createImmediateAfterCommit(logger: ILogger) {
-  const pending = new Set<Promise<void>>();
+export function createAfterCommitQueue(logger: ILogger, options: AfterCommitOptions) {
+  const tracker = createTracker(logger, options);
+  const callbacks: Array<{ fn: AfterCommitCallback; label?: string }> = [];
 
   return {
-    schedule(fn: AfterCommitCallback): void {
-      const tracked: Promise<void> = Promise.resolve()
-        .then(fn)
-        .catch((err: unknown) => {
-          logger.error({ err }, 'scheduleAfterCommit callback failed');
-        })
-        .finally(() => {
-          pending.delete(tracked);
-        });
-      pending.add(tracked);
+    schedule(fn: AfterCommitCallback, label?: string): void {
+      callbacks.push({ fn, label });
     },
-    async settled(): Promise<void> {
-      while (pending.size > 0) {
-        await Promise.all([...pending]);
+    async run(): Promise<void> {
+      for (const { fn, label } of callbacks.splice(0)) {
+        tracker.start(fn, label);
       }
+      await tracker.settled();
     },
+  };
+}
+
+/**
+ * For requests with no transaction: runs each callback immediately and tracks it, so the
+ * response can wait for it (`settled()`, bounded by `timeoutMs`) instead of leaving it in flight.
+ */
+export function createImmediateAfterCommit(logger: ILogger, options: AfterCommitOptions) {
+  const tracker = createTracker(logger, options);
+
+  return {
+    schedule(fn: AfterCommitCallback, label?: string): void {
+      tracker.start(fn, label);
+    },
+    settled: () => tracker.settled(),
   };
 }
 
@@ -86,8 +123,13 @@ export function holdResponseEndUntil(res: Response, gate: () => Promise<void>): 
   };
 
   res.end = function holdingEnd(this: Response, ...args: EndArgs): Response {
-    if (held || abandoned) {
+    if (abandoned) {
       return originalEnd.apply(this, args);
+    }
+    if (held) {
+      // A second end() while the first is held must not flush: it would send the response
+      // before the gate, the exact hole this guards. The first call's arguments win.
+      return this;
     }
     held = true;
     const flush = () => {

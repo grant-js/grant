@@ -1618,6 +1618,16 @@ const META: EnvVarMeta[] = [
     section: 'Jobs',
   },
   {
+    key: 'JOBS_AFTER_COMMIT_TIMEOUT_MS',
+    category: 'main',
+    label: 'After-commit enqueue timeout (ms)',
+    description:
+      'Max time a request waits for its post-commit job enqueue before the response is sent anyway (default: 5000).',
+    envFiles: ['.env'],
+    digitsOnly: true,
+    section: 'Jobs',
+  },
+  {
     key: 'JOBS_EVENT_RELAY_BATCH_SIZE',
     category: 'main',
     label: 'Event relay batch size',
