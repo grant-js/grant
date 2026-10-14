@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.14.3
+
+### Platform
+
+**Docker images:** tagged `:1.14.3` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.14.3** (fixed group with apps).
+
+### Patch Changes
+
+- 48aaee4: `IFileStorageService` gains a required `download(path, { maxBytes })` that reads a stored object into a `Buffer`, refusing anything over `maxBytes`; the API's `FileStorageService` delegates to the configured adapter. No behaviour change yet: nothing calls it until CDM imports by reference land (ADR 0009, proposed).
+
 ## 1.14.2
 
 ### Platform
