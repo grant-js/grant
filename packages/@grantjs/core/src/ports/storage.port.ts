@@ -60,6 +60,14 @@ export interface StoredObjectMetadata {
   lastModified?: Date;
 }
 
+export interface DownloadOptions {
+  /**
+   * Largest object the caller will accept, in bytes. Required: a read with no cap
+   * is a read the caller can be made to lose memory on. See `download()`.
+   */
+  maxBytes: number;
+}
+
 export interface IFileStorageService {
   /**
    * Upload a file to storage
@@ -134,15 +142,23 @@ export interface IFileStorageService {
   getMetadata(path: string): Promise<StoredObjectMetadata | null>;
 
   /**
-   * Read the whole object stored at `path` into memory.
+   * Read the whole object stored at `path` into memory, refusing anything larger
+   * than `options.maxBytes`.
    *
    * Returns a `Buffer`, not a stream, on purpose: the only consumer today is the
    * project-sync worker, which parses the entire document before it does anything
    * with it, so a stream would be buffered by the first caller anyway. A streaming
    * variant can be added beside this method later without breaking any caller.
    *
-   * There is no size limit here. A caller that cannot afford an arbitrary object
-   * in memory must read `getMetadata()` first and refuse on `size`.
+   * **The cap lives inside the method and is required, not left to the caller.**
+   * "Call `getMetadata()` first and refuse on `size`" does not fail closed: HEAD
+   * then GET is a time-of-check/time-of-use gap, and the principals that read
+   * through this port (the sync task role) can also write the bucket, so a larger
+   * object may be at the same key by the time the GET runs. Both stores also hand
+   * the body over before the caller can look at it. So the adapter checks the size
+   * the store reports on the read itself, before buffering, and counts bytes while
+   * reading where the store did not report one. Adding the parameter later would be
+   * another `@grantjs/core` change, which is why it is here from the first slice.
    *
    * Required of every adapter, for the reason ADR 0007 gives for `getUploadUrl()`:
    * a capability the port promises and one adapter cannot honour makes ports leak.
@@ -154,14 +170,20 @@ export interface IFileStorageService {
    * have been minted is never read either.
    *
    * @param path - Storage path to read
+   * @param options - `maxBytes`: the largest object, in bytes, the caller will
+   *   accept. A positive integer; an object of exactly `maxBytes` is accepted.
    * @returns The stored bytes
+   * @throws PayloadTooLargeError when the object is larger than `maxBytes`. Thrown
+   *   before the body is buffered; `limitBytes` is the cap, and `receivedBytes` the
+   *   size when the store reported it.
    * @throws NotFoundError when nothing is stored at `path`. Unlike `getMetadata()`,
    *   which answers `null`, a method that returns bytes has no empty value to
    *   return, and unlike `delete()` a missing object is not an already-satisfied
    *   intent.
    * @throws ValidationError on a path containing a `..` segment, a leading
-   *   separator, an empty segment or a dot-prefixed segment
+   *   separator, an empty segment or a dot-prefixed segment; or on a `maxBytes`
+   *   that is not a positive integer
    * @throws GrantException (`STORAGE_ERROR`) on any other store failure
    */
-  download(path: string): Promise<Buffer>;
+  download(path: string, options: DownloadOptions): Promise<Buffer>;
 }

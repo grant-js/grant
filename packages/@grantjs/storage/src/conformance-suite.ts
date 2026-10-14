@@ -1,5 +1,10 @@
 import type { IFileStorageService } from '@grantjs/core';
-import { GrantException, NotFoundError, ValidationError } from '@grantjs/core';
+import {
+  GrantException,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from '@grantjs/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -84,6 +89,9 @@ const runId = `${process.pid}-${Date.now()}`;
 const uniquePath = (name: string) => `conformance/${runId}/${(counter += 1)}-${name}`;
 
 const bytes = (n: number, fill = 'a') => Buffer.from(fill.repeat(n));
+
+/** Comfortably above every object the happy-path download tests store. */
+const DOWNLOAD_MAX_BYTES = 64 * 1024;
 
 export function runFileStorageConformance(
   label: string,
@@ -176,7 +184,7 @@ export function runFileStorageConformance(
         const content = bytes(1024, 'd');
         await storage.upload(content, path);
 
-        const downloaded = await storage.download(path);
+        const downloaded = await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES });
 
         expect(Buffer.isBuffer(downloaded)).toBe(true);
         expect(downloaded).toEqual(content);
@@ -189,14 +197,14 @@ export function runFileStorageConformance(
         const content = Buffer.from(Array.from({ length: 256 }, (_, value) => value));
         await storage.upload(content, path);
 
-        expect(await storage.download(path)).toEqual(content);
+        expect(await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).toEqual(content);
       });
 
       it('returns an empty Buffer for an empty object', async () => {
         const path = uniquePath('download-empty.bin');
         await storage.upload(Buffer.alloc(0), path);
 
-        const downloaded = await storage.download(path);
+        const downloaded = await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES });
 
         expect(downloaded.length).toBe(0);
       });
@@ -206,7 +214,7 @@ export function runFileStorageConformance(
         const content = bytes(32, 'n');
         await storage.upload(content, path);
 
-        expect(await storage.download(path)).toEqual(content);
+        expect(await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).toEqual(content);
       });
 
       it('reads what a client wrote through a presigned URL', async () => {
@@ -224,7 +232,7 @@ export function runFileStorageConformance(
         const response = await harness.put(minted.url, minted.method, minted.headers, content);
         expect(response.status).toBeLessThan(300);
 
-        const downloaded = await storage.download(path);
+        const downloaded = await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES });
 
         expect(downloaded).toEqual(content);
         expect(downloaded).toEqual(await harness.readBack(path));
@@ -235,16 +243,18 @@ export function runFileStorageConformance(
         await storage.upload(bytes(64, 'a'), path);
         await storage.upload(bytes(8, 'b'), path);
 
-        expect(await storage.download(path)).toEqual(bytes(8, 'b'));
+        expect(await storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).toEqual(
+          bytes(8, 'b')
+        );
       });
 
       it('throws NotFoundError for a path holding nothing', async () => {
         // Unlike getMetadata (null) there is no empty value to return, and unlike
         // delete a missing object is not an already-satisfied intent: a worker told
         // to import an object that is not there must fail, not import nothing.
-        await expect(storage.download(uniquePath('download-absent.bin'))).rejects.toBeInstanceOf(
-          NotFoundError
-        );
+        await expect(
+          storage.download(uniquePath('download-absent.bin'), { maxBytes: DOWNLOAD_MAX_BYTES })
+        ).rejects.toBeInstanceOf(NotFoundError);
       });
 
       it('throws NotFoundError after the object was deleted', async () => {
@@ -252,7 +262,62 @@ export function runFileStorageConformance(
         await storage.upload(bytes(8), path);
         await storage.delete(path);
 
-        await expect(storage.download(path)).rejects.toBeInstanceOf(NotFoundError);
+        await expect(
+          storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })
+        ).rejects.toBeInstanceOf(NotFoundError);
+      });
+
+      it('accepts an object of exactly maxBytes', async () => {
+        const path = uniquePath('download-at-cap.bin');
+        const content = bytes(512, 'c');
+        await storage.upload(content, path);
+
+        expect(await storage.download(path, { maxBytes: 512 })).toEqual(content);
+      });
+
+      it('refuses an object one byte over maxBytes with PayloadTooLargeError', async () => {
+        const path = uniquePath('download-over-cap.bin');
+        await storage.upload(bytes(513, 'o'), path);
+
+        const outcome = await storage
+          .download(path, { maxBytes: 512 })
+          .catch((caught: unknown) => caught);
+
+        expect(outcome).toBeInstanceOf(PayloadTooLargeError);
+        expect((outcome as PayloadTooLargeError).limitBytes).toBe(512);
+      });
+
+      it('refuses an oversize object without returning any of its bytes', async () => {
+        // Whether the body was *ingested* is asserted per adapter, where the read
+        // path can be observed (`s3/index.test.ts`, `local/index.test.ts`); what the
+        // port can show is that the caller gets an error and no data.
+        const path = uniquePath('download-huge.bin');
+        await storage.upload(bytes(64 * 1024, 'h'), path);
+
+        await expect(storage.download(path, { maxBytes: 1024 })).rejects.toBeInstanceOf(
+          PayloadTooLargeError
+        );
+      });
+
+      it('checks the cap on the read, not against an earlier answer: a larger object written after getMetadata is still refused', async () => {
+        // The TOCTOU the cap lives inside the method for. HEAD says small; the object
+        // at the same key is replaced before the GET.
+        const path = uniquePath('download-swapped.bin');
+        await storage.upload(bytes(100, 's'), path);
+        expect((await storage.getMetadata(path))?.size).toBe(100);
+
+        await storage.upload(bytes(4096, 'L'), path);
+
+        await expect(storage.download(path, { maxBytes: 1024 })).rejects.toBeInstanceOf(
+          PayloadTooLargeError
+        );
+      });
+
+      it.each([0, -1, 1.5, Number.NaN])('refuses a maxBytes of %s', async (maxBytes) => {
+        const path = uniquePath('download-bad-cap.bin');
+        await storage.upload(bytes(8), path);
+
+        await expect(storage.download(path, { maxBytes })).rejects.toBeInstanceOf(ValidationError);
       });
 
       it.each([
@@ -261,10 +326,12 @@ export function runFileStorageConformance(
         ['an empty segment', 'tenants//import.json', /empty segment/i],
         ['a dot-prefixed segment', 'tenants/.grant-upload-key', /dot-prefixed/i],
       ])('refuses a path with %s, as getUploadUrl does', async (_label, path, message) => {
-        await expect(storage.download(path)).rejects.toThrow(
+        await expect(storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })).rejects.toThrow(
           expect.objectContaining({ message: expect.stringMatching(message) })
         );
-        await expect(storage.download(path)).rejects.toBeInstanceOf(ValidationError);
+        await expect(
+          storage.download(path, { maxBytes: DOWNLOAD_MAX_BYTES })
+        ).rejects.toBeInstanceOf(ValidationError);
       });
     });
 

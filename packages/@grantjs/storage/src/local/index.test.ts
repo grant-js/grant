@@ -1,4 +1,6 @@
+import fsDefault from 'node:fs/promises';
 import * as http from 'node:http';
+import { syncBuiltinESMExports } from 'node:module';
 import type { AddressInfo } from 'node:net';
 
 import {
@@ -6,12 +8,13 @@ import {
   GrantException,
   noopLogger,
   NotFoundError,
+  PayloadTooLargeError,
   ValidationError,
 } from '@grantjs/core';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { runFileStorageConformance } from '../conformance-suite';
 import { LocalStorageAdapter } from './index';
@@ -259,7 +262,9 @@ describe('local download path guards', () => {
     await fs.writeFile(planted, secret);
 
     try {
-      const outcome = await settle(adapter.download(`../${path.basename(planted)}`));
+      const outcome = await settle(
+        adapter.download(`../${path.basename(planted)}`, { maxBytes: 1024 })
+      );
 
       expect(outcome.value).toBeUndefined();
       expect(outcome.error).toBeInstanceOf(ValidationError);
@@ -273,7 +278,7 @@ describe('local download path guards', () => {
     await fs.writeFile(planted, secret);
 
     try {
-      const outcome = await settle(adapter.download(planted));
+      const outcome = await settle(adapter.download(planted, { maxBytes: 1024 }));
 
       expect(outcome.value).toBeUndefined();
       expect(outcome.error).toBeInstanceOf(ValidationError);
@@ -293,7 +298,7 @@ describe('local download path guards', () => {
     });
     await fs.stat(path.join(basePath, '.grant-upload-key'));
 
-    const outcome = await settle(adapter.download('.grant-upload-key'));
+    const outcome = await settle(adapter.download('.grant-upload-key', { maxBytes: 1024 }));
 
     expect(outcome.value).toBeUndefined();
     expect(outcome.error).toBeInstanceOf(ValidationError);
@@ -305,10 +310,54 @@ describe('local download path guards', () => {
     // object was never uploaded when the store is in fact inconsistent.
     await fs.mkdir(path.join(basePath, 'download-guard/a-directory'), { recursive: true });
 
-    const outcome = await settle(adapter.download('download-guard/a-directory'));
+    const outcome = await settle(
+      adapter.download('download-guard/a-directory', { maxBytes: 1024 })
+    );
 
     expect(outcome.error).toBeInstanceOf(GrantException);
     expect(outcome.error).not.toBeInstanceOf(NotFoundError);
     expect((outcome.error as GrantException).code).toBe('STORAGE_ERROR');
+  });
+});
+
+/**
+ * The cap is only worth having if it is applied before the read. `readFile` pulls the
+ * whole file into memory before returning, so "refused with PayloadTooLargeError" is
+ * not enough: the test has to show `readFile` was never called on the oversize file.
+ */
+describe('local download cap is applied before the file is read', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    syncBuiltinESMExports();
+  });
+
+  // The adapter reads through a namespace import of `fs/promises`, whose bindings
+  // follow the default export object once built-in exports are re-synced.
+  const spyOnReadFile = () => {
+    const spy = vi.spyOn(fsDefault, 'readFile');
+    syncBuiltinESMExports();
+    return spy;
+  };
+
+  it('does not call readFile on an object over maxBytes', async () => {
+    await adapter.upload(Buffer.alloc(4096, 1), 'download-cap/too-big.bin');
+    const readFile = spyOnReadFile();
+
+    await expect(
+      adapter.download('download-cap/too-big.bin', { maxBytes: 4095 })
+    ).rejects.toBeInstanceOf(PayloadTooLargeError);
+
+    expect(readFile).not.toHaveBeenCalled();
+  });
+
+  it('does call readFile on an object at exactly maxBytes (the spy sees the read path)', async () => {
+    // The control for the test above: without it, a spy that never attaches would
+    // make "not called" pass for the wrong reason.
+    await adapter.upload(Buffer.alloc(4096, 1), 'download-cap/just-right.bin');
+    const readFile = spyOnReadFile();
+
+    await adapter.download('download-cap/just-right.bin', { maxBytes: 4096 });
+
+    expect(readFile).toHaveBeenCalledTimes(1);
   });
 });

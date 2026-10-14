@@ -1,3 +1,5 @@
+import type { Readable } from 'node:stream';
+
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
@@ -8,6 +10,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type {
+  DownloadOptions,
   IFileStorageService,
   ILogger,
   StoredObjectMetadata,
@@ -16,9 +19,9 @@ import type {
   UploadUrlOptions,
   UploadUrlResult,
 } from '@grantjs/core';
-import { GrantException, NotFoundError } from '@grantjs/core';
+import { GrantException, NotFoundError, PayloadTooLargeError } from '@grantjs/core';
 
-import { assertUploadPath, assertUploadTarget } from '../upload-url';
+import { assertDownloadMaxBytes, assertUploadPath, assertUploadTarget } from '../upload-url';
 
 export interface S3Config {
   bucket: string;
@@ -172,11 +175,13 @@ export class S3StorageAdapter implements IFileStorageService {
     }
   }
 
-  async download(filePath: string): Promise<Buffer> {
+  async download(filePath: string, options: DownloadOptions): Promise<Buffer> {
     // Same guard as `getUploadUrl`, so the port's path contract is one contract.
     // S3 keys are flat and `..` means nothing to the store; this is parity, which
     // the shared suite can then assert without knowing the adapter.
     assertUploadPath(filePath);
+    assertDownloadMaxBytes(options.maxBytes);
+    const { maxBytes } = options;
 
     try {
       // The shared client, not `presignClient`: this is a real request carrying a
@@ -184,13 +189,45 @@ export class S3StorageAdapter implements IFileStorageService {
       const object = await this.s3Client.send(
         new GetObjectCommand({ Bucket: this.config.bucket, Key: filePath })
       );
+      const body = object.Body as (Readable & AsyncIterable<Uint8Array>) | undefined;
 
-      if (!object.Body) {
+      if (!body) {
         throw new Error('S3 returned no body for the object');
       }
 
-      return Buffer.from(await object.Body.transformToByteArray());
+      // The size comes from the GET response itself, not from an earlier HEAD: a
+      // HEAD-then-GET is a TOCTOU gap, and the task role can write this bucket. On
+      // an oversize object the body is destroyed without a byte of it being read.
+      if (object.ContentLength !== undefined && object.ContentLength > maxBytes) {
+        body.destroy();
+        throw new PayloadTooLargeError(
+          `Stored object exceeds the ${maxBytes}-byte download limit`,
+          maxBytes,
+          object.ContentLength
+        );
+      }
+
+      // Counted as it arrives even when `ContentLength` said it fits: the count is
+      // what is enforced, and it is the only guard where S3 reported no length.
+      const chunks: Buffer[] = [];
+      let received = 0;
+      for await (const chunk of body) {
+        received += chunk.length;
+        if (received > maxBytes) {
+          body.destroy();
+          throw new PayloadTooLargeError(
+            `Stored object exceeds the ${maxBytes}-byte download limit`,
+            maxBytes
+          );
+        }
+        chunks.push(Buffer.from(chunk));
+      }
+
+      return Buffer.concat(chunks);
     } catch (error) {
+      if (error instanceof PayloadTooLargeError) {
+        throw error;
+      }
       if (
         (error as { name?: string }).name === 'NoSuchKey' ||
         (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404

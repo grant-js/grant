@@ -1,5 +1,11 @@
 import { GetObjectCommand, type S3Client } from '@aws-sdk/client-s3';
-import { GrantException, noopLogger, NotFoundError, ValidationError } from '@grantjs/core';
+import {
+  GrantException,
+  noopLogger,
+  NotFoundError,
+  PayloadTooLargeError,
+  ValidationError,
+} from '@grantjs/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { S3StorageAdapter } from './index';
@@ -103,13 +109,37 @@ describe('S3 presigned upload URLs', () => {
 /**
  * `download()` against a mocked client. The S3 SDK is the thing under test only in
  * the integration lane; what is checkable offline is which client is used, what is
- * sent, and how each failure is classified.
+ * sent, how each failure is classified, and that the size cap is applied before the
+ * body is read.
  */
 describe('S3 download', () => {
   const shared = () => adapter['s3Client'] as S3Client;
   const presign = () => adapter['presignClient'] as S3Client;
+  const LIMIT = { maxBytes: 1024 };
 
-  const body = (bytes: Uint8Array) => ({ transformToByteArray: async () => bytes });
+  /**
+   * A body that records whether anything was read from it and whether it was
+   * destroyed. `chunks` is what it would yield if someone iterated it.
+   */
+  const trackedBody = (chunks: Uint8Array[]) => {
+    const state = { read: false, destroyed: false };
+    const body = {
+      destroy: () => {
+        state.destroyed = true;
+      },
+      transformToByteArray: async () => {
+        state.read = true;
+        return Buffer.concat(chunks);
+      },
+      async *[Symbol.asyncIterator]() {
+        for (const chunk of chunks) {
+          state.read = true;
+          yield chunk;
+        }
+      },
+    };
+    return { body, state };
+  };
   const httpError = (name: string, httpStatusCode: number) =>
     Object.assign(new Error(name), { name, $metadata: { httpStatusCode } });
 
@@ -118,22 +148,20 @@ describe('S3 download', () => {
   });
 
   it('returns the object body as a Buffer', async () => {
-    vi.spyOn(shared(), 'send').mockResolvedValue({
-      Body: body(Uint8Array.from([0, 1, 255])),
-    } as never);
+    const { body } = trackedBody([Uint8Array.from([0, 1]), Uint8Array.from([255])]);
+    vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body, ContentLength: 3 } as never);
 
-    const downloaded = await adapter.download('imports/p1/u1.json');
+    const downloaded = await adapter.download('imports/p1/u1.json', LIMIT);
 
     expect(Buffer.isBuffer(downloaded)).toBe(true);
     expect([...downloaded]).toEqual([0, 1, 255]);
   });
 
   it('sends a GetObject for the configured bucket and the requested key', async () => {
-    const send = vi
-      .spyOn(shared(), 'send')
-      .mockResolvedValue({ Body: body(new Uint8Array()) } as never);
+    const { body } = trackedBody([]);
+    const send = vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body } as never);
 
-    await adapter.download('imports/p1/u1.json');
+    await adapter.download('imports/p1/u1.json', LIMIT);
 
     const command = send.mock.calls[0]?.[0] as GetObjectCommand;
     expect(command).toBeInstanceOf(GetObjectCommand);
@@ -144,15 +172,93 @@ describe('S3 download', () => {
     // The presign client drops checksum calculation to keep presigned PUTs valid.
     // A real GET has no such need, and silently routing it there would be the same
     // "extend, do not replace" slip the presign client's own comment warns about.
-    const sharedSend = vi
-      .spyOn(shared(), 'send')
-      .mockResolvedValue({ Body: body(new Uint8Array()) } as never);
+    const { body } = trackedBody([]);
+    const sharedSend = vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body } as never);
     const presignSend = vi.spyOn(presign(), 'send');
 
-    await adapter.download('imports/p1/u1.json');
+    await adapter.download('imports/p1/u1.json', LIMIT);
 
     expect(sharedSend).toHaveBeenCalledTimes(1);
     expect(presignSend).not.toHaveBeenCalled();
+  });
+
+  describe('the size cap', () => {
+    it('refuses on ContentLength over maxBytes, destroying the body without reading it', async () => {
+      const { body, state } = trackedBody([Buffer.alloc(2048)]);
+      vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body, ContentLength: 2048 } as never);
+
+      const outcome = await adapter
+        .download('imports/p1/huge.json', LIMIT)
+        .catch((caught: unknown) => caught);
+
+      expect(outcome).toBeInstanceOf(PayloadTooLargeError);
+      expect((outcome as PayloadTooLargeError).limitBytes).toBe(1024);
+      expect((outcome as PayloadTooLargeError).receivedBytes).toBe(2048);
+      expect(state.destroyed).toBe(true);
+      expect(state.read).toBe(false);
+    });
+
+    it('accepts ContentLength of exactly maxBytes', async () => {
+      const { body } = trackedBody([Buffer.alloc(1024, 7)]);
+      vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body, ContentLength: 1024 } as never);
+
+      expect((await adapter.download('imports/p1/exact.json', LIMIT)).length).toBe(1024);
+    });
+
+    it('counts while streaming when S3 reports no ContentLength, and aborts at maxBytes', async () => {
+      // Four 400-byte chunks: the third pushes the running total to 1,200, past 1,024,
+      // so the fourth must never be pulled.
+      let pulled = 0;
+      const state = { destroyed: false };
+      const body = {
+        destroy: () => {
+          state.destroyed = true;
+        },
+        async *[Symbol.asyncIterator]() {
+          for (let i = 0; i < 4; i += 1) {
+            pulled += 1;
+            yield Buffer.alloc(400);
+          }
+        },
+      };
+      vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body } as never);
+
+      await expect(
+        adapter.download('imports/p1/unknown-length.json', LIMIT)
+      ).rejects.toBeInstanceOf(PayloadTooLargeError);
+
+      expect(state.destroyed).toBe(true);
+      expect(pulled).toBe(3);
+    });
+
+    it('accepts a streamed body of exactly maxBytes when no ContentLength is reported', async () => {
+      const { body } = trackedBody([Buffer.alloc(512), Buffer.alloc(512)]);
+      vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body } as never);
+
+      expect((await adapter.download('imports/p1/streamed.json', LIMIT)).length).toBe(1024);
+    });
+
+    it('enforces the streamed count even when ContentLength understated the size', async () => {
+      const { body } = trackedBody([Buffer.alloc(2048)]);
+      vi.spyOn(shared(), 'send').mockResolvedValue({ Body: body, ContentLength: 10 } as never);
+
+      await expect(adapter.download('imports/p1/liar.json', LIMIT)).rejects.toBeInstanceOf(
+        PayloadTooLargeError
+      );
+    });
+
+    it.each([0, -1, 1.5, Number.NaN])(
+      'refuses a maxBytes of %s before calling S3',
+      async (maxBytes) => {
+        const send = vi.spyOn(shared(), 'send');
+
+        await expect(adapter.download('imports/p1/u1.json', { maxBytes })).rejects.toBeInstanceOf(
+          ValidationError
+        );
+
+        expect(send).not.toHaveBeenCalled();
+      }
+    );
   });
 
   it.each([
@@ -161,7 +267,9 @@ describe('S3 download', () => {
   ])('maps %s to NotFoundError', async (_label, error) => {
     vi.spyOn(shared(), 'send').mockRejectedValue(error);
 
-    await expect(adapter.download('imports/p1/gone.json')).rejects.toBeInstanceOf(NotFoundError);
+    await expect(adapter.download('imports/p1/gone.json', LIMIT)).rejects.toBeInstanceOf(
+      NotFoundError
+    );
   });
 
   it.each([
@@ -173,7 +281,9 @@ describe('S3 download', () => {
     // would send an operator looking for an object that is there.
     vi.spyOn(shared(), 'send').mockRejectedValue(error);
 
-    const outcome = await adapter.download('imports/p1/u1.json').catch((caught: unknown) => caught);
+    const outcome = await adapter
+      .download('imports/p1/u1.json', LIMIT)
+      .catch((caught: unknown) => caught);
 
     expect(outcome).toBeInstanceOf(GrantException);
     expect(outcome).not.toBeInstanceOf(NotFoundError);
@@ -183,7 +293,9 @@ describe('S3 download', () => {
   it('fails as a STORAGE_ERROR when S3 returns no body', async () => {
     vi.spyOn(shared(), 'send').mockResolvedValue({} as never);
 
-    const outcome = await adapter.download('imports/p1/u1.json').catch((caught: unknown) => caught);
+    const outcome = await adapter
+      .download('imports/p1/u1.json', LIMIT)
+      .catch((caught: unknown) => caught);
 
     expect(outcome).toBeInstanceOf(GrantException);
     expect((outcome as GrantException).code).toBe('STORAGE_ERROR');
@@ -192,10 +304,12 @@ describe('S3 download', () => {
   it('refuses a malformed path before calling S3', async () => {
     const send = vi.spyOn(shared(), 'send');
 
-    await expect(adapter.download('imports/../other-tenant/u1.json')).rejects.toBeInstanceOf(
+    await expect(adapter.download('imports/../other-tenant/u1.json', LIMIT)).rejects.toBeInstanceOf(
       ValidationError
     );
-    await expect(adapter.download('/imports/p1/u1.json')).rejects.toBeInstanceOf(ValidationError);
+    await expect(adapter.download('/imports/p1/u1.json', LIMIT)).rejects.toBeInstanceOf(
+      ValidationError
+    );
 
     expect(send).not.toHaveBeenCalled();
   });
