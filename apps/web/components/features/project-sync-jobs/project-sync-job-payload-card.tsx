@@ -6,6 +6,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 
 import { FeatureModuleCard, JsonEditor } from '@/components/common';
 import { Button } from '@/components/ui/button';
+import { formatMebibytes, isByReferencePayload } from '@/lib/cdm-import';
 
 import { PROJECT_SYNC_JOB_CDM_EDITOR_HEIGHT } from './project-sync-job-display';
 import { ProjectSyncJobOnConflictBadge } from './project-sync-job-on-conflict-badge';
@@ -31,6 +32,10 @@ export function ProjectSyncJobPayloadCard({
   const tPayload = useTranslations('projectSyncJobs.viewDialog.payload');
   const tFields = useTranslations('projectSyncJobs.viewDialog.fields');
 
+  // A by-reference import's document lives in storage and is deleted when the job ends;
+  // the API answers with a stub, which is not something to show as if it were the CDM.
+  const byReference = isByReferencePayload(payload) ? payload : null;
+
   return (
     <FeatureModuleCard
       title={t('payload.title')}
@@ -46,7 +51,11 @@ export function ProjectSyncJobPayloadCard({
           >
             {tPayload('reload')}
           </Button>
-          <Button type="button" onClick={() => void onDownload()} disabled={loading || !payload}>
+          <Button
+            type="button"
+            onClick={() => void onDownload()}
+            disabled={loading || !payload || byReference !== null}
+          >
             {tPayload('download')}
           </Button>
         </div>
@@ -69,6 +78,10 @@ export function ProjectSyncJobPayloadCard({
           <Loader2 className="h-4 w-4 animate-spin" />
           {tPayload('loading')}
         </div>
+      ) : byReference ? (
+        <p className="py-4 text-sm text-muted-foreground">
+          {tPayload('byReference', { size: formatMebibytes(byReference.sizeBytes) })}
+        </p>
       ) : payload ? (
         <JsonEditor
           value={payload as object}

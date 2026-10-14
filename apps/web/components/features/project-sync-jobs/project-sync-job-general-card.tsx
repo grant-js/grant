@@ -19,6 +19,7 @@ import { CopyToClipboard, EntityDetailInfoTable, FeatureModuleCard } from '@/com
 import { formatTimestamp } from '@/lib/utils';
 
 import { ProjectSyncJobConfirmDestructiveBadge } from './project-sync-job-confirm-destructive-badge';
+import { ProjectSyncJobErrorMessage } from './project-sync-job-error-message';
 import { ProjectSyncJobModeBadge } from './project-sync-job-mode-badge';
 import { ProjectSyncJobOperationBadge } from './project-sync-job-operation-badge';
 import { ProjectSyncJobStatusBadge } from './project-sync-job-status-badge';
@@ -193,7 +194,7 @@ export function ProjectSyncJobGeneralCard({
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="font-medium">{tFields('errorMessage')}</p>
-              <p className="break-words">{job.errorMessage}</p>
+              <ProjectSyncJobErrorMessage errorMessage={job.errorMessage} />
             </div>
           </div>
         </div>
