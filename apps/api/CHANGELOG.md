@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.14.2
+
+### Patch Changes
+
+- acc8db1: Fix background jobs never being queued on AWS Lambda: the SQS enqueue behind project import/export (and the event relay) ran after the HTTP response was sent, so Lambda froze the environment before `SendMessage` completed and the job stayed `pending` forever. After-commit callbacks now run once the transaction has committed and are awaited, for at most `JOBS_AFTER_COMMIT_TIMEOUT_MS` (default 5000), before the response is flushed; a failed enqueue is logged with the job id. The in-process node-cron adapter's `enqueue()` now returns once the job is accepted instead of running it to completion inside the request.
+- @grantjs/schema@1.14.2
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.14.1
 
 ### Patch Changes
