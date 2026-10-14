@@ -790,6 +790,14 @@ const JOB_CONFIG = {
   /** Job scheduling provider: 'node-cron' | 'bullmq' */
   provider: env.JOBS_PROVIDER,
 
+  /**
+   * How long a request waits for its post-commit enqueues (an SQS SendMessage, a BullMQ add)
+   * before the response is sent anyway. They are awaited so a runtime that freezes after the
+   * response (Lambda) cannot cut them off; the bound keeps an unreachable queue from holding
+   * every mutation. Callbacks still pending at the bound keep running, best effort.
+   */
+  afterCommitTimeoutMs: env.JOBS_AFTER_COMMIT_TIMEOUT_MS,
+
   /** Redis connection for BullMQ (uses existing Redis config if available) */
   redis:
     CACHE_CONFIG.strategy === 'redis'

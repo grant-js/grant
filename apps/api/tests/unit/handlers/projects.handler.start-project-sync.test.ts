@@ -15,6 +15,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ProjectHandler } from '@/handlers/projects.handler';
 
+const { loggerError } = vi.hoisted(() => ({ loggerError: vi.fn() }));
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({ error: loggerError, warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+}));
+
 const projectId = '00000000-0000-4000-8000-000000000011';
 const accountId = '00000000-0000-4000-8000-000000000020';
 const userId = '30000000-0000-4000-8000-000000000099';
@@ -289,5 +294,120 @@ describe('ProjectHandler.startProjectSync', () => {
     ).rejects.toThrow(/same projectId/);
     expect(findActiveByJobKey).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
+  });
+
+  describe('enqueue completion (the response must not be sent before the SQS SendMessage ends)', () => {
+    const scope = { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` };
+
+    it('hands the after-commit runner a promise that settles only once the enqueue has', async () => {
+      create.mockResolvedValue(buildJob(null));
+      let finishEnqueue!: () => void;
+      enqueue.mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishEnqueue = resolve;
+        })
+      );
+      const deferred: Array<() => void | Promise<void>> = [];
+
+      const handler = createHandler({
+        jobsAdapter: { enqueue },
+        syncJobs: { create, findActiveByJobKey },
+        scheduleAfterCommit: (fn) => {
+          deferred.push(fn);
+        },
+      });
+      await handler.startProjectSync({
+        id: projectId,
+        scope,
+        input: buildInput(),
+        enqueuedById: userId,
+      });
+
+      let settled = false;
+      const running = Promise.resolve(deferred[0]?.()).then(() => {
+        settled = true;
+      });
+      await Promise.resolve();
+      expect(enqueue).toHaveBeenCalledTimes(1);
+      expect(settled).toBe(false);
+
+      finishEnqueue();
+      await running;
+      expect(settled).toBe(true);
+    });
+
+    it('awaits the enqueue itself when there is no after-commit hook (no transaction)', async () => {
+      create.mockResolvedValue(buildJob(null));
+      let enqueueFinished = false;
+      enqueue.mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        enqueueFinished = true;
+      });
+
+      const handler = createHandler({
+        jobsAdapter: { enqueue },
+        syncJobs: { create, findActiveByJobKey },
+      });
+      await handler.startProjectSync({
+        id: projectId,
+        scope,
+        input: buildInput(),
+        enqueuedById: userId,
+      });
+
+      expect(enqueueFinished).toBe(true);
+    });
+
+    it('logs the job id when the enqueue fails and still returns the committed job', async () => {
+      const job = buildJob(null);
+      create.mockResolvedValue(job);
+      const sendFailure = new Error('SQS SendMessage failed');
+      enqueue.mockRejectedValue(sendFailure);
+      const deferred: Array<() => void | Promise<void>> = [];
+
+      const handler = createHandler({
+        jobsAdapter: { enqueue },
+        syncJobs: { create, findActiveByJobKey },
+        scheduleAfterCommit: (fn) => {
+          deferred.push(fn);
+        },
+      });
+      const result = await handler.startProjectSync({
+        id: projectId,
+        scope,
+        input: buildInput(),
+        enqueuedById: userId,
+      });
+
+      expect(result).toBe(job);
+      await expect(Promise.resolve(deferred[0]?.())).resolves.toBeUndefined();
+      expect(loggerError).toHaveBeenCalledTimes(1);
+      expect(loggerError).toHaveBeenCalledWith(
+        expect.objectContaining({ jobRecordId: job.id, err: sendFailure })
+      );
+      // The payload (the CDM document) must never reach the log.
+      expect(JSON.stringify(loggerError.mock.calls)).not.toContain('viewer');
+    });
+
+    it('logs and does not throw when the enqueue fails with no after-commit hook', async () => {
+      const job = buildJob(null);
+      create.mockResolvedValue(job);
+      enqueue.mockRejectedValue(new Error('SQS down'));
+
+      const handler = createHandler({
+        jobsAdapter: { enqueue },
+        syncJobs: { create, findActiveByJobKey },
+      });
+
+      await expect(
+        handler.startProjectSync({
+          id: projectId,
+          scope,
+          input: buildInput(),
+          enqueuedById: userId,
+        })
+      ).resolves.toBe(job);
+      expect(loggerError).toHaveBeenCalledWith(expect.objectContaining({ jobRecordId: job.id }));
+    });
   });
 });

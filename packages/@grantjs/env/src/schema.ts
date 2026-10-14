@@ -395,6 +395,8 @@ export const envSchema = z.object({
    * is bounded well below the scale the CDM shape permits — the crossing is near
    * 10,700 entities.
    */
+  /** Upper bound (ms) a request waits for post-commit enqueues before the response is sent anyway. */
+  JOBS_AFTER_COMMIT_TIMEOUT_MS: optionalNumber(5000),
   JOBS_SYNC_RUNTIME: z.enum(['inprocess', 'container']).optional().default('inprocess'),
   /**
    * Which `project_sync_jobs` row the container entrypoint applies, and under which

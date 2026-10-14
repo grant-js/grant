@@ -250,4 +250,44 @@ describe('ProjectHandler.startProjectExport', () => {
       })
     );
   });
+
+  it('hands the after-commit runner a promise that settles only once the enqueue has', async () => {
+    const job = buildExportJob(projectDisplayName);
+    create.mockResolvedValue(job);
+    let finishEnqueue!: () => void;
+    enqueue.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishEnqueue = resolve;
+      })
+    );
+    const deferred: Array<() => void | Promise<void>> = [];
+
+    const handler = createHandler({
+      jobsAdapter: { enqueue },
+      syncJobs: { create, findActiveByJobKey },
+      projects: { getProjects },
+      scheduleAfterCommit: (fn) => {
+        deferred.push(fn);
+      },
+    });
+    await handler.startProjectExport({
+      id: projectId,
+      scope: { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` },
+      input: { version: 1 },
+      enqueuedById: userId,
+    });
+
+    expect(enqueue).not.toHaveBeenCalled();
+    let settled = false;
+    const running = Promise.resolve(deferred[0]?.()).then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(enqueue).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(false);
+
+    finishEnqueue();
+    await running;
+    expect(settled).toBe(true);
+  });
 });
