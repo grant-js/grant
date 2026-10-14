@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
   // tsc lives on `@typescript/native`. See decisions/0006.
   experimental: {
     useTypeScriptCli: false,
+    // `proxy.ts` matches `/storage/*`, and Next buffers a proxied request's body only up to
+    // 10 MB by default, forwarding a truncated body without an error. A CDM import upload
+    // on local storage (`PUT /storage/imports/...`, up to `CDM_UPLOAD_MAX_BYTES`, 64 MiB by
+    // default) would reach the API cut short and be refused as a length mismatch. Object
+    // stores and the gateway do not pass through here.
+    proxyClientMaxBodySize: '64mb',
   },
   // NFT traces CJS @swc/helpers; Node 22 may require ESM at runtime (next#97358).
   outputFileTracingIncludes: {

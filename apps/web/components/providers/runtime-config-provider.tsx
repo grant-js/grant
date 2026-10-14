@@ -9,6 +9,7 @@ const DEFAULTS: RuntimeConfig = {
   demoModeDbRefreshSchedule: '0 0 */2 * *',
   accountDeletionRetentionDays: '30',
   appVersion: 'dev',
+  cdmUploadMaxBytes: 64 * 1024 * 1024,
 };
 
 const RuntimeConfigContext = createContext<RuntimeConfig>(DEFAULTS);
@@ -24,10 +25,11 @@ interface ConfigPayload {
   demoModeDbRefreshSchedule?: string;
   accountDeletionRetentionDays?: string;
   appVersion?: string;
+  cdmUploadMaxBytes?: number;
 }
 
 /**
- * Fetches GET /api/config for demo mode, privacy retention, and app version.
+ * Fetches GET /api/config for demo mode, privacy retention, app version, and the CDM upload limit.
  * Enables CSR to get deploy-time config without baking env into the image.
  */
 export function RuntimeConfigProvider({ children }: RuntimeConfigProviderProps) {
@@ -50,6 +52,10 @@ export function RuntimeConfigProvider({ children }: RuntimeConfigProviderProps) 
           accountDeletionRetentionDays:
             data.accountDeletionRetentionDays ?? DEFAULTS.accountDeletionRetentionDays,
           appVersion: data.appVersion ?? DEFAULTS.appVersion,
+          cdmUploadMaxBytes:
+            typeof data.cdmUploadMaxBytes === 'number' && data.cdmUploadMaxBytes > 0
+              ? data.cdmUploadMaxBytes
+              : DEFAULTS.cdmUploadMaxBytes,
         };
         setRuntimeConfig(merged);
         setConfig(merged);

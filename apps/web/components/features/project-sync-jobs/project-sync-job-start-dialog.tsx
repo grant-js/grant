@@ -5,14 +5,16 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { CdmModeStrategy, CdmOnConflict, type SyncProjectInput } from '@grantjs/schema';
+import { type CdmModeInput, CdmModeStrategy, CdmOnConflict } from '@grantjs/schema';
 import { AlertCircle, FileJson, Loader2, ShieldAlert, X } from 'lucide-react';
 import { type FileRejection, useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 
 import { JsonFileDropzone, type JsonFileDropzoneProps } from '@/components/common';
+import { useRuntimeConfig } from '@/components/providers/runtime-config-provider';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -21,37 +23,35 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
-import { useScopeFromParams } from '@/hooks/common';
-import { useStartProjectSync } from '@/hooks/projects';
+import { useDirectUploadMessage, useScopeFromParams } from '@/hooks/common';
+import { useImportProjectSyncByReference } from '@/hooks/projects';
+import {
+  CDM_BROWSER_PARSE_MAX_BYTES,
+  type CdmPayloadShape,
+  countCdmEntities,
+  formatMebibytes,
+  isCdmPayloadShape,
+  readPayloadTooLarge,
+} from '@/lib/cdm-import';
+import { DirectUploadError } from '@/lib/direct-upload';
 import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const ACCEPT_JSON = {
   'application/json': ['.json'],
   'text/json': ['.json'],
 } as const;
 
-interface ParsedPayload {
-  filename: string;
-  size: number;
-  payload: SyncProjectInput;
-}
-
-function isParsedPayload(value: unknown): value is SyncProjectInput {
-  if (!value || typeof value !== 'object') return false;
-  const candidate = value as Record<string, unknown>;
-  if (typeof candidate.version !== 'number') return false;
-  if (!candidate.mode || typeof candidate.mode !== 'object') return false;
-  const mode = candidate.mode as Record<string, unknown>;
-  if (typeof mode.strategy !== 'string') return false;
-  if (!Array.isArray(candidate.roles)) return false;
-  if (!Array.isArray(candidate.users)) return false;
-  if (candidate.resources !== undefined && !Array.isArray(candidate.resources)) return false;
-  if (candidate.permissions !== undefined && !Array.isArray(candidate.permissions)) return false;
-  if (candidate.groups !== undefined && !Array.isArray(candidate.groups)) return false;
-  if (candidate.tags !== undefined && !Array.isArray(candidate.tags)) return false;
-  return true;
+interface SelectedFile {
+  file: File;
+  /**
+   * The document, when the file is small enough to parse in the browser
+   * (`CDM_BROWSER_PARSE_MAX_BYTES`). `null` above that: the file goes up unparsed and the
+   * worker is the only validator.
+   */
+  document: CdmPayloadShape | null;
 }
 
 function generateImportId(): string {
@@ -84,11 +84,18 @@ export function ProjectSyncJobStartDialog() {
   const setOpen = useProjectSyncJobsStore((state) => state.setStartDialogOpen);
   const prependJob = useProjectSyncJobsStore((state) => state.prependJob);
 
-  const [parsed, setParsed] = useState<ParsedPayload | null>(null);
+  const [selected, setSelected] = useState<SelectedFile | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Only used for a file too large to parse, where the document's own `mode` is unknown
+  // to the browser and the request needs one. `null` until the user chooses.
+  const [chosenStrategy, setChosenStrategy] = useState<CdmModeStrategy | null>(null);
+  const [chosenConfirmDestructive, setChosenConfirmDestructive] = useState(false);
 
-  const { startSync } = useStartProjectSync();
+  const { cdmUploadMaxBytes } = useRuntimeConfig();
+  const maxFileSizeLabel = formatMebibytes(cdmUploadMaxBytes);
+  const directUploadMessage = useDirectUploadMessage();
+  const { importByReference } = useImportProjectSyncByReference();
   const { isGranted: canStart, isLoading: grantLoading } = useGrant(
     ResourceSlug.ProjectSyncJob,
     ResourceAction.Update,
@@ -97,9 +104,11 @@ export function ProjectSyncJobStartDialog() {
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 
   const reset = useCallback(() => {
-    setParsed(null);
+    setSelected(null);
     setParseError(null);
     setSubmitting(false);
+    setChosenStrategy(null);
+    setChosenConfirmDestructive(false);
   }, []);
 
   const onDrop = useCallback(
@@ -108,7 +117,7 @@ export function ProjectSyncJobStartDialog() {
       if (rejected.length > 0) {
         const first = rejected[0]?.errors?.[0]?.code ?? '';
         if (first === 'file-too-large') {
-          setParseError(t('errors.fileTooLarge', { maxSize: MAX_FILE_SIZE / 1024 / 1024 }));
+          setParseError(t('errors.fileTooLarge', { maxSize: maxFileSizeLabel }));
         } else if (first === 'file-invalid-type') {
           setParseError(t('errors.invalidType'));
         } else {
@@ -119,38 +128,45 @@ export function ProjectSyncJobStartDialog() {
       const file = acceptedFiles[0];
       if (!file) return;
 
+      setChosenStrategy(null);
+      setChosenConfirmDestructive(false);
+
+      // Parsing is a preview and a source for the job name and the `entityCount` hint,
+      // worth doing only while it is cheap. Above the threshold the file is sent as it
+      // is and the worker validates it.
+      if (file.size > CDM_BROWSER_PARSE_MAX_BYTES) {
+        setSelected({ file, document: null });
+        return;
+      }
+
       const reader = new FileReader();
       reader.onerror = () => setParseError(t('errors.readFailed'));
       reader.onload = () => {
         try {
           const text = String(reader.result ?? '');
           const json = JSON.parse(text);
-          if (!isParsedPayload(json)) {
+          if (!isCdmPayloadShape(json)) {
             setParseError(t('errors.invalidShape'));
             return;
           }
-          setParsed({
-            filename: file.name,
-            size: file.size,
-            payload: json,
-          });
+          setSelected({ file, document: json });
         } catch {
           setParseError(t('errors.invalidJson'));
         }
       };
       reader.readAsText(file);
     },
-    [t]
+    [t, maxFileSizeLabel]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ACCEPT_JSON as unknown as Record<string, string[]>,
     maxFiles: 1,
-    maxSize: MAX_FILE_SIZE,
+    maxSize: cdmUploadMaxBytes,
     multiple: false,
-    noClick: !!parsed,
-    noKeyboard: !!parsed,
+    noClick: !!selected,
+    noKeyboard: !!selected,
     disabled: grantLoading || !canStart || requiresEmailVerification,
   });
 
@@ -163,29 +179,36 @@ export function ProjectSyncJobStartDialog() {
     [submitting, setOpen, reset]
   );
 
+  const cdmDocument = selected?.document ?? null;
+
   const stats = useMemo(() => {
-    if (!parsed) return null;
-    const p = parsed.payload;
-    const apiKeyCount = p.users?.reduce((n, u) => n + (u.apiKeys?.length ?? 0), 0) ?? 0;
-    const jobName = typeof p.id === 'string' && p.id.trim() !== '' ? p.id.trim() : null;
-    const strategy = p.mode?.strategy;
-    const onConflict = p.mode?.onConflict ?? null;
-    const confirmDestructive = Boolean(p.mode?.confirmDestructive);
+    if (!cdmDocument) return null;
+    const apiKeyCount = (cdmDocument.users as Array<{ apiKeys?: unknown[] }>).reduce(
+      (n, u) => n + (Array.isArray(u?.apiKeys) ? u.apiKeys.length : 0),
+      0
+    );
+    const jobName =
+      typeof cdmDocument.id === 'string' && cdmDocument.id.trim() !== ''
+        ? cdmDocument.id.trim()
+        : null;
+    const strategy = cdmDocument.mode.strategy;
+    const onConflict = cdmDocument.mode.onConflict ?? null;
+    const confirmDestructive = Boolean(cdmDocument.mode.confirmDestructive);
     return {
-      version: p.version,
+      version: cdmDocument.version,
       strategy,
       onConflict,
       confirmDestructive,
       jobName,
-      roles: p.roles?.length ?? 0,
-      users: p.users?.length ?? 0,
+      roles: cdmDocument.roles.length,
+      users: cdmDocument.users.length,
       apiKeys: apiKeyCount,
-      groups: p.groups?.length ?? 0,
-      resources: p.resources?.length ?? 0,
-      permissions: p.permissions?.length ?? 0,
-      tags: p.tags?.length ?? 0,
+      groups: cdmDocument.groups?.length ?? 0,
+      resources: cdmDocument.resources?.length ?? 0,
+      permissions: cdmDocument.permissions?.length ?? 0,
+      tags: cdmDocument.tags?.length ?? 0,
     };
-  }, [parsed]);
+  }, [cdmDocument]);
 
   const strategyLabel = useMemo(() => {
     if (!stats?.strategy) return null;
@@ -202,20 +225,50 @@ export function ProjectSyncJobStartDialog() {
     return String(stats.onConflict);
   }, [stats?.onConflict, t]);
 
+  // A parsed file brings its own mode. An unparsed one needs the user's choice, and for
+  // `replace` the same explicit confirmation the server requires on the request.
+  const unparsedModeIncomplete =
+    selected !== null &&
+    selected.document === null &&
+    (chosenStrategy === null ||
+      (chosenStrategy === CdmModeStrategy.Replace && !chosenConfirmDestructive));
+
   const handleSubmit = useCallback(async () => {
-    if (!parsed || !scope) return;
+    if (!selected || !scope) return;
     setSubmitting(true);
     try {
-      const existingId = parsed.payload.id;
-      const id =
-        typeof existingId === 'string' && existingId.trim() !== ''
-          ? existingId.trim()
-          : generateImportId();
-      const input: SyncProjectInput = {
-        ...parsed.payload,
-        id,
-      };
-      const job = await startSync({ id: projectId, scope, input });
+      const { file, document: parsedDocument } = selected;
+
+      let mode: CdmModeInput;
+      let jobName: string;
+      let version: number | undefined;
+      let entityCount: number | undefined;
+      if (parsedDocument) {
+        mode = { ...parsedDocument.mode } as CdmModeInput;
+        jobName =
+          typeof parsedDocument.id === 'string' && parsedDocument.id.trim() !== ''
+            ? parsedDocument.id.trim()
+            : generateImportId();
+        version = parsedDocument.version;
+        entityCount = countCdmEntities(parsedDocument);
+      } else {
+        if (!chosenStrategy) return;
+        mode = {
+          strategy: chosenStrategy,
+          ...(chosenStrategy === CdmModeStrategy.Replace ? { confirmDestructive: true } : {}),
+        };
+        jobName = generateImportId();
+      }
+
+      const job = await importByReference({
+        id: projectId,
+        scope,
+        file,
+        jobName,
+        mode,
+        version,
+        entityCount,
+      });
       setOpen(false);
       reset();
       toast.success(tNotifications('startSuccess'));
@@ -228,13 +281,42 @@ export function ProjectSyncJobStartDialog() {
         prependJob(job);
       }
     } catch (error) {
-      toast.error(tNotifications('startError'), {
-        description: error instanceof Error ? error.message : undefined,
-      });
+      const tooLarge = readPayloadTooLarge(error);
+      if (tooLarge) {
+        // The API refused the size (at the upload URL or at the start). Say so, with the
+        // limit it reported, instead of the generic failure.
+        toast.error(
+          t('errors.fileTooLarge', {
+            maxSize: formatMebibytes(tooLarge.limitBytes ?? cdmUploadMaxBytes),
+          })
+        );
+      } else {
+        toast.error(tNotifications('startError'), {
+          description:
+            error instanceof DirectUploadError
+              ? directUploadMessage(error)
+              : error instanceof Error
+                ? error.message
+                : undefined,
+        });
+      }
     } finally {
       setSubmitting(false);
     }
-  }, [parsed, scope, projectId, prependJob, startSync, tNotifications, setOpen, reset]);
+  }, [
+    selected,
+    scope,
+    chosenStrategy,
+    projectId,
+    importByReference,
+    prependJob,
+    tNotifications,
+    setOpen,
+    reset,
+    t,
+    cdmUploadMaxBytes,
+    directUploadMessage,
+  ]);
 
   if (!scope) {
     return null;
@@ -265,14 +347,14 @@ export function ProjectSyncJobStartDialog() {
             <AlertTitle>{t('permissionDeniedTitle')}</AlertTitle>
             <AlertDescription>{t('permissionDeniedDescription')}</AlertDescription>
           </Alert>
-        ) : !parsed ? (
+        ) : !selected ? (
           <JsonFileDropzone
             getRootProps={getRootProps as JsonFileDropzoneProps['getRootProps']}
             getInputProps={getInputProps as JsonFileDropzoneProps['getInputProps']}
             isDragActive={isDragActive}
             activeLabel={t('dropzone.active')}
             idleLabel={t('dropzone.idle')}
-            hint={t('dropzone.hint')}
+            hint={t('dropzone.hint', { maxSize: maxFileSizeLabel })}
             browseLabel={t('dropzone.browse')}
             error={parseError}
           />
@@ -282,10 +364,13 @@ export function ProjectSyncJobStartDialog() {
               <div className="flex min-w-0 flex-1 items-start gap-3 overflow-hidden">
                 <FileJson className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="block min-w-0 truncate text-sm font-medium" title={parsed.filename}>
-                    {parsed.filename}
+                  <p
+                    className="block min-w-0 truncate text-sm font-medium"
+                    title={selected.file.name}
+                  >
+                    {selected.file.name}
                   </p>
-                  <p className="text-xs text-muted-foreground">{formatBytes(parsed.size)}</p>
+                  <p className="text-xs text-muted-foreground">{formatBytes(selected.file.size)}</p>
                 </div>
               </div>
               <Button
@@ -299,6 +384,49 @@ export function ProjectSyncJobStartDialog() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
+            {!selected.document && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {t('largeFile.note', { threshold: formatMebibytes(CDM_BROWSER_PARSE_MAX_BYTES) })}
+                </p>
+                <div className="space-y-2">
+                  <Label id="cdm-import-strategy-label">{t('summary.strategyLabel')}</Label>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    aria-labelledby="cdm-import-strategy-label"
+                    value={chosenStrategy ?? ''}
+                    onValueChange={(value) => {
+                      setChosenStrategy(value ? (value as CdmModeStrategy) : null);
+                      setChosenConfirmDestructive(false);
+                    }}
+                    className="justify-start"
+                  >
+                    <ToggleGroupItem value={CdmModeStrategy.Merge}>
+                      {t('summary.strategy.merge')}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value={CdmModeStrategy.Replace}>
+                      {t('summary.strategy.replace')}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                  <p className="text-xs text-muted-foreground">{t('largeFile.modeHint')}</p>
+                </div>
+                {chosenStrategy === CdmModeStrategy.Replace ? (
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="cdm-import-confirm-destructive"
+                      checked={chosenConfirmDestructive}
+                      onCheckedChange={(value) => setChosenConfirmDestructive(value === true)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="cdm-import-confirm-destructive" className="leading-snug">
+                      {t('largeFile.confirmDestructive')}
+                    </Label>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {stats && (
               <div className="space-y-4">
@@ -399,7 +527,12 @@ export function ProjectSyncJobStartDialog() {
             type="button"
             onClick={handleSubmit}
             disabled={
-              !parsed || submitting || !canStart || requiresEmailVerification || grantLoading
+              !selected ||
+              unparsedModeIncomplete ||
+              submitting ||
+              !canStart ||
+              requiresEmailVerification ||
+              grantLoading
             }
           >
             {submitting ? t('submitting') : t('submit')}

@@ -16,6 +16,10 @@ router.get('/', (_req: Request, res: Response) => {
     demoModeDbRefreshSchedule: config.demoMode.dbRefreshSchedule,
     accountDeletionRetentionDays: String(config.privacy.accountDeletionRetentionDays),
     appVersion: config.app.version,
+    // The largest CDM import document this deployment will take by reference, so the web
+    // dropzone refuses what the upload URL would refuse instead of carrying its own copy
+    // of the number (ADR 0009).
+    cdmUploadMaxBytes: config.storage.cdmImport.maxBytes,
   });
 });
 
