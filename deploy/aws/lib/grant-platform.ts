@@ -748,6 +748,10 @@ export class GrantPlatform extends Construct {
         // and staying out avoids ENI attachment on every cold start.
         environment: {
           APP_URL: props.appUrl,
+          // The provider the API runs with, so the web app can tell it serves no `/storage`.
+          // CloudFront has no behaviour for that path on this target, so it lands on the web
+          // function, whose rewrite to a sibling API would fail with a 500 (`proxy.ts`).
+          STORAGE_PROVIDER: this.env.STORAGE_PROVIDER,
           ...props.web.env,
         },
         memorySize: props.web.memorySize,

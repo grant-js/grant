@@ -162,3 +162,20 @@ describe('the web function stays out of the VPC', () => {
     expect((web[0].Properties as { VpcConfig?: unknown }).VpcConfig).toBeUndefined();
   });
 });
+
+describe('the web function knows the storage provider', () => {
+  it('is told the provider the API runs with, so /storage is answered 404 rather than proxied', () => {
+    // `/storage` has no CloudFront behaviour on this target (`behaviours.ts`), so it reaches
+    // the web function, which has no API beside it to proxy to. `apps/web/proxy.ts` answers
+    // 404 for a non-local provider; it can only do that if it is told.
+    const template = build();
+    const web = Object.values(template.findResources('AWS::Lambda::Function')).filter((f) =>
+      JSON.stringify((f.Properties as { Code?: unknown }).Code ?? '').includes('grant/web')
+    );
+
+    expect(web).toHaveLength(1);
+    const variables = (web[0].Properties as { Environment: { Variables: Record<string, unknown> } })
+      .Environment.Variables;
+    expect(variables.STORAGE_PROVIDER).toBe('s3');
+  });
+});

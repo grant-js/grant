@@ -42,9 +42,17 @@ const ENV: Record<string, string> = {
   SECURITY_ENABLE_RATE_LIMIT: 'false',
 };
 
-async function boot() {
+const S3_ENV: Record<string, string> = {
+  STORAGE_PROVIDER: 's3',
+  STORAGE_S3_BUCKET: 'unused-test-bucket',
+  STORAGE_S3_REGION: 'eu-central-1',
+  STORAGE_S3_ACCESS_KEY_ID: 'test-access-key',
+  STORAGE_S3_SECRET_ACCESS_KEY: 'test-secret-key',
+};
+
+async function boot(overrides: Record<string, string> = {}) {
   vi.resetModules();
-  for (const [key, value] of Object.entries(ENV)) {
+  for (const [key, value] of Object.entries({ ...ENV, ...overrides })) {
     vi.stubEnv(key, value);
   }
   const { createApp } = await import('@/create-app');
@@ -126,4 +134,39 @@ describe('createApp: PUT and GET /storage', () => {
       await shutdown.closeDatabase();
     }
   }, 30_000);
+});
+
+describe('createApp: /storage on the S3 provider', () => {
+  // Nothing mounts `/storage` here, so it is an unknown path like any other. The AWS target
+  // never routes it to the API; this holds that the API itself answers 404, with nothing
+  // in the body that names the bucket or any stored object, if something does.
+  it.each([
+    ['GET', 'imports/projects/00000000-0000-4000-8000-000000000011/u-1.json'],
+    ['GET', 'users/9/avatar.png'],
+    [
+      'PUT',
+      'imports/projects/00000000-0000-4000-8000-000000000011/u-1.json?exp=1&len=2&ct=application%2Fjson&sig=x',
+    ],
+  ])(
+    'answers 404 to %s /storage/%s',
+    async (method, key) => {
+      const { app, shutdown } = await boot(S3_ENV);
+
+      try {
+        const url = `/storage/${key}`;
+        const res =
+          method === 'PUT'
+            ? await request(app).put(url).set('Content-Type', 'application/json').send('{}')
+            : await request(app).get(url);
+
+        expect(res.status).toBe(404);
+        expect(res.text).not.toContain('unused-test-bucket');
+      } finally {
+        await shutdown.stopApollo();
+        await shutdown.disconnectCache();
+        await shutdown.closeDatabase();
+      }
+    },
+    30_000
+  );
 });
