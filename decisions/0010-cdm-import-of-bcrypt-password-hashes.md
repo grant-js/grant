@@ -70,23 +70,37 @@ object that is deleted when its job ends (ADR 0009).
 3. **Stored where login reads it.** The hash is written to `providerData.hashedPassword`, the
    field and shape `changePassword` writes, so `auth.handler.ts` login works unchanged. Beside it
    the import writes **`providerData.passwordSource: 'cdm-import'`**, a provenance marker.
-4. **Ownership is forward-only: the legacy system owns an imported credential until a Grant-side
-   change.** While the marker is present, a later import of the same project owns the
-   credential: a **different** hash replaces it (`passwordsUpdated`), an **identical** hash is a
-   no-op (`passwordsUnchanged`). A user who changes their legacy password after the first import
-   must not keep the stale hash in Grant for ever. **Every Grant-side set, change or reset
-   removes the marker** (`changePassword` and `resetPassword` in
-   `user-authentication-methods.service.ts`, the only two paths that write `hashedPassword` to
-   an existing method; there is no administrator path), so ownership passes to Grant for good
-   and imports never touch the credential again. A password with no marker (set in Grant before
-   any import) is never overwritten (`passwordsSkippedExisting`). **An import never deletes a
-   credential**: an absent `password` leaves the stored one alone.
+4. **Ownership is forward-only: the legacy system owns an imported credential during the
+   unverified migration window; verification, or any Grant-side change, hands it to Grant.**
+   While the marker is present **and the email method is unverified**, a later import of the same
+   project owns the credential: a **different** hash replaces it (`passwordsUpdated`), an
+   **identical** hash is a no-op (`passwordsUnchanged`). A user who changes their legacy password
+   after the first import must not keep the stale hash in Grant for ever.
+   - **Verification is the handover.** Once the owner proves the mailbox (for example through the
+     project OAuth magic link, which sets `isVerified: true` and leaves the marker), the
+     credential is Grant's exactly as after a password change: an import skips it and counts
+     `passwordsSkippedExisting`, writes nothing, whatever the marker says.
+   - **Every Grant-side set, change or reset removes the marker** (`changePassword` and
+     `resetPassword` in `user-authentication-methods.service.ts`, the only two paths that write
+     `hashedPassword` to an existing method; there is no administrator path), so ownership passes
+     to Grant and imports never touch the credential again.
+   - A password with no marker (set in Grant before any import) is never overwritten
+     (`passwordsSkippedExisting`). **An import never deletes a credential**: an absent
+     `password` leaves the stored one alone.
+   - **Cost, accepted:** a user who verified and then rotated their password only in the legacy
+     system is not re-synchronized. They have a Grant login, and the recovery path is Grant's
+     `resetPassword` or `changePassword`.
 5. **Which identities an import may write a credential to.** The credential is global, so the
    project's document may only write one it has a claim to:
    - an identity **the import creates**, or
    - one **an earlier import of this project created** (the user carries this project's
-     `metadata.cdmImport`) that is **unverified and has no password**, or whose credential is
-     import-marked, for replacement under rule 4.
+     `metadata.cdmImport`) whose email method is **unverified** and either has no password or
+     carries an import-marked one (replacement under rule 4), and
+   - only ever through an **Email** method: an identity found through GitHub or Google is a real
+     account that no import created, so it is skipped and its OAuth `providerData` is never
+     written (the passwordless Email method an import adds beside a GitHub identity stays
+     passwordless).
+
      Everything else is left untouched and counted in `passwordsSkippedExisting`, with one
      aggregate warning on the result: a user who registered in Grant, signed in with GitHub or
      Google, was provisioned by another project, or verified the address. Without this rule a
@@ -169,8 +183,8 @@ Not built here; this is the shape the slice is held to.
 
 ## Consequences
 
-- The legacy system owns an imported credential until the user sets, changes or resets the
-  password in Grant. From then on Grant owns it. An adopter should stop re-importing
+- The legacy system owns an imported credential until the owner verifies the address or sets,
+  changes or resets the password in Grant. From then on Grant owns it. An adopter should stop re-importing
   credentials once project apps sign in through Grant.
 - An adopter whose ETL already wrote `passwordHash` into metadata has copies in
   `project_users.metadata` and in later exports. Grant does not scrub what it was sent; the
@@ -200,14 +214,12 @@ Not built here; this is the shape the slice is held to.
    credential adds that they can sign in to the **platform** while the verification window is
    open. Mitigations: the method is unverified, the window is bounded, and the real owner
    recovers through password reset, which clears the marker and invalidates sessions.
-   Second residual, **open for the reviewer**: rule 4 lets a project administrator replace an
-   import-marked credential even after the owner verified the address (for example through the
-   magic link) and never changed the password in Grant. That is what forward-only ownership means
-   (the legacy system stays authoritative), but it also means the administrator can set a known
-   password on a verified global account that the import created. The alternative is to refuse
-   replacement once the method is verified, at the cost that a user who verified and then changed
-   their legacy password is no longer synchronized. This record keeps the first behaviour as
-   decided and asks the review to confirm it.
+   Second point, **decided**: replacement of an import-marked credential stops at verification.
+   Left open, a project administrator could set a known password on a verified global account the
+   import created (the owner verified through the magic link and never changed the password in
+   Grant), which is the takeover this record exists to prevent. Rule 4 therefore skips a verified
+   method. The cost is stated there: a user who verified and then rotated only the legacy password
+   is not re-synchronized, and recovers through Grant's reset or change.
    Also noted, and not introduced here: the email lookup used to find an existing identity
    (`findByEmail`) matches with `ILIKE`, so `_` and `%` in an imported address act as wildcards;
    the credential rules above still compare the exact address against the project's own

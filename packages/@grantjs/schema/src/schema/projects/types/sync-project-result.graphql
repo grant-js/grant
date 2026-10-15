@@ -31,8 +31,9 @@ type SyncProjectResult {
   passwordsUnchanged: Int!
   """
   Users whose `password` hash was not stored because the credential or the identity is
-  not the import's to write: a password set in Grant, or an identity that already
-  existed and was not created by an earlier import of this project.
+  not the import's to write: a password set in Grant, an address the owner has verified,
+  or an identity that already existed and was not created by an earlier import of this
+  project.
   """
   passwordsSkippedExisting: Int!
   resourcesCreated: Int!

@@ -153,7 +153,14 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         );
       }
       if (row.password) {
-        await this.applyPasswordToExistingMethod(ctx, row, existingAuthMethod, tx);
+        // Only an Email method is ever a target. An identity found through GitHub or Google
+        // is a real account that was not created by an import, so it is never this import's
+        // to write to (the Email method added above for GitHub stays passwordless).
+        if (existingAuthMethod.provider === UserAuthenticationMethodProvider.Email) {
+          await this.applyPasswordToExistingMethod(ctx, row, existingAuthMethod, tx);
+        } else {
+          ctx.result.passwordsSkippedExisting += 1;
+        }
       }
       this.recordProducedUser(ctx, row.externalKey, existingAuthMethod.userId);
       return;
@@ -213,8 +220,9 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
    * password onto it would let a project administrator sign in as that person.
    *
    * Within that claim, ownership is forward-only. An import-sourced credential belongs to
-   * the importing system, so a different hash replaces it and an identical one is a no-op.
-   * A credential set in Grant (no marker) is never touched. An absent `password` never
+   * the importing system only while the address is unverified: then a different hash
+   * replaces it and an identical one is a no-op. A credential set in Grant (no marker), or
+   * any credential on a verified method, is never touched. An absent `password` never
    * reaches this method, so an import never deletes a credential.
    */
   private async applyPasswordToExistingMethod(
@@ -230,9 +238,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         ? providerData.hashedPassword
         : null;
 
-    const isEmailMethod = method.provider === UserAuthenticationMethodProvider.Email;
     const provisionedByThisProject =
-      isEmailMethod &&
       (await this.userRepository.findUserIdByCdmImport(
         { projectId: ctx.projectId, kind: 'user', externalKey: row.externalKey },
         tx
@@ -253,6 +259,12 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     }
 
     if (providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY] !== PASSWORD_SOURCE_CDM_IMPORT) {
+      ctx.result.passwordsSkippedExisting += 1;
+      return;
+    }
+    // Verification is the handover: once the owner has proved the mailbox, Grant owns the
+    // credential exactly as after changePassword or resetPassword, whatever the marker says.
+    if (method.isVerified) {
       ctx.result.passwordsSkippedExisting += 1;
       return;
     }

@@ -3616,8 +3616,9 @@ export type SyncProjectResult = {
   passwordsImported: Scalars['Int']['output'];
   /**
    * Users whose `password` hash was not stored because the credential or the identity is
-   * not the import's to write: a password set in Grant, or an identity that already
-   * existed and was not created by an earlier import of this project.
+   * not the import's to write: a password set in Grant, an address the owner has verified,
+   * or an identity that already existed and was not created by an earlier import of this
+   * project.
    */
   passwordsSkippedExisting: Scalars['Int']['output'];
   /** Users whose imported credential already equalled the hash in the document. */
@@ -4136,12 +4137,13 @@ export type UserCdmInput = {
    * method; any other resolver is a validation error.
    *
    * Ownership is forward-only. An imported credential is marked as imported and stays
-   * owned by the importing system: a later import of this project with a different
-   * hash replaces it, an identical one changes nothing. Once the password is set,
-   * changed or reset in Grant the marker is gone and imports never touch it again.
-   * A credential is written only for an identity the import creates, or one an earlier
-   * import of this project created that nobody has verified or given a password since;
-   * any other existing identity is left untouched. An absent `password` never removes a
+   * owned by the importing system while the email is unverified: a later import of this
+   * project with a different hash replaces it, an identical one changes nothing. Once the
+   * owner verifies the address, or the password is set, changed or reset in Grant, Grant owns
+   * it and imports never touch it again. A credential is written only for an identity the
+   * import creates, or one an earlier import of this project created whose email is still
+   * unverified; any other existing identity, including one found through GitHub or Google,
+   * is left untouched. An absent `password` never removes a
    * stored credential. See `SyncProjectResult` for the counters.
    */
   password?: InputMaybe<CdmPasswordInput>;

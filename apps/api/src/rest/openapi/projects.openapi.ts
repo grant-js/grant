@@ -313,11 +313,12 @@ top-level \`cdmImport\` key in importer metadata).
 A user identified by \`key.findBy: "email"\` may carry \`password: { algorithm: "bcrypt", hash }\`, an
 existing bcrypt hash (\`$2a$\`, \`$2b$\` or \`$2y$\`, cost 4 to 15) such as Go's
 \`bcrypt.GenerateFromPassword\` writes. It is stored as the user's email password credential, where
-platform login verifies it, and is marked as imported: the importing system owns it until the
-password is set, changed or reset in Grant, after which an import never touches it. A later import
-with a different hash replaces an imported credential; an absent \`password\` never deletes one.
-A credential is only written for an identity the import creates, or one an earlier import of
-this project created that nobody has verified or given a password since. The result counts
+platform login verifies it, and is marked as imported: the importing system owns it while the
+email is unverified, and a later import with a different hash replaces it. Once the owner verifies the
+address, or the password is set, changed or reset in Grant, an import never touches it again. An absent
+\`password\` never deletes one. A credential is only written for an identity the import creates, or one
+an earlier import of this project created whose email is still unverified (never to one found
+through GitHub or Google). The result counts
 \`passwordsImported\`, \`passwordsUpdated\`, \`passwordsUnchanged\` and \`passwordsSkippedExisting\`.
 A \`password\` on any other user, or an invalid hash, is a validation error that never echoes the
 hash. The hash is never kept in metadata, search tokens, audit values or events, is removed
