@@ -151,7 +151,11 @@ the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, 
   change needs the current password when one exists and is a first set when none does
   (`user-authentication-methods.service.ts:821-836`), and both revoke platform sessions. The reset
   OTP stays in the Email method's `providerData` (`:660,693`): it is a mailbox-proof token, not a
-  credential.
+  credential. **But it is stored in plain text and found by scanning**: `resetPassword` loads
+  **every** Email method and compares each `passwordResetOtp.token` in a loop
+  (`user-authentication-methods.service.ts:681-697`). Slice 2's reset rewrite **looks tokens up
+  by hash** (store a hash of the token, query by it, compare in constant time) instead of
+  scanning and holding the token readable.
 - **`hasPassword`** on the Email method becomes "a platform credential exists" (the resolver and
   `authMethodHasPassword`, `auth-method-public.lib.ts:5-18`, change, the field does not).
 - **The verification window** (`auth.handler.ts:460-467`) is a property of the **Email method's
@@ -185,8 +189,16 @@ the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, 
     (`rate-limit.middleware.ts:112-125`), so the per-address limit should be added to it too.
   - **It is also the console's recovery path when a password is locked** (slice 7), which is why
     it lands first.
-  - **Eligibility**: see open question 1; recommended, only identities that already have an
-    account or an organization membership.
+  - **Eligibility**: **anyone with an existing identity**, the same as any other method. The
+    link signs the person in; what they reach is decided by the closed-install rule, not by the
+    magic link. When public sign-up is off, a console sign-in by **any method** never creates a
+    Personal account for an identity that has none (bootstrap and a valid invitation excepted):
+    the person is signed in **account-less** and reaches only their own settings (profile,
+    security, preferences, notifications, privacy, project memberships), and account creation is
+    refused for them while sign-up is off. That rule is fixed upstream, separately, in the branch
+    `fix/closed-install-platform-access` (PR number to follow), and **is a prerequisite of slice
+    6**: without it the magic link would hand an imported, account-less identity the Personal
+    account that `login` creates today (`auth.handler.ts:496`).
   - **Reused from the project-app magic link** (platform-scoped, so a different callback and a
     session): the one-time token kept in the cache and consumed once
     (`project-oauth.handler.ts:543-559,675`, a platform key prefix and TTL), the mail send
@@ -286,7 +298,7 @@ signs in by email), resolved at step 1 of § 1. Other identifiers are a follow-u
   magic link and OAuth, `project-oauth.handler.ts:758-760`).
 - **`email_verified`** is **not a Grant-side control**. No such claim exists in `apps/api/src`;
   project-app tokens carry no verification state and are treated as verified
-  (`docs/architecture/security.md`, token table). Whether to expose one is open question 2, and
+  (`docs/architecture/security.md`, token table). Whether to expose one is open question 1, and
   nothing here relies on it.
 
 _Alternatives considered:_
@@ -418,7 +430,8 @@ hash that still carried a leftover marker.
 2. **Platform cut-over: one deployable unit** (one PR, or a stack merged atomically): the data
    migration of § 7, platform register, connect, login, change and reset reading and writing the
    platform credential, `hasPassword`, **and** the import ceasing to write the global slot and
-   the marker handling removed from `changePassword` and `resetPassword`. Tests assert a migrated
+   the marker handling removed from `changePassword` and `resetPassword`, whose rewrite also
+   moves the reset token to a **lookup by hash** (§ 3). Tests assert a migrated
    hash still logs in, registration and reset write the credential, and an unverified `cdm-import`
    hash is not carried.
 3. **Import writes project credentials** (§ 4): the step after assignment, the apply-time
@@ -439,8 +452,9 @@ hash that still carried a leftover marker.
    project.
 6. **Platform sign-in: magic link and UI.** The console magic-link request and callback
    endpoints (§ 3), the per-IP and per-address limits, the platform session hand-off, and the
-   "Send me a magic link" link with i18n. **Must land before slice 7.** It adds routes and a
-   link, no change to the existing form.
+   "Send me a magic link" link with i18n. **Prerequisites:** the upstream closed-install fix
+   (`fix/closed-install-platform-access`, § 3), and it **must land before slice 7**. It adds
+   routes and a link, no change to the existing form.
 7. **Enable the platform lockout** (own step, using the unread `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`
    and `AUTH_LOCKOUT_DURATION_MINUTES`): only once platform password reset **and** the console
    magic link are confirmed working on the new credential store, because they are the way back
@@ -499,29 +513,19 @@ routes.
 
 ## Open questions
 
-For **Ale**:
+All of Ale's questions are answered and folded into the sections above (the last, who may use
+the console magic link, by the closed-install fix of § 3). Still open, for **grant-agent**:
 
-1. **Who may use the console magic link.** An imported identity with no platform credential and
-   no account would otherwise reach an empty console (the first platform login creates a Personal
-   account for an identity that has none, `auth.handler.ts:496`). Recommended **yes, restrict**,
-   answering identically and sending nothing for anyone else. Careful with the wording: "at least
-   one organization membership" would also exclude a person who registered individually and owns
-   only a Personal account (the maintainer's own personal projects), so the recommended rule is
-   **an account or an organization membership**: either they registered on the platform or an
-   organization has them. Confirm that definition, or restrict to organization members only.
-
-For **grant-agent**:
-
-2. **Which token carries `email_verified`**, if any, and how a project app reads it (there is no
+1. **Which token carries `email_verified`**, if any, and how a project app reads it (there is no
    such claim in `apps/api/src`). Nothing in this record relies on one.
-3. **Apply-time membership check** (§ 4): which handler writes the project credential after
+2. **Apply-time membership check** (§ 4): which handler writes the project credential after
    assignment (a new handler ordered after `user-assignment.cdm-entity.ts`, or a step in it), and
    does any ETL send password rows for users that are not and will not be members?
-4. **Lockout store**: the cache used for OAuth state, or a table. Its shape, per `(scope, user)`
+3. **Lockout store**: the cache used for OAuth state, or a table. Its shape, per `(scope, user)`
    and guarding one credential, is decided; only the store is open. It gates slice 4 (the project provider) and slice 7.
-5. **Bulk revoke of a user's project grants** (§ 6): a repository method on
+4. **Bulk revoke of a user's project grants** (§ 6): a repository method on
    `project_oauth_grants` joined through `project_apps`, or a new column on the grant?
-6. **Other readers of `providerData.hashedPassword` and `hasPassword`**: this record found
+5. **Other readers of `providerData.hashedPassword` and `hasPassword`**: this record found
    `auth.handler.ts`, `user-authentication-methods.service.ts`, `auth-method-public.lib.ts`, the
    import entity and an e2e helper. Anything in the published SDKs or the web app that reads the
    field directly, or a user with two Email methods, would need handling in slice 2.
