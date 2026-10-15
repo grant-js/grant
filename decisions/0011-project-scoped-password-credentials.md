@@ -70,7 +70,7 @@ A table named and shaped like its siblings (`project_user_api_keys`, `project_us
 `project_id` + `user_id` columns, not a foreign key to `project_users.id`, which is replaced when
 a member is re-added). Schema file `project-user-credentials.schema.ts` in
 `packages/@grantjs/database/src/schemas`, with a `project_user_credential_audit_logs` table as
-`project-oauth-connections.schema.ts:51-70` does.
+`project-oauth-connections.schema.ts:39-61` does.
 
 | Column                                                   | Notes                                                                                                                                         |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -82,7 +82,7 @@ a member is re-added). Schema file `project-user-credentials.schema.ts` in
 
 Unique `(project_id, user_id) WHERE deleted_at IS NULL`; indexes on `project_id`, `user_id`,
 `deleted_at`. The same restrictive `tenant_isolation_policy` on `app.current_project_id` as
-`project-user-api-keys.schema.ts:42-52`, so the import, running as that tenant, sees exactly its
+`project-user-api-keys.schema.ts:44-49`, so the import, running as that tenant, sees exactly its
 own rows.
 
 **One credential per project, shared by its apps**, as 0008 chose for connections (per-app
@@ -198,7 +198,7 @@ sign-in and a pass over verified methods were all considered and dropped. Re-imp
 migration.
 
 **Residual copies.** The hash also lived in `user_authentication_methods.provider_data`, including
-its GIN index (`user-authentication-methods.schema.ts:36`), and in backups. Neither is scrubbed
+its GIN index (`user-authentication-methods.schema.ts:41`), and in backups. Neither is scrubbed
 here.
 
 ### 7. Security notes
