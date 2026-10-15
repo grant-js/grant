@@ -20,18 +20,12 @@ import {
  * `bcrypt.compareSync`, which platform login uses, reads all three and takes the cost from
  * the hash.
  */
-export const BCRYPT_HASH_PATTERN = /^\$2[aby]\$(\d{2})\$[./A-Za-z0-9]{53}$/;
+const BCRYPT_HASH_PATTERN = /^\$2[aby]\$(\d{2})\$[./A-Za-z0-9]{53}$/;
 
 export const BCRYPT_HASH_FORMAT_MESSAGE =
   'password.hash must be a bcrypt hash ($2a$, $2b$ or $2y$ prefix, two-digit cost, 60 characters)';
 
 export const BCRYPT_HASH_COST_MESSAGE = `password.hash cost must be between ${CDM_BCRYPT_MIN_COST} and ${CDM_BCRYPT_MAX_COST}`;
-
-/** The credential as a document carries it. */
-export interface CdmPasswordCredential {
-  algorithm: string;
-  hash: string;
-}
 
 /**
  * Why a hash is refused, or `null` when it is acceptable. The reason is a fixed string:
