@@ -28,6 +28,33 @@ export const CDM_BCRYPT_MAX_COST = 15;
 export const PASSWORD_SOURCE_PROVIDER_DATA_KEY = 'passwordSource' as const;
 export const PASSWORD_SOURCE_CDM_IMPORT = 'cdm-import' as const;
 
+/**
+ * `providerData.passwordSourceProjectId`: the project whose import wrote the marked
+ * `hashedPassword`. A credential written by v1.16.0 has no such key; its source is then the
+ * project that created the identity (`users.metadata.cdmImport.projectId`), the only project
+ * v1.16.0 ever wrote for (ADR 0010, Amendment).
+ */
+export const PASSWORD_SOURCE_PROJECT_ID_PROVIDER_DATA_KEY = 'passwordSourceProjectId' as const;
+
+/**
+ * `providerData.passwordConflict`: tombstone left when two projects of one organization
+ * imported different hashes for the same global identity. The hash is removed, so neither
+ * environment's password wins, and every later import skips the row. Setting or resetting a
+ * password in Grant clears it (ADR 0010, Amendment).
+ */
+export const PASSWORD_CONFLICT_PROVIDER_DATA_KEY = 'passwordConflict' as const;
+
+/**
+ * Removes every CDM import marker from an email method's `providerData` (the source, its
+ * project and the conflict tombstone), in place. A Grant-side set, change or reset calls it:
+ * the credential is Grant's from then on.
+ */
+export function clearCdmPasswordMarkers(providerData: Record<string, unknown>): void {
+  delete providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY];
+  delete providerData[PASSWORD_SOURCE_PROJECT_ID_PROVIDER_DATA_KEY];
+  delete providerData[PASSWORD_CONFLICT_PROVIDER_DATA_KEY];
+}
+
 /** What `/payload` and a finished job's stored payload show in place of an imported hash. */
 export const CDM_PASSWORD_HASH_REDACTED = '[redacted]' as const;
 

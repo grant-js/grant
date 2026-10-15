@@ -474,6 +474,25 @@ const syncProjectResultSchema = z.object({
   usersCreated: z.number(),
   userRolesAssigned: z.number(),
   projectUserApiKeysCreated: z.number(),
+  passwordsImported: z.number().openapi({
+    description:
+      'Users whose `password` hash was stored as their email credential for the first time.',
+  }),
+  passwordsUpdated: z.number().openapi({
+    description:
+      'Users whose imported credential was replaced because the same project sent a different hash.',
+  }),
+  passwordsUnchanged: z.number().openapi({
+    description: 'Users whose imported credential already equalled the hash in the document.',
+  }),
+  passwordsSkippedExisting: z.number().openapi({
+    description:
+      "Users whose `password` hash was not stored because the credential or the identity is not the import's to write: a password set in Grant, a verified address, or an existing identity that is not confined to the importing project's organization and was not created by an earlier import of this project.",
+  }),
+  passwordsSkippedConflict: z.number().openapi({
+    description:
+      'Users whose `password` hash was not stored because projects of the same organization imported different hashes for the same identity: the stored hash was removed and the user signs in through password reset. Later imports of the row count here too.',
+  }),
   tagsCreated: z.number(),
   projectTagsLinked: z.number(),
   roleTagsLinked: z.number(),

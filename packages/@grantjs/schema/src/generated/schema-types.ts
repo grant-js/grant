@@ -3615,10 +3615,17 @@ export type SyncProjectResult = {
   /** Users whose `password` hash was stored as their email credential for the first time. */
   passwordsImported: Scalars['Int']['output'];
   /**
+   * Users whose `password` hash was not stored because projects of the same organization
+   * imported different hashes for the same identity. The stored hash is removed and a
+   * conflict marker left, so neither environment's password wins and the user signs in
+   * through password reset; every later import skips the row and is counted here too.
+   */
+  passwordsSkippedConflict: Scalars['Int']['output'];
+  /**
    * Users whose `password` hash was not stored because the credential or the identity is
    * not the import's to write: a password set in Grant, an address the owner has verified,
-   * or an identity that already existed and was not created by an earlier import of this
-   * project.
+   * or an existing identity that is not confined to this project's organization and was not
+   * created by an earlier import of this project.
    */
   passwordsSkippedExisting: Scalars['Int']['output'];
   /** Users whose imported credential already equalled the hash in the document. */
@@ -4141,9 +4148,13 @@ export type UserCdmInput = {
    * project with a different hash replaces it, an identical one changes nothing. Once the
    * owner verifies the address, or the password is set, changed or reset in Grant, Grant owns
    * it and imports never touch it again. A credential is written only for an identity the
-   * import creates, or one an earlier import of this project created whose email is still
-   * unverified; any other existing identity, including one found through GitHub or Google,
-   * is left untouched. An absent `password` never removes a
+   * import creates, one this project's own import created, or an existing identity confined
+   * to this project's organization (every project and organization membership it has is in
+   * that organization, and it has at least one) whose email is still unverified; any other
+   * existing identity, including one found through GitHub or Google, is left untouched.
+   * When two projects of one organization import different hashes for the same identity, the
+   * stored hash is removed and the user signs in through password reset (a conflict, counted
+   * in `passwordsSkippedConflict`). An absent `password` never removes a
    * stored credential. See `SyncProjectResult` for the counters.
    */
   password?: InputMaybe<CdmPasswordInput>;

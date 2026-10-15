@@ -32,10 +32,17 @@ type SyncProjectResult {
   """
   Users whose `password` hash was not stored because the credential or the identity is
   not the import's to write: a password set in Grant, an address the owner has verified,
-  or an identity that already existed and was not created by an earlier import of this
-  project.
+  or an existing identity that is not confined to this project's organization and was not
+  created by an earlier import of this project.
   """
   passwordsSkippedExisting: Int!
+  """
+  Users whose `password` hash was not stored because projects of the same organization
+  imported different hashes for the same identity. The stored hash is removed and a
+  conflict marker left, so neither environment's password wins and the user signs in
+  through password reset; every later import skips the row and is counted here too.
+  """
+  passwordsSkippedConflict: Int!
   resourcesCreated: Int!
   permissionsCreated: Int!
   tagsCreated: Int!

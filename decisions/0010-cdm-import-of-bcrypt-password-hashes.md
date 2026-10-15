@@ -90,7 +90,10 @@ object that is deleted when its job ends (ADR 0009).
    - **Cost, accepted:** a user who verified and then rotated their password only in the legacy
      system is not re-synchronized. They have a Grant login, and the recovery path is Grant's
      `resetPassword` or `changePassword`.
-5. **Which identities an import may write a credential to.** The credential is global, so the
+5. **Which identities an import may write a credential to.** _Amended: the claim "an earlier
+   import of this project created it" is replaced by organization confinement, see
+   [Amendment: org-scoped eligibility and conflict handling](#amendment-org-scoped-eligibility-and-conflict-handling)._
+   The credential is global, so the
    project's document may only write one it has a claim to:
    - an identity **the import creates**, or
    - one **an earlier import of this project created** (the user carries this project's
@@ -202,7 +205,10 @@ Not built here; this is the shape the slice is held to.
 
 ## Security notes (for the security review)
 
-1. **Identity eligibility is the control against cross-tenant takeover.** CDM already lets a
+1. **Identity eligibility is the control against cross-tenant takeover** (the claim described
+   here was widened from "this project's" to "this organization's" by the
+   [Amendment](#amendment-org-scoped-eligibility-and-conflict-handling); the argument is the same).
+   CDM already lets a
    project administrator attach project membership to any global user by email. A credential is
    different: it is global, and with it the administrator could sign in as that user. The import
    therefore writes a credential only where it created the identity, or where an earlier import
@@ -251,12 +257,180 @@ Not built here; this is the shape the slice is held to.
 8. **Weak legacy hashes.** Cost 4 is accepted: it is the adopter's existing credential, and
    refusing it would block the migration. Rehash-on-login (b) is what upgrades it.
 
+## Amendment: org-scoped eligibility and conflict handling
+
+- **Date**: 2026-10-15
+- **Status**: Proposed, with the rest of this record
+- **Amends**: Decision (a) rules 4 and 5, rule 8 (the result counters), Security notes 1
+
+### Why
+
+Rule 5 let an import write a credential onto an existing identity only when **this project's**
+earlier import had created it. Measured on staging, that skips almost everyone. Identities that an
+import created before this version, or that a sibling project of the same organization created,
+are unverified and passwordless, but they are not "this project's": re-imports of the migrated
+users stored 1 of 173, 3 of 176, 9 of 199 and 290 of 451 passwords.
+
+Two facts about Grant shape the fix.
+
+- **Identities and their authentication methods are global.** One email is one identity is one
+  password, across every organization. On staging: 2,527 identities, 203 in more than one
+  project, **0 in more than one organization**.
+- **The legacy source can hold a different hash per environment for the same person**, and those
+  environments are separate projects of one organization. Both want to import a password into
+  the same global identity.
+
+### Decision
+
+1. **Eligibility is organization confinement, not project provenance.** An import may write a
+   credential onto an existing **Email** method when the user is **confined to the importing
+   project's organization**, namely
+   - every active project membership of the user (`project_users`, `deleted_at IS NULL`) is in a
+     project of that organization (`organization_projects`, `deleted_at IS NULL`), and
+   - every active organization membership (`organization_users`, `deleted_at IS NULL`) is that
+     organization, and
+   - the user has at least one membership in the importing organization, through a project or
+     directly, and
+   - the user has no GitHub or Google authentication method (see below).
+
+   "Provisioned by this project's import" (`users.metadata.cdmImport.projectId`) stays
+   **sufficient on its own**, so an identity v1.16.0 could already write is never excluded. The
+   importing project must belong to exactly one organization; with none or several, nothing is
+   confined and only that provenance rule applies. A project that belongs to another organization
+   as well as the importing one counts as outside.
+
+2. **The other guards do not change.** An identity found through GitHub or Google is skipped, a
+   **verified** Email method is never written, a credential without the `cdm-import` marker (set
+   in Grant) is never written, and an absent `password` never deletes anything. All count
+   `passwordsSkippedExisting`.
+3. **The credential records its source project.** A write stores
+   `providerData.passwordSourceProjectId` beside `passwordSource`. A marked credential that
+   v1.16.0 wrote has no such key; its source is the project that created the identity
+   (`metadata.cdmImport.projectId`), which is the only project v1.16.0 ever wrote for. With
+   neither, the source is unknown and counts as a different project.
+4. **Same source project, different hash**: replace, `passwordsUpdated`, as before. **Identical
+   hash, from any project**: `passwordsUnchanged`.
+5. **Different source project, different hash: a conflict.** The stored hash and
+   `passwordSourceProjectId` are removed, `passwordSource: 'cdm-import'` is kept, and
+   `passwordConflict: true` is written (the tombstone). It counts in the new
+   `passwordsSkippedConflict`. While the tombstone is present every later import, from any
+   project and with any hash, skips the row into `passwordsSkippedConflict`; it never rewrites
+   it. The tombstone is checked after eligibility and before anything else, but a **verified**
+   method with a marked credential is still skipped as Grant-owned, because verification is the
+   handover and an import never replaces a credential on a verified method.
+6. **Reset is the way out.** `changePassword` and `resetPassword` already replace `providerData`
+   whole and removed the marker; they now remove the whole set of import markers
+   (`passwordSource`, `passwordSourceProjectId`, `passwordConflict`) through one helper,
+   `clearCdmPasswordMarkers`. After a reset the credential is Grant's: a later import skips it
+   as `passwordsSkippedExisting`. Requesting a reset does not clear the tombstone; completing it
+   does.
+7. **The check is batched.** The staging import already runs about 806 s against a 900 s Lambda
+   ceiling, so confinement may not cost a query per row. Before the first row is applied, the
+   user provisioner resolves every email row that carries a password in one pass
+   (`IUserRepository.findCdmPasswordIdentities`): the importing project's organization, the
+   Email methods for all addresses, the users' GitHub and Google methods, and the two membership
+   tables, each as one `IN` query (chunked at 5,000 bound values, so a very large import costs a
+   few queries, never one per user). Eligibility is then decided in memory. This replaces the
+   per-row provenance query of v1.16.0 and adds nothing per row. Memberships are only counted
+   when rows are active, and the decision itself (`isConfinedToOrganization`) is a pure function.
+8. **Counters.** `SyncProjectResult` gains `passwordsSkippedConflict` (GraphQL, the completion
+   event and audit counters, and the REST `ProjectSyncJob.result` schema), with its own warning
+   beside the existing one. The REST result schema lacked **all** the password counters
+   (`passwordsImported`, `passwordsUpdated`, `passwordsUnchanged`, `passwordsSkippedExisting`),
+   so they are added with it.
+
+### Why organization confinement
+
+An import is **tenant-controlled input**: the administrator of one project decides what the
+document says. The credential it writes is **global**, so it is a way to sign in as someone, not
+a project-local attribute. The previous rule closed that by confining writes to identities the
+project had created, which is safe and useless once an organization has more than one project.
+The safe generalization is the next tenant boundary up: the organization is where an
+administrator already has authority over a person, and an identity that **no other organization
+relies on** is one whose owners are all under the same administrators. A global credential must
+not open an identity another organization relies on, and a membership elsewhere is the evidence
+that it does.
+
+The staging measurement says the cost is nil: no identity there spans two organizations, so
+confinement excludes nothing a migration needs while excluding every identity that could belong
+to another tenant by construction. The project is the wrong boundary because the environments of
+one source system are projects of one organization and the person is one identity.
+
+Two further choices follow from "a real account is not an import's to give a password".
+
+- **At least one membership.** An identity nobody in this organization relies on (no membership
+  here at all) is not confined: there is nothing to say it is this organization's. The cost is
+  that a document with `users` and no assignments leaves a membership-less identity that only the
+  project that created it can write, which is the v1.16.0 behaviour.
+- **No GitHub or Google method.** The first import adds a passwordless Email method beside an
+  OAuth identity. Without this rule, the second import would find that Email method first and,
+  for a user confined to one organization, write a password onto a person who signs in with
+  GitHub. The guard in rule 2 ("found through GitHub or Google") is therefore applied to the user,
+  not only to the method the lookup happens to return. It does not apply to an identity this
+  project's own import created, which v1.16.0 already allowed.
+
+The lookup that finds the identity matches addresses with `ILIKE` (Security notes 1), so `_` and
+`%` in an imported address are wildcards. Eligibility therefore requires that the method the
+lookup returned is the very Email method the batched resolution found for exactly this address
+(case-insensitive, no wildcards); a wildcard match is skipped, as before.
+
+The memberships are read **outside** the import transaction. The import runs as the restricted
+RLS role with the importing project as its tenant, and under that role `project_users` shows only
+that project's rows and `organization_users` only that organization's: a user who also belongs to
+another organization would look confined, which is exactly the case to catch. The reads use the
+application login role, like other system reads (docs/architecture/security.md, system bypass),
+change nothing and never leave the server. The consequence is that rows written earlier in the
+same import transaction are not seen; eligibility of an identity the import itself creates never
+depends on them.
+
+### Why a tombstone, and why order-independence beats first-claim
+
+When two environments of one organization send different hashes for one person, three outcomes
+are possible.
+
+- **First claim wins** (the credential keeps whichever project wrote first). The password a
+  person ends up with then depends on which import the ETL happened to run first, and the other
+  environment's users silently get the wrong one. It is deterministic only for a fixed schedule.
+- **Last write wins.** Every run flips it, and the credential is whichever environment imported
+  last.
+- **Neither wins (this decision).** The outcome is the same for A then B and B then A, and
+  nobody holds a password that is wrong for the environment they use. The failure is loud (a
+  counter and a warning, a user who cannot use the imported password) and recoverable by a flow
+  that already exists. What it costs: both environments' users for that person lose the imported
+  password and use reset, which is better than one of them using the other environment's.
+
+The tombstone keeps `passwordSource: 'cdm-import'` and drops the hash, so `hasPassword` is false
+and platform login has nothing to compare. It is a flag, not a lock: reset or change clears it
+and the credential is then Grant's. If the legacy systems later agree on one hash, nothing in
+Grant resolves the conflict automatically; the user resets, and the point of the decision is that
+a disagreement between two sources of truth is not something an import should settle.
+
+### Consequences
+
+- A migration of several environments into one organization now stores the password for the
+  users whose environments agree, and flags the users whose environments disagree.
+- An adopter should read `passwordsSkippedConflict` after a multi-environment migration; it
+  names exactly the people who need a reset.
+- A v1.16.0 credential is understood without a data migration, through the creating project.
+- The importing project must belong to one organization for confinement to apply; an
+  installation whose projects are not linked to an organization keeps the v1.16.0 behaviour.
+- **Client contract.** `grant-etl` reads these counters from the job result and must add
+  `passwordsSkippedConflict` to `GRANT_PASSWORD_COUNTER_KEYS`
+  (`packages/etl-shared/src/cdm/grant-result.ts`); until it does, the counter is dropped there.
+- Residual risk, unchanged in kind: a project administrator can still pre-claim an address that
+  has no Grant identity yet (Security notes 1). Confinement does not add to it: an identity
+  confined to the administrator's own organization is one the administrator's organization can
+  already add members to and remove them from.
+
 ## References
 
 - Import: `apps/api/src/lib/cdm/entities/user-provision.cdm-entity.ts`,
   `apps/api/src/lib/cdm/cdm-password.lib.ts`, `apps/api/src/lib/cdm/cdm-document.schemas.ts`
 - Marker cleared: `apps/api/src/services/user-authentication-methods.service.ts`
   (`changePassword`, `resetPassword`)
+- Amendment: `apps/api/src/lib/cdm/cdm-org-confinement.lib.ts` (the decision),
+  `apps/api/src/repositories/users.repository.ts` (`findCdmPasswordIdentities`, the batched reads),
+  `apps/api/src/constants/cdm-import.constants.ts` (`clearCdmPasswordMarkers`)
 - Payload: `apps/api/src/services/project-sync-job.service.ts` (`redactStoredPayload`, `getPayload`)
 - Contract: `packages/@grantjs/schema/src/schema/projects/inputs/sync-project-cdm.graphql`
 - Operator docs: `docs/core-concepts/cdm-import-export.md` § Password credentials

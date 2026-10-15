@@ -35,6 +35,7 @@ function baseResult(): SyncProjectResult {
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
     passwordsSkippedExisting: 0,
+    passwordsSkippedConflict: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
