@@ -1,5 +1,12 @@
 # @grantjs/client
 
+## 1.16.0
+
+### Patch Changes
+
+- Updated dependencies [bf408fb]
+  - @grantjs/schema@1.16.0
+
 ## 1.15.0
 
 ### Patch Changes
