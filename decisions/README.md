@@ -33,3 +33,4 @@ record _why_ it became that way.
 | [0008](./0008-per-project-oauth-connections.md)                   | Accepted | Per-project BYO OAuth connections for project-app social sign-in                                       |
 | [0009](./0009-cdm-import-by-reference.md)                         | Proposed | CDM import payloads may travel by reference through the presigned-upload port                          |
 | [0010](./0010-cdm-import-of-bcrypt-password-hashes.md)            | Proposed | CDM imports carry bcrypt password hashes into the credential store; project apps may sign in with them |
+| [0011](./0011-project-scoped-password-credentials.md)             | Proposed | Password credentials for project apps are stored per (user, project); amends 0010                      |
