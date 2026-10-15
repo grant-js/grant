@@ -417,6 +417,13 @@ a disagreement between two sources of truth is not something an import should se
 - **Client contract.** `grant-etl` reads these counters from the job result and must add
   `passwordsSkippedConflict` to `GRANT_PASSWORD_COUNTER_KEYS`
   (`packages/etl-shared/src/cdm/grant-result.ts`); until it does, the counter is dropped there.
+- **Concurrency.** Conflict detection reads the credential and writes it back without a row
+  lock, like every other writer of that field (Security notes 7). Two imports of sibling
+  projects that run at the same moment can both see no hash and both write one; the later write
+  wins and no conflict is recorded. The order-independence above holds for imports that do not
+  overlap, so an adopter loading several environments should run them one after another.
+- **Connection pool.** The batched reads use a second pooled connection while the import
+  transaction holds the first, so `DB_POOL_MAX` must be at least 2 (the default is 20).
 - Residual risk, unchanged in kind: a project administrator can still pre-claim an address that
   has no Grant identity yet (Security notes 1). Confinement does not add to it: an identity
   confined to the administrator's own organization is one the administrator's organization can
