@@ -76,6 +76,8 @@ function loose<T extends object>(defaults: Partial<Record<keyof T, unknown>> = {
       }
       return cache.get(prop);
     },
+    ownKeys: () => [...cache.keys()].filter((key): key is string => typeof key === 'string'),
+    getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
   });
 }
 
@@ -227,8 +229,10 @@ class World {
     { publish: vi.fn() } as never
   );
 
+  readonly importRepo = loose({ resolvePermission: { id: 'p', resourceId: 'r' } });
+
   importService(): ProjectImportService {
-    const importRepo = loose({ resolvePermission: { id: 'p', resourceId: 'r' } });
+    const importRepo = this.importRepo;
     const cache = {
       permissions: { delete: vi.fn(), keys: vi.fn().mockResolvedValue([]) },
       roles: { delete: vi.fn() },
@@ -539,6 +543,15 @@ describe('CDM import of bcrypt password hashes (ADR 0010)', () => {
       expect(world.calls.update).toEqual([]);
       expect(world.calls.create).toEqual([]);
       expect(world.methods).toHaveLength(1);
+      // The replace teardown ran (it asked the repository what to remove) and none of what it
+      // asked about is a user or an authentication method.
+      const teardownCalls = Object.keys(world.importRepo as object).length;
+      expect(teardownCalls).toBeGreaterThan(0);
+      expect(
+        Object.keys(world.importRepo as object).filter((name) =>
+          /user(?!.*(Tag|Group|Permission|ApiKey|Role))|authentication/i.test(name)
+        )
+      ).toEqual([]);
       expect(world.email.providerData.hashedPassword).toBe(GO_HASH);
       expect((await loginWith(world, EMAIL, GO_PASSWORD)).accessToken).toBe('access');
     });

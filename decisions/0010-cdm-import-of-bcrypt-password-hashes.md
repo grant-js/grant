@@ -200,6 +200,18 @@ Not built here; this is the shape the slice is held to.
    credential adds that they can sign in to the **platform** while the verification window is
    open. Mitigations: the method is unverified, the window is bounded, and the real owner
    recovers through password reset, which clears the marker and invalidates sessions.
+   Second residual, **open for the reviewer**: rule 4 lets a project administrator replace an
+   import-marked credential even after the owner verified the address (for example through the
+   magic link) and never changed the password in Grant. That is what forward-only ownership means
+   (the legacy system stays authoritative), but it also means the administrator can set a known
+   password on a verified global account that the import created. The alternative is to refuse
+   replacement once the method is verified, at the cost that a user who verified and then changed
+   their legacy password is no longer synchronized. This record keeps the first behaviour as
+   decided and asks the review to confirm it.
+   Also noted, and not introduced here: the email lookup used to find an existing identity
+   (`findByEmail`) matches with `ILIKE`, so `_` and `%` in an imported address act as wildcards;
+   the credential rules above still compare the exact address against the project's own
+   provisioning record, so a wildcard match is skipped, not written.
 2. **Cost ceiling.** The cost is read from the hash and `compareSync` blocks the event loop, so
    an unbounded cost in a document would turn every sign-in attempt into a stall. The ceiling
    is 15 (about 2^15 rounds), the floor is bcrypt's 4.
