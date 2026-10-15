@@ -1300,7 +1300,8 @@
         },
         "Environment": {
           "Variables": {
-            "APP_URL": "https://grant.example.com"
+            "APP_URL": "https://grant.example.com",
+            "STORAGE_PROVIDER": "s3"
           }
         },
         "LoggingConfig": {
