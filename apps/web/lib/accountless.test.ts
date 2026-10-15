@@ -6,25 +6,58 @@ describe('isAccountlessState', () => {
   const account = { id: 'a1' };
 
   it('is true for a signed-in user the server confirmed owns no account', () => {
-    expect(isAccountlessState({ accessToken: 't', accountsLoaded: true, accounts: [] })).toBe(true);
+    expect(
+      isAccountlessState({
+        accessToken: 't',
+        accountsLoaded: true,
+        accounts: [],
+        hasOrganizationMembership: false,
+      })
+    ).toBe(true);
   });
 
   it('is false before the server has answered: an empty list is not yet a fact', () => {
-    expect(isAccountlessState({ accessToken: 't', accountsLoaded: false, accounts: [] })).toBe(
-      false
-    );
+    expect(
+      isAccountlessState({
+        accessToken: 't',
+        accountsLoaded: false,
+        accounts: [],
+        hasOrganizationMembership: false,
+      })
+    ).toBe(false);
   });
 
   it('is false for a user with an account', () => {
     expect(
-      isAccountlessState({ accessToken: 't', accountsLoaded: true, accounts: [account] })
+      isAccountlessState({
+        accessToken: 't',
+        accountsLoaded: true,
+        accounts: [account],
+        hasOrganizationMembership: false,
+      })
+    ).toBe(false);
+  });
+
+  it('is false for an organization member who has no account: an administrator admitted them', () => {
+    expect(
+      isAccountlessState({
+        accessToken: 't',
+        accountsLoaded: true,
+        accounts: [],
+        hasOrganizationMembership: true,
+      })
     ).toBe(false);
   });
 
   it('is false when nobody is signed in', () => {
-    expect(isAccountlessState({ accessToken: null, accountsLoaded: true, accounts: [] })).toBe(
-      false
-    );
+    expect(
+      isAccountlessState({
+        accessToken: null,
+        accountsLoaded: true,
+        accounts: [],
+        hasOrganizationMembership: false,
+      })
+    ).toBe(false);
   });
 });
 

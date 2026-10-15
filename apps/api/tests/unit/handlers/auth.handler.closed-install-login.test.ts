@@ -69,6 +69,7 @@ const mockUserSessions = {
 };
 const mockEmail = { sendOtp: vi.fn(), sendPasswordReset: vi.fn() };
 const mockOrganizationInvitations = { getInvitationByToken: vi.fn() };
+const mockOrganizationUsers = { getUserOrganizationMemberships: vi.fn() };
 const mockCache = { get: vi.fn(), set: vi.fn(), delete: vi.fn(), clear: vi.fn() };
 
 function createHandler() {
@@ -85,7 +86,10 @@ function createHandler() {
     mockOrganizationInvitations as never,
     mockCache as never,
     {} as never,
-    { withTransaction: mockWithTransaction } as never
+    { withTransaction: mockWithTransaction } as never,
+    {
+      getUserOrganizationMemberships: mockOrganizationUsers.getUserOrganizationMemberships,
+    } as never
   );
 }
 
@@ -177,6 +181,7 @@ beforeEach(() => {
     refreshToken: 'refresh-token',
   });
   mockOrganizationInvitations.getInvitationByToken.mockResolvedValue(pendingInvitation());
+  mockOrganizationUsers.getUserOrganizationMemberships.mockResolvedValue([]);
 });
 
 describe.each(METHODS)('login by %s of an identity with no account', (_label, method) => {
@@ -190,6 +195,7 @@ describe.each(METHODS)('login by %s of an identity with no account', (_label, me
     expect(result.accessToken).toBe('access-token');
     expect(result.refreshToken).toBe('refresh-token');
     expect(result.accounts).toEqual([]);
+    expect(mockOrganizationUsers.getUserOrganizationMemberships).toHaveBeenCalledWith(USER_ID, tx);
     expect(mockAccounts.createAccount).not.toHaveBeenCalled();
     expect(mockAccountRoles.seedAccountRoles).not.toHaveBeenCalled();
     expect(mockUserRoles.addUserRole).not.toHaveBeenCalled();
@@ -262,6 +268,49 @@ describe.each(METHODS)('login by %s of an identity with no account', (_label, me
     expect(mockAccounts.createAccount).not.toHaveBeenCalled();
   });
 });
+
+const MEMBERSHIP = [
+  { organizationId: 'org-1', organizationName: 'Acme', role: 'Member', joinedAt: new Date() },
+];
+
+describe.each(METHODS)(
+  'login by %s of an organization member who has no account, closed install',
+  (_label, method) => {
+    it('creates the Personal account, as before: an administrator admitted them', async () => {
+      mockAuthCfg.publicSignupEnabled = false;
+      mockUsers.countHumanUsers.mockResolvedValue(2500);
+      mockOrganizationUsers.getUserOrganizationMemberships.mockResolvedValue(MEMBERSHIP);
+      stubExistingIdentity(method, []);
+      mockUsers.getUsers
+        .mockResolvedValueOnce({ totalCount: 1, users: [{ id: USER_ID, accounts: [] }] })
+        .mockResolvedValueOnce({ totalCount: 1, users: [{ id: USER_ID, accounts: [PERSONAL] }] });
+
+      const result = await login(method);
+
+      expect(mockOrganizationUsers.getUserOrganizationMemberships).toHaveBeenCalledWith(
+        USER_ID,
+        tx
+      );
+      expect(mockAccounts.createAccount).toHaveBeenCalledWith(
+        { type: AccountType.Personal, ownerId: USER_ID },
+        tx
+      );
+      expect(result.accounts).toEqual([PERSONAL]);
+    });
+
+    it('open install: no membership lookup is needed', async () => {
+      mockAuthCfg.publicSignupEnabled = true;
+      stubExistingIdentity(method, []);
+      mockUsers.getUsers
+        .mockResolvedValueOnce({ totalCount: 1, users: [{ id: USER_ID, accounts: [] }] })
+        .mockResolvedValueOnce({ totalCount: 1, users: [{ id: USER_ID, accounts: [PERSONAL] }] });
+
+      await login(method);
+
+      expect(mockOrganizationUsers.getUserOrganizationMemberships).not.toHaveBeenCalled();
+    });
+  }
+);
 
 describe('login with an organization invitation proof on a closed install', () => {
   const password = METHODS[0][1];
@@ -408,6 +457,26 @@ describe('linkOAuthAuthToExistingUser for a user with no account', () => {
     mockUserAuthenticationMethods.createUserAuthenticationMethod.mockResolvedValue({
       id: 'auth-method-2',
     });
+
+    const result = await createHandler().linkOAuthAuthToExistingUser({
+      userId: USER_ID,
+      provider: github.provider,
+      providerId: github.providerId,
+      providerData: github.providerData,
+    });
+
+    expect(mockAccounts.createAccount).toHaveBeenCalledTimes(1);
+    expect(result.accounts).toEqual([PERSONAL]);
+  });
+
+  it('closed install: an organization member gets the Personal account', async () => {
+    mockAuthCfg.publicSignupEnabled = false;
+    mockUsers.countHumanUsers.mockResolvedValue(2500);
+    mockOrganizationUsers.getUserOrganizationMemberships.mockResolvedValue(MEMBERSHIP);
+    stubLink([]);
+    mockUsers.getUsers
+      .mockResolvedValueOnce({ totalCount: 1, users: [{ id: USER_ID, accounts: [] }] })
+      .mockResolvedValueOnce({ totalCount: 1, users: [{ id: USER_ID, accounts: [PERSONAL] }] });
 
     const result = await createHandler().linkOAuthAuthToExistingUser({
       userId: USER_ID,

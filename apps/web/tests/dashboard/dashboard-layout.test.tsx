@@ -33,9 +33,14 @@ const { default: DashboardLayout } = await import('@/app/[locale]/dashboard/layo
 
 const account = { id: 'a1', type: AccountType.Personal } as never;
 
-function signIn(accounts: never[], accountsLoaded = true) {
+function signIn(accounts: never[], accountsLoaded = true, hasOrganizationMembership = false) {
   act(() => {
-    useAuthStore.setState({ accessToken: 'token', accounts, accountsLoaded });
+    useAuthStore.setState({
+      accessToken: 'token',
+      accounts,
+      accountsLoaded,
+      hasOrganizationMembership,
+    });
   });
 }
 
@@ -95,6 +100,15 @@ describe('dashboard layout for everyone else', () => {
     signIn([account]);
 
     renderAt('/dashboard/accounts/a1/projects');
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.getByText('page content')).toBeInTheDocument();
+  });
+
+  it('does not touch an organization member who has no account', () => {
+    signIn([], true, true);
+
+    renderAt('/dashboard/organizations');
 
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByText('page content')).toBeInTheDocument();

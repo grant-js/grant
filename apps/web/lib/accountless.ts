@@ -1,5 +1,5 @@
 /**
- * A user can be signed in without owning any account: on a closed install
+ * A user can be signed in without any workspace: on a closed install
  * (`AUTH_PUBLIC_SIGNUP_ENABLED=false`) an identity that reached the platform without one
  * (a CDM import, a project-app user) is not given a Personal account at login. They keep
  * the user-scoped settings; everything account-scoped is refused by the API, and the
@@ -19,14 +19,22 @@ interface AccountlessState {
   accessToken: string | null;
   accountsLoaded: boolean;
   accounts: readonly unknown[];
+  hasOrganizationMembership: boolean;
 }
 
 /**
- * Signed in, and the server has said the user owns no account. Before the server has
- * answered an empty list means "not known yet", which must not redirect anyone.
+ * Signed in, and the server has said the user owns no account and belongs to no
+ * organization. An organization member without an account has console access an
+ * administrator granted, so is not account-less. Before the server has answered an empty
+ * list means "not known yet", which must not redirect anyone.
  */
 export function isAccountlessState(state: AccountlessState): boolean {
-  return !!state.accessToken && state.accountsLoaded && state.accounts.length === 0;
+  return (
+    !!state.accessToken &&
+    state.accountsLoaded &&
+    state.accounts.length === 0 &&
+    !state.hasOrganizationMembership
+  );
 }
 
 function normalizePath(pathname: string): string {

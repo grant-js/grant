@@ -444,6 +444,7 @@ export type MeQuery = {
     requiresEmailVerification: boolean | null;
     verificationExpiry: Date | null;
     email: string | null;
+    hasOrganizationMembership: boolean;
     accounts: Array<{
       id: string;
       type: Types.AccountType;
@@ -4179,6 +4180,7 @@ export const MeDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'requiresEmailVerification' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'verificationExpiry' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'hasOrganizationMembership' } },
               ],
             },
           },

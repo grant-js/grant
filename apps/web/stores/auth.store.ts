@@ -19,6 +19,11 @@ interface AuthState {
    * initial empty list. "Signed in with no accounts" is only a fact once this is set.
    */
   accountsLoaded: boolean;
+  /**
+   * Whether the user belongs to an organization (from `me`). A user with no accounts but a
+   * membership has console access an administrator granted, so is not account-less.
+   */
+  hasOrganizationMembership: boolean;
   currentAccountId: string | null;
   isSwitchingAccounts: boolean;
   accessToken: string | null;
@@ -53,6 +58,7 @@ interface AuthState {
      * or failed: then `accounts` says nothing and the known list is left as it is.
      */
     accountsLoaded?: boolean;
+    hasOrganizationMembership?: boolean;
     email: string | null;
     mfaVerified: boolean;
     requiresEmailVerification: boolean;
@@ -89,6 +95,7 @@ export const useAuthStore = create<AuthState>()(
         // Account state
         accounts: [],
         accountsLoaded: false,
+        hasOrganizationMembership: false,
         currentAccountId: null,
         isSwitchingAccounts: false,
         accessToken: null,
@@ -113,6 +120,7 @@ export const useAuthStore = create<AuthState>()(
           set((state) => ({
             accounts: [],
             accountsLoaded: false,
+            hasOrganizationMembership: false,
             currentAccountId: null,
             isSwitchingAccounts: false,
             accessToken: null,
@@ -140,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
           const {
             accounts,
             accountsLoaded,
+            hasOrganizationMembership,
             email,
             mfaVerified,
             requiresEmailVerification,
@@ -149,6 +158,9 @@ export const useAuthStore = create<AuthState>()(
           set((state) => ({
             accounts: accountsKnown ? accounts : state.accounts,
             accountsLoaded: accountsKnown ? true : state.accountsLoaded,
+            hasOrganizationMembership: accountsKnown
+              ? (hasOrganizationMembership ?? false)
+              : state.hasOrganizationMembership,
             email,
             mfaVerified,
             requiresEmailVerification,
@@ -178,6 +190,9 @@ export const useAuthStore = create<AuthState>()(
           set((state) => ({
             accounts,
             accountsLoaded: true,
+            // A login with no account means the API found no membership either (it would have
+            // created the account), so there is nothing more to learn here.
+            hasOrganizationMembership: false,
             currentAccountId: targetAccountId,
             accessToken,
             email: email ?? null,

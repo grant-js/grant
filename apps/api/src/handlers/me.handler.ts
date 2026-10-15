@@ -87,7 +87,12 @@ export class MeHandler extends CacheHandler {
 
   public async getMe(): Promise<MeResponse> {
     return await this.db.withTransaction(async (tx: Transaction) => {
-      return await this.me.getMe(tx);
+      const me = await this.me.getMe(tx);
+      const memberships = await this.organizationUsers.getUserOrganizationMemberships(
+        this.getAuthenticatedUserId(),
+        tx
+      );
+      return { ...me, hasOrganizationMembership: memberships.length > 0 };
     });
   }
 
@@ -100,7 +105,17 @@ export class MeHandler extends CacheHandler {
         const humanUserCount = config.auth.publicSignupEnabled
           ? 0
           : await this.users.countHumanUsers(tx);
-        assertPlatformSelfSignupAllowed({ invitationProofValid: false, humanUserCount });
+        // An organization membership is access an administrator granted, like an invitation.
+        const isOrganizationMember =
+          (
+            await this.organizationUsers.getUserOrganizationMemberships(
+              this.getAuthenticatedUserId(),
+              tx
+            )
+          ).length > 0;
+        if (!isOrganizationMember) {
+          assertPlatformSelfSignupAllowed({ invitationProofValid: false, humanUserCount });
+        }
       }
 
       const result = await this.me.createMySecondaryAccount(tx);

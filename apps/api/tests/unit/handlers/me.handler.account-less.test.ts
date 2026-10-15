@@ -23,7 +23,7 @@ const USER_ID = '30000000-0000-4000-8000-000000000099';
 const tx = {};
 const now = new Date('2026-10-15T12:00:00.000Z');
 
-const me = { createMySecondaryAccount: vi.fn() };
+const me = { createMySecondaryAccount: vi.fn(), getMe: vi.fn() };
 const accountRoles = { seedAccountRoles: vi.fn() };
 const userRoles = { getUserRoles: vi.fn(), addUserRole: vi.fn() };
 const accounts = {
@@ -73,6 +73,34 @@ beforeEach(() => {
     accounts: [PERSONAL, ORGANIZATION],
   });
   accountRoles.seedAccountRoles.mockResolvedValue([]);
+  organizationUsers.getUserOrganizationMemberships.mockResolvedValue([]);
+});
+
+describe('getMe', () => {
+  const base = {
+    accounts: [],
+    email: 'imported@example.com',
+    requiresEmailVerification: false,
+    verificationExpiry: null,
+  };
+
+  it('says whether the user belongs to an organization, which an account-less console needs', async () => {
+    me.getMe.mockResolvedValue(base);
+
+    await expect(createHandler().getMe()).resolves.toEqual({
+      ...base,
+      hasOrganizationMembership: false,
+    });
+
+    organizationUsers.getUserOrganizationMemberships.mockResolvedValue([
+      { organizationId: 'org-1', organizationName: 'Acme', role: 'Member', joinedAt: now },
+    ]);
+
+    await expect(createHandler().getMe()).resolves.toEqual({
+      ...base,
+      hasOrganizationMembership: true,
+    });
+  });
 });
 
 describe('createMySecondaryAccount', () => {
@@ -87,6 +115,15 @@ describe('createMySecondaryAccount', () => {
 
     expect(me.createMySecondaryAccount).not.toHaveBeenCalled();
     expect(accountRoles.seedAccountRoles).not.toHaveBeenCalled();
+  });
+
+  it('allows an organization member with no account on a closed install', async () => {
+    organizationUsers.getUserOrganizationMemberships.mockResolvedValue([
+      { organizationId: 'org-1', organizationName: 'Acme', role: 'Member', joinedAt: now },
+    ]);
+
+    await expect(createHandler().createMySecondaryAccount()).resolves.toBeDefined();
+    expect(me.createMySecondaryAccount).toHaveBeenCalledTimes(1);
   });
 
   it('allows the first human of a closed install (bootstrap)', async () => {

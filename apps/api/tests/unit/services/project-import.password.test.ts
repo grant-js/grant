@@ -333,7 +333,8 @@ async function verifyThroughMagicLink(world: World, email: string) {
     {} as never,
     {} as never,
     {} as never,
-    { withTransaction: (fn: (t: unknown) => unknown) => fn(tx) } as never
+    { withTransaction: (fn: (t: unknown) => unknown) => fn(tx) } as never,
+    {} as never
   );
   return handler.resolveUserIdFromEmailForProject(email, tx as never);
 }
@@ -368,7 +369,8 @@ async function loginWith(world: World, email: string, password: string) {
     {} as never,
     {} as never,
     {} as never,
-    { withTransaction: (fn: (t: unknown) => unknown) => fn(tx) } as never
+    { withTransaction: (fn: (t: unknown) => unknown) => fn(tx) } as never,
+    {} as never
   );
   return handler.login({
     input: {

@@ -70,7 +70,8 @@ function createHandler(): AuthHandler {
     mockOrganizationInvitations as never,
     mockCache as never,
     mockScopeServices as never,
-    mockDb as never
+    mockDb as never,
+    {} as never
   );
 }
 

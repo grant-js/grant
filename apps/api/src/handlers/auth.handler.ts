@@ -5,6 +5,7 @@ import type {
   IEmailService,
   ILogger,
   IOrganizationInvitationService,
+  IOrganizationUserService,
   ITransactionalConnection,
   IUserAuthenticationMethodService,
   IUserMfaService,
@@ -214,8 +215,12 @@ export class AuthHandler extends CacheHandler {
    * Login must not hand out what registration refuses: an identity that has no account
    * (CDM import, project-app sign-in) may only get its first Personal account where
    * `register` would have created one. Otherwise it is signed in without an account.
+   *
+   * An organization membership is console access an administrator granted (an org admin
+   * added the user), so such an identity gets its account as it always did.
    */
   private async mayCreateFirstAccount(
+    userId: string,
     invitationProofValid: boolean,
     tx: Transaction
   ): Promise<boolean> {
@@ -223,7 +228,11 @@ export class AuthHandler extends CacheHandler {
       invitationProofValid || config.auth.publicSignupEnabled
         ? 0
         : await this.users.countHumanUsers(tx);
-    return isPlatformSelfSignupAllowed({ invitationProofValid, humanUserCount });
+    if (isPlatformSelfSignupAllowed({ invitationProofValid, humanUserCount })) {
+      return true;
+    }
+    const memberships = await this.organizationUsers.getUserOrganizationMemberships(userId, tx);
+    return memberships.length > 0;
   }
 
   private async createPersonalAccountForUser(userId: string, tx: Transaction): Promise<void> {
@@ -252,6 +261,7 @@ export class AuthHandler extends CacheHandler {
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
+    private readonly organizationUsers: IOrganizationUserService,
     private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
   ) {
     super(cache, scopeServices);
@@ -527,7 +537,7 @@ export class AuthHandler extends CacheHandler {
           // The identity exists without an account (e.g. CDM import, project OAuth). The first
           // Personal account follows the register policy; on a closed install the session is
           // issued account-less and reaches user-scoped settings only.
-          if (await this.mayCreateFirstAccount(isVerifiedByInvitationProof, tx)) {
+          if (await this.mayCreateFirstAccount(user.id, isVerifiedByInvitationProof, tx)) {
             await this.createPersonalAccountForUser(user.id, tx);
             const usersResultAfter = await this.users.getUsers(
               { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
@@ -973,7 +983,7 @@ export class AuthHandler extends CacheHandler {
       const user = usersResult.users[0];
 
       let accounts = user.accounts ?? [];
-      if (accounts.length === 0 && (await this.mayCreateFirstAccount(false, tx))) {
+      if (accounts.length === 0 && (await this.mayCreateFirstAccount(user.id, false, tx))) {
         await this.createPersonalAccountForUser(user.id, tx);
         const usersResultAfter = await this.users.getUsers(
           { ids: [user.id], limit: 1, requestedFields: ['accounts'] },

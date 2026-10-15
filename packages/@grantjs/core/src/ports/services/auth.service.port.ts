@@ -144,7 +144,8 @@ export interface IOAuthStateService {
 // ---------------------------------------------------------------------------
 
 export interface IMeService {
-  getMe(transaction?: unknown): Promise<MeResponse>;
+  /** Everything `me` answers from the user's own rows; the handler adds the organization membership. */
+  getMe(transaction?: unknown): Promise<Omit<MeResponse, 'hasOrganizationMembership'>>;
 
   createMySecondaryAccount(
     transaction?: unknown

@@ -42,7 +42,9 @@ export class MeService implements IMeService {
     return userId;
   }
 
-  public async getMe(transaction?: Transaction): Promise<MeResponse> {
+  public async getMe(
+    transaction?: Transaction
+  ): Promise<Omit<MeResponse, 'hasOrganizationMembership'>> {
     const userId = this.getAuthenticatedUserId();
 
     const usersResult = await this.userRepository.getUsers(

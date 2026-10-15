@@ -49,6 +49,18 @@ describe('accountsLoaded', () => {
     expect(isAccountless()).toBe(true);
   });
 
+  it('an organization member with no account is not account-less once me says so', () => {
+    useAuthStore.getState().setAuthData({ accounts: [], accessToken: 'token' });
+    expect(isAccountless()).toBe(true);
+
+    useAuthStore
+      .getState()
+      .syncFromMe({ accounts: [], accountsLoaded: true, hasOrganizationMembership: true, ...me });
+
+    expect(useAuthStore.getState().hasOrganizationMembership).toBe(true);
+    expect(isAccountless()).toBe(false);
+  });
+
   it('syncFromMe without a me response (loading or failed) does not make it known', () => {
     useAuthStore.getState().setAccessToken('token');
     useAuthStore.getState().syncFromMe({ accounts: [], accountsLoaded: false, ...me });
@@ -80,8 +92,12 @@ describe('accountsLoaded', () => {
 
   it('logging out forgets it', () => {
     useAuthStore.getState().setAuthData({ accounts: [], accessToken: 'token' });
+    useAuthStore
+      .getState()
+      .syncFromMe({ accounts: [], accountsLoaded: true, hasOrganizationMembership: true, ...me });
     useAuthStore.getState().clearAuth();
 
+    expect(useAuthStore.getState().hasOrganizationMembership).toBe(false);
     expect(useAuthStore.getState().accountsLoaded).toBe(false);
     expect(isAccountless()).toBe(false);
   });
