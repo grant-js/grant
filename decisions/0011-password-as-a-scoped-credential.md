@@ -90,10 +90,10 @@ removes the machinery.
   touching storage (§ Follow-ups).
 - **MFA unchanged**: global enrolment.
 
-| Surface            | Providers it can offer                            | List comes from                       |
-| ------------------ | ------------------------------------------------- | ------------------------------------- |
-| Platform (console) | Password, GitHub, Google (Email magic link later) | configuration (`/api/auth/providers`) |
-| Project app        | Email (magic link), Password, GitHub, Google      | the app's `enabledProviders`          |
+| Surface            | Providers it can offer                                      | List comes from                       |
+| ------------------ | ----------------------------------------------------------- | ------------------------------------- |
+| Platform (console) | Password and Email magic link (inline form), GitHub, Google | configuration (`/api/auth/providers`) |
+| Project app        | Email (magic link), Password, GitHub, Google                | the app's `enabledProviders`          |
 
 ### 2. Storage: two tables behind one port
 
@@ -163,12 +163,40 @@ the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, 
   login on the Email method's `isVerified`, and nothing in the credential move changes who is
   verified or when. The one reading that changes is conceptual: it is now plainly "this mailbox
   was never proven", not "this password is stale".
-- **Sign-in surface.** The platform offers **Password plus the configured OAuth providers**,
-  which is what the console already does (`auth.routes.ts:268-277`, `apps/web/lib/oauth-providers.ts`,
-  the email and password form of `apps/web/app/[locale]/auth/login/page.tsx`). **There is no
-  platform "Email" button** (magic link on the platform) in this record: it is a follow-up. The
-  console's form becomes a "Password" provider in the same list as the OAuth buttons in slice 6;
-  the cut-over itself changes no UI.
+- **Sign-in surface (console).** The console **keeps its inline email and password form as the
+  default**, with the GitHub and Google buttons above "OR", as today
+  (`auth.routes.ts:268-277`, `apps/web/lib/oauth-providers.ts`,
+  `apps/web/app/[locale]/auth/login/page.tsx`): password-manager autofill and a fast sign-in
+  stay. The cut-over itself changes no UI. Slice 6 adds the magic link below.
+- **Console magic link: a text link "Send me a magic link"** under the Email field, styled like
+  "Forgot password?" under the Password field.
+  - It sends to the **address typed in the field**. An empty or invalid field shows the field's
+    validation error and **nothing is sent**.
+  - The response is **identical whether or not the account exists** ("If an account exists for
+    this address, we've sent a link"), as `requestPasswordReset` already answers
+    (`auth.handler.ts:780-817`, `auth.routes.ts:232-247`).
+  - It **never creates an identity**: registration stays with "Create account" and respects
+    disabled public sign-up (`auth.handler.ts:253-262`). Following the link **verifies the Email
+    method** (`isVerified`) and signs the person in with a **platform session**, not a
+    project-app code.
+  - **Rate limits**: per IP, by adding the route to `AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`
+    (`rate-limit.middleware.ts:15-30`; the project equivalent is already there at `:21`), and
+    **per address**, which is new: today forgot-password has only the global per-IP limiter
+    (`rate-limit.middleware.ts:107-114`), so the per-address limit should be added to it too.
+  - **It is also the console's recovery path when a password is locked** (slice 7), which is why
+    it lands first.
+  - **Eligibility**: see open question 1; recommended, only identities that already have an
+    account or an organization membership.
+  - **Reused from the project-app magic link** (platform-scoped, so a different callback and a
+    session): the one-time token kept in the cache and consumed once
+    (`project-oauth.handler.ts:543-559,675`, a platform key prefix and TTL), the mail send
+    (`sendProjectOAuthMagicLink`, `:563`, a platform variant), and the verify-on-follow step
+    (`resolveUserIdFromEmailForProject`, `auth.handler.ts:1157-1181`), used in a **find-only** mode:
+    its create branch (`:1183-1199`) must not run. The callback creates the session as `login`
+    does (`auth.handler.ts:575-592`), including the MFA step-up flag (`:66-77`), and hands it to the
+    web app the way the platform OAuth callback does.
+- **Project apps are not the console.** Nothing in this section applies to the hosted project
+  sign-in (§ 5), which keeps one view per provider.
 
 ### 4. Project scope: import writes only the importing project's credential
 
@@ -227,9 +255,10 @@ boolean, so no new column. Two consequences of the list's semantics:
 
 **Hosted sign-in** shows a **"Password" button with a key icon**, parallel to the Email icon and
 "Email" label, when the app enables it (`project-oauth-entry.lib.ts:9-20` gains `showPassword`).
-Clicking it opens an email and password form with **"Forgot password?"**, which starts the
-project reset of § 6. Email stays magic link only. This is the same list the platform console
-renders (§ 1), fed by `enabledProviders` instead of configuration.
+Clicking it opens **its own view** with an email and password form and **"Forgot password?"**,
+which starts the project reset of § 6, exactly as clicking Email opens its own magic-link view
+today. Email stays magic link only. Project apps keep **one view per provider**; they do not use
+the console's inline layout.
 
 **The password provider verifies only the project credential.** There is **no fallback to the
 global or platform credential**; a person with no project credential there signs in by magic link
@@ -247,7 +276,7 @@ signs in by email), resolved at step 1 of § 1. Other identifiers are a follow-u
   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES` are defined at
   `env.config.ts:149,152` and nothing reads them. A tenant can lock only its own project's
   credential, never platform login (§ 8). The store is built once for both scopes (slice 1);
-  whether the platform scope turns it on is open question 1.
+  the platform scope turns it on later, as its own step (§ Slicing, slice 7).
 - Generic failures and a **dummy compare** so timing does not reveal whether a credential exists.
 - **MFA at the ceremony** when the platform requires it: `computeRequiresMfaStepUp` steps up only
   when `config.auth.minAalAtLogin === 'aal2'` and the user has an active enrolment
@@ -257,7 +286,7 @@ signs in by email), resolved at step 1 of § 1. Other identifiers are a follow-u
   magic link and OAuth, `project-oauth.handler.ts:758-760`).
 - **`email_verified`** is **not a Grant-side control**. No such claim exists in `apps/api/src`;
   project-app tokens carry no verification state and are treated as verified
-  (`docs/architecture/security.md`, token table). Whether to expose one is open question 4, and
+  (`docs/architecture/security.md`, token table). Whether to expose one is open question 2, and
   nothing here relies on it.
 
 _Alternatives considered:_
@@ -274,6 +303,11 @@ _Alternatives considered:_
 - Password as a mode of the Email provider with an `allow_password_sign_in` boolean (0010 (b)): a
   second switch beside `enabledProviders`, and a hosted page that cannot show "Email" and
   "Password" as the two different things they are.
+- **A shared inline layout** for the console and project apps (email field, password field,
+  "Forgot password?" and "Send me a magic link" together). Rejected for project apps: they keep
+  one view per provider, driven by `enabledProviders`, so an app can offer Password without
+  Email or the reverse and the hosted page stays a list of providers. The console keeps the
+  inline form because it is the default and gives password-manager autofill.
 
 ### 6. Reset and change: one flow, parameterised by scope
 
@@ -314,8 +348,7 @@ of every handled row. This **replaces the separate cleanup migration** of the pr
   the platform today; dropping it would strand them for a rule that has already decided they own
   it. The distinct `source` keeps them identifiable and, like every non-`cdm-import` source, out
   of reach of an import. _Alternative:_ clear them and make those people reset. Safer against a
-  hash a tenant once planted and the owner never changed; costlier for real users. Open
-  question 2 asks Ale to confirm.
+  hash a tenant once planted and the owner never changed; costlier for real users. Decided: carry.
 - **Idempotent**: `INSERT ... ON CONFLICT DO NOTHING`, and once `hashedPassword` is
   removed nothing matches again. **Report**: counts of methods scanned, copied by `source`,
   dropped (unverified import), skipped because a credential already existed, and stripped
@@ -353,7 +386,7 @@ hash that still carried a leftover marker.
 - **Lockout residual.** The per-`(project, user)` lockout lets a tenant, or anyone able to guess
   its members' addresses, lock the **project** password of those users out. It cannot touch
   platform login or another project, and the user can still use magic link or a reset. If the
-  platform scope turns its lockout on (open question 1), the same trade applies there: an
+  platform scope turns its lockout on (slice 7), the same trade applies there: an
   attacker who knows an address can lock that person's platform password, with OAuth and a
   password reset as the way back.
 - **Pre-claim** of an address with no Grant identity yet remains (the same administrator creates
@@ -404,8 +437,14 @@ hash that still carried a leftover marker.
    the "Forgot password?" link, and i18n.
 5. **Project-app reset and forgot password** (§ 6), with the bulk revoke of a user's grants in a
    project.
-6. **Platform sign-in UI shows Password as its own button** beside the OAuth buttons (a follow-up
-   if the cut-over runs long; it changes no API).
+6. **Platform sign-in: magic link and UI.** The console magic-link request and callback
+   endpoints (§ 3), the per-IP and per-address limits, the platform session hand-off, and the
+   "Send me a magic link" link with i18n. **Must land before slice 7.** It adds routes and a
+   link, no change to the existing form.
+7. **Enable the platform lockout** (own step, using the unread `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`
+   and `AUTH_LOCKOUT_DURATION_MINUTES`): only once platform password reset **and** the console
+   magic link are confirmed working on the new credential store, because they are the way back
+   from a locked password. The store itself is built in slice 1.
 
 ### Release
 
@@ -415,13 +454,11 @@ register requests), but the note must say: password hashes **move** from `provid
 to a credential table (anything reading that field breaks; `hasPassword` is preserved); an
 imported password no longer opens the platform and unverified `cdm-import` hashes are dropped by
 the migration; and a password for a user who is not a project member after an import is rejected.
-`grant-api` and `@grantjs/schema` are bumped; slices 1, 4 and 5 add a table, a provider value and
+`grant-api` and `@grantjs/schema` are bumped; slices 1, 4, 5 and 6 add tables, a provider value and
 routes.
 
 ### Follow-ups (out of scope for the slices above)
 
-- **Platform magic link** (an Email button on the console, mailbox proof only), once Email is no
-  longer password-bearing there.
 - **Further identifier resolvers**, which plug in at step 1 of § 1 and touch neither the
   credential tables nor the verifier or lockout: a **username**, unique per project (and, for the
   platform scope, globally unique), kept in its own per-scope identifier table; a phone number.
@@ -464,28 +501,27 @@ routes.
 
 For **Ale**:
 
-1. **Platform lockout.** The `(scope, user)` store lands in slice 1 and the project provider uses
-   it. Turn it on for platform login at the cut-over (using the unread
-   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES`), or later, separately?
-   Recommended **separately**: the cut-over is already a storage change, and a lockout on a
-   console with no magic link is a way to deny an admin their own login.
-2. **Verified `cdm-import` hashes** carried to the platform credential as `migrated-import`
-   (recommended) or cleared (§ 7).
-3. **No platform "Email" button now**, Password plus OAuth only (recommended, § 3), with platform
-   magic link a follow-up.
+1. **Who may use the console magic link.** An imported identity with no platform credential and
+   no account would otherwise reach an empty console (the first platform login creates a Personal
+   account for an identity that has none, `auth.handler.ts:496`). Recommended **yes, restrict**,
+   answering identically and sending nothing for anyone else. Careful with the wording: "at least
+   one organization membership" would also exclude a person who registered individually and owns
+   only a Personal account (the maintainer's own personal projects), so the recommended rule is
+   **an account or an organization membership**: either they registered on the platform or an
+   organization has them. Confirm that definition, or restrict to organization members only.
 
 For **grant-agent**:
 
-4. **Which token carries `email_verified`**, if any, and how a project app reads it (there is no
+2. **Which token carries `email_verified`**, if any, and how a project app reads it (there is no
    such claim in `apps/api/src`). Nothing in this record relies on one.
-5. **Apply-time membership check** (§ 4): which handler writes the project credential after
+3. **Apply-time membership check** (§ 4): which handler writes the project credential after
    assignment (a new handler ordered after `user-assignment.cdm-entity.ts`, or a step in it), and
    does any ETL send password rows for users that are not and will not be members?
-6. **Lockout store**: the cache used for OAuth state, or a table. Its shape, per `(scope, user)`
-   and guarding one credential, is decided; only the store is open. It gates slice 4.
-7. **Bulk revoke of a user's project grants** (§ 6): a repository method on
+4. **Lockout store**: the cache used for OAuth state, or a table. Its shape, per `(scope, user)`
+   and guarding one credential, is decided; only the store is open. It gates slice 4 (the project provider) and slice 7.
+5. **Bulk revoke of a user's project grants** (§ 6): a repository method on
    `project_oauth_grants` joined through `project_apps`, or a new column on the grant?
-8. **Other readers of `providerData.hashedPassword` and `hasPassword`**: this record found
+6. **Other readers of `providerData.hashedPassword` and `hasPassword`**: this record found
    `auth.handler.ts`, `user-authentication-methods.service.ts`, `auth-method-public.lib.ts`, the
    import entity and an e2e helper. Anything in the published SDKs or the web app that reads the
    field directly, or a user with two Email methods, would need handling in slice 2.
@@ -500,6 +536,8 @@ For **grant-agent**:
   `apps/web/lib/project-oauth-entry.lib.ts:9-20`
 - Platform provider list: `apps/api/src/rest/routes/auth.routes.ts:268-277`,
   `apps/web/lib/oauth-providers.ts`
+- Console magic link, reused pieces: `apps/api/src/handlers/project-oauth.handler.ts:543-563,675`,
+  `apps/api/src/handlers/auth.handler.ts:1157-1181`; limits: `apps/api/src/middleware/rate-limit.middleware.ts:15-30,107-114`
 - Project tables and conventions: `packages/@grantjs/database/src/schemas/project-apps.schema.ts`,
   `project-oauth-connections.schema.ts`, `project-user-api-keys.schema.ts`, `project-users.schema.ts`,
   `project-oauth-grants.schema.ts`, `user-authentication-methods.schema.ts`
