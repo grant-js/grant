@@ -77,7 +77,7 @@ a member is re-added). Schema file `project-user-credentials.schema.ts` in
 | `id`                                                     | uuid, default random                                                                                                                          |
 | `project_id`, `user_id`                                  | uuid, `ON DELETE CASCADE` to `projects` and `users`, not null                                                                                 |
 | `hash`                                                   | `varchar(255)`, the stored bcrypt hash (the `$2a$`/`$2b$`/`$2y$` prefix names the algorithm; no `algorithm` column until a second one exists) |
-| `source`                                                 | `varchar(32)`: `cdm-import`, `project-reset`, `project-change`                                                                                |
+| `source`                                                 | `varchar(32)`: `cdm-import`, `project-reset`, `project-change` (in the enum now, written only once the self-service change follow-up lands)   |
 | `last_used_at`, `created_at`, `updated_at`, `deleted_at` | as the siblings                                                                                                                               |
 
 Unique `(project_id, user_id) WHERE deleted_at IS NULL`; indexes on `project_id`, `user_id`,
@@ -150,30 +150,33 @@ mailbox's owner. Only a magic link or a provider-verified address in the same si
 `true`. (A magic link sets the global flag as a side effect,
 `auth.handler.ts:1172-1181`; unchanged.)
 
-**Precedence when the user also has a global Grant-set password: recommended, the project
+**Precedence when the user also has a global Grant-set password (decided): the project
 credential decides alone when it exists; the global password is the fallback when the project
 has none.** Inside one project the answer is then deterministic and explainable ("the project
 password, else your Grant password"), a planted or imported project credential cannot be bypassed
 by, nor shadow, a password the person set at Grant for a project that has no credential, and each
 attempt verifies one hash (plus the dummy compare).
 
-_Rejected:_ both accepted at once (two valid passwords, double the guessing surface per attempt);
-a per-app setting (another knob, and a mismatch between apps of one project); project credential
-only (cleanest boundary, but strands a person with a Grant password and no project credential
-until they reset, and is the likelier choice if Ale prefers that no tenant surface ever sees the
-global password, see Open questions).
+_Alternatives considered:_ both accepted at once (two valid passwords, double the guessing
+surface per attempt); a per-app setting (another knob, and a mismatch between apps of one
+project); **project credential only**, never accepting the global password at a tenant surface
+(the cleanest boundary, and the closest runner-up, but it strands a person who has a Grant
+password and no project credential until they reset; declined because the global password is
+already the person's own and a tenant surface verifying it learns nothing the platform login
+does not).
 
 ### 4. Platform login is unchanged
 
 Platform login reads the global Email method only (`auth.handler.ts:421-430`). A project
 credential lives in another table and is structurally invisible to it. Hashes v1.16.0 left in
-global methods are not read by the new import path; whether they are also cleared is open
-question 2.
+global methods are not read by the new import path and are cleared by the cleanup migration of
+§ 6.
 
 ### 5. Reset and forgot-password from a project app
 
-Requesting a reset from a project app proves the mailbox as the magic link does and **writes the
-project credential** (`source: project-reset`); it does not touch the global method. It
+Completing a reset from a project app proves the mailbox, so it **sets the global
+`isVerified`** exactly as the magic link does (`auth.handler.ts:1172-1181`), and **writes the
+project credential** (`source: project-reset`); it does not touch the global password. It
 invalidates **that project's app sessions**: the user's `project_oauth_grants` across the
 project's apps (`project-oauth-grants.schema.ts`, keyed by `project_app_id`; no bulk revoke exists
 yet, `project-oauth.handler.ts:1096,1134,1166` revoke one). A **platform** reset or change writes
@@ -182,22 +185,34 @@ only the global password and revokes platform sessions
 project credential. A later import never overwrites a `project-reset` or `project-change`
 credential (§ 2).
 
-### 6. No data migration: existing deployments re-provision
+### 6. No data migration, one cleanup migration
 
 v1.16.0 wrote import-marked hashes into global Email methods
-(`providerData.passwordSource: 'cdm-import'`). They are not moved. The new import path ignores
-them, and a re-import of the same document creates the project credentials. Where an environment
-is wiped and re-imported (staging), nothing is left. Where it is not, an unverified method keeps
-that global hash, usable for platform login inside the verification window
-(`auth.handler.ts:460-467`), until it is cleared or re-imported over by the person. Whether to
-ship a one-statement cleanup migration for that case is open question 2.
+(`providerData.passwordSource: 'cdm-import'`). They are not moved to project credentials. The new
+import path ignores them, and a re-import of the same document creates the project credentials.
+Where an environment is wiped and re-imported (staging), nothing is left. Where it is not, an
+unverified method would keep that global hash, usable for platform login inside the verification
+window (`auth.handler.ts:460-467`). A **committed schema migration**, one statement, closes that:
+
+```sql
+UPDATE user_authentication_methods
+SET provider_data = provider_data - 'hashedPassword' - 'passwordSource'
+WHERE provider = 'email'
+  AND is_verified = false
+  AND provider_data ->> 'passwordSource' = 'cdm-import';
+```
+
+It clears only a hash that is still import-marked on an unverified method. A verified method
+keeps its value (Grant owns it by 0010 rule 4: verification was the handover), and so does any
+hash with no marker (set in Grant). It is idempotent, since once cleared nothing matches, and it
+ships in the same release as the import slice (§ Slicing, slice 2).
 
 _Where the clean break changed the design:_ a copy of each hash to its source project
 (`users.metadata.cdmImport.projectId`), an idempotent count-reporting script, a dual read in
 sign-in and a pass over verified methods were all considered and dropped. Re-importing is the
 migration.
 
-**Residual copies.** The hash also lived in `user_authentication_methods.provider_data`, including
+**Residual copies.** The migration's updates leave dead tuples until vacuum, and the hash also lived in `user_authentication_methods.provider_data`, including
 its GIN index (`user-authentication-methods.schema.ts:41`), and in backups. Neither is scrubbed
 here.
 
@@ -221,7 +236,7 @@ here.
   soft-deleted in the same transaction. Removing a member (`project-users.service.ts:408`)
   soft-deletes their credential **in the same transaction**, so re-adding them never revives an
   old password, and the data-retention job purges soft-deleted credentials on its next run
-  (`data-retention-cleanup.job.ts`). Project removal cascades.
+  (`data-retention-cleanup.job.ts`; decided, no retention period). Project removal cascades.
 - **Timing and cost** as 0010 Security notes 2 and 6 (cost ceiling, constant-time compare), now
   per credential.
 
@@ -246,17 +261,31 @@ In order, each landing and reviewed on its own:
    needed), the REST `ProjectSyncJob.result` schema listing the password counters with
    descriptions, and its OpenAPI test. _Not reusable:_ confinement, the tombstone and
    `passwordsSkippedConflict`, `clearCdmPasswordMarkers`, the OAuth guard.
-3. **Project-app password sign-in**, 0010 (b): the switch, the sign-in route, per-identity
+3. **Cleanup migration** (§ 6): the one statement clearing unverified `cdm-import` hashes from
+   global Email methods. A schema migration of its own so it is reviewed and reverted separately;
+   it ships in the same release as slice 2.
+4. **Project-app password sign-in**, 0010 (b): the switch, the sign-in route, per-identity
    throttling first, the `email_verified` claim, MFA step-up, precedence of § 3.
-4. **Project-app reset and forgot password** (§ 5), with the bulk revoke of a user's grants in a
+5. **Project-app reset and forgot password** (§ 5), with the bulk revoke of a user's grants in a
    project.
-5. _(optional, open question 2)_ a cleanup migration for v1.16.0 global hashes.
 
-**Changeset plan, a call for Ale.** The CDM contract is almost unchanged (`users[].password`,
-the four counters), but slice 2 changes behaviour a client could notice: an imported password no
-longer works for platform login, and a password on a user with no assignment is rejected.
-Strictly that is **major**; with no external users, **minor** for `grant-api` and
-`@grantjs/schema` is proposed. Slices 1, 3 and 4 are minor (new table, new sign-in route).
+### Release
+
+**Changeset: minor, with a BREAKING note** (Ale's call; strictly semver would say major). The CDM
+contract is almost unchanged (`users[].password`, the four counters), but slice 2 changes
+behaviour a client could notice, and the note must say so: an imported password no longer works
+for platform login (and slice 3 clears the ones v1.16.0 left), and a password on a user with no
+assignment is rejected. `grant-api` and `@grantjs/schema` are bumped; slices 1, 4 and 5 are minor
+additions (new table, new sign-in and reset routes).
+
+### Follow-ups (out of scope for the slices above)
+
+- **Self-service change of a project password.** A signed-in project-app user changes their
+  project credential (`source: project-change`), with the same rules as a reset: the per-identity
+  throttling of slice 4, MFA step-up from the global enrolment, and revocation of the user's
+  project grants. `project-change` is in the `source` enum from slice 1 but **nothing writes it
+  until this lands**, so until then an import only ever meets `cdm-import` and `project-reset`.
+- Per-environment write-back of a changed password (§ 8).
 
 ## Consequences
 
@@ -271,34 +300,21 @@ Strictly that is **major**; with no external users, **minor** for `grant-api` an
 - 0010's (a) rules 3, 4, 5, 6 and 8 and Security notes 1 describe v1.16.0 and are superseded by
   this record; each carries a pointer here. (b) is re-pointed, not dropped.
 - `grant-etl` needs no counter change: #544's `passwordsSkippedConflict` is not shipped. Its
-  documents may need an assignment for every user that carries a password (open question 6).
+  documents may need an assignment for every user that carries a password (open question 2).
 
 ## Open questions
 
-For **Ale**:
+Ale's questions (global fallback in project apps, the cleanup migration, the purge timing and
+whether a project reset sets the global `isVerified`) were answered in review and are folded into
+§ 3, § 5, § 6, § 7 and the slicing plan. Still open, for **grant-agent**:
 
-1. **Global fallback in project apps.** Recommended: project credential alone when present, global
-   Grant password only when the project has none (§ 3). Alternative: never accept the global
-   password at a tenant surface. Which?
-2. **Cleanup of v1.16.0 global hashes** (clean break, § 6). Staging is re-imported, so nothing is
-   needed there. Ship a one-statement migration anyway that removes `hashedPassword` and
-   `passwordSource` from unverified Email methods marked `cdm-import`, so no environment keeps an
-   import-written password usable for platform login? Recommended yes: it is trivial and closes
-   the only remaining exposure. Skip it if nobody but staging ever ran v1.16.0.
-3. **Purge timing** of soft-deleted credentials: at the next data-retention run (proposed), or a
-   retention period like account deletion?
-4. **Does a project reset set the global `isVerified`**, as the magic link does
-   (`auth.handler.ts:1172-1181`), or leave it alone?
-
-For **grant-agent**:
-
-5. **Which token carries `email_verified`**, and how does a project app read it today (there is
+1. **Which token carries `email_verified`**, and how does a project app read it today (there is
    no such claim in `apps/api/src`)? 0010 (b) assumed one.
-6. **Password without an assignment** as a validation error (§ 2): can `validateSyncInput` check it
+2. **Password without an assignment** as a validation error (§ 2): can `validateSyncInput` check it
    across the `users` and `userAssignments` sections, and does any ETL send such rows?
-7. **Per-identity throttling**: which store (the cache used for OAuth state, or a table), and is it
+3. **Per-identity throttling**: which store (the cache used for OAuth state, or a table), and is it
    shared with platform login or separate? It gates slice 4.
-8. **Bulk revoke of a user's project grants** (§ 5): a repository method on `project_oauth_grants`
+4. **Bulk revoke of a user's project grants** (§ 5): a repository method on `project_oauth_grants`
    joined through `project_apps`, or a new column on the grant?
 
 ## References
