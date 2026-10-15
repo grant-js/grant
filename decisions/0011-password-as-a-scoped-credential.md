@@ -80,6 +80,14 @@ removes the machinery.
   `source` enum, parameterised by scope.
 - **No cross-scope reads.** Platform login checks only the platform credential; a project app's
   `password` provider checks only that project's credential. Neither falls back to the other.
+- **Identifier-agnostic.** Sign-in is two steps: **(1) resolve a login identifier to a user within
+  the scope, (2) verify that user's credential for the scope.** Today the only resolver is the
+  email address, through the Email method. The credential row has **no email column** and no
+  identifier at all; the verifier takes a **resolved user id**; the lockout keys on
+  **`(scope, user)`**, never on the identifier typed, so every identifier that resolves to one
+  user shares one guess budget; and the response is **identical for an unknown identifier and a
+  wrong password** (generic failure, dummy compare). Further resolvers plug in at step 1 without
+  touching storage (§ Follow-ups).
 - **MFA unchanged**: global enrolment.
 
 | Surface            | Providers it can offer                            | List comes from                       |
@@ -229,7 +237,7 @@ or OAuth, or resets (§ 6, which creates one). The result is the app authorizati
 magic-link callback already issues (`project-oauth.handler.ts:724-760`), never a platform session.
 
 **Identifier: email only** for now (identities are email-keyed globally and the legacy source
-signs in by email). Username is a follow-up.
+signs in by email), resolved at step 1 of § 1. Other identifiers are a follow-up.
 
 **Requirements carried from 0010 (b)**, each with what it really is today:
 
@@ -414,9 +422,15 @@ routes.
 
 - **Platform magic link** (an Email button on the console, mailbox proof only), once Email is no
   longer password-bearing there.
-- **Username as an alternative identifier** for a scope's password provider: unique per project
-  (platform: unique globally) and stored with the credential (a nullable `username` column with a
-  partial unique index). Identities stay email-keyed; the legacy source signs in by email.
+- **Further identifier resolvers**, which plug in at step 1 of § 1 and touch neither the
+  credential tables nor the verifier or lockout: a **username**, unique per project (and, for the
+  platform scope, globally unique), kept in its own per-scope identifier table; a phone number.
+  Identities stay email-keyed. Two things travel with that: a **non-mailbox identifier such as a
+  username still needs a verified recovery channel** (email or phone) for "Forgot password?", and
+  every identifier that resolves to a user shares that user's one `(scope, user)` guess budget.
+  A possible use, not claimed as needed: a per-project identifier could let legacy users who
+  **share one email address** (today keyed by legacy id, with no password) sign in individually;
+  nothing here assumes the legacy system has usernames.
 - **Self-service change of a project password.** A signed-in project-app user changes their
   project credential (`source: change`), with the rules of a reset: the `(project, user)`
   lockout, MFA at the ceremony when the platform requires it, and revocation of the user's
