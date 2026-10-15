@@ -176,13 +176,13 @@ the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, 
     this address, we've sent a link"), as `requestPasswordReset` already answers
     (`auth.handler.ts:780-817`, `auth.routes.ts:232-247`).
   - It **never creates an identity**: registration stays with "Create account" and respects
-    disabled public sign-up (`auth.handler.ts:253-262`). Following the link **verifies the Email
+    disabled public sign-up (`auth.handler.ts:262-267`). Following the link **verifies the Email
     method** (`isVerified`) and signs the person in with a **platform session**, not a
     project-app code.
   - **Rate limits**: per IP, by adding the route to `AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`
     (`rate-limit.middleware.ts:15-30`; the project equivalent is already there at `:21`), and
     **per address**, which is new: today forgot-password has only the global per-IP limiter
-    (`rate-limit.middleware.ts:107-114`), so the per-address limit should be added to it too.
+    (`rate-limit.middleware.ts:112-125`), so the per-address limit should be added to it too.
   - **It is also the console's recovery path when a password is locked** (slice 7), which is why
     it lands first.
   - **Eligibility**: see open question 1; recommended, only identities that already have an
@@ -192,8 +192,8 @@ the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, 
     (`project-oauth.handler.ts:543-559,675`, a platform key prefix and TTL), the mail send
     (`sendProjectOAuthMagicLink`, `:563`, a platform variant), and the verify-on-follow step
     (`resolveUserIdFromEmailForProject`, `auth.handler.ts:1157-1181`), used in a **find-only** mode:
-    its create branch (`:1183-1199`) must not run. The callback creates the session as `login`
-    does (`auth.handler.ts:575-592`), including the MFA step-up flag (`:66-77`), and hands it to the
+    its create branch (`:1186-1202`) must not run. The callback creates the session as `login`
+    does (`auth.handler.ts:568-580`), including the MFA step-up flag (`:66-77`), and hands it to the
     web app the way the platform OAuth callback does.
 - **Project apps are not the console.** Nothing in this section applies to the hosted project
   sign-in (§ 5), which keeps one view per provider.
@@ -347,7 +347,7 @@ of every handled row. This **replaces the separate cleanup migration** of the pr
   was the handover, so Grant owns them, and the person may be using that password to sign in to
   the platform today; dropping it would strand them for a rule that has already decided they own
   it. The distinct `source` keeps them identifiable and, like every non-`cdm-import` source, out
-  of reach of an import. _Alternative:_ clear them and make those people reset. Safer against a
+  of reach of an import. _Alternative considered:_ clear them and make those people reset. Safer against a
   hash a tenant once planted and the owner never changed; costlier for real users. Decided: carry.
 - **Idempotent**: `INSERT ... ON CONFLICT DO NOTHING`, and once `hashedPassword` is
   removed nothing matches again. **Report**: counts of methods scanned, copied by `source`,
@@ -537,7 +537,7 @@ For **grant-agent**:
 - Platform provider list: `apps/api/src/rest/routes/auth.routes.ts:268-277`,
   `apps/web/lib/oauth-providers.ts`
 - Console magic link, reused pieces: `apps/api/src/handlers/project-oauth.handler.ts:543-563,675`,
-  `apps/api/src/handlers/auth.handler.ts:1157-1181`; limits: `apps/api/src/middleware/rate-limit.middleware.ts:15-30,107-114`
+  `apps/api/src/handlers/auth.handler.ts:1157-1181`; limits: `apps/api/src/middleware/rate-limit.middleware.ts:15-30,112-125`
 - Project tables and conventions: `packages/@grantjs/database/src/schemas/project-apps.schema.ts`,
   `project-oauth-connections.schema.ts`, `project-user-api-keys.schema.ts`, `project-users.schema.ts`,
   `project-oauth-grants.schema.ts`, `user-authentication-methods.schema.ts`
