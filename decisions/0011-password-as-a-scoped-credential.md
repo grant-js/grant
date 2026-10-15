@@ -1,0 +1,492 @@
+# 0011 — Password as a scoped credential: platform and project
+
+- **Status**: Proposed
+- **Date**: 2026-10-15
+- **Context**: [#544](https://github.com/grant-js/grant/pull/544), an attempt to make ADR 0010's
+  import reach the identities migrated users really have, which showed the storage is wrong, not
+  the eligibility rule; and the realisation that "Email" already means two different things
+- **Amends**: [0010](./0010-cdm-import-of-bcrypt-password-hashes.md) (a) rules 3 to 6 and 8, and (b)
+- **Depends on**: [0008](./0008-per-project-oauth-connections.md) (project grain for project apps)
+- **Scope**: design only. This record changes no code; § Slicing lists the implementation slices.
+- **Compatibility**: the **import path** is a clean break (no users beyond the maintainer's own
+  consume it): no migration of v1.16.0 import data into project credentials, no dual read. The
+  **platform cut-over is not a wipe**: platform passwords belong to real users, and § 7 copies
+  every Grant-set hash verbatim so nobody resets.
+
+## Context
+
+**"Email" means two things.** On the platform it is email **and password**: registration hashes
+the password into the Email method's `providerData.hashedPassword`
+(`user-authentication-methods.service.ts:385-398`), login verifies it (`auth.handler.ts:421-430`),
+change and reset rewrite it (`user-authentication-methods.service.ts:706-710,821-836`). In a
+project app it is **magic link only**, with no password
+(`auth.handler.ts:1157-1158`, `requestProjectEmailMagicLink`,
+`project-oauth.handler.ts:485-520`). The platform therefore conflates two different facts:
+**mailbox proof** (an identity fact: global, `isVerified`, produced by an OTP or a magic link)
+and **knowledge of a secret** (a credential). Project apps are about to separate them; the
+platform should too.
+
+**Identities are global; a password is the only credential a tenant's input can write.** One
+email is one identity and one `user_authentication_methods` row, shared by every organization and
+project. A magic link and a GitHub or Google login hold no secret a tenant supplies. The bcrypt
+hash of ADR 0010 is the only one, and v1.16.0 writes it into that shared row
+(`user-provision.cdm-entity.ts:228-277`), where platform login reads it.
+
+**The legacy source holds one hash per environment for the same person.** Each environment is a
+project, so two projects can import different hashes into one global field. Measured on staging:
+2,527 identities, 203 in more than one project, 0 in more than one organization.
+
+**0010 already treats the imported hash as a project credential in everything but storage.** Its
+part (b) opens a **project app** only, yielding an app authorization code, never a platform
+session, and its consequences say the credential stops working for platform login after the
+verification window (`auth.handler.ts:460-467`). Rules 4 and 5 of 0010 exist only to make storing
+it in the global row safe.
+
+**Precedent.** ADR 0008 moved OAuth connections to project grain for project apps and left
+platform login on the global configuration.
+
+### What #544 showed (rejected alternative)
+
+#544 widened eligibility to "confined to the importing project's organization" and handled two
+environments disagreeing with a conflict tombstone. It works in tests and is the wrong direction:
+
+- **The membership read cannot be made in the import's own scope.** The import runs as the
+  restricted RLS role with the importing project as tenant, so `project_users` shows only that
+  project's rows (`project-users.schema.ts:51-55`). Confinement therefore reads on the login role,
+  outside the import transaction, a deliberate hole in tenant isolation that needs a second pooled
+  connection.
+- **Sibling imports race.** The credential is one JSON field with no lock; two environments
+  importing at once both write and no conflict is recorded.
+- **A conflict has no good outcome.** The tombstone removes both environments' passwords and sends
+  the person to reset, because two tenants disagree about a secret neither should own globally.
+- **Confinement is a heuristic** for "no other tenant relies on this identity", and needs an
+  OAuth-method guard and a rule for membership-less users to stay safe.
+
+All of that is eligibility machinery compensating for a global store. Removing the global store
+removes the machinery.
+
+## Decision
+
+**Identity and auth methods hold no Grant-side secret. A password is a credential with a scope:
+`platform` (the Grant console) or one `project` (that project's apps).**
+
+### 1. The model
+
+- **Identity**: global, unchanged.
+- **Auth methods**: Email (mailbox proof by OTP or magic link, sets `isVerified`), GitHub,
+  Google. Global, as today. **The Email method no longer carries a password.**
+- **Credential**: `(scope, user, hash, source)`. One verifier (bcrypt compare with a dummy compare
+  on a missing row), one throttle shape **per `(scope, user)`**, one reset and change flow and one
+  `source` enum, parameterised by scope.
+- **No cross-scope reads.** Platform login checks only the platform credential; a project app's
+  `password` provider checks only that project's credential. Neither falls back to the other.
+- **MFA unchanged**: global enrolment.
+
+| Surface            | Providers it can offer                            | List comes from                       |
+| ------------------ | ------------------------------------------------- | ------------------------------------- |
+| Platform (console) | Password, GitHub, Google (Email magic link later) | configuration (`/api/auth/providers`) |
+| Project app        | Email (magic link), Password, GitHub, Google      | the app's `enabledProviders`          |
+
+### 2. Storage: two tables behind one port
+
+- **`user_credentials`** (platform scope): `id`, `user_id` (`ON DELETE CASCADE`), `hash`,
+  `source`, `last_used_at`, `created_at`, `updated_at`, `deleted_at`; unique `(user_id) WHERE
+deleted_at IS NULL`. Like `users` and `user_authentication_methods` it is a core table with **no
+  RLS** (`docs/architecture/security.md:556-558`: core tables are reached through tenant-scoped
+  pivots).
+- **`project_user_credentials`** (project scope): the same columns plus `project_id`
+  (`ON DELETE CASCADE`), shaped like `project_user_api_keys` and `project_user_groups`
+  (`project_id` + `user_id` columns, not a foreign key to `project_users.id`, which is replaced
+  when a member is re-added); unique `(project_id, user_id) WHERE deleted_at IS NULL`; the same
+  restrictive `tenant_isolation_policy` on `app.current_project_id` as
+  `project-user-api-keys.schema.ts:44-49`. Each table has an audit-log table as
+  `project-oauth-connections.schema.ts:39-61` does.
+- **One port, one service**, parameterised by scope (`{ scope: 'platform' }` or
+  `{ scope: 'project', projectId }`): hashing, the verifier, the lockout store and `source`
+  rules are written once; only two thin repositories differ.
+
+`hash` is `varchar(255)`, a bcrypt hash (the `$2a$`/`$2b$`/`$2y$` prefix names the algorithm; no
+`algorithm` column until a second one exists). `source` is one enum: `register`, `cdm-import`,
+`reset`, `change`, `migrated`, `migrated-import`. `change` is in the enum from the start but, for
+the **project** scope, nothing writes it until the self-service follow-up lands. The scope is the
+table, so there is no `project-reset`: a reset is `reset` in either. The hash never appears in
+`providerData`, `metadata`, search, audit values, events or logs.
+
+**Why two tables, not one with a nullable `project_id`.** The deciding point is RLS. The project
+policy is `current_project_id IS NULL OR project_id = current_project_id`: an **unscoped** request
+sees every row. Platform login is unscoped by nature, so in a single table it would see every
+project's credentials and be one missing `project_id IS NULL` away from reading them, while the
+platform rows (`project_id` NULL) would be invisible under any project tenant role only because
+`NULL = x` happens to be null. The guarantee would rest on a predicate in every query. With two
+tables it is structural: a platform query cannot name a project row, a project-scoped import
+cannot name a platform row, and the project table keeps exactly the policy its siblings have. A
+single table would also need two partial unique indexes (`project_id IS NULL` and `IS NOT NULL`)
+and a policy that special-cases NULL.
+
+_Rejected:_ one table with nullable `project_id` (above); a column on `project_users` (replaced
+with the membership row, and its `metadata` is exported and searched, which 0010 already rejected
+for the hash); keeping the hash in the method's `providerData` with a project key (same race, and
+the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, deferred in 0008).
+
+### 3. Platform scope
+
+- **Registration** creates the identity, the Email method (unverified, with its OTP) and the
+  **platform credential** (`source: register`) in the same transaction
+  (`auth.handler.ts:228-335`; the hash moves out of `providerData` at
+  `user-authentication-methods.service.ts:392-397`). The `Connect` action (adding email and
+  password to an account that has only OAuth, same branch, `:385-386`) does the same.
+- **Login** with email and password resolves the identity through the Email method and verifies
+  the **platform credential** only (`auth.handler.ts:421-430` reads the new table). The request
+  contract (`provider: email`, `providerData.password`) is **unchanged**, so the cut-over is not
+  an API break.
+- **Change and reset** write the platform credential (`change`, `reset`), keeping today's rules:
+  change needs the current password when one exists and is a first set when none does
+  (`user-authentication-methods.service.ts:821-836`), and both revoke platform sessions. The reset
+  OTP stays in the Email method's `providerData` (`:660,693`): it is a mailbox-proof token, not a
+  credential.
+- **`hasPassword`** on the Email method becomes "a platform credential exists" (the resolver and
+  `authMethodHasPassword`, `auth-method-public.lib.ts:5-18`, change, the field does not).
+- **The verification window** (`auth.handler.ts:460-467`) is a property of the **Email method's
+  mailbox proof**, not of the secret: an unverified method older than
+  `AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS` is refused at login (`:458-467`,
+  `verification.lib.ts:5-7`), and a session carries `requiresEmailVerification` and a
+  `verificationExpiry` while it is unverified (`:558,592`). It sits after the credential check and
+  applies to whichever method logged in. **It stays exactly as is**: it still gates password
+  login on the Email method's `isVerified`, and nothing in the credential move changes who is
+  verified or when. The one reading that changes is conceptual: it is now plainly "this mailbox
+  was never proven", not "this password is stale".
+- **Sign-in surface.** The platform offers **Password plus the configured OAuth providers**,
+  which is what the console already does (`auth.routes.ts:268-277`, `apps/web/lib/oauth-providers.ts`,
+  the email and password form of `apps/web/app/[locale]/auth/login/page.tsx`). **There is no
+  platform "Email" button** (magic link on the platform) in this record: it is a follow-up. The
+  console's form becomes a "Password" provider in the same list as the OAuth buttons in slice 6;
+  the cut-over itself changes no UI.
+
+### 4. Project scope: import writes only the importing project's credential
+
+`users[].password` (unchanged contract, `findBy: email` only) upserts the row for
+`(importing project, resolved identity)`. **0010 (a)'s write to the global Email method's
+`hashedPassword` is removed outright**, with the `passwordSource` marker it set and every rule that
+guarded it. The new import path never reads or writes that slot.
+
+**A credential needs a member.** The credential is written in a step **after user assignment**,
+in the same transaction, and only for a user who is then a member of the importing project:
+either this document assigned them (`roles`, `groups` or `permissions` on the `users[]` row; the
+public document has no separate assignments section, `cdm-document.schemas.ts:265-301`, and
+`user-assignment.cdm-entity.ts:230-234` skips a row with no assignment, creating no membership) or
+they already were. **A password-only row for someone already a member of this project is
+allowed**, so a passwords-only delta works. Membership is read inside the import transaction,
+where the restrictive policy on `project_users` shows exactly the importing project's rows
+(`project-users.schema.ts:51-55`): no cross-tenant read. A password for a user who is not a member
+afterwards is a **validation error raised at apply time**, which rolls the transaction back and
+names the position, never the address or hash. `validateSyncInput` cannot decide it, because it
+is a pure function with no view of existing members.
+
+Eligibility collapses to that. The v1.16.0 rules (this project's own import created it,
+unverified, not found through GitHub or Google, no Grant-set password) all protected a global
+field and go away. Forward-only provenance moves to the project:
+
+- no row: create (`passwordsImported`);
+- `source: cdm-import` and a different hash: replace (`passwordsUpdated`); identical:
+  `passwordsUnchanged`;
+- any other `source` (the person reset or changed it): never touched, `passwordsSkippedExisting`;
+- an absent `password` never deletes anything; `replace` keeps credentials, as 0010 rule 6.
+
+**Counters.** `passwordsImported`, `passwordsUpdated`, `passwordsUnchanged` keep their meaning.
+`passwordsSkippedExisting` keeps one narrow meaning: a project credential the person owns. No
+conflict counter: two projects never write the same row.
+
+**Verified and OAuth-found identities are no longer excluded.** The reasons to skip them guarded a
+credential that opened the identity everywhere. This one opens the importing tenant's apps only,
+and the tenant already decides who is a member and what roles they hold. The platform account, the
+user's other projects and their GitHub or Google login are untouched. "Verification is the
+handover" (0010 rule 4) becomes **a project-side reset or change is the handover**. § 8 is plain
+about what limits a planted credential.
+
+### 5. Project-app sign-in: `password` is its own provider
+
+Password sign-in is **not a mode of Email**. `password` is a new value in
+`ProjectApp.enabledProviders` (`project-apps.schema.ts:31`, a `string[]`) beside `email` (magic
+link, unchanged), `github` and `google`. It **replaces** 0010 (b)'s `allow_password_sign_in`
+boolean, so no new column. Two consequences of the list's semantics:
+
+- An **empty or null `enabledProviders` means "every provider"** today
+  (`project-oauth.handler.ts:503-504`, `project-oauth-entry.lib.ts:14-16`). `password` is
+  **opt-in only**: on when the list names it, never by being empty, so no existing app grows a
+  password form.
+- The value is one more string in GraphQL, REST and the dashboard's provider field
+  (`enabledProviders: [String!]`) and in `ProjectAppPublicInfo.enabledProviders`.
+
+**Hosted sign-in** shows a **"Password" button with a key icon**, parallel to the Email icon and
+"Email" label, when the app enables it (`project-oauth-entry.lib.ts:9-20` gains `showPassword`).
+Clicking it opens an email and password form with **"Forgot password?"**, which starts the
+project reset of § 6. Email stays magic link only. This is the same list the platform console
+renders (§ 1), fed by `enabledProviders` instead of configuration.
+
+**The password provider verifies only the project credential.** There is **no fallback to the
+global or platform credential**; a person with no project credential there signs in by magic link
+or OAuth, or resets (§ 6, which creates one). The result is the app authorization code the
+magic-link callback already issues (`project-oauth.handler.ts:724-760`), never a platform session.
+
+**Identifier: email only** for now (identities are email-keyed globally and the legacy source
+signs in by email). Username is a follow-up.
+
+**Requirements carried from 0010 (b)**, each with what it really is today:
+
+- **Per-identity lockout scoped to `(scope, user)`**, here `(project, user)`, is a prerequisite of
+  the sign-in slice and guards **only the project credential**. The only live limiter is per
+  client address (`rate-limit.middleware.ts:98-104`, key `auth:${ip}`);
+  `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES` are defined at
+  `env.config.ts:149,152` and nothing reads them. A tenant can lock only its own project's
+  credential, never platform login (§ 8). The store is built once for both scopes (slice 1);
+  whether the platform scope turns it on is open question 1.
+- Generic failures and a **dummy compare** so timing does not reveal whether a credential exists.
+- **MFA at the ceremony** when the platform requires it: `computeRequiresMfaStepUp` steps up only
+  when `config.auth.minAalAtLogin === 'aal2'` and the user has an active enrolment
+  (`auth.handler.ts:66-77`). 0010 (b)'s "or the app or project requires it" is **not** in that
+  function and is not promised here.
+- Sign-in **requires an existing membership**: a password never creates one (sign-up stays on
+  magic link and OAuth, `project-oauth.handler.ts:758-760`).
+- **`email_verified`** is **not a Grant-side control**. No such claim exists in `apps/api/src`;
+  project-app tokens carry no verification state and are treated as verified
+  (`docs/architecture/security.md`, token table). Whether to expose one is open question 4, and
+  nothing here relies on it.
+
+_Alternatives considered:_
+
+- **Fall back to the global or platform credential when the project has none.** It makes the new
+  public verify route an extra online guessing surface for a credential that is not the tenant's:
+  a project administrator can already add any global user by email, so without planting anything
+  they could test that person's platform password. The only live limiter is per client address; a
+  **separate** per-identity throttle for that path is an extra guess budget that does not lock
+  platform login, and a **shared** one lets a tenant lock a person out of platform login. Neither
+  is acceptable, so the provider never reads the platform credential.
+- Both credentials accepted at once: the same surface, doubled.
+- A per-app precedence setting: another knob for a rule that no longer exists.
+- Password as a mode of the Email provider with an `allow_password_sign_in` boolean (0010 (b)): a
+  second switch beside `enabledProviders`, and a hosted page that cannot show "Email" and
+  "Password" as the two different things they are.
+
+### 6. Reset and change: one flow, parameterised by scope
+
+- **Platform** keeps its flow (`requestPasswordReset`, `resetPassword`, `changePassword`) and
+  writes the platform credential. It does not set `isVerified`, as today.
+- **Project** "Forgot password?" applies to an **existing member** only, and the response is the
+  same whether or not the address is a member, so the form does not enumerate them. Completing it
+  proves the mailbox, so it **sets the global `isVerified`** exactly as the magic link does
+  (`auth.handler.ts:1172-1181`), and **writes the project credential** (`source: reset`). It
+  invalidates **that project's app sessions**: the user's `project_oauth_grants` across the
+  project's apps (`project-oauth-grants.schema.ts`, keyed by `project_app_id`; no bulk revoke
+  exists yet: the primitive is `revokeGrant` at `project-oauth-grants.service.ts:118`, called one
+  grant at a time at `project-oauth.handler.ts:1134,1166`).
+- Neither reads or clears the other scope's credential, and a platform reset revokes platform
+  sessions only (`user-authentication-methods.service.ts:735`).
+- A later import never overwrites a project credential whose `source` is not `cdm-import` (§ 4).
+
+### 7. Platform cut-over migration (not a wipe)
+
+One **schema migration**, one transaction, idempotent, count-reporting, copies platform passwords
+out of the Email method and removes the hash from `providerData`. For each
+`user_authentication_methods` row with `provider = 'email'` and a non-empty
+`provider_data->>'hashedPassword'`:
+
+| Row                                                       | Result                                                                    |
+| --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| no `passwordSource` (set in Grant)                        | **copied verbatim** to `user_credentials`, `source: migrated`             |
+| `passwordSource = 'cdm-import'` and `is_verified = true`  | **copied verbatim**, `source: migrated-import`                            |
+| `passwordSource = 'cdm-import'` and `is_verified = false` | **not carried**: the hash is dropped (the tenant-written, unverified one) |
+
+Then `hashedPassword`, `passwordSource` and any import markers are removed from `provider_data`
+of every handled row. This **replaces the separate cleanup migration** of the previous draft.
+
+- **Passwords keep working, no resets**: the same bcrypt hash is read from another table, and
+  `compareSync` takes the cost from the hash (0010 Context).
+- **Verified `cdm-import` hashes are carried** (`migrated-import`). By 0010 rule 4 verification
+  was the handover, so Grant owns them, and the person may be using that password to sign in to
+  the platform today; dropping it would strand them for a rule that has already decided they own
+  it. The distinct `source` keeps them identifiable and, like every non-`cdm-import` source, out
+  of reach of an import. _Alternative:_ clear them and make those people reset. Safer against a
+  hash a tenant once planted and the owner never changed; costlier for real users. Open
+  question 2 asks Ale to confirm.
+- **Idempotent**: `INSERT ... ON CONFLICT DO NOTHING`, and once `hashedPassword` is
+  removed nothing matches again. **Report**: counts of methods scanned, copied by `source`,
+  dropped (unverified import), skipped because a credential already existed, and stripped
+  without a copy (soft-deleted methods and a second Email method for the same user, whose hash is
+  not carried: the credential belongs to the identity, so the most recently updated hash wins).
+  Emitted as `RAISE NOTICE` lines.
+- The staging wipe and restore runs this migration on the restored Lisbon data; the real users
+  (the maintainer, the Alteos members, personal projects) keep their passwords.
+
+**Residual copies.** The hash also lived in `user_authentication_methods.provider_data`,
+including its GIN index (`user-authentication-methods.schema.ts:41`); the update leaves dead
+tuples until vacuum, and backups keep the old value. Neither is scrubbed here.
+
+`changePassword` and `resetPassword` stop touching `passwordSource` and `hashedPassword` in the
+**same deployable unit** as this migration (§ Slicing), never before it: platform reset does not
+set `isVerified`, so removing the marker handling first would let the statement strip a Grant-set
+hash that still carried a leftover marker.
+
+### 8. Security notes
+
+- **What a tenant admin can do.** CDM already lets a project administrator add any global user to
+  the project by email (0010 Security notes 1). Now the same administrator can plant a hash for
+  that person, which opens **only that tenant's apps** through the password provider. Compare with
+  today: a global write that, with the verification window open, opened the **platform** account
+  of a person the administrator has no relationship with. The new exposure is inside the tenant's
+  own trust domain, where the administrator already controls membership and roles; the old one
+  crossed it.
+- **What does _not_ limit it on the token.** Grant does not enforce `email_verified` or a
+  post-mint MFA check on a project-app token: those tokens skip the email-verification and MFA
+  guards (`email-verification-rest-guard.ts:25-28`, `mfa-rest-guard.ts:23`) and carry no
+  verification state. The real limits are the token's `aud` (the app's `client_id`) and `scope`,
+  which confine it to the tenant's own apps, and MFA **at the sign-in ceremony** when the
+  platform requires it (`computeRequiresMfaStepUp`, `auth.handler.ts:66-77`, steps up only when
+  `minAalAtLogin` is `aal2`). A tenant app that wants more must ask for it itself.
+- **Lockout residual.** The per-`(project, user)` lockout lets a tenant, or anyone able to guess
+  its members' addresses, lock the **project** password of those users out. It cannot touch
+  platform login or another project, and the user can still use magic link or a reset. If the
+  platform scope turns its lockout on (open question 1), the same trade applies there: an
+  attacker who knows an address can lock that person's platform password, with OAuth and a
+  password reset as the way back.
+- **Pre-claim** of an address with no Grant identity yet remains (the same administrator creates
+  the identity); the person recovers by a project reset or magic link.
+- **Audit.** Each credential table has an audit-log table recording create, replace, reset,
+  change and delete with `source`, scope and user, **never the hash**. Events:
+  `user.password_changed` as today for the platform scope, and a `project_user.password_set`
+  (reason `import`, `reset` or `change`) for the project scope; counters only on the import
+  completion event.
+- **GDPR.** The data export lists, per scope and project, that a credential exists with its
+  `source` and dates, **never the hash** (`me.handler.ts:386-402` exports methods without
+  `providerData` for the same reason). Erasure: a hard-deleted user cascades; a soft-deleted
+  user's credentials are soft-deleted in the same transaction. Removing a project member
+  (`project-users.service.ts:408`) soft-deletes their project credential **in the same
+  transaction**, so re-adding them never revives an old password. Slice 1 **extends**
+  `data-retention-cleanup.job.ts` to purge soft-deleted credentials on its next run: today it
+  hard-deletes only users whose accounts passed `accountDeletionRetentionDays` and purges no
+  soft-deleted rows (decided, no retention period). Project removal cascades.
+- **Timing and cost** as 0010 Security notes 2 and 6 (cost ceiling, constant-time compare), now per
+  credential.
+
+## Slicing plan
+
+1. **Credential storage, port and verifier for both scopes.** The two tables, audit tables,
+   migration of the **schema only**, repositories, the scoped service and port, the verifier with
+   dummy compare, the per-`(scope, user)` **lockout store** (built here, enabled for the project
+   scope by slice 4), member-removal and user-erasure hooks, export entry, and the retention
+   extension. No behaviour change.
+2. **Platform cut-over: one deployable unit** (one PR, or a stack merged atomically): the data
+   migration of § 7, platform register, connect, login, change and reset reading and writing the
+   platform credential, `hasPassword`, **and** the import ceasing to write the global slot and
+   the marker handling removed from `changePassword` and `resetPassword`. Tests assert a migrated
+   hash still logs in, registration and reset write the credential, and an unverified `cdm-import`
+   hash is not carried.
+3. **Import writes project credentials** (§ 4): the step after assignment, the apply-time
+   membership check, counters, tests, OpenAPI and docs. _Reusable from #544:_ resolving the rows
+   up front in one batched lookup and deciding in memory (here one `IN` query on the credential
+   table, inside the import transaction and RLS-visible, so none of #544's login-role read or
+   confinement logic is needed), the REST `ProjectSyncJob.result` schema listing the password
+   counters with descriptions, and its OpenAPI test. _Not reusable:_ confinement, the tombstone
+   and `passwordsSkippedConflict`, `clearCdmPasswordMarkers`, the OAuth guard. Slice 3 may merge
+   with or after slice 2, but never before it (the import must not write a slot slice 2 removes).
+4. **Project-app `password` provider** (0010 (b), re-pointed): the `password` value of
+   `enabledProviders` through GraphQL, REST and the dashboard's provider field (replacing
+   `allow_password_sign_in`, opt-in only), the sign-in route verifying the project credential
+   only, the `(project, user)` lockout switched on, dummy compare, MFA at the ceremony, **and the
+   web hosted sign-in UI**: the "Password" button with a key icon, the email and password form,
+   the "Forgot password?" link, and i18n.
+5. **Project-app reset and forgot password** (§ 6), with the bulk revoke of a user's grants in a
+   project.
+6. **Platform sign-in UI shows Password as its own button** beside the OAuth buttons (a follow-up
+   if the cut-over runs long; it changes no API).
+
+### Release
+
+**Changeset: minor, with a BREAKING note** (Ale's call; strictly semver would say major). The
+public contract is almost unchanged (`users[].password`, the four counters, the login and
+register requests), but the note must say: password hashes **move** from `providerData.hashedPassword`
+to a credential table (anything reading that field breaks; `hasPassword` is preserved); an
+imported password no longer opens the platform and unverified `cdm-import` hashes are dropped by
+the migration; and a password for a user who is not a project member after an import is rejected.
+`grant-api` and `@grantjs/schema` are bumped; slices 1, 4 and 5 add a table, a provider value and
+routes.
+
+### Follow-ups (out of scope for the slices above)
+
+- **Platform magic link** (an Email button on the console, mailbox proof only), once Email is no
+  longer password-bearing there.
+- **Username as an alternative identifier** for a scope's password provider: unique per project
+  (platform: unique globally) and stored with the credential (a nullable `username` column with a
+  partial unique index). Identities stay email-keyed; the legacy source signs in by email.
+- **Self-service change of a project password.** A signed-in project-app user changes their
+  project credential (`source: change`), with the rules of a reset: the `(project, user)`
+  lockout, MFA at the ceremony when the platform requires it, and revocation of the user's
+  project grants. Until it lands nothing writes `change` in the project scope.
+- **Per-environment write-back** of a changed password: per-project credentials make it possible
+  without touching a global field.
+
+## Consequences
+
+- The Email method is purely mailbox proof. Registering, resetting and changing a platform
+  password never edits `provider_data`.
+- Imports stop touching global state, and `passwordsSkippedExisting` drops from "almost everyone"
+  to "people who reset it themselves". Two environments of one source system each keep their own
+  hash for the same person: no conflicts, nothing lost, no resets.
+- A person who verified, then rotated only the legacy password, is **re-synchronized** until they
+  reset in the project app; 0010's accepted cost disappears.
+- An imported password no longer opens the **platform**: it could only ever do so inside the
+  verification window or after verification, which 0010 already called unwanted for project apps.
+- Password sign-in is an explicit, opt-in provider with its own button; no app gains it by having
+  an empty provider list, and the platform credential is never accepted at a tenant surface.
+- 0010's (a) rules 3, 4, 5, 6 and 8 and Security notes 1 describe v1.16.0 and are superseded by
+  this record; each carries a pointer here. (b) is re-pointed, not dropped.
+- `grant-etl` needs no counter change: #544's `passwordsSkippedConflict` is not shipped. Its
+  documents may need an assignment, or an existing membership, for every user that carries a
+  password.
+- The published `@grantjs/client`, `@grantjs/server` and `@grantjs/cli` keep their request
+  contracts; any consumer of `providerData.hashedPassword` (none in this repository outside the
+  files cited) is affected.
+
+## Open questions
+
+For **Ale**:
+
+1. **Platform lockout.** The `(scope, user)` store lands in slice 1 and the project provider uses
+   it. Turn it on for platform login at the cut-over (using the unread
+   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES`), or later, separately?
+   Recommended **separately**: the cut-over is already a storage change, and a lockout on a
+   console with no magic link is a way to deny an admin their own login.
+2. **Verified `cdm-import` hashes** carried to the platform credential as `migrated-import`
+   (recommended) or cleared (§ 7).
+3. **No platform "Email" button now**, Password plus OAuth only (recommended, § 3), with platform
+   magic link a follow-up.
+
+For **grant-agent**:
+
+4. **Which token carries `email_verified`**, if any, and how a project app reads it (there is no
+   such claim in `apps/api/src`). Nothing in this record relies on one.
+5. **Apply-time membership check** (§ 4): which handler writes the project credential after
+   assignment (a new handler ordered after `user-assignment.cdm-entity.ts`, or a step in it), and
+   does any ETL send password rows for users that are not and will not be members?
+6. **Lockout store**: the cache used for OAuth state, or a table. Its shape, per `(scope, user)`
+   and guarding one credential, is decided; only the store is open. It gates slice 4.
+7. **Bulk revoke of a user's project grants** (§ 6): a repository method on
+   `project_oauth_grants` joined through `project_apps`, or a new column on the grant?
+8. **Other readers of `providerData.hashedPassword` and `hasPassword`**: this record found
+   `auth.handler.ts`, `user-authentication-methods.service.ts`, `auth-method-public.lib.ts`, the
+   import entity and an e2e helper. Anything in the published SDKs or the web app that reads the
+   field directly, or a user with two Email methods, would need handling in slice 2.
+
+## References
+
+- Platform password today: `apps/api/src/handlers/auth.handler.ts:66-77,228-335,421-430,460-467`,
+  `apps/api/src/services/user-authentication-methods.service.ts:385-398,706-710,821-836`,
+  `apps/api/src/lib/auth-method-public.lib.ts:5-18`
+- Import today: `apps/api/src/lib/cdm/entities/user-provision.cdm-entity.ts:92-277`
+- Project sign-in: `apps/api/src/handlers/project-oauth.handler.ts:485-520,724-760`,
+  `apps/web/lib/project-oauth-entry.lib.ts:9-20`
+- Platform provider list: `apps/api/src/rest/routes/auth.routes.ts:268-277`,
+  `apps/web/lib/oauth-providers.ts`
+- Project tables and conventions: `packages/@grantjs/database/src/schemas/project-apps.schema.ts`,
+  `project-oauth-connections.schema.ts`, `project-user-api-keys.schema.ts`, `project-users.schema.ts`,
+  `project-oauth-grants.schema.ts`, `user-authentication-methods.schema.ts`
+- Rejected alternative: [#544](https://github.com/grant-js/grant/pull/544)

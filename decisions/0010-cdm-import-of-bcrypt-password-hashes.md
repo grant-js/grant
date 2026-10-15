@@ -1,9 +1,10 @@
 # 0010 — CDM imports carry bcrypt password hashes into the credential store, and project apps can sign in with them
 
 - **Status**: Proposed
-- **Amended by**: [0011](./0011-project-scoped-password-credentials.md) (Proposed). The imported
-  credential moves from the global email authentication method to a per-project credential that
-  only that project's apps verify. Rules 3 to 6 and 8 of (a), Security notes 1 and all of (b) below
+- **Amended by**: [0011](./0011-password-as-a-scoped-credential.md) (Proposed). Passwords stop living in the
+  global email authentication method: they become a credential with a scope, `platform` or one
+  `project`, and an imported password is a project credential that only that project's apps
+  verify. Rules 3 to 6 and 8 of (a), Security notes 1 and all of (b) below
   describe what v1.16.0 shipped; where 0011 is accepted it governs. This record is left as written.
 - **Date**: 2026-10-15
 - **Context**: an adopter migrating users from a legacy system, who wants them to sign in to
@@ -58,7 +59,7 @@ object that is deleted when its job ends (ADR 0009).
 
 ### (a) Import a pre-hashed bcrypt credential: this change
 
-_Amended by [0011](./0011-project-scoped-password-credentials.md): rules 3 to 6 and 8 (where the hash is stored, who owns it, which identities may receive it, the counters) are replaced by a per-project credential. Rules 1, 2 and 7 stand._
+_Amended by [0011](./0011-password-as-a-scoped-credential.md): rules 3 to 6 and 8 (where the hash is stored, who owns it, which identities may receive it, the counters) are replaced by a per-project credential. Rules 1, 2 and 7 stand._
 
 1. **A per-user `password: { algorithm: 'bcrypt', hash }`** on `UserCdmInput` (GraphQL) and
    `users[]` (REST and the shared document schema), both strict. `algorithm` is the literal
@@ -138,7 +139,7 @@ _Amended by [0011](./0011-project-scoped-password-credentials.md): rules 3 to 6 
 
 ### (b) Email and password as a per-project-app sign-in option: follow-up slice
 
-_Amended by [0011](./0011-project-scoped-password-credentials.md) § 3: password sign-in is its own `password` value of `enabledProviders` (replacing the `allow_password_sign_in` boolean below), verified against the project's own credential only, never the global Grant password._
+_Amended by [0011](./0011-password-as-a-scoped-credential.md) § 5: password sign-in is its own `password` value of `enabledProviders` (replacing the `allow_password_sign_in` boolean below), verified against the project's own credential only, never the global Grant password._
 
 Not built here; this is the shape the slice is held to.
 
@@ -210,7 +211,7 @@ Not built here; this is the shape the slice is held to.
 
 ## Security notes (for the security review)
 
-1. **Identity eligibility is the control against cross-tenant takeover** (_superseded by [0011](./0011-project-scoped-password-credentials.md) § 7: the credential no longer lives on the shared identity_). CDM already lets a
+1. **Identity eligibility is the control against cross-tenant takeover** (_superseded by [0011](./0011-password-as-a-scoped-credential.md) § 8: the credential no longer lives on the shared identity_). CDM already lets a
    project administrator attach project membership to any global user by email. A credential is
    different: it is global, and with it the administrator could sign in as that user. The import
    therefore writes a credential only where it created the identity, or where an earlier import
