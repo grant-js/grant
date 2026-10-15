@@ -1,4 +1,5 @@
 {
+  "agentGuidance": false,
   "globalPassThroughEnv": [
     "NODE_ENV",
     "APP_URL",
