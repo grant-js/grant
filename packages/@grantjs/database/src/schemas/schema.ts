@@ -109,6 +109,13 @@ import {
   projectUserApiKeysRelations,
 } from './project-user-api-keys.schema';
 import {
+  projectUserCredentialAuditLogs,
+  projectUserCredentialAuditLogsRelations,
+  projectUserCredentialLockouts,
+  projectUserCredentials,
+  projectUserCredentialsRelations,
+} from './project-user-credentials.schema';
+import {
   projectUserGroupAuditLogs,
   projectUserGroups,
   projectUserGroupsRelations,
@@ -141,6 +148,13 @@ import {
   userAuthenticationMethods,
   userAuthenticationMethodsRelations,
 } from './user-authentication-methods.schema';
+import {
+  userCredentialAuditLogs,
+  userCredentialAuditLogsRelations,
+  userCredentialLockouts,
+  userCredentials,
+  userCredentialsRelations,
+} from './user-credentials.schema';
 import { userGroups, userGroupsAuditLogs, userGroupsRelations } from './user-groups.schema';
 import {
   userMfaFactorAuditLogs,
@@ -231,6 +245,9 @@ export const schema = {
   projectTags,
   projectUserApiKeys,
   projectUserApiKeyAuditLogs,
+  projectUserCredentials,
+  projectUserCredentialAuditLogs,
+  projectUserCredentialLockouts,
   projectUsers,
   projects,
   roleGroups,
@@ -247,6 +264,9 @@ export const schema = {
   userTags,
   users,
   userAuthenticationMethods,
+  userCredentials,
+  userCredentialAuditLogs,
+  userCredentialLockouts,
   userMfaFactors,
   userMfaRecoveryCodes,
   userMfaFactorAuditLogs,
@@ -299,6 +319,8 @@ export const schema = {
   projectTagsRelations,
   projectUserApiKeysRelations,
   projectUserApiKeyAuditLogsRelations,
+  projectUserCredentialsRelations,
+  projectUserCredentialAuditLogsRelations,
   projectUsersRelations,
   apiKeysRelations,
   apiKeyAuditLogsRelations,
@@ -318,6 +340,8 @@ export const schema = {
   accountProjectsRelations,
   accountsRelations,
   userAuthenticationMethodsRelations,
+  userCredentialsRelations,
+  userCredentialAuditLogsRelations,
   userMfaFactorsRelations,
   userMfaRecoveryCodesRelations,
   userSessionsRelations,

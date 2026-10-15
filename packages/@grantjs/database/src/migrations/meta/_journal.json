@@ -603,6 +603,13 @@
       "when": 1791997251178,
       "tag": "0085_sparkling_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1792103329039,
+      "tag": "0086_broken_rage",
+      "breakpoints": true
     }
   ]
 }
