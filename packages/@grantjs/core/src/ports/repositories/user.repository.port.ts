@@ -41,6 +41,32 @@ import type {
 
 import type { IEntityExistence, SelectedFields } from './common';
 
+/**
+ * What a CDM password import needs to know about one existing email authentication
+ * method, resolved for a whole import at once (ADR 0010, Amendment).
+ */
+export interface CdmPasswordIdentity {
+  /** The Email authentication method the row was resolved to. */
+  methodId: string;
+  userId: string;
+  /** The method's stored `providerId` (the address), as stored. */
+  providerId: string;
+  /**
+   * True when the user is confined to the importing project's organization: every active
+   * project membership is in a project of that organization, every active organization
+   * membership is that organization, and there is at least one. Always false when the
+   * importing project does not belong to exactly one organization.
+   */
+  confinedToImportingOrganization: boolean;
+  /**
+   * True when the user also has an active GitHub or Google authentication method: a person
+   * who signs in elsewhere is a real account, not an import's to give a password.
+   */
+  hasOAuthMethod: boolean;
+  /** `users.metadata.cdmImport` as stored, when the user was created by a CDM import. */
+  cdmImport: { projectId: string | null; kind: string | null; externalKey: string | null } | null;
+}
+
 export interface IUserRepository extends IEntityExistence {
   getUsers(
     params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
@@ -59,6 +85,22 @@ export interface IUserRepository extends IEntityExistence {
     params: { projectId: string; kind: string; externalKey: string },
     transaction?: unknown
   ): Promise<string | null>;
+
+  /**
+   * Resolve, for all `emails` of a CDM import in a constant number of queries (chunked on
+   * very large imports, never per address), the existing Email authentication methods the
+   * password rules need to decide on: who the user is, whether the user is confined to the
+   * importing project's organization, and which import created the user.
+   *
+   * Reads run without the tenant (RLS) session: eligibility looks across every project and
+   * organization the user belongs to, which the importing project's own tenant scope cannot
+   * see. The result never leaves the server. Addresses match case-insensitively and
+   * exactly (no wildcards); an address with no Email method is absent from the result.
+   */
+  findCdmPasswordIdentities(params: {
+    projectId: string;
+    emails: readonly string[];
+  }): Promise<CdmPasswordIdentity[]>;
 
   updateUser(
     id: string,

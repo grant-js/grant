@@ -3292,6 +3292,7 @@ export type SyncProjectResultResolvers<
   groupsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   importId?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   passwordsImported?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  passwordsSkippedConflict?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   passwordsSkippedExisting?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   passwordsUnchanged?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   passwordsUpdated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

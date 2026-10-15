@@ -156,6 +156,32 @@ describe('imported password credentials (ADR 0010)', () => {
     expect(body).toContain('"password"');
     expect(body).toContain('bcrypt');
     expect(operation?.description).toContain('passwordsSkippedExisting');
+    expect(operation?.description).toContain('passwordsSkippedConflict');
+  });
+
+  it('describes every password counter on the sync job result', () => {
+    const schemas = (document.components?.schemas ?? {}) as Record<
+      string,
+      { properties?: Record<string, { properties?: Record<string, { description?: string }> }> }
+    >;
+    const job = schemas['ProjectSyncJob'];
+    const result = job?.properties?.result as unknown as {
+      properties?: Record<string, { description?: string }>;
+      anyOf?: Array<{ properties?: Record<string, { description?: string }> }>;
+    };
+    const properties =
+      result?.properties ?? result?.anyOf?.find((member) => member.properties)?.properties ?? {};
+
+    for (const counter of [
+      'passwordsImported',
+      'passwordsUpdated',
+      'passwordsUnchanged',
+      'passwordsSkippedExisting',
+      'passwordsSkippedConflict',
+    ]) {
+      expect(properties[counter], counter).toBeDefined();
+      expect(properties[counter]?.description, counter).toBeTruthy();
+    }
   });
 
   it('says the payload download redacts hashes', () => {

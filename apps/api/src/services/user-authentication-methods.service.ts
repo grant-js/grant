@@ -16,7 +16,7 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
-import { PASSWORD_SOURCE_PROVIDER_DATA_KEY } from '@/constants/cdm-import.constants';
+import { clearCdmPasswordMarkers } from '@/constants/cdm-import.constants';
 import { authMethodHasPassword } from '@/lib/auth-method-public.lib';
 import {
   AuthenticationError,
@@ -707,7 +707,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     const providerData = (targetMethod.providerData as Record<string, unknown>) || {};
     providerData.hashedPassword = hashedPassword;
-    delete providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY];
+    clearCdmPasswordMarkers(providerData);
 
     delete providerData.passwordResetOtp;
 
@@ -833,7 +833,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     const reason = hashedPassword ? 'change' : 'set';
 
     providerData.hashedPassword = hashSecret(newPassword);
-    delete providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY];
+    clearCdmPasswordMarkers(providerData);
 
     await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       emailMethod.id,

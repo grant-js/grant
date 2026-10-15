@@ -314,12 +314,16 @@ A user identified by \`key.findBy: "email"\` may carry \`password: { algorithm: 
 existing bcrypt hash (\`$2a$\`, \`$2b$\` or \`$2y$\`, cost 4 to 15) such as Go's
 \`bcrypt.GenerateFromPassword\` writes. It is stored as the user's email password credential, where
 platform login verifies it, and is marked as imported: the importing system owns it while the
-email is unverified, and a later import with a different hash replaces it. Once the owner verifies the
+email is unverified, and a later import of the same project with a different hash replaces it. Once the owner verifies the
 address, or the password is set, changed or reset in Grant, an import never touches it again. An absent
-\`password\` never deletes one. A credential is only written for an identity the import creates, or one
-an earlier import of this project created whose email is still unverified (never to one found
-through GitHub or Google). The result counts
-\`passwordsImported\`, \`passwordsUpdated\`, \`passwordsUnchanged\` and \`passwordsSkippedExisting\`.
+\`password\` never deletes one. A credential is only written for an identity the import creates, one this
+project's own import created, or an existing identity confined to this project's organization (every project
+and organization membership it has is in that organization, and it has at least one) whose email is still
+unverified; never to one found through GitHub or Google. When two projects of one organization import
+different hashes for the same identity, the stored hash is removed and the user signs in through password
+reset (a conflict: neither environment's password wins, whatever the import order). The result counts
+\`passwordsImported\`, \`passwordsUpdated\`, \`passwordsUnchanged\`, \`passwordsSkippedExisting\` and
+\`passwordsSkippedConflict\`.
 A \`password\` on any other user, or an invalid hash, is a validation error that never echoes the
 hash. The hash is never kept in metadata, search tokens, audit values or events, is removed
 from the stored job payload when the job ends, and is replaced by \`[redacted]\` in the payload download.
