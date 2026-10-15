@@ -3476,6 +3476,43 @@
         "loginRequired": "Sie müssen angemeldet sein, um Ihr Konto zu löschen",
         "deleteSuccessDescription": "Ihr Konto wurde erfolgreich gelöscht",
         "deleteErrorDescription": "Kontolöschung fehlgeschlagen"
+      },
+      "identityDeletion": {
+        "title": "Identität löschen",
+        "description": "Löschen Sie Ihre Identität und alle zugehörigen Daten dauerhaft",
+        "warning": "Diese Aktion kann nicht rückgängig gemacht werden. Ihre Identität und alle damit verknüpften Daten werden dauerhaft gelöscht.",
+        "consequences": {
+          "title": "Was passiert, wenn Sie Ihre Identität löschen:",
+          "data": "Ihre Identität, Ihr Profil und Ihre Einstellungen werden dauerhaft gelöscht",
+          "dataTitle": "Identitätsdaten",
+          "dataDescription": "Ihre Identität, Ihr Profil und Ihre Einstellungen werden dauerhaft gelöscht",
+          "access": "Sie verlieren den Zugriff auf alle Projekte, in denen Sie Mitglied sind",
+          "accessTitle": "Zugriffsverlust",
+          "accessDescription": "Sie verlieren den Zugriff auf alle Projekte, in denen Sie Mitglied sind",
+          "irreversible": "Diese Aktion ist unwiderruflich und kann nicht rückgängig gemacht werden",
+          "irreversibleTitle": "Unwiderruflich",
+          "irreversibleDescription": "Diese Aktion kann nicht rückgängig gemacht werden",
+          "retentionTitle": "Aufbewahrungsfrist"
+        },
+        "deleteButton": "Meine Identität löschen",
+        "dialog": {
+          "title": "Identität löschen",
+          "description": "Sind Sie sich absolut sicher, dass Sie Ihre Identität löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden und alle Ihre Daten werden dauerhaft entfernt.",
+          "warning": "Bitte bestätigen Sie Ihre Benutzer-ID, um mit der Löschung Ihrer Identität fortzufahren.",
+          "userIdLabel": "Ihre Benutzer-ID",
+          "userIdHint": "Kopieren Sie Ihre Benutzer-ID mit der Schaltfläche oben.",
+          "confirmUserIdLabel": "Benutzer-ID bestätigen",
+          "confirmUserIdPlaceholder": "Fügen Sie hier Ihre Benutzer-ID ein",
+          "confirmUserIdHint": "Geben Sie Ihre Benutzer-ID oben ein, um die Löschung Ihrer Identität zu bestätigen. Dies verhindert versehentliche Löschungen.",
+          "confirm": "Identität löschen",
+          "deleting": "Wird gelöscht..."
+        },
+        "success": "Identität erfolgreich gelöscht",
+        "error": "Löschung der Identität fehlgeschlagen",
+        "userIdMismatch": "Die eingegebene Benutzer-ID stimmt nicht mit Ihrer Benutzer-ID überein. Bitte versuchen Sie es erneut.",
+        "loginRequired": "Sie müssen angemeldet sein, um Ihre Identität zu löschen",
+        "deleteSuccessDescription": "Ihre Identität wurde erfolgreich gelöscht",
+        "deleteErrorDescription": "Löschung der Identität fehlgeschlagen"
       }
     },
     "notifications": {
@@ -3536,6 +3573,10 @@
         "updateError": "Mitgliedschaftsprofil konnte nicht aktualisiert werden",
         "uploadPictureSuccess": "Profilbild aktualisiert",
         "uploadPictureError": "Profilbild konnte nicht hochgeladen werden"
+      },
+      "noWorkspace": {
+        "title": "Kein Arbeitsbereich in dieser Installation",
+        "description": "Sie haben in dieser Installation keinen Arbeitsbereich. Ein Administrator kann Sie zu einer Organisation einladen."
       }
     }
   },

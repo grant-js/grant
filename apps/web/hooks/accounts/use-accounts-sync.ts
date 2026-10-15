@@ -13,6 +13,7 @@ export function useAccountsSync() {
   } = useAuthStore();
   const {
     accounts,
+    loaded,
     email,
     mfaVerified,
     requiresEmailVerification,
@@ -29,6 +30,7 @@ export function useAccountsSync() {
 
     syncFromMe({
       accounts,
+      accountsLoaded: loaded,
       email,
       mfaVerified,
       requiresEmailVerification,
@@ -45,6 +47,7 @@ export function useAccountsSync() {
     auth,
     loading,
     accounts,
+    loaded,
     email,
     mfaVerified,
     requiresEmailVerification,

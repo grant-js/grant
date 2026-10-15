@@ -3,8 +3,9 @@
 import { ReactNode, useEffect } from 'react';
 
 import { EmailVerificationBanner, FullPageLoader } from '@/components/common';
-import { useAccountsSync } from '@/hooks/accounts';
-import { usePathname } from '@/i18n/navigation';
+import { useAccountsSync, useIsAccountless } from '@/hooks/accounts';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import { ACCOUNTLESS_HOME, isAccountlessAllowedPath } from '@/lib/accountless';
 import { useAuthStore } from '@/stores/auth.store';
 
 interface DashboardLayoutProps {
@@ -13,6 +14,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const {
     email,
     requiresEmailVerification,
@@ -23,6 +25,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useAccountsSync();
 
+  // Signed in without an account (closed install): only user-scoped pages are reachable.
+  // Everything account-scoped is refused by the API too; this keeps the console from
+  // offering it.
+  const isAccountless = useIsAccountless();
+  const redirectingAccountless = isAccountless && !isAccountlessAllowedPath(pathname);
+
+  useEffect(() => {
+    if (redirectingAccountless) {
+      router.replace(ACCOUNTLESS_HOME);
+    }
+  }, [redirectingAccountless, router]);
+
   useEffect(() => {
     if (isSwitchingAccounts) {
       setSwitchingAccounts(false);
@@ -30,7 +44,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when pathname changes
   }, [pathname, setSwitchingAccounts]);
 
-  if (isSwitchingAccounts) {
+  if (isSwitchingAccounts || redirectingAccountless) {
     return <FullPageLoader />;
   }
 

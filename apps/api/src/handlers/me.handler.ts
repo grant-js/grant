@@ -53,6 +53,7 @@ import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { assertEmailProviderForDirectAuth } from '@/lib/oauth-direct-auth.lib';
+import { assertPlatformSelfSignupAllowed } from '@/lib/signup-policy.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Otp } from '@/types';
 
@@ -92,6 +93,16 @@ export class MeHandler extends CacheHandler {
 
   public async createMySecondaryAccount(): Promise<{ account: Account; accounts: Account[] }> {
     return await this.db.withTransaction(async (tx: Transaction) => {
+      // The first account of an account-less user is a self-signup: it follows the register
+      // policy. Users who already have an account may still add the complementary one.
+      const ownedAccounts = await this.accounts.getOwnerAccounts(tx);
+      if (ownedAccounts.length === 0) {
+        const humanUserCount = config.auth.publicSignupEnabled
+          ? 0
+          : await this.users.countHumanUsers(tx);
+        assertPlatformSelfSignupAllowed({ invitationProofValid: false, humanUserCount });
+      }
+
       const result = await this.me.createMySecondaryAccount(tx);
 
       const seededRoles = await this.accountRoles.seedAccountRoles(result.account.id, tx);

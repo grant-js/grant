@@ -187,7 +187,8 @@ const AUTH_CONFIG = {
 
   /**
    * When false, platform self-signup (email/password register and GitHub/Google new users)
-   * is allowed only while no human user exists. Invitations and Project App `allowSignUp`
+   * is allowed only while no human user exists, and a login by an identity that has no account
+   * does not create one (it signs in account-less). Invitations and Project App `allowSignUp`
    * are unchanged. From `AUTH_PUBLIC_SIGNUP_ENABLED`.
    */
   publicSignupEnabled: env.AUTH_PUBLIC_SIGNUP_ENABLED,

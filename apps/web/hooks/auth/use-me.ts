@@ -4,6 +4,8 @@ import { Account, MeDocument, MeQuery } from '@grantjs/schema';
 
 interface UseMeResult {
   accounts: Account[];
+  /** True once a `me` response arrived, so an empty `accounts` is the server's answer. */
+  loaded: boolean;
   email: string | null;
   mfaVerified: boolean;
   requiresEmailVerification: boolean;
@@ -20,6 +22,7 @@ export function useMe(): UseMeResult {
     errorPolicy: 'all',
   });
 
+  const loaded = data?.me != null;
   const accounts = data?.me?.accounts ?? [];
   const email = data?.me?.email ?? null;
   const mfaVerified = data?.me?.mfaVerified ?? false;
@@ -28,6 +31,7 @@ export function useMe(): UseMeResult {
 
   return {
     accounts,
+    loaded,
     email,
     mfaVerified,
     requiresEmailVerification,

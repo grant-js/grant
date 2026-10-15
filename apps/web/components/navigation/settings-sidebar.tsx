@@ -5,22 +5,29 @@ import { useTranslations } from 'next-intl';
 import { Bell, Building2, FolderKanban, Lock, Shield, User, UserCircle } from 'lucide-react';
 
 import { Sidebar } from '@/components/ui/sidebar';
+import { useIsAccountless } from '@/hooks/accounts';
 
 import { DashboardSidebar, NavGroup } from './dashboard-sidebar';
 
 export function SettingsSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const dashboardT = useTranslations('dashboard.navigation');
   const settingsT = useTranslations('settings.navigation');
+  const isAccountless = useIsAccountless();
 
   const groups: NavGroup[] = [
     {
       label: dashboardT('settings'),
       items: [
-        {
-          title: settingsT('account'),
-          url: '/dashboard/settings/account',
-          icon: Building2,
-        },
+        // An account-less user has no account to show.
+        ...(isAccountless
+          ? []
+          : [
+              {
+                title: settingsT('account'),
+                url: '/dashboard/settings/account',
+                icon: Building2,
+              },
+            ]),
         {
           title: settingsT('profile'),
           url: '/dashboard/settings/profile',
