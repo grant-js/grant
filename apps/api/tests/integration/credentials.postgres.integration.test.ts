@@ -6,7 +6,9 @@
  *
  * Runs only when `GRANT_TEST_DATABASE_URL` points at a database with every migration
  * applied (`pnpm --filter @grantjs/database db:migrate`, which also grants the RLS
- * restricted role to the login role). It writes its own rows and removes them. Without
+ * restricted role to the login role). It writes its own rows and removes them, but the
+ * purge test deletes **every** soft-deleted credential row, so point it at a disposable
+ * database only. Without
  * the variable the whole file is skipped, so `pnpm test` stays database-free.
  *
  *   GRANT_TEST_DATABASE_URL=postgres://user:pass@localhost:5432/grant \
