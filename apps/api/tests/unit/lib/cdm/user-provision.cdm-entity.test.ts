@@ -47,6 +47,10 @@ function createCtx(): CdmApplyContext {
     usersCreated: 0,
     userRolesAssigned: 0,
     projectUserApiKeysCreated: 0,
+    passwordsImported: 0,
+    passwordsUpdated: 0,
+    passwordsUnchanged: 0,
+    passwordsSkippedExisting: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -216,5 +220,73 @@ describe('UserProvisionCdmEntity email identities', () => {
     expect(() =>
       entity.validateInput([{ externalKey: 'not-an-email', findBy: 'email', name: 'A' }])
     ).toThrow(ValidationError);
+  });
+});
+
+describe('UserProvisionCdmEntity password validation', () => {
+  const hash = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+
+  it('accepts a bcrypt credential on an email identity', () => {
+    expect(() =>
+      createEntity().validateInput([
+        {
+          externalKey: 'a@example.com',
+          findBy: 'email',
+          name: 'A',
+          password: { algorithm: 'bcrypt', hash },
+        },
+      ])
+    ).not.toThrow();
+  });
+
+  it('refuses a credential on a key-identified user without naming the key or the hash', () => {
+    let message = '';
+    try {
+      createEntity().validateInput([
+        {
+          externalKey: 'legacy-user-17',
+          findBy: 'key',
+          name: 'A',
+          password: { algorithm: 'bcrypt', hash },
+        },
+      ]);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+
+    expect(message).toMatch(/password is only allowed with key.findBy 'email'/);
+    expect(message).not.toContain(hash);
+    expect(message).not.toContain('legacy-user-17');
+  });
+
+  it('refuses a malformed hash without echoing it', () => {
+    const bad = `${hash}extra`;
+    let message = '';
+    try {
+      createEntity().validateInput([
+        {
+          externalKey: 'a@example.com',
+          findBy: 'email',
+          name: 'A',
+          password: { algorithm: 'bcrypt', hash: bad },
+        },
+      ]);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+
+    expect(message).toContain('password.hash');
+    expect(message).not.toContain(bad);
+    expect(message).not.toContain('a@example.com');
+  });
+
+  it('exports no credential: an exported user carries no password field', async () => {
+    exportRepo.getProjectCdmProvisionedUsers.mockResolvedValue([
+      { userId: 'u1', name: 'Ada', metadata: {} },
+    ]);
+
+    const [row] = await createEntity().export({ projectId, tx } as never);
+
+    expect(row).not.toHaveProperty('password');
   });
 });

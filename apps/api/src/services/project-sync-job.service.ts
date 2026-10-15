@@ -18,6 +18,7 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { redactCdmPasswordHashes, withCdmPasswordHashesRedacted } from '@/lib/cdm/cdm-password.lib';
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -50,6 +51,10 @@ function compactResultSummary(result: SyncProjectResult): Record<string, unknown
     usersCreated: result.usersCreated,
     userRolesAssigned: result.userRolesAssigned,
     projectUserApiKeysCreated: result.projectUserApiKeysCreated,
+    passwordsImported: result.passwordsImported,
+    passwordsUpdated: result.passwordsUpdated,
+    passwordsUnchanged: result.passwordsUnchanged,
+    passwordsSkippedExisting: result.passwordsSkippedExisting,
     warningsCount: Array.isArray(result.warnings) ? result.warnings.length : 0,
   };
 }
@@ -193,6 +198,24 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
     };
   }
 
+  /**
+   * Take imported password hashes out of the stored document. The worker needs them
+   * while the job is pending or running, and nobody needs them after: a terminal job
+   * keeps the document (it is downloadable) minus the credentials, as a by-reference
+   * object is deleted at terminal state (ADR 0009). Called in the same transaction as
+   * the transition, so a terminal row never holds a hash.
+   */
+  private async redactStoredPayload(
+    jobId: string,
+    payload: unknown,
+    transaction?: Transaction
+  ): Promise<void> {
+    const redacted = redactCdmPasswordHashes(payload);
+    if (redacted) {
+      await this.repo.updatePayload({ jobId, payload: redacted }, transaction);
+    }
+  }
+
   public async getPayload(
     params: { projectId: string; jobId: string },
     transaction?: Transaction
@@ -207,7 +230,8 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       throw new NotFoundError('ProjectSyncJob', params.jobId);
     }
     return {
-      payload: row.payload,
+      // Never the credentials: a pending or running job still holds them for the worker.
+      payload: withCdmPasswordHashesRedacted(row.payload),
       payloadRef: row.payloadRef,
       jobName: row.jobName,
       cdmVersion: row.cdmVersion,
@@ -302,6 +326,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       },
       transaction
     );
+    await this.redactStoredPayload(params.jobId, full.payload, transaction);
     await this.audit.logUpdate(
       params.jobId,
       compactJobSummary(current),
@@ -362,6 +387,7 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
       },
       transaction
     );
+    await this.redactStoredPayload(params.jobId, full.payload, transaction);
     const truncatedError =
       params.errorMessage.length > 400
         ? `${params.errorMessage.slice(0, 397)}...`
@@ -462,6 +488,8 @@ export class ProjectSyncJobService implements IProjectSyncJobService {
         },
         transaction
       );
+      const full = await this.repo.getFullById(params.jobId, transaction);
+      await this.redactStoredPayload(params.jobId, full?.payload, transaction);
       await this.audit.logUpdate(
         params.jobId,
         compactJobSummary(current),

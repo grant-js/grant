@@ -16,6 +16,25 @@ type SyncProjectResult {
   usersCreated: Int!
   userRolesAssigned: Int!
   projectUserApiKeysCreated: Int!
+  """
+  Users whose `password` hash was stored as their email credential for the first time.
+  """
+  passwordsImported: Int!
+  """
+  Users whose imported credential was replaced because the document carried a different
+  hash for it.
+  """
+  passwordsUpdated: Int!
+  """
+  Users whose imported credential already equalled the hash in the document.
+  """
+  passwordsUnchanged: Int!
+  """
+  Users whose `password` hash was not stored because the credential or the identity is
+  not the import's to write: a password set in Grant, or an identity that already
+  existed and was not created by an earlier import of this project.
+  """
+  passwordsSkippedExisting: Int!
   resourcesCreated: Int!
   permissionsCreated: Int!
   tagsCreated: Int!

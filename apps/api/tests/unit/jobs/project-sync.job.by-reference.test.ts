@@ -489,6 +489,58 @@ describe('ProjectSyncJob, importing by reference', () => {
       expect(JSON.stringify(params)).not.toContain('jane.doe');
     });
 
+    describe('an imported password hash (ADR 0010)', () => {
+      const HASH = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+      const withPassword = (password: unknown, findBy: string = CdmFindBy.Email) =>
+        document(1, {
+          users: [{ key: { value: 'jane.doe@example.com', findBy }, name: 'J', password }],
+        });
+
+      it.each([
+        ['a hash of the wrong algorithm', { algorithm: 'bcrypt', hash: `x${HASH}` }, 'email'],
+        [
+          'a cost above the ceiling',
+          { algorithm: 'bcrypt', hash: `$2a$16$${HASH.slice(7)}` },
+          'email',
+        ],
+        ['an unknown algorithm', { algorithm: 'argon2id', hash: HASH }, 'email'],
+        ['a user identified by key', { algorithm: 'bcrypt', hash: HASH }, CdmFindBy.Key],
+      ])(
+        'refuses %s, and keeps the hash and the email out of the stored message, details and event',
+        async (_label, password, findBy) => {
+          const { mocks, run } = build();
+          mocks.loadForExecution.mockResolvedValue(execData());
+          mocks.download.mockResolvedValue(asBytes(withPassword(password, findBy)));
+
+          await expect(run()).rejects.toBeInstanceOf(CdmImportRefusedError);
+
+          const [params] = mocks.markFailed.mock.calls[0] as unknown as [{ errorMessage: string }];
+          expect(params.errorMessage).toMatch(/^CDM_IMPORT_DOCUMENT_INVALID: .*password/s);
+          expect(JSON.stringify(params)).not.toContain(HASH);
+          expect(JSON.stringify(params)).not.toContain(HASH.slice(7));
+          expect(JSON.stringify(params)).not.toContain('jane.doe');
+          expectNothingApplied(mocks);
+          expect(mocks.delete).toHaveBeenCalledWith(uploadPath);
+        }
+      );
+
+      it('hands a valid credential to the import untouched', async () => {
+        const { mocks, run } = build();
+        mocks.loadForExecution.mockResolvedValue(execData());
+        mocks.download.mockResolvedValue(
+          asBytes(withPassword({ algorithm: 'bcrypt', hash: HASH }))
+        );
+
+        await run();
+
+        const [{ input }] = mocks.importProjectCdm.mock.calls[0] as unknown as [
+          { input: { users: { password: unknown }[] } },
+        ];
+        expect(input.users[0]?.password).toEqual({ algorithm: 'bcrypt', hash: HASH });
+        expect(mocks.markFailed).not.toHaveBeenCalled();
+      });
+    });
+
     it.each([
       ['over the entity cap', () => asBytes(document(9))],
       ['not JSON', () => asBytes('nope')],

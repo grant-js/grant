@@ -80,4 +80,22 @@ describe('buildCloudEventEnvelope', () => {
     });
     expect(envelope.data.after).toEqual({ id: 'key-id', clientSecret: '[redacted]' });
   });
+
+  it('redacts an imported CDM password credential and a stored hashedPassword', () => {
+    const hash = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+    const result = redactEventData({
+      after: {
+        id: 'u1',
+        password: { algorithm: 'bcrypt', hash },
+        providerData: { hashedPassword: hash, passwordSource: 'cdm-import' },
+      },
+    });
+
+    expect(JSON.stringify(result)).not.toContain(hash);
+    expect(result.after).toEqual({
+      id: 'u1',
+      password: '[redacted]',
+      providerData: { hashedPassword: '[redacted]', passwordSource: '[redacted]' },
+    });
+  });
 });

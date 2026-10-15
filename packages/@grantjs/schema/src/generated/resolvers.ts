@@ -237,6 +237,8 @@ export type ResolversTypes = ResolversObject<{
   CdmModeInput: Types.CdmModeInput;
   CdmModeStrategy: Types.CdmModeStrategy;
   CdmOnConflict: Types.CdmOnConflict;
+  CdmPasswordAlgorithm: Types.CdmPasswordAlgorithm;
+  CdmPasswordInput: Types.CdmPasswordInput;
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: ResolverTypeWrapper<Types.ChangeMyPasswordResult>;
   ClearProjectAppPictureInput: Types.ClearProjectAppPictureInput;
@@ -646,6 +648,7 @@ export type ResolversParentTypes = ResolversObject<{
   Boolean: Types.Scalars['Boolean']['output'];
   CdmKeyResolverInput: Types.CdmKeyResolverInput;
   CdmModeInput: Types.CdmModeInput;
+  CdmPasswordInput: Types.CdmPasswordInput;
   ChangeMyPasswordInput: Types.ChangeMyPasswordInput;
   ChangeMyPasswordResult: Types.ChangeMyPasswordResult;
   ClearProjectAppPictureInput: Types.ClearProjectAppPictureInput;
@@ -3288,6 +3291,10 @@ export type SyncProjectResultResolvers<
   groupTagsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   groupsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   importId?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  passwordsImported?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  passwordsSkippedExisting?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  passwordsUnchanged?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  passwordsUpdated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   permissionsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectGroupsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;

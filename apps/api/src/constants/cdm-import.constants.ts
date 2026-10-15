@@ -6,6 +6,31 @@ export const CDM_IMPORT_METADATA_KEY = 'cdmImport' as const;
 /** Importer-owned payload merged under this key (never overwrites `cdmImport`). */
 export const CDM_SOURCE_METADATA_KEY = 'cdmSource' as const;
 
+/** The only password hash algorithm a CDM import accepts (ADR 0010). */
+export const CDM_PASSWORD_ALGORITHM_BCRYPT = 'bcrypt' as const;
+
+/**
+ * Cost bounds for an imported bcrypt hash. 4 is bcrypt's own floor. 15 is a ceiling on
+ * what a document can make every later sign-in cost, since `verifySecret` is a synchronous
+ * compare on the event loop and the cost is read from the hash, not from configuration
+ * (ADR 0010 § Security notes). Constants rather than env keys: this is a security limit
+ * a reviewer should see change, not a deployment-sizing knob like `CDM_IMPORT_MAX_ENTITIES`.
+ */
+export const CDM_BCRYPT_MIN_COST = 4;
+export const CDM_BCRYPT_MAX_COST = 15;
+
+/**
+ * `providerData.passwordSource` on an email authentication method whose
+ * `providerData.hashedPassword` was written by a CDM import. Provenance, not a secret: it
+ * says the importing system still owns the credential. Every Grant-side set, change or
+ * reset removes it, which hands ownership to Grant for good (ADR 0010).
+ */
+export const PASSWORD_SOURCE_PROVIDER_DATA_KEY = 'passwordSource' as const;
+export const PASSWORD_SOURCE_CDM_IMPORT = 'cdm-import' as const;
+
+/** What `/payload` and a finished job's stored payload show in place of an imported hash. */
+export const CDM_PASSWORD_HASH_REDACTED = '[redacted]' as const;
+
 /**
  * When true on exported `resources[]` / `permissions[]` metadata, apply must
  * bind to existing catalog rows (`grantResourceId` / `grantPermissionId`) and

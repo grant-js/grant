@@ -139,6 +139,7 @@ export function expandCdmSyncInput(input: CdmDocumentInput): ExpandedCdmSyncPayl
         name: u.name,
         metadata: u.metadata ?? null,
         searchable: readCdmInputSearchable(u.searchable),
+        password: u.password ? { algorithm: u.password.algorithm, hash: u.password.hash } : null,
       });
     }
 

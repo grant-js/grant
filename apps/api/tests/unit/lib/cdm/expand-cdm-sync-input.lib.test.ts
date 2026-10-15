@@ -578,3 +578,36 @@ describe('expandCdmSyncInput user.groups direct assignment', () => {
     expect(expanded.userAssignments[0]?.directGroups?.[0]?.permissionRefs).toHaveLength(1);
   });
 });
+
+describe('expandCdmSyncInput password credentials', () => {
+  const hash = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+
+  it('carries the hash on the provisioned user only, never in metadata, searchable or assignments', () => {
+    const input = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        {
+          key: { value: 'Ada@Example.test', findBy: CdmFindBy.Email },
+          name: 'Ada',
+          metadata: { legacy: { id: '7' } },
+          searchable: { email: 'ada@example.test' },
+          password: { algorithm: 'bcrypt', hash },
+        },
+        { key: { value: 'bob@example.test', findBy: CdmFindBy.Email }, name: 'Bob' },
+      ],
+    } as unknown as CdmDocumentInput;
+
+    const expanded = expandCdmSyncInput(input);
+
+    expect(expanded.provisionedUsers[0]?.password).toEqual({ algorithm: 'bcrypt', hash });
+    expect(expanded.provisionedUsers[1]?.password).toBeNull();
+
+    const { provisionedUsers, ...rest } = expanded;
+    expect(JSON.stringify(rest)).not.toContain(hash);
+    const { password: _password, ...provisionedWithoutPassword } = provisionedUsers[0]!;
+    expect(JSON.stringify(provisionedWithoutPassword)).not.toContain(hash);
+  });
+});

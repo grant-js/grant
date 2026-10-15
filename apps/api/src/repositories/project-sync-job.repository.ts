@@ -93,6 +93,10 @@ function normalizeSyncJobResult(raw: unknown): SyncProjectResult | null {
     usersCreated: Number(r.usersCreated ?? 0),
     userRolesAssigned: Number(r.userRolesAssigned ?? 0),
     projectUserApiKeysCreated: Number(r.projectUserApiKeysCreated ?? 0),
+    passwordsImported: Number(r.passwordsImported ?? 0),
+    passwordsUpdated: Number(r.passwordsUpdated ?? 0),
+    passwordsUnchanged: Number(r.passwordsUnchanged ?? 0),
+    passwordsSkippedExisting: Number(r.passwordsSkippedExisting ?? 0),
     tagsCreated: Number(r.tagsCreated ?? 0),
     projectTagsLinked: Number(r.projectTagsLinked ?? 0),
     roleTagsLinked: Number(r.roleTagsLinked ?? 0),
@@ -482,6 +486,25 @@ export class ProjectSyncJobRepository implements IProjectSyncJobRepository {
       throw new NotFoundError('ProjectSyncJob', params.jobId);
     }
     return toEntity(row);
+  }
+
+  public async updatePayload(
+    params: { jobId: string; payload: unknown },
+    transaction?: Transaction
+  ): Promise<void> {
+    const dbInstance = transaction ?? this.db;
+    const [row] = await dbInstance
+      .update(projectSyncJobs)
+      .set({
+        payload: params.payload as unknown as NewProjectSyncJobModel['payload'],
+        updatedAt: new Date(),
+      })
+      .where(and(eq(projectSyncJobs.id, params.jobId), isNull(projectSyncJobs.deletedAt)))
+      .returning({ id: projectSyncJobs.id });
+
+    if (!row) {
+      throw new NotFoundError('ProjectSyncJob', params.jobId);
+    }
   }
 
   public async updateSnapshot(
