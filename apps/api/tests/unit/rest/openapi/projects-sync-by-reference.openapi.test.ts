@@ -147,3 +147,20 @@ describe('the by-reference contract is described', () => {
     expect(ok?.description).toContain('{ byReference: true, sizeBytes }');
   });
 });
+
+describe('imported password credentials (ADR 0010)', () => {
+  it('documents users[].password on the inline CDM body', () => {
+    const operation = paths['/api/projects/{id}/sync/jobs']?.post;
+    const body = JSON.stringify(operation?.requestBody);
+
+    expect(body).toContain('"password"');
+    expect(body).toContain('bcrypt');
+    expect(operation?.description).toContain('passwordsSkippedExisting');
+  });
+
+  it('says the payload download redacts hashes', () => {
+    const operation = paths['/api/projects/{id}/sync/jobs/{jobId}/payload']?.get;
+
+    expect(operation?.description).toContain('[redacted]');
+  });
+});

@@ -243,6 +243,48 @@ describe('project CDM sync REST (async jobs)', () => {
     });
   });
 
+  describe('imported password hashes (ADR 0010)', () => {
+    const HASH = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+    const body = (password: unknown, findBy: string = CdmFindBy.Email) => ({
+      scope: { tenant: 'accountProject', id: `${accountId}:${projectId}` },
+      version: 1,
+      mode: canonicalMode,
+      roles: [],
+      users: [{ key: { value: 'jane.doe@example.com', findBy }, name: 'Jane', password }],
+    });
+
+    it('POST /sync/jobs forwards a valid bcrypt credential to the handler', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${projectId}/sync/jobs`)
+        .send(body({ algorithm: 'bcrypt', hash: HASH }));
+
+      expect(res.status).toBe(202);
+      expect(startProjectSync.mock.calls[0][0].input.users[0].password).toEqual({
+        algorithm: 'bcrypt',
+        hash: HASH,
+      });
+    });
+
+    it.each([
+      ['an unknown algorithm', { algorithm: 'argon2id', hash: HASH }],
+      ['a malformed hash', { algorithm: 'bcrypt', hash: HASH.slice(0, -3) }],
+      ['a cost outside the range', { algorithm: 'bcrypt', hash: `$2a$31$${HASH.slice(7)}` }],
+    ])(
+      'POST /sync/jobs refuses %s with a 400 that does not echo the hash',
+      async (_label, password) => {
+        const res = await request(app)
+          .post(`/api/projects/${projectId}/sync/jobs`)
+          .send(body(password));
+
+        expect(res.status).toBe(400);
+        expect(JSON.stringify(res.body)).toContain('password');
+        expect(JSON.stringify(res.body)).not.toContain(HASH);
+        expect(JSON.stringify(res.body)).not.toContain(HASH.slice(7));
+        expect(startProjectSync).not.toHaveBeenCalled();
+      }
+    );
+  });
+
   it('POST /sync/jobs maps project-level API key auth to system user for enqueuedById', async () => {
     const apiKeyId = 'd1bfe5e5-a05d-4e74-8e5e-5c1a64de802b';
     const apiKeyContext = {

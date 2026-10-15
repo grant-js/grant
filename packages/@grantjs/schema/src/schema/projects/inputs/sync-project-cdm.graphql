@@ -23,6 +23,14 @@ enum CdmIfMissing {
   createNew
 }
 
+"""
+Password hash algorithms a CDM import can carry. Only `bcrypt` is accepted; the
+enum leaves room for further algorithms without changing the input shape.
+"""
+enum CdmPasswordAlgorithm {
+  bcrypt
+}
+
 input CdmModeInput {
   strategy: CdmModeStrategy!
   onConflict: CdmOnConflict
@@ -39,8 +47,9 @@ input CdmKeyResolverInput {
   value: String!
   """
   `id` references an existing Grant user id. `email` resolves or creates a
-  global passwordless email authentication method. Other values are treated as
-  CDM-local external keys for project import/export.
+  global email authentication method, passwordless unless the user carries a
+  `password`. Other values are treated as CDM-local external keys for project
+  import/export.
   """
   findBy: CdmFindBy
   ifMissing: CdmIfMissing
@@ -128,6 +137,23 @@ input UserApiKeyCdmInput {
   metadata: JSON
 }
 
+"""
+A password hash the importer already holds, to be stored as the user's email
+password credential (ADR 0010). Never the plaintext password.
+"""
+input CdmPasswordInput {
+  algorithm: CdmPasswordAlgorithm!
+  """
+  A bcrypt hash in the modular-crypt form `$2a$`, `$2b$` or `$2y$`, a two-digit
+  cost and 53 salt-and-hash characters (60 in all), such as the output of Go's
+  `bcrypt.GenerateFromPassword`. The cost must be within the range the deployment
+  accepts (4 to 15). It is written only to the credential store: it is not kept in
+  metadata, searchable tokens, audit values, events or the stored job payload once
+  the job finishes, and an invalid hash is refused without being echoed.
+  """
+  hash: String!
+}
+
 input UserCdmInput {
   key: CdmKeyResolverInput!
   name: String!
@@ -146,6 +172,22 @@ input UserCdmInput {
   tags: [String!]
   primaryTag: String
   apiKeys: [UserApiKeyCdmInput!]
+  """
+  Existing password credential to import for this user. Only valid with
+  `key.findBy: email`, because the credential lives on the email authentication
+  method; any other resolver is a validation error.
+
+  Ownership is forward-only. An imported credential is marked as imported and stays
+  owned by the importing system while the email is unverified: a later import of this
+  project with a different hash replaces it, an identical one changes nothing. Once the
+  owner verifies the address, or the password is set, changed or reset in Grant, Grant owns
+  it and imports never touch it again. A credential is written only for an identity the
+  import creates, or one an earlier import of this project created whose email is still
+  unverified; any other existing identity, including one found through GitHub or Google,
+  is left untouched. An absent `password` never removes a
+  stored credential. See `SyncProjectResult` for the counters.
+  """
+  password: CdmPasswordInput
   """
   Denormalized search tokens for project-scoped user list views.
   """

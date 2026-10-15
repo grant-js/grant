@@ -308,6 +308,22 @@ Optional \`metadata\` on role templates and user assignments is stored under the
 \`cdmSource\` key on created roles, groups, and \`project_users\` rows (do not send a
 top-level \`cdmImport\` key in importer metadata).
 
+### Password credentials (\`users[].password\`)
+
+A user identified by \`key.findBy: "email"\` may carry \`password: { algorithm: "bcrypt", hash }\`, an
+existing bcrypt hash (\`$2a$\`, \`$2b$\` or \`$2y$\`, cost 4 to 15) such as Go's
+\`bcrypt.GenerateFromPassword\` writes. It is stored as the user's email password credential, where
+platform login verifies it, and is marked as imported: the importing system owns it while the
+email is unverified, and a later import with a different hash replaces it. Once the owner verifies the
+address, or the password is set, changed or reset in Grant, an import never touches it again. An absent
+\`password\` never deletes one. A credential is only written for an identity the import creates, or one
+an earlier import of this project created whose email is still unverified (never to one found
+through GitHub or Google). The result counts
+\`passwordsImported\`, \`passwordsUpdated\`, \`passwordsUnchanged\` and \`passwordsSkippedExisting\`.
+A \`password\` on any other user, or an invalid hash, is a validation error that never echoes the
+hash. The hash is never kept in metadata, search tokens, audit values or events, is removed
+from the stored job payload when the job ends, and is replaced by \`[redacted]\` in the payload download.
+
 ### Project user API keys (\`projectUserApiKeys\`)
 
 Optional array of per-member API keys. **Import:** each object must include a plaintext
@@ -597,6 +613,9 @@ job's lifecycle.
 Download the original \`SyncProjectInput\` JSON body that was submitted when the
 sync job was enqueued. For an inline job the response uses \`Content-Type: application/json\` and a
 \`Content-Disposition: attachment\` header so browsers prompt for a save.
+
+Imported password hashes (\`users[].password.hash\`) are never returned: they read \`[redacted]\`
+here, which also makes a downloaded payload fail validation if re-submitted unchanged.
 
 A job started **by reference** has no body in the database, and the uploaded document is
 deleted when the job ends, so this endpoint does not return it. It answers

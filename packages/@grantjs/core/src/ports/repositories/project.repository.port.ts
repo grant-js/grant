@@ -585,6 +585,13 @@ export interface IProjectSyncJobRepository {
   ): Promise<ProjectSyncJob>;
 
   /**
+   * Replace the stored CDM payload of a job. Used to take imported password hashes out of
+   * the document once the job is terminal (ADR 0010). Throws `NotFoundError` when the job
+   * does not exist.
+   */
+  updatePayload(params: { jobId: string; payload: unknown }, transaction?: unknown): Promise<void>;
+
+  /**
    * Persist a pre-sync rollback snapshot for an existing job row. Throws
    * `NotFoundError` when the job does not exist. Intended to be called from
    * inside the sync worker's import transaction.

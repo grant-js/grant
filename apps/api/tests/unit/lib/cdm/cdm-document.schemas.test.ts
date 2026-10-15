@@ -231,3 +231,114 @@ describe('the REST start body, one endpoint and two shapes', () => {
     ).toBe(false);
   });
 });
+
+describe('imported password credentials', () => {
+  const GO_HASH = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+  const withPassword = (password: unknown, findBy: string = CdmFindBy.Email) =>
+    document({
+      users: [{ key: { value: 'a@example.com', findBy }, name: 'A', password }],
+    });
+
+  function messageOf(fn: () => unknown): string {
+    try {
+      fn();
+    } catch (error) {
+      return (error as Error).message;
+    }
+    throw new Error('expected a refusal');
+  }
+
+  it('accepts a bcrypt password through the shared schema and the REST body schema', () => {
+    const password = { algorithm: 'bcrypt', hash: GO_HASH };
+
+    expect(parseCdmDocument(withPassword(password)).users[0]?.password).toEqual(password);
+    expect(
+      startProjectSyncRequestSchema.parse({ scope, ...withPassword(password) }).users?.[0]?.password
+    ).toEqual(password);
+  });
+
+  it('accepts a null password, as GraphQL clients send for an unset input', () => {
+    expect(() => parseCdmDocument(withPassword(null))).not.toThrow();
+  });
+
+  it.each([
+    ['an unknown algorithm', { algorithm: 'argon2id', hash: GO_HASH }],
+    ['a plaintext password in the hash field', { algorithm: 'bcrypt', hash: 'Legacy-Passw0rd!' }],
+    ['a cost below the floor', { algorithm: 'bcrypt', hash: `$2a$03$${GO_HASH.slice(7)}` }],
+    ['a cost above the ceiling', { algorithm: 'bcrypt', hash: `$2a$16$${GO_HASH.slice(7)}` }],
+    ['a truncated hash', { algorithm: 'bcrypt', hash: GO_HASH.slice(0, -2) }],
+    ['a non-string hash', { algorithm: 'bcrypt', hash: 12345 }],
+    ['a missing hash', { algorithm: 'bcrypt' }],
+  ])('refuses %s without echoing the hash', (_label, password) => {
+    const viaDocument = messageOf(() => parseCdmDocument(withPassword(password)));
+    const restResult = startProjectSyncRequestSchema.safeParse({
+      scope,
+      ...withPassword(password),
+    });
+
+    expect(restResult.success).toBe(false);
+    for (const message of [viaDocument, JSON.stringify(restResult.error?.issues)]) {
+      expect(message).toContain('password');
+      expect(message).not.toContain(GO_HASH);
+      expect(message).not.toContain(GO_HASH.slice(7));
+      expect(message).not.toContain('Legacy-Passw0rd!');
+    }
+  });
+
+  describe('validateSyncInput (GraphQL and the worker, where zod has not looked)', () => {
+    const base = { version: 1, mode: merge, roles: [] };
+    const user = (
+      password: { algorithm?: unknown; hash?: unknown } | null | undefined,
+      findBy: string,
+      value = 'jane.doe@example.com'
+    ) => ({
+      key: { value, findBy },
+      password,
+    });
+
+    it('accepts a valid bcrypt credential on an email-identified user', () => {
+      expect(() =>
+        validateSyncInput({
+          ...base,
+          users: [user({ algorithm: 'bcrypt', hash: GO_HASH }, 'email')],
+        })
+      ).not.toThrow();
+    });
+
+    it.each(['key', 'id', 'name', 'slug', undefined])(
+      'refuses a password on a user identified by %s',
+      (findBy) => {
+        const message = messageOf(() =>
+          validateSyncInput({
+            ...base,
+            users: [user({ algorithm: 'bcrypt', hash: GO_HASH }, findBy as string)],
+          })
+        );
+
+        expect(message).toMatch(/users\[0\]: password is only allowed with key.findBy 'email'/);
+        expect(message).not.toContain(GO_HASH);
+        expect(message).not.toContain('jane.doe@example.com');
+      }
+    );
+
+    it.each([
+      { algorithm: 'md5', hash: GO_HASH },
+      { algorithm: 'bcrypt', hash: 'not-a-hash' },
+      { algorithm: 'bcrypt', hash: `$2a$99$${GO_HASH.slice(7)}` },
+    ])('refuses a bad credential, naming the position only', (password) => {
+      const message = messageOf(() =>
+        validateSyncInput({ ...base, users: [user(password, 'email')] })
+      );
+
+      expect(message).toMatch(/^users\[0\]: password\./);
+      expect(message).not.toContain(GO_HASH);
+      expect(message).not.toContain('jane.doe@example.com');
+    });
+
+    it('ignores an absent or null password', () => {
+      expect(() =>
+        validateSyncInput({ ...base, users: [user(undefined, 'key', 'a'), user(null, 'key', 'b')] })
+      ).not.toThrow();
+    });
+  });
+});

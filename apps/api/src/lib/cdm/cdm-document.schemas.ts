@@ -8,8 +8,11 @@ import {
   type UserCdmInput,
 } from '@grantjs/schema';
 
+import { CDM_PASSWORD_ALGORITHM_BCRYPT } from '@/constants/cdm-import.constants';
 import { ValidationError } from '@/lib/errors';
 import { z } from '@/lib/zod-openapi.lib';
+
+import { bcryptHashProblem, cdmPasswordProblem } from './cdm-password.lib';
 
 /**
  * The one description of a CDM import document, shared by every place that reads one.
@@ -106,6 +109,30 @@ const userApiKeyCdmSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
 });
 
+const cdmPasswordSchema = z
+  .object({
+    algorithm: z.literal(CDM_PASSWORD_ALGORITHM_BCRYPT, {
+      message: `password.algorithm must be '${CDM_PASSWORD_ALGORITHM_BCRYPT}'`,
+    }),
+    hash: z
+      .string({ message: 'password.hash must be a string' })
+      .superRefine((hash, ctx) => {
+        const problem = bcryptHashProblem(hash);
+        if (problem) {
+          ctx.addIssue({ code: 'custom', message: problem });
+        }
+      })
+      .openapi({
+        description:
+          'A bcrypt hash (`$2a$`, `$2b$` or `$2y$`, two-digit cost between 4 and 15, 60 characters), for example the output of Go `bcrypt.GenerateFromPassword`. Never the plaintext. An invalid value is refused without being echoed.',
+        example: '$2a$10$' + 'x'.repeat(53),
+      }),
+  })
+  .openapi({
+    description:
+      'An existing password credential to store as the user email password (ADR 0010). Only valid with `key.findBy: email`.',
+  });
+
 const userCdmSchema = z.object({
   key: cdmKeyResolverSchema,
   name: z.string().min(1),
@@ -118,6 +145,7 @@ const userCdmSchema = z.object({
   tags: z.array(z.string().min(1)).optional(),
   primaryTag: z.string().min(1).optional().nullable(),
   apiKeys: z.array(userApiKeyCdmSchema).optional(),
+  password: cdmPasswordSchema.optional().nullable(),
   searchable: cdmSearchableSchema,
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
 });
@@ -223,7 +251,10 @@ export interface SyncInputUnderValidation {
   version: number;
   mode?: { strategy?: string | null; confirmDestructive?: boolean | null } | null;
   roles: readonly { key: string }[];
-  users: readonly { key: { value: string; findBy?: string | null } }[];
+  users: readonly {
+    key: { value: string; findBy?: string | null };
+    password?: { algorithm?: unknown; hash?: unknown } | null;
+  }[];
 }
 
 /**
@@ -265,6 +296,29 @@ export function validateSyncInput(
       );
     }
     userSeen.add(dedupe);
+
+    assertUserPassword(u, index);
+  }
+}
+
+/**
+ * A password is the credential of the email authentication method, so it only belongs on
+ * a user identified by email, and what it carries must be a bcrypt hash this deployment
+ * accepts. The message names the position, never the key (an email) or the hash: this
+ * runs for the by-reference worker too, whose refusals are stored on the job row.
+ */
+function assertUserPassword(user: SyncInputUnderValidation['users'][number], index: number): void {
+  if (user.password == null) {
+    return;
+  }
+  if (user.key.findBy !== CdmFindBy.Email) {
+    throw new ValidationError(
+      `users[${index}]: password is only allowed with key.findBy 'email'; the credential belongs to the email authentication method`
+    );
+  }
+  const problem = cdmPasswordProblem(user.password);
+  if (problem) {
+    throw new ValidationError(`users[${index}]: ${problem}`);
   }
 }
 

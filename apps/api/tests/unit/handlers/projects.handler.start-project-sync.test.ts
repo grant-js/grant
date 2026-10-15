@@ -411,3 +411,71 @@ describe('ProjectHandler.startProjectSync', () => {
     });
   });
 });
+
+describe('ProjectHandler.startProjectSync imported password hashes (ADR 0010)', () => {
+  const HASH = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+  const scope = { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` };
+
+  function inputWith(password: unknown, findBy: CdmFindBy = CdmFindBy.Email) {
+    return {
+      ...buildInput(),
+      users: [
+        {
+          key: { value: 'jane.doe@example.com', findBy },
+          name: 'Jane',
+          password,
+        },
+      ],
+    } as never;
+  }
+
+  function handlerWith(create = vi.fn().mockResolvedValue(buildJob(null))) {
+    return {
+      create,
+      handler: createHandler({
+        jobsAdapter: { enqueue: vi.fn().mockResolvedValue(undefined) },
+        syncJobs: { create, findActiveByJobKey: vi.fn() },
+      }),
+    };
+  }
+
+  it('keeps the credential in the stored payload for the worker, which needs it until the job ends', async () => {
+    const { create, handler } = handlerWith();
+
+    await handler.startProjectSync({
+      id: projectId,
+      scope,
+      input: inputWith({ algorithm: 'bcrypt', hash: HASH }),
+      enqueuedById: userId,
+    });
+
+    expect(create.mock.calls[0][0].payload.users[0].password).toEqual({
+      algorithm: 'bcrypt',
+      hash: HASH,
+    });
+  });
+
+  it.each([
+    ['a malformed hash', { algorithm: 'bcrypt', hash: 'nope' }, CdmFindBy.Email],
+    ['an unknown algorithm', { algorithm: 'md5', hash: HASH }, CdmFindBy.Email],
+    ['a user identified by key', { algorithm: 'bcrypt', hash: HASH }, CdmFindBy.Key],
+  ])('refuses %s with a validation error and stores nothing', async (_label, password, findBy) => {
+    const { create, handler } = handlerWith();
+
+    const failure = await handler
+      .startProjectSync({
+        id: projectId,
+        scope,
+        input: inputWith(password, findBy),
+        enqueuedById: userId,
+      })
+      .then(
+        () => null,
+        (error: Error) => error
+      );
+
+    expect(failure?.message).toMatch(/password/);
+    expect(failure?.message).not.toContain(HASH);
+    expect(create).not.toHaveBeenCalled();
+  });
+});

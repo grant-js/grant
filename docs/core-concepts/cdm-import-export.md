@@ -176,17 +176,39 @@ Every CDM-portable entity has an opaque **`externalKey`**:
 
 ## Provisioned users
 
-The optional **`users`** section creates or resolves global Grant users for inbound porting, then the assignment fields (`roles`, `groups`, or `permissions`) add project membership. CDM user imports never create Grant accounts, sessions, passwords, OTPs, or outgoing verification emails.
+The optional **`users`** section creates or resolves global Grant users for inbound porting, then the assignment fields (`roles`, `groups`, or `permissions`) add project membership. CDM user imports never create Grant accounts, sessions, OTPs, or outgoing verification emails, and never choose a password: the only credential an import can carry is a hash you already hold ([below](#password-credentials)).
 
 User keys support two important modes:
 
-| Resolver            | Behavior                                                                                                                                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `findBy: id`        | `key.value` is an existing Grant user id. Import skips global user provisioning and uses that user directly.                                                                                                                |
-| `findBy: key`/empty | `key.value` is a CDM-local external key. Grant creates or reuses a user with `metadata.cdmImport` for this project.                                                                                                         |
-| `findBy: email`     | `key.value` is normalized to lowercase and resolved against the global authentication catalog. If no identity exists, Grant creates a global user plus a passwordless email authentication method with `isVerified: false`. |
+| Resolver            | Behavior                                                                                                                                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `findBy: id`        | `key.value` is an existing Grant user id. Import skips global user provisioning and uses that user directly.                                                                                                                                                                                |
+| `findBy: key`/empty | `key.value` is a CDM-local external key. Grant creates or reuses a user with `metadata.cdmImport` for this project.                                                                                                                                                                         |
+| `findBy: email`     | `key.value` is normalized to lowercase and resolved against the global authentication catalog. If no identity exists, Grant creates a global user plus an email authentication method with `isVerified: false`, passwordless unless the user carries a [`password`](#password-credentials). |
 
 For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
+
+### Password credentials {#password-credentials}
+
+A user with `key.findBy: email` can carry the password hash your legacy system already holds, so existing credentials survive a migration:
+
+```json
+{
+  "key": { "value": "ada@example.com", "findBy": "email" },
+  "name": "Ada Lovelace",
+  "password": { "algorithm": "bcrypt", "hash": "$2a$10$…" }
+}
+```
+
+- **Format.** `algorithm` must be `bcrypt`. `hash` is a 60-character bcrypt hash with a `$2a$`, `$2b$` or `$2y$` prefix, such as the output of Go's `bcrypt.GenerateFromPassword`, with a cost between 4 and 15. Anything else, and a `password` on a user not identified by `email`, is a validation error; the message names the position and never repeats the hash.
+- **Where it goes.** The hash is stored on the user's email authentication method, in the same place a password set in Grant lives, so the platform email and password login verifies it unchanged. It is not copied into `metadata`, search tokens, audit values or events. Remove any `passwordHash` your ETL previously put into `metadata`: Grant does not scrub what you sent before.
+- **Who owns it.** An imported credential is marked as imported. Your legacy system owns it during the unverified migration window: a later import of this project with a different hash replaces it, and an identical one changes nothing. **Verification is the handover.** Once the owner verifies the address (for example through the project OAuth magic link), or the password is set, changed or reset in Grant, Grant owns the credential and imports never touch it again; the import skips it and counts `passwordsSkippedExisting`. A user who verified and then rotated only the legacy password is therefore not re-synchronized and recovers through Grant's password reset. An absent `password` never removes a stored credential, and `replace` mode keeps the credentials of users it re-creates.
+- **Which identities.** A credential is written only for an identity the import creates, or one an earlier import of this project created whose email is still unverified. A user who already exists in Grant any other way (registered, signed in with GitHub or Google, provisioned by another project, or verified) is left untouched, because the credential is global.
+- **Verification.** The email method stays unverified, as for any imported email identity. Platform login accepts an unverified method only for the configured verification window after it was created.
+- **Counters.** The import result reports `passwordsImported`, `passwordsUpdated`, `passwordsUnchanged` and `passwordsSkippedExisting`, and one warning when any were skipped.
+- **The job payload.** The hash is in the stored payload while the job is pending or running, because the worker reads it from there, and is replaced by `[redacted]` when the job completes, fails or is cancelled. The payload download always shows `[redacted]`, so a downloaded payload must be given its hashes again before it is re-imported. A by-reference upload is deleted when the job ends ([ADR 0009](https://github.com/grant-js/grant/blob/main/decisions/0009-cdm-import-by-reference.md)).
+
+Signing in to a project app with this password is not part of this change; see [ADR 0010](https://github.com/grant-js/grant/blob/main/decisions/0010-cdm-import-of-bcrypt-password-hashes.md).
 
 Export remains conservative: CDM-managed users are emitted with opaque external keys unless a future export mode explicitly opts into exposing global login identifiers.
 
