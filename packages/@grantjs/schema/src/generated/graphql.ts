@@ -583,6 +583,14 @@ export type MyUserDataExportQuery = {
       lastUsedAt: Date | null;
       createdAt: Date;
     }>;
+    credentials: Array<{
+      scope: string;
+      projectId: string | null;
+      source: string;
+      lastUsedAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
     sessions: Array<{
       userAgent: string | null;
       ipAddress: string | null;
@@ -4517,6 +4525,21 @@ export const MyUserDataExportDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'isPrimary' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'credentials' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'scope' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'source' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                     ],
                   },
                 },

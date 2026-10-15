@@ -58,6 +58,7 @@ function createHandler(authUserId: string | null = userId) {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     db as never
   );
 

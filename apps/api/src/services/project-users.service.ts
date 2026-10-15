@@ -1,6 +1,7 @@
 import type {
   IAccountProjectRepository,
   IAuditLogger,
+  ICredentialService,
   IEventPublisher,
   IFileStorageService,
   IOrganizationProjectRepository,
@@ -51,6 +52,7 @@ export class ProjectUserService implements IProjectUserService {
     private readonly audit: IAuditLogger,
     private readonly events: IEventPublisher,
     private readonly fileStorage: IFileStorageService,
+    private readonly credentials: ICredentialService,
     private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
 
@@ -438,6 +440,10 @@ export class ProjectUserService implements IProjectUserService {
       ...oldValues,
       deletedAt: projectUser.deletedAt,
     };
+
+    // The credential belongs to the membership: removing the member soft-deletes it in this
+    // transaction, so re-adding them never revives an old password (ADR 0011 § 8).
+    await this.credentials.removeCredential({ scope: 'project', projectId }, userId, transaction);
 
     const metadata = {
       context,

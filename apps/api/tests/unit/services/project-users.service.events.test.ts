@@ -79,7 +79,8 @@ function buildService() {
       accountProjectRepository,
       audit,
       events,
-      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never
+      { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never,
+      { removeCredential: vi.fn() } as never
     ),
     events,
   };

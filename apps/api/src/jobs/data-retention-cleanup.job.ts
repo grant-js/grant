@@ -119,12 +119,26 @@ export default class DataRetentionCleanupJob extends Job {
       };
     });
 
+    // Soft-deleted credentials have no retention period (ADR 0011 § 8): they go on the next
+    // run, whether or not any account expired. Runs after the account cleanup so that
+    // credentials which cascaded with a hard-deleted user are already gone.
+    const credentialsPurged = await txConn.withTransaction((tx) =>
+      this.appContext.services.credentials.purgeSoftDeleted(tx)
+    );
+    this.logger.info({
+      msg: 'Purged soft-deleted credentials',
+      platformCredentialsPurged: credentialsPurged.platform,
+      projectCredentialsPurged: credentialsPurged.project,
+    });
+
     return {
       success: true,
       data: {
         accountsDeleted: result.accountsDeleted,
         usersDeleted: result.usersDeleted,
         backupsDeleted: result.backupsDeleted,
+        platformCredentialsPurged: credentialsPurged.platform,
+        projectCredentialsPurged: credentialsPurged.project,
       },
     };
   }

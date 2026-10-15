@@ -21,6 +21,14 @@ query MyUserDataExport {
       lastUsedAt
       createdAt
     }
+    credentials {
+      scope
+      projectId
+      source
+      lastUsedAt
+      createdAt
+      updatedAt
+    }
     sessions {
       userAgent
       ipAddress

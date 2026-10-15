@@ -16,6 +16,7 @@ Users can download all their personal data as a structured JSON file.
 - User profile (ID, name, email, timestamps)
 - Accounts owned (personal and organization)
 - Authentication methods (providers, verification status)
+- Password credentials: whether one exists, its scope (platform, or a project), its source and its dates
 - Sessions (device info, IP, expiry)
 - Organization and project memberships with roles
 - Export metadata (timestamp)
@@ -97,8 +98,9 @@ Content-Type: application/json
 The **data retention cleanup job** runs on the configured schedule and:
 
 1. Finds accounts soft-deleted longer ago than the retention period
-2. Permanently deletes the associated users (cascading to relationships)
+2. Permanently deletes the associated users (cascading to relationships, including their password credentials)
 3. Permanently deletes the accounts
+4. Permanently deletes soft-deleted password credentials. A credential is soft-deleted when its project membership is removed or when its user is soft-deleted, and has no retention period: it is purged on the next run
 
 See [Job Scheduling](/advanced-topics/job-scheduling) for details on the cleanup job.
 

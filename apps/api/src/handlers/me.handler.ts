@@ -2,6 +2,7 @@ import type {
   IAccountRoleService,
   IAccountService,
   IAuthService,
+  ICredentialService,
   IEmailService,
   IEventPublisher,
   IFileStorageServicePort,
@@ -78,6 +79,7 @@ export class MeHandler extends CacheHandler {
     private readonly auth: IAuthService,
     private readonly notifications: INotificationService,
     private readonly events: IEventPublisher,
+    private readonly credentials: ICredentialService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -427,6 +429,16 @@ export class MeHandler extends CacheHandler {
       createdAt: new Date(method.createdAt),
     }));
 
+    // Existence, scope, source and dates only: the hash is never part of an export.
+    const credentialsData = (await this.credentials.listForUser(userId)).map((credential) => ({
+      scope: credential.scope,
+      projectId: credential.projectId,
+      source: credential.source,
+      lastUsedAt: credential.lastUsedAt,
+      createdAt: credential.createdAt,
+      updatedAt: credential.updatedAt,
+    }));
+
     const sessionsPage = await this.userSessions.getUserSessions({
       userId,
       limit: -1,
@@ -461,6 +473,7 @@ export class MeHandler extends CacheHandler {
         updatedAt: new Date(account.updatedAt),
       })),
       authenticationMethods: authenticationMethodsData,
+      credentials: credentialsData,
       sessions: sessionsData,
       organizationMemberships: organizationMembershipsRaw.map((m) => ({
         organizationId: m.organizationId,

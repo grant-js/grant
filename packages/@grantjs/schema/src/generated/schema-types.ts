@@ -787,6 +787,22 @@ export type CreateWebhookSubscriptionMutationInput = {
   url: Scalars['String']['input'];
 };
 
+/**
+ * A password credential the user holds, per scope. Existence, scope, source and dates only:
+ * the hash is never exported.
+ */
+export type CredentialExportData = {
+  __typename?: 'CredentialExportData';
+  createdAt: Scalars['Date']['output'];
+  lastUsedAt?: Maybe<Scalars['Date']['output']>;
+  /** Set for a project credential */
+  projectId?: Maybe<Scalars['ID']['output']>;
+  /** platform (the Grant console) or project (that project's apps) */
+  scope: Scalars['String']['output'];
+  source: Scalars['String']['output'];
+  updatedAt: Scalars['Date']['output'];
+};
+
 export type DeleteApiKeyInput = {
   hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -4166,6 +4182,7 @@ export type UserDataExport = {
   __typename?: 'UserDataExport';
   accounts: Array<AccountExportData>;
   authenticationMethods: Array<AuthenticationMethodExportData>;
+  credentials: Array<CredentialExportData>;
   exportedAt: Scalars['Date']['output'];
   organizationMemberships: Array<OrganizationMembershipExportData>;
   projectMemberships: Array<ProjectMembershipExportData>;
