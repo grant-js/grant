@@ -138,7 +138,7 @@ _Amended by [0011](./0011-project-scoped-password-credentials.md): rules 3 to 6 
 
 ### (b) Email and password as a per-project-app sign-in option: follow-up slice
 
-_Amended by [0011](./0011-project-scoped-password-credentials.md) § 3: verified against the project's own credential, with a defined precedence over a global Grant password._
+_Amended by [0011](./0011-project-scoped-password-credentials.md) § 3: password sign-in is its own `password` value of `enabledProviders` (replacing the `allow_password_sign_in` boolean below), verified against the project's own credential only, never the global Grant password._
 
 Not built here; this is the shape the slice is held to.
 
