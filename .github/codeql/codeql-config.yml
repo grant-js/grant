@@ -1,0 +1,16 @@
+# CodeQL configuration for the advanced setup in .github/workflows/codeql.yml.
+#
+# Only test code is excluded from analysis. No query or rule is disabled, so
+# production code is scanned with the same default query suite as before.
+# Throwaway Express apps in unit tests (js/missing-rate-limiting) were the
+# reason for this file; see the PR that introduced it.
+name: Grant CodeQL config
+
+paths-ignore:
+  - '**/tests/**'
+  - '**/__tests__/**'
+  - '**/e2e/**'
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - '**/*.spec.tsx'
