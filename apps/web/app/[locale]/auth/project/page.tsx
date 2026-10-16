@@ -25,6 +25,7 @@ import {
   createProjectOAuthState,
   ensureProjectOAuthPkceSession,
   markProjectOAuthEmailViaAuthorize,
+  markProjectOAuthPasswordViaAuthorize,
   type ProjectOAuthPkceSession,
 } from '@/lib/project-oauth-pkce.lib';
 
@@ -138,6 +139,7 @@ export default function ProjectOAuthEntryPage() {
     (provider: string) => {
       if (!clientId || !redirectUri || !pkce) return;
       if (provider === 'email') markProjectOAuthEmailViaAuthorize();
+      if (provider === 'password') markProjectOAuthPasswordViaAuthorize();
       window.location.href = buildProjectAuthorizeUrl({
         apiBase: getApiBaseUrl(),
         clientId,
@@ -152,7 +154,8 @@ export default function ProjectOAuthEntryPage() {
     [clientId, redirectUri, pkce, scopeParam, locale]
   );
 
-  const { showGithub, showGoogle, showEmail } = getProjectOAuthProviderVisibility(appInfo);
+  const { showGithub, showGoogle, showEmail, showPassword } =
+    getProjectOAuthProviderVisibility(appInfo);
 
   if (displayLoading) {
     const loadingContent = (
@@ -256,6 +259,17 @@ export default function ProjectOAuthEntryPage() {
           >
             <OAuthProviderIcon provider="email" />
             {t('email')}
+          </Button>
+        )}
+        {showPassword && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => startAuthorize('password')}
+          >
+            <OAuthProviderIcon provider="password" />
+            {t('password')}
           </Button>
         )}
       </div>

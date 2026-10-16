@@ -19,6 +19,8 @@ export const AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS = [
   'POST /api/auth/token',
   'GET /api/auth/project/authorize',
   'POST /api/auth/project/email/request',
+  'POST /api/auth/project/password',
+  'POST /api/auth/project/password/mfa',
   'GET /api/auth/project/consent-info',
   'POST /api/auth/project/consent/approve',
   'POST /api/auth/project/consent/deny',

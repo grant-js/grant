@@ -62,3 +62,10 @@ export interface ProjectConsentInfo {
 export interface ProjectConsentRedirectResult {
   redirectUrl: string;
 }
+
+/**
+ * Response from POST /api/auth/project/password: the consent page to continue to, or a
+ * pending MFA step when the platform requires MFA at sign-in (ADR 0011 slice 4).
+ */
+export type ProjectPasswordSignInResult =
+  { status: 'authenticated'; redirectUrl: string } | { status: 'mfa_required'; mfaToken: string };

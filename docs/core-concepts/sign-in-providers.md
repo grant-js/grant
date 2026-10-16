@@ -114,7 +114,7 @@ Googleusercontent URLs (`lh3.googleusercontent.com`) reject hotlinks that send a
 Project OAuth is documented in [Project OAuth](/core-concepts/project-oauth). Summary:
 
 - **Credentials** — per-project **OAuth connections** (BYO GitHub/Google client id + secret), with optional fallback to platform env vars.
-- **Per app** — `ProjectApp.enabledProviders` subsets which methods each app offers; `redirectUris` hold customer product callbacks only.
+- **Per app** — `ProjectApp.enabledProviders` subsets which methods each app offers (`email`, `github`, `google`, `password`); `redirectUris` hold customer product callbacks only. `password` (email and password, checked against the project's own credential, never the platform password) is **opt-in**: an empty list does not enable it.
 - **Linking** — same global user resolution as platform OAuth, then project membership is checked.
 - **Tokens and callbacks** — authorization-code + PKCE; [Security § Project OAuth](/architecture/security#project-oauth).
 

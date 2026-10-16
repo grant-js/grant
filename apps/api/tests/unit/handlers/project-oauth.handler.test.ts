@@ -159,7 +159,10 @@ function createHandler(): ProjectOAuthHandler {
     mockUsers as never,
     mockUserAuthenticationMethods as never,
     mockUsersScopeCacheUpdater as never,
-    mockProjectOAuthGrants as never
+    mockProjectOAuthGrants as never,
+    {} as never,
+    {} as never,
+    {} as never
   );
 }
 

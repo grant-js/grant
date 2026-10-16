@@ -5,11 +5,14 @@ export enum ProjectAppView {
   TABLE = 'table',
 }
 
-/** Providers available for project OAuth (subset of UserAuthenticationMethodProvider). */
+/** Providers a project app can enable: a subset of UserAuthenticationMethodProvider plus `password`. */
 export const PROJECT_OAUTH_PROVIDER_OPTIONS = [
   { id: UserAuthenticationMethodProvider.Email, nameKey: 'providers.email' },
   { id: UserAuthenticationMethodProvider.Github, nameKey: 'providers.github' },
   { id: UserAuthenticationMethodProvider.Google, nameKey: 'providers.google' },
+  // Not a UserAuthenticationMethodProvider: the Email method holds no secret, so project
+  // password sign-in is its own opt-in value of enabledProviders (ADR 0011 § 5).
+  { id: 'password', nameKey: 'providers.password' },
 ] as const;
 
 export const createProjectAppSchema = z

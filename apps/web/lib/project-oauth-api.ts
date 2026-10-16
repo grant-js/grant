@@ -2,6 +2,7 @@ import type {
   ProjectAppPublicInfo,
   ProjectConsentInfo,
   ProjectConsentRedirectResult,
+  ProjectPasswordSignInResult,
 } from '@grantjs/schema';
 
 import { getApiBaseUrl } from '@/lib/constants';
@@ -11,6 +12,7 @@ export type {
   ProjectAppPublicInfo,
   ProjectAppScopeInfo,
   ProjectConsentInfo,
+  ProjectPasswordSignInResult,
 } from '@grantjs/schema';
 
 /** Response body shape from project OAuth API error responses. */
@@ -25,7 +27,7 @@ interface ProjectOAuthApiErrorBody {
  * Error thrown by project OAuth API calls (app-info, consent-info, approve, deny).
  * Carries status and body so the web layer can map HTTP status/codes to user-facing messages.
  */
-class ProjectOAuthApiError extends Error {
+export class ProjectOAuthApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
@@ -264,4 +266,79 @@ export async function requestProjectEmailLink(input: ProjectEmailLinkRequestInpu
       data
     );
   }
+}
+
+export interface ProjectPasswordSignInInput {
+  clientId: string;
+  redirectUri: string;
+  /** The API's state id from the authorize step (it carries the PKCE challenge). */
+  state: string;
+  email: string;
+  password: string;
+  locale: string;
+}
+
+/**
+ * Signs in to a project app with email and password. `401` is the one generic answer for
+ * every identifier or password failure; `429` is the per-address limiter; `400` means the
+ * authorize step's state is missing or expired (start the sign-in again).
+ */
+export async function signInProjectWithPassword(
+  input: ProjectPasswordSignInInput
+): Promise<ProjectPasswordSignInResult> {
+  const apiBase = getApiBaseUrl();
+  const res = await fetch(`${apiBase}/api/auth/project/password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: input.clientId,
+      redirect_uri: input.redirectUri,
+      state: input.state,
+      email: input.email,
+      password: input.password,
+      locale: input.locale,
+    }),
+  });
+  const data = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody & {
+    success?: boolean;
+    data?: ProjectPasswordSignInResult;
+  };
+  if (!res.ok || !data.data) {
+    throw new ProjectOAuthApiError(
+      data.details ?? data.error ?? data.message ?? 'Sign-in failed',
+      res.status,
+      data
+    );
+  }
+  return data.data;
+}
+
+export interface ProjectPasswordMfaInput {
+  mfaToken: string;
+  code: string;
+  method: 'totp' | 'recovery';
+}
+
+/** Second step of a project password sign-in: a TOTP or recovery code for the pending challenge. */
+export async function verifyProjectPasswordMfa(
+  input: ProjectPasswordMfaInput
+): Promise<ProjectConsentRedirectResult> {
+  const apiBase = getApiBaseUrl();
+  const res = await fetch(`${apiBase}/api/auth/project/password/mfa`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mfa_token: input.mfaToken, code: input.code, method: input.method }),
+  });
+  const data = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody & {
+    success?: boolean;
+    data?: ProjectConsentRedirectResult;
+  };
+  if (!res.ok || !data.data?.redirectUrl) {
+    throw new ProjectOAuthApiError(
+      data.details ?? data.error ?? data.message ?? 'MFA verification failed',
+      res.status,
+      data
+    );
+  }
+  return { redirectUrl: data.data.redirectUrl };
 }

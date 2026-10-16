@@ -5,6 +5,9 @@ import {
   exchangeProjectOAuthCode,
   getProjectAppPublicInfo,
   peekProjectAppPublicInfo,
+  ProjectOAuthApiError,
+  signInProjectWithPassword,
+  verifyProjectPasswordMfa,
 } from './project-oauth-api';
 
 afterEach(() => {
@@ -81,5 +84,114 @@ describe('exchangeProjectOAuthCode', () => {
         }),
       })
     );
+  });
+});
+
+describe('signInProjectWithPassword', () => {
+  const input = {
+    clientId: 'app_1',
+    redirectUri: 'https://app.example/cb',
+    state: 'api-state',
+    email: 'member@example.com',
+    password: 'correct horse',
+    locale: 'de',
+  };
+
+  it('POSTs the credentials to the project password route and returns the consent redirect', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          status: 'authenticated',
+          redirectUrl: 'https://grant.example/de/auth/project/consent?consent_token=t',
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(signInProjectWithPassword(input)).resolves.toEqual({
+      status: 'authenticated',
+      redirectUrl: 'https://grant.example/de/auth/project/consent?consent_token=t',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/project/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: 'app_1',
+        redirect_uri: 'https://app.example/cb',
+        state: 'api-state',
+        email: 'member@example.com',
+        password: 'correct horse',
+        locale: 'de',
+      }),
+    });
+  });
+
+  it('returns a pending MFA step as such', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { status: 'mfa_required', mfaToken: 'mfa-1' } }),
+      })
+    );
+    await expect(signInProjectWithPassword(input)).resolves.toEqual({
+      status: 'mfa_required',
+      mfaToken: 'mfa-1',
+    });
+  });
+
+  it.each([401, 429, 400])('throws ProjectOAuthApiError carrying status %i', async (status) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status,
+        json: async () => ({ error: 'nope', details: 'Invalid credentials' }),
+      })
+    );
+    const error = await signInProjectWithPassword(input).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ProjectOAuthApiError);
+    expect((error as ProjectOAuthApiError).status).toBe(status);
+  });
+});
+
+describe('verifyProjectPasswordMfa', () => {
+  it('POSTs the challenge token, the code and the method', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: {
+          status: 'authenticated',
+          redirectUrl: 'https://grant.example/consent?consent_token=t',
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      verifyProjectPasswordMfa({ mfaToken: 'mfa-1', code: '123456', method: 'totp' })
+    ).resolves.toEqual({ redirectUrl: 'https://grant.example/consent?consent_token=t' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/project/password/mfa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfa_token: 'mfa-1', code: '123456', method: 'totp' }),
+    });
+  });
+
+  it('throws with the status on a refused code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'x' }) })
+    );
+    const error = await verifyProjectPasswordMfa({
+      mfaToken: 'mfa-1',
+      code: '000000',
+      method: 'totp',
+    }).catch((e: unknown) => e);
+    expect((error as ProjectOAuthApiError).status).toBe(401);
   });
 });

@@ -8,7 +8,7 @@ type CreateProjectAppResult {
   name: String
   redirectUris: [String!]!
   """
-  Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers.
+  Auth providers enabled for this app: `email` (magic link), `github`, `google` and `password` (email and password, checked against the project's own credential). Empty/null = every provider except `password`, which is opt-in and is on only when named here.
   """
   enabledProviders: [String!]
   """

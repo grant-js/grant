@@ -103,6 +103,8 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
             scheduleAfterCommit,
             // The platform credential tables are out of the restricted role's reach.
             baseDb: db,
+            // The sign-in lockout counts failures on the pool, outside this transaction.
+            durableDb: db,
           });
           const txConnection = new DrizzleTransactionalConnection(scopedDb);
           const handlers = createHandlers(cache, services, txConnection, grant, {
@@ -171,6 +173,7 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
 
       const services = createServices(repositories, user, db, cache, grant, {
         scheduleAfterCommit,
+        durableDb: db,
       });
       const txConnection = new DrizzleTransactionalConnection(db);
       const handlers = createHandlers(cache, services, txConnection, grant, {

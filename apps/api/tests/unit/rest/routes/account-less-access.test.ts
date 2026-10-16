@@ -97,6 +97,8 @@ const PUBLIC_ROUTES = [
   'POST /auth/token',
   'GET /auth/project/authorize',
   'POST /auth/project/email/request',
+  'POST /auth/project/password',
+  'POST /auth/project/password/mfa',
   'GET /auth/project/callback',
   'GET /auth/project/app-info',
   'GET /auth/project/consent-info',

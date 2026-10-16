@@ -677,7 +677,7 @@ export type CreatePermissionInput = {
 export type CreateProjectAppInput = {
   /** Allow new users to sign up when authenticating via this app. Default true. */
   allowSignUp?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
+  /** Auth providers enabled for this app: `email` (magic link), `github`, `google` and `password` (email and password, checked against the project's own credential). Empty/null = every provider except `password`, which is opt-in and is on only when named here. */
   enabledProviders?: InputMaybe<Array<Scalars['String']['input']>>;
   name?: InputMaybe<Scalars['String']['input']>;
   primaryTagId?: InputMaybe<Scalars['ID']['input']>;
@@ -699,7 +699,7 @@ export type CreateProjectAppResult = {
   /** Shown only once at creation. Null for public clients. */
   clientSecret?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Date']['output'];
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
+  /** Auth providers enabled for this app: `email` (magic link), `github`, `google` and `password` (email and password, checked against the project's own credential). Empty/null = every provider except `password`, which is opt-in and is on only when named here. */
   enabledProviders?: Maybe<Array<Scalars['String']['output']>>;
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
@@ -2201,7 +2201,7 @@ export type ProjectApp = Auditable & {
   clientId: Scalars['String']['output'];
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
+  /** Auth providers enabled for this app: `email` (magic link), `github`, `google` and `password` (email and password, checked against the project's own credential). Empty/null = every provider except `password`, which is opt-in and is on only when named here. */
   enabledProviders?: Maybe<Array<Scalars['String']['output']>>;
   id: Scalars['ID']['output'];
   name?: Maybe<Scalars['String']['output']>;
@@ -3850,7 +3850,7 @@ export type UpdatePermissionTagInput = {
 export type UpdateProjectAppInput = {
   /** Allow new users to sign up when authenticating via this app. */
   allowSignUp?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Auth providers enabled for this app (e.g. github, email). Empty/null = all configured providers. */
+  /** Auth providers enabled for this app: `email` (magic link), `github`, `google` and `password` (email and password, checked against the project's own credential). Empty/null = every provider except `password`, which is opt-in and is on only when named here. */
   enabledProviders?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Display name for the app. */
   name?: InputMaybe<Scalars['String']['input']>;

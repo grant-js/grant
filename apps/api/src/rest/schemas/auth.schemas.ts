@@ -452,6 +452,53 @@ export const projectEmailRequestSchema = z.object({
   locale: z.string().min(1).optional(),
 });
 
+/**
+ * Body for POST /project/password (project-app password sign-in, ADR 0011 § 5). `state` is
+ * the API's own state id from the authorize step (`provider=password`), which carries the
+ * PKCE challenge. Nothing here is echoed into an error: a malformed field names only the
+ * field.
+ */
+export const projectPasswordSignInSchema = z.object({
+  client_id: z.string().min(1, 'client_id required'),
+  redirect_uri: z.string().url('redirect_uri must be a valid URL'),
+  state: z.string().min(1, 'state required'),
+  email: z.string().email('email must be a valid email address').max(320),
+  // No `.max()`: an over-long password is a credentials failure (the same 401 as a wrong
+  // one, after the verifier's one compare, which refuses anything over its bound), not a
+  // malformed request. The body size limit bounds the input.
+  password: z.string().min(1, 'password required'),
+  /** Frontend locale for the consent redirect (e.g. en, de). */
+  locale: z.string().min(1).optional(),
+});
+
+/** Body for POST /project/password/mfa (second step when the platform requires MFA at sign-in). */
+export const projectPasswordMfaSchema = z.object({
+  mfa_token: z.string().min(1, 'mfa_token required'),
+  code: z.string().min(1, 'code required').max(64),
+  /** `totp` (default) or a one-time `recovery` code. */
+  method: z.enum(['totp', 'recovery']).optional(),
+});
+
+/**
+ * Result of POST /project/password: either the consent redirect, or a pending MFA step.
+ * The failure for an unknown address, a non-member, no project credential, a wrong
+ * password and a locked credential is one and the same 401.
+ */
+export const projectPasswordSignInResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('authenticated'),
+    redirectUrl: z.string().url().openapi({
+      description: 'The consent page to continue to (carries `consent_token`).',
+    }),
+  }),
+  z.object({
+    status: z.literal('mfa_required'),
+    mfaToken: z.string().openapi({
+      description: 'Short-lived one-time token to send to POST /project/password/mfa.',
+    }),
+  }),
+]);
+
 /** Query for GET project app public info (OAuth entry/consent UI). */
 export const projectAppInfoQuerySchema = z.object({
   client_id: z.string().min(1, 'client_id required'),
@@ -475,7 +522,10 @@ export const projectAppInfoResponseSchema = z.object({
   primaryColor: z.string().nullable(),
   showHelpPanel: z.boolean(),
   themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable(),
-  enabledProviders: z.array(z.string()).nullable(),
+  enabledProviders: z.array(z.string()).nullable().openapi({
+    description:
+      'Providers the app enables (`email`, `github`, `google`, `password`). Null or empty means every provider except `password`, which is opt-in.',
+  }),
   configuredProviders: z.array(z.string()),
   scopes: z.array(projectAppInfoScopeSchema),
 });

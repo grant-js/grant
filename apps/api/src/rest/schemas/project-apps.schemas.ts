@@ -7,6 +7,9 @@ import {
   scopeSchema,
 } from '@/rest/schemas/common.schemas';
 
+const enabledProvidersDescription =
+  "Auth providers enabled for the app: `email` (magic link), `github`, `google` and `password` (email and password, checked against the project's own credential). An empty or missing list means every provider except `password`, which is opt-in and is on only when named here.";
+
 /** Scope tenant for project apps: accountProject or organizationProject only. */
 const projectAppScopeTenantSchema = z.enum([Tenant.AccountProject, Tenant.OrganizationProject] as [
   Tenant,
@@ -29,7 +32,10 @@ export const projectAppSchema = z.object({
   themeMode: z.enum(PROJECT_OAUTH_THEME_MODES).nullable().optional(),
   redirectUris: z.array(z.string().url()),
   scopes: z.array(z.string()).optional(),
-  enabledProviders: z.array(z.string()).optional(),
+  enabledProviders: z
+    .array(z.string())
+    .optional()
+    .openapi({ description: enabledProvidersDescription }),
   allowSignUp: z.boolean().optional(),
   signUpRoleId: z.string().uuid().nullable().optional(),
   createdAt: z.string(),
@@ -62,7 +68,10 @@ export const createProjectAppRequestSchema = z.object({
   name: z.string().max(255).optional(),
   redirectUris: z.array(z.string().url()).min(1, 'errors.validation.redirectUrisMinOne'),
   scopes: z.array(z.string()).optional(),
-  enabledProviders: z.array(z.string()).optional(),
+  enabledProviders: z
+    .array(z.string())
+    .optional()
+    .openapi({ description: enabledProvidersDescription }),
   allowSignUp: z.boolean().optional(),
   signUpRoleId: z.string().uuid().nullable().optional(),
   tagIds: z.array(z.string()).optional(),
@@ -74,7 +83,10 @@ export const updateProjectAppRequestSchema = z.object({
   name: z.string().max(255).optional(),
   redirectUris: z.array(z.string().url()).optional(),
   scopes: z.array(z.string()).optional(),
-  enabledProviders: z.array(z.string()).optional(),
+  enabledProviders: z
+    .array(z.string())
+    .optional()
+    .openapi({ description: enabledProvidersDescription }),
   allowSignUp: z.boolean().optional(),
   signUpRoleId: z.string().uuid().nullable().optional(),
   primaryColor: z

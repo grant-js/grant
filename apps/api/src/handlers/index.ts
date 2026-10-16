@@ -138,7 +138,10 @@ export function createHandlers(
       services.users,
       services.userAuthenticationMethods,
       userHandler,
-      services.projectOAuthGrants
+      services.projectOAuthGrants,
+      services.credentials,
+      services.credentialSignInLockouts,
+      services.userMfa
     ),
     groups: new GroupHandler(
       services.groupTags,

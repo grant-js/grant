@@ -268,13 +268,22 @@ export const SOCIAL_OAUTH_PROVIDERS = [
 ] as const;
 
 /**
- * Subset of UserAuthenticationMethodProvider (schema) that is supported in the project OAuth flow.
- * Single source of truth: schema enum; this list defines which are implemented for project apps.
+ * Project-app sign-in by email and password (ADR 0011 § 5). Not a `UserAuthenticationMethodProvider`:
+ * the Email method carries mailbox proof only and holds no secret, so "password" exists only as a
+ * value of `ProjectApp.enabledProviders` and of the project authorize flow, and it verifies the
+ * project's own credential (never the platform one).
+ */
+export const PROJECT_PASSWORD_PROVIDER = 'password' as const;
+
+/**
+ * Providers implemented in the project OAuth flow: the subset of UserAuthenticationMethodProvider
+ * (schema) that project apps can use, plus the project-only `password` provider.
  */
 export const PROJECT_OAUTH_PROVIDERS = [
   UserAuthenticationMethodProvider.Github,
   UserAuthenticationMethodProvider.Google,
   UserAuthenticationMethodProvider.Email,
+  PROJECT_PASSWORD_PROVIDER,
 ] as const;
 export type ProjectOAuthProvider = (typeof PROJECT_OAUTH_PROVIDERS)[number];
 

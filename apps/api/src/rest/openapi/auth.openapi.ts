@@ -19,6 +19,9 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectConsentInfoResponseSchema,
+  projectPasswordMfaSchema,
+  projectPasswordSignInResultSchema,
+  projectPasswordSignInSchema,
   projectTokenBodySchema,
   projectTokenResponseSchema,
   refreshSessionRequestSchema,
@@ -770,8 +773,9 @@ Initiate the project-scoped authorization-code + PKCE flow. Used by project appl
           description: 'Space-delimited scopes (subset of app-configured scopes)',
           example: 'organization:read user:read',
         }),
-        provider: z.enum(['github', 'email']).optional().openapi({
-          description: 'Auth provider',
+        provider: z.enum(['github', 'google', 'email', 'password']).optional().openapi({
+          description:
+            'Auth provider. `password` is opt-in: the app must list it in `enabledProviders` (an empty list does not enable it).',
           default: 'github',
         }),
         locale: z.string().min(1).optional().openapi({
@@ -857,6 +861,131 @@ Sends an email containing a one-time link to \`/api/auth/project/callback?token=
         content: {
           'application/json': {
             schema: validationErrorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/auth/project/password
+   * Project-app sign-in by email and password (ADR 0011 slice 4)
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/auth/project/password',
+    operationId: 'postApiAuthProjectPassword',
+    tags: ['Authentication'],
+    summary: 'Sign in to a project app with email and password',
+    description: `
+Sign in to a project app with the app's \`password\` provider. The user reaches the hosted password view through \`GET /api/auth/project/authorize?provider=password\`, which stores the state (and the PKCE challenge) and redirects there; \`state\` below is that state id.
+
+Only the **project's own credential** is checked. The platform (console) password is never accepted here, and there is no fallback to it. The address is resolved through the Email method; the user must already be a member of the project (a password never creates a membership or an identity). On success the response is the consent redirect, exactly as for the magic link; no platform session is created.
+
+An unknown address, a user who is not a member, no project credential, a wrong password and a locked credential all return the same \`401\`. After \`AUTH_MAX_FAILED_LOGIN_ATTEMPTS\` attempts for one user in one project the credential is locked for \`AUTH_LOCKOUT_DURATION_MINUTES\`; this never affects platform login or another project. When the platform requires MFA at sign-in (\`AUTH_MIN_AAL_AT_LOGIN=aal2\`) and the user has an active enrolment, the response is \`status: mfa_required\` and the sign-in is completed at \`POST /api/auth/project/password/mfa\`.
+
+Disabled unless the app lists \`password\` in \`enabledProviders\` (an empty list does not enable it): \`400\` otherwise.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: projectPasswordSignInSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Consent redirect, or a pending MFA step',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(projectPasswordSignInResultSchema),
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid client_id, redirect_uri, body, or `password` is not enabled for the app',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description:
+          'Invalid credentials: one generic answer for an unknown address, a non-member, no project credential, a wrong password and a locked credential',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      429: {
+        description: 'Too many requests from this address',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/auth/project/password/mfa
+   * Second step of a project password sign-in when MFA is required
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/auth/project/password/mfa',
+    operationId: 'postApiAuthProjectPasswordMfa',
+    tags: ['Authentication'],
+    summary: 'Complete a project password sign-in with MFA',
+    description:
+      'Verifies a TOTP code (or, with `method: recovery`, a one-time recovery code) for the `mfa_token` returned by `POST /api/auth/project/password`, then returns the consent redirect. Every attempt counts against the same per-project lockout as the password; a token tolerates five wrong codes.',
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: projectPasswordMfaSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Consent redirect',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(
+              z.object({ status: z.literal('authenticated'), redirectUrl: z.string().url() })
+            ),
+          },
+        },
+      },
+      400: {
+        description: 'Invalid body, or the MFA challenge is unknown, expired or used up',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Invalid code',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      429: {
+        description: 'Too many requests from this address',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },

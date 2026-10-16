@@ -1,4 +1,4 @@
-import { GitBranch, Mail } from 'lucide-react';
+import { GitBranch, KeyRound, Mail } from 'lucide-react';
 
 import type { SocialOAuthProviderId } from '@/lib/oauth-providers';
 
@@ -48,6 +48,9 @@ export function OAuthProviderIcon({
   }
   if (provider === 'email') {
     return <Mail className={className} />;
+  }
+  if (provider === 'password') {
+    return <KeyRound className={className} />;
   }
   return <GitBranch className={className} />;
 }

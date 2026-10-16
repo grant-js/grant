@@ -723,6 +723,22 @@ export const vendoredOperations: CliOperation[] = [
     pathParams: [],
   },
   {
+    operationId: 'postApiAuthProjectPassword',
+    method: 'post',
+    path: '/api/auth/project/password',
+    tags: ['Authentication'],
+    summary: 'Sign in to a project app with email and password',
+    pathParams: [],
+  },
+  {
+    operationId: 'postApiAuthProjectPasswordMfa',
+    method: 'post',
+    path: '/api/auth/project/password/mfa',
+    tags: ['Authentication'],
+    summary: 'Complete a project password sign-in with MFA',
+    pathParams: [],
+  },
+  {
     operationId: 'postApiAuthRefresh',
     method: 'post',
     path: '/api/auth/refresh',

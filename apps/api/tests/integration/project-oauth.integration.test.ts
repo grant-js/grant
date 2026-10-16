@@ -234,7 +234,10 @@ function buildProjectOAuthContext(
     users as never,
     userAuthenticationMethods as never,
     usersScopeCacheUpdater as never,
-    projectOAuthGrants as never
+    projectOAuthGrants as never,
+    {} as never,
+    {} as never,
+    {} as never
   );
 
   return {
