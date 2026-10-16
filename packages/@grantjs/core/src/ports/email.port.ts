@@ -29,6 +29,16 @@ export interface SendProjectOAuthMagicLinkParams {
   locale?: string;
 }
 
+export interface SendProjectPasswordResetParams {
+  to: string;
+  /** Link to the hosted reset view; carries the one-time token. */
+  resetUrl: string;
+  /** Epoch milliseconds at which the link stops working. */
+  validUntil: number;
+  appName?: string;
+  locale?: string;
+}
+
 export interface SendNotificationEmailParams {
   to: string;
   subject: string;
@@ -58,6 +68,11 @@ export interface IEmailService {
    * Send a project OAuth magic link (sign-in link for project app)
    */
   sendProjectOAuthMagicLink(params: SendProjectOAuthMagicLinkParams): Promise<void>;
+
+  /**
+   * Send a project-app password reset link (ADR 0011 § 6), branded with the app's name
+   */
+  sendProjectPasswordReset(params: SendProjectPasswordResetParams): Promise<void>;
 
   /**
    * Send a generic notification email (subject + text/html body). Used by the

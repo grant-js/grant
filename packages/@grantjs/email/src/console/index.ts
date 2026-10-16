@@ -6,6 +6,7 @@ import type {
   SendOtpParams,
   SendPasswordResetParams,
   SendProjectOAuthMagicLinkParams,
+  SendProjectPasswordResetParams,
 } from '@grantjs/core';
 
 import type { EmailTemplates } from '../templates';
@@ -70,6 +71,20 @@ export class ConsoleEmailAdapter implements IEmailService {
     this.logger.info({
       msg: '📧 PROJECT OAUTH MAGIC LINK (Console Adapter - Development Mode)',
       emailType: 'project-oauth-magic-link',
+      from: this.from,
+      to: params.to,
+      subject,
+      text,
+    });
+  }
+
+  async sendProjectPasswordReset(params: SendProjectPasswordResetParams): Promise<void> {
+    const subject = this.templates.getProjectPasswordResetEmailSubject(params);
+    const text = this.templates.getProjectPasswordResetEmailText(params);
+
+    this.logger.info({
+      msg: '📧 PROJECT PASSWORD RESET (Console Adapter - Development Mode)',
+      emailType: 'project-password-reset',
       from: this.from,
       to: params.to,
       subject,

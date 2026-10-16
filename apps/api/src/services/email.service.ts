@@ -3,6 +3,7 @@ import type {
   SendInvitationParams,
   SendNotificationEmailParams,
   SendProjectOAuthMagicLinkParams,
+  SendProjectPasswordResetParams,
 } from '@grantjs/core';
 import type { EmailTemplates } from '@grantjs/email';
 import { EmailFactory } from '@grantjs/email';
@@ -21,6 +22,9 @@ import {
   getProjectOAuthMagicLinkEmailHtml,
   getProjectOAuthMagicLinkEmailSubject,
   getProjectOAuthMagicLinkEmailText,
+  getProjectPasswordResetEmailHtml,
+  getProjectPasswordResetEmailSubject,
+  getProjectPasswordResetEmailText,
 } from '@/lib/email/templates';
 import { loggerFactory } from '@/lib/logger';
 
@@ -38,6 +42,9 @@ const templates: EmailTemplates = {
   getProjectOAuthMagicLinkEmailSubject,
   getProjectOAuthMagicLinkEmailHtml,
   getProjectOAuthMagicLinkEmailText,
+  getProjectPasswordResetEmailSubject,
+  getProjectPasswordResetEmailHtml,
+  getProjectPasswordResetEmailText,
 };
 
 /**
@@ -138,6 +145,13 @@ export class EmailService implements IEmailService {
    */
   public async sendProjectOAuthMagicLink(params: SendProjectOAuthMagicLinkParams): Promise<void> {
     return this.emailAdapter.sendProjectOAuthMagicLink(params);
+  }
+
+  /**
+   * Send a project-app password reset email
+   */
+  public async sendProjectPasswordReset(params: SendProjectPasswordResetParams): Promise<void> {
+    return this.emailAdapter.sendProjectPasswordReset(params);
   }
 
   /**

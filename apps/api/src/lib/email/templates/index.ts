@@ -4,3 +4,4 @@ export * from './notification.template';
 export * from './otp.template';
 export * from './password-reset.template';
 export * from './project-oauth-magic-link.template';
+export * from './project-password-reset.template';

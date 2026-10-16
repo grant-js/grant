@@ -255,6 +255,15 @@
       "messageLink": "Klicken Sie auf den Link unten, um sich anzumelden:",
       "messageLinkWithApp": "Klicken Sie auf den Link unten, um sich bei {{appName}} anzumelden:"
     },
+    "projectPasswordReset": {
+      "subject": "Passwort für {{appName}} zurücksetzen",
+      "defaultAppName": "die App",
+      "message": "Wir haben eine Anfrage erhalten, Ihr Passwort für {{appName}} zurückzusetzen. Klicken Sie auf die Schaltfläche unten, um ein neues Passwort zu wählen:",
+      "button": "Passwort zurücksetzen",
+      "messageLink": "Wir haben eine Anfrage erhalten, Ihr Passwort für {{appName}} zurückzusetzen. Öffnen Sie den Link unten, um ein neues Passwort zu wählen:",
+      "expiresIn": "Dieser Link läuft in {{minutes}} Minuten ab und kann nur einmal verwendet werden.",
+      "warning": "Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren. Ihr Passwort bleibt unverändert."
+    },
     "notification": {
       "common": {
         "greeting": "Hallo,",
