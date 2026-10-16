@@ -43,6 +43,7 @@ const { mockConfig } = vi.hoisted(() => ({
 
 vi.mock('@/config', () => ({ config: mockConfig }));
 
+const { NotFoundError } = await import('@/lib/errors');
 const { ProjectPasswordResetHandler } = await import('@/handlers/project-password-reset.handler');
 const { CredentialService } = await import('@/services/credentials.service');
 const { CredentialLockoutService } = await import('@/services/credential-lockouts.service');
@@ -609,6 +610,19 @@ describe('ProjectPasswordResetHandler', () => {
       await complete(handler, token);
 
       expect(mockMethods.updateUserAuthenticationMethod).not.toHaveBeenCalled();
+    });
+
+    it('treats an Email method deleted since the request as a dead link, writing nothing', async () => {
+      const handler = createHandler();
+      const token = await requestedToken(handler);
+      mockMethods.getUserAuthenticationMethod.mockRejectedValue(
+        new NotFoundError('UserAuthenticationMethod')
+      );
+
+      expect(await failureOf(complete(handler, token))).toEqual(INVALID_LINK);
+
+      expect(projectCredentials.rows).toHaveLength(0);
+      expect(mockGrants.revokeAllForUserInProject).not.toHaveBeenCalled();
     });
 
     it('is single-use: the second attempt with the same token fails and changes nothing', async () => {

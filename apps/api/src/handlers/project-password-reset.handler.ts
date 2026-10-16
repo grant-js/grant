@@ -161,6 +161,14 @@ export class ProjectPasswordResetHandler {
         throw this.invalidResetLink();
       }
 
+      // An Email method deleted since the request leaves nothing to sign in with and nothing
+      // to verify: the same answer as any other dead link, not a 404 that names a method.
+      const method = await this.userAuthenticationMethods
+        .getUserAuthenticationMethod(consumed.authMethodId, tx)
+        .catch((error: unknown) => {
+          throw error instanceof NotFoundError ? this.invalidResetLink() : error;
+        });
+
       await this.credentials.setPassword(
         { scope, userId: consumed.userId, password: params.password, source: 'reset' },
         tx
@@ -169,10 +177,6 @@ export class ProjectPasswordResetHandler {
 
       // The link reached the mailbox: the one global fact a reset proves, exactly as the
       // magic link does. The platform credential is not touched.
-      const method = await this.userAuthenticationMethods.getUserAuthenticationMethod(
-        consumed.authMethodId,
-        tx
-      );
       if (
         method.userId === consumed.userId &&
         method.provider === UserAuthenticationMethodProvider.Email &&
@@ -185,7 +189,15 @@ export class ProjectPasswordResetHandler {
         );
       }
 
-      await this.projectOAuthGrants.revokeAllForUserInProject(app.projectId, consumed.userId, tx);
+      const revokedGrants = await this.projectOAuthGrants.revokeAllForUserInProject(
+        app.projectId,
+        consumed.userId,
+        tx
+      );
+      this.logger.info(
+        { projectId: app.projectId, userId: consumed.userId, revokedGrants },
+        'Project password reset completed'
+      );
     });
   }
 
