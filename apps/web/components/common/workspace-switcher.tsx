@@ -42,7 +42,9 @@ export function WorkspaceSwitcher({ className }: WorkspaceSwitcherProps) {
     () => accounts.some((a) => a.type === AccountType.Organization),
     [accounts]
   );
-  const showCreateComplementary = !(hasPersonal && hasOrganization);
+  // Creating the first account is a sign-up, which a closed install refuses; only offer the
+  // complementary one to a user who already has an account.
+  const showCreateComplementary = accounts.length > 0 && !(hasPersonal && hasOrganization);
   const complementaryTypeLabel = hasPersonal
     ? t('accountTypes.organization')
     : t('accountTypes.personal');

@@ -23,5 +23,6 @@ query Me {
     requiresEmailVerification
     verificationExpiry
     email
+    hasOrganizationMembership
   }
 }

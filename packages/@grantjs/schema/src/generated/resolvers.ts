@@ -1433,6 +1433,7 @@ export type MeResponseResolvers<
 > = ResolversObject<{
   accounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
   email?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  hasOrganizationMembership?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   mfaVerified?: Resolver<Types.Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   requiresEmailVerification?: Resolver<
     Types.Maybe<ResolversTypes['Boolean']>,

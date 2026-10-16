@@ -100,6 +100,7 @@ This endpoint requires authentication via Authorization header (Bearer token) or
 ### Response
 Returns user account information including:
 - \`accounts\`: Array of user's accounts
+- \`hasOrganizationMembership\`: Whether the user belongs to an organization (no accounts and no membership means no workspace on this installation)
 - \`email\`: User's email address (from authentication methods)
 - \`requiresEmailVerification\`: Whether email verification is required
 - \`verificationExpiry\`: Date when email verification expires (if applicable)
@@ -114,6 +115,7 @@ Returns user account information including:
               success: z.literal(true),
               data: z.object({
                 accounts: z.array(accountSchema),
+                hasOrganizationMembership: z.boolean(),
                 email: z.string().nullable(),
                 requiresEmailVerification: z.boolean(),
                 verificationExpiry: z.string().datetime().nullable(),
@@ -132,6 +134,7 @@ Returns user account information including:
                     deletedAt: null,
                   },
                 ],
+                hasOrganizationMembership: false,
                 email: 'user@example.com',
                 requiresEmailVerification: false,
                 verificationExpiry: null,

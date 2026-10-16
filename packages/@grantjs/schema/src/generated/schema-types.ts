@@ -1010,6 +1010,11 @@ export type MeResponse = {
   __typename?: 'MeResponse';
   accounts: Array<Account>;
   email?: Maybe<Scalars['String']['output']>;
+  /**
+   * Whether the user belongs to at least one organization. A user with no accounts and no
+   * organization membership has no workspace on this installation.
+   */
+  hasOrganizationMembership: Scalars['Boolean']['output'];
   mfaVerified?: Maybe<Scalars['Boolean']['output']>;
   requiresEmailVerification?: Maybe<Scalars['Boolean']['output']>;
   verificationExpiry?: Maybe<Scalars['Date']['output']>;

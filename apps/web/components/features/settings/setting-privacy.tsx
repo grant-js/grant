@@ -40,6 +40,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Label } from '@/components/ui/label';
+import { useIsAccountless } from '@/hooks/accounts';
 import { useEmailVerified } from '@/hooks/auth';
 import { usePrivacySettings } from '@/hooks/privacy';
 import { getCurrentUserId } from '@/lib/auth';
@@ -68,6 +69,9 @@ export function SettingPrivacy() {
   const [deleteUserId, setDeleteUserId] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const isEmailVerified = useEmailVerified();
+  // Without an account there are no "accounts" to delete: the deletion removes the identity.
+  const isAccountless = useIsAccountless();
+  const deletionKey = isAccountless ? 'identityDeletion' : 'accountDeletion';
 
   const currentUserId = useMemo(() => getCurrentUserId(accessToken!), [accessToken]);
 
@@ -111,18 +115,15 @@ export function SettingPrivacy() {
       </SettingCard>
 
       {/* Account Deletion Card */}
-      <SettingCard
-        title={t('accountDeletion.title')}
-        description={t('accountDeletion.description')}
-      >
+      <SettingCard title={t(`${deletionKey}.title`)} description={t(`${deletionKey}.description`)}>
         <div className="space-y-4">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{t('accountDeletion.warning')}</AlertDescription>
+            <AlertDescription>{t(`${deletionKey}.warning`)}</AlertDescription>
           </Alert>
 
           <div className="space-y-3">
-            <p className="text-sm font-medium">{t('accountDeletion.consequences.title')}</p>
+            <p className="text-sm font-medium">{t(`${deletionKey}.consequences.title`)}</p>
             <ItemGroup className="gap-4">
               {DELETION_CONSEQUENCES.map(({ key, Icon }) => (
                 <Item key={key} variant="default" size="sm">
@@ -130,13 +131,13 @@ export function SettingPrivacy() {
                     <Icon className="size-4 text-muted-foreground" />
                   </ItemMedia>
                   <ItemContent>
-                    <ItemTitle>{t(`accountDeletion.consequences.${key}Title`)}</ItemTitle>
+                    <ItemTitle>{t(`${deletionKey}.consequences.${key}Title`)}</ItemTitle>
                     <ItemDescription>
                       {key === 'retention'
                         ? t('dataRetention.deleted.description', {
                             days: getRuntimeConfig().accountDeletionRetentionDays,
                           })
-                        : t(`accountDeletion.consequences.${key}Description`)}
+                        : t(`${deletionKey}.consequences.${key}Description`)}
                     </ItemDescription>
                   </ItemContent>
                 </Item>
@@ -152,47 +153,47 @@ export function SettingPrivacy() {
                 disabled={!isEmailVerified}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                {t('accountDeletion.deleteButton')}
+                {t(`${deletionKey}.deleteButton`)}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t('accountDeletion.dialog.title')}</AlertDialogTitle>
+                <AlertDialogTitle>{t(`${deletionKey}.dialog.title`)}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {t('accountDeletion.dialog.description')}
+                  {t(`${deletionKey}.dialog.description`)}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="space-y-4 py-4">
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{t('accountDeletion.dialog.warning')}</AlertDescription>
+                  <AlertDescription>{t(`${deletionKey}.dialog.warning`)}</AlertDescription>
                 </Alert>
                 {currentUserId && (
                   <div className="space-y-2">
-                    <Label>{t('accountDeletion.dialog.userIdLabel')}</Label>
+                    <Label>{t(`${deletionKey}.dialog.userIdLabel`)}</Label>
                     <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
                       <code className="flex-1 text-sm font-mono">{currentUserId}</code>
                       <CopyToClipboard text={currentUserId} size="sm" variant="ghost" />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {t('accountDeletion.dialog.userIdHint')}
+                      {t(`${deletionKey}.dialog.userIdHint`)}
                     </p>
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="delete-user-id">
-                    {t('accountDeletion.dialog.confirmUserIdLabel')}
+                    {t(`${deletionKey}.dialog.confirmUserIdLabel`)}
                   </Label>
                   <Input
                     id="delete-user-id"
                     value={deleteUserId}
                     onChange={(e) => setDeleteUserId(e.target.value)}
-                    placeholder={t('accountDeletion.dialog.confirmUserIdPlaceholder')}
+                    placeholder={t(`${deletionKey}.dialog.confirmUserIdPlaceholder`)}
                     disabled={isDeleting || !currentUserId}
                     autoComplete="off"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t('accountDeletion.dialog.confirmUserIdHint')}
+                    {t(`${deletionKey}.dialog.confirmUserIdHint`)}
                   </p>
                 </div>
               </div>
@@ -206,8 +207,8 @@ export function SettingPrivacy() {
                   variant="destructive"
                 >
                   {isDeleting
-                    ? t('accountDeletion.dialog.deleting')
-                    : t('accountDeletion.dialog.confirm')}
+                    ? t(`${deletionKey}.dialog.deleting`)
+                    : t(`${deletionKey}.dialog.confirm`)}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

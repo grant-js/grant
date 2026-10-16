@@ -104,6 +104,8 @@ A company can run Grant on the public internet without a VPN. Two independent co
 | `SECURITY_ORIGIN_VERIFY_HEADER`   | `x-origin-verify` | Header that carries the secret.                                                                                                                                                                                                                                       |
 | `SECURITY_ORIGIN_VERIFY_REQUIRED` | `false`           | When `true`, a missing secret **refuses** every API request (fail closed). AWS sets `true`.                                                                                                                                                                           |
 
+On a closed install, login follows the same rule as registration. An identity that exists without an account or an organization membership (a CDM import, a user who only signed in to a Project App) can sign in, but it is not given a Personal account: it is signed in **without an account** and reaches only its own settings (profile, security, preferences, notifications, privacy, data export and deletion) and its project memberships. Account-scoped pages are not offered and the API refuses them, and it cannot create an account or an organization. A valid organization invitation, an organization membership (an administrator added the user to an organization) and, on an empty install, being the first human still create the account. Password reset stays open to every identity.
+
 `SECURITY_API_KEY` is declared in env schema and config only. It has **no runtime consumer** and is **not** the origin gate. Do not wire a second gate.
 
 Who attaches `x-origin-verify` (never a CloudFront Function):

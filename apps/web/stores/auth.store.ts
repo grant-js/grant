@@ -14,6 +14,16 @@ interface AuthState {
 
   // Account state
   accounts: Account[];
+  /**
+   * True once `accounts` reflects the server (a login response or `me`), as opposed to the
+   * initial empty list. "Signed in with no accounts" is only a fact once this is set.
+   */
+  accountsLoaded: boolean;
+  /**
+   * Whether the user belongs to an organization (from `me`). A user with no accounts but a
+   * membership has console access an administrator granted, so is not account-less.
+   */
+  hasOrganizationMembership: boolean;
   currentAccountId: string | null;
   isSwitchingAccounts: boolean;
   accessToken: string | null;
@@ -43,6 +53,12 @@ interface AuthState {
   updateAccounts: (accounts: Account[], accountId?: string) => void;
   syncFromMe: (data: {
     accounts: Account[];
+    /**
+     * Whether `accounts` came from a `me` response (default true). False while `me` is loading
+     * or failed: then `accounts` says nothing and the known list is left as it is.
+     */
+    accountsLoaded?: boolean;
+    hasOrganizationMembership?: boolean;
     email: string | null;
     mfaVerified: boolean;
     requiresEmailVerification: boolean;
@@ -78,6 +94,8 @@ export const useAuthStore = create<AuthState>()(
 
         // Account state
         accounts: [],
+        accountsLoaded: false,
+        hasOrganizationMembership: false,
         currentAccountId: null,
         isSwitchingAccounts: false,
         accessToken: null,
@@ -91,7 +109,7 @@ export const useAuthStore = create<AuthState>()(
 
         // Actions
         setLoading: (loading) => set({ loading }),
-        setAccounts: (accounts) => set({ accounts }),
+        setAccounts: (accounts) => set({ accounts, accountsLoaded: true }),
         setCurrentAccount: (accountId) => set({ currentAccountId: accountId }),
         setSwitchingAccounts: (value) => set({ isSwitchingAccounts: value }),
         setAccessToken: (accessToken) => {
@@ -101,6 +119,8 @@ export const useAuthStore = create<AuthState>()(
         clearAuth: () => {
           set((state) => ({
             accounts: [],
+            accountsLoaded: false,
+            hasOrganizationMembership: false,
             currentAccountId: null,
             isSwitchingAccounts: false,
             accessToken: null,
@@ -121,19 +141,31 @@ export const useAuthStore = create<AuthState>()(
         },
 
         updateAccounts: (accounts: Account[]) => {
-          set({ accounts });
+          set({ accounts, accountsLoaded: true });
         },
 
         syncFromMe: (data) => {
-          const { accounts, email, mfaVerified, requiresEmailVerification, verificationExpiry } =
-            data;
-          set({
+          const {
             accounts,
+            accountsLoaded,
+            hasOrganizationMembership,
             email,
             mfaVerified,
             requiresEmailVerification,
             verificationExpiry,
-          });
+          } = data;
+          const accountsKnown = accountsLoaded !== false;
+          set((state) => ({
+            accounts: accountsKnown ? accounts : state.accounts,
+            accountsLoaded: accountsKnown ? true : state.accountsLoaded,
+            hasOrganizationMembership: accountsKnown
+              ? (hasOrganizationMembership ?? false)
+              : state.hasOrganizationMembership,
+            email,
+            mfaVerified,
+            requiresEmailVerification,
+            verificationExpiry,
+          }));
           // currentAccountId is persisted; useAccountsSync only ensures a valid one when accounts load.
         },
 
@@ -157,6 +189,10 @@ export const useAuthStore = create<AuthState>()(
 
           set((state) => ({
             accounts,
+            accountsLoaded: true,
+            // A login with no account means the API found no membership either (it would have
+            // created the account), so there is nothing more to learn here.
+            hasOrganizationMembership: false,
             currentAccountId: targetAccountId,
             accessToken,
             email: email ?? null,

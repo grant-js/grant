@@ -25,6 +25,7 @@ import {
 } from '@/components/common';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { useMyMutations } from '@/hooks';
+import { useIsAccountless } from '@/hooks/accounts';
 import { Link } from '@/i18n/navigation';
 import { getInitials } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
@@ -36,6 +37,7 @@ export function SidebarAccountDropdown() {
   const { getCurrentAccount, email, isAuthenticated, clearAuth } = useAuthStore();
   const { logoutMyUser } = useMyMutations();
   const currentAccount = getCurrentAccount();
+  const isAccountless = useIsAccountless();
 
   if (!isAuthenticated()) {
     return null;
@@ -103,12 +105,14 @@ export function SidebarAccountDropdown() {
             {/* Settings Section */}
             <SidebarDropdownMenuGroup>
               <SidebarDropdownMenuLabel>{dashboardT('settings')}</SidebarDropdownMenuLabel>
-              <SidebarDropdownMenuItem asChild>
-                <Link href="/dashboard/settings/account" className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>{settingsT('account')}</span>
-                </Link>
-              </SidebarDropdownMenuItem>
+              {!isAccountless && (
+                <SidebarDropdownMenuItem asChild>
+                  <Link href="/dashboard/settings/account" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    <span>{settingsT('account')}</span>
+                  </Link>
+                </SidebarDropdownMenuItem>
+              )}
               <SidebarDropdownMenuItem asChild>
                 <Link href="/dashboard/settings/profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />

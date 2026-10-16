@@ -9,6 +9,7 @@ export * from './setting-language-switcher';
 export * from './setting-mfa-devices-card';
 export * from './setting-mfa-enroll-dialog';
 export * from './setting-mfa-recovery-codes-card';
+export * from './setting-no-workspace-notice';
 export * from './setting-password-change-form';
 export * from './setting-preferences';
 export * from './setting-privacy';

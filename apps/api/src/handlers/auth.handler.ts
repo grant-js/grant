@@ -5,6 +5,7 @@ import type {
   IEmailService,
   ILogger,
   IOrganizationInvitationService,
+  IOrganizationUserService,
   ITransactionalConnection,
   IUserAuthenticationMethodService,
   IUserMfaService,
@@ -51,7 +52,10 @@ import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/error
 import { createLogger } from '@/lib/logger';
 import { contactEmailFromOAuthProviderData } from '@/lib/oauth-contact-email.lib';
 import { oauthPictureUrlFromProviderData, userPictureUrlIsEmpty } from '@/lib/oauth-picture.lib';
-import { assertPlatformSelfSignupAllowed } from '@/lib/signup-policy.lib';
+import {
+  assertPlatformSelfSignupAllowed,
+  isPlatformSelfSignupAllowed,
+} from '@/lib/signup-policy.lib';
 import { verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { getVerificationExpirationMs, getVerificationExpiryDate } from '@/lib/verification.lib';
@@ -207,6 +211,42 @@ export class AuthHandler extends CacheHandler {
     return true;
   }
 
+  /**
+   * Login must not hand out what registration refuses: an identity that has no account
+   * (CDM import, project-app sign-in) may only get its first Personal account where
+   * `register` would have created one. Otherwise it is signed in without an account.
+   *
+   * An organization membership is console access an administrator granted (an org admin
+   * added the user), so such an identity gets its account as it always did.
+   */
+  private async mayCreateFirstAccount(
+    userId: string,
+    invitationProofValid: boolean,
+    tx: Transaction
+  ): Promise<boolean> {
+    const humanUserCount =
+      invitationProofValid || config.auth.publicSignupEnabled
+        ? 0
+        : await this.users.countHumanUsers(tx);
+    if (isPlatformSelfSignupAllowed({ invitationProofValid, humanUserCount })) {
+      return true;
+    }
+    const memberships = await this.organizationUsers.getUserOrganizationMemberships(userId, tx);
+    return memberships.length > 0;
+  }
+
+  private async createPersonalAccountForUser(userId: string, tx: Transaction): Promise<void> {
+    const account = await this.accounts.createAccount(
+      { type: AccountType.Personal, ownerId: userId },
+      tx
+    );
+    const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
+    const accountOwnerRole = seededRoles[0];
+    if (accountOwnerRole) {
+      await this.userRoles.addUserRole({ userId, roleId: accountOwnerRole.role.id }, tx);
+    }
+  }
+
   constructor(
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     private readonly users: IUserService,
@@ -221,6 +261,7 @@ export class AuthHandler extends CacheHandler {
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
+    private readonly organizationUsers: IOrganizationUserService,
     private readonly scheduleAfterCommit?: (fn: () => void | Promise<void>) => void
   ) {
     super(cache, scopeServices);
@@ -493,24 +534,17 @@ export class AuthHandler extends CacheHandler {
         }
 
         if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
-          // User has auth method but no account (e.g. created via project OAuth). Create default Personal account on first platform login.
-          const account = await this.accounts.createAccount(
-            { type: AccountType.Personal, ownerId: user.id },
-            tx
-          );
-          const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
-          const accountOwnerRole = seededRoles[0];
-          if (accountOwnerRole) {
-            await this.userRoles.addUserRole(
-              { userId: user.id, roleId: accountOwnerRole.role.id },
+          // The identity exists without an account (e.g. CDM import, project OAuth). The first
+          // Personal account follows the register policy; on a closed install the session is
+          // issued account-less and reaches user-scoped settings only.
+          if (await this.mayCreateFirstAccount(user.id, isVerifiedByInvitationProof, tx)) {
+            await this.createPersonalAccountForUser(user.id, tx);
+            const usersResultAfter = await this.users.getUsers(
+              { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
               tx
             );
+            user = usersResultAfter.users?.[0] ?? user;
           }
-          const usersResultAfter = await this.users.getUsers(
-            { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
-            tx
-          );
-          user = usersResultAfter.users?.[0] ?? user;
         }
 
         // Check for existing non-expired sessions (without requiring exact userAgent/ipAddress match)
@@ -948,8 +982,14 @@ export class AuthHandler extends CacheHandler {
 
       const user = usersResult.users[0];
 
-      if (!Array.isArray(user.accounts) || user.accounts.length === 0) {
-        throw new AuthenticationError('User does not have an account');
+      let accounts = user.accounts ?? [];
+      if (accounts.length === 0 && (await this.mayCreateFirstAccount(user.id, false, tx))) {
+        await this.createPersonalAccountForUser(user.id, tx);
+        const usersResultAfter = await this.users.getUsers(
+          { ids: [user.id], limit: 1, requestedFields: ['accounts'] },
+          tx
+        );
+        accounts = usersResultAfter.users?.[0]?.accounts ?? [];
       }
 
       const session = await this.userSessions.createSession(
@@ -971,7 +1011,7 @@ export class AuthHandler extends CacheHandler {
         refreshToken: session.refreshToken,
         mfaVerified: false,
         requiresMfaStepUp,
-        accounts: user.accounts ?? [],
+        accounts,
         requiresEmailVerification: false,
         verificationExpiry: null,
         email: null,

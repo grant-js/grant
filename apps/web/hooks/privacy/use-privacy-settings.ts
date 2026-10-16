@@ -9,6 +9,7 @@ import {
 } from '@grantjs/schema';
 import { toast } from 'sonner';
 
+import { useIsAccountless } from '@/hooks/accounts';
 import { useRouter } from '@/i18n/navigation';
 import { getCurrentUserId } from '@/lib/auth';
 import { useAuthStore } from '@/stores/auth.store';
@@ -17,6 +18,8 @@ export function usePrivacySettings() {
   const t = useTranslations('settings.privacy');
   const router = useRouter();
   const { clearAuth, accessToken } = useAuthStore();
+  const isAccountless = useIsAccountless();
+  const deletionKey = isAccountless ? 'identityDeletion' : 'accountDeletion';
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -70,16 +73,16 @@ export function usePrivacySettings() {
   const handleDeleteAccounts = async (confirmedUserId: string) => {
     const userId = getCurrentUserId(accessToken!);
     if (!userId) {
-      toast.error(t('accountDeletion.error'), {
-        description: t('accountDeletion.loginRequired'),
+      toast.error(t(`${deletionKey}.error`), {
+        description: t(`${deletionKey}.loginRequired`),
       });
       return;
     }
 
     // Verify that the entered user ID matches the current user ID
     if (confirmedUserId !== userId) {
-      toast.error(t('accountDeletion.error'), {
-        description: t('accountDeletion.userIdMismatch'),
+      toast.error(t(`${deletionKey}.error`), {
+        description: t(`${deletionKey}.userIdMismatch`),
       });
       return;
     }
@@ -94,8 +97,8 @@ export function usePrivacySettings() {
         variables: { input },
       });
 
-      toast.success(t('accountDeletion.success'), {
-        description: t('accountDeletion.deleteSuccessDescription'),
+      toast.success(t(`${deletionKey}.success`), {
+        description: t(`${deletionKey}.deleteSuccessDescription`),
       });
 
       // Clear auth and redirect to login
@@ -103,9 +106,9 @@ export function usePrivacySettings() {
       router.push(`/auth/login`);
     } catch (error) {
       console.error('Error deleting account:', error);
-      toast.error(t('accountDeletion.error'), {
+      toast.error(t(`${deletionKey}.error`), {
         description:
-          error instanceof Error ? error.message : t('accountDeletion.deleteErrorDescription'),
+          error instanceof Error ? error.message : t(`${deletionKey}.deleteErrorDescription`),
       });
       throw error; // Re-throw to allow component to handle
     } finally {

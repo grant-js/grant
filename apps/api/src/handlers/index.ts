@@ -72,6 +72,7 @@ export function createHandlers(
     cache,
     services,
     db,
+    services.organizationUsers,
     options?.scheduleAfterCommit
   );
 

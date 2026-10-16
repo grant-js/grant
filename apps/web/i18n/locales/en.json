@@ -3751,6 +3751,43 @@
         "loginRequired": "You must be logged in to delete your account",
         "deleteSuccessDescription": "Your account has been deleted successfully",
         "deleteErrorDescription": "Failed to delete your account"
+      },
+      "identityDeletion": {
+        "title": "Identity Deletion",
+        "description": "Permanently delete your identity and all associated data",
+        "warning": "This action cannot be undone. Your identity and all data linked to it will be permanently deleted.",
+        "consequences": {
+          "title": "What happens when you delete your identity:",
+          "data": "Your identity, profile, and settings will be permanently deleted",
+          "dataTitle": "Identity data",
+          "dataDescription": "Your identity, profile, and settings will be permanently deleted",
+          "access": "You will lose access to all projects you're a member of",
+          "accessTitle": "Access loss",
+          "accessDescription": "You will lose access to all projects you're a member of",
+          "irreversible": "This action is irreversible and cannot be undone",
+          "irreversibleTitle": "Irreversible",
+          "irreversibleDescription": "This action cannot be undone",
+          "retentionTitle": "Retention period"
+        },
+        "deleteButton": "Delete My Identity",
+        "dialog": {
+          "title": "Delete Identity",
+          "description": "Are you absolutely sure you want to delete your identity? This action cannot be undone and all your data will be permanently removed.",
+          "warning": "Please confirm your user ID to proceed with identity deletion.",
+          "userIdLabel": "Your User ID",
+          "userIdHint": "Copy your user ID using the button above.",
+          "confirmUserIdLabel": "Confirm User ID",
+          "confirmUserIdPlaceholder": "Paste your user ID here",
+          "confirmUserIdHint": "Enter your user ID above to confirm identity deletion. This prevents accidental deletions.",
+          "confirm": "Delete Identity",
+          "deleting": "Deleting..."
+        },
+        "success": "Identity deleted successfully",
+        "error": "Failed to delete identity",
+        "userIdMismatch": "The entered user ID does not match your user ID. Please try again.",
+        "loginRequired": "You must be logged in to delete your identity",
+        "deleteSuccessDescription": "Your identity has been deleted successfully",
+        "deleteErrorDescription": "Failed to delete your identity"
       }
     },
     "notifications": {
@@ -3811,6 +3848,10 @@
         "updateError": "Failed to update membership profile",
         "uploadPictureSuccess": "Profile picture updated",
         "uploadPictureError": "Failed to upload profile picture"
+      },
+      "noWorkspace": {
+        "title": "No workspace on this installation",
+        "description": "You don't have a workspace on this installation. An administrator can invite you to an organization."
       }
     }
   },

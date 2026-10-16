@@ -11,9 +11,33 @@ vi.mock('@/config', () => ({ config: mockConfig }));
 const {
   assertNotLastHumanUser,
   assertPlatformSelfSignupAllowed,
+  isPlatformSelfSignupAllowed,
   LAST_HUMAN_USER_REASON,
   PUBLIC_SIGNUP_DISABLED_REASON,
 } = await import('@/lib/signup-policy.lib');
+
+describe('isPlatformSelfSignupAllowed', () => {
+  beforeEach(() => {
+    mockConfig.auth.publicSignupEnabled = false;
+  });
+
+  it.each([
+    { publicSignup: true, invitation: false, humans: 3, allowed: true },
+    { publicSignup: false, invitation: true, humans: 3, allowed: true },
+    { publicSignup: false, invitation: false, humans: 0, allowed: true },
+    { publicSignup: false, invitation: false, humans: 1, allowed: false },
+    { publicSignup: false, invitation: false, humans: 2500, allowed: false },
+  ])(
+    'public signup $publicSignup, invitation proof $invitation, $humans humans -> $allowed',
+    ({ publicSignup, invitation, humans, allowed }) => {
+      mockConfig.auth.publicSignupEnabled = publicSignup;
+
+      expect(
+        isPlatformSelfSignupAllowed({ invitationProofValid: invitation, humanUserCount: humans })
+      ).toBe(allowed);
+    }
+  );
+});
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 

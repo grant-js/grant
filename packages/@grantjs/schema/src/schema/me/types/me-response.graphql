@@ -4,4 +4,9 @@ type MeResponse {
   requiresEmailVerification: Boolean
   verificationExpiry: Date
   email: String
+  """
+  Whether the user belongs to at least one organization. A user with no accounts and no
+  organization membership has no workspace on this installation.
+  """
+  hasOrganizationMembership: Boolean!
 }
