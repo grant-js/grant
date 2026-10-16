@@ -7,6 +7,7 @@
       "invalidEmail": "Ungültige E-Mail-Adresse",
       "invalidUrl": "Muss eine gültige URL sein",
       "redirectUrisMinOne": "Mindestens eine Weiterleitungs-URI ist erforderlich",
+      "enabledProvidersMinOne": "Wählen Sie mindestens einen Anmeldeanbieter aus",
       "eventTypesMinOne": "Wählen Sie mindestens einen Event-Typ aus",
       "nameTooLong": "Name ist zu lang",
       "signUpRoleRequired": "Rolle für neue Nutzer ist erforderlich, wenn Registrierung erlaubt ist."

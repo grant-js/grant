@@ -320,6 +320,17 @@ describe('project-app password provider over HTTP', () => {
       expect(JSON.stringify(bodies)).not.toMatch(/member@example|nobody@example|a wrong one/);
     });
 
+    it('answers an over-long password with the same 401 as a wrong one, not a 400', async () => {
+      await seedCredential();
+      const state = await authorize();
+
+      const wrong = await signIn({ state, password: 'a wrong one' }).expect(401);
+      const overLong = await signIn({ state, password: 'x'.repeat(5000) }).expect(401);
+
+      expect(JSON.stringify(overLong.body)).toBe(JSON.stringify(wrong.body));
+      expect(JSON.stringify(overLong.body)).not.toContain('xxxxxxxx');
+    });
+
     it('locks after the configured failures, across separate requests, with the same 401', async () => {
       await seedCredential();
       const state = await authorize();

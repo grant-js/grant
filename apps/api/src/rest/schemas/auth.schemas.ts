@@ -6,7 +6,6 @@ import {
 } from '@grantjs/schema';
 
 import { PROJECT_OAUTH_PROVIDERS } from '@/config/env.config';
-import { MAX_PASSWORD_LENGTH } from '@/lib/credential-verifier.lib';
 import { z } from '@/lib/zod-openapi.lib';
 import { accountSchema, accountTypeSchema } from '@/rest/schemas/accounts.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
@@ -464,7 +463,10 @@ export const projectPasswordSignInSchema = z.object({
   redirect_uri: z.string().url('redirect_uri must be a valid URL'),
   state: z.string().min(1, 'state required'),
   email: z.string().email('email must be a valid email address').max(320),
-  password: z.string().min(1, 'password required').max(MAX_PASSWORD_LENGTH),
+  // No `.max()`: an over-long password is a credentials failure (the same 401 as a wrong
+  // one, after the verifier's one compare, which refuses anything over its bound), not a
+  // malformed request. The body size limit bounds the input.
+  password: z.string().min(1, 'password required'),
   /** Frontend locale for the consent redirect (e.g. en, de). */
   locale: z.string().min(1).optional(),
 });

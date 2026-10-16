@@ -7,6 +7,7 @@
       "invalidEmail": "Invalid email",
       "invalidUrl": "Must be a valid URL",
       "redirectUrisMinOne": "At least one redirect URI is required",
+      "enabledProvidersMinOne": "Select at least one sign-in provider",
       "eventTypesMinOne": "Select at least one event type",
       "nameTooLong": "Name too long",
       "signUpRoleRequired": "Sign-up role is required when allow sign-up is enabled."

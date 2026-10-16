@@ -1068,6 +1068,15 @@ export class ProjectOAuthHandler {
     codeChallenge?: string;
     codeChallengeMethod?: 'S256';
   }): Promise<{ status: 'authenticated'; redirectUrl: string }> {
+    // The password check (and, for a stepped-up user, the MFA ceremony after it) happened
+    // earlier; what it established may no longer hold. Removing a member soft-deletes that
+    // project's credential, so a sign-in finished after the removal must not get through,
+    // and above all must not undo it: a password never creates a membership (ADR 0011 § 5),
+    // whatever `allowSignUp` says. Both checks fail as the same generic answer a wrong
+    // password gets, never as "not a member".
+    if (!(await this.credentials.hasCredential(params.credentialScope, params.userId))) {
+      throw this.invalidProjectPasswordCredentials();
+    }
     const result = await this.ensureProjectMembershipAndBuildConsentRedirect({
       userId: params.userId,
       app: params.app,
@@ -1078,6 +1087,7 @@ export class ProjectOAuthHandler {
       provider: PROJECT_PASSWORD_PROVIDER,
       codeChallenge: params.codeChallenge,
       codeChallengeMethod: params.codeChallengeMethod,
+      membershipRequired: true,
     });
     await this.credentialLockouts.reset(params.credentialScope, params.userId);
     await this.cache.oauth.delete(`${PROJECT_OAUTH_STATE_KEY_PREFIX}${params.stateId}` as CacheKey);
@@ -1086,7 +1096,8 @@ export class ProjectOAuthHandler {
 
   /**
    * Ensures the user is a project member, resolves scope, stores consent payload in cache,
-   * and returns the consent redirect URL. Shared by the GitHub, email and password flows.
+   * and returns the consent redirect URL. Shared by the GitHub, email and password flows;
+   * the password flow passes `membershipRequired` so it can never sign anyone up.
    */
   private async ensureProjectMembershipAndBuildConsentRedirect(params: {
     userId: string;
@@ -1104,6 +1115,12 @@ export class ProjectOAuthHandler {
     provider: ProjectOAuthProvider;
     codeChallenge?: string;
     codeChallengeMethod?: 'S256';
+    /**
+     * Never create a membership: a missing one is the generic `Invalid credentials`,
+     * whatever `allowSignUp` is. Set by the password flow only (sign-up stays on the magic
+     * link and OAuth).
+     */
+    membershipRequired?: boolean;
   }): Promise<HandleProjectCallbackConsentRedirectResult> {
     const {
       userId,
@@ -1115,6 +1132,7 @@ export class ProjectOAuthHandler {
       provider,
       codeChallenge,
       codeChallengeMethod,
+      membershipRequired,
     } = params;
 
     const projectUsers = await this.projectUsers.getProjectUsers({
@@ -1122,6 +1140,9 @@ export class ProjectOAuthHandler {
       userId,
     });
     if (!projectUsers.length) {
+      if (membershipRequired) {
+        throw this.invalidProjectPasswordCredentials();
+      }
       if (app.allowSignUp !== false) {
         await this.projectUsers.addProjectUser({
           projectId: app.projectId,

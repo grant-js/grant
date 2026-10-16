@@ -35,6 +35,7 @@ import { Switch } from '@/components/ui/switch';
 import { useScopeFromParams } from '@/hooks/common';
 import { useProjectAppFormData, useProjectAppMutations } from '@/hooks/project-apps';
 import { useProjectOAuthConnectionNav } from '@/hooks/project-oauth-connections';
+import { resolveEnabledProvidersUpdate } from '@/lib/project-app-enabled-providers.lib';
 
 import { PROJECT_OAUTH_PROVIDER_OPTIONS } from '../project-apps/project-app-types';
 import { ProjectAppEnabledProvidersField } from './project-app-enabled-providers-field';
@@ -104,14 +105,25 @@ export function ProjectAppOauthCard({
 
   const handleSubmit = async (values: ProjectAppOauthFormValues) => {
     if (!scope) return;
+    // An empty list means "every provider except password" to the API, not "all off", so
+    // unchecking the last toggle must not be saved as one: refuse it and say why.
+    const providers = resolveEnabledProvidersUpdate(
+      projectApp.enabledProviders,
+      values.enabledProviders
+    );
+    if (!providers.ok) {
+      form.setError('enabledProviders', {
+        type: 'validate',
+        message: 'errors.validation.enabledProvidersMinOne',
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
       await updateProjectApp(projectApp.id, {
         scope,
         redirectUris: values.redirectUris,
-        // An empty list is a real value (every provider except password), so it is sent:
-        // `undefined` would leave the saved list unchanged and the last toggle could not be turned off.
-        enabledProviders: values.enabledProviders ?? [],
+        enabledProviders: providers.enabledProviders,
         allowSignUp: values.allowSignUp,
         signUpRoleId:
           values.allowSignUp === false

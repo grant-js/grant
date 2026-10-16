@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   PROJECT_OAUTH_CODE_KEY_PREFIX,
   PROJECT_OAUTH_CONSENT_KEY_PREFIX,
+  PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX,
   PROJECT_OAUTH_MFA_KEY_PREFIX,
   PROJECT_OAUTH_STATE_KEY_PREFIX,
 } from '@/constants/cache.constants';
@@ -430,6 +431,132 @@ describe('ProjectOAuthHandler password provider', () => {
 
       expect(lockoutRepo.rows.size).toBe(0);
       expect(cacheStore.has(`${PROJECT_OAUTH_STATE_KEY_PREFIX}state-1`)).toBe(false);
+    });
+  });
+
+  describe('membership and credential are re-checked at completion (a password never signs anyone up)', () => {
+    const signUpApp = { ...validApp, allowSignUp: true, signUpRoleId: 'role-sign-up' };
+    const MEMBER = [{ userId: USER, projectId: PROJECT }];
+
+    beforeEach(() => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue(signUpApp);
+      mockProjectApps.getProjectAppById.mockResolvedValue(signUpApp);
+    });
+
+    function consentKeys() {
+      return [...cacheStore.keys()].filter((k) => k.startsWith(PROJECT_OAUTH_CONSENT_KEY_PREFIX));
+    }
+
+    it('MFA pending, member removed, allowSignUp true: the generic failure, no membership created', async () => {
+      mockConfig.auth.minAalAtLogin = 'aal2';
+      mockUserMfa.hasActiveMfaEnrollment.mockResolvedValue(true);
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      const { mfaToken } = (await signIn(handler)) as { mfaToken: string };
+      mockUserMfa.verifyTotp.mockResolvedValue({ factorId: 'f', verified: true });
+      // An admin removes the member during the challenge window (slice 1 also soft-deletes
+      // the project credential; this case covers the membership alone).
+      mockProjectUsers.getProjectUsers.mockResolvedValue([]);
+
+      expect(
+        await failureOf(handler.verifyProjectPasswordMfa({ mfaToken, code: '123456' }))
+      ).toEqual(GENERIC);
+
+      expect(mockProjectUsers.addProjectUser).not.toHaveBeenCalled();
+      expect(mockUserRoles.addUserRole).not.toHaveBeenCalled();
+      expect(consentKeys()).toEqual([]);
+    });
+
+    it('MFA pending, credential soft-deleted, member still listed: the generic failure', async () => {
+      mockConfig.auth.minAalAtLogin = 'aal2';
+      mockUserMfa.hasActiveMfaEnrollment.mockResolvedValue(true);
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      const { mfaToken } = (await signIn(handler)) as { mfaToken: string };
+      mockUserMfa.verifyTotp.mockResolvedValue({ factorId: 'f', verified: true });
+      await credentialService.removeCredential({ scope: 'project', projectId: PROJECT }, USER);
+
+      expect(
+        await failureOf(handler.verifyProjectPasswordMfa({ mfaToken, code: '123456' }))
+      ).toEqual(GENERIC);
+
+      expect(consentKeys()).toEqual([]);
+    });
+
+    it('member removed between the password check and the consent step: the generic failure, no membership created', async () => {
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      // The first read (the sign-in's own check) sees the member; every later one does not.
+      mockProjectUsers.getProjectUsers.mockReset();
+      mockProjectUsers.getProjectUsers.mockResolvedValueOnce(MEMBER).mockResolvedValue([]);
+
+      expect(await failureOf(signIn(handler))).toEqual(GENERIC);
+
+      expect(mockProjectUsers.addProjectUser).not.toHaveBeenCalled();
+      expect(mockUserRoles.addUserRole).not.toHaveBeenCalled();
+      expect(consentKeys()).toEqual([]);
+      // The state stays usable and the failure stays counted: nothing was consumed or cleared.
+      expect(cacheStore.has(`${PROJECT_OAUTH_STATE_KEY_PREFIX}state-1`)).toBe(true);
+      expect(lockoutRepo.rows.get(`${PROJECT}:${USER}`)?.failedAttempts).toBe(1);
+    });
+
+    it('credential soft-deleted between the password check and the consent step: the generic failure', async () => {
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      const realVerify = credentialService.verifyPassword.bind(credentialService);
+      vi.spyOn(credentialService, 'verifyPassword').mockImplementationOnce(async (...args) => {
+        const matches = await realVerify(...args);
+        await credentialService.removeCredential({ scope: 'project', projectId: PROJECT }, USER);
+        return matches;
+      });
+
+      expect(await failureOf(signIn(handler))).toEqual(GENERIC);
+
+      expect(consentKeys()).toEqual([]);
+      expect(mockProjectUsers.addProjectUser).not.toHaveBeenCalled();
+    });
+
+    it('still signs in a member whose credential is live, with allowSignUp true', async () => {
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+
+      await expect(signIn(handler)).resolves.toMatchObject({ status: 'authenticated' });
+      expect(mockProjectUsers.addProjectUser).not.toHaveBeenCalled();
+    });
+
+    it('leaves the magic link signing a new person up when allowSignUp is true', async () => {
+      const token = 'magic-token';
+      cacheStore.set(`${PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX}${token}`, {
+        projectAppId: signUpApp.id,
+        redirectUri: REDIRECT_URI,
+        stateId: 'state-1',
+        email: 'new@example.com',
+        codeChallenge: RFC_PKCE.challenge,
+        codeChallengeMethod: 'S256',
+      });
+      mockAuthHandler.resolveUserIdFromEmailForProject.mockResolvedValue(USER);
+      // Not a member on the first read; a member once added.
+      mockProjectUsers.getProjectUsers.mockResolvedValueOnce([]).mockResolvedValue(MEMBER);
+      mockProjectUsers.addProjectUser.mockResolvedValue({});
+      mockUserRoles.addUserRole.mockResolvedValue({});
+      const handler = createHandler();
+
+      const result = await handler.handleProjectCallbackEmailFlow(token, 'state-1');
+
+      expect(result).toMatchObject({ redirectToConsent: true });
+      expect(mockProjectUsers.addProjectUser).toHaveBeenCalledWith({
+        projectId: PROJECT,
+        userId: USER,
+      });
+      expect(mockUserRoles.addUserRole).toHaveBeenCalledWith({
+        userId: USER,
+        roleId: 'role-sign-up',
+      });
     });
   });
 
