@@ -121,7 +121,7 @@ describe('ProjectOAuthPasswordPage', () => {
     expect(screen.getByRole('button', { name: 'auth.projectOAuth.password.submit' })).toBeEnabled();
   });
 
-  it('hides "Forgot password?" until the reset view exists, then links to it with the same params', async () => {
+  it('shows "Forgot password?" only while the reset views are available, and links to them with the same params', async () => {
     const first = render(<ProjectOAuthPasswordPage />);
     await screen.findByLabelText('auth.projectOAuth.password.emailLabel');
     expect(screen.queryByText('auth.projectOAuth.password.forgotPassword')).toBeNull();

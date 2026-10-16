@@ -109,8 +109,6 @@ export class CredentialService implements ICredentialService {
 
   /**
    * The write itself, on the connection `run` chose: upsert, audit, lockout reset.
-   * `known` is what the caller already read for this `(scope, user)` in the same
-   * transaction (`null`: no live credential), which saves the lookup; absent, it is read here.
    */
   private async write(
     scope: CredentialScope,
@@ -118,15 +116,24 @@ export class CredentialService implements ICredentialService {
     hash: string,
     source: CredentialRecord['source'],
     context: string,
-    transaction: Transaction | undefined,
-    known?: { existing: CredentialRecord | null }
+    transaction: Transaction | undefined
   ): Promise<CredentialRecord> {
     const repository = this.repositoryFor(scope);
-    const existing = known
-      ? known.existing
-      : await repository.findActive(scope, userId, transaction);
+    const existing = await repository.findActive(scope, userId, transaction);
     const record = await repository.upsert(scope, { userId, hash, source }, transaction);
+    await this.recordWrite(scope, userId, existing, record, context, transaction);
+    return record;
+  }
 
+  /** What every credential write leaves behind: its audit row and the lockout reset. */
+  private async recordWrite(
+    scope: CredentialScope,
+    userId: string,
+    existing: CredentialRecord | null,
+    record: CredentialRecord,
+    context: string,
+    transaction: Transaction | undefined
+  ): Promise<void> {
     const metadata = { context, scope: scope.scope };
     if (existing) {
       await this.auditFor(scope.scope).logUpdate(
@@ -147,7 +154,6 @@ export class CredentialService implements ICredentialService {
     // A successful write is the way back from a lock (ADR 0011 § 8): reset this
     // (scope, user) only, never another scope's budget.
     await this.lockouts.reset(scope, userId, transaction);
-    return record;
   }
 
   async setPassword(
@@ -284,15 +290,18 @@ export class CredentialService implements ICredentialService {
         counts.unchanged += 1;
         continue;
       }
-      const record = await this.write(
+      // Conditional in the statement itself: a person who set a password after the read above
+      // (a first-time reset has no row to have locked) keeps it.
+      const record = await this.repositories.project.upsertImported(
         projectScope,
-        userIds[index],
-        row.hash,
-        'cdm-import',
-        context,
-        transaction,
-        { existing }
+        { userId: userIds[index], hash: row.hash, source: 'cdm-import' },
+        transaction
       );
+      if (!record) {
+        counts.skippedExisting += 1;
+        continue;
+      }
+      await this.recordWrite(projectScope, userIds[index], existing, record, context, transaction);
       current.set(row.userId, { ...record, hash: row.hash });
       counts[existing ? 'updated' : 'imported'] += 1;
     }

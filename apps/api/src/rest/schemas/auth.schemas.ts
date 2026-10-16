@@ -6,6 +6,7 @@ import {
 } from '@grantjs/schema';
 
 import { PROJECT_OAUTH_PROVIDERS } from '@/config/env.config';
+import { MAX_PASSWORD_LENGTH } from '@/lib/credential-verifier.lib';
 import { z } from '@/lib/zod-openapi.lib';
 import { accountSchema, accountTypeSchema } from '@/rest/schemas/accounts.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
@@ -498,6 +499,43 @@ export const projectPasswordSignInResultSchema = z.discriminatedUnion('status', 
     }),
   }),
 ]);
+
+/**
+ * Body for POST /project/password/forgot (project-app "Forgot password?", ADR 0011 § 6).
+ * `state` is optional: the API state id of the sign-in the person came from, only used to
+ * carry the client's own `state` and PKCE challenge into the reset link.
+ */
+export const projectPasswordResetRequestSchema = z.object({
+  client_id: z.string().min(1, 'client_id required'),
+  redirect_uri: z.string().url('redirect_uri must be a valid URL'),
+  email: z.string().email('email must be a valid email address').max(320),
+  state: z.string().min(1).optional(),
+  /** Frontend locale for the email and the reset view (e.g. en, de). */
+  locale: z.string().min(1).optional(),
+});
+
+/**
+ * Result of POST /project/password/forgot. The same body whether or not the address
+ * belongs to a member: it never says whether an email was sent.
+ */
+export const projectPasswordResetRequestResultSchema = z.object({
+  status: z.literal('reset_requested'),
+});
+
+/**
+ * Body for POST /project/password/reset (completing a reset). The password policy is
+ * enforced by the service, before the token is used, and a rejected password is never echoed.
+ */
+export const projectPasswordResetCompleteSchema = z.object({
+  client_id: z.string().min(1, 'client_id required'),
+  redirect_uri: z.string().url('redirect_uri must be a valid URL'),
+  token: z.string().min(1, 'token required').max(512),
+  password: z.string().min(1, 'password required').max(MAX_PASSWORD_LENGTH),
+});
+
+export const projectPasswordResetCompleteResultSchema = z.object({
+  status: z.literal('password_reset'),
+});
 
 /** Query for GET project app public info (OAuth entry/consent UI). */
 export const projectAppInfoQuerySchema = z.object({

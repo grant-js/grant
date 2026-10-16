@@ -342,3 +342,79 @@ export async function verifyProjectPasswordMfa(
   }
   return { redirectUrl: data.data.redirectUrl };
 }
+
+export interface ProjectPasswordResetRequestInput {
+  clientId: string;
+  redirectUri: string;
+  email: string;
+  locale: string;
+  /** The API's state id of the sign-in the person came from; only carried into the emailed link. */
+  state?: string | null;
+}
+
+/**
+ * Asks for a project-app password reset link. Every address gets the same answer, so a
+ * resolved promise says nothing about whether an email was sent; `429` is the limiter and
+ * `400` a client or redirect URI the API does not accept.
+ */
+export async function requestProjectPasswordReset(
+  input: ProjectPasswordResetRequestInput
+): Promise<void> {
+  const apiBase = getApiBaseUrl();
+  const trimmedState = input.state?.trim();
+  const res = await fetch(`${apiBase}/api/auth/project/password/forgot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: input.clientId,
+      redirect_uri: input.redirectUri,
+      email: input.email,
+      locale: input.locale,
+      ...(trimmedState && { state: trimmedState }),
+    }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody;
+    throw new ProjectOAuthApiError(
+      data.details ?? data.error ?? data.message ?? 'Request failed',
+      res.status,
+      data
+    );
+  }
+}
+
+export interface ProjectPasswordResetCompleteInput {
+  clientId: string;
+  redirectUri: string;
+  token: string;
+  password: string;
+}
+
+/**
+ * Sets the project password from a reset token. `400` with code `BAD_USER_INPUT` is a
+ * password the policy rejects (the token is not used up); any other `400` is an invalid,
+ * expired or already used link; `429` is the limiter.
+ */
+export async function completeProjectPasswordReset(
+  input: ProjectPasswordResetCompleteInput
+): Promise<void> {
+  const apiBase = getApiBaseUrl();
+  const res = await fetch(`${apiBase}/api/auth/project/password/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: input.clientId,
+      redirect_uri: input.redirectUri,
+      token: input.token,
+      password: input.password,
+    }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as ProjectOAuthApiErrorBody;
+    throw new ProjectOAuthApiError(
+      data.details ?? data.error ?? data.message ?? 'Reset failed',
+      res.status,
+      data
+    );
+  }
+}

@@ -18,6 +18,7 @@ import { PermissionHandler } from './permissions.handler';
 import { ProjectAppsHandler } from './project-apps.handler';
 import { ProjectOAuthHandler } from './project-oauth.handler';
 import { ProjectOAuthConnectionsHandler } from './project-oauth-connections.handler';
+import { ProjectPasswordResetHandler } from './project-password-reset.handler';
 import { ProjectHandler } from './projects.handler';
 import { ResourceHandler } from './resources.handler';
 import { RoleHandler } from './roles.handler';
@@ -142,6 +143,18 @@ export function createHandlers(
       services.credentials,
       services.credentialSignInLockouts,
       services.userMfa
+    ),
+    projectPasswordReset: new ProjectPasswordResetHandler(
+      services.projectApps,
+      services.projectUsers,
+      services.userAuthenticationMethods,
+      services.credentials,
+      services.credentialLockouts,
+      services.projectPasswordResets,
+      services.projectOAuthGrants,
+      services.email,
+      cache,
+      db
     ),
     groups: new GroupHandler(
       services.groupTags,

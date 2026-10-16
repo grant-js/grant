@@ -350,6 +350,26 @@ _Alternatives considered:_
   sessions only (`user-authentication-methods.service.ts:735`).
 - A later import never overwrites a project credential whose `source` is not `cdm-import` (§ 4).
 
+_Implementation note (slice 5):_ **bulk revoke** (Open question 4) is a repository method on
+`project_oauth_grants` joined through `project_apps` (`softDeleteActiveGrantsForUserInProject`):
+one `UPDATE ... WHERE user_id = $u AND deleted_at IS NULL AND project_app_id IN (SELECT id FROM
+project_apps WHERE project_id = $p) RETURNING id`, in the completion's transaction, with an audit
+row per revoked grant. No column on the grant: a denormalised `project_id` could drift from the
+app's, would need a backfill and buys nothing (`project_oauth_grants_project_app_user_idx` already
+serves the lookup). Apps are matched whether or not they are soft-deleted, since a grant on a
+retired app is still a live refresh token. Only refresh is cut: an access token already issued
+lives until it expires. The **reset token** is a row in `project_password_resets`, one per
+`(project, user)`, holding the SHA-256 digest (slice 2's pattern), the Email method it was sent to
+(completing the reset marks that method verified) and the request counter of the **per-address
+limit**, which the same atomic upsert that stores the digest maintains (`PROJECT_PASSWORD_RESET_*`);
+a newer link replaces the older, and a request over the limit is answered like any other and sends
+nothing. The console magic link of slice 6 is a different surface and may share the idea, not the
+table. Completion runs in one transaction: it consumes the token (row-locked), re-checks
+membership, writes the credential (`source: reset`), clears the `(project, user)` lockout, marks
+the Email method verified and revokes the grants. The reset link carries the token in the URL
+fragment. `project_user.password_set` (§ 8) is not emitted by this slice: the credential's audit
+row records the write, and the event is left to the slice that adds it for every reason.
+
 ### 7. Platform cut-over migration (not a wipe)
 
 One **schema migration**, one transaction, idempotent, count-reporting, copies platform passwords
@@ -555,7 +575,8 @@ the console magic link, by the closed-install fix of § 3). Still open, for **gr
 3. **Lockout store**: the cache used for OAuth state, or a table. Its shape, per `(scope, user)`
    and guarding one credential, is decided; only the store is open. It gates slice 4 (the project provider) and slice 7.
 4. **Bulk revoke of a user's project grants** (§ 6): a repository method on
-   `project_oauth_grants` joined through `project_apps`, or a new column on the grant?
+   `project_oauth_grants` joined through `project_apps`, or a new column on the grant? _Decided in
+   slice 5: the repository method (see the note in § 6)._
 5. **Other readers of `providerData.hashedPassword` and `hasPassword`**: this record found
    `auth.handler.ts`, `user-authentication-methods.service.ts`, `auth-method-public.lib.ts`, the
    import entity and an e2e helper. Anything in the published SDKs or the web app that reads the

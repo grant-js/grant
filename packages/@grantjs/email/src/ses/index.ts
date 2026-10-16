@@ -7,6 +7,7 @@ import type {
   SendOtpParams,
   SendPasswordResetParams,
   SendProjectOAuthMagicLinkParams,
+  SendProjectPasswordResetParams,
 } from '@grantjs/core';
 import { GrantException } from '@grantjs/core';
 
@@ -221,6 +222,46 @@ export class SesEmailAdapter implements IEmailService {
     } catch (error) {
       throw new GrantException(
         `Failed to send project OAuth magic link: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'EMAIL_SEND_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async sendProjectPasswordReset(params: SendProjectPasswordResetParams): Promise<void> {
+    const subject = this.templates.getProjectPasswordResetEmailSubject(params);
+    const html = await this.templates.getProjectPasswordResetEmailHtml(params);
+    const text = this.templates.getProjectPasswordResetEmailText(params);
+
+    try {
+      const commandInput: SendEmailCommandInput = {
+        Source: this.from,
+        Destination: {
+          ToAddresses: [params.to],
+        },
+        Message: {
+          Subject: {
+            Data: subject,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Html: {
+              Data: html,
+              Charset: 'UTF-8',
+            },
+            Text: {
+              Data: text,
+              Charset: 'UTF-8',
+            },
+          },
+        },
+      };
+
+      const command = new SendEmailCommand(commandInput);
+      await this.sesClient.send(command);
+    } catch (error) {
+      throw new GrantException(
+        `Failed to send project password reset email: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'EMAIL_SEND_ERROR',
         error instanceof Error ? error : undefined
       );

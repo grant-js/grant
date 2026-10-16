@@ -24,6 +24,8 @@ import {
   projectConsentInfoQuerySchema,
   projectEmailRequestSchema,
   projectPasswordMfaSchema,
+  projectPasswordResetCompleteSchema,
+  projectPasswordResetRequestSchema,
   projectPasswordSignInSchema,
   projectTokenBodySchema,
   refreshSessionRequestSchema,
@@ -595,6 +597,46 @@ export function createAuthRoutes(context: RequestContext) {
         method,
       });
       sendSuccessResponse(res, { status: 'authenticated', redirectUrl });
+    }
+  );
+
+  router.post(
+    '/project/password/forgot',
+    validateBody(projectPasswordResetRequestSchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory. The per-address limit is in ProjectPasswordResetService.
+    async (
+      req: TypedRequest<{ body: typeof projectPasswordResetRequestSchema }>,
+      res: Response
+    ) => {
+      const { client_id, redirect_uri, email, state, locale } = req.body;
+      await context.handlers.projectPasswordReset.requestReset({
+        clientId: client_id,
+        redirectUri: redirect_uri,
+        email,
+        stateId: state,
+        locale: locale ?? context.locale,
+      });
+      // One body for every address: it does not say whether a member exists or an email went out.
+      sendSuccessResponse(res, { status: 'reset_requested' });
+    }
+  );
+
+  router.post(
+    '/project/password/reset',
+    validateBody(projectPasswordResetCompleteSchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
+    async (
+      req: TypedRequest<{ body: typeof projectPasswordResetCompleteSchema }>,
+      res: Response
+    ) => {
+      const { client_id, redirect_uri, token, password } = req.body;
+      await context.handlers.projectPasswordReset.completeReset({
+        clientId: client_id,
+        redirectUri: redirect_uri,
+        token,
+        password,
+      });
+      sendSuccessResponse(res, { status: 'password_reset' });
     }
   );
 

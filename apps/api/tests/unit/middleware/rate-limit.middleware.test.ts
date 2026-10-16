@@ -177,6 +177,38 @@ describe('rateLimitMiddleware', () => {
     });
   });
 
+  describe('project password reset routes (ADR 0011 slice 5)', () => {
+    it.each(['/api/auth/project/password/forgot', '/api/auth/project/password/reset'])(
+      'limits POST %s per client address with the shared auth bucket',
+      async (path) => {
+        const req = createMockReq({ method: 'POST', path });
+        const res = createMockRes();
+
+        await middleware(req, res, next);
+        await middleware(req, res, next);
+        expect(next).toHaveBeenCalledTimes(2);
+
+        await middleware(req, res, next);
+        expect(next).toHaveBeenCalledTimes(2);
+        expect(res.status).toHaveBeenCalledWith(429);
+      }
+    );
+
+    it('shares one bucket between requesting a link and completing it', async () => {
+      const forgot = createMockReq({ method: 'POST', path: '/api/auth/project/password/forgot' });
+      const reset = createMockReq({ method: 'POST', path: '/api/auth/project/password/reset' });
+      const res = createMockRes();
+
+      await middleware(forgot, res, next);
+      await middleware(forgot, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      await middleware(reset, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+  });
+
   describe('per-tenant limit (config: mockSecurity.rateLimitPerTenant*)', () => {
     beforeEach(() => {
       mockSecurity.rateLimitPerTenantEnabled = true;
@@ -289,6 +321,8 @@ describe('rateLimitMiddleware', () => {
         'POST /api/auth/project/email/request',
         'POST /api/auth/project/password',
         'POST /api/auth/project/password/mfa',
+        'POST /api/auth/project/password/forgot',
+        'POST /api/auth/project/password/reset',
         'GET /api/auth/project/consent-info',
         'POST /api/auth/project/consent/approve',
         'POST /api/auth/project/consent/deny',

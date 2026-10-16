@@ -18,7 +18,10 @@ import {
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { validateInput } from '@/services/common';
 
-import { createProjectOAuthGrantInputSchema } from './project-oauth-grants.schemas';
+import {
+  createProjectOAuthGrantInputSchema,
+  revokeUserGrantsInProjectInputSchema,
+} from './project-oauth-grants.schemas';
 
 function grantAuditValues(grant: ProjectOAuthGrantRecord): Record<string, unknown> {
   return {
@@ -136,5 +139,32 @@ export class ProjectOAuthGrantService implements IProjectOAuthGrantService {
     }
     await this.revokeGrant(existing.id, transaction);
     return true;
+  }
+
+  async revokeAllForUserInProject(
+    projectId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<number> {
+    validateInput(
+      revokeUserGrantsInProjectInputSchema,
+      { projectId, userId },
+      'ProjectOAuthGrantService.revokeAllForUserInProject'
+    );
+    const revokedIds = await this.grants.softDeleteActiveGrantsForUserInProject(
+      projectId,
+      userId,
+      transaction
+    );
+    for (const id of revokedIds) {
+      await this.audit.logSoftDelete(
+        id,
+        { id },
+        { id, deleted: true },
+        { context: 'revokeAllForUserInProject' },
+        transaction
+      );
+    }
+    return revokedIds.length;
   }
 }

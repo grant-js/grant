@@ -45,6 +45,9 @@ const CREDENTIAL_SHAPED = /(SECRET|PASSWORD|API_KEY|PRIVATE_KEY|ACCESS_KEY|CREDE
  */
 const NOT_A_CREDENTIAL: Record<string, string> = {
   AUTH_PASSWORD_RESET_OTP_VALIDITY_MINUTES: 'a duration in minutes',
+  PROJECT_PASSWORD_RESET_MAX_REQUESTS: 'a request count for the per-address reset limit',
+  PROJECT_PASSWORD_RESET_REQUEST_WINDOW_SECONDS: 'a duration in seconds',
+  PROJECT_PASSWORD_RESET_TOKEN_TTL_SECONDS: 'a duration in seconds',
   SECRETS_AWS_ENDPOINT: 'resolver configuration — an endpoint URL',
   SECRETS_AWS_REGION: 'resolver configuration — a region name',
   SECRETS_AWS_SECRET_ID: 'names *where* to look; the stack sets it and it grants nothing',

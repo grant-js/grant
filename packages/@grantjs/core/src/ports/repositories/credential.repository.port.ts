@@ -107,6 +107,18 @@ export interface IProjectCredentialRepository extends ICredentialRepository<Proj
     userIds: readonly string[],
     transaction?: unknown
   ): Promise<CredentialWithHash[]>;
+
+  /**
+   * The import's write: like `upsert`, but a live credential that is not itself an import
+   * (`source <> 'cdm-import'`) is never replaced. The condition is part of the one atomic
+   * statement, so a person who set a password between the import's read and its write (a
+   * first-time reset has no row to lock) keeps it. `null` when that credential won.
+   */
+  upsertImported(
+    scope: ProjectCredentialScope,
+    input: CredentialWriteInput,
+    transaction?: unknown
+  ): Promise<CredentialRecord | null>;
 }
 
 export interface CredentialLockoutPolicy {

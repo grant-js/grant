@@ -54,6 +54,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '@/lib/errors';
+import { buildFrontendUrlWithLocale } from '@/lib/frontend-url.lib';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
 import { createLogger } from '@/lib/logger';
 import { resolveOAuthBranding } from '@/lib/oauth-branding.lib';
@@ -74,7 +75,7 @@ export interface IUsersScopeCacheUpdater {
   addUserIdToScopeCache(scope: Scope, userId: string): Promise<void>;
 }
 
-interface ProjectOAuthState {
+export interface ProjectOAuthState {
   projectAppId: string;
   redirectUri: string;
   clientState?: string;
@@ -366,24 +367,7 @@ export class ProjectOAuthHandler {
     path: string,
     locale?: string | null
   ): string {
-    const supported = new Set<string>(config.i18n.supportedLocales);
-    const effectiveLocale =
-      locale && supported.has(locale)
-        ? locale
-        : (() => {
-            try {
-              const parsed = new URL(configuredUrl);
-              const firstSegment = parsed.pathname.replace(/^\//, '').split('/')[0];
-              if (firstSegment && supported.has(firstSegment)) {
-                return firstSegment;
-              }
-            } catch {
-              // invalid URL, fall through
-            }
-            return config.i18n.defaultLocale;
-          })();
-    const base = config.security.frontendUrl.replace(/\/$/, '');
-    return `${base}/${effectiveLocale}${path.startsWith('/') ? path : `/${path}`}`;
+    return buildFrontendUrlWithLocale(configuredUrl, path, locale);
   }
 
   async getProjectAppPublicInfo(

@@ -29,6 +29,7 @@ export * from './project-apps.schema';
 export * from './project-groups.schema';
 export * from './project-oauth-connections.schema';
 export * from './project-oauth-grants.schema';
+export * from './project-password-resets.schema';
 export * from './project-permissions.schema';
 export * from './project-resources.schema';
 export * from './project-role-permissions.schema';

@@ -34,6 +34,7 @@ import { ProjectGroupRepository } from './project-groups.repository';
 import { ProjectImportRepository } from './project-import.repository';
 import { ProjectOAuthConnectionRepository } from './project-oauth-connections.repository';
 import { ProjectOAuthGrantRepository } from './project-oauth-grants.repository';
+import { ProjectPasswordResetRepository } from './project-password-resets.repository';
 import { ProjectPermissionRepository } from './project-permissions.repository';
 import { ProjectResourceRepository } from './project-resources.repository';
 import { ProjectRolePermissionRepository } from './project-role-permissions.repository';
@@ -104,6 +105,7 @@ export function createRepositories(db: DbSchema) {
     projectOAuthConnectionRepository: new ProjectOAuthConnectionRepository(db),
     projectOAuthGrantRepository: new ProjectOAuthGrantRepository(db),
     projectGroupRepository: new ProjectGroupRepository(db),
+    projectPasswordResetRepository: new ProjectPasswordResetRepository(db),
     projectPermissionRepository: new ProjectPermissionRepository(db),
     projectResourceRepository: new ProjectResourceRepository(db),
     projectRoleRepository: new ProjectRoleRepository(db),

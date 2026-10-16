@@ -3,6 +3,7 @@ import type {
   SendOtpParams,
   SendPasswordResetParams,
   SendProjectOAuthMagicLinkParams,
+  SendProjectPasswordResetParams,
 } from '@grantjs/core';
 
 /**
@@ -22,4 +23,7 @@ export interface EmailTemplates {
   getProjectOAuthMagicLinkEmailSubject(params: SendProjectOAuthMagicLinkParams): string;
   getProjectOAuthMagicLinkEmailHtml(params: SendProjectOAuthMagicLinkParams): Promise<string>;
   getProjectOAuthMagicLinkEmailText(params: SendProjectOAuthMagicLinkParams): string;
+  getProjectPasswordResetEmailSubject(params: SendProjectPasswordResetParams): string;
+  getProjectPasswordResetEmailHtml(params: SendProjectPasswordResetParams): Promise<string>;
+  getProjectPasswordResetEmailText(params: SendProjectPasswordResetParams): string;
 }

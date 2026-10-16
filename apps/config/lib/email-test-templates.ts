@@ -2,6 +2,7 @@ import type {
   SendInvitationParams,
   SendPasswordResetParams,
   SendProjectOAuthMagicLinkParams,
+  SendProjectPasswordResetParams,
 } from '@grantjs/core';
 import type { EmailTemplates } from '@grantjs/email';
 
@@ -24,4 +25,7 @@ export const emailTestTemplates: EmailTemplates = {
   getProjectOAuthMagicLinkEmailSubject: (_: SendProjectOAuthMagicLinkParams) => stub(),
   getProjectOAuthMagicLinkEmailHtml: (_: SendProjectOAuthMagicLinkParams) => stubHtml(),
   getProjectOAuthMagicLinkEmailText: (_: SendProjectOAuthMagicLinkParams) => stub(),
+  getProjectPasswordResetEmailSubject: (_: SendProjectPasswordResetParams) => stub(),
+  getProjectPasswordResetEmailHtml: (_: SendProjectPasswordResetParams) => stubHtml(),
+  getProjectPasswordResetEmailText: (_: SendProjectPasswordResetParams) => stub(),
 };

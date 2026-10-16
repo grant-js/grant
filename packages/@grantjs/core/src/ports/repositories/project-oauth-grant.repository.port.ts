@@ -58,4 +58,16 @@ export interface IProjectOAuthGrantRepository {
   ): Promise<ProjectOAuthGrantRecord>;
 
   softDeleteGrant(id: string, transaction?: unknown): Promise<void>;
+
+  /**
+   * Soft-delete every live grant a user holds across the apps of one project, in one
+   * statement, and return the ids it revoked. Apps are matched through `project_apps`
+   * (the grant carries no project column); grants on apps of other projects, and other
+   * users' grants, are untouched.
+   */
+  softDeleteActiveGrantsForUserInProject(
+    projectId: string,
+    userId: string,
+    transaction?: unknown
+  ): Promise<string[]>;
 }

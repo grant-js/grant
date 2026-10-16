@@ -11,3 +11,8 @@ export const createProjectOAuthGrantInputSchema = z.object({
   userAgent: z.string().max(500).nullable().optional(),
   ipAddress: z.string().max(45).nullable().optional(),
 });
+
+export const revokeUserGrantsInProjectInputSchema = z.object({
+  projectId: idSchema,
+  userId: idSchema,
+});

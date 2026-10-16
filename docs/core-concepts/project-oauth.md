@@ -66,6 +66,10 @@ visible = configuredProviders ∩ enabledProviders
 
 The **Password** button (key icon) is different: it needs no connection, and it is shown only when the app's `enabledProviders` names `password`. An empty list shows Email and the configured social providers, never Password. It opens its own view with an email and password form; sign-in checks only the project's own credential for the app's project, and requires an existing membership.
 
+### Forgot password
+
+The password view's **Forgot password?** link opens a view that asks for the email address and always answers "if an account exists, we've sent a link": it never says whether the address belongs to a member. The email (branded with the app's name and sent in the visitor's locale) is sent only to an existing **member** of the app's project that has an Email method. The link opens a view where the member chooses a new password; completing it sets the project password (a later CDM import never overwrites it), clears the failed-attempt lockout, marks the email address verified, and **signs the member out of this project's apps everywhere** (their refresh grants in the project are revoked). It then sends them back to the password sign-in. Their platform (console) password and their other projects are not affected. See [Security § Project OAuth](/architecture/security#project-oauth) for the token, the limits and `PROJECT_PASSWORD_RESET_*`.
+
 ## Branding
 
 Project owners set a default logo and OAuth theme on the project **Branding** page (`…/projects/{projectId}/branding`). Each app can override those values on its **Branding** card.

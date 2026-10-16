@@ -142,6 +142,25 @@ export class ProjectUserCredentialRepository implements IProjectCredentialReposi
     input: CredentialWriteInput,
     transaction?: Transaction
   ): Promise<CredentialRecord> {
+    const record = await this.insertOrReplace(scope, input, transaction, false);
+    // Unconditional, so the statement always returns the row it wrote.
+    return record as CredentialRecord;
+  }
+
+  async upsertImported(
+    scope: ProjectCredentialScope,
+    input: CredentialWriteInput,
+    transaction?: Transaction
+  ): Promise<CredentialRecord | null> {
+    return this.insertOrReplace(scope, input, transaction, true);
+  }
+
+  private async insertOrReplace(
+    scope: ProjectCredentialScope,
+    input: CredentialWriteInput,
+    transaction: Transaction | undefined,
+    onlyReplaceImport: boolean
+  ): Promise<CredentialRecord | null> {
     const dbInstance = transaction ?? this.db;
     const now = new Date();
     return withCredentialStorageErrors(async () => {
@@ -159,9 +178,14 @@ export class ProjectUserCredentialRepository implements IProjectCredentialReposi
           target: [projectUserCredentials.projectId, projectUserCredentials.userId],
           targetWhere: isNull(projectUserCredentials.deletedAt),
           set: { hash: input.hash, source: input.source, lastUsedAt: null, updatedAt: now },
+          // When the conflicting row is a person's own password the statement changes
+          // nothing and returns no row.
+          ...(onlyReplaceImport
+            ? { setWhere: eq(projectUserCredentials.source, 'cdm-import') }
+            : {}),
         })
         .returning(recordColumns);
-      return toRecord(row);
+      return row ? toRecord(row) : null;
     });
   }
 

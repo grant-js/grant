@@ -121,6 +121,7 @@ import { ProjectGroupService } from './project-groups.service';
 import { ProjectImportService } from './project-import.service';
 import { ProjectOAuthConnectionService } from './project-oauth-connections.service';
 import { ProjectOAuthGrantService } from './project-oauth-grants.service';
+import { ProjectPasswordResetService } from './project-password-resets.service';
 import { ProjectPermissionService } from './project-permissions.service';
 import { ProjectResourceService } from './project-resources.service';
 import { ProjectRolePermissionService } from './project-role-permissions.service';
@@ -450,6 +451,14 @@ export function createServices(
     projectOAuthGrants: new ProjectOAuthGrantService(
       repositories.projectOAuthGrantRepository,
       audit(projectOAuthGrantAuditLogs, 'projectOAuthGrantId', user, db)
+    ),
+    projectPasswordResets: new ProjectPasswordResetService(
+      repositories.projectPasswordResetRepository,
+      {
+        tokenTtlMs: config.projectPasswordReset.tokenTtlSeconds * 1000,
+        maxRequests: config.projectPasswordReset.maxRequests,
+        windowMs: config.projectPasswordReset.requestWindowSeconds * 1000,
+      }
     ),
     projectAppTags: new ProjectAppTagService(
       repositories.projectAppRepository,

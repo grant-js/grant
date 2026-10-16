@@ -42,6 +42,15 @@
     "messageLink": "Click the link below to sign in:",
     "messageLinkWithApp": "Click the link below to sign in to {{appName}}:"
   },
+  "projectPasswordReset": {
+    "subject": "Reset your password for {{appName}}",
+    "defaultAppName": "the app",
+    "message": "We received a request to reset your password for {{appName}}. Click the button below to choose a new password:",
+    "button": "Reset password",
+    "messageLink": "We received a request to reset your password for {{appName}}. Open the link below to choose a new password:",
+    "expiresIn": "This link will expire in {{minutes}} minutes and can be used once.",
+    "warning": "If you didn't request this, you can safely ignore this email. Your password will remain unchanged."
+  },
   "notification": {
     "common": {
       "greeting": "Hi there,",
