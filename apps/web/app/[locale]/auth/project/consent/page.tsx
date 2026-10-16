@@ -123,7 +123,7 @@ export default function ProjectOAuthConsentPage() {
                 <OAuthProviderIcon provider={info.user.provider} className="size-3.5" />
                 <span>
                   {t('signedInWith', {
-                    provider: ['email', 'github', 'google'].includes(info.user.provider)
+                    provider: ['email', 'github', 'google', 'password'].includes(info.user.provider)
                       ? t(`providers.${info.user.provider}`)
                       : info.user.provider,
                   })}

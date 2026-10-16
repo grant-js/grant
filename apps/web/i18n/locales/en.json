@@ -708,6 +708,7 @@
         "requestedPermissions": "Requested permissions:",
         "signInWith": "Sign in with",
         "email": "Email",
+        "password": "Password",
         "github": "GitHub",
         "google": "Google",
         "failedToLoad": "Failed to load app"
@@ -729,6 +730,43 @@
         "requestFailed": "Request failed",
         "somethingWentWrong": "Something went wrong"
       },
+      "password": {
+        "title": "Sign in with password",
+        "description": "Enter your email and password to continue.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@example.com",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter your password",
+        "passwordRequired": "Password is required",
+        "submit": "Sign in",
+        "submitting": "Signing in…",
+        "forgotPassword": "Forgot password?",
+        "invalidCredentials": "Incorrect email or password. After several failed attempts, signing in with a password is paused for a while; you can use another sign-in method.",
+        "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+        "sessionExpired": "This sign-in has expired or was already used. Please start the sign-in process again.",
+        "preparing": "Preparing sign-in…",
+        "missingParams": "Missing client_id or redirect_uri.",
+        "backToLogin": "Back to login",
+        "somethingWentWrong": "Something went wrong",
+        "mfa": {
+          "title": "Two-step verification",
+          "description": "Enter the 6-digit code from your authenticator app.",
+          "recoveryDescription": "Enter one of your single-use recovery codes.",
+          "codeLabel": "Code",
+          "codePlaceholder": "123456",
+          "recoveryLabel": "Recovery code",
+          "recoveryPlaceholder": "Enter recovery code",
+          "codeRequired": "Code is required",
+          "verify": "Verify",
+          "verifying": "Verifying…",
+          "useRecovery": "Use a recovery code",
+          "useAuthenticator": "Use an authenticator code",
+          "invalidCode": "That code is not valid. Please try again.",
+          "expired": "This verification expired. Please sign in again."
+        }
+      },
       "consent": {
         "loading": "Loading…",
         "title": "Consent",
@@ -737,7 +775,8 @@
         "providers": {
           "email": "Email",
           "github": "GitHub",
-          "google": "Google"
+          "google": "Google",
+          "password": "Password"
         },
         "wantsAccess": "{appName} wants to access your account",
         "thisApp": "This app",
@@ -1704,7 +1743,8 @@
     "providers": {
       "email": "Email",
       "github": "GitHub",
-      "google": "Google"
+      "google": "Google",
+      "password": "Password"
     },
     "createDialog": {
       "title": "Create app",

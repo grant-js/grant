@@ -3,6 +3,7 @@ const PKCE_UNRESERVED = /^[A-Za-z0-9\-._~]{43,128}$/;
 const PROJECT_OAUTH_PKCE_CURRENT_KEY = 'grant:project-oauth:pkce:current';
 const PROJECT_OAUTH_PKCE_STATE_PREFIX = 'grant:project-oauth:pkce:';
 const PROJECT_OAUTH_EMAIL_VIA_AUTHORIZE_KEY = 'grant:project-oauth:email-via-authorize';
+const PROJECT_OAUTH_PASSWORD_VIA_AUTHORIZE_KEY = 'grant:project-oauth:password-via-authorize';
 export const PROJECT_OAUTH_TEST_TOKENS_PREFIX = 'grant:project-oauth:tokens:';
 
 export interface ProjectOAuthPkcePair {
@@ -165,6 +166,14 @@ export function isProjectOAuthEmailViaAuthorize(): boolean {
   return getSessionStorage()?.getItem(PROJECT_OAUTH_EMAIL_VIA_AUTHORIZE_KEY) === '1';
 }
 
+export function markProjectOAuthPasswordViaAuthorize(): void {
+  getSessionStorage()?.setItem(PROJECT_OAUTH_PASSWORD_VIA_AUTHORIZE_KEY, '1');
+}
+
+export function isProjectOAuthPasswordViaAuthorize(): boolean {
+  return getSessionStorage()?.getItem(PROJECT_OAUTH_PASSWORD_VIA_AUTHORIZE_KEY) === '1';
+}
+
 export function persistProjectOAuthTestTokens(
   state: string,
   tokens: ProjectOAuthTokenSnapshot
@@ -187,6 +196,7 @@ export function clearProjectOAuthPkceStorageForTests(): void {
     if (
       key === PROJECT_OAUTH_PKCE_CURRENT_KEY ||
       key === PROJECT_OAUTH_EMAIL_VIA_AUTHORIZE_KEY ||
+      key === PROJECT_OAUTH_PASSWORD_VIA_AUTHORIZE_KEY ||
       key?.startsWith(PROJECT_OAUTH_PKCE_STATE_PREFIX) ||
       key?.startsWith(PROJECT_OAUTH_TEST_TOKENS_PREFIX)
     ) {

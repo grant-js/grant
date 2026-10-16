@@ -109,7 +109,9 @@ export function ProjectAppOauthCard({
       await updateProjectApp(projectApp.id, {
         scope,
         redirectUris: values.redirectUris,
-        enabledProviders: values.enabledProviders?.length ? values.enabledProviders : undefined,
+        // An empty list is a real value (every provider except password), so it is sent:
+        // `undefined` would leave the saved list unchanged and the last toggle could not be turned off.
+        enabledProviders: values.enabledProviders ?? [],
         allowSignUp: values.allowSignUp,
         signUpRoleId:
           values.allowSignUp === false

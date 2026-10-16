@@ -706,6 +706,7 @@
         "requestedPermissions": "Angeforderte Berechtigungen:",
         "signInWith": "Anmelden mit",
         "email": "E-Mail",
+        "password": "Passwort",
         "github": "GitHub",
         "google": "Google",
         "failedToLoad": "App konnte nicht geladen werden"
@@ -727,6 +728,43 @@
         "requestFailed": "Anfrage fehlgeschlagen",
         "somethingWentWrong": "Etwas ist schiefgelaufen"
       },
+      "password": {
+        "title": "Mit Passwort anmelden",
+        "description": "Geben Sie Ihre E-Mail-Adresse und Ihr Passwort ein, um fortzufahren.",
+        "emailLabel": "E-Mail",
+        "emailPlaceholder": "sie@beispiel.de",
+        "emailRequired": "E-Mail ist erforderlich",
+        "invalidEmail": "Ungültige E-Mail-Adresse",
+        "passwordLabel": "Passwort",
+        "passwordPlaceholder": "Passwort eingeben",
+        "passwordRequired": "Passwort ist erforderlich",
+        "submit": "Anmelden",
+        "submitting": "Anmeldung läuft…",
+        "forgotPassword": "Passwort vergessen?",
+        "invalidCredentials": "E-Mail-Adresse oder Passwort ist nicht korrekt. Nach mehreren fehlgeschlagenen Versuchen wird die Anmeldung mit Passwort für eine Weile pausiert; Sie können eine andere Anmeldemethode nutzen.",
+        "tooManyRequests": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        "sessionExpired": "Dieser Anmeldevorgang ist abgelaufen oder wurde bereits verwendet. Bitte starten Sie die Anmeldung erneut.",
+        "preparing": "Anmeldung wird vorbereitet…",
+        "missingParams": "client_id oder redirect_uri fehlt.",
+        "backToLogin": "Zurück zur Anmeldung",
+        "somethingWentWrong": "Etwas ist schiefgelaufen",
+        "mfa": {
+          "title": "Bestätigung in zwei Schritten",
+          "description": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.",
+          "recoveryDescription": "Geben Sie einen Ihrer einmalig verwendbaren Wiederherstellungscodes ein.",
+          "codeLabel": "Code",
+          "codePlaceholder": "123456",
+          "recoveryLabel": "Wiederherstellungscode",
+          "recoveryPlaceholder": "Wiederherstellungscode eingeben",
+          "codeRequired": "Code ist erforderlich",
+          "verify": "Bestätigen",
+          "verifying": "Wird geprüft…",
+          "useRecovery": "Wiederherstellungscode verwenden",
+          "useAuthenticator": "Authenticator-Code verwenden",
+          "invalidCode": "Dieser Code ist nicht gültig. Bitte versuchen Sie es erneut.",
+          "expired": "Diese Bestätigung ist abgelaufen. Bitte melden Sie sich erneut an."
+        }
+      },
       "consent": {
         "loading": "Laden…",
         "title": "Einwilligung",
@@ -735,7 +773,8 @@
         "providers": {
           "email": "E-Mail",
           "github": "GitHub",
-          "google": "Google"
+          "google": "Google",
+          "password": "Passwort"
         },
         "wantsAccess": "{appName} möchte auf Ihr Konto zugreifen",
         "thisApp": "Diese App",
@@ -1450,7 +1489,8 @@
     "providers": {
       "email": "E-Mail",
       "github": "GitHub",
-      "google": "Google"
+      "google": "Google",
+      "password": "Passwort"
     },
     "createDialog": {
       "title": "App erstellen",
