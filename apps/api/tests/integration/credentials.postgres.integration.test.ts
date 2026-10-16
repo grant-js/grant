@@ -254,6 +254,79 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
       await projectRepo.purgeSoftDeleted();
     });
 
+    it("upsertImported replaces an earlier import but never a person's own password", async () => {
+      const scope = { scope: 'project', projectId: projectA } as const;
+      await projectRepo.upsert(scope, { userId: userA, hash: HASH_A, source: 'cdm-import' });
+
+      const replaced = await projectRepo.upsertImported(scope, {
+        userId: userA,
+        hash: HASH_B,
+        source: 'cdm-import',
+      });
+      expect(replaced).toMatchObject({ source: 'cdm-import' });
+      expect((await projectRepo.findActive(scope, userA))?.hash).toBe(HASH_B);
+
+      await projectRepo.upsert(scope, { userId: userA, hash: HASH_A, source: 'reset' });
+      const refused = await projectRepo.upsertImported(scope, {
+        userId: userA,
+        hash: HASH_B,
+        source: 'cdm-import',
+      });
+      expect(refused).toBeNull();
+      expect(await projectRepo.findActive(scope, userA)).toMatchObject({
+        hash: HASH_A,
+        source: 'reset',
+      });
+
+      // No live row at all: it is a plain insert.
+      await projectRepo.softDelete(scope, userA);
+      const inserted = await projectRepo.upsertImported(scope, {
+        userId: userA,
+        hash: HASH_B,
+        source: 'cdm-import',
+      });
+      expect(inserted).toMatchObject({ source: 'cdm-import' });
+
+      await projectRepo.softDeleteAllForUser(userA);
+      await projectRepo.purgeSoftDeleted();
+    });
+
+    it('a first-time reset racing an import wins: the import waits for it, then leaves it alone', async () => {
+      const scope = { scope: 'project', projectId: projectA } as const;
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+
+      // The reset inserts the person's first credential and has not committed yet, so the
+      // import's batched read (rows with no credential: nothing to lock) saw none.
+      const reset = db.transaction(async (tx) => {
+        await projectRepo.upsert(
+          scope,
+          { userId: userA, hash: HASH_A, source: 'reset' },
+          tx as never
+        );
+        await gate;
+      });
+      await sleep(150);
+      const imported = projectRepo.upsertImported(scope, {
+        userId: userA,
+        hash: HASH_B,
+        source: 'cdm-import',
+      });
+      await sleep(250);
+      release();
+      await reset;
+
+      expect(await imported).toBeNull();
+      expect(await projectRepo.findActive(scope, userA)).toMatchObject({
+        hash: HASH_A,
+        source: 'reset',
+      });
+
+      await projectRepo.softDeleteAllForUser(userA);
+      await projectRepo.purgeSoftDeleted();
+    });
+
     it('rejects a second live row for the same (project, user)', async () => {
       await db
         .insert(projectUserCredentials)

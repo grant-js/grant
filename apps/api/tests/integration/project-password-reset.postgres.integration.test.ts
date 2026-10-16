@@ -656,6 +656,37 @@ describe.skipIf(!url)('project password reset on PostgreSQL', () => {
     });
   });
 
+  describe('a CDM import after a reset (ADR 0011 slice 3 rule, slice 5 writer)', () => {
+    const IMPORTED_HASH = '$2b$04$' + 'a'.repeat(53);
+
+    const importAfter = () =>
+      db.transaction(async (tx) =>
+        wiring(tx as never).services.credentials.importProjectPasswordHashes(
+          { projectId, rows: [{ userId: memberId, hash: IMPORTED_HASH }] },
+          tx as never
+        )
+      );
+
+    it('leaves the source "reset" credential untouched and counts it as skipped', async () => {
+      await complete(await requestedToken());
+      const afterReset = await credentialRow();
+      expect(afterReset?.source).toBe('reset');
+
+      const counts = await importAfter();
+
+      expect(counts).toEqual({ imported: 0, updated: 0, unchanged: 0, skippedExisting: 1 });
+      expect(await credentialRow()).toEqual(afterReset);
+    });
+
+    it('still imports for a member who has not reset, and a later reset then replaces it', async () => {
+      expect(await importAfter()).toMatchObject({ imported: 1, skippedExisting: 0 });
+      expect((await credentialRow())?.source).toBe('cdm-import');
+
+      await complete(await requestedToken());
+      expect((await credentialRow())?.source).toBe('reset');
+    });
+  });
+
   describe('bulk revoke of grants (repository)', () => {
     it("revokes only the live grants of that user across that project's apps, and returns their ids", async () => {
       const { services } = wiring(db);

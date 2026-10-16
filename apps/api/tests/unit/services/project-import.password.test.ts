@@ -147,6 +147,16 @@ class FakeProjectCredentials {
     return record;
   }
 
+  /** The import's write: never replaces a live credential that is not itself an import. */
+  async upsertImported(
+    scope: { projectId: string },
+    input: { userId: string; hash: string; source: CredentialWithHash['source'] }
+  ) {
+    const existing = this.live(scope.projectId, input.userId);
+    if (existing && existing.source !== 'cdm-import') return null;
+    return this.upsert(scope, input);
+  }
+
   lockActive = vi.fn();
   touchLastUsed = vi.fn();
   softDelete = vi.fn();

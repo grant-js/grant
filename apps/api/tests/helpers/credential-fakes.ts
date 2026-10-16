@@ -57,6 +57,15 @@ export class FakeCredentialRepository implements ICredentialRepository<Credentia
       .map((row) => ({ ...row }));
   }
 
+  async upsertImported(
+    scope: ProjectCredentialScope,
+    input: { userId: string; hash: string; source: never }
+  ) {
+    const existing = this.rows.find(this.match(scope, input.userId));
+    if (existing && existing.source !== 'cdm-import') return null;
+    return this.upsert(scope, input);
+  }
+
   async upsert(scope: CredentialScope, input: { userId: string; hash: string; source: never }) {
     const existing = this.rows.find(this.match(scope, input.userId));
     if (existing) {

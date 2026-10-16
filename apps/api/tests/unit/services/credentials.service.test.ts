@@ -67,6 +67,17 @@ class FakeCredentialRepository implements ICredentialRepository<CredentialScope>
       .map((row) => ({ ...row }));
   }
 
+  /** The import's write: never replaces a live credential that is not itself an import. */
+  async upsertImported(
+    scope: CredentialScope,
+    input: { userId: string; hash: string; source: never },
+    transaction?: unknown
+  ) {
+    const existing = this.rows.find(this.key(scope, input.userId));
+    if (existing && existing.source !== 'cdm-import') return null;
+    return this.upsert(scope, input, transaction);
+  }
+
   async upsert(
     scope: CredentialScope,
     input: { userId: string; hash: string; source: never },
@@ -962,6 +973,26 @@ describe('CredentialService', () => {
         expect(projectAudit.logUpdate).not.toHaveBeenCalled();
       }
     );
+
+    it('keeps a password set after the import read the rows (a first-time reset has no row to lock)', async () => {
+      const { service, project, projectAudit } = build();
+      await seed(service, USER, 'reset', HASH_ONE);
+      projectAudit.logUpdate.mockClear();
+      projectAudit.logCreate.mockClear();
+      const before = { ...project.rows[0] };
+      // The read ran before the reset committed: it saw no credential for this person.
+      project.findActiveMany = async () => [];
+
+      const counts = await service.importProjectPasswordHashes({
+        projectId: PROJECT,
+        rows: [{ userId: USER, hash: HASH_TWO }],
+      });
+
+      expect(counts).toEqual({ imported: 0, updated: 0, unchanged: 0, skippedExisting: 1 });
+      expect(project.rows).toEqual([before]);
+      expect(projectAudit.logUpdate).not.toHaveBeenCalled();
+      expect(projectAudit.logCreate).not.toHaveBeenCalled();
+    });
 
     it('reads the existing credentials once for the whole document, then decides in memory', async () => {
       const { service, project } = build();
