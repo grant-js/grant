@@ -14,6 +14,16 @@ import type {
   ProjectCredentialScope,
 } from '@grantjs/core';
 
+/**
+ * The platform connection, passing the caller's transaction straight through. The real one
+ * (`BasePoolPlatformCredentialConnection`) joins an unrestricted caller or opens its own
+ * transaction; service-level behaviour is the same, so these tests don't model the pool.
+ */
+export const passThroughPlatformConnection = {
+  transaction: <T>(caller: unknown, work: (tx: never) => Promise<T>): Promise<T> =>
+    work(caller as never),
+};
+
 /** In-memory credential repository with one live row per key, like the real ones. */
 export class FakeCredentialRepository implements ICredentialRepository<CredentialScope> {
   rows: Array<CredentialWithHash & { deletedAt: Date | null }> = [];
@@ -35,6 +45,16 @@ export class FakeCredentialRepository implements ICredentialRepository<Credentia
     this.findActiveCalls += 1;
     const row = this.rows.find(this.match(scope, userId));
     return row ? { ...row } : null;
+  }
+
+  async lockActive(scope: CredentialScope, userId: string) {
+    return this.findActive(scope, userId);
+  }
+
+  async findActiveMany(scope: ProjectCredentialScope, userIds: readonly string[]) {
+    return this.rows
+      .filter((row) => userIds.includes(row.userId) && this.match(scope, row.userId)(row))
+      .map((row) => ({ ...row }));
   }
 
   async upsert(scope: CredentialScope, input: { userId: string; hash: string; source: never }) {

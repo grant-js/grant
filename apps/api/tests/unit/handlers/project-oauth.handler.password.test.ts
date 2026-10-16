@@ -18,7 +18,11 @@ import {
   PROJECT_OAUTH_STATE_KEY_PREFIX,
 } from '@/constants/cache.constants';
 
-import { FakeCredentialRepository, FakeLockoutRepository } from '../../helpers/credential-fakes';
+import {
+  FakeCredentialRepository,
+  FakeLockoutRepository,
+  passThroughPlatformConnection,
+} from '../../helpers/credential-fakes';
 
 const verifySecretSpy = vi.hoisted(() => vi.fn());
 
@@ -70,7 +74,7 @@ const RFC_PKCE = {
   challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
 };
 const REDIRECT_URI = 'https://example.com/callback';
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'Xe9#mK2!vQ7z';
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 15;
 
@@ -163,12 +167,15 @@ function createHandler() {
     new CredentialLockoutService(
       { platform: lockoutRepo as never, project: lockoutRepo },
       policy,
+      passThroughPlatformConnection as never,
       () => clock
-    )
+    ),
+    passThroughPlatformConnection as never
   );
   const signInLockouts = new CredentialLockoutService(
     { platform: lockoutRepo as never, project: lockoutRepo },
     policy,
+    passThroughPlatformConnection as never,
     () => clock
   );
   return new ProjectOAuthHandler(

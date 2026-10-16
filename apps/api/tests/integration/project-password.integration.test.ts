@@ -15,7 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PROJECT_OAUTH_STATE_KEY_PREFIX } from '@/constants/cache.constants';
 
-import { FakeCredentialRepository, FakeLockoutRepository } from '../helpers/credential-fakes';
+import {
+  FakeCredentialRepository,
+  FakeLockoutRepository,
+  passThroughPlatformConnection,
+} from '../helpers/credential-fakes';
 
 vi.mock('@/lib/token.lib', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/token.lib')>();
@@ -77,7 +81,7 @@ const { createAuthRoutes } = await import('@/rest/routes/auth.routes');
 const { CredentialLockoutService } = await import('@/services/credential-lockouts.service');
 const { CredentialService } = await import('@/services/credentials.service');
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'Xe9#mK2!vQ7z';
 const REDIRECT_URI = 'https://example.com/callback';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 const USER = 'user-1';
@@ -109,12 +113,14 @@ function build(cache: ReturnType<typeof CacheFactory.createEntityCache>) {
   };
   const lockouts = new CredentialLockoutService(
     { platform: lockoutRepo as never, project: lockoutRepo },
-    policy
+    policy,
+    passThroughPlatformConnection as never
   );
   const credentials = new CredentialService(
     { platform: new FakeCredentialRepository(), project: projectCredentials },
     { platform: noopAudit(), project: noopAudit() },
-    lockouts
+    lockouts,
+    passThroughPlatformConnection as never
   );
   const userMfa = {
     hasActiveMfaEnrollment: vi.fn().mockResolvedValue(false),

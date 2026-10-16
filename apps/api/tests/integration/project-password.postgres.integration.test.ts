@@ -51,7 +51,7 @@ const { createRepositories } = await import('@/repositories');
 const { createServices } = await import('@/services');
 const { config } = await import('@/config');
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'Xe9#mK2!vQ7z';
 const REDIRECT_URI = 'https://example.com/callback';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 
