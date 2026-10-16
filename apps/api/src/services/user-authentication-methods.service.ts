@@ -332,6 +332,16 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
           transaction
         );
 
+    if (oldUserAuthenticationMethod.provider === UserAuthenticationMethodProvider.Email) {
+      // After the method is gone (a failed delete must not strand its owner without a password): the platform password belonged to the Email method (it was in its providerData);
+      // it must not outlive it, or it would sign in to whatever email is added next.
+      await this.credentials.removeCredential(
+        { scope: 'platform' },
+        oldUserAuthenticationMethod.userId,
+        transaction
+      );
+    }
+
     const oldValues = {
       id: oldUserAuthenticationMethod.id,
       userId: oldUserAuthenticationMethod.userId,
@@ -342,16 +352,6 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       createdAt: oldUserAuthenticationMethod.createdAt,
       updatedAt: oldUserAuthenticationMethod.updatedAt,
     };
-
-    if (oldUserAuthenticationMethod.provider === UserAuthenticationMethodProvider.Email) {
-      // The platform password belonged to the Email method (it was in its providerData);
-      // it must not outlive it, or it would sign in to whatever email is added next.
-      await this.credentials.removeCredential(
-        { scope: 'platform' },
-        oldUserAuthenticationMethod.userId,
-        transaction
-      );
-    }
 
     const metadata = {
       context,
