@@ -39,4 +39,15 @@ export interface IProjectOAuthGrantService {
   revokeGrant(id: string, transaction?: unknown): Promise<void>;
 
   revokeByRefreshToken(refreshToken: string, transaction?: unknown): Promise<boolean>;
+
+  /**
+   * Revoke every live grant of a user across one project's apps (a project password
+   * reset, ADR 0011 § 6). Each revocation is audited like `revokeGrant`. Returns how many
+   * grants went. Access tokens already issued live until they expire; only refresh is cut.
+   */
+  revokeAllForUserInProject(
+    projectId: string,
+    userId: string,
+    transaction?: unknown
+  ): Promise<number>;
 }

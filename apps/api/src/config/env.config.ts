@@ -336,6 +336,16 @@ const PROJECT_OAUTH_CONFIG = {
   requireByoSocial: env.PROJECT_OAUTH_REQUIRE_BYO_SOCIAL,
 } as const;
 
+/**
+ * Project-app password reset (ADR 0011 § 6): the lifetime of a reset link and the
+ * per-address request limit (reset emails one `(project, member)` may be sent in a window).
+ */
+const PROJECT_PASSWORD_RESET_CONFIG = {
+  tokenTtlSeconds: env.PROJECT_PASSWORD_RESET_TOKEN_TTL_SECONDS,
+  maxRequests: env.PROJECT_PASSWORD_RESET_MAX_REQUESTS,
+  requestWindowSeconds: env.PROJECT_PASSWORD_RESET_REQUEST_WINDOW_SECONDS,
+} as const;
+
 // ============================================================================
 // Cache Configuration
 // ============================================================================
@@ -1330,6 +1340,7 @@ export const config = {
   githubOAuth: GITHUB_OAUTH_CONFIG,
   googleOAuth: GOOGLE_OAUTH_CONFIG,
   projectOAuth: PROJECT_OAUTH_CONFIG,
+  projectPasswordReset: PROJECT_PASSWORD_RESET_CONFIG,
   cache: CACHE_CONFIG,
   redis: REDIS_CONFIG,
   secrets: SECRETS_CONFIG,

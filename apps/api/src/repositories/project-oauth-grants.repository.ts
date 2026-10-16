@@ -1,6 +1,7 @@
 import type { IProjectOAuthGrantRepository, ProjectOAuthGrantRecord } from '@grantjs/core';
 import type { ProjectOAuthGrantModel } from '@grantjs/database';
-import { projectOAuthGrants } from '@grantjs/database';
+import { projectApps, projectOAuthGrants } from '@grantjs/database';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
@@ -111,5 +112,35 @@ export class ProjectOAuthGrantRepository
 
   async softDeleteGrant(id: string, transaction?: Transaction): Promise<void> {
     await this.softDelete({ id }, transaction);
+  }
+
+  async softDeleteActiveGrantsForUserInProject(
+    projectId: string,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const dbInstance = transaction ?? this.db;
+    const now = new Date();
+    // One statement. The apps are matched through `project_apps` (the grant has no project
+    // column), including soft-deleted apps: a grant on a retired app is still a live
+    // refresh token and a reset must cut it too.
+    const revoked = await dbInstance
+      .update(projectOAuthGrants)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(projectOAuthGrants.userId, userId),
+          isNull(projectOAuthGrants.deletedAt),
+          inArray(
+            projectOAuthGrants.projectAppId,
+            dbInstance
+              .select({ id: projectApps.id })
+              .from(projectApps)
+              .where(eq(projectApps.projectId, projectId))
+          )
+        )
+      )
+      .returning({ id: projectOAuthGrants.id });
+    return revoked.map((row) => row.id);
   }
 }

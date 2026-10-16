@@ -165,6 +165,12 @@ export const envSchema = z.object({
   PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: optionalString(''),
   /** When true, project social OAuth requires a BYO connection (no platform fallback). */
   PROJECT_OAUTH_REQUIRE_BYO_SOCIAL: optionalBoolean(false),
+  /** Lifetime of a project-app password reset link, in seconds (default: 30 minutes). */
+  PROJECT_PASSWORD_RESET_TOKEN_TTL_SECONDS: optionalNumber(1800),
+  /** Reset emails one (project, member) may be sent per window (the per-address limit). */
+  PROJECT_PASSWORD_RESET_MAX_REQUESTS: optionalNumber(5),
+  /** Window of that per-address limit, in seconds (default: one hour). */
+  PROJECT_PASSWORD_RESET_REQUEST_WINDOW_SECONDS: optionalNumber(3600),
 
   // Pagination
   PAGINATION_DEFAULT_PAGE_SIZE: optionalNumber(50),

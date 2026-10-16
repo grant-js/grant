@@ -20,6 +20,10 @@ import {
   projectConsentInfoQuerySchema,
   projectConsentInfoResponseSchema,
   projectPasswordMfaSchema,
+  projectPasswordResetCompleteResultSchema,
+  projectPasswordResetCompleteSchema,
+  projectPasswordResetRequestResultSchema,
+  projectPasswordResetRequestSchema,
   projectPasswordSignInResultSchema,
   projectPasswordSignInSchema,
   projectTokenBodySchema,
@@ -978,6 +982,114 @@ Disabled unless the app lists \`password\` in \`enabledProviders\` (an empty lis
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      429: {
+        description: 'Too many requests from this address',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/auth/project/password/forgot
+   * Project-app "Forgot password?" request (ADR 0011 slice 5)
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/auth/project/password/forgot',
+    operationId: 'postApiAuthProjectPasswordForgot',
+    tags: ['Authentication'],
+    summary: 'Request a project-app password reset link',
+    description: `
+Send a password reset link for the app's \`password\` provider. The link is sent only to an **existing member** of the app's project that has an Email method; the response is the **same \`200\`** for an unknown address, an address that is not a member, an address over its per-address limit and an address that was sent a link, so the form cannot be used to find out who is a member.
+
+The link opens the hosted reset view with a one-time token in the URL fragment. The token is random, stored only as a SHA-256 digest scoped to the project and user, expires after \`PROJECT_PASSWORD_RESET_TOKEN_TTL_SECONDS\` and works once; a newer link replaces the previous one. Each member may be sent \`PROJECT_PASSWORD_RESET_MAX_REQUESTS\` links per \`PROJECT_PASSWORD_RESET_REQUEST_WINDOW_SECONDS\` (a request over the limit is answered the same and sends nothing); there is also the shared per-IP limit.
+
+Disabled unless the app lists \`password\` in \`enabledProviders\`: \`400\` otherwise.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: projectPasswordResetRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Accepted. Identical whether or not an email was sent',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(projectPasswordResetRequestResultSchema),
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid client_id, redirect_uri or body, or `password` is not enabled for the app',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      429: {
+        description: 'Too many requests from this address',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/auth/project/password/reset
+   * Complete a project-app password reset (ADR 0011 slice 5)
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/auth/project/password/reset',
+    operationId: 'postApiAuthProjectPasswordReset',
+    tags: ['Authentication'],
+    summary: 'Complete a project-app password reset',
+    description: `
+Set the member's **project** password from the token in a reset link. In one transaction: the token is consumed, the project credential is written (\`source: reset\`, so a later CDM import never overwrites it), the failed-attempt lockout of that project and user is cleared, the global Email method is marked verified (the link proved the mailbox), and **every project-app grant the user holds in this project is revoked** (grants in other projects, and the platform credential and sessions, are untouched). Access tokens already issued live until they expire.
+
+The password must meet the password policy; a rejected password is never echoed and does not use up the token. An unknown, expired, already used or foreign-project token, and a user who is no longer a member, all return the same \`400\`. No sign-in is performed: the person signs in afterwards, through MFA if the platform requires it.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: projectPasswordResetCompleteSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'The project password was set',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(projectPasswordResetCompleteResultSchema),
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid or expired link, invalid body, or a password that does not meet the policy',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
           },
         },
       },
