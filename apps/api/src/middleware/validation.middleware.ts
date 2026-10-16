@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { z, ZodError } from 'zod';
 
 import { isTranslationKey, t, translateMessage } from '@/i18n';
+import { redactSensitiveFields } from '@/lib/log-redaction.lib';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 
 /**
@@ -62,7 +63,12 @@ export function validate(schemas: ValidationSchemas) {
     try {
       // Validate body if schema provided
       if (schemas.body) {
-        logger.debug({ msg: 'Validating body', path: req.path, body: req.body });
+        // A body can hold a password or a one-time code: log its shape, never those values.
+        logger.debug({
+          msg: 'Validating body',
+          path: req.path,
+          body: redactSensitiveFields(req.body),
+        });
         req.body = await schemas.body.parseAsync(req.body);
         logger.debug({ msg: 'Body validation successful', path: req.path });
       }
@@ -107,7 +113,7 @@ export function validate(schemas: ValidationSchemas) {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
           query: req.query,
-          body: req.body,
+          body: redactSensitiveFields(req.body),
           params: req.params,
         },
         'Validation middleware error'

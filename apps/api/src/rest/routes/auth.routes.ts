@@ -23,6 +23,8 @@ import {
   projectConsentDenyBodySchema,
   projectConsentInfoQuerySchema,
   projectEmailRequestSchema,
+  projectPasswordMfaSchema,
+  projectPasswordSignInSchema,
   projectTokenBodySchema,
   refreshSessionRequestSchema,
   registerRequestSchema,
@@ -560,6 +562,39 @@ export function createAuthRoutes(context: RequestContext) {
         context.requestBaseUrl
       );
       res.status(202).send();
+    }
+  );
+
+  router.post(
+    '/project/password',
+    validateBody(projectPasswordSignInSchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
+    async (req: TypedRequest<{ body: typeof projectPasswordSignInSchema }>, res: Response) => {
+      const { client_id, redirect_uri, state, email, password, locale } = req.body;
+      const result = await context.handlers.projectOAuth.signInWithProjectPassword({
+        clientId: client_id,
+        redirectUri: redirect_uri,
+        stateId: state,
+        email,
+        password,
+        locale,
+      });
+      sendSuccessResponse(res, result);
+    }
+  );
+
+  router.post(
+    '/project/password/mfa',
+    validateBody(projectPasswordMfaSchema),
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
+    async (req: TypedRequest<{ body: typeof projectPasswordMfaSchema }>, res: Response) => {
+      const { mfa_token, code, method } = req.body;
+      const { redirectUrl } = await context.handlers.projectOAuth.verifyProjectPasswordMfa({
+        mfaToken: mfa_token,
+        code,
+        method,
+      });
+      sendSuccessResponse(res, { status: 'authenticated', redirectUrl });
     }
   );
 

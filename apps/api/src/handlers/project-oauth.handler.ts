@@ -1,6 +1,9 @@
 import type {
+  CredentialScope,
   IAccountProjectService,
   IAccountService,
+  ICredentialLockoutService,
+  ICredentialService,
   IEmailService,
   ILogger,
   IOrganizationProjectService,
@@ -12,6 +15,7 @@ import type {
   IProjectService,
   IProjectUserService,
   IUserAuthenticationMethodService,
+  IUserMfaService,
   IUserRoleService,
   IUserService,
   OAuthClientCredentials,
@@ -28,14 +32,20 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
-import { PROJECT_OAUTH_PROVIDERS, type ProjectOAuthProvider } from '@/config/env.config';
+import {
+  PROJECT_OAUTH_PROVIDERS,
+  PROJECT_PASSWORD_PROVIDER,
+  type ProjectOAuthProvider,
+} from '@/config/env.config';
 import {
   PROJECT_OAUTH_CODE_KEY_PREFIX,
   PROJECT_OAUTH_CONSENT_KEY_PREFIX,
   PROJECT_OAUTH_EMAIL_TOKEN_KEY_PREFIX,
+  PROJECT_OAUTH_MFA_KEY_PREFIX,
   PROJECT_OAUTH_STATE_KEY_PREFIX,
 } from '@/constants/cache.constants';
 import { CacheKey, IEntityCacheAdapter } from '@/lib/cache';
+import { verifyCredentialPassword } from '@/lib/credential-verifier.lib';
 import {
   AuthenticationError,
   BadRequestError,
@@ -53,6 +63,7 @@ import {
   isValidPkceChallenge,
   verifyPkceS256,
 } from '@/lib/project-oauth-pkce.lib';
+import { isProjectProviderEnabled } from '@/lib/project-oauth-providers.lib';
 import { generateSecureToken, verifySecret } from '@/lib/token.lib';
 
 import type { AuthHandler } from './auth.handler';
@@ -135,6 +146,48 @@ interface ProjectOAuthAuthorizationCodePayload {
   clientId: string;
 }
 
+/** A password sign-in that passed the password and now waits for the MFA code (ADR 0011 § 8). */
+interface ProjectOAuthPasswordMfaPayload {
+  userId: string;
+  projectAppId: string;
+  redirectUri: string;
+  stateId: string;
+  clientState?: string;
+  requestedScopeSlugs?: string[];
+  locale?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: 'S256';
+  /** Wrong codes tried against this challenge; it is discarded at PROJECT_PASSWORD_MFA_MAX_ATTEMPTS. */
+  attempts: number;
+}
+
+export interface ProjectPasswordSignInParams {
+  clientId: string;
+  redirectUri: string;
+  /** The API's own state id, from the authorize step (it carries the PKCE challenge). */
+  stateId: string;
+  email: string;
+  password: string;
+  locale?: string | null;
+}
+
+export type ProjectPasswordSignInResult =
+  { status: 'authenticated'; redirectUrl: string } | { status: 'mfa_required'; mfaToken: string };
+
+export interface ProjectPasswordMfaParams {
+  mfaToken: string;
+  code: string;
+  /** `totp` (default) or a one-time `recovery` code. */
+  method?: 'totp' | 'recovery';
+}
+
+/**
+ * Wrong MFA codes one challenge tolerates. The `(project, user)` lockout is the real
+ * budget (every code attempt spends from it, in the database); this only stops one token
+ * from being hammered until that lockout trips.
+ */
+const PROJECT_PASSWORD_MFA_MAX_ATTEMPTS = 5;
+
 export interface HandleProjectTokenParams {
   grantType: string;
   clientId: string;
@@ -184,7 +237,14 @@ export class ProjectOAuthHandler {
     private readonly users: IUserService,
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     private readonly usersScopeCacheUpdater: IUsersScopeCacheUpdater,
-    private readonly projectOAuthGrants: IProjectOAuthGrantService
+    private readonly projectOAuthGrants: IProjectOAuthGrantService,
+    private readonly credentials: ICredentialService,
+    /**
+     * Must write on a connection that survives the failing request (the pool, not the
+     * request transaction): see `CreateServicesOptions.durableDb`.
+     */
+    private readonly credentialLockouts: ICredentialLockoutService,
+    private readonly userMfa: IUserMfaService
   ) {}
 
   /** Parse OAuth scope param (space-delimited) into slug array. */
@@ -380,9 +440,7 @@ export class ProjectOAuthHandler {
       throw new BadRequestError('redirect_uri is not allowed for this app');
     }
 
-    const enabledList = app.enabledProviders ?? [];
-    const providerAllowed = enabledList.length === 0 || enabledList.includes(provider);
-    if (!providerAllowed) {
+    if (!isProjectProviderEnabled(app.enabledProviders, provider)) {
       throw new BadRequestError(`Provider "${provider}" is not enabled for this app`);
     }
     if (!PROJECT_OAUTH_PROVIDERS.includes(provider)) {
@@ -473,6 +531,22 @@ export class ProjectOAuthHandler {
           return url.toString();
         },
       },
+      // The hosted email-and-password view. It reuses the email entry URL's configuration
+      // (only its locale is read from it), so a deployment sets no extra variable.
+      password: {
+        getAuthorizeUrl: (params) => {
+          const baseUrl = this.buildFrontendUrlWithLocale(
+            config.projectOAuth.emailEntryUrl,
+            '/auth/project/password'
+          );
+          const url = new URL(baseUrl);
+          url.searchParams.set('client_id', params.clientId);
+          url.searchParams.set('redirect_uri', params.redirectUri);
+          url.searchParams.set('state', params.stateId);
+          if (params.clientState) url.searchParams.set('client_state', params.clientState);
+          return url.toString();
+        },
+      },
     };
   }
 
@@ -500,9 +574,7 @@ export class ProjectOAuthHandler {
     if (!allowedUris.length || !allowedUris.includes(redirectUri)) {
       throw new BadRequestError('redirect_uri is not allowed for this app');
     }
-    const enabledList = app.enabledProviders ?? [];
-    const providerAllowed = enabledList.length === 0 || enabledList.includes('email');
-    if (!providerAllowed) {
+    if (!isProjectProviderEnabled(app.enabledProviders, 'email')) {
       throw new BadRequestError('Provider "email" is not enabled for this app');
     }
 
@@ -718,8 +790,276 @@ export class ProjectOAuthHandler {
   }
 
   /**
+   * Sign in to a project app with email and password (ADR 0011 § 5): resolve the address to
+   * a user through the Email method, require an existing membership, verify the user's
+   * **project** credential (never the platform one) and hand the same consent step the
+   * magic-link callback hands. It never creates an identity, a membership or a platform
+   * session.
+   *
+   * Every failure the caller can cause by choosing the identifier or the password (unknown
+   * address, not a member, no project credential, wrong password, locked) is the same
+   * `AuthenticationError`, after the same bcrypt work, so the response and its timing do
+   * not say which. (A request with a bad `client_id`, `redirect_uri` or state is rejected
+   * first, before any identifier is looked at.)
+   *
+   * Lockout (ADR 0011 § 5, per `(project, user)`, keyed by the resolved user id): the
+   * attempt is **recorded before it is verified** and cleared on success. Recording after
+   * the compare would let a burst of parallel guesses all read the same count and all
+   * be verified; recording first, in one atomic statement on a connection that survives
+   * the request, bounds the verifications to the budget however many requests overlap. An
+   * attempt past the budget gets the dummy compare and the generic failure, whether or not
+   * the password was right. The user is keyed whether or not they are a member or hold a
+   * credential, so a locked and an unlocked address look alike.
+   */
+  async signInWithProjectPassword(
+    params: ProjectPasswordSignInParams
+  ): Promise<ProjectPasswordSignInResult> {
+    const { app, state } = await this.requireProjectPasswordSignInContext(
+      params.clientId,
+      params.redirectUri,
+      params.stateId
+    );
+    const credentialScope: CredentialScope = { scope: 'project', projectId: app.projectId };
+
+    const userId = await this.resolveUserIdForProjectPassword(params.email);
+    if (!userId) {
+      verifyCredentialPassword(params.password, null);
+      throw this.invalidProjectPasswordCredentials();
+    }
+
+    const attempt = await this.credentialLockouts.recordFailure(credentialScope, userId);
+    if (attempt.failedAttempts > config.auth.maxFailedLoginAttempts) {
+      verifyCredentialPassword(params.password, null);
+      this.logger.warn(
+        { projectId: app.projectId, userId },
+        'Project password sign-in refused: credential locked'
+      );
+      throw this.invalidProjectPasswordCredentials();
+    }
+
+    const memberships = await this.projectUsers.getProjectUsers({
+      projectId: app.projectId,
+      userId,
+    });
+    const matches = await this.credentials.verifyPassword({
+      scope: credentialScope,
+      userId,
+      password: params.password,
+    });
+    if (!matches || memberships.length === 0) {
+      throw this.invalidProjectPasswordCredentials();
+    }
+
+    if (await this.requiresMfaStepUp(userId)) {
+      // The attempt stays recorded until the MFA step succeeds: a password alone does not
+      // clear the counter, so it cannot be used to reset the budget for guessing codes.
+      const mfaToken = generateSecureToken(
+        Math.max(1, Math.floor(config.projectOAuth.consentTtlSeconds / 60)),
+        32
+      ).token;
+      const payload: ProjectOAuthPasswordMfaPayload = {
+        userId,
+        projectAppId: app.id,
+        redirectUri: params.redirectUri,
+        stateId: params.stateId,
+        ...(state.clientState ? { clientState: state.clientState } : {}),
+        ...(state.requestedScopeSlugs?.length
+          ? { requestedScopeSlugs: state.requestedScopeSlugs }
+          : {}),
+        ...(params.locale?.trim() || state.locale
+          ? { locale: params.locale?.trim() || state.locale }
+          : {}),
+        ...(state.codeChallenge
+          ? { codeChallenge: state.codeChallenge, codeChallengeMethod: state.codeChallengeMethod }
+          : {}),
+        attempts: 0,
+      };
+      await this.cache.oauth.set(
+        `${PROJECT_OAUTH_MFA_KEY_PREFIX}${mfaToken}` as CacheKey,
+        payload,
+        config.projectOAuth.consentTtlSeconds
+      );
+      return { status: 'mfa_required', mfaToken };
+    }
+
+    return this.completeProjectPasswordSignIn({
+      credentialScope,
+      userId,
+      app,
+      stateId: params.stateId,
+      redirectUri: params.redirectUri,
+      clientState: state.clientState,
+      requestedScopeSlugs: state.requestedScopeSlugs,
+      locale: params.locale?.trim() || state.locale,
+      codeChallenge: state.codeChallenge,
+      codeChallengeMethod: state.codeChallengeMethod,
+    });
+  }
+
+  /**
+   * Second step of a password sign-in for a user the platform requires to step up
+   * (`minAalAtLogin: aal2` and an active MFA enrolment, as `computeRequiresMfaStepUp` in the
+   * auth handler decides). Every code tried spends from the same `(project, user)` budget.
+   */
+  async verifyProjectPasswordMfa(
+    params: ProjectPasswordMfaParams
+  ): Promise<{ redirectUrl: string }> {
+    const key = `${PROJECT_OAUTH_MFA_KEY_PREFIX}${params.mfaToken}` as CacheKey;
+    const payload = await this.cache.oauth.get<ProjectOAuthPasswordMfaPayload>(key);
+    if (!payload) {
+      throw new BadRequestError('Invalid or expired MFA challenge');
+    }
+    const app = await this.projectApps.getProjectAppById(payload.projectAppId);
+    if (!app || !isProjectProviderEnabled(app.enabledProviders, PROJECT_PASSWORD_PROVIDER)) {
+      await this.cache.oauth.delete(key);
+      throw new BadRequestError('Invalid or expired MFA challenge');
+    }
+    const credentialScope: CredentialScope = { scope: 'project', projectId: app.projectId };
+
+    const attempt = await this.credentialLockouts.recordFailure(credentialScope, payload.userId);
+    let verified = false;
+    if (attempt.failedAttempts <= config.auth.maxFailedLoginAttempts) {
+      try {
+        verified =
+          params.method === 'recovery'
+            ? await this.userMfa.verifyRecoveryCode(payload.userId, params.code)
+            : (await this.userMfa.verifyTotp(payload.userId, params.code)).verified;
+      } catch {
+        // No enrolled factor (removed since the password step) or a malformed secret: the
+        // same answer as a wrong code.
+        verified = false;
+      }
+    }
+    if (!verified) {
+      const attempts = payload.attempts + 1;
+      if (attempts >= PROJECT_PASSWORD_MFA_MAX_ATTEMPTS) {
+        await this.cache.oauth.delete(key);
+      } else {
+        await this.cache.oauth.set(
+          key,
+          { ...payload, attempts },
+          config.projectOAuth.consentTtlSeconds
+        );
+      }
+      throw new AuthenticationError('Invalid MFA code');
+    }
+
+    await this.cache.oauth.delete(key);
+    const { redirectUrl } = await this.completeProjectPasswordSignIn({
+      credentialScope,
+      userId: payload.userId,
+      app,
+      stateId: payload.stateId,
+      redirectUri: payload.redirectUri,
+      clientState: payload.clientState,
+      requestedScopeSlugs: payload.requestedScopeSlugs,
+      locale: payload.locale,
+      codeChallenge: payload.codeChallenge,
+      codeChallengeMethod: payload.codeChallengeMethod,
+    });
+    return { redirectUrl };
+  }
+
+  private invalidProjectPasswordCredentials(): AuthenticationError {
+    return new AuthenticationError('Invalid credentials');
+  }
+
+  /**
+   * The app and the authorize-step state behind a password sign-in, or a rejection that
+   * does not depend on any identifier: unknown client, a redirect URI off the allowlist,
+   * the provider not enabled (`password` is opt-in), or a missing, expired or foreign
+   * state (which also carries the PKCE challenge the consent step needs).
+   */
+  private async requireProjectPasswordSignInContext(
+    clientId: string,
+    redirectUri: string,
+    stateId: string
+  ) {
+    const app = await this.projectApps.getProjectAppByClientId(clientId);
+    if (!app) {
+      throw new NotFoundError('ProjectApp');
+    }
+    const allowedUris = app.redirectUris ?? [];
+    if (!allowedUris.length || !allowedUris.includes(redirectUri)) {
+      throw new BadRequestError('redirect_uri is not allowed for this app');
+    }
+    if (!isProjectProviderEnabled(app.enabledProviders, PROJECT_PASSWORD_PROVIDER)) {
+      throw new BadRequestError(
+        `Provider "${PROJECT_PASSWORD_PROVIDER}" is not enabled for this app`
+      );
+    }
+    const state = await this.cache.oauth.get<ProjectOAuthState>(
+      `${PROJECT_OAUTH_STATE_KEY_PREFIX}${stateId}` as CacheKey
+    );
+    if (
+      !state ||
+      state.projectAppId !== app.id ||
+      state.redirectUri !== redirectUri ||
+      state.provider !== PROJECT_PASSWORD_PROVIDER ||
+      !state.codeChallenge
+    ) {
+      throw new BadRequestError('Invalid or expired state');
+    }
+    return { app, state };
+  }
+
+  /**
+   * The user behind an email address, through the Email method only (an address that only
+   * a GitHub or Google method carries does not sign in by password), or `null`. Find-only:
+   * it never creates an identity and never marks the method verified, unlike the magic link.
+   */
+  private async resolveUserIdForProjectPassword(email: string): Promise<string | null> {
+    const method = await this.userAuthenticationMethods.getUserAuthenticationMethodByProvider(
+      UserAuthenticationMethodProvider.Email,
+      email.trim().toLowerCase()
+    );
+    return method?.userId ?? null;
+  }
+
+  /** The platform's rule (`computeRequiresMfaStepUp`, `auth.handler.ts`): `aal2` and an enrolment. */
+  private async requiresMfaStepUp(userId: string): Promise<boolean> {
+    if (config.auth.minAalAtLogin !== 'aal2') {
+      return false;
+    }
+    return this.userMfa.hasActiveMfaEnrollment(userId);
+  }
+
+  private async completeProjectPasswordSignIn(params: {
+    credentialScope: CredentialScope;
+    userId: string;
+    app: {
+      id: string;
+      projectId: string;
+      allowSignUp?: boolean | null;
+      signUpRoleId?: string | null;
+    };
+    stateId: string;
+    redirectUri: string;
+    clientState?: string;
+    requestedScopeSlugs?: string[];
+    locale?: string | null;
+    codeChallenge?: string;
+    codeChallengeMethod?: 'S256';
+  }): Promise<{ status: 'authenticated'; redirectUrl: string }> {
+    const result = await this.ensureProjectMembershipAndBuildConsentRedirect({
+      userId: params.userId,
+      app: params.app,
+      redirectUri: params.redirectUri,
+      clientState: params.clientState,
+      requestedScopeSlugs: params.requestedScopeSlugs,
+      locale: params.locale,
+      provider: PROJECT_PASSWORD_PROVIDER,
+      codeChallenge: params.codeChallenge,
+      codeChallengeMethod: params.codeChallengeMethod,
+    });
+    await this.credentialLockouts.reset(params.credentialScope, params.userId);
+    await this.cache.oauth.delete(`${PROJECT_OAUTH_STATE_KEY_PREFIX}${params.stateId}` as CacheKey);
+    return { status: 'authenticated', redirectUrl: result.consentUrl };
+  }
+
+  /**
    * Ensures the user is a project member, resolves scope, stores consent payload in cache,
-   * and returns the consent redirect URL. Shared by GitHub and email callback flows.
+   * and returns the consent redirect URL. Shared by the GitHub, email and password flows.
    */
   private async ensureProjectMembershipAndBuildConsentRedirect(params: {
     userId: string;

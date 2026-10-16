@@ -13,5 +13,6 @@ export {
   type ProjectConsentInfoUser,
   type ProjectConsentRedirectResult,
   type ProjectOAuthThemeMode,
+  type ProjectPasswordSignInResult,
 } from './project-oauth.types';
 export * from './webhooks/webhook.types';

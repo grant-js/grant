@@ -73,7 +73,10 @@ import { BasePoolPlatformCredentialConnection } from '@/lib/platform-credential-
 import { secretResolver } from '@/lib/secrets';
 import { webhookAdapters, WebhookDispatcherConsumer } from '@/lib/webhooks';
 import { Repositories } from '@/repositories';
-import { UserCredentialLockoutRepository } from '@/repositories/credential-lockouts.repository';
+import {
+  ProjectUserCredentialLockoutRepository,
+  UserCredentialLockoutRepository,
+} from '@/repositories/credential-lockouts.repository';
 import { UserCredentialRepository } from '@/repositories/user-credentials.repository';
 
 import { AccountProjectApiKeyService } from './account-project-api-keys.service';
@@ -170,6 +173,15 @@ export interface CreateServicesOptions {
    * inject a fake; production callers leave it unset.
    */
   secrets?: ISecretResolver;
+  /**
+   * The process-wide pool, outside any request transaction. The project password
+   * sign-in records its lockout failures on it (ADR 0011 § 5): a failed attempt is a failed
+   * request, so a count written inside the request's own transaction, or inside a savepoint
+   * the failure rolls back, would be lost and the lockout would never trip. Present on
+   * every HTTP request (the context middleware sets it); a caller without one falls back
+   * to the request connection and must not rely on the count surviving a failure.
+   */
+  durableDb?: DbSchema;
 }
 
 export function createServices(
@@ -218,18 +230,30 @@ export function createServices(
   // operation runs through one connection policy (see PlatformCredentialConnection).
   const baseDb = options?.baseDb ?? db;
   const platformCredentialConnection = new BasePoolPlatformCredentialConnection(baseDb);
+  const lockoutPolicy = {
+    maxAttempts: config.auth.maxFailedLoginAttempts,
+    windowMs: lockoutDurationMs,
+    lockDurationMs: lockoutDurationMs,
+  };
   const credentialLockouts = new CredentialLockoutService(
     {
       platform: new UserCredentialLockoutRepository(baseDb),
       project: repositories.projectUserCredentialLockoutRepository,
     },
-    {
-      maxAttempts: config.auth.maxFailedLoginAttempts,
-      windowMs: lockoutDurationMs,
-      lockDurationMs: lockoutDurationMs,
-    },
+    lockoutPolicy,
     platformCredentialConnection
   );
+  const durableDb = options?.durableDb;
+  const credentialSignInLockouts = durableDb
+    ? new CredentialLockoutService(
+        {
+          platform: new UserCredentialLockoutRepository(durableDb),
+          project: new ProjectUserCredentialLockoutRepository(durableDb),
+        },
+        lockoutPolicy,
+        new BasePoolPlatformCredentialConnection(durableDb)
+      )
+    : credentialLockouts;
   const credentials = new CredentialService(
     {
       platform: new UserCredentialRepository(baseDb),
@@ -245,6 +269,7 @@ export function createServices(
   const servicesBase = {
     credentials,
     credentialLockouts,
+    credentialSignInLockouts,
     events,
     me: new MeService(
       repositories.userRepository,

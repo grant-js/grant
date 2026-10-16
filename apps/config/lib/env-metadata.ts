@@ -299,7 +299,8 @@ const META: EnvVarMeta[] = [
     key: 'AUTH_MAX_FAILED_LOGIN_ATTEMPTS',
     category: 'auth',
     label: 'Max failed login attempts',
-    description: 'Failed attempts before lockout (default: 5).',
+    description:
+      'Failed attempts before a project-app password credential is locked (default: 5). Not enforced for platform login yet.',
     envFiles: ['.env'],
     digitsOnly: true,
     section: 'Authentication',
@@ -308,7 +309,8 @@ const META: EnvVarMeta[] = [
     key: 'AUTH_LOCKOUT_DURATION_MINUTES',
     category: 'auth',
     label: 'Lockout duration (min)',
-    description: 'Account lockout duration in minutes (default: 15).',
+    description:
+      'Lockout duration in minutes for a project-app password credential, and the window failures are counted in (default: 15).',
     envFiles: ['.env'],
     digitsOnly: true,
     section: 'Authentication',

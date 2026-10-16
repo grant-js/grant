@@ -64,6 +64,8 @@ visible = configuredProviders ∩ enabledProviders
 
 `configuredProviders` comes from `app-info` (project connections + fallback policy). Hosted pages do **not** call `GET /api/auth/providers` (that endpoint is for platform login only).
 
+The **Password** button (key icon) is different: it needs no connection, and it is shown only when the app's `enabledProviders` names `password`. An empty list shows Email and the configured social providers, never Password. It opens its own view with an email and password form; sign-in checks only the project's own credential for the app's project, and requires an existing membership.
+
 ## Branding
 
 Project owners set a default logo and OAuth theme on the project **Branding** page (`…/projects/{projectId}/branding`). Each app can override those values on its **Branding** card.
