@@ -82,6 +82,10 @@ import {
   projectOAuthGrants,
   projectOAuthGrantsRelations,
 } from './project-oauth-grants.schema';
+import {
+  projectPasswordResets,
+  projectPasswordResetsRelations,
+} from './project-password-resets.schema';
 import { projectPermissions, projectPermissionsRelations } from './project-permissions.schema';
 import {
   projectResourceAuditLogs,
@@ -248,6 +252,7 @@ export const schema = {
   projectUserCredentials,
   projectUserCredentialAuditLogs,
   projectUserCredentialLockouts,
+  projectPasswordResets,
   projectUsers,
   projects,
   roleGroups,
@@ -321,6 +326,7 @@ export const schema = {
   projectUserApiKeyAuditLogsRelations,
   projectUserCredentialsRelations,
   projectUserCredentialAuditLogsRelations,
+  projectPasswordResetsRelations,
   projectUsersRelations,
   apiKeysRelations,
   apiKeyAuditLogsRelations,
