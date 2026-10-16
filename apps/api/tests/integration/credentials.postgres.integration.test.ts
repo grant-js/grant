@@ -32,6 +32,7 @@ import postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { DrizzleAuditLogger } from '@/lib/audit';
+import { BasePoolPlatformCredentialConnection } from '@/lib/platform-credential-connection.lib';
 import {
   ProjectUserCredentialLockoutRepository,
   UserCredentialLockoutRepository,
@@ -376,6 +377,8 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
   describe('service on real repositories', () => {
     const auth = (userId: string) => ({ userId }) as unknown as GrantAuth;
 
+    const connection = new BasePoolPlatformCredentialConnection(db);
+
     function buildService(performedBy: string) {
       return new CredentialService(
         { platform: platformRepo, project: projectRepo },
@@ -395,8 +398,10 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
         },
         new CredentialLockoutService(
           { platform: platformLockouts, project: projectLockouts },
-          POLICY
-        )
+          POLICY,
+          connection
+        ),
+        connection
       );
     }
 
@@ -404,7 +409,7 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
       const service = buildService(userA);
       const platform = { scope: 'platform' } as const;
       const project = { scope: 'project', projectId: projectA } as const;
-      const password = 'correct horse battery staple';
+      const password = 'Correct-Horse-7-Staple!';
 
       const record = await service.setPassword({
         scope: platform,
@@ -415,7 +420,7 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
       await service.setPassword({
         scope: project,
         userId: userB,
-        password: 'project-only-pw-1',
+        password: 'Project-Only-Pw-1!',
         source: 'reset',
       });
 

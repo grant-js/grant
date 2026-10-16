@@ -70,6 +70,14 @@ const mockUserSessions = {
 const mockEmail = { sendOtp: vi.fn(), sendPasswordReset: vi.fn() };
 const mockOrganizationInvitations = { getInvitationByToken: vi.fn() };
 const mockOrganizationUsers = { getUserOrganizationMemberships: vi.fn() };
+// The platform credential store: `verifyPassword` compares against what the test has "set".
+let platformPassword: string | null = PASSWORD;
+const mockCredentials = {
+  setPassword: vi.fn(),
+  verifyPassword: vi.fn(
+    async ({ password }: { password: string }) => platformPassword === password
+  ),
+};
 const mockCache = { get: vi.fn(), set: vi.fn(), delete: vi.fn(), clear: vi.fn() };
 
 function createHandler() {
@@ -84,6 +92,7 @@ function createHandler() {
     mockEmail as never,
     { getAuth: vi.fn(), isPersonalScope: vi.fn() } as never,
     mockOrganizationInvitations as never,
+    mockCredentials as never,
     mockCache as never,
     {} as never,
     { withTransaction: mockWithTransaction } as never,
@@ -140,7 +149,7 @@ function stubExistingIdentity(method: Method, accounts: unknown[]) {
     userId: USER_ID,
     isVerified: true,
     createdAt: new Date(),
-    providerData: { hashedPassword: hashSecret(PASSWORD) },
+    providerData: {},
   });
   mockUsers.getUsers.mockResolvedValue({ totalCount: 1, users: [{ id: USER_ID, accounts }] });
 }
@@ -167,6 +176,7 @@ const invitationProof = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  platformPassword = PASSWORD;
   mockAuthCfg.publicSignupEnabled = true;
   mockWithTransaction.mockImplementation((fn: (transaction: unknown) => Promise<unknown>) =>
     fn(tx)
@@ -364,6 +374,7 @@ describe('forgot password -> reset -> login on a closed install', () => {
     mockUsers.countHumanUsers.mockResolvedValue(2500);
 
     // A CDM-imported identity: Email method, no password, no account.
+    platformPassword = null;
     const authMethod = {
       id: 'auth-method-1',
       userId: USER_ID,
@@ -377,7 +388,7 @@ describe('forgot password -> reset -> login on a closed install', () => {
     });
     mockUserAuthenticationMethods.resetPassword.mockImplementation(
       async (_token: string, newPassword: string) => {
-        authMethod.providerData = { hashedPassword: hashSecret(newPassword) };
+        platformPassword = newPassword;
         return USER_ID;
       }
     );

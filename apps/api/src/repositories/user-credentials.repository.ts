@@ -67,6 +67,21 @@ export class UserCredentialRepository implements ICredentialRepository<PlatformC
     return row ? { ...toRecord(row), hash: row.hash } : null;
   }
 
+  async lockActive(
+    _scope: PlatformCredentialScope,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<CredentialWithHash | null> {
+    const dbInstance = transaction ?? this.db;
+    const [row] = await dbInstance
+      .select({ ...recordColumns, hash: userCredentials.hash })
+      .from(userCredentials)
+      .where(and(eq(userCredentials.userId, userId), isNull(userCredentials.deletedAt)))
+      .limit(1)
+      .for('update');
+    return row ? { ...toRecord(row), hash: row.hash } : null;
+  }
+
   async upsert(
     _scope: PlatformCredentialScope,
     input: CredentialWriteInput,

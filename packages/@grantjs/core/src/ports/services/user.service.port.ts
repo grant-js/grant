@@ -318,7 +318,13 @@ export interface IUserAuthenticationMethodService {
     provider: UserAuthenticationMethodProvider,
     providerId: string,
     providerData: Record<string, unknown>
-  ): Promise<{ providerData: Record<string, unknown>; isVerified: boolean; name: string }>;
+  ): Promise<{
+    providerData: Record<string, unknown>;
+    isVerified: boolean;
+    name: string;
+    /** The validated plaintext password of a Register or Connect; hand it to the credential service. */
+    password?: string;
+  }>;
 
   generateOtp(): { token: string; validUntil: number };
 
@@ -339,6 +345,12 @@ export interface IUserAuthenticationMethodService {
   resetPassword(token: string, newPassword: string, transaction?: unknown): Promise<string | null>;
 
   invalidateAllUserSessions(userId: string, transaction?: unknown): Promise<void>;
+
+  /**
+   * Whether the user has a platform password (a live platform credential). Not computed on
+   * the methods the getters return, whose `hasPassword` is `false`.
+   */
+  hasPlatformPassword(userId: string, transaction?: unknown): Promise<boolean>;
 
   changePassword(
     userId: string,

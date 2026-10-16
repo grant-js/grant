@@ -1,12 +1,10 @@
 import { UserAuthenticationMethodResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
-import { authMethodHasPassword } from '@/lib/auth-method-public.lib';
 
+/**
+ * `hasPassword` is "a platform credential exists" (ADR 0011), not a property of the stored
+ * row: the handler that returns the method sets it. Anything that did not is `false`.
+ */
 export const userAuthenticationMethodHasPasswordResolver: UserAuthenticationMethodResolvers<GraphqlContext>['hasPassword'] =
-  (parent) => {
-    if (typeof parent.hasPassword === 'boolean') {
-      return parent.hasPassword;
-    }
-    return authMethodHasPassword(parent);
-  };
+  (parent) => parent.hasPassword === true;

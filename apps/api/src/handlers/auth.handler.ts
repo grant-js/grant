@@ -2,6 +2,7 @@ import type {
   IAccountRoleService,
   IAccountService,
   IAuthService,
+  ICredentialService,
   IEmailService,
   ILogger,
   IOrganizationInvitationService,
@@ -258,6 +259,7 @@ export class AuthHandler extends CacheHandler {
     private readonly email: IEmailService,
     private readonly auth: IAuthService,
     private readonly organizationInvitations: IOrganizationInvitationService,
+    private readonly credentials: ICredentialService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
@@ -312,6 +314,7 @@ export class AuthHandler extends CacheHandler {
         providerData: processedProviderData,
         isVerified,
         name,
+        password,
       } = await this.userAuthenticationMethods.processProvider(provider, providerId, {
         ...providerData,
         action: UserAuthenticationEmailProviderAction.Register,
@@ -335,6 +338,15 @@ export class AuthHandler extends CacheHandler {
           },
           tx
         );
+
+      if (password) {
+        // The platform credential is created with the identity, in the same transaction
+        // (ADR 0011 § 3); the hash never goes into the method's providerData.
+        await this.credentials.setPassword(
+          { scope: { scope: 'platform' }, userId: user.id, password, source: 'register' },
+          tx
+        );
+      }
 
       if (this.isSocialOAuthProvider(provider)) {
         await this.bindVerifiedOauthContactEmailFromProviderData(user.id, finalProviderData, tx);
@@ -460,13 +472,17 @@ export class AuthHandler extends CacheHandler {
         }
 
         if (provider === UserAuthenticationMethodProvider.Email) {
-          const userAuthenticationMethodProviderData =
-            userAuthenticationMethod.providerData as unknown as { hashedPassword: string };
-          const storedHashedPassword = userAuthenticationMethodProviderData.hashedPassword;
-          if (
-            !storedHashedPassword ||
-            !verifySecret(processedProviderData.password as string, storedHashedPassword)
-          ) {
+          // Only the platform credential is checked (ADR 0011 § 1): a project credential is
+          // never accepted here. A missing credential costs the same compare as a wrong one.
+          const passwordMatches = await this.credentials.verifyPassword(
+            {
+              scope: { scope: 'platform' },
+              userId: userAuthenticationMethod.userId,
+              password: processedProviderData.password as string,
+            },
+            tx
+          );
+          if (!passwordMatches) {
             throw new AuthenticationError('Invalid credentials');
           }
         }

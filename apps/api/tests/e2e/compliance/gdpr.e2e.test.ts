@@ -223,31 +223,24 @@ describe('GDPR Art. 32 -- Security of processing', () => {
   it('passwords are stored hashed, not plaintext', async () => {
     const user = await TestUser.create();
 
-    // Query the DB directly to verify password is hashed
-    const rows = await query<{ provider_data: Record<string, unknown> }>`
-      SELECT provider_data
-      FROM user_authentication_methods
-      WHERE provider = 'email'
-        AND provider_id = ${user.email}
-        AND deleted_at IS NULL
+    // Query the DB directly to verify password is hashed. Since ADR 0011 the hash lives in
+    // `user_credentials`, never in the Email method's provider_data.
+    const rows = await query<{ hash: string; provider_data: Record<string, unknown> | null }>`
+      SELECT c.hash, m.provider_data
+      FROM user_authentication_methods m
+      JOIN user_credentials c ON c.user_id = m.user_id AND c.deleted_at IS NULL
+      WHERE m.provider = 'email'
+        AND m.provider_id = ${user.email}
+        AND m.deleted_at IS NULL
       LIMIT 1
     `;
 
     expect(rows.length).toBe(1);
-    const providerData = rows[0].provider_data;
 
-    // The stored password should be a bcrypt hash, not the plaintext
-    const storedHash =
-      (providerData as Record<string, unknown>).hashedPassword ??
-      (providerData as Record<string, unknown>).password ??
-      (providerData as Record<string, unknown>).hash;
-
-    if (storedHash) {
-      // bcrypt hashes start with $2a$ or $2b$
-      expect(String(storedHash)).toMatch(/^\$2[aby]\$/);
-      // Must not be the plaintext password
-      expect(storedHash).not.toBe(user.password);
-    }
+    // The stored password should be a bcrypt hash ($2a$, $2b$ or $2y$), not the plaintext
+    expect(String(rows[0].hash)).toMatch(/^\$2[aby]\$/);
+    expect(rows[0].hash).not.toBe(user.password);
+    expect(JSON.stringify(rows[0].provider_data ?? {})).not.toContain('hashedPassword');
   });
 
   it('access tokens have expiration (JWT exp claim)', async () => {

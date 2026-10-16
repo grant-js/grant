@@ -50,6 +50,7 @@ const mockUserSessions = {
 const mockEmail = { sendOtp: vi.fn(), sendPasswordReset: vi.fn(), sendInvitation: vi.fn() };
 const mockAuth = { getAuth: vi.fn(), isPersonalScope: vi.fn() };
 const mockOrganizationInvitations = { getInvitationByToken: vi.fn() };
+const mockCredentials = { setPassword: vi.fn(), verifyPassword: vi.fn() };
 const mockCache = { get: vi.fn(), set: vi.fn(), delete: vi.fn(), clear: vi.fn() };
 const mockScopeServices = {};
 const mockDb = { withTransaction: mockWithTransaction };
@@ -66,6 +67,7 @@ function createHandler(): AuthHandler {
     mockEmail as never,
     mockAuth as never,
     mockOrganizationInvitations as never,
+    mockCredentials as never,
     mockCache as never,
     mockScopeServices as never,
     mockDb as never,
@@ -112,9 +114,10 @@ describe('AuthHandler invitation email verification proof', () => {
     const otp = { token: 'otp-token', validUntil: Date.now() + 60_000 };
     mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
     mockUserAuthenticationMethods.processProvider.mockResolvedValue({
-      providerData: { hashedPassword: 'hashed-password', otp },
+      providerData: { otp },
       isVerified: false,
       name: 'Invitee',
+      password: PASSWORD,
     });
     mockUserAuthenticationMethods.createUserAuthenticationMethod.mockResolvedValue({
       id: 'auth-method-1',
@@ -135,8 +138,13 @@ describe('AuthHandler invitation email verification proof', () => {
     expect(mockUserAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalledWith(
       expect.objectContaining({
         isVerified: true,
-        providerData: { hashedPassword: 'hashed-password' },
+        providerData: {},
       }),
+      tx
+    );
+    // The platform credential is created with the identity, in the same transaction.
+    expect(mockCredentials.setPassword).toHaveBeenCalledWith(
+      { scope: { scope: 'platform' }, userId: 'user-1', password: PASSWORD, source: 'register' },
       tx
     );
     expect(mockUserSessions.createSession).toHaveBeenCalledWith(
@@ -189,7 +197,6 @@ describe('AuthHandler invitation email verification proof', () => {
       id: 'auth-method-1',
       userId: 'user-1',
       providerData: {
-        hashedPassword: hashSecret(PASSWORD),
         otp: { token: 'otp-token', validUntil: Date.now() + 60_000 },
       },
       isVerified: false,
@@ -197,9 +204,10 @@ describe('AuthHandler invitation email verification proof', () => {
     };
     const updatedAuthMethod = {
       ...authMethod,
-      providerData: { hashedPassword: authMethod.providerData.hashedPassword },
+      providerData: {},
       isVerified: true,
     };
+    mockCredentials.verifyPassword.mockResolvedValue(true);
 
     mockUserAuthenticationMethods.processProvider.mockResolvedValue({
       providerData: { password: PASSWORD },
@@ -231,10 +239,11 @@ describe('AuthHandler invitation email verification proof', () => {
     expect(result.verificationExpiry).toBeNull();
     expect(mockUserAuthenticationMethods.updateUserAuthenticationMethod).toHaveBeenCalledWith(
       'auth-method-1',
-      {
-        isVerified: true,
-        providerData: { hashedPassword: authMethod.providerData.hashedPassword },
-      },
+      { isVerified: true, providerData: {} },
+      tx
+    );
+    expect(mockCredentials.verifyPassword).toHaveBeenCalledWith(
+      { scope: { scope: 'platform' }, userId: 'user-1', password: PASSWORD },
       tx
     );
     expect(mockUserSessions.createSession).toHaveBeenCalledWith(

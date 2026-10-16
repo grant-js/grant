@@ -91,6 +91,28 @@ export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown, context:
 }
 
 /**
+ * `validateInput` for a value that is, or contains, a secret (a password).
+ *
+ * `validateInput` puts a sample of its input into the error message, and that message
+ * reaches the log and the response. This one reports the issues and the context only, so a
+ * rejected password is never echoed. Use it for every password, never `validateInput`.
+ */
+export function validateSecretInput<T>(schema: z.ZodSchema<T>, data: unknown, context: string): T {
+  const result = schema.safeParse(data);
+
+  if (!result.success) {
+    const violations = result.error.issues.map((issue) => formatValidationError(issue));
+    const errorMessages = violations.map((violation, index) => `  ${index + 1}. ${violation}`);
+    throw new ApiValidationError(
+      `Input validation failed in ${context}:\n${errorMessages.join('\n')}`,
+      violations
+    );
+  }
+
+  return result.data;
+}
+
+/**
  * Validates a list result against a paginated schema.
  *
  * Repositories return `{ <entityPlural>, totalCount, hasNextPage }` while the

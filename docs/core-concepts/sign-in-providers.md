@@ -51,7 +51,7 @@ Each method is stored independently (`user_authentication_methods`). Constraints
 - A Grant user can have **at most one** method per provider.
 - Every user has exactly **one primary** method. OAuth-first signup keeps the social method primary.
 
-**Email is the mailbox, not the password.** `provider = email` is the verified contact address (`providerId`). A password (`providerData.hashedPassword`) is optional. Settings shows **Set password** when the Email method has no password, and **Change password** when it does.
+**Email is the mailbox, not the password.** `provider = email` is the verified contact address (`providerId`). A password is optional and is stored as a separate platform credential, not in the Email method. Settings shows **Set password** when there is no platform credential, and **Change password** when there is.
 
 ## Account linking
 
@@ -86,7 +86,7 @@ Auto-link requires **both** sides verified. If the IdP email is unverified, or G
 After signup, connect, auto-link, later social login, and project OAuth, Grant also tries to attach a **passwordless** Email method when the IdP reports a verified mailbox:
 
 - `provider = email`, `providerId` = normalized address, `isVerified = true`
-- `providerData` has **no** `hashedPassword`
+- no platform credential (password) is created
 - Existing Email methods are not overwritten
 - If another user already owns that Email address, OAuth still succeeds and the bind is skipped
 

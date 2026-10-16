@@ -69,9 +69,12 @@ import {
   NotificationDisplayContextResolver,
   NotificationGeneratorConsumer,
 } from '@/lib/notifications';
+import { BasePoolPlatformCredentialConnection } from '@/lib/platform-credential-connection.lib';
 import { secretResolver } from '@/lib/secrets';
 import { webhookAdapters, WebhookDispatcherConsumer } from '@/lib/webhooks';
 import { Repositories } from '@/repositories';
+import { UserCredentialLockoutRepository } from '@/repositories/credential-lockouts.repository';
+import { UserCredentialRepository } from '@/repositories/user-credentials.repository';
 
 import { AccountProjectApiKeyService } from './account-project-api-keys.service';
 import { AccountProjectTagService } from './account-project-tags.service';
@@ -156,6 +159,13 @@ function audit(table: any, entityIdField: string, user: GrantAuth | null, db: Db
 export interface CreateServicesOptions {
   scheduleAfterCommit?: ScheduleAfterCommit;
   /**
+   * The unrestricted base pool. A scoped request passes `db` as its restricted-role
+   * transaction, and the platform credential tables are out of that role's reach (ADR 0011
+   * slice 2), so the credential and lockout services need the pool itself. Defaults to `db`,
+   * which is the base pool in every unscoped context.
+   */
+  baseDb?: DbSchema;
+  /**
    * Overrides the process-wide resolver from `@/lib/secrets`. Present so tests can
    * inject a fake; production callers leave it unset.
    */
@@ -203,27 +213,34 @@ export function createServices(
   );
   const fileStorage = new FileStorageService();
   const lockoutDurationMs = config.auth.lockoutDurationMinutes * MILLISECONDS_PER_MINUTE;
+  // Platform credential tables are unreachable for the restricted RLS role: their
+  // repositories and audit logger are bound to the base pool, and every platform-scope
+  // operation runs through one connection policy (see PlatformCredentialConnection).
+  const baseDb = options?.baseDb ?? db;
+  const platformCredentialConnection = new BasePoolPlatformCredentialConnection(baseDb);
   const credentialLockouts = new CredentialLockoutService(
     {
-      platform: repositories.userCredentialLockoutRepository,
+      platform: new UserCredentialLockoutRepository(baseDb),
       project: repositories.projectUserCredentialLockoutRepository,
     },
     {
       maxAttempts: config.auth.maxFailedLoginAttempts,
       windowMs: lockoutDurationMs,
       lockDurationMs: lockoutDurationMs,
-    }
+    },
+    platformCredentialConnection
   );
   const credentials = new CredentialService(
     {
-      platform: repositories.userCredentialRepository,
+      platform: new UserCredentialRepository(baseDb),
       project: repositories.projectUserCredentialRepository,
     },
     {
-      platform: audit(userCredentialAuditLogs, 'userCredentialId', user, db),
+      platform: audit(userCredentialAuditLogs, 'userCredentialId', user, baseDb),
       project: audit(projectUserCredentialAuditLogs, 'projectUserCredentialId', user, db),
     },
-    credentialLockouts
+    credentialLockouts,
+    platformCredentialConnection
   );
   const servicesBase = {
     credentials,
@@ -320,7 +337,8 @@ export function createServices(
       repositories.userAuthenticationMethodRepository,
       repositories.userSessionRepository,
       audit(userAuthenticationMethodsAuditLogs, 'userAuthenticationMethodId', user, db),
-      events
+      events,
+      credentials
     ),
     userMfa: new UserMfaService(
       repositories.userMfaFactorRepository,

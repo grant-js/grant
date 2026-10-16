@@ -1,48 +1,34 @@
 /**
- * CDM import of bcrypt password hashes (ADR 0010), end to end below the transport.
+ * CDM import with a `password` after ADR 0011 slice 2, end to end below the transport.
  *
- * The real `ProjectImportService` with the default entity registry runs against an
- * in-memory credential store, and that store is also what the real
- * `UserAuthenticationMethodService` and the real `AuthHandler.login` read, so what is
- * asserted is the thing that matters: the hash an import writes is the hash platform login
- * verifies, and a password set in Grant is not an import's to overwrite.
+ * The real `ProjectImportService` with the default entity registry runs against in-memory
+ * authentication methods and a credential service that fails the test if it is called. The
+ * v1.16.0 global slot (`providerData.hashedPassword` + `passwordSource`) is gone and the
+ * project credential that replaces it lands in the next slice, so in this slice an import
+ * validates a password and then ignores it, with a warning. Nothing is written anywhere.
  */
 import {
-  AccountType,
   CdmFindBy,
   CdmModeStrategy,
   CdmPasswordAlgorithm,
   type Scope,
   Tenant,
-  UserAuthenticationEmailProviderAction,
   UserAuthenticationMethodProvider,
 } from '@grantjs/schema';
 import { genSaltSync, hashSync } from 'bcrypt';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  CDM_IMPORT_METADATA_KEY,
-  PASSWORD_SOURCE_CDM_IMPORT,
-  PASSWORD_SOURCE_PROVIDER_DATA_KEY,
-} from '@/constants/cdm-import.constants';
-import { AuthHandler } from '@/handlers/auth.handler';
+import { CDM_IMPORT_METADATA_KEY } from '@/constants/cdm-import.constants';
 import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
-import { AuthenticationError } from '@/lib/errors';
 import { ProjectImportService } from '@/services/project-import.service';
 import { UserAuthenticationMethodService } from '@/services/user-authentication-methods.service';
 
 const accountId = '10000000-0000-4000-8000-000000000020';
 const projectId = '10000000-0000-4000-8000-000000000011';
-const otherProjectId = '10000000-0000-4000-8000-000000000012';
 const scope: Scope = { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` };
-const otherScope: Scope = {
-  tenant: Tenant.AccountProject,
-  id: `${accountId}:${otherProjectId}`,
-};
 const tx = {};
 
-/** `bcrypt.GenerateFromPassword([]byte("Legacy-Passw0rd!"), bcrypt.DefaultCost)` from Go's x/crypto. */
-const GO_PASSWORD = 'Legacy-Passw0rd!';
+/** A hash as Go's x/crypto writes it (`bcrypt.GenerateFromPassword`, DefaultCost). */
 const GO_HASH = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
 
 const NODE_PASSWORD = 'Another-Passw0rd#';
@@ -216,6 +202,14 @@ class World {
     ),
   };
 
+  /** An import must not write any credential in this slice: every method fails the test. */
+  readonly credentials = {
+    setPassword: vi.fn(),
+    setPasswordHash: vi.fn(),
+    removeCredential: vi.fn(),
+    hasCredential: vi.fn().mockResolvedValue(false),
+  };
+
   readonly authService = new UserAuthenticationMethodService(
     this.repository as never,
     {} as never,
@@ -226,7 +220,8 @@ class World {
       logHardDelete: vi.fn(),
       logAction: vi.fn(),
     } as never,
-    { publish: vi.fn() } as never
+    { publish: vi.fn() } as never,
+    this.credentials as never
   );
 
   readonly importRepo = loose({ resolvePermission: { id: 'p', resourceId: 'r' } });
@@ -318,70 +313,12 @@ const counters = (r: Awaited<ReturnType<World['runImport']>>) => ({
   skipped: r.passwordsSkippedExisting,
 });
 
-/** The real magic-link resolution (`project-oauth.handler` calls it), which verifies the address. */
-async function verifyThroughMagicLink(world: World, email: string) {
-  const handler = new AuthHandler(
-    world.authService as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    { withTransaction: (fn: (t: unknown) => unknown) => fn(tx) } as never,
-    {} as never
-  );
-  return handler.resolveUserIdFromEmailForProject(email, tx as never);
-}
+const passwordWarnings = (r: { warnings: string[] }) =>
+  r.warnings.filter((w) => /password/i.test(w));
 
-async function loginWith(world: World, email: string, password: string) {
-  const mockUsers = {
-    getUsers: vi.fn().mockResolvedValue({
-      totalCount: 1,
-      users: [
-        { id: world.email.userId, accounts: [{ id: 'account-1', type: AccountType.Personal }] },
-      ],
-    }),
-    createUser: vi.fn(),
-    countHumanUsers: vi.fn(),
-  };
-  const mockUserSessions = {
-    getUserSessions: vi.fn().mockResolvedValue({ userSessions: [] }),
-    createSession: vi.fn().mockResolvedValue({ accessToken: 'access', refreshToken: 'refresh' }),
-    refreshSessionLastUsed: vi.fn(),
-    signSession: vi.fn(),
-  };
-  const handler = new AuthHandler(
-    world.authService as never,
-    mockUsers as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    { hasActiveMfaEnrollment: vi.fn().mockResolvedValue(false) } as never,
-    mockUserSessions as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    { withTransaction: (fn: (t: unknown) => unknown) => fn(tx) } as never,
-    {} as never
-  );
-  return handler.login({
-    input: {
-      provider: UserAuthenticationMethodProvider.Email,
-      providerId: email,
-      providerData: { password, action: UserAuthenticationEmailProviderAction.Login },
-    },
-  });
-}
+const NO_COUNTERS = { imported: 0, updated: 0, unchanged: 0, skipped: 0 };
 
-describe('CDM import of bcrypt password hashes (ADR 0010)', () => {
+describe('CDM import with a password (ADR 0011 slice 2: validated, then ignored)', () => {
   let world: World;
 
   beforeEach(() => {
@@ -389,332 +326,75 @@ describe('CDM import of bcrypt password hashes (ADR 0010)', () => {
     world = new World();
   });
 
-  describe('first import', () => {
-    it('stores the hash where platform login reads it, marked as imported, and login succeeds with the original plaintext', async () => {
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
+  it('provisions the identity without any password, warns, and moves no counter', async () => {
+    const result = await world.runImport([userWithPassword(GO_HASH)]);
 
-      expect(counters(result)).toEqual({ imported: 1, updated: 0, unchanged: 0, skipped: 0 });
-      expect(world.email.providerData).toEqual({
-        hashedPassword: GO_HASH,
-        [PASSWORD_SOURCE_PROVIDER_DATA_KEY]: PASSWORD_SOURCE_CDM_IMPORT,
-      });
-      expect(world.email.isVerified).toBe(false);
-
-      // The Go-generated `$2a$10$` hash verifies with node bcrypt through the unchanged login.
-      const session = await loginWith(world, EMAIL, GO_PASSWORD);
-      expect(session.accessToken).toBe('access');
-      expect(session.requiresEmailVerification).toBe(true);
-
-      await expect(loginWith(world, EMAIL, `${GO_PASSWORD}x`)).rejects.toBeInstanceOf(
-        AuthenticationError
-      );
-    });
-
-    it('accepts a node-generated $2a$ hash the same way', async () => {
-      expect(NODE_HASH.startsWith('$2a$10$')).toBe(true);
-      await world.runImport([userWithPassword(NODE_HASH)]);
-
-      const session = await loginWith(world, EMAIL, NODE_PASSWORD);
-      expect(session.accessToken).toBe('access');
-    });
-
-    it('creates a passwordless identity when the document carries no password', async () => {
-      const result = await world.runImport([userWithPassword(null)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 0 });
-      expect(world.email.providerData).toEqual({});
-      await expect(loginWith(world, EMAIL, GO_PASSWORD)).rejects.toBeInstanceOf(
-        AuthenticationError
-      );
-    });
-
-    it('writes the hash to the credential store and nowhere else', async () => {
-      const result = await world.runImport([
-        { ...userWithPassword(GO_HASH), metadata: { legacy: { id: '7' } }, searchable: { n: 1 } },
-      ]);
-
-      const elsewhere = JSON.stringify({
-        createUser: world.calls.createUser,
-        userMetadata: [...world.users.values()],
-        warnings: result.warnings,
-        result,
-      });
-      expect(elsewhere).not.toContain(GO_HASH);
-      // The one place it is: the create call for the email method (never audited with it).
-      expect(JSON.stringify(world.calls.create)).toContain(GO_HASH);
-    });
+    expect(counters(result)).toEqual(NO_COUNTERS);
+    expect(result.usersCreated).toBe(1);
+    expect(world.email.providerData).toEqual({});
+    expect(world.email.isVerified).toBe(false);
+    expect(passwordWarnings(result)).toEqual([
+      expect.stringContaining('1 password(s) were not imported'),
+    ]);
+    expect(world.credentials.setPassword).not.toHaveBeenCalled();
+    expect(world.credentials.setPasswordHash).not.toHaveBeenCalled();
   });
 
-  describe('re-import', () => {
-    it('leaves an identical hash alone', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-      world.calls.update.length = 0;
-
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 1, skipped: 0 });
-      expect(world.calls.update).toEqual([]);
+  it('never carries a hash or a marker into the Email method, for any identity', async () => {
+    world.seedMethod({ providerId: EMAIL, isVerified: true }, projectId);
+    world.seedMethod({ providerId: 'unverified@example.test', isVerified: false }, projectId);
+    world.seedMethod({
+      providerId: 'someone',
+      provider: UserAuthenticationMethodProvider.Github,
+      providerData: { email: 'gh@example.test' },
     });
 
-    it('replaces an imported credential when the legacy hash changed', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
+    await world.runImport([
+      userWithPassword(GO_HASH),
+      userWithPassword(NODE_HASH, 'unverified@example.test'),
+      userWithPassword(GO_HASH, 'gh@example.test'),
+    ]);
 
-      const result = await world.runImport([userWithPassword(NODE_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 1, unchanged: 0, skipped: 0 });
-      expect(world.email.providerData).toEqual({
-        hashedPassword: NODE_HASH,
-        [PASSWORD_SOURCE_PROVIDER_DATA_KEY]: PASSWORD_SOURCE_CDM_IMPORT,
-      });
-      expect((await loginWith(world, EMAIL, NODE_PASSWORD)).accessToken).toBe('access');
-      await expect(loginWith(world, EMAIL, GO_PASSWORD)).rejects.toBeInstanceOf(
-        AuthenticationError
-      );
-    });
-
-    it('adds a credential to an identity an earlier import of this project created without one', async () => {
-      await world.runImport([userWithPassword(null)]);
-
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 1, updated: 0, unchanged: 0, skipped: 0 });
-      expect((await loginWith(world, EMAIL, GO_PASSWORD)).accessToken).toBe('access');
-    });
-
-    it('never deletes a credential: an absent password field leaves it as it is', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-      world.calls.update.length = 0;
-
-      const result = await world.runImport([userWithPassword(null)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 0 });
-      expect(world.calls.update).toEqual([]);
-      expect(world.email.providerData.hashedPassword).toBe(GO_HASH);
-    });
-  });
-
-  describe('verification is the handover to Grant', () => {
-    it('does not replace an import-marked credential once the address is verified', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-      world.email.isVerified = true;
-      expect(world.email.providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY]).toBe(
-        PASSWORD_SOURCE_CDM_IMPORT
-      );
-      world.calls.update.length = 0;
-
-      const result = await world.runImport([userWithPassword(NODE_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.calls.update).toEqual([]);
-      expect(world.email.providerData.hashedPassword).toBe(GO_HASH);
-      expect((await loginWith(world, EMAIL, GO_PASSWORD)).accessToken).toBe('access');
-      await expect(loginWith(world, EMAIL, NODE_PASSWORD)).rejects.toBeInstanceOf(
-        AuthenticationError
-      );
-    });
-
-    it('counts an identical hash on a verified method as skipped, and writes nothing', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-      world.email.isVerified = true;
-      world.calls.update.length = 0;
-
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.calls.update).toEqual([]);
-    });
-
-    it('stops replacing after the magic link verifies the address', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-
-      // Unverified: still the legacy system's to update.
-      const before = await world.runImport([userWithPassword(NODE_HASH)]);
-      expect(counters(before)).toEqual({ imported: 0, updated: 1, unchanged: 0, skipped: 0 });
-
-      await verifyThroughMagicLink(world, EMAIL);
-      expect(world.email.isVerified).toBe(true);
-      expect(world.email.providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY]).toBe(
-        PASSWORD_SOURCE_CDM_IMPORT
-      );
-
-      const after = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(after)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData.hashedPassword).toBe(NODE_HASH);
-    });
-
-    it('does not add a credential to a verified identity either', async () => {
-      await world.runImport([userWithPassword(null)]);
-      await verifyThroughMagicLink(world, EMAIL);
-
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData).toEqual({});
-    });
-  });
-
-  describe('a password set in Grant is Grant-owned from then on', () => {
-    async function importedThen(change: (w: World, userId: string) => Promise<void>) {
-      await world.runImport([userWithPassword(GO_HASH)]);
-      const { userId } = world.email;
-      await change(world, userId);
-      const afterChange = { ...world.email.providerData };
-
-      const result = await world.runImport([userWithPassword(NODE_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData).toEqual(afterChange);
-      expect(world.email.providerData.hashedPassword).not.toBe(NODE_HASH);
-      expect(result.warnings.join('\n')).not.toContain(NODE_HASH);
+    for (const method of world.methods) {
+      expect(JSON.stringify(method.providerData)).not.toContain('hashedPassword');
+      expect(JSON.stringify(method.providerData)).not.toContain('passwordSource');
+      expect(JSON.stringify(method.providerData)).not.toContain('$2');
     }
-
-    it('changePassword clears the marker, and the next import does not overwrite', async () => {
-      await importedThen(async (w, userId) => {
-        await w.authService.changePassword(userId, GO_PASSWORD, 'Grant-Side-Passw0rd!');
-        expect(w.email.providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY]).toBeUndefined();
-        expect(w.email.providerData.hashedPassword).not.toBe(GO_HASH);
-      });
-    });
-
-    it('resetPassword clears the marker, and the next import does not overwrite', async () => {
-      await importedThen(async (w) => {
-        w.email.providerData = {
-          ...w.email.providerData,
-          passwordResetOtp: { token: 'reset-token', validUntil: Date.now() + 60_000 },
-        };
-        const reset = await w.authService.resetPassword('reset-token', 'Reset-Passw0rd!');
-        expect(reset).toBe(w.email.userId);
-        expect(w.email.providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY]).toBeUndefined();
-      });
-    });
-
-    it('a password with no marker (set in Grant before any import) is never overwritten', async () => {
-      world.seedMethod(
-        {
-          providerId: EMAIL,
-          providerData: { hashedPassword: hashSync('Grant-Passw0rd!', 4) },
-        },
-        projectId
-      );
-      const before = { ...world.email.providerData };
-
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData).toEqual(before);
-    });
+    expect(world.calls.update).toEqual([]);
+    expect(JSON.stringify(world.calls.create)).not.toContain('$2');
   });
 
-  describe('replace mode', () => {
-    it('keeps the credential of a user it re-creates, and tears down no authentication method', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-      world.calls.update.length = 0;
-      world.calls.create.length = 0;
+  it('counts every ignored password in one warning, across all rows', async () => {
+    const result = await world.runImport([
+      userWithPassword(GO_HASH),
+      userWithPassword(NODE_HASH, 'grace@example.test'),
+      userWithPassword(null, 'no-password@example.test'),
+    ]);
 
-      const same = await world.runImport([userWithPassword(GO_HASH)], {
-        strategy: CdmModeStrategy.Replace,
-      });
-      const absent = await world.runImport([userWithPassword(null)], {
-        strategy: CdmModeStrategy.Replace,
-      });
-      const dropped = await world.runImport([], { strategy: CdmModeStrategy.Replace });
-
-      expect(counters(same)).toEqual({ imported: 0, updated: 0, unchanged: 1, skipped: 0 });
-      expect(counters(absent)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 0 });
-      expect(counters(dropped)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 0 });
-      expect(world.calls.update).toEqual([]);
-      expect(world.calls.create).toEqual([]);
-      expect(world.methods).toHaveLength(1);
-      // The replace teardown ran (it asked the repository what to remove) and none of what it
-      // asked about is a user or an authentication method.
-      const teardownCalls = Object.keys(world.importRepo as object).length;
-      expect(teardownCalls).toBeGreaterThan(0);
-      expect(
-        Object.keys(world.importRepo as object).filter((name) =>
-          /user(?!.*(Tag|Group|Permission|ApiKey|Role))|authentication/i.test(name)
-        )
-      ).toEqual([]);
-      expect(world.email.providerData.hashedPassword).toBe(GO_HASH);
-      expect((await loginWith(world, EMAIL, GO_PASSWORD)).accessToken).toBe('access');
-    });
-
-    it('can still replace an imported credential with a changed hash', async () => {
-      await world.runImport([userWithPassword(GO_HASH)]);
-
-      const result = await world.runImport([userWithPassword(NODE_HASH)], {
-        strategy: CdmModeStrategy.Replace,
-      });
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 1, unchanged: 0, skipped: 0 });
-    });
+    expect(passwordWarnings(result)).toEqual([
+      expect.stringContaining('2 password(s) were not imported'),
+    ]);
+    expect(counters(result)).toEqual(NO_COUNTERS);
   });
 
-  describe('identities that are not this import to write', () => {
-    it('does not put a password on a user who registered in Grant (verified, passwordless)', async () => {
-      world.seedMethod({ providerId: EMAIL, isVerified: true });
+  it('does not warn for a document without passwords', async () => {
+    const result = await world.runImport([userWithPassword(null)]);
+    expect(passwordWarnings(result)).toEqual([]);
+    expect(result.usersCreated).toBe(1);
+  });
 
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
+  it('still rejects a password that is not a valid bcrypt hash, so a bad document fails as before', async () => {
+    await expect(world.runImport([userWithPassword('not-a-bcrypt-hash')])).rejects.toThrow();
+    expect(world.methods).toHaveLength(0);
+  });
 
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData).toEqual({});
-      expect(result.warnings.join('\n')).toMatch(/passwordsSkippedExisting/);
-      expect(result.warnings.join('\n')).not.toContain(EMAIL);
-    });
+  it('does not delete or alter anything a user already has, in replace mode either', async () => {
+    const existing = world.seedMethod({ providerId: EMAIL, isVerified: true }, projectId);
+    const before = JSON.stringify(existing);
 
-    it('does not put a password on an unverified passwordless user that no import of this project created', async () => {
-      world.seedMethod({ providerId: EMAIL, isVerified: false });
+    await world.runImport([userWithPassword(GO_HASH)], { strategy: CdmModeStrategy.Replace });
 
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData).toEqual({});
-    });
-
-    it('does not put a password on an identity provisioned by another project', async () => {
-      world.seedMethod({ providerId: EMAIL, isVerified: false }, otherProjectId);
-
-      const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData).toEqual({});
-    });
-
-    it("does not replace another project's imported credential", async () => {
-      await world.runImport([userWithPassword(GO_HASH)], { scope: otherScope });
-
-      const result = await world.runImport([userWithPassword(NODE_HASH)]);
-
-      expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-      expect(world.email.providerData.hashedPassword).toBe(GO_HASH);
-    });
-
-    it('does not put a password on a user known only through GitHub or Google', async () => {
-      const oauthData = { email: EMAIL, emailVerified: true };
-      for (const provider of [
-        UserAuthenticationMethodProvider.Github,
-        UserAuthenticationMethodProvider.Google,
-      ]) {
-        world = new World();
-        const oauth = world.seedMethod({
-          provider,
-          providerId: '4242',
-          providerData: { ...oauthData },
-          isVerified: true,
-        });
-
-        const result = await world.runImport([userWithPassword(GO_HASH)]);
-
-        expect(counters(result)).toEqual({ imported: 0, updated: 0, unchanged: 0, skipped: 1 });
-        // Nothing was written to the OAuth identity, and no hash exists anywhere in the store.
-        expect(oauth.providerData).toEqual(oauthData);
-        expect(world.calls.update).toEqual([]);
-        expect(JSON.stringify(world.methods)).not.toContain(GO_HASH);
-        const created = world.methods.find(
-          (m) => m.provider === UserAuthenticationMethodProvider.Email
-        );
-        expect(created?.providerData ?? {}).toEqual({});
-      }
-    });
+    expect(JSON.stringify(world.email)).toBe(before);
+    expect(world.credentials.removeCredential).not.toHaveBeenCalled();
   });
 });

@@ -136,6 +136,19 @@ with the membership row, and its `metadata` is exported and searched, which 0010
 for the hash); keeping the hash in the method's `providerData` with a project key (same race, and
 the RLS-blind reads of #544); a credential per `ProjectApp` (finer than needed, deferred in 0008).
 
+_Implementation note (slice 2): the separation is database-enforced._ "A platform query cannot
+name a project row, a project-scoped import cannot name a platform row" first held in code only:
+migration 0042 gives the restricted role (`grant_app_restricted`) default privileges on every new
+table, so it could read `user_credentials`. Since slice 2 (migration 0088) the restricted role has
+**no privileges** on `user_credentials`, `user_credential_lockouts` and
+`user_credential_audit_logs`, so the separation holds in Postgres. The consequence is that
+platform-scope credential operations cannot run inside a scoped request's transaction: the credential
+service runs them on the base connection, inside the service (callers never choose a connection or
+pass a handle). An unscoped caller transaction (login, register, reset) is joined, so the credential
+commits with the caller's writes; a scoped request's operation runs in its own short transaction,
+outside the request transaction, and holds one extra pooled connection while it runs. The project
+tables are unchanged.
+
 ### 3. Platform scope
 
 - **Registration** creates the identity, the Email method (unverified, with its OTP) and the
@@ -378,6 +391,14 @@ tuples until vacuum, and backups keep the old value. Neither is scrubbed here.
 **same deployable unit** as this migration (§ Slicing), never before it: platform reset does not
 set `isVerified`, so removing the marker handling first would let the statement strip a Grant-set
 hash that still carried a leftover marker.
+
+_Implementation note (slice 2):_ today's `changePassword` does not revoke sessions (only the reset
+flow does, in `auth.handler.ts`); slice 2 keeps exactly that ("keeping today's rules"), so the
+sentence "both revoke platform sessions" in § 3 describes reset only. Until slice 3 lands an import
+that carries a `password` is validated and then ignored, with a warning in the job result and no
+counter moved: the v1.16.0 global slot is gone and the project credential it is replaced by is the
+next slice. A migrated database also loses the plain-text `passwordResetOtp` tokens (§ 3): an
+outstanding reset link stops working and the person requests a new one.
 
 ### 8. Security notes
 

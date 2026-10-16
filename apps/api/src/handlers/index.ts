@@ -69,6 +69,7 @@ export function createHandlers(
     services.email,
     services.auth,
     services.organizationInvitations,
+    services.credentials,
     cache,
     services,
     db,
@@ -174,6 +175,7 @@ export function createHandlers(
       services.userRoles,
       services.auth,
       services.accountRoles,
+      services.credentials,
       db
     ),
     organizationMembers: new OrganizationMembersHandler(

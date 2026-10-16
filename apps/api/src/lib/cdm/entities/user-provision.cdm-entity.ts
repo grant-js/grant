@@ -1,5 +1,3 @@
-import { timingSafeEqual } from 'node:crypto';
-
 import type {
   CdmApplyContext,
   CdmExportContext,
@@ -10,15 +8,13 @@ import type {
   IUserRepository,
   IUserService,
 } from '@grantjs/core';
-import { type UserAuthenticationMethod, UserAuthenticationMethodProvider } from '@grantjs/schema';
+import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
 import {
   buildCdmImportMetadata,
   CDM_IMPORT_METADATA_KEY,
   CDM_SOURCE_METADATA_KEY,
   mergeCdmImporterMetadata,
-  PASSWORD_SOURCE_CDM_IMPORT,
-  PASSWORD_SOURCE_PROVIDER_DATA_KEY,
 } from '@/constants/cdm-import.constants';
 import { ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -94,7 +90,6 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     input: readonly CdmUserProvisionInternal[]
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
-    const skippedBefore = ctx.result.passwordsSkippedExisting;
     for (const row of input) {
       if (row.findBy === 'email') {
         await this.applyEmailIdentity(ctx, row, tx);
@@ -124,10 +119,15 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       ctx.result.usersCreated += 1;
     }
 
-    const skipped = ctx.result.passwordsSkippedExisting - skippedBefore;
-    if (skipped > 0) {
+    // ADR 0011: an import no longer writes a password into the global Email method (the
+    // v1.16.0 slot is gone), and the project credential it writes instead lands in the
+    // next slice. Until then a password is validated (above) and then ignored, with this
+    // warning, so no document fails and nobody believes a password was stored. No
+    // `passwords*` counter moves: none of them is true for a password that was not written.
+    const ignored = input.filter((row) => row.password != null).length;
+    if (ignored > 0) {
       ctx.result.warnings.push(
-        `${skipped} password(s) were not imported because the email identity or its credential is not this import's to write (counted in passwordsSkippedExisting)`
+        `${ignored} password(s) were not imported: password import is suspended until project credentials are available (ADR 0011); the users were provisioned without a password`
       );
     }
   }
@@ -152,16 +152,6 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
           tx
         );
       }
-      if (row.password) {
-        // Only an Email method is ever a target. An identity found through GitHub or Google
-        // is a real account that was not created by an import, so it is never this import's
-        // to write to (the Email method added above for GitHub stays passwordless).
-        if (existingAuthMethod.provider === UserAuthenticationMethodProvider.Email) {
-          await this.applyPasswordToExistingMethod(ctx, row, existingAuthMethod, tx);
-        } else {
-          ctx.result.passwordsSkippedExisting += 1;
-        }
-      }
       this.recordProducedUser(ctx, row.externalKey, existingAuthMethod.userId);
       return;
     }
@@ -180,12 +170,11 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
           userId: existingCdmUserId,
           provider: UserAuthenticationMethodProvider.Email,
           providerId: row.externalKey,
-          providerData: importedCredentialProviderData({}, row),
+          providerData: {},
           isVerified: false,
         },
         tx
       );
-      if (row.password) ctx.result.passwordsImported += 1;
       this.recordProducedUser(ctx, row.externalKey, existingCdmUserId);
       return;
     }
@@ -200,93 +189,13 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         userId: user.id,
         provider: UserAuthenticationMethodProvider.Email,
         providerId: row.externalKey,
-        providerData: importedCredentialProviderData({}, row),
+        providerData: {},
         isVerified: false,
       },
       tx
     );
-    if (row.password) ctx.result.passwordsImported += 1;
     this.recordProducedUser(ctx, row.externalKey, user.id);
     ctx.result.usersCreated += 1;
-  }
-
-  /**
-   * An identity that already exists before this row is applied.
-   *
-   * The credential is global, so a project's document may only write one it has a claim
-   * to (ADR 0010 § Security notes): an identity an earlier import of this project
-   * created. Anything else (a user who registered, signed in with GitHub or Google, or
-   * was provisioned by another project) is somebody else's account, and importing a
-   * password onto it would let a project administrator sign in as that person.
-   *
-   * Within that claim, ownership is forward-only. An import-sourced credential belongs to
-   * the importing system only while the address is unverified: then a different hash
-   * replaces it and an identical one is a no-op. A credential set in Grant (no marker), or
-   * any credential on a verified method, is never touched. An absent `password` never
-   * reaches this method, so an import never deletes a credential.
-   */
-  private async applyPasswordToExistingMethod(
-    ctx: CdmApplyContext,
-    row: CdmUserProvisionInternal,
-    method: UserAuthenticationMethod,
-    tx: Transaction
-  ): Promise<void> {
-    const incoming = row.password!.hash;
-    const providerData = (method.providerData as Record<string, unknown> | null) ?? {};
-    const storedHash =
-      typeof providerData.hashedPassword === 'string' && providerData.hashedPassword.length > 0
-        ? providerData.hashedPassword
-        : null;
-
-    const provisionedByThisProject =
-      (await this.userRepository.findUserIdByCdmImport(
-        { projectId: ctx.projectId, kind: 'user', externalKey: row.externalKey },
-        tx
-      )) === method.userId;
-    if (!provisionedByThisProject) {
-      ctx.result.passwordsSkippedExisting += 1;
-      return;
-    }
-
-    if (storedHash === null) {
-      if (method.isVerified) {
-        ctx.result.passwordsSkippedExisting += 1;
-        return;
-      }
-      await this.writeCredential(method, providerData, row, tx);
-      ctx.result.passwordsImported += 1;
-      return;
-    }
-
-    if (providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY] !== PASSWORD_SOURCE_CDM_IMPORT) {
-      ctx.result.passwordsSkippedExisting += 1;
-      return;
-    }
-    // Verification is the handover: once the owner has proved the mailbox, Grant owns the
-    // credential exactly as after changePassword or resetPassword, whatever the marker says.
-    if (method.isVerified) {
-      ctx.result.passwordsSkippedExisting += 1;
-      return;
-    }
-    if (sameHash(storedHash, incoming)) {
-      ctx.result.passwordsUnchanged += 1;
-      return;
-    }
-    await this.writeCredential(method, providerData, row, tx);
-    ctx.result.passwordsUpdated += 1;
-  }
-
-  private async writeCredential(
-    method: UserAuthenticationMethod,
-    providerData: Record<string, unknown>,
-    row: CdmUserProvisionInternal,
-    tx: Transaction
-  ): Promise<void> {
-    await this.userAuthenticationMethods.updateUserAuthenticationMethod(
-      method.id,
-      { providerData: importedCredentialProviderData(providerData, row) },
-      tx
-    );
   }
 
   private recordProducedUser(ctx: CdmApplyContext, externalKey: string, userId: string): void {
@@ -311,31 +220,6 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       };
     });
   }
-}
-
-/**
- * `providerData` for an email method carrying the imported credential: the hash where
- * platform login reads it (`hashedPassword`, as `changePassword` writes it) and the marker
- * that the importing system still owns it. Without a password, `base` unchanged.
- */
-function importedCredentialProviderData(
-  base: Record<string, unknown>,
-  row: CdmUserProvisionInternal
-): Record<string, unknown> {
-  if (!row.password) {
-    return base;
-  }
-  return {
-    ...base,
-    hashedPassword: row.password.hash,
-    [PASSWORD_SOURCE_PROVIDER_DATA_KEY]: PASSWORD_SOURCE_CDM_IMPORT,
-  };
-}
-
-function sameHash(stored: string, incoming: string): boolean {
-  const a = Buffer.from(stored);
-  const b = Buffer.from(incoming);
-  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 function extractCdmSourceMetadata(

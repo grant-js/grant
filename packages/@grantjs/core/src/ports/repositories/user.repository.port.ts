@@ -218,6 +218,15 @@ export interface IUserAuthenticationMethodRepository extends IEntityExistence {
 
   findByToken(token: string, transaction?: unknown): Promise<UserAuthenticationMethod | null>;
 
+  /**
+   * The Email method holding a password-reset token, found by the SHA-256 of the token
+   * (ADR 0011 § 3). The token itself is never stored, so it is never scanned for.
+   */
+  findByPasswordResetTokenHash(
+    tokenHash: string,
+    transaction?: unknown
+  ): Promise<UserAuthenticationMethod | null>;
+
   findByEmail(email: string, transaction?: unknown): Promise<UserAuthenticationMethod | null>;
 }
 

@@ -67,6 +67,7 @@ const mockUserSessions = {
 const mockEmail = { sendOtp: vi.fn(), sendPasswordReset: vi.fn(), sendInvitation: vi.fn() };
 const mockAuth = { getAuth: vi.fn(), isPersonalScope: vi.fn() };
 const mockOrganizationInvitations = { getInvitationByToken: vi.fn() };
+const mockCredentials = { setPassword: vi.fn(), verifyPassword: vi.fn() };
 const mockCache = { get: vi.fn(), set: vi.fn(), delete: vi.fn(), clear: vi.fn() };
 const mockScopeServices = {};
 const mockDb = { withTransaction: mockWithTransaction };
@@ -83,6 +84,7 @@ function createHandler() {
     mockEmail as never,
     mockAuth as never,
     mockOrganizationInvitations as never,
+    mockCredentials as never,
     mockCache as never,
     mockScopeServices as never,
     mockDb as never,

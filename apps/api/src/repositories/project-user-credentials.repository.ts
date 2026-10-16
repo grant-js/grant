@@ -77,6 +77,27 @@ export class ProjectUserCredentialRepository implements ICredentialRepository<Pr
     return row ? { ...toRecord(row), hash: row.hash } : null;
   }
 
+  async lockActive(
+    scope: ProjectCredentialScope,
+    userId: string,
+    transaction?: Transaction
+  ): Promise<CredentialWithHash | null> {
+    const dbInstance = transaction ?? this.db;
+    const [row] = await dbInstance
+      .select({ ...recordColumns, hash: projectUserCredentials.hash })
+      .from(projectUserCredentials)
+      .where(
+        and(
+          eq(projectUserCredentials.projectId, scope.projectId),
+          eq(projectUserCredentials.userId, userId),
+          isNull(projectUserCredentials.deletedAt)
+        )
+      )
+      .limit(1)
+      .for('update');
+    return row ? { ...toRecord(row), hash: row.hash } : null;
+  }
+
   async upsert(
     scope: ProjectCredentialScope,
     input: CredentialWriteInput,

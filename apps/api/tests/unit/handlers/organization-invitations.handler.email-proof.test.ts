@@ -40,6 +40,8 @@ const mockAccountRoles = { seedAccountRoles: vi.fn() };
 const mockWithTransaction = vi.fn((fn: (transaction: unknown) => Promise<unknown>) => fn(tx));
 const mockDb = { withTransaction: mockWithTransaction };
 
+const mockCredentials = { setPassword: vi.fn() };
+
 function createHandler(): OrganizationInvitationsHandler {
   return new OrganizationInvitationsHandler(
     mockOrganizationInvitations as never,
@@ -54,6 +56,7 @@ function createHandler(): OrganizationInvitationsHandler {
     mockUserRoles as never,
     mockAuth as never,
     mockAccountRoles as never,
+    mockCredentials as never,
     mockDb as never
   );
 }

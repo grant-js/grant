@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  ICredentialService,
   IEventPublisher,
   IUserAuthenticationMethodRepository,
   IUserAuthenticationMethodService,
@@ -16,10 +17,7 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
-import { PASSWORD_SOURCE_PROVIDER_DATA_KEY } from '@/constants/cdm-import.constants';
-import { authMethodHasPassword } from '@/lib/auth-method-public.lib';
 import {
-  AuthenticationError,
   BadRequestError,
   ConflictError,
   InvalidOrUsedVerificationTokenError,
@@ -28,12 +26,18 @@ import {
 } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { normalizeVerifiedContactEmail } from '@/lib/oauth-contact-email.lib';
-import { generateSecureToken, hashSecret, isTokenValid, verifySecret } from '@/lib/token.lib';
+import { generateSecureToken, hashToken, isTokenValid, tokenHashesEqual } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { Otp } from '@/types';
 import { DeleteParams, SelectedFields } from '@/types';
 
-import { createDynamicSingleSchema, emailSchema, validateInput, validateOutput } from './common';
+import {
+  createDynamicSingleSchema,
+  emailSchema,
+  validateInput,
+  validateOutput,
+  validateSecretInput,
+} from './common';
 import {
   createUserAuthenticationMethodInputSchema,
   deleteUserAuthenticationMethodArgsSchema,
@@ -51,13 +55,18 @@ interface ProcessedProvider {
   providerData: Record<string, unknown>;
   isVerified: boolean;
   name: string;
+  /** Validated plaintext password of a Register or Connect, for the credential service. */
+  password?: string;
 }
 
+/**
+ * `hasPassword` is "a platform credential exists" (ADR 0011 § 3), which lives outside the
+ * method row. The getters below do not look it up (most callers never read it, and a lookup
+ * is a second connection in a scoped request), so it is `false` on what they return. A caller
+ * that needs the real value asks `hasPlatformPassword`.
+ */
 function withHasPassword(method: UserAuthenticationMethod): UserAuthenticationMethod {
-  return {
-    ...method,
-    hasPassword: authMethodHasPassword(method),
-  };
+  return { ...method, hasPassword: false };
 }
 
 export class UserAuthenticationMethodService implements IUserAuthenticationMethodService {
@@ -67,8 +76,13 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     private readonly userAuthenticationMethodRepository: IUserAuthenticationMethodRepository,
     private readonly userSessionRepository: IUserSessionRepository,
     private readonly audit: IAuditLogger,
-    private readonly events: IEventPublisher
+    private readonly events: IEventPublisher,
+    private readonly credentials: ICredentialService
   ) {}
+
+  public async hasPlatformPassword(userId: string, transaction?: Transaction): Promise<boolean> {
+    return this.credentials.hasCredential({ scope: 'platform' }, userId, transaction);
+  }
 
   public async getUserAuthenticationMethod(
     id: string,
@@ -318,6 +332,16 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
           transaction
         );
 
+    if (oldUserAuthenticationMethod.provider === UserAuthenticationMethodProvider.Email) {
+      // After the method is gone (a failed delete must not strand its owner without a password): the platform password belonged to the Email method (it was in its providerData);
+      // it must not outlive it, or it would sign in to whatever email is added next.
+      await this.credentials.removeCredential(
+        { scope: 'platform' },
+        oldUserAuthenticationMethod.userId,
+        transaction
+      );
+    }
+
     const oldValues = {
       id: oldUserAuthenticationMethod.id,
       userId: oldUserAuthenticationMethod.userId,
@@ -371,7 +395,12 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     const emailName = email.split('@')[0] || 'User';
 
-    const validatedProviderData = validateInput(emailProviderDataSchema, providerData, context);
+    // A password is in this object: `validateSecretInput` never echoes its input.
+    const validatedProviderData = validateSecretInput(
+      emailProviderDataSchema,
+      providerData,
+      context
+    );
 
     switch (validatedProviderData.action) {
       case UserAuthenticationEmailProviderAction.Login:
@@ -384,20 +413,19 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
         };
       case UserAuthenticationEmailProviderAction.Register:
       case UserAuthenticationEmailProviderAction.Connect: {
-        const validatedPassword = validateInput(
+        const validatedPassword = validateSecretInput(
           passwordPolicySchema,
           validatedProviderData.password,
           context
         );
-        const hashedPassword = hashSecret(validatedPassword);
         const otp = this.generateOtp();
+        // The password is not hashed or stored here: the caller hands it to the credential
+        // service, which owns hashing and storage. `providerData` carries the OTP only.
         return {
-          providerData: {
-            otp,
-            hashedPassword,
-          },
+          providerData: { otp },
           isVerified: false,
           name: emailName,
+          password: validatedPassword,
         };
       }
       default:
@@ -519,7 +547,8 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     providerData: Record<string, unknown>
   ): Promise<ProcessedProvider> {
     const context = 'UserAuthenticationMethodService.processProvider';
-    validateInput(parseProviderDataSchema, { providerId, provider, providerData }, context);
+    // `providerData` can hold a password: do not use `validateInput`, which echoes its input.
+    validateSecretInput(parseProviderDataSchema, { providerId, provider, providerData }, context);
 
     if (!providerData || typeof providerData !== 'object') {
       throw new ValidationError('Invalid provider data: must be a valid JSON object');
@@ -656,8 +685,11 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     const otp = this.generatePasswordResetOtp();
 
+    // Only a digest of the token is stored (ADR 0011 § 3): the plain token exists in the
+    // email and in the caller's hands, never in the database, so a copy of the row cannot
+    // be replayed and `resetPassword` can look it up by hash instead of scanning.
     const providerData = (method.providerData as Record<string, unknown>) || {};
-    providerData.passwordResetOtp = otp;
+    providerData.passwordResetOtp = { tokenHash: hashToken(otp.token), validUntil: otp.validUntil };
 
     await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       method.id,
@@ -675,46 +707,59 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     newPassword: string,
     transaction?: Transaction
   ): Promise<string | null> {
-    validateInput(passwordPolicySchema, newPassword, 'password');
+    const context = 'UserAuthenticationMethodService.resetPassword';
+    // A password: never `validateInput` (it echoes its input into the error).
+    validateSecretInput(passwordPolicySchema, newPassword, context);
 
-    const methods = await this.userAuthenticationMethodRepository.getUserAuthenticationMethods(
+    if (typeof token !== 'string' || token.length === 0 || token.length > 512) {
+      return null;
+    }
+
+    // Lookup by digest: one indexed query, not a scan of every Email method comparing
+    // plain-text tokens (ADR 0011 § 3).
+    const tokenHash = hashToken(token);
+    const targetMethod = await this.userAuthenticationMethodRepository.findByPasswordResetTokenHash(
+      tokenHash,
+      transaction
+    );
+    if (!targetMethod || targetMethod.provider !== UserAuthenticationMethodProvider.Email) {
+      return null;
+    }
+
+    const providerData = (targetMethod.providerData as Record<string, unknown>) || {};
+    const stored = providerData.passwordResetOtp as
+      { tokenHash?: unknown; validUntil?: unknown } | undefined;
+    if (
+      !stored ||
+      typeof stored.tokenHash !== 'string' ||
+      typeof stored.validUntil !== 'number' ||
+      !tokenHashesEqual(stored.tokenHash, tokenHash) ||
+      !isTokenValid({ token, validUntil: stored.validUntil })
+    ) {
+      return null;
+    }
+
+    const targetUserId = targetMethod.userId;
+
+    // Credential first, then the token is consumed: a failed write leaves the token
+    // usable, and a reset does not set `isVerified` (the mailbox proof is untouched).
+    await this.credentials.setPassword(
       {
-        provider: UserAuthenticationMethodProvider.Email,
-        requestedFields: ['id', 'userId', 'providerData'],
+        scope: { scope: 'platform' },
+        userId: targetUserId,
+        password: newPassword,
+        source: 'reset',
       },
       transaction
     );
 
-    let targetMethod: UserAuthenticationMethod | null = null;
-    let targetUserId: string | null = null;
-
-    for (const method of methods) {
-      const providerData = method.providerData as Record<string, unknown>;
-      const otp = providerData?.passwordResetOtp as Otp | undefined;
-
-      if (otp && otp.token === token && isTokenValid(otp)) {
-        targetMethod = method;
-        targetUserId = method.userId;
-        break;
-      }
-    }
-
-    if (!targetMethod || !targetUserId) {
-      return null;
-    }
-
-    const hashedPassword = hashSecret(newPassword);
-
-    const providerData = (targetMethod.providerData as Record<string, unknown>) || {};
-    providerData.hashedPassword = hashedPassword;
-    delete providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY];
-
-    delete providerData.passwordResetOtp;
+    const remainingProviderData = { ...providerData };
+    delete remainingProviderData.passwordResetOtp;
 
     await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
       targetMethod.id,
       {
-        providerData,
+        providerData: remainingProviderData,
       },
       transaction
     );
@@ -799,15 +844,11 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     newPassword: string,
     transaction?: Transaction
   ): Promise<void> {
-    const context = 'UserAuthenticationMethodService.changePassword';
-
-    validateInput(passwordPolicySchema, newPassword, context);
-
     const methods = await this.userAuthenticationMethodRepository.getUserAuthenticationMethods(
       {
         userId,
         provider: UserAuthenticationMethodProvider.Email,
-        requestedFields: ['id', 'userId', 'providerData'],
+        requestedFields: ['id', 'userId'],
       },
       transaction
     );
@@ -817,29 +858,12 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     }
 
     const emailMethod = methods[0];
-    const providerData = (emailMethod.providerData as Record<string, unknown>) || {};
-    const hashedPassword =
-      typeof providerData.hashedPassword === 'string' ? providerData.hashedPassword : undefined;
 
-    if (hashedPassword) {
-      if (!currentPassword) {
-        throw new BadRequestError('Current password is required');
-      }
-      if (!verifySecret(currentPassword, hashedPassword)) {
-        throw new AuthenticationError('Current password is incorrect');
-      }
-    }
-
-    const reason = hashedPassword ? 'change' : 'set';
-
-    providerData.hashedPassword = hashSecret(newPassword);
-    delete providerData[PASSWORD_SOURCE_PROVIDER_DATA_KEY];
-
-    await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
-      emailMethod.id,
-      {
-        providerData,
-      },
+    // Verify the current password and write the new hash in one transaction, row locked, on
+    // the connection the platform credential tables are reachable from (the credential
+    // service picks it; in a scoped request this is not the request transaction).
+    const { reason } = await this.credentials.changePlatformPassword(
+      { userId, currentPassword, newPassword },
       transaction
     );
 

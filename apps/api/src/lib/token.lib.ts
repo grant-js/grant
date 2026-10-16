@@ -1,6 +1,6 @@
 import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import { compareSync, hashSync } from 'bcrypt';
-import { randomBytes, randomUUID } from 'crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
 
 import { config } from '@/config';
 
@@ -45,4 +45,21 @@ export function hashSecret(value: string, rounds: number = config.token.bcryptRo
 
 export function verifySecret(value: string, hash: string): boolean {
   return compareSync(value, hash);
+}
+
+/**
+ * Deterministic digest of a high-entropy one-time token (a password-reset token), so it can
+ * be stored hashed and looked up by hash. bcrypt (`hashSecret`) is salted and cannot be
+ * looked up; it is also the wrong tool for a 256-bit random value, which cannot be guessed
+ * offline, so a fast digest is enough.
+ */
+export function hashToken(token: string): string {
+  return createHash('sha256').update(token, 'utf8').digest('hex');
+}
+
+/** Constant-time equality of two hex digests of equal length (`false` for different lengths). */
+export function tokenHashesEqual(a: string, b: string): boolean {
+  const left = Buffer.from(a, 'utf8');
+  const right = Buffer.from(b, 'utf8');
+  return left.length === right.length && timingSafeEqual(left, right);
 }
