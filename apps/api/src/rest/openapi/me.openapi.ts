@@ -425,6 +425,16 @@ This endpoint supports the GDPR "Right to Data Portability" requirement, allowin
                   createdAt: '2024-01-01T00:00:00.000Z',
                 },
               ],
+              credentials: [
+                {
+                  scope: 'platform',
+                  projectId: null,
+                  source: 'register',
+                  lastUsedAt: '2024-01-15T10:30:00.000Z',
+                  createdAt: '2024-01-01T00:00:00.000Z',
+                  updatedAt: '2024-01-01T00:00:00.000Z',
+                },
+              ],
               sessions: [
                 {
                   userAgent: 'Mozilla/5.0...',

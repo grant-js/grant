@@ -7,6 +7,10 @@ import { AccountRoleRepository } from './account-roles.repository';
 import { AccountTagsRepository } from './account-tags.repository';
 import { AccountRepository } from './accounts.repository';
 import { ApiKeyRepository } from './api-keys.repository';
+import {
+  ProjectUserCredentialLockoutRepository,
+  UserCredentialLockoutRepository,
+} from './credential-lockouts.repository';
 import { EventLogRepository } from './event-log.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
 import { GroupTagRepository } from './group-tags.repository';
@@ -40,6 +44,7 @@ import { ProjectRoleRepository } from './project-roles.repository';
 import { ProjectSyncJobRepository } from './project-sync-job.repository';
 import { ProjectTagRepository } from './project-tags.repository';
 import { ProjectUserApiKeyRepository } from './project-user-api-keys.repository';
+import { ProjectUserCredentialRepository } from './project-user-credentials.repository';
 import { ProjectUserGroupRepository } from './project-user-groups.repository';
 import { ProjectUserPermissionRepository } from './project-user-permissions.repository';
 import { ProjectUserRepository } from './project-users.repository';
@@ -53,6 +58,7 @@ import { RoleRepository } from './roles.repository';
 import { SigningKeyRepository } from './signing-keys.repository';
 import { TagRepository } from './tags.repository';
 import { UserAuthenticationMethodRepository } from './user-authentication-methods.repository';
+import { UserCredentialRepository } from './user-credentials.repository';
 import { UserGroupRepository } from './user-groups.repository';
 import { UserMfaFactorRepository } from './user-mfa-factors.repository';
 import { UserMfaRecoveryCodeRepository } from './user-mfa-recovery-codes.repository';
@@ -109,6 +115,8 @@ export function createRepositories(db: DbSchema) {
     signingKeyRepository: new SigningKeyRepository(db),
     projectTagRepository: new ProjectTagRepository(db),
     projectUserApiKeyRepository: new ProjectUserApiKeyRepository(db),
+    projectUserCredentialRepository: new ProjectUserCredentialRepository(db),
+    projectUserCredentialLockoutRepository: new ProjectUserCredentialLockoutRepository(db),
     projectUserRepository: new ProjectUserRepository(db),
     projectUserPermissionRepository: new ProjectUserPermissionRepository(db),
     projectUserGroupRepository: new ProjectUserGroupRepository(db),
@@ -121,6 +129,8 @@ export function createRepositories(db: DbSchema) {
     roleRepository: new RoleRepository(db),
     tagRepository: new TagRepository(db),
     userAuthenticationMethodRepository: new UserAuthenticationMethodRepository(db),
+    userCredentialRepository: new UserCredentialRepository(db),
+    userCredentialLockoutRepository: new UserCredentialLockoutRepository(db),
     userMfaFactorRepository: new UserMfaFactorRepository(db),
     userMfaRecoveryCodeRepository: new UserMfaRecoveryCodeRepository(db),
     userRoleRepository: new UserRoleRepository(db),

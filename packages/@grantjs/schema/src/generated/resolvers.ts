@@ -270,6 +270,7 @@ export type ResolversTypes = ResolversObject<{
   CreateUserInput: Types.CreateUserInput;
   CreateUserSessionInput: Types.CreateUserSessionInput;
   CreateWebhookSubscriptionMutationInput: Types.CreateWebhookSubscriptionMutationInput;
+  CredentialExportData: ResolverTypeWrapper<Types.CredentialExportData>;
   Date: ResolverTypeWrapper<Types.Scalars['Date']['output']>;
   DeleteApiKeyInput: Types.DeleteApiKeyInput;
   DeleteMyAccountsInput: Types.DeleteMyAccountsInput;
@@ -680,6 +681,7 @@ export type ResolversParentTypes = ResolversObject<{
   CreateUserInput: Types.CreateUserInput;
   CreateUserSessionInput: Types.CreateUserSessionInput;
   CreateWebhookSubscriptionMutationInput: Types.CreateWebhookSubscriptionMutationInput;
+  CredentialExportData: Types.CredentialExportData;
   Date: Types.Scalars['Date']['output'];
   DeleteApiKeyInput: Types.DeleteApiKeyInput;
   DeleteMyAccountsInput: Types.DeleteMyAccountsInput;
@@ -1293,6 +1295,19 @@ export type CreateProjectAppResultResolvers<
   name?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   redirectUris?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   signUpRoleId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+}>;
+
+export type CredentialExportDataResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['CredentialExportData'] =
+    ResolversParentTypes['CredentialExportData'],
+> = ResolversObject<{
+  createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  projectId?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
+  scope?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  source?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
 }>;
 
 export interface DateScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Date'], any> {
@@ -3469,6 +3484,7 @@ export type UserDataExportResolvers<
     ParentType,
     ContextType
   >;
+  credentials?: Resolver<Array<ResolversTypes['CredentialExportData']>, ParentType, ContextType>;
   exportedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   organizationMemberships?: Resolver<
     Array<ResolversTypes['OrganizationMembershipExportData']>,
@@ -3736,6 +3752,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   CreateApiKeyResult?: CreateApiKeyResultResolvers<ContextType>;
   CreateMySecondaryAccountResult?: CreateMySecondaryAccountResultResolvers<ContextType>;
   CreateProjectAppResult?: CreateProjectAppResultResolvers<ContextType>;
+  CredentialExportData?: CredentialExportDataResolvers<ContextType>;
   Date?: GraphQLScalarType;
   ExchangeApiKeyResult?: ExchangeApiKeyResultResolvers<ContextType>;
   Group?: GroupResolvers<ContextType>;

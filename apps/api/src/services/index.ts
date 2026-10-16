@@ -1,3 +1,4 @@
+import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import { Grant, GrantAuth, type ISecretResolver } from '@grantjs/core';
 import {
   accountAuditLogs,
@@ -37,6 +38,7 @@ import {
   projectTagAuditLogs,
   projectUserApiKeyAuditLogs,
   projectUserAuditLogs,
+  projectUserCredentialAuditLogs,
   projectUserGroupAuditLogs,
   projectUserPermissionAuditLogs,
   resourceAuditLogs,
@@ -49,6 +51,7 @@ import {
   tagAuditLogs,
   userAuditLogs,
   userAuthenticationMethodsAuditLogs,
+  userCredentialAuditLogs,
   userGroupsAuditLogs,
   userMfaFactorAuditLogs,
   userPermissionsAuditLogs,
@@ -57,6 +60,7 @@ import {
   userTagsAuditLogs,
 } from '@grantjs/database';
 
+import { config } from '@/config';
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { DrizzleEventPublisher, type ScheduleAfterCommit } from '@/lib/events';
@@ -77,6 +81,8 @@ import { AccountTagsService } from './account-tags.service';
 import { AccountService } from './accounts.service';
 import { ApiKeyService } from './api-keys.service';
 import { AuthService } from './auth.service';
+import { CredentialLockoutService } from './credential-lockouts.service';
+import { CredentialService } from './credentials.service';
 import { EmailService } from './email.service';
 import { EventRelayService } from './event-relay.service';
 import { FileStorageService } from './file-storage.service';
@@ -196,7 +202,32 @@ export function createServices(
     repositories.projectUserRepository
   );
   const fileStorage = new FileStorageService();
+  const lockoutDurationMs = config.auth.lockoutDurationMinutes * MILLISECONDS_PER_MINUTE;
+  const credentialLockouts = new CredentialLockoutService(
+    {
+      platform: repositories.userCredentialLockoutRepository,
+      project: repositories.projectUserCredentialLockoutRepository,
+    },
+    {
+      maxAttempts: config.auth.maxFailedLoginAttempts,
+      windowMs: lockoutDurationMs,
+      lockDurationMs: lockoutDurationMs,
+    }
+  );
+  const credentials = new CredentialService(
+    {
+      platform: repositories.userCredentialRepository,
+      project: repositories.projectUserCredentialRepository,
+    },
+    {
+      platform: audit(userCredentialAuditLogs, 'userCredentialId', user, db),
+      project: audit(projectUserCredentialAuditLogs, 'projectUserCredentialId', user, db),
+    },
+    credentialLockouts
+  );
   const servicesBase = {
+    credentials,
+    credentialLockouts,
     events,
     me: new MeService(
       repositories.userRepository,
@@ -282,7 +313,8 @@ export function createServices(
       repositories.userRepository,
       user,
       audit(userAuditLogs, 'userId', user, db),
-      fileStorage
+      fileStorage,
+      credentials
     ),
     userAuthenticationMethods: new UserAuthenticationMethodService(
       repositories.userAuthenticationMethodRepository,
@@ -448,6 +480,7 @@ export function createServices(
       audit(projectUserAuditLogs, 'projectUserId', user, db),
       events,
       fileStorage,
+      credentials,
       repositories.userAuthenticationMethodRepository
     ),
     projectUserPermissions: new ProjectUserPermissionService(

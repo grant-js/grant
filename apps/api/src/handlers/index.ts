@@ -93,6 +93,7 @@ export function createHandlers(
       services.auth,
       services.notifications,
       services.events,
+      services.credentials,
       cache,
       services,
       db

@@ -1,3 +1,4 @@
+import { CREDENTIAL_SOURCES } from '@grantjs/core';
 import { SortOrder, UserSortableField } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
@@ -270,6 +271,21 @@ export const exportUserDataResponseSchema = z.object({
       createdAt: z.string().datetime(),
     })
   ),
+  credentials: z
+    .array(
+      z.object({
+        scope: z.enum(['platform', 'project']),
+        projectId: z.uuid().nullable(),
+        source: z.enum(CREDENTIAL_SOURCES),
+        lastUsedAt: z.string().datetime().nullable(),
+        createdAt: z.string().datetime(),
+        updatedAt: z.string().datetime(),
+      })
+    )
+    .openapi({
+      description:
+        'Password credentials the user holds, per scope: existence, scope, source and dates. The hash is never exported.',
+    }),
   sessions: z.array(
     z.object({
       userAgent: z.string().nullable(),

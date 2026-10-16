@@ -2,6 +2,7 @@ type UserDataExport {
   user: UserExportData!
   accounts: [AccountExportData!]!
   authenticationMethods: [AuthenticationMethodExportData!]!
+  credentials: [CredentialExportData!]!
   sessions: [SessionExportData!]!
   organizationMemberships: [OrganizationMembershipExportData!]!
   projectMemberships: [ProjectMembershipExportData!]!
@@ -30,6 +31,21 @@ type AuthenticationMethodExportData {
   isPrimary: Boolean!
   lastUsedAt: Date
   createdAt: Date!
+}
+
+"""
+A password credential the user holds, per scope. Existence, scope, source and dates only:
+the hash is never exported.
+"""
+type CredentialExportData {
+  "platform (the Grant console) or project (that project's apps)"
+  scope: String!
+  "Set for a project credential"
+  projectId: ID
+  source: String!
+  lastUsedAt: Date
+  createdAt: Date!
+  updatedAt: Date!
 }
 
 type SessionExportData {

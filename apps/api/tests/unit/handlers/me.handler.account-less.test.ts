@@ -36,6 +36,7 @@ const userAuthenticationMethods = { getUserAuthenticationMethods: vi.fn() };
 const userSessions = { getUserSessions: vi.fn() };
 const organizationUsers = { getUserOrganizationMemberships: vi.fn() };
 const projectUsers = { getUserProjectMemberships: vi.fn() };
+const credentials = { listForUser: vi.fn() };
 
 function createHandler() {
   return new MeHandler(
@@ -54,6 +55,7 @@ function createHandler() {
     { getAuth: () => ({ userId: USER_ID }) } as never,
     {} as never,
     {} as never,
+    credentials as never,
     {} as never,
     {} as never,
     { withTransaction: (fn: (t: unknown) => Promise<unknown>) => fn(tx) } as never
@@ -168,6 +170,7 @@ describe('privacy operations without an account', () => {
       },
     ]);
     accounts.getAccountsByOwnerId.mockResolvedValue([]);
+    credentials.listForUser.mockResolvedValue([]);
     userSessions.getUserSessions.mockResolvedValue({ userSessions: [] });
     organizationUsers.getUserOrganizationMemberships.mockResolvedValue([]);
     projectUsers.getUserProjectMemberships.mockResolvedValue([

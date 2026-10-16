@@ -1,6 +1,7 @@
 import {
   GrantAuth,
   type IAuditLogger,
+  type ICredentialService,
   type IFileStorageService,
   type IUserRepository,
   type IUserService,
@@ -47,7 +48,8 @@ export class UserService implements IUserService {
     private readonly userRepository: IUserRepository,
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
-    private readonly fileStorage: IFileStorageService
+    private readonly fileStorage: IFileStorageService,
+    private readonly credentials: ICredentialService
   ) {}
 
   private async getUser(userId: string): Promise<User> {
@@ -210,6 +212,9 @@ export class UserService implements IUserService {
       : await this.userRepository.softDeleteUser(validatedParams, transaction);
 
     if (!isHardDelete) {
+      // A hard delete cascades to every credential row; a soft delete removes the user from
+      // sign-in, so their credentials (and lockout state) go with it, in this transaction.
+      await this.credentials.removeAllForUser(deletedUser.id, transaction);
       const newValues = {
         ...oldValues,
         deletedAt: deletedUser.deletedAt,
