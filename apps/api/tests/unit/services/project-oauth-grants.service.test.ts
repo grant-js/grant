@@ -36,6 +36,7 @@ describe('ProjectOAuthGrantService', () => {
     findActiveByTokenHash: vi.fn(),
     rotateGrant: vi.fn(),
     softDeleteGrant: vi.fn(),
+    softDeleteActiveGrantsForUserInProject: vi.fn(),
   };
   const audit = {
     logCreate: vi.fn(),
@@ -98,5 +99,45 @@ describe('ProjectOAuthGrantService', () => {
     const service = createService();
     await expect(service.rotateByRefreshToken('old-token')).resolves.toBeNull();
     expect(grants.rotateGrant).not.toHaveBeenCalled();
+  });
+
+  describe('revokeAllForUserInProject', () => {
+    it('revokes through one repository call scoped to the project and the user, and audits each grant', async () => {
+      grants.softDeleteActiveGrantsForUserInProject.mockResolvedValue(['grant-1', 'grant-2']);
+      const service = createService();
+
+      await expect(
+        service.revokeAllForUserInProject('project-1', 'user-1', 'tx' as never)
+      ).resolves.toBe(2);
+
+      expect(grants.softDeleteActiveGrantsForUserInProject).toHaveBeenCalledWith(
+        'project-1',
+        'user-1',
+        'tx'
+      );
+      expect(audit.logSoftDelete).toHaveBeenCalledTimes(2);
+      expect(audit.logSoftDelete.mock.calls.map((call) => call[0])).toEqual(['grant-1', 'grant-2']);
+      expect(audit.logSoftDelete.mock.calls[0][3]).toEqual({
+        context: 'revokeAllForUserInProject',
+      });
+    });
+
+    it('returns 0 and audits nothing when the user holds no grants there', async () => {
+      grants.softDeleteActiveGrantsForUserInProject.mockResolvedValue([]);
+      const service = createService();
+
+      await expect(service.revokeAllForUserInProject('project-1', 'user-1')).resolves.toBe(0);
+      expect(audit.logSoftDelete).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['project', { projectId: '', userId: 'user-1' }],
+      ['user', { projectId: 'project-1', userId: '' }],
+    ])('refuses an empty %s id without revoking anything', async (_label, ids) => {
+      const service = createService();
+
+      await expect(service.revokeAllForUserInProject(ids.projectId, ids.userId)).rejects.toThrow();
+      expect(grants.softDeleteActiveGrantsForUserInProject).not.toHaveBeenCalled();
+    });
   });
 });
