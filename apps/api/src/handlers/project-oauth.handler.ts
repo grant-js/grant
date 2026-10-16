@@ -1,4 +1,5 @@
 import type {
+  CredentialLockoutStatus,
   CredentialScope,
   IAccountProjectService,
   IAccountService,
@@ -828,7 +829,7 @@ export class ProjectOAuthHandler {
     }
 
     const attempt = await this.credentialLockouts.recordFailure(credentialScope, userId);
-    if (attempt.failedAttempts > config.auth.maxFailedLoginAttempts) {
+    if (!this.passwordAttemptWithinBudget(attempt)) {
       verifyCredentialPassword(params.password, null);
       this.logger.warn(
         { projectId: app.projectId, userId },
@@ -918,7 +919,7 @@ export class ProjectOAuthHandler {
 
     const attempt = await this.credentialLockouts.recordFailure(credentialScope, payload.userId);
     let verified = false;
-    if (attempt.failedAttempts <= config.auth.maxFailedLoginAttempts) {
+    if (this.mfaAttemptWithinBudget(attempt)) {
       try {
         verified =
           params.method === 'recovery'
@@ -958,6 +959,32 @@ export class ProjectOAuthHandler {
       codeChallengeMethod: payload.codeChallengeMethod,
     });
     return { redirectUrl };
+  }
+
+  /**
+   * Whether the attempt just recorded may be verified. The count includes this attempt, so
+   * the Nth attempt (count == max, which is also the one that sets the lock) is the last
+   * one allowed. An active lock with a lower count means the counter restarted when its
+   * window lapsed while the lock was still running (the store keeps an active lock when it
+   * restarts): that attempt is refused.
+   */
+  private passwordAttemptWithinBudget(attempt: CredentialLockoutStatus): boolean {
+    const max = config.auth.maxFailedLoginAttempts;
+    return attempt.failedAttempts <= max && (!attempt.locked || attempt.failedAttempts === max);
+  }
+
+  /**
+   * An MFA code attempt comes after a password that already passed the check above, and
+   * that password attempt is still counted (it is cleared only when MFA succeeds), so it
+   * may have been the one that set the lock. The user who typed it right is given
+   * `PROJECT_PASSWORD_MFA_MAX_ATTEMPTS` more tries on top of the budget; the same counter
+   * still bounds everything an attacker holding the password can do.
+   */
+  private mfaAttemptWithinBudget(attempt: CredentialLockoutStatus): boolean {
+    return (
+      attempt.failedAttempts <=
+      config.auth.maxFailedLoginAttempts + PROJECT_PASSWORD_MFA_MAX_ATTEMPTS
+    );
   }
 
   private invalidProjectPasswordCredentials(): AuthenticationError {

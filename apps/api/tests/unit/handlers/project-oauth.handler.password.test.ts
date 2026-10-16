@@ -629,6 +629,24 @@ describe('ProjectOAuthHandler password provider', () => {
       expect(againstStoredHash.length).toBeLessThanOrEqual(MAX_ATTEMPTS);
     });
 
+    it('refuses an attempt when the counter restarted under a lock that is still running', async () => {
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      // Failures spread over the window set the lock late; the window then lapses first.
+      lockoutRepo.rows.set(`${PROJECT}:${USER}`, {
+        failedAttempts: MAX_ATTEMPTS,
+        windowStartedAt: new Date(clock.getTime() - (LOCK_MINUTES * 60_000 + 1000)),
+        lockedUntil: new Date(clock.getTime() + 60_000),
+      });
+
+      expect(await failureOf(signIn(handler))).toEqual(GENERIC);
+      expect(lockoutRepo.rows.get(`${PROJECT}:${USER}`)?.failedAttempts).toBe(1);
+      // ...and it was not compared against the stored hash.
+      const storedHash = projectCredentials.rows[0].hash;
+      expect(verifySecretSpy.mock.calls.filter(([, h]) => h === storedHash)).toHaveLength(0);
+    });
+
     it('counts a user who is not a member or holds no credential the same as one who does', async () => {
       const handler = createHandler();
       seedState();
@@ -745,26 +763,55 @@ describe('ProjectOAuthHandler password provider', () => {
       }
     });
 
-    it('spends every code attempt from the (project, user) budget and locks', async () => {
+    it('gives the user who typed the password right on the Nth attempt their MFA tries', async () => {
       const handler = createHandler();
       await seedProjectCredential();
       seedState();
-      const token = await pendingMfa(handler); // attempt 1 (the password)
+      mockConfig.auth.minAalAtLogin = 'aal1';
+      for (let i = 0; i < MAX_ATTEMPTS - 1; i += 1) {
+        await failureOf(signIn(handler, { password: `wrong-${i}` }));
+      }
+      mockConfig.auth.minAalAtLogin = 'aal2';
 
-      await expect(
-        handler.verifyProjectPasswordMfa({ mfaToken: token, code: '000000' })
-      ).rejects.toThrow('Invalid MFA code'); // attempt 2
-      await expect(
-        handler.verifyProjectPasswordMfa({ mfaToken: token, code: '000000' })
-      ).rejects.toThrow('Invalid MFA code'); // attempt 3 reaches the limit
+      // This attempt is the Nth: it sets the lock, and is still allowed to finish.
+      const token = await pendingMfa(handler);
+      expect(lockoutRepo.rows.get(`${PROJECT}:${USER}`)?.lockedUntil).not.toBeNull();
 
-      // Locked: a valid code is refused too, and is not even tried.
+      mockUserMfa.verifyTotp.mockResolvedValue({ factorId: 'f', verified: true });
+      await expect(
+        handler.verifyProjectPasswordMfa({ mfaToken: token, code: '123456' })
+      ).resolves.toHaveProperty('redirectUrl');
+      expect(lockoutRepo.rows.size).toBe(0);
+    });
+
+    it('refuses a code, valid or not, once the budget and the MFA allowance are spent', async () => {
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      const token = await pendingMfa(handler);
+      // Others have been guessing: the counter is past budget + allowance, under a live lock.
+      lockoutRepo.rows.set(`${PROJECT}:${USER}`, {
+        failedAttempts: MAX_ATTEMPTS + 5,
+        windowStartedAt: clock,
+        lockedUntil: new Date(clock.getTime() + 60_000),
+      });
       mockUserMfa.verifyTotp.mockClear();
       mockUserMfa.verifyTotp.mockResolvedValue({ factorId: 'f', verified: true });
+
       await expect(
         handler.verifyProjectPasswordMfa({ mfaToken: token, code: '123456' })
       ).rejects.toThrow('Invalid MFA code');
       expect(mockUserMfa.verifyTotp).not.toHaveBeenCalled();
+    });
+
+    it('stops fresh passwords once the budget is spent, so MFA guessing cannot be restarted', async () => {
+      const handler = createHandler();
+      await seedProjectCredential();
+      seedState();
+      for (let i = 0; i < MAX_ATTEMPTS; i += 1) {
+        await pendingMfa(handler); // each correct password counts until MFA succeeds
+      }
+      expect(await failureOf(signIn(handler))).toEqual(GENERIC);
     });
 
     it('treats a missing factor like a wrong code', async () => {
