@@ -101,6 +101,8 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
           const scopedRepositories = createRepositories(scopedDb);
           const services = createServices(scopedRepositories, user, scopedDb, cache, grant, {
             scheduleAfterCommit,
+            // The platform credential tables are out of the restricted role's reach.
+            baseDb: db,
           });
           const txConnection = new DrizzleTransactionalConnection(scopedDb);
           const handlers = createHandlers(cache, services, txConnection, grant, {

@@ -9,6 +9,7 @@ import type {
   ProjectCredentialScope,
 } from '@grantjs/core';
 
+import type { PlatformCredentialConnection } from '@/lib/platform-credential-connection.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import { validateInput } from './common';
@@ -34,8 +35,24 @@ export class CredentialLockoutService implements ICredentialLockoutService {
   constructor(
     private readonly repositories: CredentialLockoutRepositories,
     private readonly policy: CredentialLockoutPolicy,
+    private readonly platformConnection: PlatformCredentialConnection,
     private readonly now: () => Date = () => new Date()
   ) {}
+
+  /**
+   * The platform lockout table has no privileges for the restricted role of a scoped
+   * request (ADR 0011 slice 2), so a platform-scope operation runs on the connection
+   * `platformConnection` picks; a project-scope one uses the caller's transaction.
+   */
+  private run<T>(
+    scope: CredentialScope,
+    caller: Transaction | undefined,
+    work: (transaction: Transaction | undefined) => Promise<T>
+  ): Promise<T> {
+    return scope.scope === 'platform'
+      ? this.platformConnection.transaction(caller, work)
+      : work(caller);
+  }
 
   private repositoryFor(scope: CredentialScope): ICredentialLockoutRepository<CredentialScope> {
     return scope.scope === 'platform' ? this.repositories.platform : this.repositories.project;
@@ -61,7 +78,9 @@ export class CredentialLockoutService implements ICredentialLockoutService {
       'CredentialLockoutService.getStatus'
     );
     return this.toStatus(
-      await this.repositoryFor(target.scope).getState(target.scope, target.userId, transaction)
+      await this.run(target.scope, transaction, (tx) =>
+        this.repositoryFor(target.scope).getState(target.scope, target.userId, tx)
+      )
     );
   }
 
@@ -76,12 +95,14 @@ export class CredentialLockoutService implements ICredentialLockoutService {
       'CredentialLockoutService.recordFailure'
     );
     return this.toStatus(
-      await this.repositoryFor(target.scope).recordFailure(
-        target.scope,
-        target.userId,
-        this.policy,
-        this.now(),
-        transaction
+      await this.run(target.scope, transaction, (tx) =>
+        this.repositoryFor(target.scope).recordFailure(
+          target.scope,
+          target.userId,
+          this.policy,
+          this.now(),
+          tx
+        )
       )
     );
   }
@@ -92,7 +113,9 @@ export class CredentialLockoutService implements ICredentialLockoutService {
       { scope, userId },
       'CredentialLockoutService.reset'
     );
-    await this.repositoryFor(target.scope).reset(target.scope, target.userId, transaction);
+    await this.run(target.scope, transaction, (tx) =>
+      this.repositoryFor(target.scope).reset(target.scope, target.userId, tx)
+    );
   }
 
   async resetAllForUser(userId: string, transaction?: Transaction): Promise<void> {
@@ -101,7 +124,9 @@ export class CredentialLockoutService implements ICredentialLockoutService {
       { userId },
       'CredentialLockoutService.resetAllForUser'
     );
-    await this.repositories.platform.resetAllForUser(validUserId, transaction);
+    await this.platformConnection.transaction(transaction, (tx) =>
+      this.repositories.platform.resetAllForUser(validUserId, tx)
+    );
     await this.repositories.project.resetAllForUser(validUserId, transaction);
   }
 }

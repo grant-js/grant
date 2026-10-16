@@ -1,20 +1,12 @@
-import { UserAuthenticationMethodProvider } from '@grantjs/schema';
-
-const SECRET_PROVIDER_DATA_KEYS = new Set(['hashedPassword', 'otp', 'password', 'accessToken']);
-
-export function authMethodHasPassword(method: {
-  provider: string;
-  providerData?: unknown;
-}): boolean {
-  if (method.provider !== UserAuthenticationMethodProvider.Email) {
-    return false;
-  }
-  const providerData =
-    method.providerData && typeof method.providerData === 'object'
-      ? (method.providerData as Record<string, unknown>)
-      : {};
-  return typeof providerData.hashedPassword === 'string' && providerData.hashedPassword.length > 0;
-}
+// `hashedPassword` no longer lives in `providerData` (ADR 0011 slice 2) but stays listed:
+// a copy of an old row must still never reach a client.
+const SECRET_PROVIDER_DATA_KEYS = new Set([
+  'hashedPassword',
+  'otp',
+  'passwordResetOtp',
+  'password',
+  'accessToken',
+]);
 
 export function redactAuthMethodProviderData(providerData: unknown): Record<string, unknown> {
   if (!providerData || typeof providerData !== 'object' || Array.isArray(providerData)) {

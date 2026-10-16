@@ -49,7 +49,6 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
-import { authMethodHasPassword } from '@/lib/auth-method-public.lib';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
@@ -328,11 +327,19 @@ export class MeHandler extends CacheHandler {
       ],
     });
 
+    // "A platform credential exists": looked up once, only when there is an Email method.
+    const hasEmailMethod = methods.some(
+      (method) => method.provider === UserAuthenticationMethodProvider.Email
+    );
+    const hasPlatformPassword =
+      hasEmailMethod && (await this.userAuthenticationMethods.hasPlatformPassword(userId));
+
     return methods.map((method) => {
       const { providerData: _providerData, ...rest } = method;
       return {
         ...rest,
-        hasPassword: authMethodHasPassword(method),
+        hasPassword:
+          method.provider === UserAuthenticationMethodProvider.Email && hasPlatformPassword,
         providerData: {},
       };
     });
@@ -557,12 +564,15 @@ export class MeHandler extends CacheHandler {
     const userId = this.getAuthenticatedUserId();
     assertEmailProviderForDirectAuth(input.provider);
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const { providerData: processedProviderData, isVerified } =
-        await this.userAuthenticationMethods.processProvider(
-          input.provider,
-          input.providerId,
-          input.providerData
-        );
+      const {
+        providerData: processedProviderData,
+        isVerified,
+        password,
+      } = await this.userAuthenticationMethods.processProvider(
+        input.provider,
+        input.providerId,
+        input.providerData
+      );
 
       const userAuthenticationMethod =
         await this.userAuthenticationMethods.createUserAuthenticationMethod(
@@ -576,6 +586,15 @@ export class MeHandler extends CacheHandler {
           },
           tx
         );
+
+      if (password) {
+        // Adding Email and password to an account (the `Connect` action): the platform
+        // credential is created beside the method (ADR 0011 § 3).
+        await this.credentials.setPassword(
+          { scope: { scope: 'platform' }, userId, password, source: 'register' },
+          tx
+        );
+      }
 
       if (input.provider === UserAuthenticationMethodProvider.Email) {
         const { token, validUntil } = processedProviderData.otp as Otp;

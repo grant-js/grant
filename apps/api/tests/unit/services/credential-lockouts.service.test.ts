@@ -86,7 +86,15 @@ function build(startAt = new Date('2026-10-16T10:00:00.000Z')) {
   const clock = { now: startAt };
   const platform = new FakeLockoutRepository();
   const project = new FakeLockoutRepository();
-  const service = new CredentialLockoutService({ platform, project }, POLICY, () => clock.now);
+  const passthrough = {
+    transaction: (caller: never, work: (tx: never) => Promise<unknown>) => work(caller),
+  };
+  const service = new CredentialLockoutService(
+    { platform, project },
+    POLICY,
+    passthrough as never,
+    () => clock.now
+  );
   const advance = (ms: number) => {
     clock.now = new Date(clock.now.getTime() + ms);
   };

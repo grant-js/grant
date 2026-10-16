@@ -11,17 +11,15 @@ import type {
 } from '@grantjs/core';
 
 import { bcryptHashProblem } from '@/lib/cdm/cdm-password.lib';
-import {
-  isAcceptablePassword,
-  MAX_PASSWORD_LENGTH,
-  verifyCredentialPassword,
-} from '@/lib/credential-verifier.lib';
-import { ValidationError } from '@/lib/errors';
+import { verifyCredentialPassword } from '@/lib/credential-verifier.lib';
+import { AuthenticationError, BadRequestError, ValidationError } from '@/lib/errors';
+import type { PlatformCredentialConnection } from '@/lib/platform-credential-connection.lib';
 import { hashSecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
-import { validateInput } from './common';
+import { validateInput, validateSecretInput } from './common';
 import { credentialTargetSchema, credentialWriteTargetSchema } from './credentials.schemas';
+import { passwordPolicySchema } from './user-authentication-methods.schemas';
 
 export interface CredentialRepositories {
   platform: ICredentialRepository<PlatformCredentialScope>;
@@ -52,16 +50,32 @@ function auditValues(record: CredentialRecord): Record<string, unknown> {
  * scope. The scope only picks the repository (and so the table); hashing, the verifier and
  * the `source` rules are written once.
  *
- * Nothing here is called by a sign-in path yet (slices 2 to 5 wire it); the member-removal
- * hook, the erasure hook, the data export and the retention job are its only callers.
+ * **Connections.** The platform repositories and audit logger passed in are bound to the
+ * base pool; every platform-scope operation runs through `platformConnection`, which joins
+ * an unrestricted caller transaction or opens its own short one (see
+ * {@link PlatformCredentialConnection}). Project-scope operations use the caller's
+ * transaction, where RLS applies. No caller picks a connection.
+ *
  * Neither a password nor a hash is ever passed to a logger, an audit row or an error.
  */
 export class CredentialService implements ICredentialService {
   constructor(
     private readonly repositories: CredentialRepositories,
     private readonly audit: CredentialAuditLoggers,
-    private readonly lockouts: ICredentialLockoutService
+    private readonly lockouts: ICredentialLockoutService,
+    private readonly platformConnection: PlatformCredentialConnection
   ) {}
+
+  /** Runs `work` on the connection the scope's tables are reachable from. */
+  private run<T>(
+    scope: CredentialScope,
+    caller: Transaction | undefined,
+    work: (transaction: Transaction | undefined) => Promise<T>
+  ): Promise<T> {
+    return scope.scope === 'platform'
+      ? this.platformConnection.transaction(caller, work)
+      : work(caller);
+  }
 
   private repositoryFor(scope: CredentialScope): ICredentialRepository<CredentialScope> {
     return scope.scope === 'platform' ? this.repositories.platform : this.repositories.project;
@@ -87,13 +101,23 @@ export class CredentialService implements ICredentialService {
       context
     );
 
+    return this.run(scope, transaction, async (tx) =>
+      this.write(scope, userId, params.hash, source, context, tx)
+    );
+  }
+
+  /** The write itself, on the connection `run` chose: upsert, audit, lockout reset. */
+  private async write(
+    scope: CredentialScope,
+    userId: string,
+    hash: string,
+    source: CredentialRecord['source'],
+    context: string,
+    transaction: Transaction | undefined
+  ): Promise<CredentialRecord> {
     const repository = this.repositoryFor(scope);
     const existing = await repository.findActive(scope, userId, transaction);
-    const record = await repository.upsert(
-      scope,
-      { userId, hash: params.hash, source },
-      transaction
-    );
+    const record = await repository.upsert(scope, { userId, hash, source }, transaction);
 
     const metadata = { context, scope: scope.scope };
     if (existing) {
@@ -112,6 +136,9 @@ export class CredentialService implements ICredentialService {
         transaction
       );
     }
+    // A successful write is the way back from a lock (ADR 0011 § 8): reset this
+    // (scope, user) only, never another scope's budget.
+    await this.lockouts.reset(scope, userId, transaction);
     return record;
   }
 
@@ -124,21 +151,62 @@ export class CredentialService implements ICredentialService {
     },
     transaction?: Transaction
   ): Promise<CredentialRecord> {
-    if (!isAcceptablePassword(params.password)) {
-      throw new ValidationError(
-        `Password must be a non-empty string of at most ${MAX_PASSWORD_LENGTH} characters`
-      );
-    }
+    // The policy is the Grant-set rule (min 8, max 128, complexity). It is checked with
+    // `validateSecretInput`: `validateInput` would put the rejected password into the error.
+    // `MAX_PASSWORD_LENGTH` (1024) stays the verifier's compare-cost bound and the limit of
+    // imported hashes; it is not the policy.
+    const password = validateSecretInput(
+      passwordPolicySchema,
+      params.password,
+      'CredentialService.setPassword'
+    );
     return this.store(
       {
         scope: params.scope,
         userId: params.userId,
         source: params.source,
-        hash: hashSecret(params.password),
+        // Hashed before any connection is taken: bcrypt must not hold a pooled connection.
+        hash: hashSecret(password),
       },
       'CredentialService.setPassword',
       transaction
     );
+  }
+
+  async changePlatformPassword(
+    params: { userId: string; currentPassword: string | undefined; newPassword: string },
+    transaction?: Transaction
+  ): Promise<{ reason: 'change' | 'set' }> {
+    const context = 'CredentialService.changePlatformPassword';
+    const scope: CredentialScope = { scope: 'platform' };
+    const { userId } = validateInput(
+      credentialTargetSchema,
+      { scope, userId: params.userId },
+      context
+    );
+    const newPassword = validateSecretInput(passwordPolicySchema, params.newPassword, context);
+
+    // One transaction, row locked: verify the current password, write the new hash. Two
+    // concurrent changes cannot both pass the check against the old hash.
+    return this.platformConnection.transaction(transaction, async (tx) => {
+      const existing = await this.repositories.platform.lockActive(
+        { scope: 'platform' },
+        userId,
+        tx
+      );
+
+      if (existing) {
+        if (!params.currentPassword) {
+          throw new BadRequestError('Current password is required');
+        }
+        if (!verifyCredentialPassword(params.currentPassword, existing.hash)) {
+          throw new AuthenticationError('Current password is incorrect');
+        }
+      }
+
+      await this.write(scope, userId, hashSecret(newPassword), 'change', context, tx);
+      return { reason: existing ? 'change' : 'set' };
+    });
   }
 
   async setPasswordHash(
@@ -167,15 +235,16 @@ export class CredentialService implements ICredentialService {
       'CredentialService.verifyPassword'
     );
     const repository = this.repositoryFor(scope);
-    const stored: CredentialWithHash | null = await repository.findActive(
-      scope,
-      userId,
-      transaction
+    const stored: CredentialWithHash | null = await this.run(scope, transaction, (tx) =>
+      repository.findActive(scope, userId, tx)
     );
 
+    // The compare runs with no connection held of ours.
     const verified = verifyCredentialPassword(params.password, stored?.hash ?? null);
     if (verified) {
-      await repository.touchLastUsed(scope, userId, new Date(), transaction);
+      await this.run(scope, transaction, (tx) =>
+        repository.touchLastUsed(scope, userId, new Date(), tx)
+      );
     }
     return verified;
   }
@@ -190,10 +259,8 @@ export class CredentialService implements ICredentialService {
       { scope, userId },
       'CredentialService.getCredential'
     );
-    const stored = await this.repositoryFor(target.scope).findActive(
-      target.scope,
-      target.userId,
-      transaction
+    const stored = await this.run(target.scope, transaction, (tx) =>
+      this.repositoryFor(target.scope).findActive(target.scope, target.userId, tx)
     );
     if (!stored) {
       return null;
@@ -220,22 +287,24 @@ export class CredentialService implements ICredentialService {
       { scope, userId },
       'CredentialService.removeCredential'
     );
-    const removed = await this.repositoryFor(target.scope).softDelete(
-      target.scope,
-      target.userId,
-      transaction
-    );
-    if (!removed) {
-      return false;
-    }
-    await this.auditFor(target.scope.scope).logSoftDelete(
-      removed.id,
-      auditValues(removed),
-      { ...auditValues(removed), deleted: true },
-      { context: 'CredentialService.removeCredential', scope: target.scope.scope },
-      transaction
-    );
-    return true;
+    return this.run(target.scope, transaction, async (tx) => {
+      const removed = await this.repositoryFor(target.scope).softDelete(
+        target.scope,
+        target.userId,
+        tx
+      );
+      if (!removed) {
+        return false;
+      }
+      await this.auditFor(target.scope.scope).logSoftDelete(
+        removed.id,
+        auditValues(removed),
+        { ...auditValues(removed), deleted: true },
+        { context: 'CredentialService.removeCredential', scope: target.scope.scope },
+        tx
+      );
+      return true;
+    });
   }
 
   async removeAllForUser(userId: string, transaction?: Transaction): Promise<number> {
@@ -245,21 +314,32 @@ export class CredentialService implements ICredentialService {
       'CredentialService.removeAllForUser'
     );
 
-    const removed: CredentialRecord[] = [
-      ...(await this.repositories.platform.softDeleteAllForUser(validUserId, transaction)),
-      ...(await this.repositories.project.softDeleteAllForUser(validUserId, transaction)),
-    ];
-    for (const record of removed) {
-      await this.auditFor(record.scope).logSoftDelete(
-        record.id,
-        auditValues(record),
-        { ...auditValues(record), deleted: true },
-        { context: 'CredentialService.removeAllForUser', scope: record.scope },
-        transaction
-      );
-    }
+    const softDeleteAndAudit = async (
+      records: CredentialRecord[],
+      tx: Transaction | undefined
+    ): Promise<number> => {
+      for (const record of records) {
+        await this.auditFor(record.scope).logSoftDelete(
+          record.id,
+          auditValues(record),
+          { ...auditValues(record), deleted: true },
+          { context: 'CredentialService.removeAllForUser', scope: record.scope },
+          tx
+        );
+      }
+      return records.length;
+    };
+
+    const platformRemoved = await this.platformConnection.transaction(transaction, async (tx) =>
+      softDeleteAndAudit(await this.repositories.platform.softDeleteAllForUser(validUserId, tx), tx)
+    );
+    const projectRemoved = await softDeleteAndAudit(
+      await this.repositories.project.softDeleteAllForUser(validUserId, transaction),
+      transaction
+    );
+    // Platform and project lockout rows: the lockout service picks each one's connection.
     await this.lockouts.resetAllForUser(validUserId, transaction);
-    return removed.length;
+    return platformRemoved + projectRemoved;
   }
 
   async listForUser(userId: string, transaction?: Transaction): Promise<CredentialRecord[]> {
@@ -268,18 +348,21 @@ export class CredentialService implements ICredentialService {
       { userId },
       'CredentialService.listForUser'
     );
-    return [
-      ...(await this.repositories.platform.listActiveForUser(validUserId, transaction)),
-      ...(await this.repositories.project.listActiveForUser(validUserId, transaction)),
-    ];
+    // The data subject's own export must be complete, whatever scope the request ran in: a
+    // project-scoped RLS context would show only that project's credentials. Both tables are
+    // read on the connection `platformConnection` picks (unrestricted), filtered by the user.
+    return this.platformConnection.transaction(transaction, async (tx) => [
+      ...(await this.repositories.platform.listActiveForUser(validUserId, tx)),
+      ...(await this.repositories.project.listActiveForUser(validUserId, tx)),
+    ]);
   }
 
   async purgeSoftDeleted(
     transaction?: Transaction
   ): Promise<{ platform: number; project: number }> {
-    return {
-      platform: await this.repositories.platform.purgeSoftDeleted(transaction),
-      project: await this.repositories.project.purgeSoftDeleted(transaction),
-    };
+    return this.platformConnection.transaction(transaction, async (tx) => ({
+      platform: await this.repositories.platform.purgeSoftDeleted(tx),
+      project: await this.repositories.project.purgeSoftDeleted(tx),
+    }));
   }
 }

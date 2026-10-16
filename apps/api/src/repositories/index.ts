@@ -7,10 +7,7 @@ import { AccountRoleRepository } from './account-roles.repository';
 import { AccountTagsRepository } from './account-tags.repository';
 import { AccountRepository } from './accounts.repository';
 import { ApiKeyRepository } from './api-keys.repository';
-import {
-  ProjectUserCredentialLockoutRepository,
-  UserCredentialLockoutRepository,
-} from './credential-lockouts.repository';
+import { ProjectUserCredentialLockoutRepository } from './credential-lockouts.repository';
 import { EventLogRepository } from './event-log.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
 import { GroupTagRepository } from './group-tags.repository';
@@ -58,7 +55,6 @@ import { RoleRepository } from './roles.repository';
 import { SigningKeyRepository } from './signing-keys.repository';
 import { TagRepository } from './tags.repository';
 import { UserAuthenticationMethodRepository } from './user-authentication-methods.repository';
-import { UserCredentialRepository } from './user-credentials.repository';
 import { UserGroupRepository } from './user-groups.repository';
 import { UserMfaFactorRepository } from './user-mfa-factors.repository';
 import { UserMfaRecoveryCodeRepository } from './user-mfa-recovery-codes.repository';
@@ -129,8 +125,6 @@ export function createRepositories(db: DbSchema) {
     roleRepository: new RoleRepository(db),
     tagRepository: new TagRepository(db),
     userAuthenticationMethodRepository: new UserAuthenticationMethodRepository(db),
-    userCredentialRepository: new UserCredentialRepository(db),
-    userCredentialLockoutRepository: new UserCredentialLockoutRepository(db),
     userMfaFactorRepository: new UserMfaFactorRepository(db),
     userMfaRecoveryCodeRepository: new UserMfaRecoveryCodeRepository(db),
     userRoleRepository: new UserRoleRepository(db),

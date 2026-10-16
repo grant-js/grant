@@ -3,6 +3,7 @@ import type {
   IAccountRoleService,
   IAccountService,
   IAuthService,
+  ICredentialService,
   IEmailService,
   ILogger,
   IOrganizationInvitationService,
@@ -72,6 +73,7 @@ export class OrganizationInvitationsHandler {
     private readonly userRoles: IUserRoleService,
     private readonly auth: IAuthService,
     private readonly accountRoles: IAccountRoleService,
+    private readonly credentials: ICredentialService,
     private readonly db: ITransactionalConnection<Transaction>
   ) {}
 
@@ -284,7 +286,7 @@ export class OrganizationInvitationsHandler {
         user = await this.users.createUser({ name: userData.name }, tx);
 
         // Create authentication method
-        const { providerData } = await this.userAuthenticationMethods.processProvider(
+        const { providerData, password } = await this.userAuthenticationMethods.processProvider(
           UserAuthenticationMethodProvider.Email,
           invitation.email,
           {
@@ -303,6 +305,13 @@ export class OrganizationInvitationsHandler {
           },
           tx
         );
+
+        if (password) {
+          await this.credentials.setPassword(
+            { scope: { scope: 'platform' }, userId: user.id, password, source: 'register' },
+            tx
+          );
+        }
 
         // Create account and seed account-level roles
         const newOrgAccount = await this.accounts.createAccount(

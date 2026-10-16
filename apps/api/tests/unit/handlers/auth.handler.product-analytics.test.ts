@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthHandler } from '@/handlers/auth.handler';
 import { loginFailureReason } from '@/lib/analytics/login-failure';
 import { AuthenticationError } from '@/lib/errors';
-import { hashSecret } from '@/lib/token.lib';
 
 const trackProductEvent = vi.hoisted(() => vi.fn());
 
@@ -42,6 +41,7 @@ const mockUserSessions = {
 const mockEmail = {};
 const mockAuth = {};
 const mockOrganizationInvitations = {};
+const mockCredentials = { setPassword: vi.fn(), verifyPassword: vi.fn() };
 const mockCache = {};
 const mockScopeServices = {};
 const callOrder: string[] = [];
@@ -68,6 +68,7 @@ function createHandler(): AuthHandler {
     mockEmail as never,
     mockAuth as never,
     mockOrganizationInvitations as never,
+    mockCredentials as never,
     mockCache as never,
     mockScopeServices as never,
     mockDb as never,
@@ -219,6 +220,61 @@ describe('AuthHandler product analytics', () => {
     });
   });
 
+  it('verifies only the platform credential of the resolved user, with the typed password', async () => {
+    mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+      providerData: { password: 'typed-password' },
+    });
+    mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue({
+      id: 'method-1',
+      userId: 'user-1',
+      isVerified: true,
+      createdAt: new Date(),
+      providerData: {},
+    });
+    mockCredentials.verifyPassword.mockResolvedValue(false);
+
+    await expect(
+      createHandler().login({
+        input: {
+          provider: UserAuthenticationMethodProvider.Email,
+          providerId: 'person@example.com',
+          providerData: { password: 'typed-password' },
+        },
+      })
+    ).rejects.toThrow('Invalid credentials');
+
+    expect(mockCredentials.verifyPassword).toHaveBeenCalledTimes(1);
+    expect(mockCredentials.verifyPassword).toHaveBeenCalledWith(
+      { scope: { scope: 'platform' }, userId: 'user-1', password: 'typed-password' },
+      expect.anything()
+    );
+  });
+
+  it('does not read a password out of the Email method any more', async () => {
+    // A leftover hash in providerData must not open the platform: only the credential does.
+    mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+      providerData: { password: 'typed-password' },
+    });
+    mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue({
+      id: 'method-1',
+      userId: 'user-1',
+      isVerified: true,
+      createdAt: new Date(),
+      providerData: { hashedPassword: '$2b$04$' + 'a'.repeat(53) },
+    });
+    mockCredentials.verifyPassword.mockResolvedValue(false);
+
+    await expect(
+      createHandler().login({
+        input: {
+          provider: UserAuthenticationMethodProvider.Email,
+          providerId: 'person@example.com',
+          providerData: { password: 'typed-password' },
+        },
+      })
+    ).rejects.toBeInstanceOf(AuthenticationError);
+  });
+
   it('emits session.failed with reason unverified', async () => {
     const password = 'correct-horse';
     mockUserAuthenticationMethods.processProvider.mockResolvedValue({
@@ -229,8 +285,9 @@ describe('AuthHandler product analytics', () => {
       userId: 'user-1',
       isVerified: false,
       createdAt: new Date('2020-01-01T00:00:00.000Z'),
-      providerData: { hashedPassword: hashSecret(password) },
+      providerData: {},
     });
+    mockCredentials.verifyPassword.mockResolvedValue(true);
 
     const handler = createHandler();
     await expect(

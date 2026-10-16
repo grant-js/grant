@@ -10,12 +10,38 @@ import type {
   CredentialSource,
 } from '../repositories/credential.repository.port';
 
+/**
+ * **Connections (ADR 0011 slice 2).** Platform-scope credentials live in tables the
+ * restricted RLS role has no privileges on, so every platform-scope operation runs on the
+ * unrestricted base connection, behind this interface: callers never choose a connection or
+ * write SQL for it. When the caller's transaction is itself unrestricted (an unscoped
+ * request: login, register, reset) the operation joins it, so it commits or rolls back
+ * with the caller's other writes. When the caller's transaction runs as the restricted role
+ * (a scoped request) the operation runs in its own short transaction on the base pool: it
+ * is not part of the request transaction and holds one extra pooled connection while it runs.
+ * Project-scope operations always use the caller's transaction (RLS applies to them).
+ */
 export interface ICredentialService {
-  /** Hash a plaintext password (bcrypt, configured cost) and store it as the live credential. */
+  /**
+   * Hash a plaintext password (bcrypt, configured cost) and store it as the live credential.
+   * A Grant-set password must meet the password policy; the refusal never contains it.
+   * A successful write resets the lockout of that `(scope, user)`.
+   */
   setPassword(
     params: { scope: CredentialScope; userId: string; password: string; source: CredentialSource },
     transaction?: unknown
   ): Promise<CredentialRecord>;
+
+  /**
+   * Platform scope only: change (or first-set) the platform password of a user, atomically.
+   * The current password is required, and verified against the row locked in the same
+   * transaction, when a credential exists; without one this is a first set. Returns the
+   * reason (`change` or `set`) for the caller's event.
+   */
+  changePlatformPassword(
+    params: { userId: string; currentPassword: string | undefined; newPassword: string },
+    transaction?: unknown
+  ): Promise<{ reason: 'change' | 'set' }>;
 
   /**
    * Store an already hashed credential (an import or a migration). Refuses anything that

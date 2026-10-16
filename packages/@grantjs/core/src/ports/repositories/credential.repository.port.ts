@@ -62,6 +62,13 @@ export interface ICredentialRepository<S extends CredentialScope = CredentialSco
   findActive(scope: S, userId: string, transaction?: unknown): Promise<CredentialWithHash | null>;
 
   /**
+   * Like `findActive`, but takes a row lock (`SELECT ... FOR UPDATE`) held until the
+   * transaction ends, so two concurrent changes cannot both verify against the old hash.
+   * Only meaningful inside a transaction.
+   */
+  lockActive(scope: S, userId: string, transaction?: unknown): Promise<CredentialWithHash | null>;
+
+  /**
    * Create the live credential, or replace the hash and source of the existing live one,
    * in one atomic statement. A failure never carries the hash in its message.
    */

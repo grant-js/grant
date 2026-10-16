@@ -83,6 +83,13 @@ class FakeCredentialRepository implements ICredentialRepository<CredentialScope>
     return this.toRecord(row);
   }
 
+  async lockActive(scope: CredentialScope, userId: string) {
+    this.locked.push(userId);
+    return this.findActive(scope, userId);
+  }
+
+  locked: string[] = [];
+
   async touchLastUsed(scope: CredentialScope, userId: string, at: Date) {
     const row = this.rows.find(this.key(scope, userId));
     if (row) row.lastUsedAt = at;
@@ -132,15 +139,22 @@ function build() {
     reset: vi.fn(),
     resetAllForUser: vi.fn().mockResolvedValue(undefined),
   };
+  // The real connection joins an unrestricted caller or opens its own transaction; the
+  // service-level behaviour is the same, so these tests pass the work straight through and
+  // record which scope asked for a platform connection.
+  const platformConnection = {
+    transaction: vi.fn((caller: never, work: (tx: never) => Promise<unknown>) => work(caller)),
+  };
   const service = new CredentialService(
     { platform, project },
     { platform: platformAudit, project: projectAudit },
-    lockouts
+    lockouts,
+    platformConnection as never
   );
-  return { service, platform, project, platformAudit, projectAudit, lockouts };
+  return { service, platform, project, platformAudit, projectAudit, lockouts, platformConnection };
 }
 
-const PASSWORD = 'correct horse battery staple';
+const PASSWORD = 'Correct-Horse-7-Staple!';
 
 function auditPayloads(...audits: Array<ReturnType<typeof build>['platformAudit']>): string {
   return JSON.stringify(
@@ -204,7 +218,7 @@ describe('CredentialService', () => {
       const second = await service.setPassword({
         scope: PLATFORM,
         userId: USER,
-        password: 'another password',
+        password: 'Another-Passw0rd!',
         source: 'change',
       });
 
@@ -259,7 +273,7 @@ describe('CredentialService', () => {
       await service.setPassword({
         scope: PLATFORM,
         userId: USER,
-        password: 'second-password-x',
+        password: 'Second-Passw0rd-x!',
         source: 'change',
       });
       await service.setPassword({
@@ -274,18 +288,59 @@ describe('CredentialService', () => {
       expect(payload).toContain('"source":"register"');
       expect(payload).not.toContain(platform.rows[0].hash);
       expect(payload).not.toContain(PASSWORD);
-      expect(payload).not.toContain('second-password-x');
+      expect(payload).not.toContain('Second-Passw0rd-x!');
       expect(payload).not.toContain('$2');
       expect(payload).not.toContain('"hash"');
     });
   });
 
   describe('input handling', () => {
-    it('refuses an empty password with a message that does not echo input', async () => {
+    it('refuses an empty password', async () => {
       const { service } = build();
       await expect(
         service.setPassword({ scope: PLATFORM, userId: USER, password: '', source: 'register' })
-      ).rejects.toThrow(/non-empty string/);
+      ).rejects.toThrow(/passwordRequired/);
+    });
+
+    it.each([
+      ['too short', 'Ab1!xyz'],
+      ['no uppercase', 'passw0rd-only!'],
+      ['no digit', 'Password-only!!'],
+      ['no special character', 'Passw0rdOnlyHere'],
+      ['over 128 characters', `Aa1!${'x'.repeat(130)}`],
+    ])(
+      'enforces the password policy for a Grant-set password (%s) in either scope',
+      async (_name, weak) => {
+        const { service, platform, project } = build();
+        for (const scope of [PLATFORM, IN_PROJECT]) {
+          const failure = await service
+            .setPassword({ scope, userId: USER, password: weak, source: 'register' })
+            .catch((error: unknown) => error as Error);
+          expect(failure).toBeInstanceOf(Error);
+          expect((failure as Error).message).toMatch(/Input validation failed/);
+          // The rejection never carries the password, in the message or the violations.
+          expect(
+            JSON.stringify([
+              (failure as Error).message,
+              (failure as { violations?: unknown }).violations,
+            ])
+          ).not.toContain(weak);
+        }
+        expect(platform.rows).toHaveLength(0);
+        expect(project.rows).toHaveLength(0);
+      }
+    );
+
+    it('keeps the policy out of imported hashes (they are validated as bcrypt, not as passwords)', async () => {
+      const { service } = build();
+      await expect(
+        service.setPasswordHash({
+          scope: IN_PROJECT,
+          userId: USER,
+          hash: hashSecret('weak', 4),
+          source: 'cdm-import',
+        })
+      ).resolves.toMatchObject({ source: 'cdm-import' });
     });
 
     it('does not put the password into a validation error about the rest of the call', async () => {
@@ -405,13 +460,13 @@ describe('CredentialService', () => {
       await service.setPassword({
         scope: PLATFORM,
         userId: USER,
-        password: 'platform-password',
+        password: 'Platform-Passw0rd!',
         source: 'register',
       });
       await service.setPassword({
         scope: IN_PROJECT,
         userId: USER,
-        password: 'project-password',
+        password: 'Project-Passw0rd!',
         source: 'reset',
       });
 
@@ -419,28 +474,28 @@ describe('CredentialService', () => {
         await service.verifyPassword({
           scope: PLATFORM,
           userId: USER,
-          password: 'project-password',
+          password: 'Project-Passw0rd!',
         })
       ).toBe(false);
       expect(
         await service.verifyPassword({
           scope: IN_PROJECT,
           userId: USER,
-          password: 'platform-password',
+          password: 'Platform-Passw0rd!',
         })
       ).toBe(false);
       expect(
         await service.verifyPassword({
           scope: PLATFORM,
           userId: USER,
-          password: 'platform-password',
+          password: 'Platform-Passw0rd!',
         })
       ).toBe(true);
       expect(
         await service.verifyPassword({
           scope: IN_PROJECT,
           userId: USER,
-          password: 'project-password',
+          password: 'Project-Passw0rd!',
         })
       ).toBe(true);
     });
@@ -521,7 +576,7 @@ describe('CredentialService', () => {
       await service.setPassword({
         scope: IN_PROJECT,
         userId: USER,
-        password: 'old-password-1',
+        password: 'Old-Passw0rd-1!',
         source: 'cdm-import',
       });
       await service.removeCredential(IN_PROJECT, USER);
@@ -530,7 +585,7 @@ describe('CredentialService', () => {
         await service.verifyPassword({
           scope: IN_PROJECT,
           userId: USER,
-          password: 'old-password-1',
+          password: 'Old-Passw0rd-1!',
         })
       ).toBe(false);
     });
@@ -655,6 +710,176 @@ describe('CredentialService', () => {
       expect(platform.rows.map((r) => r.userId)).toEqual([USER]);
       expect(project.rows).toHaveLength(0);
       expect(await service.purgeSoftDeleted()).toEqual({ platform: 0, project: 0 });
+    });
+  });
+
+  describe('lockout reset on a successful write (ADR 0011 section 8)', () => {
+    it('resets the lockout of that (scope, user) only, after setPassword', async () => {
+      const { service, lockouts } = build();
+      await service.setPassword({
+        scope: PLATFORM,
+        userId: USER,
+        password: PASSWORD,
+        source: 'reset',
+      });
+      await service.setPassword({
+        scope: IN_PROJECT,
+        userId: USER,
+        password: PASSWORD,
+        source: 'reset',
+      });
+
+      expect(lockouts.reset).toHaveBeenCalledTimes(2);
+      expect(lockouts.reset).toHaveBeenNthCalledWith(1, PLATFORM, USER, undefined);
+      expect(lockouts.reset).toHaveBeenNthCalledWith(2, IN_PROJECT, USER, undefined);
+      expect(lockouts.resetAllForUser).not.toHaveBeenCalled();
+    });
+
+    it('resets after setPasswordHash too, and not when the write is refused', async () => {
+      const { service, lockouts } = build();
+      await expect(
+        service.setPasswordHash({
+          scope: PLATFORM,
+          userId: USER,
+          hash: 'not-a-hash',
+          source: 'migrated',
+        })
+      ).rejects.toThrow();
+      await expect(
+        service.setPassword({ scope: PLATFORM, userId: USER, password: 'short', source: 'reset' })
+      ).rejects.toThrow();
+      expect(lockouts.reset).not.toHaveBeenCalled();
+
+      await service.setPasswordHash({
+        scope: IN_PROJECT,
+        userId: USER,
+        hash: hashSecret('x', 4),
+        source: 'cdm-import',
+      });
+      expect(lockouts.reset).toHaveBeenCalledWith(IN_PROJECT, USER, undefined);
+    });
+  });
+
+  describe('platform connection', () => {
+    it('runs platform operations, and only those, through the platform connection', async () => {
+      const { service, platformConnection } = build();
+      await service.setPassword({
+        scope: IN_PROJECT,
+        userId: USER,
+        password: PASSWORD,
+        source: 'register',
+      });
+      await service.verifyPassword({ scope: IN_PROJECT, userId: USER, password: PASSWORD });
+      await service.hasCredential(IN_PROJECT, USER);
+      expect(platformConnection.transaction).not.toHaveBeenCalled();
+
+      await service.setPassword({
+        scope: PLATFORM,
+        userId: USER,
+        password: PASSWORD,
+        source: 'register',
+      });
+      await service.hasCredential(PLATFORM, USER);
+      expect(platformConnection.transaction).toHaveBeenCalledTimes(2);
+    });
+
+    it('hands the caller transaction to the connection, which decides whether to join it', async () => {
+      const { service, platformConnection } = build();
+      const callerTransaction = { marker: 'request-transaction' };
+      await service.hasCredential(PLATFORM, USER, callerTransaction as never);
+      expect(platformConnection.transaction).toHaveBeenCalledWith(
+        callerTransaction,
+        expect.any(Function)
+      );
+    });
+  });
+
+  describe('changePlatformPassword', () => {
+    const NEW_PASSWORD = 'Brand-New-Passw0rd!';
+
+    it('is a first set when no credential exists, and needs no current password', async () => {
+      const { service, platform } = build();
+      await expect(
+        service.changePlatformPassword({
+          userId: USER,
+          currentPassword: undefined,
+          newPassword: NEW_PASSWORD,
+        })
+      ).resolves.toEqual({ reason: 'set' });
+      expect(platform.rows[0]).toMatchObject({ userId: USER, source: 'change' });
+    });
+
+    it('verifies the current password against the locked row, then replaces the hash', async () => {
+      const { service, platform } = build();
+      await service.setPassword({
+        scope: PLATFORM,
+        userId: USER,
+        password: PASSWORD,
+        source: 'register',
+      });
+
+      await expect(
+        service.changePlatformPassword({
+          userId: USER,
+          currentPassword: PASSWORD,
+          newPassword: NEW_PASSWORD,
+        })
+      ).resolves.toEqual({ reason: 'change' });
+      expect(platform.locked).toEqual([USER]);
+      expect(platform.rows).toHaveLength(1);
+      expect(platform.rows[0].source).toBe('change');
+      expect(
+        await service.verifyPassword({ scope: PLATFORM, userId: USER, password: NEW_PASSWORD })
+      ).toBe(true);
+      expect(
+        await service.verifyPassword({ scope: PLATFORM, userId: USER, password: PASSWORD })
+      ).toBe(false);
+    });
+
+    it('refuses without the current password, or with a wrong one, and changes nothing', async () => {
+      const { service, platform } = build();
+      await service.setPassword({
+        scope: PLATFORM,
+        userId: USER,
+        password: PASSWORD,
+        source: 'register',
+      });
+      const before = platform.rows[0].hash;
+
+      await expect(
+        service.changePlatformPassword({
+          userId: USER,
+          currentPassword: undefined,
+          newPassword: NEW_PASSWORD,
+        })
+      ).rejects.toThrow('Current password is required');
+      await expect(
+        service.changePlatformPassword({
+          userId: USER,
+          currentPassword: 'Wrong-Passw0rd!',
+          newPassword: NEW_PASSWORD,
+        })
+      ).rejects.toThrow('Current password is incorrect');
+      expect(platform.rows[0].hash).toBe(before);
+    });
+
+    it('rejects a weak new password through the policy, without echoing it', async () => {
+      const { service } = build();
+      const failure = await service
+        .changePlatformPassword({ userId: USER, currentPassword: undefined, newPassword: 'short' })
+        .catch((error: unknown) => error as Error);
+      expect((failure as Error).message).toMatch(/Input validation failed/);
+      expect((failure as Error).message).not.toContain('Sample data');
+    });
+
+    it('resets the platform lockout after a change', async () => {
+      const { service, lockouts } = build();
+      await service.changePlatformPassword({
+        userId: USER,
+        currentPassword: undefined,
+        newPassword: NEW_PASSWORD,
+      });
+      expect(lockouts.reset).toHaveBeenCalledWith(PLATFORM, USER, undefined);
     });
   });
 });
