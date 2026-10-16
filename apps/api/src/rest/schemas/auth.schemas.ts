@@ -6,6 +6,7 @@ import {
 } from '@grantjs/schema';
 
 import { PROJECT_OAUTH_PROVIDERS } from '@/config/env.config';
+import { MAX_PASSWORD_LENGTH } from '@/lib/credential-verifier.lib';
 import { z } from '@/lib/zod-openapi.lib';
 import { accountSchema, accountTypeSchema } from '@/rest/schemas/accounts.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
