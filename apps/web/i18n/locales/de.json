@@ -766,6 +766,49 @@
           "expired": "Diese Bestätigung ist abgelaufen. Bitte melden Sie sich erneut an."
         }
       },
+      "forgotPassword": {
+        "title": "Passwort vergessen?",
+        "description": "Geben Sie Ihre E-Mail-Adresse ein. Wenn Sie ein Konto bei {appName} haben, senden wir Ihnen einen Link, um ein neues Passwort zu wählen.",
+        "emailLabel": "E-Mail",
+        "emailPlaceholder": "sie@beispiel.de",
+        "emailRequired": "E-Mail ist erforderlich",
+        "invalidEmail": "Ungültige E-Mail-Adresse",
+        "sendLink": "Link zum Zurücksetzen senden",
+        "sending": "Wird gesendet…",
+        "checkEmailTitle": "Prüfen Sie Ihr Postfach",
+        "checkEmailDescription": "Falls für diese Adresse ein Konto existiert, haben wir einen Link zum Zurücksetzen des Passworts gesendet. Der Link funktioniert nur einmal und läuft bald ab.",
+        "backToSignIn": "Zurück zur Anmeldung",
+        "tooManyRequests": "Zu viele Anfragen. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+        "missingParams": "client_id oder redirect_uri fehlt.",
+        "backToLogin": "Zurück zur Anmeldung"
+      },
+      "resetPassword": {
+        "title": "Neues Passwort wählen",
+        "description": "Wählen Sie ein neues Passwort für die Anmeldung bei {appName}.",
+        "loading": "Wird geladen…",
+        "passwordLabel": "Neues Passwort",
+        "passwordPlaceholder": "Neues Passwort eingeben",
+        "confirmPasswordLabel": "Neues Passwort bestätigen",
+        "confirmPasswordPlaceholder": "Neues Passwort wiederholen",
+        "submit": "Neues Passwort festlegen",
+        "submitting": "Wird gespeichert…",
+        "passwordRejected": "Dieses Passwort erfüllt die Anforderungen nicht. Bitte wählen Sie ein anderes.",
+        "tooManyRequests": "Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        "somethingWentWrong": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+        "invalidLink": {
+          "title": "Dieser Link ist nicht mehr gültig",
+          "description": "Der Link zum Zurücksetzen des Passworts ist ungültig, abgelaufen oder wurde bereits verwendet. Fordern Sie einen neuen an, um fortzufahren."
+        },
+        "requestNewLink": "Neuen Link anfordern",
+        "success": {
+          "title": "Passwort aktualisiert",
+          "description": "Ihr neues Passwort für {appName} ist festgelegt. Sie wurden in dieser App überall abgemeldet, melden Sie sich daher erneut damit an."
+        },
+        "continueToSignIn": "Weiter zur Anmeldung",
+        "missingParams": "client_id oder redirect_uri fehlt.",
+        "backToLogin": "Zurück zur Anmeldung"
+      },
       "consent": {
         "loading": "Laden…",
         "title": "Einwilligung",

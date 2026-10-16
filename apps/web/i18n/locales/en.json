@@ -768,6 +768,49 @@
           "expired": "This verification expired. Please sign in again."
         }
       },
+      "forgotPassword": {
+        "title": "Forgot your password?",
+        "description": "Enter your email and, if you have an account with {appName}, we'll send you a link to choose a new password.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@example.com",
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email",
+        "sendLink": "Send reset link",
+        "sending": "Sending…",
+        "checkEmailTitle": "Check your email",
+        "checkEmailDescription": "If an account exists for this address, we've sent a link to reset the password. The link works once and expires soon.",
+        "backToSignIn": "Back to sign in",
+        "tooManyRequests": "Too many requests. Please wait a moment and try again.",
+        "somethingWentWrong": "Something went wrong. Please try again.",
+        "missingParams": "Missing client_id or redirect_uri.",
+        "backToLogin": "Back to login"
+      },
+      "resetPassword": {
+        "title": "Choose a new password",
+        "description": "Choose a new password for signing in to {appName}.",
+        "loading": "Loading…",
+        "passwordLabel": "New password",
+        "passwordPlaceholder": "Enter a new password",
+        "confirmPasswordLabel": "Confirm new password",
+        "confirmPasswordPlaceholder": "Repeat the new password",
+        "submit": "Set new password",
+        "submitting": "Saving…",
+        "passwordRejected": "This password does not meet the requirements. Please choose another one.",
+        "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+        "somethingWentWrong": "Something went wrong. Please try again.",
+        "invalidLink": {
+          "title": "This link is no longer valid",
+          "description": "The password reset link is invalid, has expired or was already used. Request a new one to continue."
+        },
+        "requestNewLink": "Request a new link",
+        "success": {
+          "title": "Password updated",
+          "description": "Your new password for {appName} is set. You've been signed out of this app everywhere, so sign in again with it."
+        },
+        "continueToSignIn": "Continue to sign in",
+        "missingParams": "Missing client_id or redirect_uri.",
+        "backToLogin": "Back to login"
+      },
       "consent": {
         "loading": "Loading…",
         "title": "Consent",

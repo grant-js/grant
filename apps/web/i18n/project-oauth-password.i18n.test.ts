@@ -69,3 +69,36 @@ describe('project-app password provider i18n (en and de)', () => {
     expect(at(de, key)).toBe('Passwort');
   });
 });
+
+describe('project-app password reset i18n (en and de)', () => {
+  it.each(['auth.projectOAuth.forgotPassword', 'auth.projectOAuth.resetPassword'])(
+    'has the same keys in both locales for %s',
+    (path) => {
+      const enKeys = leafKeys(at(en, path));
+      expect(enKeys.length).toBeGreaterThan(8);
+      expect(leafKeys(at(de, path)).sort()).toEqual(enKeys.sort());
+    }
+  );
+
+  it('translates the German reset views rather than copying the English', () => {
+    for (const key of [
+      'auth.projectOAuth.forgotPassword.title',
+      'auth.projectOAuth.forgotPassword.checkEmailDescription',
+      'auth.projectOAuth.resetPassword.title',
+      'auth.projectOAuth.resetPassword.invalidLink.description',
+    ]) {
+      expect(at(de, key)).not.toBe(at(en, key));
+    }
+  });
+
+  it('keeps the {appName} placeholder in both locales where the English has it', () => {
+    for (const key of [
+      'auth.projectOAuth.forgotPassword.description',
+      'auth.projectOAuth.resetPassword.description',
+      'auth.projectOAuth.resetPassword.success.description',
+    ]) {
+      expect(at(en, key)).toContain('{appName}');
+      expect(at(de, key)).toContain('{appName}');
+    }
+  });
+});

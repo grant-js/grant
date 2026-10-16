@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearProjectOAuthPublicInfoCacheForTests,
+  completeProjectPasswordReset,
   exchangeProjectOAuthCode,
   getProjectAppPublicInfo,
   peekProjectAppPublicInfo,
   ProjectOAuthApiError,
+  requestProjectPasswordReset,
   signInProjectWithPassword,
   verifyProjectPasswordMfa,
 } from './project-oauth-api';
@@ -193,5 +195,93 @@ describe('verifyProjectPasswordMfa', () => {
       method: 'totp',
     }).catch((e: unknown) => e);
     expect((error as ProjectOAuthApiError).status).toBe(401);
+  });
+});
+
+describe('requestProjectPasswordReset', () => {
+  const input = {
+    clientId: 'app_1',
+    redirectUri: 'https://app.example/cb',
+    email: 'member@example.com',
+    locale: 'de',
+    state: ' api-state ',
+  };
+
+  it('POSTs the address (and the trimmed state) to the forgot route and resolves on any 200', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(requestProjectPasswordReset(input)).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/project/password/forgot',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          client_id: 'app_1',
+          redirect_uri: 'https://app.example/cb',
+          email: 'member@example.com',
+          locale: 'de',
+          state: 'api-state',
+        }),
+      })
+    );
+  });
+
+  it('omits an absent state and keeps the status on a failure', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 429, json: async () => ({ error: 'slow down' }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(requestProjectPasswordReset({ ...input, state: undefined })).rejects.toMatchObject(
+      { name: 'ProjectOAuthApiError', status: 429 }
+    );
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('state');
+  });
+});
+
+describe('completeProjectPasswordReset', () => {
+  const input = {
+    clientId: 'app_1',
+    redirectUri: 'https://app.example/cb',
+    token: 'reset-token',
+    password: 'N3w-Passw0rd!x',
+  };
+
+  it('POSTs the token and the new password to the reset route', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(completeProjectPasswordReset(input)).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/project/password/reset',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          client_id: 'app_1',
+          redirect_uri: 'https://app.example/cb',
+          token: 'reset-token',
+          password: 'N3w-Passw0rd!x',
+        }),
+      })
+    );
+  });
+
+  it('throws a ProjectOAuthApiError carrying the status and the body code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ code: 'BAD_USER_INPUT', details: 'rules' }),
+      })
+    );
+
+    const failure = await completeProjectPasswordReset(input).catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(ProjectOAuthApiError);
+    expect((failure as ProjectOAuthApiError).status).toBe(400);
+    expect((failure as ProjectOAuthApiError).body.code).toBe('BAD_USER_INPUT');
   });
 });

@@ -20,7 +20,14 @@ export function isProjectOAuthBrandingPath(pathname: string | null | undefined):
   const match = path.match(/(?:^|\/)auth\/project(?:\/([^/]+))?\/?$/);
   if (!match) return false;
   const sub = match[1];
-  return sub == null || sub === 'email' || sub === 'consent';
+  return (
+    sub == null ||
+    sub === 'email' ||
+    sub === 'password' ||
+    sub === 'forgot-password' ||
+    sub === 'reset-password' ||
+    sub === 'consent'
+  );
 }
 
 export function projectOAuthBrandingCacheKey(input: {

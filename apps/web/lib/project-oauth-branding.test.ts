@@ -34,6 +34,12 @@ describe('isProjectOAuthBrandingPath', () => {
     expect(isProjectOAuthBrandingPath('/auth/project/consent')).toBe(true);
   });
 
+  it('matches the password views, including forgot and reset password', () => {
+    expect(isProjectOAuthBrandingPath('/en/auth/project/password')).toBe(true);
+    expect(isProjectOAuthBrandingPath('/de/auth/project/forgot-password')).toBe(true);
+    expect(isProjectOAuthBrandingPath('/en/auth/project/reset-password')).toBe(true);
+  });
+
   it('ignores relay and Grant platform auth', () => {
     expect(isProjectOAuthBrandingPath('/en/auth/project/relay')).toBe(false);
     expect(isProjectOAuthBrandingPath('/en/auth/login')).toBe(false);
