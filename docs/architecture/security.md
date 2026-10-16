@@ -21,7 +21,7 @@ Users can sign in with multiple methods, each stored independently. GitHub and G
 
 Operator setup, auto-link vs connect, passwordless Email bind, and IdP profile-picture inheritance are documented in [Sign-in providers](/core-concepts/sign-in-providers).
 
-**Email is the mailbox, not the password.** `provider = email` is the user’s verified contact address (`providerId`). A password (`providerData.hashedPassword`) is optional. GitHub/Google signup, link, connect, and later login bind that address as a **passwordless** Email method when the IdP marks it verified — they do not mint a password and do not overwrite an Email method that already exists. If another account already owns that Email address, OAuth still succeeds and the Email bind is skipped. Users can set a password later from Login & Security.
+**Email is the mailbox, not the password.** `provider = email` is the user’s verified contact address (`providerId`). A password is optional and is **not** part of the Email method: it is a platform credential (`user_credentials`, one row per user, bcrypt hash and `source`), so `providerData` never carries a hash. GitHub/Google signup, link, connect, and later login bind that address as a **passwordless** Email method when the IdP marks it verified — they do not mint a password and do not overwrite an Email method that already exists. If another account already owns that Email address, OAuth still succeeds and the Email bind is skipped. Users can set a password later from Login & Security.
 
 **Primary method rule:** Every user has exactly one primary method. The first method created during registration is automatically primary (OAuth-first signup keeps the social method primary). Users can change their primary method at any time, but cannot delete the primary or their last remaining method.
 
@@ -552,6 +552,12 @@ Grant enforces database-level tenant isolation on all 21 pivot tables (the table
 | `SECURITY_ENABLE_RLS` | `true`                 | Enable/disable RLS enforcement (kill switch)                                                                                                                                                    |
 | `SECURITY_RLS_ROLE`   | `grant_app_restricted` | Restricted role name (must match migration)                                                                                                                                                     |
 | `DB_GRANT_ROLE_URL`   | _(empty)_              | Optional Postgres URL used only by `db:grant-rls-role` when the app login role cannot run `GRANT … TO <self>` (set to a superuser URL or leave empty when migrations run as a privileged role). |
+
+### Platform credentials are out of the restricted role's reach
+
+Platform passwords (`user_credentials`, with its lockout and audit tables) are core tables with no RLS, so the restricted role of a scoped request must not be able to read them at all. Migration `0088` revokes every privilege on those three tables from `grant_app_restricted` (the project-scope table `project_user_credentials` keeps its privileges and its tenant policy). The separation therefore holds in the database, not only in code: a project-scoped import cannot name a platform row.
+
+Platform-scope credential operations (login verification, register, change, reset, the data export's credential list) run on the **base connection inside the credential service**, never in the request transaction, and no caller chooses a connection or writes SQL for them. An unscoped transaction (login, register, reset) is joined, so the credential commits or rolls back with the caller's other writes. A scoped request's operation runs in its **own short transaction**: it is not part of the request transaction (it commits even if that transaction later rolls back) and it holds one extra pooled connection while it runs (with `DB_POOL_MAX=2` on Lambda that is the second connection, so nothing inside such an operation may ask the pool for a third).
 
 ### Policy coverage
 

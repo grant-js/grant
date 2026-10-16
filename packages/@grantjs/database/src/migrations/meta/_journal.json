@@ -610,6 +610,20 @@
       "when": 1792103329039,
       "tag": "0086_broken_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1792106929039,
+      "tag": "0087_platform_password_cutover",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1792110529039,
+      "tag": "0088_restrict_platform_credentials",
+      "breakpoints": true
     }
   ]
 }
