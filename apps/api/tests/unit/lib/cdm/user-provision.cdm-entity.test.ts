@@ -21,13 +21,21 @@ const userAuthenticationMethods = {
 const userRepository = {
   findUserIdByCdmImport: vi.fn(),
 };
+const projectUsers = {
+  filterMemberUserIds: vi.fn(),
+};
+const credentials = {
+  importProjectPasswordHashes: vi.fn(),
+};
 
 function createEntity(): UserProvisionCdmEntity {
   return new UserProvisionCdmEntity(
     exportRepo as never,
     users as never,
     userAuthenticationMethods as never,
-    userRepository as never
+    userRepository as never,
+    projectUsers as never,
+    credentials as never
   );
 }
 
@@ -288,5 +296,140 @@ describe('UserProvisionCdmEntity password validation', () => {
     const [row] = await createEntity().export({ projectId, tx } as never);
 
     expect(row).not.toHaveProperty('password');
+  });
+});
+
+describe('UserProvisionCdmEntity postApply (project credentials, ADR 0011 slice 3)', () => {
+  const memberId = '30000000-0000-4000-8000-000000000001';
+  const strangerId = '30000000-0000-4000-8000-000000000002';
+  const hash = '$2a$10$NnYC771KbJNAJLrrFr5PD.A0KJg1eS9vxvLCiZyJ2WYfW6tAS6tzG';
+
+  function row(externalKey: string, withPassword: boolean, documentIndex?: number) {
+    return {
+      externalKey,
+      findBy: 'email' as const,
+      name: 'A',
+      ...(documentIndex === undefined ? {} : { documentIndex }),
+      ...(withPassword ? { password: { algorithm: 'bcrypt' as const, hash } } : {}),
+    };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    projectUsers.filterMemberUserIds.mockResolvedValue([memberId]);
+    credentials.importProjectPasswordHashes.mockResolvedValue({
+      imported: 2,
+      updated: 1,
+      unchanged: 3,
+      skippedExisting: 4,
+    });
+  });
+
+  it('is the only handler step that writes: apply never touches a credential', async () => {
+    const ctx = createCtx();
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+    userAuthenticationMethods.createUserAuthenticationMethod.mockResolvedValue({});
+    userRepository.findUserIdByCdmImport.mockResolvedValue(null);
+    users.createUser.mockResolvedValue({ id: 'new-user-id' });
+
+    await createEntity().apply(ctx, [row('a@example.com', true)]);
+
+    expect(credentials.importProjectPasswordHashes).not.toHaveBeenCalled();
+    expect(projectUsers.filterMemberUserIds).not.toHaveBeenCalled();
+    expect(ctx.result.warnings).toEqual([]);
+  });
+
+  it('reads membership once in the import transaction, then imports the hashes in one call', async () => {
+    const ctx = createCtx();
+    ctx.produced.userIds.set('a@example.com', memberId);
+    ctx.produced.userIds.set('b@example.com', memberId);
+
+    await createEntity().postApply(ctx, [
+      row('a@example.com', true),
+      row('b@example.com', true),
+      row('c@example.com', false),
+    ]);
+
+    expect(projectUsers.filterMemberUserIds).toHaveBeenCalledTimes(1);
+    expect(projectUsers.filterMemberUserIds).toHaveBeenCalledWith(
+      { projectId, userIds: [memberId] },
+      tx
+    );
+    expect(credentials.importProjectPasswordHashes).toHaveBeenCalledTimes(1);
+    expect(credentials.importProjectPasswordHashes).toHaveBeenCalledWith(
+      {
+        projectId,
+        rows: [
+          { userId: memberId, hash },
+          { userId: memberId, hash },
+        ],
+      },
+      tx
+    );
+    expect(ctx.result).toMatchObject({
+      passwordsImported: 2,
+      passwordsUpdated: 1,
+      passwordsUnchanged: 3,
+      passwordsSkippedExisting: 4,
+    });
+  });
+
+  it('does nothing, and reads nothing, when no row carries a password', async () => {
+    const ctx = createCtx();
+    ctx.produced.userIds.set('a@example.com', memberId);
+
+    await createEntity().postApply(ctx, [row('a@example.com', false)]);
+
+    expect(projectUsers.filterMemberUserIds).not.toHaveBeenCalled();
+    expect(credentials.importProjectPasswordHashes).not.toHaveBeenCalled();
+  });
+
+  it('refuses every non-member by document position, with no address and no hash, writing nothing', async () => {
+    const ctx = createCtx();
+    ctx.produced.userIds.set('a@example.com', memberId);
+    ctx.produced.userIds.set('b@example.com', strangerId);
+
+    let message = '';
+    try {
+      await createEntity().postApply(ctx, [
+        row('a@example.com', true, 0),
+        row('b@example.com', true, 4),
+      ]);
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError);
+      message = (error as Error).message;
+    }
+
+    expect(message).toContain('users[4]');
+    expect(message).not.toContain('users[0]');
+    expect(message).not.toContain('example.com');
+    expect(message).not.toContain(hash);
+    expect(credentials.importProjectPasswordHashes).not.toHaveBeenCalled();
+    expect(ctx.result.passwordsImported).toBe(0);
+  });
+
+  it('refuses a row whose user was never resolved, as a non-member', async () => {
+    const ctx = createCtx();
+
+    await expect(createEntity().postApply(ctx, [row('a@example.com', true, 2)])).rejects.toThrow(
+      /users\[2\]/
+    );
+    expect(credentials.importProjectPasswordHashes).not.toHaveBeenCalled();
+  });
+
+  it('caps the positions it names and counts the rest', async () => {
+    const ctx = createCtx();
+    const rows = Array.from({ length: 14 }, (_, i) => {
+      ctx.produced.userIds.set(`s${i}@example.com`, strangerId);
+      return row(`s${i}@example.com`, true, i);
+    });
+
+    const message = await createEntity()
+      .postApply(ctx, rows)
+      .catch((error: Error) => error.message);
+
+    expect(message).toContain('users[9]');
+    expect(message).not.toContain('users[10]');
+    expect(message).toContain('and 4 more');
   });
 });

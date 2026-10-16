@@ -130,7 +130,7 @@ const cdmPasswordSchema = z
   })
   .openapi({
     description:
-      'An existing password credential to store as the user email password (ADR 0010). Only valid with `key.findBy: email`.',
+      "An existing password credential to store as the importing project's credential for the user (ADR 0011). Only valid with `key.findBy: email`; the user must be a member of the project after the import.",
   });
 
 const userCdmSchema = z.object({
@@ -302,7 +302,7 @@ export function validateSyncInput(
 }
 
 /**
- * A password is the credential of the email authentication method, so it only belongs on
+ * A password is imported for a person resolved by address, so it only belongs on
  * a user identified by email, and what it carries must be a bcrypt hash this deployment
  * accepts. The message names the position, never the key (an email) or the hash: this
  * runs for the by-reference worker too, whose refusals are stored on the job row.
@@ -313,7 +313,7 @@ function assertUserPassword(user: SyncInputUnderValidation['users'][number], ind
   }
   if (user.key.findBy !== CdmFindBy.Email) {
     throw new ValidationError(
-      `users[${index}]: password is only allowed with key.findBy 'email'; the credential belongs to the email authentication method`
+      `users[${index}]: password is only allowed with key.findBy 'email'; the person is resolved by address`
     );
   }
   const problem = cdmPasswordProblem(user.password);

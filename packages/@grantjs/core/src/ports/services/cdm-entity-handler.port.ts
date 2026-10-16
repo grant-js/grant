@@ -130,6 +130,15 @@ export interface ICdmEntityHandler<TInput = unknown, TExport = TInput> {
   /** Apply this handler's slice of the CDM input, mutating shared `result` and `produced`. */
   apply(ctx: CdmApplyContext, input: readonly TInput[]): Promise<void>;
 
+  /**
+   * Optional second pass: runs for every handler that has one, in handler order, after
+   * **every** handler's `apply` has run, in the same transaction. For work that depends on
+   * what another handler produced, such as a credential that needs the project membership
+   * the user assignment step creates (ADR 0011 § 4). May throw `ValidationError`, which
+   * rolls the import back like one from `apply`.
+   */
+  postApply?(ctx: CdmApplyContext, input: readonly TInput[]): Promise<void>;
+
   /** Export project's current state back into this handler's input shape. */
   export(ctx: CdmExportContext): Promise<readonly TExport[]>;
 }

@@ -91,10 +91,12 @@ export interface CdmUserProvisionInternal {
   name: string;
   metadata?: Record<string, unknown> | null;
   searchable?: Record<string, unknown> | null;
+  /** Position of this user in the document's `users[]`, so an apply-time error can name it. */
+  documentIndex?: number;
   /**
-   * Import-only, `findBy: 'email'` only: a bcrypt hash for the email authentication method
-   * (ADR 0010). A credential: it goes to the credential store and nowhere else, so it is
-   * never copied into `metadata`, `searchable`, a log line or an error message.
+   * Import-only, `findBy: 'email'` only: a bcrypt hash for the importing project's password
+   * credential (ADR 0011 § 4). A credential: it goes to the credential store and nowhere
+   * else, so it is never copied into `metadata`, `searchable`, a log line or an error message.
    */
   password?: { algorithm: 'bcrypt'; hash: string } | null;
 }

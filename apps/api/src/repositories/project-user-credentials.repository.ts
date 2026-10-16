@@ -3,12 +3,12 @@ import type {
   CredentialSource,
   CredentialWithHash,
   CredentialWriteInput,
-  ICredentialRepository,
+  IProjectCredentialRepository,
   ProjectCredentialScope,
 } from '@grantjs/core';
 import type { DbSchema } from '@grantjs/database';
 import { projectUserCredentials } from '@grantjs/database';
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 
@@ -24,6 +24,9 @@ const recordColumns = {
   createdAt: projectUserCredentials.createdAt,
   updatedAt: projectUserCredentials.updatedAt,
 };
+
+/** Bind parameters per statement for `findActiveMany`; the driver's limit is 65,534. */
+const FIND_MANY_CHUNK = 10_000;
 
 type RecordRow = {
   id: string;
@@ -54,7 +57,7 @@ function toRecord(row: RecordRow): CredentialRecord {
  * so the policy is defence in depth, not the only guard. It never reads or writes
  * `user_credentials`.
  */
-export class ProjectUserCredentialRepository implements ICredentialRepository<ProjectCredentialScope> {
+export class ProjectUserCredentialRepository implements IProjectCredentialRepository {
   constructor(private readonly db: DbSchema) {}
 
   async findActive(
@@ -75,6 +78,38 @@ export class ProjectUserCredentialRepository implements ICredentialRepository<Pr
       )
       .limit(1);
     return row ? { ...toRecord(row), hash: row.hash } : null;
+  }
+
+  async findActiveMany(
+    scope: ProjectCredentialScope,
+    userIds: readonly string[],
+    transaction?: Transaction
+  ): Promise<CredentialWithHash[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    const dbInstance = transaction ?? this.db;
+    const rows: CredentialWithHash[] = [];
+    // One query up to the chunk size, which is far above any real document (a staging import
+    // carries ~2.5k rows): the chunking only keeps a pathological one under the driver's
+    // bind-parameter limit.
+    for (let start = 0; start < userIds.length; start += FIND_MANY_CHUNK) {
+      const chunk = userIds.slice(start, start + FIND_MANY_CHUNK);
+      const found = await dbInstance
+        .select({ ...recordColumns, hash: projectUserCredentials.hash })
+        .from(projectUserCredentials)
+        .where(
+          and(
+            eq(projectUserCredentials.projectId, scope.projectId),
+            inArray(projectUserCredentials.userId, chunk),
+            isNull(projectUserCredentials.deletedAt)
+          )
+        );
+      for (const row of found) {
+        rows.push({ ...toRecord(row), hash: row.hash });
+      }
+    }
+    return rows;
   }
 
   async lockActive(

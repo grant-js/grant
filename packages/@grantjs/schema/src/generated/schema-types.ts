@@ -448,8 +448,8 @@ export enum CdmIfMissing {
 export type CdmKeyResolverInput = {
   /**
    * `id` references an existing Grant user id. `email` resolves or creates a
-   * global email authentication method, passwordless unless the user carries a
-   * `password`. Other values are treated as CDM-local external keys for project
+   * global email authentication method, passwordless on the platform; a `password`
+   * becomes a credential of the importing project only. Other values are treated as CDM-local external keys for project
    * import/export.
    */
   findBy?: InputMaybe<CdmFindBy>;
@@ -489,8 +489,8 @@ export enum CdmPasswordAlgorithm {
 }
 
 /**
- * A password hash the importer already holds, to be stored as the user's email
- * password credential (ADR 0010). Never the plaintext password.
+ * A password hash the importer already holds, to be stored as the importing project's
+ * password credential (ADR 0011). Never the plaintext password.
  */
 export type CdmPasswordInput = {
   algorithm: CdmPasswordAlgorithm;
@@ -3633,20 +3633,24 @@ export type SyncProjectResult = {
   groupTagsLinked: Scalars['Int']['output'];
   groupsCreated: Scalars['Int']['output'];
   importId?: Maybe<Scalars['String']['output']>;
-  /** Users whose `password` hash was stored as their email credential for the first time. */
+  /**
+   * Users whose `password` hash was stored as the importing project's credential for the
+   * first time.
+   */
   passwordsImported: Scalars['Int']['output'];
   /**
-   * Users whose `password` hash was not stored because the credential or the identity is
-   * not the import's to write: a password set in Grant, an address the owner has verified,
-   * or an identity that already existed and was not created by an earlier import of this
-   * project.
+   * Users whose project credential was not written because the person owns it: it was set or
+   * reset in Grant, not imported.
    */
   passwordsSkippedExisting: Scalars['Int']['output'];
-  /** Users whose imported credential already equalled the hash in the document. */
+  /**
+   * Users whose project credential, stored by an earlier import of this project, already
+   * equalled the hash in the document.
+   */
   passwordsUnchanged: Scalars['Int']['output'];
   /**
-   * Users whose imported credential was replaced because the document carried a different
-   * hash for it.
+   * Users whose project credential was replaced because an earlier import of this project had
+   * stored a different hash.
    */
   passwordsUpdated: Scalars['Int']['output'];
   permissionsCreated: Scalars['Int']['output'];
@@ -4153,19 +4157,22 @@ export type UserCdmInput = {
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
   /**
-   * Existing password credential to import for this user. Only valid with
-   * `key.findBy: email`, because the credential lives on the email authentication
-   * method; any other resolver is a validation error.
+   * Existing password credential to import for this user as a credential of the importing
+   * project only. Only valid with `key.findBy: email`, because the person is resolved by
+   * address; any other resolver is a validation error.
    *
-   * Ownership is forward-only. An imported credential is marked as imported and stays
-   * owned by the importing system while the email is unverified: a later import of this
-   * project with a different hash replaces it, an identical one changes nothing. Once the
-   * owner verifies the address, or the password is set, changed or reset in Grant, Grant owns
-   * it and imports never touch it again. A credential is written only for an identity the
-   * import creates, or one an earlier import of this project created whose email is still
-   * unverified; any other existing identity, including one found through GitHub or Google,
-   * is left untouched. An absent `password` never removes a
-   * stored credential. See `SyncProjectResult` for the counters.
+   * The person must be a member of the project after the import: assigned in the same
+   * document (`roles`, `groups` or `permissions`) or already a member. A password for anyone
+   * else is a validation error raised when the import is applied, which rolls the import back
+   * and names the position in `users`.
+   *
+   * Ownership is forward-only. An imported credential is marked as imported and stays owned
+   * by the importing system until the person resets or changes it: a later import of this
+   * project with a different hash replaces it, an identical one changes nothing. Once it is
+   * set, changed or reset in Grant, Grant owns it and imports never touch it again. Verified
+   * and GitHub or Google linked identities are not excluded: the credential opens this
+   * project's apps only. An absent `password` never removes a stored credential. See
+   * `SyncProjectResult` for the counters.
    */
   password?: InputMaybe<CdmPasswordInput>;
   /** Direct user → permission grants (document keys or catalog `resourceSlug:action` refs). */

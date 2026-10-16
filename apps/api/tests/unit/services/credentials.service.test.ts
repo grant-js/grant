@@ -51,12 +51,27 @@ class FakeCredentialRepository implements ICredentialRepository<CredentialScope>
     return record;
   }
 
+  /** Queries issued, so a test can show an import reads once however many rows it has. */
+  reads = { findActive: 0, findActiveMany: 0 };
+
   async findActive(scope: CredentialScope, userId: string) {
+    this.reads.findActive += 1;
     const row = this.rows.find(this.key(scope, userId));
     return row ? { ...row } : null;
   }
 
-  async upsert(scope: CredentialScope, input: { userId: string; hash: string; source: never }) {
+  async findActiveMany(scope: CredentialScope, userIds: readonly string[], _transaction?: unknown) {
+    this.reads.findActiveMany += 1;
+    return this.rows
+      .filter((row) => userIds.includes(row.userId) && this.key(scope, row.userId)(row))
+      .map((row) => ({ ...row }));
+  }
+
+  async upsert(
+    scope: CredentialScope,
+    input: { userId: string; hash: string; source: never },
+    _transaction?: unknown
+  ) {
     const existing = this.rows.find(this.key(scope, input.userId));
     if (existing) {
       Object.assign(existing, {
@@ -880,6 +895,207 @@ describe('CredentialService', () => {
         newPassword: NEW_PASSWORD,
       });
       expect(lockouts.reset).toHaveBeenCalledWith(PLATFORM, USER, undefined);
+    });
+  });
+  describe('importProjectPasswordHashes (ADR 0011 section 4)', () => {
+    const HASH_ONE = hashSecret('Imported-Passw0rd-1', 4);
+    const HASH_TWO = hashSecret('Imported-Passw0rd-2', 4);
+    const THIRD_USER = 'user-3';
+
+    const seed = async (
+      service: ReturnType<typeof build>['service'],
+      userId: string,
+      source: 'cdm-import' | 'reset' | 'change' | 'register' | 'migrated-import',
+      hash = HASH_ONE
+    ) => service.setPasswordHash({ scope: IN_PROJECT, userId, hash, source });
+
+    it('writes a new credential as cdm-import and counts it as imported', async () => {
+      const { service, project } = build();
+
+      const counts = await service.importProjectPasswordHashes({
+        projectId: PROJECT,
+        rows: [{ userId: USER, hash: HASH_ONE }],
+      });
+
+      expect(counts).toEqual({ imported: 1, updated: 0, unchanged: 0, skippedExisting: 0 });
+      expect(project.rows).toHaveLength(1);
+      expect(project.rows[0]).toMatchObject({ userId: USER, source: 'cdm-import', hash: HASH_ONE });
+    });
+
+    it('replaces an earlier import with a different hash, and leaves an identical one alone', async () => {
+      const { service, project } = build();
+      await seed(service, USER, 'cdm-import', HASH_ONE);
+      await seed(service, OTHER_USER, 'cdm-import', HASH_ONE);
+      const unchangedBefore = { ...project.rows.find((r) => r.userId === OTHER_USER)! };
+
+      const counts = await service.importProjectPasswordHashes({
+        projectId: PROJECT,
+        rows: [
+          { userId: USER, hash: HASH_TWO },
+          { userId: OTHER_USER, hash: HASH_ONE },
+        ],
+      });
+
+      expect(counts).toEqual({ imported: 0, updated: 1, unchanged: 1, skippedExisting: 0 });
+      expect(project.rows.find((r) => r.userId === USER)).toMatchObject({
+        hash: HASH_TWO,
+        source: 'cdm-import',
+      });
+      expect(project.rows.find((r) => r.userId === OTHER_USER)).toEqual(unchangedBefore);
+    });
+
+    it.each(['reset', 'change', 'register', 'migrated-import'] as const)(
+      'never touches a credential the person owns (source %s)',
+      async (source) => {
+        const { service, project, projectAudit } = build();
+        await seed(service, USER, source, HASH_ONE);
+        projectAudit.logUpdate.mockClear();
+        const before = { ...project.rows[0] };
+
+        const counts = await service.importProjectPasswordHashes({
+          projectId: PROJECT,
+          rows: [{ userId: USER, hash: HASH_TWO }],
+        });
+
+        expect(counts).toEqual({ imported: 0, updated: 0, unchanged: 0, skippedExisting: 1 });
+        expect(project.rows).toEqual([before]);
+        expect(projectAudit.logUpdate).not.toHaveBeenCalled();
+      }
+    );
+
+    it('reads the existing credentials once for the whole document, then decides in memory', async () => {
+      const { service, project } = build();
+      await seed(service, OTHER_USER, 'cdm-import', HASH_ONE);
+      await seed(service, THIRD_USER, 'reset', HASH_ONE);
+      project.reads = { findActive: 0, findActiveMany: 0 };
+
+      const rows = [
+        { userId: USER, hash: HASH_ONE },
+        { userId: OTHER_USER, hash: HASH_TWO },
+        { userId: THIRD_USER, hash: HASH_TWO },
+        ...Array.from({ length: 20 }, (_, i) => ({ userId: `bulk-${i}`, hash: HASH_ONE })),
+      ];
+      const counts = await service.importProjectPasswordHashes({ projectId: PROJECT, rows });
+
+      expect(project.reads).toEqual({ findActive: 0, findActiveMany: 1 });
+      expect(counts).toEqual({ imported: 21, updated: 1, unchanged: 0, skippedExisting: 1 });
+    });
+
+    it('does no read and no write for an empty document', async () => {
+      const { service, project } = build();
+      const counts = await service.importProjectPasswordHashes({ projectId: PROJECT, rows: [] });
+      expect(counts).toEqual({ imported: 0, updated: 0, unchanged: 0, skippedExisting: 0 });
+      expect(project.reads).toEqual({ findActive: 0, findActiveMany: 0 });
+    });
+
+    it('only reads and writes the named project, and never the platform tables', async () => {
+      const { service, platform, project, platformConnection } = build();
+      await service.setPasswordHash({
+        scope: IN_OTHER_PROJECT,
+        userId: USER,
+        hash: HASH_TWO,
+        source: 'cdm-import',
+      });
+      await service.setPasswordHash({
+        scope: PLATFORM,
+        userId: USER,
+        hash: HASH_TWO,
+        source: 'migrated',
+      });
+      const platformCallsBefore = platformConnection.transaction.mock.calls.length;
+
+      const counts = await service.importProjectPasswordHashes({
+        projectId: PROJECT,
+        rows: [{ userId: USER, hash: HASH_ONE }],
+      });
+
+      // Another project's credential for the same person does not make this one "existing".
+      expect(counts).toEqual({ imported: 1, updated: 0, unchanged: 0, skippedExisting: 0 });
+      expect(project.rows.filter((r) => r.projectId === OTHER_PROJECT)[0].hash).toBe(HASH_TWO);
+      expect(platform.rows).toHaveLength(1);
+      expect(platform.rows[0].hash).toBe(HASH_TWO);
+      expect(platformConnection.transaction.mock.calls.length).toBe(platformCallsBefore);
+    });
+
+    it('applies repeated rows for one person in order, so the last hash wins', async () => {
+      const { service, project } = build();
+
+      const counts = await service.importProjectPasswordHashes({
+        projectId: PROJECT,
+        rows: [
+          { userId: USER, hash: HASH_ONE },
+          { userId: USER, hash: HASH_TWO },
+        ],
+      });
+
+      expect(counts).toEqual({ imported: 1, updated: 1, unchanged: 0, skippedExisting: 0 });
+      expect(project.rows).toHaveLength(1);
+      expect(project.rows[0].hash).toBe(HASH_TWO);
+    });
+
+    it('audits create and replace without the hash, and resets that user lockout', async () => {
+      const { service, projectAudit, lockouts } = build();
+      await seed(service, OTHER_USER, 'cdm-import', HASH_ONE);
+      projectAudit.logCreate.mockClear();
+      projectAudit.logUpdate.mockClear();
+      (lockouts.reset as ReturnType<typeof vi.fn>).mockClear();
+
+      await service.importProjectPasswordHashes({
+        projectId: PROJECT,
+        rows: [
+          { userId: USER, hash: HASH_ONE },
+          { userId: OTHER_USER, hash: HASH_TWO },
+        ],
+      });
+
+      expect(projectAudit.logCreate).toHaveBeenCalledTimes(1);
+      expect(projectAudit.logUpdate).toHaveBeenCalledTimes(1);
+      expect(auditPayloads(projectAudit)).not.toContain('$2');
+      expect(lockouts.reset).toHaveBeenCalledWith(IN_PROJECT, USER, undefined);
+      expect(lockouts.reset).toHaveBeenCalledWith(IN_PROJECT, OTHER_USER, undefined);
+    });
+
+    it('passes the caller transaction to every project read and write', async () => {
+      const { service, project } = build();
+      const seen: unknown[] = [];
+      const many = project.findActiveMany.bind(project);
+      const upsert = project.upsert.bind(project);
+      project.findActiveMany = (async (...args: Parameters<typeof many>) => {
+        seen.push(args[2]);
+        return many(...args);
+      }) as typeof project.findActiveMany;
+      project.upsert = (async (...args: Parameters<typeof upsert>) => {
+        seen.push(args[2]);
+        return upsert(...args);
+      }) as typeof project.upsert;
+      const tx = { marker: 'import-transaction' };
+
+      await service.importProjectPasswordHashes(
+        { projectId: PROJECT, rows: [{ userId: USER, hash: HASH_ONE }] },
+        tx as never
+      );
+
+      expect(seen).toEqual([tx, tx]);
+    });
+
+    it('refuses a hash that is not bcrypt without echoing it and before reading or writing anything', async () => {
+      const { service, project } = build();
+      const bad = 'plaintext-looking-secret-value';
+
+      const failure = await service
+        .importProjectPasswordHashes({
+          projectId: PROJECT,
+          rows: [
+            { userId: USER, hash: HASH_ONE },
+            { userId: OTHER_USER, hash: bad },
+          ],
+        })
+        .catch((e: Error) => e);
+
+      expect(failure).toBeInstanceOf(Error);
+      expect(String((failure as Error).message)).not.toContain(bad);
+      expect(project.reads).toEqual({ findActive: 0, findActiveMany: 0 });
+      expect(project.rows).toHaveLength(0);
     });
   });
 });

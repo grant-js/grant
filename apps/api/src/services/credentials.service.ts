@@ -6,8 +6,9 @@ import type {
   ICredentialLockoutService,
   ICredentialRepository,
   ICredentialService,
+  IProjectCredentialRepository,
   PlatformCredentialScope,
-  ProjectCredentialScope,
+  ProjectPasswordImportCounts,
 } from '@grantjs/core';
 
 import { bcryptHashProblem } from '@/lib/cdm/cdm-password.lib';
@@ -23,7 +24,7 @@ import { passwordPolicySchema } from './user-authentication-methods.schemas';
 
 export interface CredentialRepositories {
   platform: ICredentialRepository<PlatformCredentialScope>;
-  project: ICredentialRepository<ProjectCredentialScope>;
+  project: IProjectCredentialRepository;
 }
 
 export interface CredentialAuditLoggers {
@@ -106,17 +107,24 @@ export class CredentialService implements ICredentialService {
     );
   }
 
-  /** The write itself, on the connection `run` chose: upsert, audit, lockout reset. */
+  /**
+   * The write itself, on the connection `run` chose: upsert, audit, lockout reset.
+   * `known` is what the caller already read for this `(scope, user)` in the same
+   * transaction (`null`: no live credential), which saves the lookup; absent, it is read here.
+   */
   private async write(
     scope: CredentialScope,
     userId: string,
     hash: string,
     source: CredentialRecord['source'],
     context: string,
-    transaction: Transaction | undefined
+    transaction: Transaction | undefined,
+    known?: { existing: CredentialRecord | null }
   ): Promise<CredentialRecord> {
     const repository = this.repositoryFor(scope);
-    const existing = await repository.findActive(scope, userId, transaction);
+    const existing = known
+      ? known.existing
+      : await repository.findActive(scope, userId, transaction);
     const record = await repository.upsert(scope, { userId, hash, source }, transaction);
 
     const metadata = { context, scope: scope.scope };
@@ -223,6 +231,72 @@ export class CredentialService implements ICredentialService {
       throw new ValidationError(problem);
     }
     return this.store(params, 'CredentialService.setPasswordHash', transaction);
+  }
+
+  async importProjectPasswordHashes(
+    params: { projectId: string; rows: ReadonlyArray<{ userId: string; hash: string }> },
+    transaction?: Transaction
+  ): Promise<ProjectPasswordImportCounts> {
+    const context = 'CredentialService.importProjectPasswordHashes';
+    const counts: ProjectPasswordImportCounts = {
+      imported: 0,
+      updated: 0,
+      unchanged: 0,
+      skippedExisting: 0,
+    };
+    if (params.rows.length === 0) {
+      return counts;
+    }
+
+    // Ids are validated with zod; a hash is not (`validateInput` would echo a sample of it).
+    const projectScope = { scope: 'project', projectId: params.projectId } as const;
+    const userIds = params.rows.map((row) => {
+      const problem = bcryptHashProblem(row.hash);
+      if (problem) {
+        throw new ValidationError(problem);
+      }
+      return validateInput(
+        credentialTargetSchema,
+        { scope: projectScope, userId: row.userId },
+        context
+      ).userId;
+    });
+
+    // One read for the whole document, in the caller's transaction (project scope: RLS
+    // applies). Everything below is decided in memory.
+    const current = new Map<string, CredentialWithHash>(
+      (
+        await this.repositories.project.findActiveMany(
+          projectScope,
+          [...new Set(params.rows.map((row) => row.userId))],
+          transaction
+        )
+      ).map((record) => [record.userId, record])
+    );
+
+    for (const [index, row] of params.rows.entries()) {
+      const existing = current.get(row.userId) ?? null;
+      if (existing && existing.source !== 'cdm-import') {
+        counts.skippedExisting += 1;
+        continue;
+      }
+      if (existing && existing.hash === row.hash) {
+        counts.unchanged += 1;
+        continue;
+      }
+      const record = await this.write(
+        projectScope,
+        userIds[index],
+        row.hash,
+        'cdm-import',
+        context,
+        transaction,
+        { existing }
+      );
+      current.set(row.userId, { ...record, hash: row.hash });
+      counts[existing ? 'updated' : 'imported'] += 1;
+    }
+    return counts;
   }
 
   async verifyPassword(

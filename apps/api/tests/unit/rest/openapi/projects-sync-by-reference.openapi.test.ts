@@ -158,6 +158,41 @@ describe('imported password credentials (ADR 0010)', () => {
     expect(operation?.description).toContain('passwordsSkippedExisting');
   });
 
+  it('says a password belongs to the importing project and needs a member', () => {
+    const description = paths['/api/projects/{id}/sync/jobs']?.post?.description ?? '';
+
+    expect(description).toContain('credential of the importing project only');
+    expect(description).toContain('must be a member of the project');
+    // The v1.16.0 behaviour this replaces.
+    expect(description).not.toContain('platform login verifies it');
+  });
+
+  it('describes every password counter on the sync job result', () => {
+    const schemas = (document.components?.schemas ?? {}) as Record<
+      string,
+      { properties?: Record<string, { properties?: Record<string, { description?: string }> }> }
+    >;
+    const job = schemas['ProjectSyncJob'];
+    const result = job?.properties?.result as unknown as {
+      properties?: Record<string, { description?: string }>;
+      anyOf?: Array<{ properties?: Record<string, { description?: string }> }>;
+    };
+    const properties =
+      result?.properties ?? result?.anyOf?.find((member) => member.properties)?.properties ?? {};
+
+    for (const counter of [
+      'passwordsImported',
+      'passwordsUpdated',
+      'passwordsUnchanged',
+      'passwordsSkippedExisting',
+    ]) {
+      expect(properties[counter], counter).toBeDefined();
+      expect(properties[counter]?.description, counter).toBeTruthy();
+    }
+    // No conflict counter: two projects never write the same row (ADR 0011 section 4).
+    expect(properties['passwordsSkippedConflict']).toBeUndefined();
+  });
+
   it('says the payload download redacts hashes', () => {
     const operation = paths['/api/projects/{id}/sync/jobs/{jobId}/payload']?.get;
 

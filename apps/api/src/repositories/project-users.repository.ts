@@ -23,6 +23,9 @@ import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
+/** Bind parameters per statement for `filterMemberUserIds`; the driver's limit is 65,534. */
+const FILTER_MEMBERS_CHUNK = 10_000;
+
 export type ProjectUserMembershipRow = {
   projectId: string;
   projectName: string;
@@ -185,6 +188,34 @@ export class ProjectUserRepository
         )
       );
     return rows.map((r) => r.userId);
+  }
+
+  public async filterMemberUserIds(
+    params: { projectId: string; userIds: readonly string[] },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    if (params.userIds.length === 0) {
+      return [];
+    }
+    const dbInstance = transaction || this.db;
+    const members: string[] = [];
+    // One query up to the chunk size (see ProjectUserCredentialRepository.findActiveMany).
+    for (let start = 0; start < params.userIds.length; start += FILTER_MEMBERS_CHUNK) {
+      const rows = await dbInstance
+        .select({ userId: projectUsers.userId })
+        .from(projectUsers)
+        .where(
+          and(
+            eq(projectUsers.projectId, params.projectId),
+            inArray(projectUsers.userId, params.userIds.slice(start, start + FILTER_MEMBERS_CHUNK)),
+            isNull(projectUsers.deletedAt)
+          )
+        );
+      for (const row of rows) {
+        members.push(row.userId);
+      }
+    }
+    return members;
   }
 
   public async softDeleteProjectUser(

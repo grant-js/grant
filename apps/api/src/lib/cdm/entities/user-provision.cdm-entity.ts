@@ -4,6 +4,8 @@ import type {
   CdmPermissionRefSpec,
   CdmTeardownContext,
   ICdmEntityHandler,
+  ICredentialService,
+  IProjectUserService,
   IUserAuthenticationMethodService,
   IUserRepository,
   IUserService,
@@ -26,6 +28,19 @@ import { buildExternalKey } from '../identity.lib';
 
 const INPUT_KEY = 'provisionedUsers' as const;
 
+/** Positions named in a refusal; the rest are counted. Keeps a large document's error short. */
+const MAX_POSITIONS_IN_MESSAGE = 10;
+
+/** Names positions only: never an address, never a hash. */
+function passwordWithoutMembershipMessage(positions: readonly number[]): string {
+  const shown = positions.slice(0, MAX_POSITIONS_IN_MESSAGE).map((p) => `users[${p}]`);
+  const more = positions.length - shown.length;
+  return (
+    `${shown.join(', ')}${more > 0 ? ` and ${more} more` : ''}: a password is only imported for a member of the project. ` +
+    'Assign the user in this document (roles, groups or permissions) or import the password for an existing member'
+  );
+}
+
 /** CDM-marked Grant users for inbound porting (`metadata.cdmImport.kind === 'user'`). */
 export class UserProvisionCdmEntity implements ICdmEntityHandler<
   CdmUserProvisionInternal,
@@ -39,7 +54,9 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     private readonly exportRepo: ProjectExportRepository,
     private readonly users: IUserService,
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
-    private readonly userRepository: IUserRepository
+    private readonly userRepository: IUserRepository,
+    private readonly projectUsers: IProjectUserService,
+    private readonly credentials: ICredentialService
   ) {}
 
   public validateInput(input: readonly CdmUserProvisionInternal[]): void {
@@ -118,18 +135,59 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       ctx.assignmentUserIds.add(user.id);
       ctx.result.usersCreated += 1;
     }
+  }
 
-    // ADR 0011: an import no longer writes a password into the global Email method (the
-    // v1.16.0 slot is gone), and the project credential it writes instead lands in the
-    // next slice. Until then a password is validated (above) and then ignored, with this
-    // warning, so no document fails and nobody believes a password was stored. No
-    // `passwords*` counter moves: none of them is true for a password that was not written.
-    const ignored = input.filter((row) => row.password != null).length;
-    if (ignored > 0) {
-      ctx.result.warnings.push(
-        `${ignored} password(s) were not imported: password import is suspended until project credentials are available (ADR 0011); the users were provisioned without a password`
-      );
+  /**
+   * ADR 0011 § 4: `users[].password` becomes the importing project's credential, in a step
+   * after **every** `apply`, so the membership the assignment step creates exists, in the
+   * same transaction (the project's RLS applies; there is no login-role or cross-tenant read).
+   *
+   * Membership is decided here, not in `validateInput`, which is a pure function with no
+   * view of existing members: a person with a password must be a member of this project
+   * now, either assigned by this document or already one. Otherwise the import fails and
+   * rolls back, naming the positions and never an address or a hash.
+   */
+  public async postApply(
+    ctx: CdmApplyContext,
+    input: readonly CdmUserProvisionInternal[]
+  ): Promise<void> {
+    const tx = ctx.tx as Transaction;
+    const rows: Array<{ position: number; userId: string | undefined; hash: string }> = [];
+    for (const [index, row] of input.entries()) {
+      if (row.password == null) continue;
+      rows.push({
+        position: row.documentIndex ?? index,
+        userId: ctx.produced.userIds.get(row.externalKey),
+        hash: row.password.hash,
+      });
     }
+    if (rows.length === 0) return;
+
+    const memberIds = new Set(
+      await this.projectUsers.filterMemberUserIds(
+        {
+          projectId: ctx.projectId,
+          userIds: [...new Set(rows.flatMap((r) => (r.userId ? [r.userId] : [])))],
+        },
+        tx
+      )
+    );
+    const rejected = rows.filter((r) => r.userId === undefined || !memberIds.has(r.userId));
+    if (rejected.length > 0) {
+      throw new ValidationError(passwordWithoutMembershipMessage(rejected.map((r) => r.position)));
+    }
+
+    const counts = await this.credentials.importProjectPasswordHashes(
+      {
+        projectId: ctx.projectId,
+        rows: rows.map((r) => ({ userId: r.userId as string, hash: r.hash })),
+      },
+      tx
+    );
+    ctx.result.passwordsImported += counts.imported;
+    ctx.result.passwordsUpdated += counts.updated;
+    ctx.result.passwordsUnchanged += counts.unchanged;
+    ctx.result.passwordsSkippedExisting += counts.skippedExisting;
   }
 
   private async applyEmailIdentity(

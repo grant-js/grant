@@ -163,6 +163,16 @@ export interface IProjectUserRepository {
     transaction?: unknown
   ): Promise<string[]>;
 
+  /**
+   * Which of `userIds` are live members of the project, in **one** query. Read inside the
+   * caller's transaction it sees exactly the project's own rows under the restrictive
+   * `project_users` policy, and the memberships the same transaction just wrote.
+   */
+  filterMemberUserIds(
+    params: { projectId: string; userIds: readonly string[] },
+    transaction?: unknown
+  ): Promise<string[]>;
+
   getProjectUserMemberships(
     userId: string,
     transaction?: unknown

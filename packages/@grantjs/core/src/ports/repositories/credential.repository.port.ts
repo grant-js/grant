@@ -89,6 +89,23 @@ export interface ICredentialRepository<S extends CredentialScope = CredentialSco
   purgeSoftDeleted(transaction?: unknown): Promise<number>;
 }
 
+/**
+ * The project-scope repository: the shared port plus the batched read an import needs
+ * (ADR 0011 slice 3). Platform scope has no such caller, so it has no such method.
+ */
+export interface IProjectCredentialRepository extends ICredentialRepository<ProjectCredentialScope> {
+  /**
+   * The live credentials of several users of one project in **one** query, with their
+   * hashes (repository-to-service only). Users with no live credential are absent. An empty
+   * list is no query. Never use it to read a single user in a loop.
+   */
+  findActiveMany(
+    scope: ProjectCredentialScope,
+    userIds: readonly string[],
+    transaction?: unknown
+  ): Promise<CredentialWithHash[]>;
+}
+
 export interface CredentialLockoutPolicy {
   /** Failures inside one window that trigger a lock. */
   maxAttempts: number;

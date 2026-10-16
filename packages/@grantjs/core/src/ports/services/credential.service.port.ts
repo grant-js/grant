@@ -10,6 +10,18 @@ import type {
   CredentialSource,
 } from '../repositories/credential.repository.port';
 
+/** What a project password import did, per row of the document (ADR 0011 § 4). */
+export interface ProjectPasswordImportCounts {
+  /** No project credential existed: written, `source: cdm-import`. */
+  imported: number;
+  /** An earlier import's credential had a different hash: replaced. */
+  updated: number;
+  /** An earlier import's credential already held this hash: nothing written. */
+  unchanged: number;
+  /** The person owns the project credential (`reset`, `change`, ...): never touched. */
+  skippedExisting: number;
+}
+
 /**
  * **Connections (ADR 0011 slice 2).** Platform-scope credentials live in tables the
  * restricted RLS role has no privileges on, so every platform-scope operation runs on the
@@ -51,6 +63,29 @@ export interface ICredentialService {
     params: { scope: CredentialScope; userId: string; hash: string; source: CredentialSource },
     transaction?: unknown
   ): Promise<CredentialRecord>;
+
+  /**
+   * Import already hashed passwords into one project's credentials (ADR 0011 § 4), with the
+   * forward-only provenance of a CDM import, decided in memory after **one** batched read of
+   * the project's existing credentials for these users (never a query per row):
+   *
+   * - no live credential: written as `cdm-import`;
+   * - an existing `cdm-import` credential with a different hash: replaced; with the same
+   *   hash: untouched;
+   * - an existing credential of any other `source`: never touched.
+   *
+   * Runs in the caller's transaction, under the project's RLS; the caller has already
+   * established that every user is a member of the project. The hash is compared inside the
+   * service and never returned. Rows are applied in order, so a user named twice ends with
+   * the last hash.
+   */
+  importProjectPasswordHashes(
+    params: {
+      projectId: string;
+      rows: ReadonlyArray<{ userId: string; hash: string }>;
+    },
+    transaction?: unknown
+  ): Promise<ProjectPasswordImportCounts>;
 
   /**
    * Verify a password for a **resolved user id** in one scope. A missing credential costs
