@@ -3,6 +3,41 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.17.0
+
+### Platform
+
+**Docker images:** tagged `:1.17.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.17.0** (fixed group with apps).
+
+### Minor Changes
+
+- 87ca954: **BREAKING (data and behaviour; the request and response contracts are unchanged).** A password is now a credential with a scope, not a field of the Email authentication method (ADR 0011). This release moves the platform (console) password out of the Email method.
+
+  - **Hashes move.** Platform password hashes leave `providerData.hashedPassword` of the Email method and live in a new `user_credentials` table. Anything that reads `providerData.hashedPassword` or `providerData.passwordSource` breaks; `providerData` no longer carries a hash. The login request (`provider: email`, `providerData.password`), register, change-password and reset-password requests are unchanged, and `hasPassword` is preserved (it now means "a platform credential exists").
+  - **The upgrade migrates passwords, it does not wipe them.** Migration `0087` copies every Grant-set hash verbatim (bcrypt keeps its cost), so nobody resets: `source: migrated`. A hash a CDM import wrote is carried only when the address is verified (`source: migrated-import`); **unverified `cdm-import` hashes are dropped** (the person signs in by another method or resets). The migration also removes the plain-text password-reset tokens it finds: **an outstanding reset email stops working and the person requests a new one**, because reset tokens are now stored as a SHA-256 digest and looked up by it (no more scanning every Email method for a plain-text token).
+  - **An imported password no longer opens the platform, and it belongs to one project.** A CDM import with `users[].password` no longer writes anything into the Email method: it writes a credential of the **importing project only** (`project_user_credentials`, `source: cdm-import`) in a step after the user assignment, in the import transaction. The request contract is unchanged; `passwordsImported`, `passwordsUpdated`, `passwordsUnchanged` and `passwordsSkippedExisting` now count project credentials (`passwordsSkippedExisting`: the person owns it, by reset or change), and the REST `ProjectSyncJob.result` schema now lists them. Verified and GitHub or Google linked identities are no longer excluded. **A password for a user who is not a project member after an import is rejected:** the person must be assigned in the same document (`roles`, `groups` or `permissions`) or already be a member, otherwise the whole import fails and rolls back, naming the position in `users[]`. Passwords from earlier imports that the upgrade dropped are not recreated: send them again.
+  - **Database-enforced separation.** The restricted RLS role of scoped requests has no privileges on the platform credential tables (migration `0088`). Platform credential operations run on the base connection inside the credential service, in their own short transaction when the request is scoped (one extra pooled connection while they run).
+  - A Grant-set password must meet the password policy in every flow, and a rejected password is never echoed in an error.
+
+- bb65914: Project apps can sign people in with an **email and password** that belongs to the project (ADR 0011 § 5). The provider is **opt-in**: a `ProjectApp` offers it only when `enabledProviders` names `password`; an empty list still means Email and the configured social providers, never Password.
+
+  - **Project credential only.** `POST /api/auth/project/password` (email, password, `client_id`, `redirect_uri`, `state`) checks the project's own credential for the app's project. The platform password is never accepted, there is no fallback, and a password never creates an identity, a membership or a platform session. The person must already be a project member. On success the response is the same consent redirect the magic link gets; an unknown address, a non-member, no project credential, a wrong password and a locked credential all return one generic `401` after the same bcrypt work, as does an over-long password. Membership and the project credential are checked again when the sign-in completes (after an MFA step too), so removing a member while a challenge is outstanding cannot be undone by finishing it.
+  - **Lockout.** Per `(project, user)`, from `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES`. Each attempt is recorded before the password is compared, on a connection outside the request transaction, so a burst of parallel guesses cannot outrun the count. Platform login and other projects are unaffected, and magic link and OAuth keep working for a locked person.
+  - **MFA at the ceremony.** With `AUTH_MIN_AAL_AT_LOGIN=aal2` and an active MFA enrolment, the response is `mfa_required` and `POST /api/auth/project/password/mfa` verifies a TOTP or recovery code (each attempt spends from the same lockout) before the consent redirect.
+  - **Hosted view and schema.** `/auth/project/password` (en, de) and the **Password** button on the project sign-in entry when the app enables it. `ProjectApp.enabledProviders` accepts `password`; `@grantjs/schema` exports `ProjectPasswordSignInResult`.
+  - **Dashboard.** The app's OAuth card refuses to save an empty provider selection over a non-empty one: an empty list means every provider except password, not none.
+  - Request bodies of `/auth/project/password*` are redacted in request logs.
+
+- 3132693: Project apps that enable the `password` provider get a **"Forgot password?"** flow (ADR 0011 § 6).
+
+  - **Request.** `POST /api/auth/project/password/forgot` sends a reset link to an existing member of the app's project that has an Email method. The response is the same `200` for an unknown address, a non-member, an address over its limit and an address that was sent a link, so it cannot be used to find out who is a member. Each member may be sent `PROJECT_PASSWORD_RESET_MAX_REQUESTS` links (default 5) per `PROJECT_PASSWORD_RESET_REQUEST_WINDOW_SECONDS` (default one hour), on top of the per-IP limiter.
+  - **Complete.** `POST /api/auth/project/password/reset` sets the member's project password (`source: reset`, so a later CDM import never overwrites it), clears the failed-attempt lockout, marks the Email method verified (the link proved the mailbox; the platform password is untouched) and **revokes every project-app grant the user holds in that project** (other projects and platform sessions are untouched; access tokens already issued live until they expire). The password policy applies and a rejected password does not use the token up.
+  - **Token.** Random, stored only as a SHA-256 digest scoped to the project and user, looked up by digest, single-use, valid for `PROJECT_PASSWORD_RESET_TOKEN_TTL_SECONDS` (default 30 minutes), and carried in the URL fragment of the emailed link.
+  - **New table.** Migration `project_password_resets` (one row per project and user, with the project RLS policy). New email: `sendProjectPasswordReset` on every email adapter, in `en` and `de`.
+  - **Hosted views.** `/auth/project/forgot-password` and `/auth/project/reset-password`; the "Forgot password?" link of the hosted password view is shown now.
+
 ## 1.16.1
 
 ### Platform
