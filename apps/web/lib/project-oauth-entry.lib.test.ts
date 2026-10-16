@@ -22,6 +22,7 @@ describe('getProjectOAuthProviderVisibility', () => {
       showGithub: true,
       showGoogle: false,
       showEmail: true,
+      showPassword: false,
     });
   });
 
@@ -55,6 +56,55 @@ describe('getProjectOAuthProviderVisibility', () => {
     });
     expect(visibility.showGoogle).toBe(true);
     expect(visibility.showGithub).toBe(false);
+  });
+});
+
+describe('getProjectOAuthProviderVisibility password (opt-in)', () => {
+  const app = (enabledProviders: string[] | null) => ({
+    name: 'App',
+    enabledProviders,
+    configuredProviders: ['github', 'google'],
+    scopes: [],
+    pictureUrl: null,
+    primaryColor: null,
+    showHelpPanel: true,
+    themeMode: null,
+    projectName: null,
+  });
+
+  it.each([[[]], [null]])('is not shown when enabledProviders is %j', (list) => {
+    const visibility = getProjectOAuthProviderVisibility(app(list));
+    expect(visibility.showPassword).toBe(false);
+    // everything else keeps meaning "all enabled"
+    expect(visibility.showEmail).toBe(true);
+    expect(visibility.showGithub).toBe(true);
+    expect(visibility.showGoogle).toBe(true);
+  });
+
+  it('is not shown when the list names only other providers', () => {
+    expect(getProjectOAuthProviderVisibility(app(['email', 'github'])).showPassword).toBe(false);
+  });
+
+  it('is shown when the list names it, without needing a configured connection', () => {
+    const visibility = getProjectOAuthProviderVisibility({
+      ...app(['password']),
+      configuredProviders: [],
+    });
+    expect(visibility).toEqual({
+      showGithub: false,
+      showGoogle: false,
+      showEmail: false,
+      showPassword: true,
+    });
+  });
+
+  it('matches case-insensitively, like the API', () => {
+    expect(getProjectOAuthProviderVisibility(app(['Password'])).showPassword).toBe(true);
+  });
+
+  it('is not shown while the app info is unknown', () => {
+    expect(getProjectOAuthProviderVisibility(null).showPassword).toBe(false);
+    expect(getProjectOAuthProviderVisibility(undefined).showPassword).toBe(false);
   });
 });
 
