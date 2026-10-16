@@ -160,7 +160,17 @@ export async function getFirstRoleId(organizationId?: string): Promise<string | 
  * a lower-privilege role (Admin, Dev, or Viewer).
  *
  * Role names use i18n keys: `roles.names.organizationAdmin`, etc.
- * We exclude `roles.names.organizationOwner` and pick the first alternative.
+ * We exclude `roles.names.organizationOwner` and pick Admin, then Dev, then
+ * Viewer.
+ *
+ * The order must be explicit: the seeded organization roles share one
+ * `created_at` (they are inserted in a single transaction), so
+ * `ORDER BY r.created_at` alone leaves the three candidates tied and Postgres
+ * returns whichever the chosen plan scans first. That flips between a heap scan
+ * (Admin) and an index scan on `(organization_id, role_id)` (smallest random
+ * role UUID, Viewer one time in three) as the tables grow during the run, and a
+ * Viewer cannot create projects, so tests that invite with this role and then
+ * create a project failed intermittently with 403 NO_MATCHING_PERMISSION_FOUND.
  */
 export async function getMemberRoleId(organizationId: string): Promise<string | null> {
   const conn = getConnection();
@@ -173,7 +183,14 @@ export async function getMemberRoleId(organizationId: string): Promise<string | 
       AND orl.deleted_at IS NULL
       AND r.deleted_at IS NULL
       AND r.name != 'roles.names.organizationOwner'
-    ORDER BY r.created_at ASC
+    ORDER BY
+      CASE r.name
+        WHEN 'roles.names.organizationAdmin' THEN 0
+        WHEN 'roles.names.organizationDev' THEN 1
+        ELSE 2
+      END,
+      r.name ASC,
+      r.id ASC
     LIMIT 1
   `;
 
