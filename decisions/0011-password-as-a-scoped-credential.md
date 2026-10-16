@@ -400,6 +400,16 @@ counter moved: the v1.16.0 global slot is gone and the project credential it is 
 next slice. A migrated database also loses the plain-text `passwordResetOtp` tokens (§ 3): an
 outstanding reset link stops working and the person requests a new one.
 
+_Implementation note (slice 3):_ the credential step is `UserProvisionCdmEntity.postApply`, a new
+optional second pass of `ICdmEntityHandler` that `ProjectImportService` runs after every handler's
+`apply`, in the import transaction (a separate handler would have shared the `provisionedUsers`
+input key, and export keys its sections by it). Membership is one `IN` query on `project_users`
+(`filterMemberUserIds`), and `ICredentialService.importProjectPasswordHashes` does the one `IN`
+read of the project's credentials and the provenance decision in memory, so the hash is compared
+inside the service and never returned; only the rows that change are written (upsert, audit row,
+lockout reset). The membership refusal names `users[]` positions of the document, never an address.
+Two rows that resolve to one person are applied in order, so the last hash wins.
+
 ### 8. Security notes
 
 - **What a tenant admin can do.** CDM already lets a project administrator add any global user to

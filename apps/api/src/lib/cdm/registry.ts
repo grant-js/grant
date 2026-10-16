@@ -1,6 +1,7 @@
 import type {
   IApiKeyService,
   ICdmEntityHandler,
+  ICredentialService,
   IGroupPermissionService,
   IGroupService,
   IGroupTagService,
@@ -73,6 +74,7 @@ export interface CdmEntityRegistryDeps {
   users: IUserService;
   userAuthenticationMethods: IUserAuthenticationMethodService;
   userRepository: IUserRepository;
+  credentials: ICredentialService;
 }
 
 export function createDefaultCdmEntities(
@@ -118,7 +120,9 @@ export function createDefaultCdmEntities(
       deps.exportRepo,
       deps.users,
       deps.userAuthenticationMethods,
-      deps.userRepository
+      deps.userRepository,
+      deps.projectUsers,
+      deps.credentials
     ),
     new UserAssignmentCdmEntity(
       deps.exportRepo,

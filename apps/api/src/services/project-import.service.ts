@@ -4,6 +4,7 @@ import type {
   CdmProducedRefs,
   IApiKeyService,
   ICdmEntityHandler,
+  ICredentialService,
   IGroupPermissionService,
   IGroupService,
   IGroupTagService,
@@ -105,6 +106,7 @@ export class ProjectImportService implements IProjectImportService {
     userRepository: IUserRepository,
     resourceTags: IResourceTagService,
     permissionTags: IPermissionTagService,
+    credentials: ICredentialService,
     /**
      * Read-side repo used by handlers' `export(...)` to enumerate prior
      * project state. Optional because the sync flow itself only needs the
@@ -161,6 +163,7 @@ export class ProjectImportService implements IProjectImportService {
         users,
         userAuthenticationMethods,
         userRepository,
+        credentials,
       });
   }
 
@@ -388,6 +391,14 @@ export class ProjectImportService implements IProjectImportService {
     for (const handler of this.handlers) {
       const slice = this.sliceForHandler(expanded, handler);
       await handler.apply(applyCtx, slice);
+    }
+
+    // After every handler's `apply`: work that needs what the others produced (a password
+    // needs the project membership the assignment step creates). Same transaction.
+    for (const handler of this.handlers) {
+      if (handler.postApply) {
+        await handler.postApply(applyCtx, this.sliceForHandler(expanded, handler));
+      }
     }
 
     await this.linkResourceAndPermissionTagPivots(expanded, applyCtx, tx);

@@ -220,6 +220,13 @@ export class ProjectUserService implements IProjectUserService {
     return this.projectUserRepository.filterUserIdsBySearchDocument(params, transaction);
   }
 
+  public async filterMemberUserIds(
+    params: { projectId: string; userIds: readonly string[] },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return this.projectUserRepository.filterMemberUserIds(params, transaction);
+  }
+
   public async mergeProjectUserCdmMetadata(
     params: {
       projectId: string;

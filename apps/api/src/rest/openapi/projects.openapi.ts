@@ -312,14 +312,17 @@ top-level \`cdmImport\` key in importer metadata).
 
 A user identified by \`key.findBy: "email"\` may carry \`password: { algorithm: "bcrypt", hash }\`, an
 existing bcrypt hash (\`$2a$\`, \`$2b$\` or \`$2y$\`, cost 4 to 15) such as Go's
-\`bcrypt.GenerateFromPassword\` writes. It is stored as the user's email password credential, where
-platform login verifies it, and is marked as imported: the importing system owns it while the
-email is unverified, and a later import with a different hash replaces it. Once the owner verifies the
-address, or the password is set, changed or reset in Grant, an import never touches it again. An absent
-\`password\` never deletes one. A credential is only written for an identity the import creates, or one
-an earlier import of this project created whose email is still unverified (never to one found
-through GitHub or Google). The result counts
-\`passwordsImported\`, \`passwordsUpdated\`, \`passwordsUnchanged\` and \`passwordsSkippedExisting\`.
+\`bcrypt.GenerateFromPassword\` writes. It is stored as a **credential of the importing project only**
+(ADR 0011), marked as imported; it never opens the Grant console and is never written to the user's
+global identity. The person must be a member of the project after the import, either assigned in the
+same document (\`roles\`, \`groups\` or \`permissions\`) or already a member: a password for anyone else
+fails the import, which rolls back, naming the position in \`users[]\`. The importing system owns the
+credential until the person resets or changes it: a later import of this project with a different hash
+replaces it, an identical one changes nothing, and once the password is set, changed or reset in Grant an
+import never touches it again. An absent \`password\` never deletes one. Verified and GitHub or Google
+linked identities are not excluded: the credential opens this project's apps only. The result counts
+\`passwordsImported\`, \`passwordsUpdated\`, \`passwordsUnchanged\` and \`passwordsSkippedExisting\`
+(the person owns the project credential).
 A \`password\` on any other user, or an invalid hash, is a validation error that never echoes the
 hash. The hash is never kept in metadata, search tokens, audit values or events, is removed
 from the stored job payload when the job ends, and is replaced by \`[redacted]\` in the payload download.

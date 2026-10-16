@@ -146,6 +146,12 @@ export interface IProjectUserService {
     transaction?: unknown
   ): Promise<string[]>;
 
+  /** See `IProjectUserRepository.filterMemberUserIds`. */
+  filterMemberUserIds(
+    params: { projectId: string; userIds: readonly string[] },
+    transaction?: unknown
+  ): Promise<string[]>;
+
   removeProjectUser(
     params: RemoveProjectUserInput & DeleteParams,
     transaction?: unknown

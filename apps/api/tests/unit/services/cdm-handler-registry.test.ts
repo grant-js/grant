@@ -49,6 +49,8 @@ function createRecordingHandler(
   options: {
     validate?: (input: readonly unknown[]) => void;
     apply?: (ctx: CdmApplyContext) => void;
+    postApply?: (ctx: CdmApplyContext) => void;
+    withPostApply?: boolean;
   } = {}
 ): ICdmEntityHandler {
   return {
@@ -71,6 +73,14 @@ function createRecordingHandler(
       options.apply?.(ctx);
     }),
     export: vi.fn(async (_ctx: CdmExportContext) => []),
+    ...(options.withPostApply
+      ? {
+          postApply: vi.fn(async (ctx: CdmApplyContext) => {
+            log.events.push(`${name}:postApply`);
+            options.postApply?.(ctx);
+          }),
+        }
+      : {}),
   };
 }
 
@@ -117,6 +127,7 @@ function buildService(handlers: ReadonlyArray<ICdmEntityHandler>) {
     {} as never,
     {} as never,
     cache as never,
+    {} as never,
     {} as never,
     {} as never,
     {} as never,
@@ -231,6 +242,46 @@ describe('ICdmEntityHandler registry contract', () => {
     const lastTeardown = Math.max(...teardownIdx);
     const firstApply = Math.min(...applyIdx);
     expect(lastTeardown).toBeLessThan(firstApply);
+  });
+
+  it('runs every postApply after all applies, in handler order, and only for handlers that have one', async () => {
+    const log: EventLog = { events: [] };
+
+    // The first handler has a postApply and still waits for the later handler's apply.
+    const provision = createRecordingHandler('provision', 'roleTemplates', 100, log, {
+      withPostApply: true,
+    });
+    const assignment = createRecordingHandler('assignment', 'userAssignments', 200, log);
+    const keys = createRecordingHandler('keys', 'projectUserApiKeys', 300, log, {
+      withPostApply: true,
+    });
+
+    const { svc } = buildService([provision, assignment, keys]);
+    await svc.importProjectCdm({ projectId, scope, input: baseInput }, {});
+
+    const phases = log.events.filter((e) => /:(apply|postApply)$/.test(e));
+    expect(phases).toEqual([
+      'provision:apply',
+      'assignment:apply',
+      'keys:apply',
+      'provision:postApply',
+      'keys:postApply',
+    ]);
+  });
+
+  it('fails the import when a postApply throws, so the caller transaction rolls back', async () => {
+    const log: EventLog = { events: [] };
+    const handler = createRecordingHandler('provision', 'roleTemplates', 100, log, {
+      withPostApply: true,
+      postApply: () => {
+        throw new Error('postApply refused');
+      },
+    });
+
+    const { svc } = buildService([handler]);
+    await expect(svc.importProjectCdm({ projectId, scope, input: baseInput }, {})).rejects.toThrow(
+      'postApply refused'
+    );
   });
 
   it('short-circuits when a handler validateInput throws (no teardown / apply runs)', async () => {

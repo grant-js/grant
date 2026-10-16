@@ -125,7 +125,7 @@ export function expandCdmSyncInput(input: CdmDocumentInput): ExpandedCdmSyncPayl
   const userAssignments: CdmUserAssignmentInternal[] = [];
   const projectUserApiKeys: CdmProjectUserApiKeyInternal[] = [];
 
-  for (const u of input.users ?? []) {
+  for (const [documentIndex, u] of (input.users ?? []).entries()) {
     const resolver = u.key;
     const isId = resolver.findBy === CdmFindBy.Id;
     const isEmail = resolver.findBy === CdmFindBy.Email;
@@ -137,6 +137,7 @@ export function expandCdmSyncInput(input: CdmDocumentInput): ExpandedCdmSyncPayl
         externalKey: userKey,
         findBy: isEmail ? 'email' : 'key',
         name: u.name,
+        documentIndex,
         metadata: u.metadata ?? null,
         searchable: readCdmInputSearchable(u.searchable),
         password: u.password ? { algorithm: u.password.algorithm, hash: u.password.hash } : null,

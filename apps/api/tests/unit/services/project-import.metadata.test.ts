@@ -149,7 +149,8 @@ describe('ProjectImportService CDM metadata', () => {
       userAuthenticationMethods as never,
       userRepository as never,
       resourceTags as never,
-      permissionTags as never
+      permissionTags as never,
+      {} as never // credentials: these documents carry no password
     );
   }
 
