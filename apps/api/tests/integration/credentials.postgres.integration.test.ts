@@ -227,6 +227,33 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
       await projectRepo.purgeSoftDeleted();
     });
 
+    it('locks what findActiveMany returned until the transaction ends, so a concurrent reset waits', async () => {
+      const scope = { scope: 'project', projectId: projectA } as const;
+      await projectRepo.upsert(scope, { userId: userA, hash: HASH_A, source: 'cdm-import' });
+
+      await db.transaction(async (tx) => {
+        expect(await projectRepo.findActiveMany(scope, [userA], tx as never)).toHaveLength(1);
+
+        // Another connection cannot change the row while the import's decision stands.
+        const other = db.transaction(async (tx2) => {
+          await tx2.execute(sql`SET LOCAL lock_timeout = '300ms'`);
+          await projectRepo.upsert(
+            scope,
+            { userId: userA, hash: HASH_B, source: 'reset' },
+            tx2 as never
+          );
+        });
+        // The repository reports the SQLSTATE (lock_not_available) and nothing of the write.
+        await expect(other).rejects.toThrow(/SQLSTATE 55P03/);
+      });
+
+      // Once the first transaction is over, the write goes through.
+      await projectRepo.upsert(scope, { userId: userA, hash: HASH_B, source: 'reset' });
+      expect((await projectRepo.findActive(scope, userA))?.source).toBe('reset');
+      await projectRepo.softDeleteAllForUser(userA);
+      await projectRepo.purgeSoftDeleted();
+    });
+
     it('rejects a second live row for the same (project, user)', async () => {
       await db
         .insert(projectUserCredentials)

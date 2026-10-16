@@ -104,7 +104,11 @@ export class ProjectUserCredentialRepository implements IProjectCredentialReposi
             inArray(projectUserCredentials.userId, chunk),
             isNull(projectUserCredentials.deletedAt)
           )
-        );
+        )
+        // Held until the caller's transaction ends: the import decides "the person owns it"
+        // from this read, so a reset or change of one of these rows must wait for it rather
+        // than be overwritten by a decision made on the old row.
+        .for('update');
       for (const row of found) {
         rows.push({ ...toRecord(row), hash: row.hash });
       }
