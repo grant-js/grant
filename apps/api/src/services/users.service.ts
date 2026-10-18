@@ -121,6 +121,14 @@ export class UserService implements IUserService {
 
     await this.audit.logCreate(user.id, newValues, metadata, transaction);
 
+    // The user's projects are resolved for symmetry with `user.updated` and `user.deleted`.
+    // A user that was just created is normally a member of none, so this is normally
+    // empty; a later join is announced by `project.user_added`.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'user', id: user.id }],
+      transaction
+    );
+
     // Webhook payload: ids and timestamps only. The name and metadata of the
     // platform identity are not exposed by any other event.
     await this.events.publish(
@@ -129,6 +137,7 @@ export class UserService implements IUserService {
         subjectUserId: user.id,
         aggregate: { kind: 'user', id: user.id },
         data: { after: { id: user.id, createdAt: user.createdAt, updatedAt: user.updatedAt } },
+        projectIds,
       },
       transaction
     );
@@ -187,6 +196,13 @@ export class UserService implements IUserService {
       );
     const changedFields = Object.keys(buildDelta(pick(oldUser), pick(updatedUser)));
     if (changedFields.length > 0) {
+      // Name the projects the user is a member of, so an identity change made in an
+      // organization, account or `me` scope still reaches their project subscriptions.
+      // Nothing is removed here, so unlike `user.deleted` there is no ordering to respect.
+      const projectIds = await this.events.resolveLinkedProjectIds(
+        [{ kind: 'user', id: updatedUser.id }],
+        transaction
+      );
       await this.events.publish(
         {
           type: 'user.updated',
@@ -195,6 +211,7 @@ export class UserService implements IUserService {
           data: {
             after: { id: updatedUser.id, changedFields, updatedAt: updatedUser.updatedAt },
           },
+          projectIds,
         },
         transaction
       );

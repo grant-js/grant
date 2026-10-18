@@ -20,7 +20,7 @@ function user(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function build() {
+function build(linkedProjectIds: string[] = [PROJECT_A, PROJECT_B]) {
   const order: string[] = [];
   const userRepository = {
     getUsers: vi.fn().mockResolvedValue({ users: [user()], totalCount: 1, hasNextPage: false }),
@@ -42,7 +42,7 @@ function build() {
     }),
     resolveLinkedProjectIds: vi.fn().mockImplementation(async () => {
       order.push('resolve');
-      return [PROJECT_A, PROJECT_B];
+      return linkedProjectIds;
     }),
   };
   const service = new UserService(
@@ -62,8 +62,8 @@ function build() {
 }
 
 describe('UserService lifecycle events', () => {
-  it('publishes user.created with ids and timestamps only', async () => {
-    const { service, events } = build();
+  it('publishes user.created with ids and timestamps only, naming no project at creation', async () => {
+    const { service, events } = build([]);
 
     await service.createUser({ name: 'Jane Example' }, tx as never);
 
@@ -73,6 +73,7 @@ describe('UserService lifecycle events', () => {
         subjectUserId: USER_ID,
         aggregate: { kind: 'user', id: USER_ID },
         data: { after: { id: USER_ID, createdAt: expect.any(Date), updatedAt: expect.any(Date) } },
+        projectIds: [],
       },
       tx
     );
@@ -94,12 +95,25 @@ describe('UserService lifecycle events', () => {
     expect(JSON.stringify(event)).not.toContain('Jane');
   });
 
+  it('publishes user.updated naming every project the user is a member of', async () => {
+    const { service, events } = build();
+
+    await service.updateUser(USER_ID, { name: 'Jane Renamed' }, tx as never);
+
+    expect(events.resolveLinkedProjectIds).toHaveBeenCalledWith(
+      [{ kind: 'user', id: USER_ID }],
+      tx
+    );
+    expect(events.publish.mock.calls[0][0].projectIds).toEqual([PROJECT_A, PROJECT_B]);
+  });
+
   it('publishes nothing for an update that changed nothing', async () => {
     const { service, events } = build();
 
     await service.updateUser(USER_ID, { name: 'Jane Example' }, tx as never);
 
     expect(events.publish).not.toHaveBeenCalled();
+    expect(events.resolveLinkedProjectIds).not.toHaveBeenCalled();
   });
 
   it('publishes user.deleted for a soft delete with the projects read before the delete', async () => {

@@ -7,7 +7,9 @@
  *  - removing a PROJECT USER revokes the roles and groups the project gave them;
  *  - tags: create / update / link / unlink / delete;
  *  - deleting an API key (the owning user is the subject only for a user-owned key);
- *  - a user deleting their own account reaches the projects they belong to.
+ *  - a user deleting their own account reaches the projects they belong to;
+ *  - a user renaming themselves in an account scope (which names no project) reaches the
+ *    projects they belong to with one `user.updated`.
  *
  * Deliveries are read from the database together with the stored event, and the
  * external envelope is rebuilt from that row with the real builder: delivery rows
@@ -30,6 +32,7 @@ import {
   Tenant,
   UpdateRoleDocument,
   UpdateTagDocument,
+  UpdateUserDocument,
 } from '@grantjs/schema';
 import { print } from 'graphql';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -70,6 +73,7 @@ interface EventRow extends Record<string, unknown> {
 
 const EVENT_TYPES = [
   'user.created',
+  'user.updated',
   'user.deleted',
   'user.group_revoked',
   'user.role_revoked',
@@ -453,5 +457,42 @@ describe('Webhook cascades and lifecycle events', () => {
     expect(envelope.data.after).toEqual({ id: memberUserId, hardDelete: false });
     // The name of a user who asked to be erased is not in the event.
     expect(JSON.stringify(row.payload)).not.toContain(member.name);
+  });
+
+  it('a user renaming themselves in an organization scope delivers one user.updated to the project they belong to', async () => {
+    const member = await TestUser.create({ withOrgAccount: true });
+    await owner.inviteMember(org.id, member.email);
+    await member.acceptInvitation(org.id);
+    const profile = await member.getProfile();
+    const memberUserId = (
+      profile.body as { data?: { accounts?: Array<{ owner?: { id: string } }> } }
+    ).data!.accounts![0]!.owner!.id;
+    await addProjectUserForE2e(projectId, memberUserId);
+
+    // An organization scope names no project: only the user's own memberships reach the subscription.
+    const res = await graphqlRequest<{ updateUser?: { id: string } }>({
+      query: print(UpdateUserDocument),
+      accessToken: member.accessToken,
+      variables: {
+        id: memberUserId,
+        input: { scope: { tenant: Tenant.Organization, id: org.id }, name: 'E2E Renamed Member' },
+      },
+    });
+    expect(res.body.errors, JSON.stringify(res.body.errors)).toBeUndefined();
+
+    const rows = await waitForDeliveries(
+      subscriptionId,
+      'user.updated',
+      (r) => ofType(r, 'user.updated').some((row) => row.subject_user_id === memberUserId),
+      90_000
+    );
+    const updated = ofType(rows, 'user.updated').filter((r) => r.subject_user_id === memberUserId);
+    expect(updated).toHaveLength(1);
+    expect(updated[0]!.payload.projectIds).toContain(projectId);
+
+    // The names of the changed fields travel, never their values.
+    const envelope = envelopeOf(updated[0]!);
+    expect(envelope.data.after).toMatchObject({ id: memberUserId, changedFields: ['name'] });
+    expect(JSON.stringify(updated[0]!.payload)).not.toContain('E2E Renamed Member');
   });
 });
