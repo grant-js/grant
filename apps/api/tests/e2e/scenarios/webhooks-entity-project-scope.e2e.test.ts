@@ -231,4 +231,48 @@ describe('Webhook delivery whatever the request scope (ADR 0012)', () => {
     const first = await waitForDeliveries(subscriptionId, 4);
     expect(first[3]).toEqual({ type: 'role.updated', scope_tenant: Tenant.Organization });
   });
+
+  it('a resource linked to a project, deleted at ORGANIZATION scope, delivers resource.deleted and its permission.deleted', async () => {
+    // The handler unlinks the project_resources / project_permissions rows before the
+    // services publish; the events must still reach the project's subscription.
+    const sub = await apiClient()
+      .post('/api/webhook-subscriptions')
+      .set('Authorization', owner.authHeader)
+      .send({
+        scope: projectScope(),
+        url: 'https://example.com/grant-e2e-webhook-scope-resource',
+        eventTypes: ['resource.deleted', 'permission.deleted'],
+        active: true,
+      });
+    expect(sub.status).toBe(201);
+    const resourceSubscriptionId = (sub.body as IdBody).data!.id;
+
+    const created = await apiClient()
+      .post('/api/resources')
+      .set('Authorization', owner.authHeader)
+      .send({
+        name: 'E2E Webhook Scope Resource',
+        slug: `e2e-webhook-scope-${Date.now()}`,
+        actions: ['read'],
+        createPermissions: true,
+        scope: projectScope(),
+      });
+    expect(created.status).toBe(201);
+    const resourceId = (created.body as IdBody).data!.id;
+
+    // Creating it is not something this subscription asked for.
+    expect(await deliveriesOf(resourceSubscriptionId)).toHaveLength(0);
+
+    const res = await apiClient()
+      .delete(`/api/resources/${resourceId}`)
+      .query({ scopeId: org.id, tenant: Tenant.Organization })
+      .set('Authorization', owner.authHeader);
+    expect(res.status).toBe(200);
+
+    const rows = await waitForDeliveries(resourceSubscriptionId, 2);
+    expect(rows).toEqual([
+      { type: 'permission.deleted', scope_tenant: Tenant.Organization },
+      { type: 'resource.deleted', scope_tenant: Tenant.Organization },
+    ]);
+  });
 });

@@ -203,7 +203,8 @@ export class ResourceService implements IResourceService {
   }
 
   public async deleteResource(
-    params: Omit<MutationDeleteResourceArgs, 'scope'> & DeleteParams,
+    params: Omit<MutationDeleteResourceArgs, 'scope'> &
+      DeleteParams & { linkedProjectIds?: string[] },
     transaction?: Transaction
   ): Promise<Resource> {
     const context = 'ResourceService.deleteResource';
@@ -213,11 +214,14 @@ export class ResourceService implements IResourceService {
 
     const oldResource = await this.getResource(id, transaction);
 
-    // Read the project links before the delete (and a cascade) removes them.
-    const projectIds = await this.events.resolveLinkedProjectIds(
-      [{ kind: 'resource', id }],
-      transaction
-    );
+    // Read the project links before the delete (and a cascade) removes them. A caller that
+    // already unlinked the project pivots (ResourceHandler) passes the projects it read first.
+    const projectIds = [
+      ...new Set([
+        ...(params.linkedProjectIds ?? []),
+        ...(await this.events.resolveLinkedProjectIds([{ kind: 'resource', id }], transaction)),
+      ]),
+    ];
 
     const isHardDelete = hardDelete === true;
 
