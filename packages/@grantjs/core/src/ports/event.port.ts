@@ -13,7 +13,8 @@ export interface IEventPublisher {
 
   /**
    * Ids of the projects the given entities (role, group, permission, resource,
-   * apiKey) are currently linked to. A caller that is about to destroy the links
+   * apiKey, tag) are currently linked to, or, for a `user`, the projects the user
+   * is a member of. A caller that is about to destroy the links
    * (an entity delete) reads them first and passes the result as
    * `DomainEventInput.projectIds`, because by the time `publish` runs they are gone.
    */

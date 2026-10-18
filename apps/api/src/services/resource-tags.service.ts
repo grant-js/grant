@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IResourceRepository,
   IResourceTagRepository,
   IResourceTagService,
@@ -13,6 +14,7 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { tagLinkEvent } from '@/lib/events/tag-link-event.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -32,7 +34,8 @@ export class ResourceTagService implements IResourceTagService {
     private readonly resourceRepository: IResourceRepository,
     private readonly tagRepository: ITagRepository,
     private readonly resourceTagRepository: IResourceTagRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async resourceExists(resourceId: string, transaction?: Transaction): Promise<void> {
@@ -146,6 +149,11 @@ export class ResourceTagService implements IResourceTagService {
 
     await this.audit.logCreate(resourceTag.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      tagLinkEvent('tag.linked', { kind: 'resource', id: resourceTag.resourceId }, resourceTag),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(resourceTagSchema), resourceTag, context);
   }
 
@@ -230,6 +238,11 @@ export class ResourceTagService implements IResourceTagService {
       await this.audit.logSoftDelete(resourceTag.id, oldValues, newValues, metadata, transaction);
     }
 
+    await this.events.publish(
+      tagLinkEvent('tag.unlinked', { kind: 'resource', id: resourceTag.resourceId }, resourceTag),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(resourceTagSchema), resourceTag, context);
   }
 
@@ -252,6 +265,13 @@ export class ResourceTagService implements IResourceTagService {
           : this.resourceTagRepository.softDeleteResourceTag(resourceTag, transaction)
       )
     );
+
+    for (const pivot of deletedResourceTags) {
+      await this.events.publish(
+        tagLinkEvent('tag.unlinked', { kind: 'resource', id: pivot.resourceId }, pivot),
+        transaction
+      );
+    }
 
     return validateOutput(
       createDynamicSingleSchema(resourceTagSchema).array(),

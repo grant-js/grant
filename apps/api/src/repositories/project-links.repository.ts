@@ -6,14 +6,23 @@ import {
   projectPermissions,
   projectResources,
   projectRoles,
+  projectTags,
   projectUserApiKeys,
+  projectUsers,
 } from '@grantjs/database';
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 /** Entity kinds that reach a project through a pivot table. */
-export const PROJECT_LINKED_KINDS = ['role', 'group', 'permission', 'resource', 'apiKey'] as const;
+export const PROJECT_LINKED_KINDS = [
+  'role',
+  'group',
+  'permission',
+  'resource',
+  'apiKey',
+  'tag',
+] as const;
 export type ProjectLinkedKind = (typeof PROJECT_LINKED_KINDS)[number];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,8 +33,8 @@ export function isProjectLinkedKind(kind: string): kind is ProjectLinkedKind {
 
 /**
  * Reads which projects an entity is linked to, through the project pivots
- * (`project_roles`, `project_groups`, `project_permissions`, `project_resources`
- * and the three API-key pivots). Entity tables carry no scope column, so these
+ * (`project_roles`, `project_groups`, `project_permissions`, `project_resources`,
+ * `project_tags` and the three API-key pivots). Entity tables carry no scope column, so these
  * pivots are the only record of project membership.
  *
  * One entity can be linked to several projects: every pivot's unique index is on
@@ -84,6 +93,13 @@ export class ProjectLinksRepository {
               and(eq(projectResources.resourceId, entityId), isNull(projectResources.deletedAt))
             )
         );
+      case 'tag':
+        return this.projectIdsOf(
+          await db
+            .select({ projectId: projectTags.projectId })
+            .from(projectTags)
+            .where(and(eq(projectTags.tagId, entityId), isNull(projectTags.deletedAt)))
+        );
       case 'apiKey': {
         const [userKeys, accountKeys, organizationKeys] = await Promise.all([
           db
@@ -114,6 +130,25 @@ export class ProjectLinksRepository {
         return this.projectIdsOf([...userKeys, ...accountKeys, ...organizationKeys]);
       }
     }
+  }
+
+  /**
+   * The projects a user is a member of (`project_users`). Not a `ProjectLinkedKind`:
+   * the publisher never derives it from an aggregate, because events about a user's
+   * own security (`user.mfa_*`, `user.password_changed`) must not fan out to every
+   * project the user is in (ADR 0012, item 8). The user lifecycle events
+   * (`user.created`, `user.updated`, `user.deleted`) ask for it explicitly.
+   */
+  public async getUserProjectIds(userId: string, transaction?: Transaction): Promise<string[]> {
+    if (!UUID_RE.test(userId)) return [];
+
+    const db = transaction ?? this.db;
+    return this.projectIdsOf(
+      await db
+        .select({ projectId: projectUsers.projectId })
+        .from(projectUsers)
+        .where(and(eq(projectUsers.userId, userId), isNull(projectUsers.deletedAt)))
+    );
   }
 
   private projectIdsOf(rows: Array<{ projectId: string }>): string[] {

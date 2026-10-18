@@ -42,6 +42,7 @@ describe('UserService.deleteUser last human', () => {
     hardDeleteUser: vi.fn(),
   };
   const fileStorage = { getUrl: vi.fn() };
+  const events = { publish: vi.fn(), resolveLinkedProjectIds: vi.fn().mockResolvedValue([]) };
   const credentials = { removeAllForUser: vi.fn().mockResolvedValue(0) };
 
   function svc() {
@@ -50,7 +51,8 @@ describe('UserService.deleteUser last human', () => {
       { userId: HUMAN_ID } as never,
       audit as never,
       fileStorage as never,
-      credentials as never
+      credentials as never,
+      events as never
     );
   }
 
@@ -118,6 +120,7 @@ describe('UserService.deleteOwnUser last human', () => {
     hardDeleteUser: vi.fn(),
   };
   const fileStorage = { getUrl: vi.fn() };
+  const events = { publish: vi.fn(), resolveLinkedProjectIds: vi.fn().mockResolvedValue([]) };
   const credentials = { removeAllForUser: vi.fn().mockResolvedValue(0) };
 
   function svc() {
@@ -126,7 +129,8 @@ describe('UserService.deleteOwnUser last human', () => {
       { userId: HUMAN_ID } as never,
       audit as never,
       fileStorage as never,
-      credentials as never
+      credentials as never,
+      events as never
     );
   }
 

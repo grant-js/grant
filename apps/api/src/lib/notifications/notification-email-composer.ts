@@ -194,6 +194,8 @@ function composeFamily(
       return composeSecurity(event, ctx, recipientUserId, fragments, locale);
     case 'sync':
       return composeSync(event, fragments, locale);
+    case 'webhookOnly':
+      return fallbackCopy(locale);
   }
 }
 

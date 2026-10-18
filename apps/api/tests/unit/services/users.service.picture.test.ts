@@ -34,6 +34,7 @@ describe('UserService picturePath', () => {
   const fileStorage = {
     getUrl: vi.fn(async (path: string) => `https://signed.example/${path}`),
   };
+  const events = { publish: vi.fn(), resolveLinkedProjectIds: vi.fn().mockResolvedValue([]) };
   const credentials = { removeAllForUser: vi.fn().mockResolvedValue(0) };
 
   function svc() {
@@ -42,7 +43,8 @@ describe('UserService picturePath', () => {
       { userId } as never,
       audit as never,
       fileStorage as never,
-      credentials as never
+      credentials as never,
+      events as never
     );
   }
 

@@ -41,6 +41,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     findActiveAccountProjectApiKeysByClientId: vi.fn().mockResolvedValue([]),
     findActiveOrganizationProjectApiKeysByClientId: vi.fn().mockResolvedValue([]),
     getClientSecretHash: vi.fn().mockResolvedValue(hashSecret(clientSecret)),
+    getOwningUserIds: vi.fn().mockResolvedValue([]),
     createApiKey: vi.fn().mockImplementation(async (params) => apiKey(params)),
     updateLastUsedAt: vi.fn().mockImplementation(async (id) => apiKey({ id })),
     updateClientSecretHash: vi.fn().mockImplementation(async (id) => apiKey({ id })),
@@ -65,6 +66,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
 
   const events = {
     publish: vi.fn(),
+    resolveLinkedProjectIds: vi.fn().mockResolvedValue([]),
   } as unknown as IEventPublisher;
 
   const service = new ApiKeyService(
@@ -224,5 +226,86 @@ describe('ApiKeyService.rotateApiKey', () => {
 
     await expect(service.rotateApiKey({ id: apiKeyId })).rejects.toThrow(/ApiKey/);
     expect(apiKeyRepository.updateClientSecretHash).not.toHaveBeenCalled();
+  });
+});
+
+describe('ApiKeyService.deleteApiKey', () => {
+  const projectIdB = '10000000-0000-4000-8000-000000000007';
+  const otherUserId = '10000000-0000-4000-8000-000000000008';
+
+  function buildDelete(owningUserIds: string[], hardDelete = false) {
+    const existing = apiKey({ name: 'Prod key' });
+    const built = buildService({
+      getApiKey: vi.fn().mockResolvedValue(existing),
+      getOwningUserIds: vi.fn().mockResolvedValue(owningUserIds),
+      softDeleteApiKey: vi.fn().mockResolvedValue({ ...existing, deletedAt: new Date() }),
+      hardDeleteApiKey: vi.fn().mockResolvedValue(existing),
+    });
+    vi.mocked(built.events.resolveLinkedProjectIds).mockResolvedValue([projectId, projectIdB]);
+    return { ...built, hardDelete };
+  }
+
+  it('publishes api_key.deleted with the single owning user as subject and the project links read before the delete', async () => {
+    const { service, apiKeyRepository, events } = buildDelete([userId]);
+    const order: string[] = [];
+    vi.mocked(events.resolveLinkedProjectIds).mockImplementation(async () => {
+      order.push('resolve');
+      return [projectId, projectIdB];
+    });
+    vi.mocked(apiKeyRepository.softDeleteApiKey).mockImplementation(async () => {
+      order.push('delete');
+      return apiKey({ deletedAt: new Date() });
+    });
+
+    await service.deleteApiKey({ id: apiKeyId });
+
+    expect(order).toEqual(['resolve', 'delete']);
+    expect(events.resolveLinkedProjectIds).toHaveBeenCalledWith(
+      [{ kind: 'apiKey', id: apiKeyId }],
+      undefined
+    );
+    expect(events.publish).toHaveBeenCalledWith(
+      {
+        type: 'api_key.deleted',
+        aggregate: { kind: 'apiKey', id: apiKeyId },
+        subjectUserId: userId,
+        data: { before: expect.objectContaining({ id: apiKeyId, clientId }) },
+        projectIds: [projectId, projectIdB],
+      },
+      undefined
+    );
+  });
+
+  it('publishes after a hard delete too, since the pivots cascade away', async () => {
+    const { service, apiKeyRepository, events } = buildDelete([userId]);
+
+    await service.deleteApiKey({ id: apiKeyId, hardDelete: true });
+
+    expect(apiKeyRepository.hardDeleteApiKey).toHaveBeenCalled();
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'api_key.deleted', projectIds: [projectId, projectIdB] }),
+      undefined
+    );
+  });
+
+  it.each([
+    ['an account or organization project key (no owning user)', []],
+    ['a key with two owning users', [userId, otherUserId]],
+  ])('names no subject user for %s', async (_label, owners) => {
+    const { service, events } = buildDelete(owners);
+
+    await service.deleteApiKey({ id: apiKeyId });
+
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'api_key.deleted', subjectUserId: null }),
+      undefined
+    );
+  });
+
+  it('publishes nothing for a missing key', async () => {
+    const { service, events } = buildService({ getApiKey: vi.fn().mockResolvedValue(null) });
+
+    await expect(service.deleteApiKey({ id: apiKeyId })).rejects.toThrow(/ApiKey/);
+    expect(events.publish).not.toHaveBeenCalled();
   });
 });

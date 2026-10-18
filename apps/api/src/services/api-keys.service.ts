@@ -613,6 +613,17 @@ export class ApiKeyService implements IApiKeyService {
       deletedAt: apiKey.deletedAt,
     };
 
+    // Read what a delete destroys before it runs: a hard delete cascades the owner and
+    // project pivots. The user is the subject only when the key has exactly one owner
+    // in `project_user_api_keys`. Account and organization-project keys have none, and
+    // the scoped `userId` of the token exchange falls back to the key's own id for
+    // them, so it is never used here.
+    const [projectIds, owningUserIds] = await Promise.all([
+      this.events.resolveLinkedProjectIds([{ kind: 'apiKey', id }], transaction),
+      this.apiKeyRepository.getOwningUserIds(id, transaction),
+    ]);
+    const subjectUserId = owningUserIds.length === 1 ? owningUserIds[0] : null;
+
     let deletedKey: ApiKey;
     if (hardDelete) {
       // Audit row FKs to `api_keys.id`; insert the log before the row is removed
@@ -629,6 +640,17 @@ export class ApiKeyService implements IApiKeyService {
         transaction
       );
     }
+
+    await this.events.publish(
+      {
+        type: 'api_key.deleted',
+        aggregate: { kind: 'apiKey', id: deletedKey.id },
+        subjectUserId,
+        data: { before: oldValues },
+        projectIds,
+      },
+      transaction
+    );
 
     return deletedKey;
   }

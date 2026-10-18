@@ -83,6 +83,17 @@ const INTEGRATIONS_OWNERS: EventCatalogEntry = {
   audienceRule: { primitives: ['owners'], excludeActor: true },
 };
 
+/**
+ * An event that exists for webhook consumers only: delivered transactionally to
+ * subscriptions, never turned into a notification. The empty audience is what
+ * keeps the notification generator from creating rows for it.
+ */
+const webhookOnly = (category: EventCategory): EventCatalogEntry => ({
+  category,
+  deliveryClass: 'transactional',
+  audienceRule: { primitives: [] },
+});
+
 export const EVENT_TYPES = [
   // IAM mutations (Phase 1 slice)
   'role.created',
@@ -135,6 +146,17 @@ export const EVENT_TYPES = [
   // CDM / project sync job summaries (entity events suppressed during import)
   'project_sync.completed',
   'project_sync.failed',
+  // Webhook-only lifecycle events (no notification): users, project users, API keys, tags
+  'user.created',
+  'user.updated',
+  'user.deleted',
+  'project.user_updated',
+  'api_key.deleted',
+  'tag.created',
+  'tag.updated',
+  'tag.deleted',
+  'tag.linked',
+  'tag.unlinked',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -200,6 +222,16 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
   'user.password_changed': SECURITY_SUBJECT,
   'project_sync.completed': INTEGRATIONS_OWNERS,
   'project_sync.failed': INTEGRATIONS_OWNERS,
+  'user.created': webhookOnly('membership'),
+  'user.updated': webhookOnly('membership'),
+  'user.deleted': webhookOnly('membership'),
+  'project.user_updated': webhookOnly('membership'),
+  'api_key.deleted': webhookOnly('security'),
+  'tag.created': webhookOnly('iam'),
+  'tag.updated': webhookOnly('iam'),
+  'tag.deleted': webhookOnly('iam'),
+  'tag.linked': webhookOnly('iam'),
+  'tag.unlinked': webhookOnly('iam'),
 };
 
 export function getEventCatalogEntry(type: EventType): EventCatalogEntry {

@@ -627,6 +627,7 @@ export class UserHandler extends CacheHandler {
         case Tenant.OrganizationProject:
         case Tenant.AccountProject: {
           const projectId = this.extractProjectIdFromScope(scope);
+          await this.revokeProjectScopedAccess({ userId, projectId, scope }, tx);
           await this.projectUsers.removeProjectUser({ projectId, userId }, tx);
           await this.invalidateProjectUserRoleCache(userId);
           await this.removeUserIdFromScopeCache(scope, userId);
@@ -641,6 +642,58 @@ export class UserHandler extends CacheHandler {
           throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
       }
     });
+  }
+
+  /**
+   * Ends everything a member holds through a project before the membership itself goes.
+   * Removing only the `project_users` row left the user's project roles, groups and
+   * direct permissions active (the organization branch above already removes the roles)
+   * and emitted a single `project.user_removed`. Each revoke goes through the pivot
+   * service, so it publishes the same event a direct revoke does (`user.role_revoked`,
+   * `user.group_revoked`, `user.permission_revoked`, with the user as subject), in this
+   * transaction and before the project links can change.
+   */
+  private async revokeProjectScopedAccess(
+    params: { userId: string; projectId: string; scope: Scope },
+    tx: Transaction
+  ): Promise<void> {
+    const { userId, projectId, scope } = params;
+
+    const [roleIds, projectUserGroups, projectUserPermissions] = await Promise.all([
+      this.getUserRoleIdsInScope(userId, scope),
+      this.projectUserGroups.getProjectUserGroups({ projectId, userId }, tx),
+      this.projectUserPermissions.getProjectUserPermissions({ projectId, userId }, tx),
+    ]);
+
+    for (const roleId of roleIds) {
+      await this.userRoles.removeUserRole({ userId, roleId }, tx);
+    }
+
+    for (const { groupId } of projectUserGroups) {
+      try {
+        await this.userGroups.removeUserGroup({ userId, groupId }, tx);
+      } catch (error) {
+        // The project row can outlive a membership that was already removed directly.
+        if (!(error instanceof NotFoundError)) throw error;
+      }
+      await this.projectUserGroups.removeProjectUserGroup({ projectId, userId, groupId }, tx);
+    }
+
+    for (const { permissionId } of projectUserPermissions) {
+      try {
+        await this.userPermissions.revokeUserPermission({ userId, permissionId, scope }, tx);
+      } catch (error) {
+        if (!(error instanceof NotFoundError)) throw error;
+      }
+      await this.projectUserPermissions.removeProjectUserPermission(
+        { projectId, userId, permissionId },
+        tx
+      );
+    }
+
+    if (roleIds.length > 0 || projectUserGroups.length > 0 || projectUserPermissions.length > 0) {
+      await this.invalidatePermissionsCacheForAllScopes();
+    }
   }
 
   private async invalidateProjectUserRoleCache(userId: string): Promise<void> {

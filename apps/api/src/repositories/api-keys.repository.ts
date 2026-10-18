@@ -261,6 +261,16 @@ export class ApiKeyRepository
     return result[0]?.clientSecretHash || null;
   }
 
+  public async getOwningUserIds(id: string, transaction?: Transaction): Promise<string[]> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ userId: projectUserApiKeys.userId })
+      .from(projectUserApiKeys)
+      .where(and(eq(projectUserApiKeys.apiKeyId, id), isNull(projectUserApiKeys.deletedAt)));
+
+    return [...new Set(rows.map((row: { userId: string }) => row.userId))];
+  }
+
   public async createApiKey(
     params: Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;

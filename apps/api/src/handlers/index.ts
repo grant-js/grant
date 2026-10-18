@@ -163,6 +163,7 @@ export function createHandlers(
       services.projectGroups,
       services.groupPermissions,
       services.roleGroups,
+      services.userGroups,
       cache,
       services,
       db

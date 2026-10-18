@@ -6,6 +6,7 @@ import type {
   IProjectGroupService,
   IRoleGroupService,
   ITransactionalConnection,
+  IUserGroupService,
 } from '@grantjs/core';
 import {
   Group,
@@ -38,6 +39,7 @@ export class GroupHandler extends CacheHandler {
     private readonly projectGroups: IProjectGroupService,
     private readonly groupPermissions: IGroupPermissionService,
     private readonly roleGroups: IRoleGroupService,
+    private readonly userGroups: IUserGroupService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>
@@ -241,6 +243,12 @@ export class GroupHandler extends CacheHandler {
       // Get all RoleGroup relationships where this group is assigned
       const roleGroupRelations = await this.roleGroups.getRoleGroups({ groupId }, tx);
 
+      // Every member holds the group through a `user_groups` row. A soft delete of the
+      // group does not cascade to them, so without this they stay active and point at a
+      // deleted group; a hard delete cascades them silently. Either way no revoke event
+      // was emitted, so a consumer diffing state never learned who lost the group.
+      const userGroupRelations = await this.userGroups.getUserGroups({ groupId }, tx);
+
       switch (scope.tenant) {
         case Tenant.Organization:
           await this.organizationGroups.removeOrganizationGroup(
@@ -263,6 +271,10 @@ export class GroupHandler extends CacheHandler {
         // Remove all RoleGroup relationships
         ...roleGroupRelations.map((rg) =>
           this.roleGroups.removeRoleGroup({ roleId: rg.roleId, groupId: rg.groupId }, tx)
+        ),
+        // Remove every membership: one `user.group_revoked` per member, in this transaction
+        ...userGroupRelations.map((ug) =>
+          this.userGroups.removeUserGroup({ userId: ug.userId, groupId: ug.groupId }, tx)
         ),
       ]);
 

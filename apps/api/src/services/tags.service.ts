@@ -1,4 +1,4 @@
-import type { IAuditLogger, ITagRepository, ITagService } from '@grantjs/core';
+import type { IAuditLogger, IEventPublisher, ITagRepository, ITagService } from '@grantjs/core';
 import {
   CreateTagInput,
   MutationDeleteTagArgs,
@@ -9,6 +9,7 @@ import {
 } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events/event-delta.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -30,7 +31,8 @@ import {
 export class TagService implements ITagService {
   constructor(
     private readonly tagRepository: ITagRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async getTag(tagId: string, transaction?: Transaction): Promise<Tag> {
@@ -90,6 +92,15 @@ export class TagService implements ITagService {
 
     await this.audit.logCreate(tag.id, newValues, auditMetadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'tag.created',
+        aggregate: { kind: 'tag', id: tag.id },
+        data: { after: newValues },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(tagSchema), tag, context);
   }
 
@@ -126,6 +137,15 @@ export class TagService implements ITagService {
 
     await this.audit.logUpdate(updatedTag.id, oldValues, newValues, metadata, transaction);
 
+    await this.events.publish(
+      {
+        type: 'tag.updated',
+        aggregate: { kind: 'tag', id: updatedTag.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(tagSchema), updatedTag, context);
   }
 
@@ -140,6 +160,12 @@ export class TagService implements ITagService {
 
     const oldTag = await this.getTag(id);
     const isHardDelete = hardDelete === true;
+
+    // Read the project links before the delete (and a cascade) removes them.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'tag', id }],
+      transaction
+    );
 
     const deletedTag = isHardDelete
       ? await this.tagRepository.hardDeleteTag({ id }, transaction)
@@ -167,6 +193,16 @@ export class TagService implements ITagService {
       };
       await this.audit.logSoftDelete(deletedTag.id, oldValues, newValues, metadata, transaction);
     }
+
+    await this.events.publish(
+      {
+        type: 'tag.deleted',
+        aggregate: { kind: 'tag', id: deletedTag.id },
+        data: { before: oldValues },
+        projectIds,
+      },
+      transaction
+    );
 
     return validateOutput(createDynamicSingleSchema(tagSchema), deletedTag, context);
   }

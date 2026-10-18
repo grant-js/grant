@@ -2,6 +2,7 @@ import {
   GrantAuth,
   type IAuditLogger,
   type ICredentialService,
+  type IEventPublisher,
   type IFileStorageService,
   type IUserRepository,
   type IUserService,
@@ -18,6 +19,7 @@ import {
 
 import { config } from '@/config';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
+import { buildDelta } from '@/lib/events/event-delta.lib';
 import {
   hydratePictureUrl,
   hydratePictureUrls,
@@ -49,7 +51,8 @@ export class UserService implements IUserService {
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
     private readonly fileStorage: IFileStorageService,
-    private readonly credentials: ICredentialService
+    private readonly credentials: ICredentialService,
+    private readonly events: IEventPublisher
   ) {}
 
   private async getUser(userId: string): Promise<User> {
@@ -118,6 +121,27 @@ export class UserService implements IUserService {
 
     await this.audit.logCreate(user.id, newValues, metadata, transaction);
 
+    // The user's projects are resolved for symmetry with `user.updated` and `user.deleted`.
+    // A user that was just created is normally a member of none, so this is normally
+    // empty; a later join is announced by `project.user_added`.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'user', id: user.id }],
+      transaction
+    );
+
+    // Webhook payload: ids and timestamps only. The name and metadata of the
+    // platform identity are not exposed by any other event.
+    await this.events.publish(
+      {
+        type: 'user.created',
+        subjectUserId: user.id,
+        aggregate: { kind: 'user', id: user.id },
+        data: { after: { id: user.id, createdAt: user.createdAt, updatedAt: user.updatedAt } },
+        projectIds,
+      },
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(userSchema), user, context);
   }
 
@@ -161,6 +185,37 @@ export class UserService implements IUserService {
     };
 
     await this.audit.logUpdate(updatedUser.id, oldValues, newValues, metadata, transaction);
+
+    // Only the names of the fields that changed travel in the event, never their
+    // values (name, metadata and picture are personal data). An update that changed
+    // nothing, such as filling an already filled picture, emits nothing.
+    const requested = Object.keys(validatedParams.input);
+    const pick = (user: User) =>
+      Object.fromEntries(
+        requested.map((key) => [key, (user as unknown as Record<string, unknown>)[key]])
+      );
+    const changedFields = Object.keys(buildDelta(pick(oldUser), pick(updatedUser)));
+    if (changedFields.length > 0) {
+      // Name the projects the user is a member of, so an identity change made in an
+      // organization, account or `me` scope still reaches their project subscriptions.
+      // Nothing is removed here, so unlike `user.deleted` there is no ordering to respect.
+      const projectIds = await this.events.resolveLinkedProjectIds(
+        [{ kind: 'user', id: updatedUser.id }],
+        transaction
+      );
+      await this.events.publish(
+        {
+          type: 'user.updated',
+          subjectUserId: updatedUser.id,
+          aggregate: { kind: 'user', id: updatedUser.id },
+          data: {
+            after: { id: updatedUser.id, changedFields, updatedAt: updatedUser.updatedAt },
+          },
+          projectIds,
+        },
+        transaction
+      );
+    }
 
     validateOutput(createDynamicSingleSchema(userSchema), updatedUser, context);
     await hydratePictureUrl(this.fileStorage, updatedUser);
@@ -206,6 +261,31 @@ export class UserService implements IUserService {
     if (isHardDelete) {
       await this.audit.logHardDelete(oldUser.id, oldValues, metadata, transaction);
     }
+
+    // The event goes in BEFORE the delete, for the same reason: `event_log.subject_user_id`
+    // and `actor_user_id` reference `users.id`, so inserting a row that names a user a
+    // hard delete has already removed would fail and abort the transaction. A hard
+    // delete then nulls both columns on the row (ON DELETE SET NULL), so
+    // `grantsubjectuser` is `null` for it; `data.after.id` and the envelope `subject`
+    // still name the user. The user's projects are read now, while the memberships exist.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'user', id: oldUser.id }],
+      transaction
+    );
+    await this.events.publish(
+      {
+        type: 'user.deleted',
+        subjectUserId: oldUser.id,
+        aggregate: { kind: 'user', id: oldUser.id },
+        data: {
+          // No name: the outbox row outlives a hard delete, which is an erasure.
+          before: { id: oldUser.id, createdAt: oldUser.createdAt, updatedAt: oldUser.updatedAt },
+          after: { id: oldUser.id, hardDelete: isHardDelete },
+        },
+        projectIds,
+      },
+      transaction
+    );
 
     const deletedUser = isHardDelete
       ? await this.userRepository.hardDeleteUser(validatedParams, transaction)

@@ -11,6 +11,8 @@ const NOTIFICATION_EMAIL_FAMILIES = [
   'membership',
   'security',
   'sync',
+  /** Webhook-only events: the catalog gives them no audience, so no email is ever composed. */
+  'webhookOnly',
 ] as const;
 
 export type NotificationEmailFamily = (typeof NOTIFICATION_EMAIL_FAMILIES)[number];
@@ -64,6 +66,16 @@ export const NOTIFICATION_EMAIL_FAMILY_BY_TYPE: Record<EventType, NotificationEm
   'user.password_changed': 'security',
   'project_sync.completed': 'sync',
   'project_sync.failed': 'sync',
+  'user.created': 'webhookOnly',
+  'user.updated': 'webhookOnly',
+  'user.deleted': 'webhookOnly',
+  'project.user_updated': 'webhookOnly',
+  'api_key.deleted': 'webhookOnly',
+  'tag.created': 'webhookOnly',
+  'tag.updated': 'webhookOnly',
+  'tag.deleted': 'webhookOnly',
+  'tag.linked': 'webhookOnly',
+  'tag.unlinked': 'webhookOnly',
 };
 
 export function assertNotificationEmailFamilyCoverage(): EventType[] {
