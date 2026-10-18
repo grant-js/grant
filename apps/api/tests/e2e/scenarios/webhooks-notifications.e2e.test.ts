@@ -21,8 +21,9 @@ import {
 import { print } from 'graphql';
 import { afterAll, describe, expect, it } from 'vitest';
 
+import { buildCloudEventEnvelope } from '../../../src/lib/webhooks/webhook-envelope.lib';
 import { apiClient } from '../helpers/api-client';
-import { closeDbHelper } from '../helpers/db-tokens';
+import { closeDbHelper, query } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
 
@@ -131,6 +132,7 @@ describe('Webhooks and notifications flow', () => {
   let projectId: string;
   let subscriptionId: string;
   let deliveryId: string;
+  let invitationId: string;
 
   const projectScope = (): { tenant: typeof Tenant.OrganizationProject; id: string } => ({
     tenant: Tenant.OrganizationProject,
@@ -190,7 +192,8 @@ describe('Webhooks and notifications flow', () => {
   });
 
   it('Invite registered user → notification for invitee', async () => {
-    await owner.inviteMember(org.id, invitee.email);
+    const invitation = await owner.inviteMember(org.id, invitee.email);
+    invitationId = invitation.id;
 
     const notifications = await pollNotifications(invitee.authHeader, {
       type: 'organization.invitation_sent',
@@ -297,5 +300,73 @@ describe('Webhooks and notifications flow', () => {
     });
     expect(notifRes.body.errors).toBeUndefined();
     expect(notifRes.body.data?.myNotifications?.totalCount).toBeGreaterThan(0);
+  });
+
+  it('Revoke invitation → the event and its webhook envelope identify the invited user', async () => {
+    // The subscription above is project-scoped and this event is organization-scoped, so no
+    // delivery is made for it, and delivery rows do not store the posted body. Instead read the
+    // persisted event_log row (what the dispatcher reads) and build the envelope from it with the
+    // real builder. `before` is dropped from external data, so the user id must come from
+    // `grantsubjectuser`.
+    const revokeRes = await owner.delete(`/api/organization-invitations/${invitationId}`, {
+      scope: { tenant: Tenant.Organization, id: org.id },
+    });
+    expect(revokeRes.status).toBe(200);
+
+    const users = await query<{ user_id: string }>`
+      SELECT user_id
+      FROM user_authentication_methods
+      WHERE provider = 'email'
+        AND provider_id = ${invitee.email}
+        AND deleted_at IS NULL
+      LIMIT 1
+    `;
+    const inviteeUserId = users[0]?.user_id;
+    expect(inviteeUserId).toBeTruthy();
+
+    const rows = await query<{
+      id: string;
+      sequence: number | string;
+      type: string;
+      category: string;
+      delivery_class: 'transactional' | 'notification';
+      scope_tenant: string;
+      scope_id: string;
+      actor_user_id: string | null;
+      subject_user_id: string | null;
+      payload: { aggregate?: { kind: string; id: string }; data?: Record<string, unknown> };
+      occurred_at: Date;
+    }>`
+      SELECT id, sequence, type, category, delivery_class, scope_tenant, scope_id,
+             actor_user_id, subject_user_id, payload, occurred_at
+      FROM event_log
+      WHERE type = 'organization.invitation_revoked'
+        AND scope_id = ${org.id}
+      ORDER BY sequence DESC
+      LIMIT 1
+    `;
+    expect(rows).toHaveLength(1);
+    const row = rows[0]!;
+    expect(row.subject_user_id).toBe(inviteeUserId);
+
+    const envelope = buildCloudEventEnvelope(
+      {
+        id: row.id,
+        sequence: Number(row.sequence),
+        type: row.type as 'organization.invitation_revoked',
+        category: row.category as 'membership',
+        deliveryClass: row.delivery_class,
+        scope: { tenant: row.scope_tenant as typeof Tenant.Organization, id: row.scope_id },
+        actorUserId: row.actor_user_id,
+        subjectUserId: row.subject_user_id,
+        aggregate: row.payload.aggregate,
+        data: row.payload.data ?? {},
+        occurredAt: row.occurred_at,
+      },
+      'https://grant.e2e.invalid'
+    );
+
+    expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
+    expect(envelope.data).not.toHaveProperty('before');
   });
 });

@@ -18,6 +18,7 @@ export function buildCloudEventEnvelope(event: DomainEvent, source: string): Clo
     grantsequence: String(event.sequence),
     grantscope: { tenant: event.scope.tenant, id: event.scope.id },
     grantactor: event.actorUserId ? { userId: event.actorUserId } : null,
+    grantsubjectuser: event.subjectUserId ? { userId: event.subjectUserId } : null,
     grantcategory: event.category,
     data: redactEventData(event.data),
   };
