@@ -52,7 +52,14 @@ export interface IResourceService {
   ): Promise<void>;
 
   deleteResource(
-    params: Omit<MutationDeleteResourceArgs, 'scope'> & DeleteParams,
+    params: Omit<MutationDeleteResourceArgs, 'scope'> &
+      DeleteParams & {
+        /**
+         * Projects the caller read before it unlinked the resource's `project_resources`
+         * rows; published with `resource.deleted` together with whatever links remain.
+         */
+        linkedProjectIds?: string[];
+      },
     transaction?: unknown
   ): Promise<Resource>;
 }

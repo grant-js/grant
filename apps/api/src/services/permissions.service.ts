@@ -168,7 +168,8 @@ export class PermissionService implements IPermissionService {
   }
 
   public async deletePermission(
-    params: Omit<MutationDeletePermissionArgs, 'scope'> & DeleteParams,
+    params: Omit<MutationDeletePermissionArgs, 'scope'> &
+      DeleteParams & { linkedProjectIds?: string[] },
     transaction?: Transaction
   ): Promise<Permission> {
     const context = 'PermissionService.deletePermission';
@@ -177,6 +178,16 @@ export class PermissionService implements IPermissionService {
     const { id, hardDelete } = validatedParams;
 
     const oldPermission = await this.getPermission(id, transaction);
+
+    // Read the project links before the delete (and a cascade) removes them. A caller that
+    // already unlinked the project pivots (ResourceHandler) passes the projects it read first.
+    const projectIds = [
+      ...new Set([
+        ...(params.linkedProjectIds ?? []),
+        ...(await this.events.resolveLinkedProjectIds([{ kind: 'permission', id }], transaction)),
+      ]),
+    ];
+
     const isHardDelete = hardDelete === true;
 
     const deletedPermission = isHardDelete
@@ -218,6 +229,7 @@ export class PermissionService implements IPermissionService {
         type: 'permission.deleted',
         aggregate: { kind: 'permission', id: deletedPermission.id },
         data: { before: oldValues },
+        projectIds,
       },
       transaction
     );

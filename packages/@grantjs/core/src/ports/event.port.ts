@@ -1,4 +1,4 @@
-import type { DomainEvent, DomainEventInput } from '@grantjs/schema';
+import type { DomainEvent, DomainEventInput, EventAggregateRef } from '@grantjs/schema';
 
 /**
  * Port for publishing domain events to the transactional outbox.
@@ -10,6 +10,14 @@ import type { DomainEvent, DomainEventInput } from '@grantjs/schema';
  */
 export interface IEventPublisher {
   publish(event: DomainEventInput, transaction?: unknown): Promise<void>;
+
+  /**
+   * Ids of the projects the given entities (role, group, permission, resource,
+   * apiKey) are currently linked to. A caller that is about to destroy the links
+   * (an entity delete) reads them first and passes the result as
+   * `DomainEventInput.projectIds`, because by the time `publish` runs they are gone.
+   */
+  resolveLinkedProjectIds(refs: EventAggregateRef[], transaction?: unknown): Promise<string[]>;
 }
 
 /**

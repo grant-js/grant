@@ -83,7 +83,7 @@ Project operators manage subscriptions under **Project → Webhooks**:
 2. Store the **signing secret** shown once at creation (or after rotate).
 3. Inspect deliveries and replay failed attempts from the subscription detail page.
 
-Subscriptions are **project-scoped** today. Each delivery POSTs JSON and includes:
+Subscriptions are **project-scoped**. Each delivery POSTs JSON and includes:
 
 | Header              | Value                                                  |
 | ------------------- | ------------------------------------------------------ |
@@ -91,6 +91,17 @@ Subscriptions are **project-scoped** today. Each delivery POSTs JSON and include
 | `Webhook-Id`        | Delivery / event correlation id                        |
 | `Webhook-Timestamp` | Unix seconds used in the signed string                 |
 | `Webhook-Signature` | `v1,<base64 hmac-sha256>` of `"{timestamp}.{rawBody}"` |
+
+### Which events reach a subscription
+
+A subscription receives every event that is **relevant to its project**, whatever scope the request that caused it ran in (organization, account, project, project-app user or the system). An event is relevant to a project when:
+
+- the request ran in a scope that names the project (`accountProject`, `organizationProject`, the `…ProjectUser` forms, and `projectUser` for a project-app end user's own requests); or
+- the event is about a **role, group, permission, resource or API key that is linked to the project**, or about a user's assignment to one (`user.role_assigned`, `role.group_revoked`, …). The link is read when the event is published, so editing a project's role from an organization dashboard, or assigning a project role during sign-up, reaches the project's subscriptions.
+
+One entity can be linked to several projects (a shared permission, for instance); the event then reaches every one of them. An entity linked to an organization or account but to no project is not relevant to any project: nothing is delivered and nothing fails. Events about a user's own security (`user.mfa_*`, `user.password_changed`, `user.session_revoked`) reach a project only when the request ran in that project's scope, because a user is not linked to a project through a pivot.
+
+The envelope is the same for every case: `grantscope` is the scope the request ran in, so an event delivered because of a linked entity can show an organization scope.
 
 ### External envelope
 

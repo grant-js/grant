@@ -41,7 +41,14 @@ export interface IPermissionService {
   ): Promise<Permission>;
 
   deletePermission(
-    params: Omit<MutationDeletePermissionArgs, 'scope'> & DeleteParams,
+    params: Omit<MutationDeletePermissionArgs, 'scope'> &
+      DeleteParams & {
+        /**
+         * Projects the caller read before it unlinked the permission's `project_permissions`
+         * rows; published with `permission.deleted` together with whatever links remain.
+         */
+        linkedProjectIds?: string[];
+      },
     transaction?: unknown
   ): Promise<Permission>;
 }

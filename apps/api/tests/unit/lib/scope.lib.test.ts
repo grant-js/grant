@@ -7,6 +7,7 @@ import {
   organizationProjectFromScopeOrThrow,
   projectIdFromScopeOrThrow,
   projectUserFromScopeOrThrow,
+  tryOwningProjectIdFromScope,
   tryProjectIdFromScope,
 } from '@/lib/scope.lib';
 
@@ -87,5 +88,32 @@ describe('scope id parsing', () => {
   it('tryProjectIdFromScope returns null where the throwing variant raises', () => {
     expect(tryProjectIdFromScope(s(Tenant.Organization, 'org'))).toBeNull();
     expect(tryProjectIdFromScope(s(Tenant.AccountProject, 'acc:proj'))).toBe('proj');
+  });
+});
+
+describe('tryOwningProjectIdFromScope', () => {
+  const s = (tenant: Tenant, id: string) => ({ tenant, id }) as Scope;
+
+  // The wider reading webhooks need: a project-app user's own requests run in a
+  // projectUser scope (`projectId:userId`), where tryProjectIdFromScope sees no project.
+  it('reads the project out of a projectUser scope, at index 0', () => {
+    expect(tryProjectIdFromScope(s(Tenant.ProjectUser, 'proj:user'))).toBeNull();
+    expect(tryOwningProjectIdFromScope(s(Tenant.ProjectUser, 'proj:user'))).toBe('proj');
+  });
+
+  it('agrees with tryProjectIdFromScope for every other tenant', () => {
+    expect(tryOwningProjectIdFromScope(s(Tenant.AccountProject, 'acc:proj'))).toBe('proj');
+    expect(tryOwningProjectIdFromScope(s(Tenant.OrganizationProject, 'org:proj'))).toBe('proj');
+    expect(tryOwningProjectIdFromScope(s(Tenant.AccountProjectUser, 'acc:proj:user'))).toBe('proj');
+    expect(tryOwningProjectIdFromScope(s(Tenant.OrganizationProjectUser, 'org:proj:user'))).toBe(
+      'proj'
+    );
+    expect(tryOwningProjectIdFromScope(s(Tenant.Organization, 'org'))).toBeNull();
+    expect(tryOwningProjectIdFromScope(s(Tenant.Account, 'acc'))).toBeNull();
+    expect(tryOwningProjectIdFromScope(s(Tenant.System, 'system'))).toBeNull();
+  });
+
+  it('returns null for a projectUser scope with an empty project segment', () => {
+    expect(tryOwningProjectIdFromScope(s(Tenant.ProjectUser, ':user'))).toBeNull();
   });
 });

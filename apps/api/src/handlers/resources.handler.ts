@@ -358,6 +358,10 @@ export class ResourceHandler extends CacheHandler {
 
       const tagIds = resourceTags.map((rt) => rt.tagId);
 
+      // The project links go before the service deletes run, and the services publish the
+      // delete events. Carry the projects read here so the events still reach them.
+      const resourceProjectIds = allProjectResources.map((pr) => pr.projectId);
+
       for (const permission of resourcePermissions) {
         const permissionId = permission.id;
 
@@ -369,6 +373,10 @@ export class ResourceHandler extends CacheHandler {
             this.projectPermissions.getProjectPermissions({ permissionId }, tx),
           ]);
 
+        const permissionProjectIds = projectPermissions.map((pp) => pp.projectId);
+
+        // The project_permissions rows go last: the group and role pivots removed here publish
+        // events that resolve this permission's projects through them.
         await Promise.all([
           ...permissionTags.map((pt) =>
             this.permissionTags.removePermissionTag({ permissionId, tagId: pt.tagId }, tx)
@@ -385,16 +393,23 @@ export class ResourceHandler extends CacheHandler {
               tx
             )
           ),
-          ...projectPermissions.map((pp) =>
+        ]);
+
+        await Promise.all(
+          projectPermissions.map((pp) =>
             this.projectPermissions.removeProjectPermission(
               { projectId: pp.projectId, permissionId: pp.permissionId },
               tx
             )
-          ),
-        ]);
+          )
+        );
 
         await this.permissions.deletePermission(
-          { id: permissionId, hardDelete: hardDelete === true },
+          {
+            id: permissionId,
+            hardDelete: hardDelete === true,
+            linkedProjectIds: permissionProjectIds,
+          },
           tx
         );
       }
@@ -407,7 +422,10 @@ export class ResourceHandler extends CacheHandler {
 
       await this.removeResourceIdFromScopeCache(scope, resourceId);
 
-      return await this.resources.deleteResource(params, tx);
+      return await this.resources.deleteResource(
+        { ...params, linkedProjectIds: resourceProjectIds },
+        tx
+      );
     });
   }
 

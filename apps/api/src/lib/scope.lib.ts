@@ -69,6 +69,22 @@ export function tryProjectIdFromScope(scope: Scope): string | null {
   return segments(scope)[1] ?? null;
 }
 
+/**
+ * Like {@link tryProjectIdFromScope}, but also reads the project out of a
+ * `projectUser` scope (`projectId:userId`), where it sits at index 0. That is
+ * the scope a project-app end user's own requests run in.
+ *
+ * Kept separate on purpose: `tryProjectIdFromScope` also drives notification
+ * audience and deep-link resolution, which treat a `projectUser` scope as "no
+ * project". Webhook delivery is the caller that needs the wider reading.
+ */
+export function tryOwningProjectIdFromScope(scope: Scope): string | null {
+  if (scope.tenant === Tenant.ProjectUser) {
+    return segments(scope)[0] || null;
+  }
+  return tryProjectIdFromScope(scope);
+}
+
 export function projectIdFromScopeOrThrow(scope: Scope): string {
   if (!PROJECT_TENANTS.includes(scope.tenant as (typeof PROJECT_TENANTS)[number])) {
     throw new BadRequestError(`Cannot extract projectId from tenant type: ${scope.tenant}`);

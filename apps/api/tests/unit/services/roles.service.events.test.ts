@@ -7,6 +7,7 @@ import { RoleService } from '@/services/roles.service';
 
 const roleId = '10000000-0000-4000-8000-000000000010';
 const orgId = '10000000-0000-4000-8000-000000000011';
+const projectId = '10000000-0000-4000-8000-000000000012';
 
 function role(overrides: Partial<Role> = {}): Role {
   return {
@@ -60,6 +61,7 @@ function buildService(repositoryOverrides: Partial<IRoleRepository> = {}) {
 
   const events = {
     publish: vi.fn(),
+    resolveLinkedProjectIds: vi.fn().mockResolvedValue([]),
   } as unknown as IEventPublisher;
 
   return {
@@ -87,6 +89,37 @@ describe('RoleService IAM events', () => {
           after: expect.objectContaining({ id: roleId, name: 'Senior Developer' }),
           delta: expect.any(Object),
         }),
+      }),
+      undefined
+    );
+  });
+
+  it('reads the project links before a hard delete and publishes them with role.deleted', async () => {
+    const { service, events, roleRepository } = buildService({
+      hardDeleteRole: vi.fn().mockImplementation(async () => role()),
+    });
+    const order: string[] = [];
+    vi.mocked(events.resolveLinkedProjectIds).mockImplementation(async () => {
+      order.push('resolve');
+      return [projectId];
+    });
+    vi.mocked(roleRepository.hardDeleteRole).mockImplementation(async () => {
+      order.push('delete');
+      return role();
+    });
+
+    await service.deleteRole({ id: roleId, hardDelete: true });
+
+    expect(order).toEqual(['resolve', 'delete']);
+    expect(events.resolveLinkedProjectIds).toHaveBeenCalledWith(
+      [{ kind: 'role', id: roleId }],
+      undefined
+    );
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'role.deleted',
+        aggregate: { kind: 'role', id: roleId },
+        projectIds: [projectId],
       }),
       undefined
     );

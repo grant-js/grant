@@ -34,3 +34,4 @@ record _why_ it became that way.
 | [0009](./0009-cdm-import-by-reference.md)                         | Proposed | CDM import payloads may travel by reference through the presigned-upload port                            |
 | [0010](./0010-cdm-import-of-bcrypt-password-hashes.md)            | Proposed | CDM imports carry bcrypt password hashes into the credential store; project apps may sign in with them   |
 | [0011](./0011-password-as-a-scoped-credential.md)                 | Proposed | Password is a credential with a scope, platform or project, not a field of the email method; amends 0010 |
+| [0012](./0012-webhook-delivery-whatever-the-request-scope.md)     | Accepted | Webhook events reach a project whatever scope the request ran in: linked projects recorded at publish    |
