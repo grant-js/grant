@@ -112,21 +112,21 @@ Bodies follow CloudEvents 1.0 with Grant extensions:
   "specversion": "1.0",
   "id": "…",
   "source": "https://your-grant-host",
-  "type": "role.updated",
+  "type": "user.role_revoked",
   "time": "2026-01-01T00:00:00.000Z",
-  "subject": "role/…",
+  "subject": "userRole/…",
   "grantsequence": "42",
   "grantscope": { "tenant": "organizationProject", "id": "orgId:projectId" },
   "grantactor": { "userId": "…" },
+  "grantsubjectuser": { "userId": "…" },
   "grantcategory": "iam",
-  "data": {
-    "after": { "id": "…", "name": "Developer" },
-    "delta": { "name": { "from": "Dev", "to": "Developer" } }
-  }
+  "data": {}
 }
 ```
 
 External `data` drops internal `before` snapshots and redacts keys matching secret/token patterns (replaced with `"[redacted]"`).
+
+`grantactor` is the user who made the change; `grantsubjectuser` is the user the event is about, for events that have one (for example `user.role_revoked`, `user.group_revoked`, `project.user_removed`, `organization.member_removed`). Both are `null` when absent. Because `before` is dropped, `grantsubjectuser` is how a consumer learns whose access was revoked or removed; `subject` is the id of the changed record (such as the role assignment), not the user.
 
 Delivery is **best-effort / at-least-once** with application-level retries (escalating delays, then dead). Grant does not guarantee per-subscription delivery ordering; endpoints should be **idempotent** on `id` / `Webhook-Id`. SSRF guards block private targets unless explicitly allowed in configuration (useful for local receivers).
 

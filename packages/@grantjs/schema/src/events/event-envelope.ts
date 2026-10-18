@@ -80,6 +80,14 @@ export interface CloudEventEnvelope {
   grantsequence: string;
   grantscope: { tenant: string; id: string };
   grantactor?: { userId: string } | null;
+  /**
+   * The user the event is about, when it has one (`user.role_revoked`,
+   * `project.user_removed`, `organization.invitation_sent`, ...). `null` when
+   * the event has no subject user. Needed because the internal `before`
+   * snapshot is dropped from external `data`, so revoke/remove events would
+   * otherwise not say whose access changed.
+   */
+  grantsubjectuser?: { userId: string } | null;
   grantcategory: EventCategory;
   data: EventData;
 }
