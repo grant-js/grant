@@ -243,6 +243,39 @@ export async function addProjectUserForE2e(projectId: string, userId: string): P
   `;
 }
 
+/**
+ * Give a user a role by inserting into user_roles. Used to make a project-linked
+ * role effective for a `projectUser` request without going through an API that
+ * would itself emit events. Same NOT EXISTS shape as {@link addProjectUserForE2e}.
+ */
+export async function assignUserRoleForE2e(userId: string, roleId: string): Promise<void> {
+  const conn = getConnection();
+  await conn`
+    INSERT INTO user_roles (user_id, role_id)
+    SELECT ${userId}::uuid, ${roleId}::uuid
+    WHERE NOT EXISTS (
+      SELECT 1 FROM user_roles
+      WHERE user_id = ${userId}::uuid AND role_id = ${roleId}::uuid AND deleted_at IS NULL
+    )
+  `;
+}
+
+/**
+ * Link an existing role to another project by inserting into project_roles: the
+ * data model allows one role in several projects, but no API flow creates that.
+ */
+export async function linkRoleToProjectForE2e(projectId: string, roleId: string): Promise<void> {
+  const conn = getConnection();
+  await conn`
+    INSERT INTO project_roles (project_id, role_id)
+    SELECT ${projectId}::uuid, ${roleId}::uuid
+    WHERE NOT EXISTS (
+      SELECT 1 FROM project_roles
+      WHERE project_id = ${projectId}::uuid AND role_id = ${roleId}::uuid AND deleted_at IS NULL
+    )
+  `;
+}
+
 // ---------------------------------------------------------------------------
 // CDM replace-teardown E2E (pivot orphans, stagger uniqueness, tag lookup)
 // ---------------------------------------------------------------------------
