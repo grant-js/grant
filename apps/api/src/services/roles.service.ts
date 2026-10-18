@@ -214,6 +214,13 @@ export class RoleService implements IRoleService {
     const { id, hardDelete } = validatedParams;
 
     const oldRole = await this.getRole(id);
+
+    // Read the project links before the delete (and a cascade) removes them.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'role', id }],
+      transaction
+    );
+
     const isHardDelete = hardDelete === true;
 
     const deletedRole = isHardDelete
@@ -249,6 +256,7 @@ export class RoleService implements IRoleService {
         type: 'role.deleted',
         aggregate: { kind: 'role', id: deletedRole.id },
         data: { before: oldValues },
+        projectIds,
       },
       transaction
     );

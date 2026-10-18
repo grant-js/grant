@@ -212,6 +212,13 @@ export class ResourceService implements IResourceService {
     const { id, hardDelete } = validatedParams;
 
     const oldResource = await this.getResource(id, transaction);
+
+    // Read the project links before the delete (and a cascade) removes them.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'resource', id }],
+      transaction
+    );
+
     const isHardDelete = hardDelete === true;
 
     const deletedResource = isHardDelete
@@ -256,6 +263,7 @@ export class ResourceService implements IResourceService {
         type: 'resource.deleted',
         aggregate: { kind: 'resource', id: deletedResource.id },
         data: { before: oldValues },
+        projectIds,
       },
       transaction
     );

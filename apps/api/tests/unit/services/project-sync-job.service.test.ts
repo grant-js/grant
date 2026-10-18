@@ -53,6 +53,7 @@ function noopAudit(): IAuditLogger {
 function noopEvents(): IEventPublisher {
   return {
     publish: vi.fn().mockResolvedValue(undefined),
+    resolveLinkedProjectIds: vi.fn().mockResolvedValue([]),
   };
 }
 

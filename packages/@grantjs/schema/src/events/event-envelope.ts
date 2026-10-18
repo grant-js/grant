@@ -33,6 +33,13 @@ export interface DomainEventInput {
   aggregate?: EventAggregateRef;
   data: EventData;
   occurredAt?: Date;
+  /**
+   * Projects this event is relevant to beyond the one named by its scope. The
+   * publisher adds the projects an entity-bound aggregate is linked to; a caller
+   * passes it only to capture the links before a write that destroys them (a
+   * delete). Never part of the external envelope.
+   */
+  projectIds?: string[];
 }
 
 /**
@@ -51,6 +58,11 @@ export interface DomainEvent {
   aggregate?: EventAggregateRef;
   data: EventData;
   occurredAt: Date;
+  /**
+   * Projects the event is relevant to in addition to the project its scope names
+   * (webhook fan-out, ADR 0012). Internal: not carried by the webhook envelope.
+   */
+  projectIds?: string[];
 }
 
 /**

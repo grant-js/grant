@@ -11,6 +11,7 @@ import {
 interface StoredPayload {
   aggregate?: EventAggregateRef | null;
   data?: EventData;
+  projectIds?: string[];
 }
 
 /** Map a persisted `event_log` row to the internal {@link DomainEvent} shape. */
@@ -28,5 +29,6 @@ export function mapEventLogToDomainEvent(row: EventLogModel): DomainEvent {
     aggregate: payload.aggregate ?? undefined,
     data: payload.data ?? {},
     occurredAt: row.occurredAt,
+    ...(payload.projectIds?.length ? { projectIds: payload.projectIds } : {}),
   };
 }

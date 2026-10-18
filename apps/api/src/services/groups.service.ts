@@ -219,6 +219,13 @@ export class GroupService implements IGroupService {
     const { id, hardDelete } = validatedParams;
 
     const oldGroup = await this.getGroup(id, transaction);
+
+    // Read the project links before the delete (and a cascade) removes them.
+    const projectIds = await this.events.resolveLinkedProjectIds(
+      [{ kind: 'group', id }],
+      transaction
+    );
+
     const isHardDelete = hardDelete === true;
 
     const deletedGroup = isHardDelete
@@ -259,6 +266,7 @@ export class GroupService implements IGroupService {
         type: 'group.deleted',
         aggregate: { kind: 'group', id: deletedGroup.id },
         data: { before: oldValues },
+        projectIds,
       },
       transaction
     );

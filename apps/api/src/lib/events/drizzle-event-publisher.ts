@@ -1,14 +1,25 @@
 import type { GrantAuth, IEventPublisher } from '@grantjs/core';
 import { type DbSchema, eventLog, type NewEventLogModel } from '@grantjs/database';
-import { type DomainEventInput, getEventCatalogEntry, type Scope, Tenant } from '@grantjs/schema';
+import {
+  type DomainEventInput,
+  type EventAggregateRef,
+  getEventCatalogEntry,
+  type Scope,
+  Tenant,
+} from '@grantjs/schema';
 
 import { config } from '@/config';
 import { EVENT_RELAY_JOB_ID } from '@/constants/event-relay.constants';
 import type { ScheduleAfterCommit } from '@/lib/after-commit.lib';
+import { linkedEntityRefsOf } from '@/lib/events/event-project-links.lib';
 import { isEventPublishingSuppressed } from '@/lib/events/event-suppression.lib';
 import { getJobAdapter } from '@/lib/jobs/initialize';
 import { createLogger } from '@/lib/logger';
 import type { Transaction } from '@/lib/transaction-manager.lib';
+import {
+  isProjectLinkedKind,
+  ProjectLinksRepository,
+} from '@/repositories/project-links.repository';
 
 const logger = createLogger('EventPublisher');
 
@@ -19,6 +30,8 @@ export type { ScheduleAfterCommit };
 export interface DrizzleEventPublisherOptions {
   /** When set, schedules a coalesced EVENT_RELAY enqueue after the surrounding TX commits. */
   scheduleAfterCommit?: ScheduleAfterCommit;
+  /** Reads the project pivots; defaults to one over the publisher's own connection. */
+  projectLinks?: ProjectLinksRepository;
 }
 
 /**
@@ -31,12 +44,37 @@ export interface DrizzleEventPublisherOptions {
  */
 export class DrizzleEventPublisher implements IEventPublisher {
   private relayEnqueueScheduled = false;
+  private readonly projectLinks: ProjectLinksRepository;
 
   constructor(
     private readonly user: GrantAuth | null,
     private readonly db: DbSchema,
     private readonly options: DrizzleEventPublisherOptions = {}
-  ) {}
+  ) {
+    this.projectLinks = options.projectLinks ?? new ProjectLinksRepository(db);
+  }
+
+  async resolveLinkedProjectIds(
+    refs: EventAggregateRef[],
+    transaction?: unknown
+  ): Promise<string[]> {
+    const perEntity = await Promise.all(
+      refs.map(({ kind, id }) =>
+        isProjectLinkedKind(kind)
+          ? this.projectLinks.getLinkedProjectIds(kind, id, transaction as Transaction | undefined)
+          : []
+      )
+    );
+    return [...new Set(perEntity.flat())];
+  }
+
+  private async resolveProjectIds(
+    event: DomainEventInput,
+    transaction?: unknown
+  ): Promise<string[]> {
+    const resolved = await this.resolveLinkedProjectIds(linkedEntityRefsOf(event), transaction);
+    return [...new Set([...(event.projectIds ?? []), ...resolved])];
+  }
 
   private resolveActorId(event: DomainEventInput): string | null {
     return event.actor?.userId ?? this.user?.userId ?? config.system.systemUserId ?? null;
@@ -81,6 +119,7 @@ export class DrizzleEventPublisher implements IEventPublisher {
     const dbInstance = (transaction as Transaction | undefined) ?? this.db;
     const scope = this.resolveScope(event);
     const entry = getEventCatalogEntry(event.type);
+    const projectIds = await this.resolveProjectIds(event, transaction);
 
     const row: NewEventLogModel = {
       type: event.type,
@@ -93,6 +132,7 @@ export class DrizzleEventPublisher implements IEventPublisher {
       payload: {
         aggregate: event.aggregate ?? null,
         data: event.data,
+        ...(projectIds.length > 0 ? { projectIds } : {}),
       },
       occurredAt: event.occurredAt ?? new Date(),
       relayStatus: 'pending',
