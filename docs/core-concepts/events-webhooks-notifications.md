@@ -112,18 +112,15 @@ Bodies follow CloudEvents 1.0 with Grant extensions:
   "specversion": "1.0",
   "id": "…",
   "source": "https://your-grant-host",
-  "type": "role.updated",
+  "type": "user.role_revoked",
   "time": "2026-01-01T00:00:00.000Z",
-  "subject": "role/…",
+  "subject": "userRole/…",
   "grantsequence": "42",
   "grantscope": { "tenant": "organizationProject", "id": "orgId:projectId" },
   "grantactor": { "userId": "…" },
   "grantsubjectuser": { "userId": "…" },
   "grantcategory": "iam",
-  "data": {
-    "after": { "id": "…", "name": "Developer" },
-    "delta": { "name": { "from": "Dev", "to": "Developer" } }
-  }
+  "data": {}
 }
 ```
 

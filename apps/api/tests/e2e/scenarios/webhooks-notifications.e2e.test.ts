@@ -12,6 +12,7 @@
  *
  * Prerequisites: E2E stack running (docker-compose.e2e.yml), DB migrated and seeded.
  */
+import type { EventLogModel } from '@grantjs/database';
 import {
   CreateWebhookSubscriptionDocument,
   MyNotificationsDocument,
@@ -21,9 +22,15 @@ import {
 import { print } from 'graphql';
 import { afterAll, describe, expect, it } from 'vitest';
 
+import { mapEventLogToDomainEvent } from '../../../src/lib/events/event-log-mapper.lib';
 import { buildCloudEventEnvelope } from '../../../src/lib/webhooks/webhook-envelope.lib';
 import { apiClient } from '../helpers/api-client';
-import { closeDbHelper, query } from '../helpers/db-tokens';
+import {
+  addProjectUserForE2e,
+  assignUserRoleForE2e,
+  closeDbHelper,
+  query,
+} from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
 
@@ -123,6 +130,46 @@ async function pollNotifications(
   }
 
   throw new Error(`Timed out waiting for notifications (last totalCount=${last.totalCount})`);
+}
+
+async function userIdOfEmail(email: string): Promise<string> {
+  const users = await query<{ user_id: string }>`
+    SELECT user_id
+    FROM user_authentication_methods
+    WHERE provider = 'email'
+      AND provider_id = ${email}
+      AND deleted_at IS NULL
+    LIMIT 1
+  `;
+  expect(users[0]?.user_id).toBeTruthy();
+  return users[0]!.user_id;
+}
+
+/**
+ * The newest persisted `event_log` row of a type and scope, in the shape the dispatcher reads.
+ * Aliased to the camelCase column names of `EventLogModel` so the production mapper
+ * (`mapEventLogToDomainEvent`) can be applied to it unchanged; `sequence` (bigint) arrives as a string.
+ */
+async function latestEventLogRow(type: string, scopeId: string): Promise<EventLogModel> {
+  const rows = await query<Record<string, unknown>>`
+    SELECT id, sequence, type, category,
+           delivery_class AS "deliveryClass",
+           scope_tenant AS "scopeTenant",
+           scope_id AS "scopeId",
+           actor_user_id AS "actorUserId",
+           subject_user_id AS "subjectUserId",
+           payload,
+           occurred_at AS "occurredAt",
+           relay_status AS "relayStatus",
+           created_at AS "createdAt"
+    FROM event_log
+    WHERE type = ${type}
+      AND scope_id = ${scopeId}
+    ORDER BY sequence DESC
+    LIMIT 1
+  `;
+  expect(rows).toHaveLength(1);
+  return { ...rows[0], sequence: Number(rows[0]!.sequence) } as unknown as EventLogModel;
 }
 
 describe('Webhooks and notifications flow', () => {
@@ -305,68 +352,81 @@ describe('Webhooks and notifications flow', () => {
   it('Revoke invitation → the event and its webhook envelope identify the invited user', async () => {
     // The subscription above is project-scoped and this event is organization-scoped, so no
     // delivery is made for it, and delivery rows do not store the posted body. Instead read the
-    // persisted event_log row (what the dispatcher reads) and build the envelope from it with the
-    // real builder. `before` is dropped from external data, so the user id must come from
-    // `grantsubjectuser`.
+    // persisted event_log row (what the dispatcher reads) and run it through the production path,
+    // `mapEventLogToDomainEvent` then `buildCloudEventEnvelope`. `before` is dropped from external
+    // data, so the user id must come from `grantsubjectuser`.
     const revokeRes = await owner.delete(`/api/organization-invitations/${invitationId}`, {
       scope: { tenant: Tenant.Organization, id: org.id },
     });
     expect(revokeRes.status).toBe(200);
 
-    const users = await query<{ user_id: string }>`
-      SELECT user_id
-      FROM user_authentication_methods
-      WHERE provider = 'email'
-        AND provider_id = ${invitee.email}
-        AND deleted_at IS NULL
-      LIMIT 1
-    `;
-    const inviteeUserId = users[0]?.user_id;
-    expect(inviteeUserId).toBeTruthy();
-
-    const rows = await query<{
-      id: string;
-      sequence: number | string;
-      type: string;
-      category: string;
-      delivery_class: 'transactional' | 'notification';
-      scope_tenant: string;
-      scope_id: string;
-      actor_user_id: string | null;
-      subject_user_id: string | null;
-      payload: { aggregate?: { kind: string; id: string }; data?: Record<string, unknown> };
-      occurred_at: Date;
-    }>`
-      SELECT id, sequence, type, category, delivery_class, scope_tenant, scope_id,
-             actor_user_id, subject_user_id, payload, occurred_at
-      FROM event_log
-      WHERE type = 'organization.invitation_revoked'
-        AND scope_id = ${org.id}
-      ORDER BY sequence DESC
-      LIMIT 1
-    `;
-    expect(rows).toHaveLength(1);
-    const row = rows[0]!;
-    expect(row.subject_user_id).toBe(inviteeUserId);
+    const inviteeUserId = await userIdOfEmail(invitee.email);
+    const row = await latestEventLogRow('organization.invitation_revoked', org.id);
+    expect(row.subjectUserId).toBe(inviteeUserId);
 
     const envelope = buildCloudEventEnvelope(
-      {
-        id: row.id,
-        sequence: Number(row.sequence),
-        type: row.type as 'organization.invitation_revoked',
-        category: row.category as 'membership',
-        deliveryClass: row.delivery_class,
-        scope: { tenant: row.scope_tenant as typeof Tenant.Organization, id: row.scope_id },
-        actorUserId: row.actor_user_id,
-        subjectUserId: row.subject_user_id,
-        aggregate: row.payload.aggregate,
-        data: row.payload.data ?? {},
-        occurredAt: row.occurred_at,
-      },
+      mapEventLogToDomainEvent(row),
       'https://grant.e2e.invalid'
     );
 
     expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
+    expect(envelope.data).not.toHaveProperty('before');
+  });
+
+  it('Revoke a project role from a user → a delivery is made and the envelope identifies the user', async () => {
+    const inviteeUserId = await userIdOfEmail(invitee.email);
+
+    const sub = await apiClient()
+      .post('/api/webhook-subscriptions')
+      .set('Authorization', owner.authHeader)
+      .send({
+        scope: projectScope(),
+        url: 'https://example.com/grant-e2e-webhook-role-revoked',
+        eventTypes: ['user.role_revoked'],
+        active: true,
+      });
+    expect(sub.status).toBe(201);
+    const revokedSubscriptionId = (sub.body as { data: WebhookSubscriptionBody }).data.id;
+
+    const roleRes = await apiClient()
+      .post('/api/roles')
+      .set('Authorization', owner.authHeader)
+      .send({
+        name: `E2E Revoked Role ${Date.now()}`,
+        description: 'Revoked from the invitee to trigger user.role_revoked',
+        scope: projectScope(),
+      });
+    expect(roleRes.status).toBe(201);
+    const roleId = (roleRes.body as { data: { id: string } }).data.id;
+
+    // Direct inserts, so assigning the role raises no event of its own.
+    await addProjectUserForE2e(projectId, inviteeUserId);
+    await assignUserRoleForE2e(inviteeUserId, roleId);
+
+    const res = await apiClient()
+      .patch(`/api/users/${inviteeUserId}`)
+      .set('Authorization', owner.authHeader)
+      .send({ scope: projectScope(), roleIds: [] });
+    expect(res.status).toBe(200);
+
+    // The role is linked to the project, so the event reaches the project subscription.
+    const deliveries = await pollDeliveries(
+      owner.authHeader,
+      projectScope(),
+      revokedSubscriptionId
+    );
+    expect(deliveries.totalCount).toBe(1);
+
+    const row = await latestEventLogRow('user.role_revoked', `${org.id}:${projectId}`);
+    expect(row.subjectUserId).toBe(inviteeUserId);
+
+    const envelope = buildCloudEventEnvelope(
+      mapEventLogToDomainEvent(row),
+      'https://grant.e2e.invalid'
+    );
+    expect(envelope.type).toBe('user.role_revoked');
+    expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
+    expect(envelope.grantactor).not.toBeNull();
     expect(envelope.data).not.toHaveProperty('before');
   });
 });
