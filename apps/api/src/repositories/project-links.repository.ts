@@ -16,6 +16,8 @@ import { Transaction } from '@/lib/transaction-manager.lib';
 export const PROJECT_LINKED_KINDS = ['role', 'group', 'permission', 'resource', 'apiKey'] as const;
 export type ProjectLinkedKind = (typeof PROJECT_LINKED_KINDS)[number];
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function isProjectLinkedKind(kind: string): kind is ProjectLinkedKind {
   return (PROJECT_LINKED_KINDS as readonly string[]).includes(kind);
 }
@@ -40,6 +42,10 @@ export class ProjectLinksRepository {
     entityId: string,
     transaction?: Transaction
   ): Promise<string[]> {
+    // A malformed id makes Postgres reject the query, and inside the request's
+    // transaction that aborts the business write the event belongs to.
+    if (!UUID_RE.test(entityId)) return [];
+
     const db = transaction ?? this.db;
 
     switch (kind) {

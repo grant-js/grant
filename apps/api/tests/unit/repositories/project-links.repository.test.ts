@@ -42,7 +42,10 @@ describe('ProjectLinksRepository', () => {
       ]);
 
       await expect(
-        new ProjectLinksRepository(db).getLinkedProjectIds(kind, 'e-1')
+        new ProjectLinksRepository(db).getLinkedProjectIds(
+          kind,
+          '10000000-0000-4000-8000-0000000000e1'
+        )
       ).resolves.toEqual([projectA, projectB]);
       expect(select).toHaveBeenCalledTimes(1);
     }
@@ -56,7 +59,10 @@ describe('ProjectLinksRepository', () => {
     );
 
     await expect(
-      new ProjectLinksRepository(db).getLinkedProjectIds('apiKey', 'k-1')
+      new ProjectLinksRepository(db).getLinkedProjectIds(
+        'apiKey',
+        '10000000-0000-4000-8000-0000000000e2'
+      )
     ).resolves.toEqual([projectA, projectB]);
     expect(select).toHaveBeenCalledTimes(3);
   });
@@ -65,7 +71,10 @@ describe('ProjectLinksRepository', () => {
     const { db } = buildDb([]);
 
     await expect(
-      new ProjectLinksRepository(db).getLinkedProjectIds('role', 'r-1')
+      new ProjectLinksRepository(db).getLinkedProjectIds(
+        'role',
+        '10000000-0000-4000-8000-0000000000e3'
+      )
     ).resolves.toEqual([]);
   });
 
@@ -74,9 +83,23 @@ describe('ProjectLinksRepository', () => {
     const { db: tx, select: txSelect } = buildDb([{ projectId: projectA }]);
 
     await expect(
-      new ProjectLinksRepository(db).getLinkedProjectIds('role', 'r-1', tx as never)
+      new ProjectLinksRepository(db).getLinkedProjectIds(
+        'role',
+        '10000000-0000-4000-8000-0000000000e3',
+        tx as never
+      )
     ).resolves.toEqual([projectA]);
     expect(select).not.toHaveBeenCalled();
     expect(txSelect).toHaveBeenCalledTimes(1);
+  });
+
+  // A rejected query would abort the transaction of the write being published.
+  it('does not query for an id that is not a uuid', async () => {
+    const { db, select } = buildDb([{ projectId: projectA }]);
+
+    await expect(
+      new ProjectLinksRepository(db).getLinkedProjectIds('role', 'not-a-uuid')
+    ).resolves.toEqual([]);
+    expect(select).not.toHaveBeenCalled();
   });
 });
