@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IRoleRepository,
   IRoleTagRepository,
   IRoleTagService,
@@ -8,6 +9,7 @@ import type {
 import { AddRoleTagInput, RemoveRoleTagInput, RoleTag, UpdateRoleTagInput } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { tagLinkEvent } from '@/lib/events/tag-link-event.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -27,7 +29,8 @@ export class RoleTagService implements IRoleTagService {
     private readonly roleRepository: IRoleRepository,
     private readonly tagRepository: ITagRepository,
     private readonly roleTagRepository: IRoleTagRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async roleExists(roleId: string, transaction?: Transaction): Promise<void> {
@@ -128,6 +131,11 @@ export class RoleTagService implements IRoleTagService {
 
     await this.audit.logCreate(roleTag.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      tagLinkEvent('tag.linked', { kind: 'role', id: roleTag.roleId }, roleTag),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(roleTagSchema), roleTag, context);
   }
 
@@ -199,6 +207,11 @@ export class RoleTagService implements IRoleTagService {
       await this.audit.logSoftDelete(roleTag.id, oldValues, newValues, metadata, transaction);
     }
 
+    await this.events.publish(
+      tagLinkEvent('tag.unlinked', { kind: 'role', id: roleTag.roleId }, roleTag),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(roleTagSchema), roleTag, context);
   }
 
@@ -221,6 +234,13 @@ export class RoleTagService implements IRoleTagService {
           : this.roleTagRepository.softDeleteRoleTag(roleTag, transaction)
       )
     );
+
+    for (const pivot of deletedRoleTags) {
+      await this.events.publish(
+        tagLinkEvent('tag.unlinked', { kind: 'role', id: pivot.roleId }, pivot),
+        transaction
+      );
+    }
 
     return validateOutput(
       createDynamicSingleSchema(roleTagSchema).array(),

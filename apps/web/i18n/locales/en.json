@@ -4130,12 +4130,23 @@
           "mfa_recovery_codes_regenerated": "MFA recovery codes regenerated",
           "session_revoked": "Session revoked",
           "sessions_revoked": "All sessions revoked",
-          "password_changed": "Password changed"
+          "password_changed": "Password changed",
+          "created": "User created",
+          "updated": "User updated",
+          "deleted": "User deleted"
+        },
+        "tag": {
+          "created": "Tag created",
+          "updated": "Tag updated",
+          "deleted": "Tag deleted",
+          "linked": "Tag linked",
+          "unlinked": "Tag unlinked"
         },
         "api_key": {
           "created": "API key created",
           "rotated": "API key rotated",
-          "revoked": "API key revoked"
+          "revoked": "API key revoked",
+          "deleted": "API key deleted"
         },
         "signing_key": {
           "created": "Signing key created",
@@ -4153,7 +4164,8 @@
         "project": {
           "user_added": "Project member added",
           "user_removed": "Project member removed",
-          "user_profile_updated": "Project member profile updated"
+          "user_profile_updated": "Project member profile updated",
+          "user_updated": "Project member updated"
         },
         "project_sync": {
           "completed": "Project sync completed",

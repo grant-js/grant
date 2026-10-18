@@ -27,12 +27,13 @@ describe('ProjectLinksRepository', () => {
       'permission',
       'resource',
       'role',
+      'tag',
     ]);
     expect(isProjectLinkedKind('role')).toBe(true);
     expect(isProjectLinkedKind('user')).toBe(false);
   });
 
-  it.each(['role', 'group', 'permission', 'resource'] as const)(
+  it.each(['role', 'group', 'permission', 'resource', 'tag'] as const)(
     'reads one pivot for a %s and returns every linked project once',
     async (kind) => {
       const { db, select } = buildDb([
@@ -100,6 +101,29 @@ describe('ProjectLinksRepository', () => {
     await expect(
       new ProjectLinksRepository(db).getLinkedProjectIds('role', 'not-a-uuid')
     ).resolves.toEqual([]);
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("reads a user's projects from project_users, once each, and keeps `user` out of the pivot kinds", async () => {
+    const { db, select } = buildDb([
+      { projectId: projectA },
+      { projectId: projectB },
+      { projectId: projectA },
+    ]);
+
+    await expect(
+      new ProjectLinksRepository(db).getUserProjectIds('10000000-0000-4000-8000-0000000000e1')
+    ).resolves.toEqual([projectA, projectB]);
+    expect(select).toHaveBeenCalledTimes(1);
+    expect(isProjectLinkedKind('user')).toBe(false);
+  });
+
+  it('skips the read for a malformed user id', async () => {
+    const { db, select } = buildDb([{ projectId: projectA }]);
+
+    await expect(new ProjectLinksRepository(db).getUserProjectIds('not-a-uuid')).resolves.toEqual(
+      []
+    );
     expect(select).not.toHaveBeenCalled();
   });
 });

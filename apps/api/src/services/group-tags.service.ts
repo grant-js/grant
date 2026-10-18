@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IGroupRepository,
   IGroupTagRepository,
   IGroupTagService,
@@ -13,6 +14,7 @@ import {
 } from '@grantjs/schema';
 
 import { BadRequestError, ConflictError, NotFoundError, ValidationError } from '@/lib/errors';
+import { tagLinkEvent } from '@/lib/events/tag-link-event.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -32,7 +34,8 @@ export class GroupTagService implements IGroupTagService {
     private readonly groupRepository: IGroupRepository,
     private readonly tagRepository: ITagRepository,
     private readonly groupTagRepository: IGroupTagRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async groupExists(groupId: string, transaction?: Transaction): Promise<void> {
@@ -136,6 +139,11 @@ export class GroupTagService implements IGroupTagService {
 
     await this.audit.logCreate(result.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      tagLinkEvent('tag.linked', { kind: 'group', id: result.groupId }, result),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(groupTagSchema), result, context);
   }
 
@@ -217,6 +225,11 @@ export class GroupTagService implements IGroupTagService {
       await this.audit.logSoftDelete(result.id, oldValues, newValues, metadata, transaction);
     }
 
+    await this.events.publish(
+      tagLinkEvent('tag.unlinked', { kind: 'group', id: result.groupId }, result),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(groupTagSchema), result, context);
   }
 
@@ -239,6 +252,13 @@ export class GroupTagService implements IGroupTagService {
           : this.groupTagRepository.softDeleteGroupTag(groupTag, transaction)
       )
     );
+
+    for (const pivot of deletedGroupTags) {
+      await this.events.publish(
+        tagLinkEvent('tag.unlinked', { kind: 'group', id: pivot.groupId }, pivot),
+        transaction
+      );
+    }
 
     return validateOutput(
       createDynamicSingleSchema(groupTagSchema).array(),

@@ -319,6 +319,18 @@ export class ProjectUserService implements IProjectUserService {
 
     await this.audit.logUpdate(projectUser.id, oldValues, newValues, { context }, transaction);
 
+    const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
+    await this.events.publish(
+      {
+        type: 'project.user_updated',
+        ...(scope ? { scope } : {}),
+        subjectUserId: projectUser.userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { before: oldValues, after: newValues, delta: buildDelta(oldValues, newValues) },
+      },
+      transaction
+    );
+
     await this.syncProjectUserSearchDocument(
       {
         projectId: validatedParams.projectId,

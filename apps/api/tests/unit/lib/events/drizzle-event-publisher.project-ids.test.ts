@@ -17,7 +17,11 @@ describe('DrizzleEventPublisher project links (ADR 0012)', () => {
   const values = vi.fn().mockResolvedValue(undefined);
   const db = { insert: vi.fn(() => ({ values })) };
   const getLinkedProjectIds = vi.fn();
-  const projectLinks = { getLinkedProjectIds } as unknown as ProjectLinksRepository;
+  const getUserProjectIds = vi.fn();
+  const projectLinks = {
+    getLinkedProjectIds,
+    getUserProjectIds,
+  } as unknown as ProjectLinksRepository;
 
   const orgUser = {
     userId: 'user-1',
@@ -31,6 +35,7 @@ describe('DrizzleEventPublisher project links (ADR 0012)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getLinkedProjectIds.mockResolvedValue([]);
+    getUserProjectIds.mockResolvedValue([]);
   });
 
   it('records the projects an entity-bound aggregate is linked to, keeping the request scope', async () => {
@@ -117,14 +122,64 @@ describe('DrizzleEventPublisher project links (ADR 0012)', () => {
 
   it('exposes the resolution for callers that must read links before a delete', async () => {
     getLinkedProjectIds.mockResolvedValue([projectA]);
+    getUserProjectIds.mockResolvedValue([projectB]);
 
     await expect(
       publisher().resolveLinkedProjectIds([
         { kind: 'group', id: 'group-1' },
         { kind: 'user', id: 'user-9' },
+        { kind: 'organization', id: 'org-1' },
       ])
-    ).resolves.toEqual([projectA]);
+    ).resolves.toEqual([projectA, projectB]);
     expect(getLinkedProjectIds).toHaveBeenCalledTimes(1);
     expect(getLinkedProjectIds).toHaveBeenCalledWith('group', 'group-1', undefined);
+    expect(getUserProjectIds).toHaveBeenCalledWith('user-9', undefined);
   });
+
+  it('resolves a user to the projects it is a member of only when asked, never from an aggregate', async () => {
+    getUserProjectIds.mockResolvedValue([projectA]);
+
+    // Events about a user's own security name the user as aggregate: no fan-out (ADR 0012, item 8).
+    await publisher().publish({
+      type: 'user.mfa_enabled',
+      aggregate: { kind: 'user', id: 'user-9' },
+      data: {},
+    });
+    expect(getUserProjectIds).not.toHaveBeenCalled();
+    expect(storedPayload()).not.toHaveProperty('projectIds');
+
+    // The lifecycle events pass the memberships they read before the write.
+    values.mockClear();
+    await publisher().publish({
+      type: 'user.deleted',
+      aggregate: { kind: 'user', id: 'user-9' },
+      data: {},
+      projectIds: [projectA],
+    });
+    expect(storedPayload().projectIds).toEqual([projectA]);
+  });
+
+  it.each([
+    ['userTag', 'tag.linked', { tagId: 'tag-1', targetKind: 'user', targetId: 'user-1' }],
+    ['groupTag', 'tag.unlinked', { tagId: 'tag-1', targetKind: 'group', targetId: 'group-1' }],
+  ] as const)(
+    'resolves the tag and the target of a %s pivot, not the user',
+    async (aggregateKind, type, after) => {
+      getLinkedProjectIds.mockImplementation(async (kind: string) =>
+        kind === 'tag' ? [projectA] : kind === 'group' ? [projectB] : []
+      );
+
+      await publisher().publish({
+        type,
+        aggregate: { kind: aggregateKind, id: 'pivot-1' },
+        data: { after },
+      });
+
+      const kinds = getLinkedProjectIds.mock.calls.map((call) => call[0]);
+      expect(kinds).toEqual(aggregateKind === 'userTag' ? ['tag'] : ['tag', 'group']);
+      expect(storedPayload().projectIds).toEqual(
+        aggregateKind === 'userTag' ? [projectA] : [projectA, projectB]
+      );
+    }
+  );
 });

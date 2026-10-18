@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   IPermissionRepository,
   IPermissionTagRepository,
   IPermissionTagService,
@@ -13,6 +14,7 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { tagLinkEvent } from '@/lib/events/tag-link-event.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -32,7 +34,8 @@ export class PermissionTagService implements IPermissionTagService {
     private readonly permissionRepository: IPermissionRepository,
     private readonly tagRepository: ITagRepository,
     private readonly permissionTagRepository: IPermissionTagRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async permissionExists(permissionId: string, transaction?: Transaction): Promise<void> {
@@ -155,6 +158,15 @@ export class PermissionTagService implements IPermissionTagService {
 
     await this.audit.logCreate(permissionTag.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      tagLinkEvent(
+        'tag.linked',
+        { kind: 'permission', id: permissionTag.permissionId },
+        permissionTag
+      ),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(permissionTagSchema), permissionTag, context);
   }
 
@@ -240,6 +252,15 @@ export class PermissionTagService implements IPermissionTagService {
       await this.audit.logSoftDelete(permissionTag.id, oldValues, newValues, metadata, transaction);
     }
 
+    await this.events.publish(
+      tagLinkEvent(
+        'tag.unlinked',
+        { kind: 'permission', id: permissionTag.permissionId },
+        permissionTag
+      ),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(permissionTagSchema), permissionTag, context);
   }
 
@@ -265,6 +286,13 @@ export class PermissionTagService implements IPermissionTagService {
           : this.permissionTagRepository.softDeletePermissionTag(permissionTag, transaction)
       )
     );
+
+    for (const pivot of deletedPermissionTags) {
+      await this.events.publish(
+        tagLinkEvent('tag.unlinked', { kind: 'permission', id: pivot.permissionId }, pivot),
+        transaction
+      );
+    }
 
     return validateOutput(
       createDynamicSingleSchema(permissionTagSchema).array(),

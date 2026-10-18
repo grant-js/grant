@@ -23,6 +23,8 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
     updateProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   };
 
+  const events = { publish: vi.fn() };
+
   function svc() {
     return new ProjectUserService(
       projectRepository as never,
@@ -31,7 +33,7 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       { getFirstByProjectId: vi.fn().mockResolvedValue(null) } as never,
       audit as never,
-      { publish: vi.fn() } as never,
+      events as never,
       { getUrl: vi.fn(async (path: string) => `/storage/${path}`) } as never,
       { removeCredential: vi.fn() } as never
     );
@@ -83,5 +85,40 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
       undefined
     );
     expect(audit.logUpdate).toHaveBeenCalled();
+  });
+
+  it('publishes project.user_updated with the user as subject and the metadata delta', async () => {
+    await svc().updateProjectUserMetadata({
+      projectId: 'p1',
+      userId: 'u1',
+      metadata: { extra: 'y' },
+    });
+
+    expect(events.publish).toHaveBeenCalledTimes(1);
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'project.user_updated',
+        subjectUserId: 'u1',
+        aggregate: { kind: 'projectUser', id: 'pu1' },
+        data: expect.objectContaining({
+          before: expect.objectContaining({ id: 'pu1' }),
+          after: expect.objectContaining({
+            id: 'pu1',
+            metadata: expect.objectContaining({ extra: 'y' }),
+          }),
+          delta: { metadata: expect.objectContaining({ from: expect.any(Object) }) },
+        }),
+      }),
+      undefined
+    );
+  });
+
+  it('publishes nothing when the project user does not exist', async () => {
+    projectUserRepository.getProjectUsers.mockResolvedValue([]);
+
+    await expect(
+      svc().updateProjectUserMetadata({ projectId: 'p1', userId: 'u1', metadata: { extra: 'y' } })
+    ).rejects.toThrow();
+    expect(events.publish).not.toHaveBeenCalled();
   });
 });

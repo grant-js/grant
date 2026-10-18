@@ -6,10 +6,14 @@ import { describe, expect, it } from 'vitest';
 
 const SERVICES_DIR = join(__dirname, '../../../../src/services');
 
-/** Extract every event type passed to `this.events.publish({ type: '...' })`. */
+/**
+ * Extract every event type passed to `this.events.publish({ type: '...' })`, or built by
+ * the tag pivot helper: `this.events.publish(tagLinkEvent('tag.linked', ...))`.
+ */
 function collectEmittedEventTypes(): string[] {
   const types = new Set<string>();
-  const publishRe = /events\.publish\(\s*\{\s*type:\s*'([^']+)'/g;
+  const publishRe =
+    /(?:events\.publish\(\s*\{\s*type:|events\.publish\(\s*tagLinkEvent\(\s*)\s*'([^']+)'/g;
 
   for (const file of readdirSync(SERVICES_DIR)) {
     if (!file.endsWith('.service.ts')) continue;
@@ -30,7 +34,36 @@ describe('event catalog coverage', () => {
       expect(entry).toBeDefined();
       expect(['security', 'iam', 'membership', 'integrations']).toContain(entry.category);
       expect(['transactional', 'notification']).toContain(entry.deliveryClass);
-      expect(entry.audienceRule.primitives.length).toBeGreaterThan(0);
+      // An empty audience is how a webhook-only event stays out of the notification
+      // generator; it is only allowed for transactional entries.
+      if (entry.audienceRule.primitives.length === 0) {
+        expect(entry.deliveryClass, `${type} has no audience`).toBe('transactional');
+      }
+    }
+  });
+
+  it('keeps the webhook-only lifecycle events out of notifications', () => {
+    const webhookOnly = [
+      'user.created',
+      'user.updated',
+      'user.deleted',
+      'project.user_updated',
+      'api_key.deleted',
+      'tag.created',
+      'tag.updated',
+      'tag.deleted',
+      'tag.linked',
+      'tag.unlinked',
+    ] as const;
+
+    for (const type of webhookOnly) {
+      expect(EVENT_CATALOG[type].audienceRule.primitives, type).toEqual([]);
+      expect(EVENT_CATALOG[type].deliveryClass, type).toBe('transactional');
+    }
+    // Every other entry still names who is told.
+    const others = EVENT_TYPES.filter((type) => !(webhookOnly as readonly string[]).includes(type));
+    for (const type of others) {
+      expect(EVENT_CATALOG[type].audienceRule.primitives.length, type).toBeGreaterThan(0);
     }
   });
 
@@ -105,6 +138,26 @@ describe('event catalog coverage', () => {
     ] as const;
 
     for (const type of slice3) {
+      expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
+    }
+  });
+
+  it('emits the cascade and lifecycle events', () => {
+    const emitted = new Set(collectEmittedEventTypes());
+    const lifecycle = [
+      'user.created',
+      'user.updated',
+      'user.deleted',
+      'project.user_updated',
+      'api_key.deleted',
+      'tag.created',
+      'tag.updated',
+      'tag.deleted',
+      'tag.linked',
+      'tag.unlinked',
+    ] as const;
+
+    for (const type of lifecycle) {
       expect(emitted.has(type), `expected service emit for "${type}"`).toBe(true);
     }
   });

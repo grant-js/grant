@@ -1,5 +1,6 @@
 import type {
   IAuditLogger,
+  IEventPublisher,
   ITagRepository,
   IUserRepository,
   IUserTagRepository,
@@ -8,6 +9,7 @@ import type {
 import { AddUserTagInput, RemoveUserTagInput, UpdateUserTagInput, UserTag } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { tagLinkEvent } from '@/lib/events/tag-link-event.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -27,7 +29,8 @@ export class UserTagService implements IUserTagService {
     private readonly userRepository: IUserRepository,
     private readonly tagRepository: ITagRepository,
     private readonly userTagRepository: IUserTagRepository,
-    private readonly audit: IAuditLogger
+    private readonly audit: IAuditLogger,
+    private readonly events: IEventPublisher
   ) {}
 
   private async userExists(userId: string, transaction?: Transaction): Promise<void> {
@@ -124,6 +127,11 @@ export class UserTagService implements IUserTagService {
 
     await this.audit.logCreate(userTag.id, newValues, metadata, transaction);
 
+    await this.events.publish(
+      tagLinkEvent('tag.linked', { kind: 'user', id: userTag.userId }, userTag),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(userTagSchema), userTag, context);
   }
 
@@ -195,6 +203,11 @@ export class UserTagService implements IUserTagService {
       await this.audit.logSoftDelete(userTag.id, oldValues, newValues, metadata, transaction);
     }
 
+    await this.events.publish(
+      tagLinkEvent('tag.unlinked', { kind: 'user', id: userTag.userId }, userTag),
+      transaction
+    );
+
     return validateOutput(createDynamicSingleSchema(userTagSchema), userTag, context);
   }
 
@@ -217,6 +230,13 @@ export class UserTagService implements IUserTagService {
           : this.userTagRepository.softDeleteUserTag(userTag, transaction)
       )
     );
+
+    for (const pivot of deletedUserTags) {
+      await this.events.publish(
+        tagLinkEvent('tag.unlinked', { kind: 'user', id: pivot.userId }, pivot),
+        transaction
+      );
+    }
 
     return validateOutput(
       createDynamicSingleSchema(userTagSchema).array(),

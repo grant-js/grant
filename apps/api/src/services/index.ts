@@ -357,7 +357,8 @@ export function createServices(
       user,
       audit(userAuditLogs, 'userId', user, db),
       fileStorage,
-      credentials
+      credentials,
+      events
     ),
     userAuthenticationMethods: new UserAuthenticationMethodService(
       repositories.userAuthenticationMethodRepository,
@@ -409,9 +410,14 @@ export function createServices(
       repositories.userRepository,
       repositories.tagRepository,
       repositories.userTagRepository,
-      audit(userTagsAuditLogs, 'userTagId', user, db)
+      audit(userTagsAuditLogs, 'userTagId', user, db),
+      events
     ),
-    tags: new TagService(repositories.tagRepository, audit(tagAuditLogs, 'tagId', user, db)),
+    tags: new TagService(
+      repositories.tagRepository,
+      audit(tagAuditLogs, 'tagId', user, db),
+      events
+    ),
     groups: new GroupService(
       repositories.groupRepository,
       audit(groupAuditLogs, 'groupId', user, db),
@@ -431,7 +437,8 @@ export function createServices(
       repositories.resourceRepository,
       repositories.tagRepository,
       repositories.resourceTagRepository,
-      audit(resourceTagAuditLogs, 'resourceTagId', user, db)
+      audit(resourceTagAuditLogs, 'resourceTagId', user, db),
+      events
     ),
     projects: new ProjectService(
       repositories.projectRepository,
@@ -592,13 +599,15 @@ export function createServices(
       repositories.roleRepository,
       repositories.tagRepository,
       repositories.roleTagRepository,
-      audit(roleTagAuditLogs, 'roleTagId', user, db)
+      audit(roleTagAuditLogs, 'roleTagId', user, db),
+      events
     ),
     permissionTags: new PermissionTagService(
       repositories.permissionRepository,
       repositories.tagRepository,
       repositories.permissionTagRepository,
-      audit(permissionTagAuditLogs, 'permissionTagId', user, db)
+      audit(permissionTagAuditLogs, 'permissionTagId', user, db),
+      events
     ),
     groupPermissions: new GroupPermissionService(
       repositories.groupRepository,
@@ -667,7 +676,8 @@ export function createServices(
       repositories.groupRepository,
       repositories.tagRepository,
       repositories.groupTagRepository,
-      audit(groupTagsAuditLogs, 'groupTagId', user, db)
+      audit(groupTagsAuditLogs, 'groupTagId', user, db),
+      events
     ),
   };
 

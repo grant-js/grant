@@ -150,6 +150,31 @@ describe('AudienceResolver', () => {
     }
   });
 
+  it.each([
+    'user.created',
+    'user.updated',
+    'user.deleted',
+    'project.user_updated',
+    'api_key.deleted',
+    'tag.created',
+    'tag.updated',
+    'tag.deleted',
+    'tag.linked',
+    'tag.unlinked',
+  ] as const)(
+    'resolves nobody for the webhook-only event %s, so it never becomes a notification',
+    async (type) => {
+      organizationProjects.getFirstByProjectId.mockResolvedValue({ organizationId: 'org-1' });
+      organizationUsers.getUserIdsByOrganizationRoleNames.mockResolvedValue(['admin-1']);
+      projectUsers.getProjectUsers.mockResolvedValue([{ userId: 'member-1' }]);
+
+      const ids = await resolver.resolve(event({ type, subjectUserId: 'subject-1' }));
+
+      expect(ids).toEqual([]);
+      expect(organizationUsers.getUserIdsByOrganizationRoleNames).not.toHaveBeenCalled();
+    }
+  );
+
   it('returns empty recipients when owners and roleHolders resolve empty', async () => {
     organizationProjects.getFirstByProjectId.mockResolvedValue({
       organizationId: 'org-1',

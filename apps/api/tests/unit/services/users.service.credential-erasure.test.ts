@@ -23,6 +23,7 @@ function build() {
     softDeleteUser: vi.fn().mockResolvedValue({ ...user(), deletedAt: new Date() }),
     hardDeleteUser: vi.fn().mockResolvedValue(user()),
   };
+  const events = { publish: vi.fn(), resolveLinkedProjectIds: vi.fn().mockResolvedValue([]) };
   const credentials = { removeAllForUser: vi.fn().mockResolvedValue(2) };
   const service = new UserService(
     userRepository as never,
@@ -34,7 +35,8 @@ function build() {
       logHardDelete: vi.fn(),
     } as never,
     { getUrl: vi.fn() } as never,
-    credentials as never
+    credentials as never,
+    events as never
   );
   return { service, userRepository, credentials };
 }

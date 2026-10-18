@@ -41,6 +41,12 @@ export interface IApiKeyRepository {
 
   getClientSecretHash(id: string, transaction?: unknown): Promise<string | null>;
 
+  /**
+   * Distinct users an API key is owned by through `project_user_api_keys`. Account- and
+   * organization-project keys have no owning user and give an empty list.
+   */
+  getOwningUserIds(id: string, transaction?: unknown): Promise<string[]>;
+
   createApiKey(
     params: Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;

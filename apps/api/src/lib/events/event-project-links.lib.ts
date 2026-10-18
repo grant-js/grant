@@ -28,6 +28,26 @@ const PIVOT_ENTITIES: Record<
   userRole: [{ kind: 'role', field: 'roleId' }],
   userGroup: [{ kind: 'group', field: 'groupId' }],
   userPermission: [{ kind: 'permission', field: 'permissionId' }],
+  // A tag pivot reaches the tag's projects and the linked entity's. `targetKind` is
+  // fixed per aggregate here, so `data.after.targetKind` is never trusted for routing.
+  // A user target is deliberately absent, like every other `user` above.
+  userTag: [{ kind: 'tag', field: 'tagId' }],
+  groupTag: [
+    { kind: 'tag', field: 'tagId' },
+    { kind: 'group', field: 'targetId' },
+  ],
+  roleTag: [
+    { kind: 'tag', field: 'tagId' },
+    { kind: 'role', field: 'targetId' },
+  ],
+  permissionTag: [
+    { kind: 'tag', field: 'tagId' },
+    { kind: 'permission', field: 'targetId' },
+  ],
+  resourceTag: [
+    { kind: 'tag', field: 'tagId' },
+    { kind: 'resource', field: 'targetId' },
+  ],
 };
 
 /**

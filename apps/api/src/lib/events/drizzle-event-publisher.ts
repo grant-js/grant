@@ -58,12 +58,14 @@ export class DrizzleEventPublisher implements IEventPublisher {
     refs: EventAggregateRef[],
     transaction?: unknown
   ): Promise<string[]> {
+    const tx = transaction as Transaction | undefined;
     const perEntity = await Promise.all(
-      refs.map(({ kind, id }) =>
-        isProjectLinkedKind(kind)
-          ? this.projectLinks.getLinkedProjectIds(kind, id, transaction as Transaction | undefined)
-          : []
-      )
+      refs.map(({ kind, id }) => {
+        if (isProjectLinkedKind(kind)) return this.projectLinks.getLinkedProjectIds(kind, id, tx);
+        // Explicit only (never derived from an aggregate): see getUserProjectIds.
+        if (kind === 'user') return this.projectLinks.getUserProjectIds(id, tx);
+        return [];
+      })
     );
     return [...new Set(perEntity.flat())];
   }
