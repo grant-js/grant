@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@grantjs/client": "workspace:*",
-    "next": "16.4.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "next": "16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -24,6 +24,6 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.2"
   }
 }

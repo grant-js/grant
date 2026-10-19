@@ -77,7 +77,7 @@
     "@changesets/cli": "^3.0.3",
     "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^10.0.1",
-    "@iconify-json/fluent": "^1.2.59",
+    "@iconify-json/fluent": "^1.2.60",
     "@iconify-json/fluent-color": "^1.2.21",
     "@types/node": "^26.6.5",
     "badge-maker": "^6.0.0",
@@ -94,10 +94,10 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15",
-    "turbo": "^2.11.7",
+    "turbo": "^2.11.8",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.71.1",
+    "typescript-eslint": "^8.71.2",
     "vitepress": "^1.6.4"
   },
   "engines": {
