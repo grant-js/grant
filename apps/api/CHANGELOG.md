@@ -1,5 +1,27 @@
 # grant-api
 
+## 1.18.1
+
+### Patch Changes
+
+- 2b811c4: CDM import accepts role templates with no permissionRefs: a role may be a pure label whose permissions are attached later. Validation of duplicate keys and tag references is unchanged.
+- fcefe73: Webhook envelopes now carry an identity-only `before` (ids, keys, names) for delete and revoke events, so subscribers can tell what was removed. `after` and `delta` are unchanged; no personal data is added.
+- Updated dependencies [fcefe73]
+  - @grantjs/schema@1.18.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.0
 
 ### Minor Changes

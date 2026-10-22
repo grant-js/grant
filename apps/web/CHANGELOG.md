@@ -1,5 +1,15 @@
 # grant-web
 
+## 1.18.1
+
+### Patch Changes
+
+- Updated dependencies [fcefe73]
+  - @grantjs/schema@1.18.1
+  - @grantjs/client@1.18.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.18.0
 
 ### Minor Changes
