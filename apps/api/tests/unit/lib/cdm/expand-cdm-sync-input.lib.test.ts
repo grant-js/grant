@@ -126,6 +126,33 @@ describe('expandCdmSyncInput catalog permission strings', () => {
     });
   });
 
+  it('expands a role with no permissions and no groups into a template with empty permissionRefs', () => {
+    const input: CdmDocumentInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [
+        {
+          key: 'label-role',
+          name: 'Label role',
+          description: null,
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      users: [],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+    const expanded = expandCdmSyncInput(input);
+    expect(expanded.roleTemplates).toHaveLength(1);
+    expect(expanded.roleTemplates[0]!.externalKey).toBe('label-role');
+    expect(expanded.roleTemplates[0]!.permissionRefs).toEqual([]);
+  });
+
   it('expands document permission keys alongside catalog refs', () => {
     const input: CdmDocumentInput = {
       version: 1,

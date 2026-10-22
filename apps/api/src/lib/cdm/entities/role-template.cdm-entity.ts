@@ -50,6 +50,11 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
     private readonly groupTags: IGroupTagService
   ) {}
 
+  /**
+   * `permissionRefs` may be empty: a role with no permissions is a legitimate
+   * "label role" (permissions can be attached later), so only identity and tag
+   * references are validated here.
+   */
   public validateInput(input: readonly CdmRoleTemplateInternal[]): void {
     const externalKeys = new Set<string>();
     for (const t of input) {
@@ -57,11 +62,6 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
         throw new ValidationError(`Duplicate role template externalKey: ${t.externalKey}`);
       }
       externalKeys.add(t.externalKey);
-      if (t.permissionRefs.length === 0) {
-        throw new ValidationError(
-          `roleTemplates[${t.externalKey}] must include at least one permissionRef`
-        );
-      }
       assertUniqueStringArray(t.tagKeys, `roleTemplates[${t.externalKey}].tagKeys`);
       assertUniqueStringArray(t.groupTagKeys, `roleTemplates[${t.externalKey}].groupTagKeys`);
       if (t.primaryRoleTagKey != null && t.primaryRoleTagKey !== '') {

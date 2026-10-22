@@ -80,6 +80,9 @@ The orchestrator deduplicates refs from all entities, then resolves in one pass 
 | `roles.permissions` | `roleTemplates[].permissionRefs`         | `role_permissions` or group path               |
 | `roles.groups`      | paired role + group template             | `role_groups`, `group_permissions`             |
 
+A role template may have an empty `permissionRefs` list (a pure label role): the role is created with
+no permission links and exported back with an empty `permissions` list.
+
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.
 
