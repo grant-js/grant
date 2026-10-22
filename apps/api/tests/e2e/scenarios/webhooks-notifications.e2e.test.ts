@@ -430,6 +430,11 @@ describe('Webhooks and notifications flow', () => {
     expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
     expect(envelope.grantactor).not.toBeNull();
     expect(envelope.data.before).toMatchObject({ userId: inviteeUserId });
-    expect(Object.keys(envelope.data.before ?? {}).sort()).toEqual(['id', 'roleId', 'roleName', 'userId']);
+    expect(Object.keys(envelope.data.before ?? {}).sort()).toEqual([
+      'id',
+      'roleId',
+      'roleName',
+      'userId',
+    ]);
   });
 });
