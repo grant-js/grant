@@ -124,7 +124,7 @@ Each path in the document maps to native Grant edges on import:
 | `roles[].permissions` (no `roles[].groups`) + `users[].roles` | User → Role → Permission         |
 | `users[].permissions`                                         | User → Permission                |
 
-A role may also carry **no permissions at all**: `roles[]` without `permissions` and without `groups` is valid. Import creates the role itself (name, description, tags, metadata) with no `role_permissions`, no group and no permission links; it is a pure label whose permissions can be attached later, for example by a later import or through the API. Export emits it again as a role with an empty `permissions` list, so it survives a round trip.
+A role may also carry **no permissions at all**: `roles[]` without `permissions` and without `groups` is valid. Import creates the role itself (name, description, tags, metadata) with no `role_permissions`, no group and no permission links; it is a pure label whose permissions can be attached later, for example by a later import or through the API. Export emits it again as a role with an empty `permissions` list, so it survives a round trip. Validation also accepts empty permissions on the group path: when `roles[].groups` is set and those groups carry no permissions, the role has no permissions either, and import creates the role and its paired group with no permission links.
 
 Export emits the same fields. Users may have **roles only**, **direct permissions only**, **direct groups only**, or any combination.
 

@@ -47,7 +47,22 @@ function baseResult(): SyncProjectResult {
 
 function buildHandler(exportRows: unknown[] = []) {
   const builder = {
-    createRoleWithGroup: vi.fn(),
+    createRoleWithGroup: vi.fn().mockResolvedValue({
+      roleId,
+      groupId: '70000000-0000-4000-8000-000000000002',
+      counts: {
+        roleGroups: 1,
+        groupPermissions: 0,
+        rolePermissions: 0,
+        userPermissions: 0,
+        projectRoles: 1,
+        projectGroups: 1,
+        projectPermissions: 0,
+        projectRolePermissions: 0,
+        projectUserPermissions: 0,
+        projectResources: 0,
+      },
+    }),
     createRoleWithDirectPermissions: vi.fn().mockResolvedValue({
       roleId,
       groupId: '',
@@ -169,6 +184,29 @@ describe('RoleTemplateCdmEntity — roles with no permissionRefs', () => {
     expect(ctx.result.groupPermissionsLinked).toBe(0);
     expect(ctx.result.projectPermissionsLinked).toBe(0);
     expect(ctx.result.projectResourcesLinked).toBe(0);
+  });
+
+  it('apply on the group path creates the role and group with [] and links no permissions', async () => {
+    const { handler, builder } = buildHandler();
+    const lookup = vi.fn();
+    const ctx = applyCtx(lookup);
+
+    await handler.apply(ctx, [
+      {
+        ...labelRole,
+        linkedGroupImportName: 'Empty group',
+        linkedDocumentGroupKeys: ['grp-empty'],
+      },
+    ]);
+
+    expect(lookup).not.toHaveBeenCalled();
+    expect(builder.createRoleWithDirectPermissions).not.toHaveBeenCalled();
+    expect(builder.createRoleWithGroup).toHaveBeenCalledTimes(1);
+    expect(builder.createRoleWithGroup.mock.calls[0]![6]).toEqual([]);
+    expect(ctx.result.rolesCreated).toBe(1);
+    expect(ctx.result.groupsCreated).toBe(1);
+    expect(ctx.result.groupPermissionsLinked).toBe(0);
+    expect(ctx.result.projectPermissionsLinked).toBe(0);
   });
 
   it('export round-trips a role without permissions as permissionRefs: []', async () => {

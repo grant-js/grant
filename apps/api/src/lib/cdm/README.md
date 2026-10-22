@@ -82,6 +82,8 @@ The orchestrator deduplicates refs from all entities, then resolves in one pass 
 
 A role template may have an empty `permissionRefs` list (a pure label role): the role is created with
 no permission links and exported back with an empty `permissions` list.
+The same holds on the group path (`roles[].groups` set, those groups carrying no permissions):
+`validateInput` accepts the empty list, apply calls `createRoleWithGroup` with `[]` and links no permissions.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.
