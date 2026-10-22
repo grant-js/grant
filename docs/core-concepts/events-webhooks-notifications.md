@@ -78,9 +78,9 @@ Two of these were silent before. Deleting a group removed its permissions and ro
 - **`user.created` / `user.updated` / `user.deleted`** describe the platform identity. `subjectUserId` is the user. They carry ids and timestamps only: `user.updated` lists the **names** of the fields that changed (`changedFields`), never their values, and an update that changed nothing emits nothing. The delete event stores no name, because the outbox row outlives a hard delete, which is an erasure. They are emitted from `UserService`, so self-deletion and account deletion are covered, once per deletion: the data-retention job's later hard delete of a user who was already soft-deleted finds no live user (the user lookup excludes soft-deleted rows, as before this change) and emits nothing. A change to `picturePath` alone is not reported, because the user model does not carry it. `user.deleted` carries `after.hardDelete`. The event is written **before** the delete because `event_log.subject_user_id` references `users.id`; a hard delete then nulls it, so `grantsubjectuser` is `null` for a hard delete while `subject` and `data.after.id` still name the user. A user reaches a project's subscription when the request ran in that project or the user was already a member when the event was published (`user.updated` and `user.deleted` read the memberships when they are emitted, `user.deleted` before the delete); `user.created` normally names no project, and a user who joins a project afterwards is announced by `project.user_added`.
 - **`project.user_updated`** is the project-member counterpart of `project.user_profile_updated` for the one change that event does not cover: the member's `metadata`. A project member has no status column, so nothing else changes on that row. CDM imports merge importer metadata without emitting (entity events are suppressed during import).
 - **`api_key.deleted`** names the owning user as `subjectUserId` **only** when the key has exactly one owner in `project_user_api_keys`. Account and organization-project keys have no owning user, and the `userId` of an API-key token exchange falls back to the key's own id for them, so it is never used here. The project links are read before the delete.
-- **`tag.created` / `tag.updated` / `tag.deleted`** have the tag as aggregate and reach the projects the tag is linked to (`project_tags`). **`tag.linked` / `tag.unlinked`** have the **pivot** (`userTag`, `groupTag`, `roleTag`, `permissionTag`, `resourceTag`) as aggregate. Unlike other revokes they carry the ids in `data.after` for both types, `{ tagId, targetKind, targetId }`, because the envelope drops `before` and a tag pivot has no subject user to say what it joined. `subjectUserId` is set only when the target is a user. A tag pivot reaches the tag's projects and the target's (role, group, permission, resource); a user target adds none.
+- **`tag.created` / `tag.updated` / `tag.deleted`** have the tag as aggregate and reach the projects the tag is linked to (`project_tags`). **`tag.linked` / `tag.unlinked`** have the **pivot** (`userTag`, `groupTag`, `roleTag`, `permissionTag`, `resourceTag`) as aggregate. Unlike other revokes they carry the ids in `data.after` for both types, `{ tagId, targetKind, targetId }`, because a tag pivot has no subject user to say what it joined. These two types publish no `before`: they predate the identity-only `data.before` (see [External envelope](#external-envelope)), and the ids stay in `data.after` for compatibility. `subjectUserId` is set only when the target is a user. A tag pivot reaches the tag's projects and the target's (role, group, permission, resource); a user target adds none.
 
-Redaction is unchanged: these payloads hold ids, a tag's name and colour, and the project member's metadata that `project.user_added` already exposes. No email, no user name.
+Redaction of `after` and `delta` is unchanged: these payloads hold ids, a tag's name and colour, and the project member's metadata that `project.user_added` already exposes. No email, no user name.
 
 ### Relay latency vs durability
 
@@ -147,13 +147,47 @@ Bodies follow CloudEvents 1.0 with Grant extensions:
   "grantactor": { "userId": "…" },
   "grantsubjectuser": { "userId": "…" },
   "grantcategory": "iam",
-  "data": {}
+  "data": {
+    "before": { "id": "…", "userId": "…", "roleId": "…" }
+  }
 }
 ```
 
-External `data` drops internal `before` snapshots and redacts keys matching secret/token patterns (replaced with `"[redacted]"`).
+External `data` has up to three parts:
 
-`grantactor` is the user who made the change; `grantsubjectuser` is the user the event is about, for events that have one (for example `user.role_revoked`, `user.group_revoked`, `project.user_removed`, `organization.member_removed`). Both are `null` when absent. Because `before` is dropped, `grantsubjectuser` is how a consumer learns whose access was revoked or removed; `subject` is the id of the changed record (such as the role assignment), not the user.
+- **`after`** and **`delta`** are the internal snapshot and field changes, with every key matching a secret/token pattern replaced by `"[redacted]"`.
+- **`before`** is an **identity-only** projection of the internal `before` snapshot, present on delete, revoke and remove events (and on update events whose snapshot has an identity field). It says _what_ was deleted or revoked, so a subscriber can render "role Editor was deleted" or "role `…` was revoked from user `…`" without looking the record up (a deleted record can no longer be looked up). It is omitted when the snapshot has no identity field.
+
+The projection copies these keys, and only these, and only when the value is a string, number, boolean or `null`:
+
+| Keys                                                                                                                    | Meaning                                                   |
+| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `id`, `key`, `name`, `slug`, `kind`, `type`                                                                             | Identity of the entity (or pivot row) the event is about  |
+| `userId`, `roleId`, `groupId`, `permissionId`, `tagId`, `apiKeyId`, `resourceId`, `targetKind`, `targetId`, `projectId` | The other side of a pivot (membership, grant, assignment) |
+
+Everything else in the snapshot is dropped: email and other profile fields, descriptions, metadata, timestamps, status flags, and any nested object or array. A key that matches a redaction pattern is replaced by `"[redacted]"` (`apiKeyId` is the one allowlisted key that matches a pattern, `apikey`, and it is an id, so it is exempt). What each type carries today:
+
+| Event                                                                | `data.before`                                                                                                          |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `role.deleted`, `group.deleted`, `permission.deleted`, `tag.deleted` | `id`, `name`                                                                                                           |
+| `resource.deleted`                                                   | `id`, `name`, `slug`                                                                                                   |
+| `api_key.deleted`, `api_key.rotated`                                 | `id`, `name`                                                                                                           |
+| `api_key.revoked`                                                    | `id`                                                                                                                   |
+| `user.deleted`                                                       | `id`                                                                                                                   |
+| `user.role_revoked`                                                  | `id`, `userId`, `roleId`                                                                                               |
+| `user.group_revoked`                                                 | `id`, `userId`, `groupId`                                                                                              |
+| `user.permission_revoked`                                            | `id`, `userId`, `permissionId`                                                                                         |
+| `role.group_revoked`                                                 | `id`, `roleId`, `groupId`                                                                                              |
+| `role.permission_revoked`                                            | `id`, `roleId`, `permissionId`                                                                                         |
+| `group.permission_revoked`                                           | `id`, `groupId`, `permissionId`                                                                                        |
+| `project.user_removed`                                               | `id`, `projectId`, `userId`                                                                                            |
+| `organization.member_removed`                                        | `id`, `userId`, or `userId`, `roleId` when removed through the member endpoint                                         |
+| `organization.invitation_revoked`                                    | `id`, `roleId` (the invited email is not carried; `grantsubjectuser` names the invited user when they have an account) |
+| `user.session_revoked`                                               | `id`, `userId`                                                                                                         |
+
+Update events (`role.updated`, `resource.updated`, ...) carry the same projection of the snapshot before the change, so `before.name` is the previous name next to the `delta`. `tag.linked` and `tag.unlinked` are unchanged: they carry `{ tagId, targetKind, targetId }` in `data.after` and no `before`.
+
+`grantactor` is the user who made the change; `grantsubjectuser` is the user the event is about, for events that have one (for example `user.role_revoked`, `user.group_revoked`, `project.user_removed`, `organization.member_removed`). Both are `null` when absent. `grantsubjectuser` stays the primary way to read whose access was revoked or removed, and `data.before` adds _which_ role, group or permission it was; `subject` is the id of the changed record (such as the role assignment), not the user.
 
 Delivery is **best-effort / at-least-once** with application-level retries (escalating delays, then dead). Grant does not guarantee per-subscription delivery ordering; endpoints should be **idempotent** on `id` / `Webhook-Id`. SSRF guards block private targets unless explicitly allowed in configuration (useful for local receivers).
 

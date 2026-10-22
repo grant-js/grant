@@ -7,9 +7,10 @@ export type TagTargetKind = 'user' | 'group' | 'role' | 'permission' | 'resource
  * `group_tags`, `role_tags`, `permission_tags`, `resource_tags`).
  *
  * The aggregate is the pivot. What was linked travels in `data.after` for **both**
- * types, unlike other revoke events: the external envelope drops `before`, and a tag
- * pivot has no subject user to name the target, so `after` is the only place a
- * consumer can read which tag left which entity. Ids and the target kind only.
+ * types, unlike other revoke events, which carry it in `before`: a tag pivot has no
+ * subject user to name the target, and these types were published with `after` before
+ * the envelope kept an identity `before`, so they stay as they are for compatibility.
+ * Ids and the target kind only.
  *
  * `subjectUserId` is set only for a user target. Project routing is derived from the
  * aggregate by `linkedEntityRefsOf` (the tag's projects and the target's).
