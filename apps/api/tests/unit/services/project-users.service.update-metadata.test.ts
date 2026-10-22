@@ -25,6 +25,10 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
 
   const events = { publish: vi.fn() };
 
+  // One instant for both mocks: separate `new Date()` calls can straddle a clock tick, and
+  // the service would then report `createdAt`/`updatedAt` in the delta next to `metadata`.
+  const now = new Date('2026-01-01T00:00:00.000Z');
+
   function svc() {
     return new ProjectUserService(
       projectRepository as never,
@@ -47,8 +51,8 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
         projectId: 'p1',
         userId: 'u1',
         metadata: { [CDM_IMPORT_METADATA_KEY]: { projectId: 'p1', kind: 'group' }, keep: true },
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
         deletedAt: null,
       },
     ]);
@@ -61,8 +65,8 @@ describe('ProjectUserService.updateProjectUserMetadata', () => {
         keep: true,
         extra: 'y',
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       deletedAt: null,
     });
   });

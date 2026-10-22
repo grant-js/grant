@@ -9,7 +9,7 @@ const accountId = '10000000-0000-4000-8000-000000000020';
 const projectId = '10000000-0000-4000-8000-000000000011';
 const scope: Scope = { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` };
 
-/** Opaque keys so expand → roleTemplates get at least one permissionRef (RoleTemplateHandler.validateInput). */
+/** Opaque keys so the expanded roleTemplates carry a permissionRef. */
 const CDM_RES_KEY = 'cdm-res-metadata';
 const CDM_PERM_KEY = 'cdm-perm-metadata';
 

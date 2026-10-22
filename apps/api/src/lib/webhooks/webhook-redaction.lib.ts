@@ -1,4 +1,10 @@
-import type { EventData } from '@grantjs/schema';
+import {
+  type DomainEvent,
+  EVENT_IDENTITY_KEYS,
+  type EventData,
+  type EventIdentity,
+  type ExternalEventData,
+} from '@grantjs/schema';
 
 /**
  * Field names that must never leave the platform in a webhook payload. Matched
@@ -23,6 +29,12 @@ const REDACTED_KEY_PATTERNS: RegExp[] = [
 ];
 
 const REDACTED_PLACEHOLDER = '[redacted]';
+
+/**
+ * Identity keys that match a redaction pattern without being a credential:
+ * `apiKeyId` is the id of an API key, not its secret (`/apikey/i` matches it).
+ */
+const IDENTITY_KEYS_EXEMPT_FROM_REDACTION: ReadonlySet<string> = new Set(['apiKeyId']);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -51,11 +63,69 @@ function redactObject(input: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
- * Project internal event data to the external (webhook) shape: drops `before`
- * and applies the redaction allowlist to `after` and `delta`.
+ * Events about a person: the `user` aggregate and the `user.*` / `project.user_*`
+ * types. A `name` on one of their snapshots could be a person's name, so it is not
+ * carried; the id (and `grantsubjectuser`) identify the person.
  */
-export function redactEventData(data: EventData): EventData {
-  const result: EventData = {};
+function isUserEvent(event: Pick<DomainEvent, 'type' | 'aggregate'>): boolean {
+  return (
+    event.aggregate?.kind === 'user' ||
+    event.type.startsWith('user.') ||
+    event.type.startsWith('project.user_')
+  );
+}
+
+function isIdentityValue(value: unknown): value is string | number | boolean | null {
+  return value === null || ['string', 'number', 'boolean'].includes(typeof value);
+}
+
+/**
+ * Reduce an internal `before` snapshot to the identity of what it describes: the
+ * keys in `EVENT_IDENTITY_KEYS` whose value is a primitive. Everything else (email,
+ * profile fields, metadata, timestamps, nested objects) is dropped, and a key that
+ * matches a redaction pattern is replaced by the placeholder. Returns `undefined`
+ * when nothing identifies the snapshot, so the envelope carries no empty `before`.
+ * `dropName` also drops `name` (events about a person, see `isUserEvent`).
+ */
+export function projectIdentity(
+  before: Record<string, unknown>,
+  options: { dropName?: boolean } = {}
+): EventIdentity | undefined {
+  const identity: EventIdentity = {};
+  for (const key of EVENT_IDENTITY_KEYS) {
+    if (key === 'name' && options.dropName) {
+      continue;
+    }
+    const value = before[key];
+    if (!isIdentityValue(value)) {
+      continue;
+    }
+    identity[key] =
+      isRedactedKey(key) && !IDENTITY_KEYS_EXEMPT_FROM_REDACTION.has(key)
+        ? REDACTED_PLACEHOLDER
+        : value;
+  }
+  return Object.keys(identity).length > 0 ? identity : undefined;
+}
+
+/**
+ * Project internal event data to the external (webhook) shape: `before` becomes an
+ * identity-only projection (without `name` for events about a user), and the
+ * redaction allowlist applies to `after` and `delta`. `event` supplies the type and
+ * aggregate the projection depends on.
+ */
+export function redactEventData(
+  data: EventData,
+  event: Pick<DomainEvent, 'type' | 'aggregate'>
+): ExternalEventData {
+  const result: ExternalEventData = {};
+
+  if (data.before) {
+    const before = projectIdentity(data.before, { dropName: isUserEvent(event) });
+    if (before) {
+      result.before = before;
+    }
+  }
 
   if (data.after) {
     result.after = redactObject(data.after);

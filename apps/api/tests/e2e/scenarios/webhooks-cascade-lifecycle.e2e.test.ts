@@ -13,8 +13,8 @@
  *
  * Deliveries are read from the database together with the stored event, and the
  * external envelope is rebuilt from that row with the real builder: delivery rows
- * do not keep the posted body, and `before` is dropped from external data, so
- * `grantsubjectuser` is the only way a consumer learns whose access ended.
+ * do not keep the posted body. `grantsubjectuser` names whose access ended, and
+ * `data.before` carries the ids of the pivot that ended.
  * POSTs go to a public HTTPS URL (example.com); a delivery may end up failed or
  * dead, which is enough: the pending row is the proof of matching.
  *
@@ -263,7 +263,8 @@ describe('Webhook cascades and lifecycle events', () => {
     for (const row of ofType(rows, 'user.group_revoked')) {
       const envelope = envelopeOf(row);
       expect(envelope.grantsubjectuser).toEqual({ userId: row.subject_user_id });
-      expect(envelope.data).not.toHaveProperty('before');
+      expect(envelope.data.before).toMatchObject({ userId: row.subject_user_id, groupId });
+      expect(Object.keys(envelope.data.before ?? {}).sort()).toEqual(['groupId', 'id', 'userId']);
     }
   });
 

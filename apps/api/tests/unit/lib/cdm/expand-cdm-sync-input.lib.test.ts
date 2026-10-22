@@ -126,6 +126,102 @@ describe('expandCdmSyncInput catalog permission strings', () => {
     });
   });
 
+  it('expands a role with no permissions and no groups into a template with empty permissionRefs', () => {
+    const input: CdmDocumentInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [
+        {
+          key: 'label-role',
+          name: 'Label role',
+          description: null,
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      users: [],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+    const expanded = expandCdmSyncInput(input);
+    expect(expanded.roleTemplates).toHaveLength(1);
+    expect(expanded.roleTemplates[0]!.externalKey).toBe('label-role');
+    expect(expanded.roleTemplates[0]!.permissionRefs).toEqual([]);
+  });
+
+  it('expands a role with an explicit empty permissions list (the ETL shape) into empty permissionRefs', () => {
+    const input: CdmDocumentInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [
+        {
+          key: 'label-role',
+          name: 'Label role',
+          description: null,
+          groups: [],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      users: [],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+    const expanded = expandCdmSyncInput(input);
+    expect(expanded.roleTemplates).toHaveLength(1);
+    expect(expanded.roleTemplates[0]!.permissionRefs).toEqual([]);
+    expect(expanded.roleTemplates[0]!.linkedDocumentGroupKeys).toEqual([]);
+  });
+
+  it('expands a role linked to a group that carries no permissions into empty permissionRefs on the group path', () => {
+    const input: CdmDocumentInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [
+        {
+          key: 'role-g',
+          name: 'Grouped label role',
+          description: null,
+          groups: ['grp-empty'],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      users: [],
+      resources: [],
+      permissions: [],
+      groups: [
+        {
+          key: 'grp-empty',
+          name: 'Empty group',
+          description: null,
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      tags: [],
+    };
+    const expanded = expandCdmSyncInput(input);
+    expect(expanded.roleTemplates).toHaveLength(1);
+    expect(expanded.roleTemplates[0]!.permissionRefs).toEqual([]);
+    expect(expanded.roleTemplates[0]!.linkedDocumentGroupKeys).toEqual(['grp-empty']);
+    expect(expanded.roleTemplates[0]!.linkedGroupImportName).toBe('Empty group');
+  });
+
   it('expands document permission keys alongside catalog refs', () => {
     const input: CdmDocumentInput = {
       version: 1,

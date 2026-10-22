@@ -353,8 +353,9 @@ describe('Webhooks and notifications flow', () => {
     // The subscription above is project-scoped and this event is organization-scoped, so no
     // delivery is made for it, and delivery rows do not store the posted body. Instead read the
     // persisted event_log row (what the dispatcher reads) and run it through the production path,
-    // `mapEventLogToDomainEvent` then `buildCloudEventEnvelope`. `before` is dropped from external
-    // data, so the user id must come from `grantsubjectuser`.
+    // `mapEventLogToDomainEvent` then `buildCloudEventEnvelope`. The invitation snapshot holds the
+    // invited email, which the identity-only `before` does not carry, so the user id must come from
+    // `grantsubjectuser`.
     const revokeRes = await owner.delete(`/api/organization-invitations/${invitationId}`, {
       scope: { tenant: Tenant.Organization, id: org.id },
     });
@@ -370,7 +371,10 @@ describe('Webhooks and notifications flow', () => {
     );
 
     expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
-    expect(envelope.data).not.toHaveProperty('before');
+    // `before` carries ids only; `after` still holds the invitee email on invitation events.
+    expect(envelope.data.before).not.toHaveProperty('email');
+    expect(envelope.data.before).toMatchObject({ id: invitationId });
+    expect(Object.keys(envelope.data.before ?? {}).sort()).toEqual(['id', 'roleId']);
   });
 
   it('Revoke a project role from a user → a delivery is made and the envelope identifies the user', async () => {
@@ -427,6 +431,12 @@ describe('Webhooks and notifications flow', () => {
     expect(envelope.type).toBe('user.role_revoked');
     expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
     expect(envelope.grantactor).not.toBeNull();
-    expect(envelope.data).not.toHaveProperty('before');
+    expect(envelope.data.before).toMatchObject({ userId: inviteeUserId });
+    expect(Object.keys(envelope.data.before ?? {}).sort()).toEqual([
+      'id',
+      'roleId',
+      'roleName',
+      'userId',
+    ]);
   });
 });
