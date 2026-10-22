@@ -164,6 +164,7 @@ The projection copies these keys, and only these, and only when the value is a s
 | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `id`, `key`, `name`, `slug`, `kind`, `type`                                                                             | Identity of the entity (or pivot row) the event is about  |
 | `userId`, `roleId`, `groupId`, `permissionId`, `tagId`, `apiKeyId`, `resourceId`, `targetKind`, `targetId`, `projectId` | The other side of a pivot (membership, grant, assignment) |
+| `roleName`, `groupName`, `permissionName`, `tagName` | Name of an access object on the other side of a pivot, when the event has it |
 
 Everything else in the snapshot is dropped: email and other profile fields, descriptions, metadata, timestamps, status flags, and any nested object or array. A key that matches a redaction pattern is replaced by `"[redacted]"` (`apiKeyId` is the one allowlisted key that matches a pattern, `apikey`, and it is an id, so it is exempt). What each type carries today:
 
@@ -174,7 +175,7 @@ Everything else in the snapshot is dropped: email and other profile fields, desc
 | `api_key.deleted`, `api_key.rotated`                                 | `id`, `name`                                                                                                           |
 | `api_key.revoked`                                                    | `id`                                                                                                                   |
 | `user.deleted`                                                       | `id`                                                                                                                   |
-| `user.role_revoked`                                                  | `id`, `userId`, `roleId`                                                                                               |
+| `user.role_revoked` | `id`, `userId`, `roleId`, `roleName` |
 | `user.group_revoked`                                                 | `id`, `userId`, `groupId`                                                                                              |
 | `user.permission_revoked`                                            | `id`, `userId`, `permissionId`                                                                                         |
 | `role.group_revoked`                                                 | `id`, `roleId`, `groupId`                                                                                              |

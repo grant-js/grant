@@ -138,6 +138,26 @@ describe('projectIdentity', () => {
     expect(identity).not.toHaveProperty('description');
   });
 
+  it('keeps the names of access objects but not a person name', () => {
+    expect(
+      projectIdentity({
+        id: 'p1',
+        roleName: 'Editor',
+        groupName: 'Admins',
+        permissionName: 'posts:write',
+        tagName: 'billing',
+        userName: 'Ada Lovelace',
+        firstName: 'Ada',
+      })
+    ).toEqual({
+      id: 'p1',
+      roleName: 'Editor',
+      groupName: 'Admins',
+      permissionName: 'posts:write',
+      tagName: 'billing',
+    });
+  });
+
   it('drops personal data, secrets and metadata next to the identity', () => {
     const identity = projectIdentity({
       id: 'u1',

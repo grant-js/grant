@@ -40,7 +40,7 @@ describe('buildCloudEventEnvelope grantsubjectuser', () => {
 
     expect(envelope.subject).toBe('userRole/pivot-id');
     expect(envelope.data).toEqual({
-      before: { id: 'pivot-id', userId: 'subject-id', roleId: 'role-id' },
+      before: { id: 'pivot-id', userId: 'subject-id', roleId: 'role-id', roleName: 'Editor' },
     });
     expect(envelope.grantsubjectuser).toEqual({ userId: 'subject-id' });
   });
@@ -101,13 +101,14 @@ describe('buildCloudEventEnvelope data.before', () => {
     expect(JSON.stringify(envelope)).not.toContain('person@example.com');
   });
 
-  it('names a revoked pivot by its foreign ids, without the role name or timestamps', () => {
+  it('names a revoked pivot by its foreign ids and the role name, without timestamps', () => {
     const envelope = build({});
 
     expect(envelope.data.before).toEqual({
       id: 'pivot-id',
       userId: 'subject-id',
       roleId: 'role-id',
+      roleName: 'Editor',
     });
     expect(envelope.data).not.toHaveProperty('after');
   });

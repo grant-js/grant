@@ -38,6 +38,10 @@ export const EVENT_IDENTITY_KEYS = [
   'targetKind',
   'targetId',
   'projectId',
+  'roleName',
+  'groupName',
+  'permissionName',
+  'tagName',
 ] as const;
 
 export type EventIdentityKey = (typeof EVENT_IDENTITY_KEYS)[number];
