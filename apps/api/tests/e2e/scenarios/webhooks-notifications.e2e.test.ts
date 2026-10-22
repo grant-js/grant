@@ -354,7 +354,7 @@ describe('Webhooks and notifications flow', () => {
     // delivery is made for it, and delivery rows do not store the posted body. Instead read the
     // persisted event_log row (what the dispatcher reads) and run it through the production path,
     // `mapEventLogToDomainEvent` then `buildCloudEventEnvelope`. The invitation snapshot holds the
-    // invited email, which the identity-only `before` drops, so the user id must come from
+    // invited email, which the identity-only `before` does not carry, so the user id must come from
     // `grantsubjectuser`.
     const revokeRes = await owner.delete(`/api/organization-invitations/${invitationId}`, {
       scope: { tenant: Tenant.Organization, id: org.id },
@@ -371,8 +371,10 @@ describe('Webhooks and notifications flow', () => {
     );
 
     expect(envelope.grantsubjectuser).toEqual({ userId: inviteeUserId });
+    // `before` carries ids only; `after` still holds the invitee email on invitation events.
+    expect(envelope.data.before).not.toHaveProperty('email');
     expect(envelope.data.before).toMatchObject({ id: invitationId });
-    expect(JSON.stringify(envelope)).not.toContain(invitee.email);
+    expect(Object.keys(envelope.data.before ?? {}).sort()).toEqual(['id', 'roleId']);
   });
 
   it('Revoke a project role from a user → a delivery is made and the envelope identifies the user', async () => {

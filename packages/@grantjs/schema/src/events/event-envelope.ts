@@ -23,7 +23,6 @@ export interface EventData {
  */
 export const EVENT_IDENTITY_KEYS = [
   'id',
-  'key',
   'name',
   'slug',
   'kind',

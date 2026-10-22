@@ -1,4 +1,5 @@
 import {
+  type DomainEvent,
   EVENT_IDENTITY_KEYS,
   type EventData,
   type EventIdentity,
@@ -61,6 +62,19 @@ function redactObject(input: Record<string, unknown>): Record<string, unknown> {
   return output;
 }
 
+/**
+ * Events about a person: the `user` aggregate and the `user.*` / `project.user_*`
+ * types. A `name` on one of their snapshots could be a person's name, so it is not
+ * carried; the id (and `grantsubjectuser`) identify the person.
+ */
+function isUserEvent(event: Pick<DomainEvent, 'type' | 'aggregate'>): boolean {
+  return (
+    event.aggregate?.kind === 'user' ||
+    event.type.startsWith('user.') ||
+    event.type.startsWith('project.user_')
+  );
+}
+
 function isIdentityValue(value: unknown): value is string | number | boolean | null {
   return value === null || ['string', 'number', 'boolean'].includes(typeof value);
 }
@@ -71,10 +85,17 @@ function isIdentityValue(value: unknown): value is string | number | boolean | n
  * profile fields, metadata, timestamps, nested objects) is dropped, and a key that
  * matches a redaction pattern is replaced by the placeholder. Returns `undefined`
  * when nothing identifies the snapshot, so the envelope carries no empty `before`.
+ * `dropName` also drops `name` (events about a person, see `isUserEvent`).
  */
-export function projectIdentity(before: Record<string, unknown>): EventIdentity | undefined {
+export function projectIdentity(
+  before: Record<string, unknown>,
+  options: { dropName?: boolean } = {}
+): EventIdentity | undefined {
   const identity: EventIdentity = {};
   for (const key of EVENT_IDENTITY_KEYS) {
+    if (key === 'name' && options.dropName) {
+      continue;
+    }
     const value = before[key];
     if (!isIdentityValue(value)) {
       continue;
@@ -89,14 +110,18 @@ export function projectIdentity(before: Record<string, unknown>): EventIdentity 
 
 /**
  * Project internal event data to the external (webhook) shape: `before` becomes an
- * identity-only projection, and the redaction allowlist applies to `after` and
- * `delta`.
+ * identity-only projection (without `name` for events about a user), and the
+ * redaction allowlist applies to `after` and `delta`. `event` supplies the type and
+ * aggregate the projection depends on.
  */
-export function redactEventData(data: EventData): ExternalEventData {
+export function redactEventData(
+  data: EventData,
+  event: Pick<DomainEvent, 'type' | 'aggregate'>
+): ExternalEventData {
   const result: ExternalEventData = {};
 
   if (data.before) {
-    const before = projectIdentity(data.before);
+    const before = projectIdentity(data.before, { dropName: isUserEvent(event) });
     if (before) {
       result.before = before;
     }

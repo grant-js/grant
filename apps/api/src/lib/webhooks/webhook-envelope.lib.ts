@@ -20,6 +20,6 @@ export function buildCloudEventEnvelope(event: DomainEvent, source: string): Clo
     grantactor: event.actorUserId ? { userId: event.actorUserId } : null,
     grantsubjectuser: event.subjectUserId ? { userId: event.subjectUserId } : null,
     grantcategory: event.category,
-    data: redactEventData(event.data),
+    data: redactEventData(event.data, event),
   };
 }
