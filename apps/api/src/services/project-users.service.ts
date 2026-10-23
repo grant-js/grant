@@ -232,6 +232,7 @@ export class ProjectUserService implements IProjectUserService {
       projectId: string;
       userId: string;
       importerMetadata: Record<string, unknown> | null | undefined;
+      userExternalKey?: string | null;
     },
     transaction?: Transaction
   ): Promise<ProjectUser> {
@@ -246,6 +247,7 @@ export class ProjectUserService implements IProjectUserService {
         projectId: validatedParams.projectId,
         userId: validatedParams.userId,
         importerMetadata: validatedParams.importerMetadata ?? null,
+        userExternalKey: validatedParams.userExternalKey ?? null,
       },
       transaction
     );

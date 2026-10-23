@@ -22,6 +22,7 @@ export const mergeProjectUserCdmMetadataParamsSchema = z.object({
   projectId: idSchema,
   userId: idSchema,
   importerMetadata: z.record(z.string(), z.unknown()).nullish(),
+  userExternalKey: z.string().min(1).nullish(),
 });
 
 export const updateProjectUserMetadataParamsSchema = z.object({

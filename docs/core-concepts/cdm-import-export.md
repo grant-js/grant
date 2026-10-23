@@ -379,6 +379,8 @@ CDM-managed rows carry:
 | `metadata.cdmImport` | `projectId`, `kind`, `externalKey` — teardown, export filter, correlation |
 | `metadata.cdmSource` | Trace ids (`grantRoleId`, `grantUserId`, …) and importer-owned JSON       |
 
+For a `findBy: email` or `findBy: key` user the import also writes this project's `metadata.cdmImport` (`kind: 'user'`, the user's external key) on the **project membership row**, whether it created the identity or reused an existing one. The project-scoped `users` read merges the global user's metadata with the membership row's (the row wins), so a project that imported a user always sees its own marker, even when the identity pre-existed and its global metadata carries none or another project's. The global metadata of a reused identity is never changed.
+
 Contributor details: [CDM README](https://github.com/logusgraphics/grant-platform/blob/main/apps/api/src/lib/cdm/README.md) in the API tree.
 
 ## Future: portable catalog {#future-portable-catalog}

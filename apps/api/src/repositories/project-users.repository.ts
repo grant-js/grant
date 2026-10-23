@@ -18,7 +18,7 @@ import {
 } from '@grantjs/schema';
 import { and, eq, ilike, inArray, isNull } from 'drizzle-orm';
 
-import { mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
+import { buildCdmImportMetadata, mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
@@ -87,6 +87,7 @@ export class ProjectUserRepository
       projectId: string;
       userId: string;
       importerMetadata: Record<string, unknown> | null | undefined;
+      userExternalKey?: string | null;
     },
     transaction?: Transaction
   ): Promise<ProjectUser> {
@@ -102,7 +103,18 @@ export class ProjectUserRepository
       raw != null && typeof raw === 'object' && !Array.isArray(raw)
         ? (raw as Record<string, unknown>)
         : {};
-    const merged = mergeCdmImporterMetadata(current, params.importerMetadata);
+    const importerMerged = mergeCdmImporterMetadata(current, params.importerMetadata);
+    // Grant-internal marker, written on the membership row (never through the importer
+    // payload, which may not carry `cdmImport`). The row's metadata wins over the global
+    // user's in the project-scoped read, so this scopes the marker to this project even
+    // when the identity was reused and its global metadata carries none, or another project's.
+    const merged =
+      params.userExternalKey != null && params.userExternalKey !== ''
+        ? {
+            ...importerMerged,
+            ...buildCdmImportMetadata(params.projectId, 'user', params.userExternalKey),
+          }
+        : importerMerged;
     return this.update(
       { projectId: params.projectId, userId: params.userId },
       { metadata: merged, updatedAt: new Date() },

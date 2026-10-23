@@ -248,21 +248,28 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         }
       }
 
-      if (ua.metadata != null || ua.searchable != null) {
-        const importerMetadata = mergeUserAssignmentImporterMetadata(
-          ua.metadata as Record<string, unknown> | null | undefined,
-          ua.searchable
+      // The user's externalKey in this document (provisioned by this import, whether the
+      // identity was created or reused). Marks the membership row; see
+      // `mergeProjectUserCdmMetadata`. A user referenced only by a Grant `userId` that this
+      // import did not provision has no key and stays unmarked.
+      const userExternalKey = resolveAssignmentUserExternalKey(ua, effectiveUserId, ctx);
+      const importerMetadata =
+        ua.metadata != null || ua.searchable != null
+          ? mergeUserAssignmentImporterMetadata(
+              ua.metadata as Record<string, unknown> | null | undefined,
+              ua.searchable
+            )
+          : null;
+      if (importerMetadata != null || userExternalKey != null) {
+        await this.projectUsers.mergeProjectUserCdmMetadata(
+          {
+            projectId: ctx.projectId,
+            userId: effectiveUserId,
+            importerMetadata,
+            userExternalKey,
+          },
+          tx
         );
-        if (importerMetadata != null) {
-          await this.projectUsers.mergeProjectUserCdmMetadata(
-            {
-              projectId: ctx.projectId,
-              userId: effectiveUserId,
-              importerMetadata,
-            },
-            tx
-          );
-        }
       }
 
       await this.projectUsers.syncProjectUserSearchDocument(
@@ -563,4 +570,18 @@ function resolveAssignmentUserId(ua: CdmUserAssignmentInternal, ctx: CdmApplyCon
     return id;
   }
   throw new ValidationError('userAssignments: each entry requires userId or userKey');
+}
+
+function resolveAssignmentUserExternalKey(
+  ua: CdmUserAssignmentInternal,
+  effectiveUserId: string,
+  ctx: CdmApplyContext
+): string | null {
+  if (ua.userKey != null && ua.userKey !== '') {
+    return ua.userKey;
+  }
+  for (const [externalKey, userId] of ctx.produced.userIds) {
+    if (userId === effectiveUserId) return externalKey;
+  }
+  return null;
 }
