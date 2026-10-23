@@ -1,6 +1,5 @@
 ---
 'grant-api': patch
-'@grantjs/core': patch
 'grant-docs': patch
 ---
 
