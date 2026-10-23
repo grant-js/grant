@@ -104,6 +104,13 @@ export interface IProjectUserService {
       projectId: string;
       userId: string;
       importerMetadata: Record<string, unknown> | null | undefined;
+      /**
+       * External key of the user in the CDM document. When set, this project's
+       * `cdmImport` marker (`kind: 'user'`) is written on the membership row, so the
+       * project-scoped read carries it even for a reused identity whose global user
+       * metadata is not marked.
+       */
+      userExternalKey?: string | null;
     },
     transaction?: unknown
   ): Promise<ProjectUser>;

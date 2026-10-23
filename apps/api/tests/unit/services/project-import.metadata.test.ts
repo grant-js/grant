@@ -314,9 +314,93 @@ describe('ProjectImportService CDM metadata', () => {
         projectId,
         userId,
         importerMetadata: { legacyUserId: 'u-1' },
+        userExternalKey: null,
       },
       {}
     );
+  });
+
+  it.each([
+    ['reused identity', true],
+    ['created identity', false],
+  ])('marks the membership of an email user (%s) with its external key', async (_label, reused) => {
+    if (reused) {
+      userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+        userId: 'existing-user-id',
+        provider: 'email',
+      });
+    }
+    const input = {
+      version: 1,
+      id: null,
+      mode: { strategy: CdmModeStrategy.Merge, onConflict: null, confirmDestructive: false },
+      roles: [
+        {
+          key: 'viewer',
+          name: 'Viewer',
+          permissions: [CDM_PERM_KEY],
+          groups: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      users: [
+        {
+          key: { value: 'User@Example.test', findBy: CdmFindBy.Email },
+          name: 'Member',
+          roles: ['viewer'],
+          groups: [],
+          permissions: [],
+          tags: [],
+          primaryTag: null,
+          apiKeys: [],
+          metadata: { legacyUserId: 'u-1' },
+        },
+      ],
+      resources: [
+        {
+          key: CDM_RES_KEY,
+          slug: 'documents',
+          name: 'Documents',
+          description: null,
+          actions: ['read'],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      permissions: [
+        {
+          key: CDM_PERM_KEY,
+          resource: CDM_RES_KEY,
+          action: 'read',
+          name: 'Documents:read',
+          description: null,
+          condition: null,
+          groups: [],
+          tags: [],
+          primaryTag: null,
+          metadata: null,
+        },
+      ],
+      groups: [],
+      tags: [],
+    } as CdmDocumentInput;
+
+    await createService().importProjectCdm({ projectId, scope, input }, {});
+
+    expect(projectUsers.mergeProjectUserCdmMetadata).toHaveBeenCalledWith(
+      {
+        projectId,
+        userId: reused ? 'existing-user-id' : 'created-user-id',
+        importerMetadata: { legacyUserId: 'u-1' },
+        userExternalKey: 'user@example.test',
+      },
+      {}
+    );
+    // The global user of a reused identity is never rewritten by the import.
+    expect(users.createUser).toHaveBeenCalledTimes(reused ? 0 : 1);
   });
 
   it('imports findBy=email users as unverified email identities and project members', async () => {
