@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.2
+
+### Platform
+
+**Docker images:** tagged `:1.18.2` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.2** (fixed group with apps).
+
+### Patch Changes
+
+- 9ee4de7: CDM import now writes this project's `cdmImport` marker (`kind: 'user'`, external key) on the project membership row of every user it assigns, including an email-identified user that already had a Grant identity. The project-scoped `users` read therefore identifies the users a project imported even when the identity was reused; the global user's metadata is not changed.
+
 ## 1.18.1
 
 ### Platform

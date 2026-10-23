@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.18.2
+
+### Patch Changes
+
+- 9ee4de7: CDM import now writes this project's `cdmImport` marker (`kind: 'user'`, external key) on the project membership row of every user it assigns, including an email-identified user that already had a Grant identity. The project-scoped `users` read therefore identifies the users a project imported even when the identity was reused; the global user's metadata is not changed.
+- @grantjs/schema@1.18.2
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.1
 
 ### Patch Changes
