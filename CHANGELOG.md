@@ -3,6 +3,20 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.1
+
+### Platform
+
+**Docker images:** tagged `:1.18.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.1** (fixed group with apps).
+
+### Patch Changes
+
+- 2b811c4: CDM import accepts role templates with no permissionRefs: a role may be a pure label whose permissions are attached later. Validation of duplicate keys and tag references is unchanged.
+
+- fcefe73: Webhook envelopes now carry an identity-only `before` (ids, keys, names) for delete and revoke events, so subscribers can tell what was removed. `after` and `delta` are unchanged; no personal data is added.
+
 ## 1.18.0
 
 ### Platform
