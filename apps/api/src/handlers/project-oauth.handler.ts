@@ -1582,6 +1582,9 @@ export class ProjectOAuthHandler {
     const scopeSlugs = effectiveScopeSlugs?.length ? effectiveScopeSlugs : (app.scopes ?? []);
     if (scopeSlugs.length > 0) {
       const grantedScopes = await this.grant.getGrantedScopeSlugs(userId, userScope, scopeSlugs);
+      if (grantedScopes.length === 0) {
+        throw new AuthenticationError('invalid_scope');
+      }
       return this.grant.signProjectAppToken(
         { ...basePayload, scopes: grantedScopes },
         { signingScope }
