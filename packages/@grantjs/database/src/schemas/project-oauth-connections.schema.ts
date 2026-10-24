@@ -1,5 +1,13 @@
 import { relations, sql } from 'drizzle-orm';
-import { index, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  index,
+  pgPolicy,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 import { projects } from './projects.schema';
 import { users } from './users.schema';
@@ -26,6 +34,17 @@ export const projectOAuthConnections = pgTable(
       .where(sql`${t.deletedAt} IS NULL`),
     index('project_oauth_connections_project_id_idx').on(t.projectId),
     index('project_oauth_connections_deleted_at_idx').on(t.deletedAt),
+    pgPolicy('tenant_isolation_policy', {
+      as: 'restrictive',
+      for: 'select',
+      using: sql`NULLIF(current_setting('app.current_project_id', true), '') IS NULL OR project_id = NULLIF(current_setting('app.current_project_id', true), '')::uuid`,
+    }),
+    pgPolicy('tenant_rls_allow', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 );
 

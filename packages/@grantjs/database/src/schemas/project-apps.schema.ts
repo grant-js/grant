@@ -3,6 +3,7 @@ import {
   boolean,
   index,
   jsonb,
+  pgPolicy,
   pgTable,
   timestamp,
   uniqueIndex,
@@ -47,6 +48,17 @@ export const projectApps = pgTable(
     index('project_apps_project_id_idx').on(t.projectId),
     index('project_apps_sign_up_role_id_idx').on(t.signUpRoleId),
     index('project_apps_deleted_at_idx').on(t.deletedAt),
+    pgPolicy('tenant_isolation_policy', {
+      as: 'restrictive',
+      for: 'select',
+      using: sql`NULLIF(current_setting('app.current_project_id', true), '') IS NULL OR project_id = NULLIF(current_setting('app.current_project_id', true), '')::uuid`,
+    }),
+    pgPolicy('tenant_rls_allow', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 );
 
