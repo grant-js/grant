@@ -103,6 +103,21 @@ export interface ResponseHold {
 }
 
 /**
+ * Resolve the request transaction so Drizzle COMMITs and returns the client, then run
+ * after-commit. After-commit must not start until `transactionSettled` resolves (client
+ * already back in the pool). If COMMIT fails the promise rejects and after-commit does not run.
+ */
+export async function releaseTransactionThenAfterCommit(
+  releaseTransaction: () => void,
+  transactionSettled: Promise<unknown>,
+  afterCommit: { run(): Promise<void> }
+): Promise<void> {
+  releaseTransaction();
+  await transactionSettled;
+  await afterCommit.run();
+}
+
+/**
  * Hold the first `res.end()` until `gate()` has settled, then flush the response.
  *
  * Why: on AWS Lambda (Lambda Web Adapter) the execution environment is frozen as soon as the
