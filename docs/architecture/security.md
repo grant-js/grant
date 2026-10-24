@@ -107,12 +107,12 @@ sequenceDiagram
 
 ### Session Operations
 
-| Operation      | Behavior                                                                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Create**     | On login or registration. If a session already matches the device, it is reused and `lastUsedAt` is updated.                                  |
-| **Refresh**    | Validates the refresh token, issues new access + refresh tokens, maintains the same session ID (`jti`).                                       |
-| **Revoke**     | Individual revocation. Revoking the current session logs the user out immediately.                                                            |
-| **Expiration** | Access tokens are short-lived (default 15 min); refresh tokens are long-lived (default 30 days). Expired sessions are filtered automatically. |
+| Operation      | Behavior                                                                                                                                                              |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Create**     | On login or registration. If a session already matches the device, it is reused and `lastUsedAt` is updated.                                                          |
+| **Refresh**    | Validates the refresh token, issues new access + refresh tokens, maintains the same session ID (`jti`). Reuse of a rotated refresh secret revokes the session family. |
+| **Revoke**     | Individual revocation. Revoking the current session logs the user out immediately.                                                                                    |
+| **Expiration** | Access tokens are short-lived (default 15 min); refresh tokens are long-lived (default 30 days). Expired sessions are filtered automatically.                         |
 
 ## JWKS and Signing Keys
 
@@ -192,7 +192,7 @@ sequenceDiagram
 
 Public apps (no `clientSecretHash`) authenticate with PKCE only. Confidential apps must send `client_secret`. The endpoint rejects `client_credentials`, does not issue `id_token`, and does not implement DPoP.
 
-Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails. Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
+Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails and revokes the grant family (the live grant and any siblings that share `family_id`). Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
 
 JSON envelope: `{ success, data: { accessToken, tokenType, expiresIn, refreshToken, scope? } }`.
 

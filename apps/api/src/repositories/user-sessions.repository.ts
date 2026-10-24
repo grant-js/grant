@@ -18,6 +18,7 @@ import {
   UserSessionSearchableField,
   UserSessionSortableField,
 } from '@grantjs/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
@@ -197,25 +198,74 @@ export class UserSessionRepository
 
   async refreshUserSession(
     id: string,
-    token: string,
+    expectedToken: string,
+    nextToken: string,
     expiresAt: Date,
     lastUsedAt: Date,
     userAgent?: string | null,
     ipAddress?: string | null,
     transaction?: Transaction
-  ): Promise<UserSession> {
-    const baseUpdateArgs: BaseUpdateArgs = {
-      id,
-      input: {
-        token,
+  ): Promise<UserSession | null> {
+    const dbInstance = transaction ?? this.db;
+    const now = new Date();
+    const rows = await dbInstance
+      .update(userSessions)
+      .set({
+        token: nextToken,
+        previousToken: expectedToken,
         expiresAt,
         lastUsedAt,
         userAgent: userAgent ?? null,
         ipAddress: ipAddress ?? null,
-      },
-    };
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(userSessions.id, id),
+          eq(userSessions.token, expectedToken),
+          isNull(userSessions.deletedAt)
+        )
+      )
+      .returning();
+    const row = rows[0];
+    return row ? (row as UserSession) : null;
+  }
 
-    return this.update(baseUpdateArgs, transaction);
+  async findFamilyIdByPreviousRefreshToken(
+    token: string,
+    transaction?: Transaction
+  ): Promise<string | null> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ familyId: userSessions.familyId })
+      .from(userSessions)
+      .where(and(eq(userSessions.previousToken, token), isNull(userSessions.deletedAt)))
+      .limit(1);
+    return rows[0]?.familyId ?? null;
+  }
+
+  async getSessionFamilyId(sessionId: string, transaction?: Transaction): Promise<string | null> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ familyId: userSessions.familyId })
+      .from(userSessions)
+      .where(and(eq(userSessions.id, sessionId), isNull(userSessions.deletedAt)))
+      .limit(1);
+    return rows[0]?.familyId ?? null;
+  }
+
+  async listActiveSessionsInFamily(
+    familyId: string,
+    transaction?: Transaction
+  ): Promise<UserSession[]> {
+    const result = await this.query(
+      {
+        filters: [{ field: 'familyId', operator: 'eq', value: familyId }],
+        unbounded: true,
+      },
+      transaction
+    );
+    return result.items;
   }
 
   async softDeleteUserSession(

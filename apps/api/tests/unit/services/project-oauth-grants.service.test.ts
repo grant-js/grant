@@ -5,6 +5,8 @@ import { ProjectOAuthGrantService } from '@/services/project-oauth-grants.servic
 
 const { mockConfig } = vi.hoisted(() => ({
   mockConfig: {
+    app: { isDevelopment: false },
+    logging: { level: 'silent', prettyPrint: false },
     projectOAuth: {
       refreshTokenExpirationDays: 30,
       authorizationCodeTtlSeconds: 60,
@@ -21,6 +23,7 @@ const grantRow = {
   scopeTenant: 'organizationProject',
   scopeId: 'org:project',
   scopes: ['read'],
+  familyId: 'family-1',
   expiresAt: new Date('2026-11-10T00:00:00.000Z'),
   lastUsedAt: new Date('2026-10-11T00:00:00.000Z'),
   userAgent: null,
@@ -35,6 +38,8 @@ describe('ProjectOAuthGrantService', () => {
     createGrant: vi.fn(),
     findActiveByTokenHash: vi.fn(),
     rotateGrant: vi.fn(),
+    findFamilyIdByPreviousTokenHash: vi.fn(),
+    listActiveGrantIdsInFamily: vi.fn(),
     softDeleteGrant: vi.fn(),
     softDeleteActiveGrantsForUserInProject: vi.fn(),
   };
@@ -52,6 +57,8 @@ describe('ProjectOAuthGrantService', () => {
     }));
     grants.rotateGrant.mockResolvedValue(grantRow);
     grants.findActiveByTokenHash.mockResolvedValue(grantRow);
+    grants.findFamilyIdByPreviousTokenHash.mockResolvedValue(null);
+    grants.listActiveGrantIdsInFamily.mockResolvedValue([]);
     audit.logCreate.mockResolvedValue(undefined);
     audit.logUpdate.mockResolvedValue(undefined);
     audit.logSoftDelete.mockResolvedValue(undefined);
@@ -94,11 +101,52 @@ describe('ProjectOAuthGrantService', () => {
     );
   });
 
-  it('returns null when the refresh token is unknown or already rotated', async () => {
+  it('rotates the current secret and does not revoke the family', async () => {
+    const service = createService();
+    const presented = 'current-refresh-token-value-32bytes!!';
+    const issued = await service.rotateByRefreshToken(presented);
+    expect(issued?.refreshToken).toBeTruthy();
+    expect(issued?.refreshToken).not.toBe(presented);
+    expect(grants.rotateGrant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'grant-1',
+        expectedTokenHash: hashProjectOAuthRefreshToken(presented),
+      }),
+      undefined
+    );
+    expect(grants.softDeleteGrant).not.toHaveBeenCalled();
+  });
+
+  it('revokes every live grant in the family when a rotated secret is reused', async () => {
+    grants.findActiveByTokenHash.mockResolvedValue(null);
+    grants.findFamilyIdByPreviousTokenHash.mockResolvedValue('family-1');
+    grants.listActiveGrantIdsInFamily.mockResolvedValue(['grant-1', 'grant-sibling']);
+    const service = createService();
+
+    await expect(service.rotateByRefreshToken('old-token')).resolves.toBeNull();
+    expect(grants.rotateGrant).not.toHaveBeenCalled();
+    expect(grants.listActiveGrantIdsInFamily).toHaveBeenCalledWith('family-1', undefined);
+    expect(grants.softDeleteGrant).toHaveBeenCalledTimes(2);
+    expect(grants.softDeleteGrant).toHaveBeenCalledWith('grant-1', undefined);
+    expect(grants.softDeleteGrant).toHaveBeenCalledWith('grant-sibling', undefined);
+  });
+
+  it('revokes the family when concurrent rotation loses the CAS', async () => {
+    grants.rotateGrant.mockResolvedValue(null);
+    grants.listActiveGrantIdsInFamily.mockResolvedValue(['grant-1']);
+    const service = createService();
+
+    await expect(service.rotateByRefreshToken('current-token')).resolves.toBeNull();
+    expect(grants.listActiveGrantIdsInFamily).toHaveBeenCalledWith('family-1', undefined);
+    expect(grants.softDeleteGrant).toHaveBeenCalledWith('grant-1', undefined);
+  });
+
+  it('returns null when the refresh token is unknown', async () => {
     grants.findActiveByTokenHash.mockResolvedValue(null);
     const service = createService();
     await expect(service.rotateByRefreshToken('old-token')).resolves.toBeNull();
     expect(grants.rotateGrant).not.toHaveBeenCalled();
+    expect(grants.softDeleteGrant).not.toHaveBeenCalled();
   });
 
   describe('revokeAllForUserInProject', () => {

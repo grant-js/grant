@@ -18,6 +18,7 @@ function toGrantRecord(row: ProjectOAuthGrantModel): ProjectOAuthGrantRecord {
     scopeTenant: row.scopeTenant,
     scopeId: row.scopeId,
     scopes: row.scopes ?? null,
+    familyId: row.familyId,
     expiresAt: row.expiresAt,
     lastUsedAt: row.lastUsedAt ?? null,
     userAgent: row.userAgent ?? null,
@@ -86,6 +87,7 @@ export class ProjectOAuthGrantRepository
   async rotateGrant(
     params: {
       id: string;
+      expectedTokenHash: string;
       tokenHash: string;
       expiresAt: Date;
       lastUsedAt: Date;
@@ -93,21 +95,54 @@ export class ProjectOAuthGrantRepository
       ipAddress?: string | null;
     },
     transaction?: Transaction
-  ): Promise<ProjectOAuthGrantRecord> {
-    const row = await this.update(
-      {
-        id: params.id,
-        input: {
-          token: params.tokenHash,
-          expiresAt: params.expiresAt,
-          lastUsedAt: params.lastUsedAt,
-          userAgent: params.userAgent ?? null,
-          ipAddress: params.ipAddress ?? null,
-        },
-      },
-      transaction
-    );
-    return toGrantRecord(row as ProjectOAuthGrantModel);
+  ): Promise<ProjectOAuthGrantRecord | null> {
+    const dbInstance = transaction ?? this.db;
+    const now = new Date();
+    const rows = await dbInstance
+      .update(projectOAuthGrants)
+      .set({
+        token: params.tokenHash,
+        previousToken: params.expectedTokenHash,
+        expiresAt: params.expiresAt,
+        lastUsedAt: params.lastUsedAt,
+        userAgent: params.userAgent ?? null,
+        ipAddress: params.ipAddress ?? null,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(projectOAuthGrants.id, params.id),
+          eq(projectOAuthGrants.token, params.expectedTokenHash),
+          isNull(projectOAuthGrants.deletedAt)
+        )
+      )
+      .returning();
+    const row = rows[0];
+    return row ? toGrantRecord(row) : null;
+  }
+
+  async findFamilyIdByPreviousTokenHash(
+    tokenHash: string,
+    transaction?: Transaction
+  ): Promise<string | null> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ familyId: projectOAuthGrants.familyId })
+      .from(projectOAuthGrants)
+      .where(
+        and(eq(projectOAuthGrants.previousToken, tokenHash), isNull(projectOAuthGrants.deletedAt))
+      )
+      .limit(1);
+    return rows[0]?.familyId ?? null;
+  }
+
+  async listActiveGrantIdsInFamily(familyId: string, transaction?: Transaction): Promise<string[]> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ id: projectOAuthGrants.id })
+      .from(projectOAuthGrants)
+      .where(and(eq(projectOAuthGrants.familyId, familyId), isNull(projectOAuthGrants.deletedAt)));
+    return rows.map((row) => row.id);
   }
 
   async softDeleteGrant(id: string, transaction?: Transaction): Promise<void> {

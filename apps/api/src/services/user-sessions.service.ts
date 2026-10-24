@@ -198,6 +198,13 @@ export class UserSessionService implements IUserSessionService {
     );
 
     if (!session) {
+      const reusedFamilyId = await this.userSessionRepository.findFamilyIdByPreviousRefreshToken(
+        refreshToken,
+        transaction
+      );
+      if (reusedFamilyId) {
+        await this.revokeSessionFamily(reusedFamilyId, transaction);
+      }
       return null;
     }
 
@@ -208,6 +215,7 @@ export class UserSessionService implements IUserSessionService {
 
     const refreshedSession = await this.userSessionRepository.refreshUserSession(
       session.id,
+      refreshToken,
       newRefreshToken,
       this.getRefreshTokenExpirationDate(now),
       new Date(),
@@ -215,6 +223,14 @@ export class UserSessionService implements IUserSessionService {
       finalIpAddress,
       transaction
     );
+
+    if (!refreshedSession) {
+      const familyId = await this.userSessionRepository.getSessionFamilyId(session.id, transaction);
+      if (familyId) {
+        await this.revokeSessionFamily(familyId, transaction);
+      }
+      return null;
+    }
 
     const isVerified = await this.resolveIsVerifiedFromAuthMethod(session, transaction);
 
@@ -241,6 +257,16 @@ export class UserSessionService implements IUserSessionService {
     );
 
     return method?.isVerified === true;
+  }
+
+  private async revokeSessionFamily(familyId: string, transaction?: Transaction): Promise<void> {
+    const members = await this.userSessionRepository.listActiveSessionsInFamily(
+      familyId,
+      transaction
+    );
+    for (const member of members) {
+      await this.revokeSession(member.id, transaction);
+    }
   }
 
   public async revokeSession(id: string, transaction?: Transaction): Promise<UserSession> {
