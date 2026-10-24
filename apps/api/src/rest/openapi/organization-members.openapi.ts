@@ -50,7 +50,7 @@ List all members (both active users and pending invitations) for a scope.
 
 ### Pagination:
 - \`page\`: Page number (1-indexed, default: 1)
-- \`limit\`: Items per page (default: 50, use -1 for all)
+- \`limit\`: Items per page (default: 50, maximum 100)
 
 ### Search & Sorting:
 - \`search\`: Search by member name or email (min 2 characters)

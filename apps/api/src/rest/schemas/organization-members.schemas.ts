@@ -32,8 +32,8 @@ export const getOrganizationMembersQuerySchema = z.object({
     description: 'Page number (1-indexed)',
     example: 1,
   }),
-  limit: z.number().int().min(-1).max(100).optional().openapi({
-    description: 'Number of items per page (-1 for all)',
+  limit: z.number().int().min(1).max(100).optional().openapi({
+    description: 'Number of items per page (1–100)',
     example: 50,
   }),
   search: z.string().min(2, 'errors.validation.searchMin2').optional().openapi({
