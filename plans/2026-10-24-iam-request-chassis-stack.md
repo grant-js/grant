@@ -29,11 +29,11 @@ Only list roles that will run for this story:
 
 Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that slice starts — never declare the whole list up front.
 
-| #     | Branch                             | Base                       | Concern                         | Owner role | Review bar           | PR  |
-| ----- | ---------------------------------- | -------------------------- | ------------------------------- | ---------- | -------------------- | --- |
-| 1     | `feat/iam-request-chassis-measure` | `feat/iam-request-chassis` | authz bench + pool-watch recipe | Backend    | light                |     |
-| 2     | `feat/iam-request-chassis-hold`    | prior slice                | RLS client back at COMMIT       | Backend    | security-full        |     |
-| final | `feat/iam-request-chassis`         | `main`                     | integration                     | Principal  | deep + security-full |     |
+| #     | Branch                             | Base                       | Concern                         | Owner role | Review bar           | PR                                                 |
+| ----- | ---------------------------------- | -------------------------- | ------------------------------- | ---------- | -------------------- | -------------------------------------------------- |
+| 1     | `feat/iam-request-chassis-measure` | `feat/iam-request-chassis` | authz bench + pool-watch recipe | Backend    | light                | [#590](https://github.com/grant-js/grant/pull/590) |
+| 2     | `feat/iam-request-chassis-hold`    | prior slice                | RLS client back at COMMIT       | Backend    | security-full        |                                                    |
+| final | `feat/iam-request-chassis`         | `main`                     | integration                     | Principal  | deep + security-full |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has no db/schema/web slices. Measure is docs + committed bench. Hold is `apps/api` middleware / after-commit.
 
