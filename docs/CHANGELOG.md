@@ -1,5 +1,11 @@
 # grant-docs
 
+## 1.18.3
+
+### Patch Changes
+
+- 9eff88e: Document residual access JWT window and production trusted client IP header.
+
 ## 1.18.2
 
 ### Patch Changes
