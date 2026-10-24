@@ -228,10 +228,7 @@ export class ProjectAppsHandler extends CacheHandler {
     if (!projectIds.includes(projectId)) {
       throw new BadRequestError('Project not in scope');
     }
-    const existing = await this.projectApps.getProjectAppById(id);
-    if (!existing) {
-      throw new NotFoundError('ProjectApp');
-    }
+    const existing = await this.assertProjectAppBelongsToScope(id, projectId);
     const effectiveAllowSignUp = allowSignUp ?? existing.allowSignUp;
     const effectiveSignUpRoleId = signUpRoleId !== undefined ? signUpRoleId : existing.signUpRoleId;
     if (effectiveAllowSignUp !== false) {
@@ -343,11 +340,26 @@ export class ProjectAppsHandler extends CacheHandler {
     if (!projectIds.includes(projectId)) {
       throw new BadRequestError('Project not in scope');
     }
+    await this.assertProjectAppBelongsToScope(id, projectId);
     const deleted = await this.db.withTransaction((tx) =>
       this.projectApps.deleteProjectApp({ id, projectId }, tx)
     );
     await this.removeProjectAppIdFromScopeCache(scope, id);
     return deleted;
+  }
+
+  private async assertProjectAppBelongsToScope(
+    projectAppId: string,
+    projectId: string
+  ): Promise<ProjectApp> {
+    const app = await this.projectApps.getProjectAppById(projectAppId);
+    if (!app) {
+      throw new NotFoundError('ProjectApp');
+    }
+    if (app.projectId !== projectId) {
+      throw new ValidationError('projectAppId must belong to the scoped project');
+    }
+    return app;
   }
 
   private async assertProjectAppPictureScope(
@@ -360,13 +372,7 @@ export class ProjectAppsHandler extends CacheHandler {
       );
     }
     const projectId = this.extractProjectIdFromScope(scope);
-    const app = await this.projectApps.getProjectAppById(projectAppId);
-    if (!app) {
-      throw new NotFoundError('ProjectApp');
-    }
-    if (app.projectId !== projectId) {
-      throw new ValidationError('projectAppId must belong to the scoped project');
-    }
+    await this.assertProjectAppBelongsToScope(projectAppId, projectId);
   }
 
   private projectAppPicturePath(projectAppId: string, filename: string): string {
