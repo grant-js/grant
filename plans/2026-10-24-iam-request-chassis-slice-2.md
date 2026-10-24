@@ -39,7 +39,7 @@ Principal Engineer issues one per active stack PR. Implementer stays inside this
 
 ## Done when
 
-- [ ] Implementation complete within this slice only
-- [ ] Verifier run (format, lint, unit tests for after-commit / middleware)
-- [ ] PR opened with correct base; links stack plan + upstream/downstream PRs
+- [x] Implementation complete within this slice only
+- [x] Verifier run (format, lint, unit tests for after-commit / middleware)
+- [x] PR opened with correct base; links stack plan + upstream/downstream PRs
 - [ ] Senior Security notified (`security-full`)
