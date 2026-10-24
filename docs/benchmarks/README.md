@@ -22,6 +22,8 @@ Optional CLI:
 
 Raw results are written to `docs/benchmarks/authz-{date}.json` and `.md` (local-only; not committed — see root `.gitignore`). Update [report.md](./report.md) when publishing a new snapshot.
 
+This bench is `POST /api/auth/is-authorized` (H4). It is not a pool-wait measurement. To watch the H1 parking spot (RLS client held until COMMIT), use the `pg_stat_activity` recipe in [report.md](./report.md#how-to-watch-the-parking-spot-h1). There is no pool-checkout metric today — `http_request_duration_seconds` is HTTP duration only.
+
 Credentials JSON may include a `checks` array to customize permission cases (`name`, `permission.resource` / `permission.action`, `expectAuthorized`).
 
 ## Reading the report
