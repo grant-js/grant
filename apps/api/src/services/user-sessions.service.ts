@@ -3,6 +3,7 @@ import {
   Grant,
   type IAuditLogger,
   type IEventPublisher,
+  type IUserAuthenticationMethodRepository,
   type IUserSessionRepository,
   type IUserSessionService,
   type SessionSignOptions,
@@ -38,6 +39,7 @@ interface CreateSessionResult {
 export class UserSessionService implements IUserSessionService {
   constructor(
     private readonly userSessionRepository: IUserSessionRepository,
+    private readonly userAuthenticationMethodRepository: IUserAuthenticationMethodRepository,
     private readonly audit: IAuditLogger,
     private readonly grant: Grant,
     private readonly events: IEventPublisher
@@ -83,7 +85,7 @@ export class UserSessionService implements IUserSessionService {
 
   public async signSession(
     session: UserSession,
-    isVerified: boolean = true,
+    isVerified: boolean = false,
     mfaVerified: boolean = false,
     issuerBaseUrl?: string,
     signOptions?: SessionSignOptions
@@ -173,7 +175,7 @@ export class UserSessionService implements IUserSessionService {
 
     return this.signSession(
       session,
-      params.isVerified ?? true,
+      params.isVerified === true,
       Boolean((session as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt),
       issuerBaseUrl
     );
@@ -188,8 +190,6 @@ export class UserSessionService implements IUserSessionService {
     transaction?: Transaction,
     userAgent?: string | null,
     ipAddress?: string | null,
-    isVerified?: boolean,
-    mfaVerified?: boolean,
     issuerBaseUrl?: string
   ): Promise<CreateSessionResult | null> {
     const session = await this.userSessionRepository.getSessionByRefreshToken(
@@ -216,15 +216,31 @@ export class UserSessionService implements IUserSessionService {
       transaction
     );
 
+    const isVerified = await this.resolveIsVerifiedFromAuthMethod(session, transaction);
+
     return this.signSession(
       refreshedSession,
-      isVerified ??
-        (refreshedSession as unknown as { emailVerified?: boolean }).emailVerified ??
-        true,
-      mfaVerified ??
-        Boolean((refreshedSession as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt),
+      isVerified,
+      Boolean((refreshedSession as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt),
       issuerBaseUrl
     );
+  }
+
+  private async resolveIsVerifiedFromAuthMethod(
+    session: UserSession,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    const methodId = session.userAuthenticationMethodId;
+    if (!methodId) {
+      return false;
+    }
+
+    const method = await this.userAuthenticationMethodRepository.getUserAuthenticationMethod(
+      methodId,
+      transaction
+    );
+
+    return method?.isVerified === true;
   }
 
   public async revokeSession(id: string, transaction?: Transaction): Promise<UserSession> {

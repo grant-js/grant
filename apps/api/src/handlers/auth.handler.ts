@@ -688,8 +688,6 @@ export class AuthHandler extends CacheHandler {
         tx,
         userAgent,
         ipAddress,
-        undefined, // isVerified defaults to true in signSession
-        undefined, // mfaVerified derives from session state
         requestBaseUrl
       );
 

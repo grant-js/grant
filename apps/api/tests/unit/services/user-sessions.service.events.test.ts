@@ -24,7 +24,13 @@ function buildService() {
   } as unknown as IEventPublisher;
 
   return {
-    service: new UserSessionService(userSessionRepository, audit, {} as never, events),
+    service: new UserSessionService(
+      userSessionRepository,
+      { getUserAuthenticationMethod: vi.fn() } as never,
+      audit,
+      {} as never,
+      events
+    ),
     events,
   };
 }

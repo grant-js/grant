@@ -228,8 +228,6 @@ describe('AuthHandler refreshSession', () => {
       expect.anything(),
       'ua',
       '127.0.0.1',
-      undefined,
-      undefined,
       'http://api.test'
     );
   });

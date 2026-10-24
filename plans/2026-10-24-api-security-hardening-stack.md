@@ -29,26 +29,26 @@ Only list roles that will run for this story:
 
 One audit finding per slice. Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that slice starts — never declare the whole list up front.
 
-| #     | Branch                                         | Base                                      | Concern                         | Audit | Owner role | Review bar      | PR  |
-| ----- | ---------------------------------------------- | ----------------------------------------- | ------------------------------- | ----- | ---------- | --------------- | --- |
-| 1     | `feat/api-security-hardening-refresh-verified` | `feat/api-security-hardening`             | refresh `isVerified`            | H1    | Backend    | security-full   |     |
-| 2     | `feat/api-security-hardening-project-app-bind` | prior slice                               | project-app mutate binds project | H2    | Backend    | security-full   |     |
-| 3     | `feat/api-security-hardening-project-app-rls`  | prior slice                               | RLS on `project_apps`           | H2    | Backend    | security-full   |     |
-| 4     | `feat/api-security-hardening-gql-auth-limit`   | prior slice                               | GraphQL auth rate-limit bucket  | M1    | Backend    | security-full   |     |
-| 5     | `feat/api-security-hardening-platform-lockout` | prior slice                               | platform password lockout       | M2    | Backend    | security-full   |     |
-| 6     | `feat/api-security-hardening-mfa-verify`       | prior slice                               | MFA verify attempt budget       | M3    | Backend    | security-full   |     |
-| 7     | `feat/api-security-hardening-app-scopes`       | prior slice                               | empty scopes fail closed        | M4    | Backend    | security-full   |     |
-| 8     | `feat/api-security-hardening-oauth-refresh`    | prior slice                               | refresh ∩ current app.scopes    | M5    | Backend    | security-full   |     |
-| 9     | `feat/api-security-hardening-cache-delete`     | prior slice                               | invalidate authz cache on delete | M6    | Backend    | security-full   |     |
-| 10    | `feat/api-security-hardening-gql-cost`         | prior slice                               | query cost + clamp `limit`      | M7    | Backend    | security-full   |     |
-| 11    | `feat/api-security-hardening-org-members`      | prior slice                               | org member list SQL page        | M8    | Backend    | light           |     |
-| 12    | `feat/api-security-hardening-tenant-lists`     | prior slice                               | tenant lists page in DB         | M9    | Backend    | light           |     |
-| 13    | `feat/api-security-hardening-cascade-chunk`    | prior slice                               | chunk IAM cascade + outbox      | M10   | Backend    | security-full   |     |
-| 14    | `feat/api-security-hardening-min-aal`          | prior slice                               | unnamed GraphQL min-AAL         | L1    | Backend    | security-full   |     |
-| 15    | `feat/api-security-hardening-refresh-reuse`    | prior slice                               | revoke family on refresh reuse  | L2    | Backend    | security-full   |     |
-| 16    | `feat/api-security-hardening-jwks-cache`       | prior slice                               | JWKS HTTP short-TTL cache       | L5    | Backend    | light           |     |
-| 17    | `feat/api-security-hardening-docs`             | prior slice                               | residual JWT window + trusted IP | L3, L4 | Backend | light           |     |
-| final | `feat/api-security-hardening`                  | `main`                                    | integration                     | all   | Principal  | deep + security-full |     |
+| #     | Branch                                         | Base                          | Concern                          | Audit  | Owner role | Review bar           | PR  |
+| ----- | ---------------------------------------------- | ----------------------------- | -------------------------------- | ------ | ---------- | -------------------- | --- |
+| 1     | `feat/api-security-hardening-refresh-verified` | `feat/api-security-hardening` | refresh `isVerified`             | H1     | Backend    | security-full        |     |
+| 2     | `feat/api-security-hardening-project-app-bind` | prior slice                   | project-app mutate binds project | H2     | Backend    | security-full        |     |
+| 3     | `feat/api-security-hardening-project-app-rls`  | prior slice                   | RLS on `project_apps`            | H2     | Backend    | security-full        |     |
+| 4     | `feat/api-security-hardening-gql-auth-limit`   | prior slice                   | GraphQL auth rate-limit bucket   | M1     | Backend    | security-full        |     |
+| 5     | `feat/api-security-hardening-platform-lockout` | prior slice                   | platform password lockout        | M2     | Backend    | security-full        |     |
+| 6     | `feat/api-security-hardening-mfa-verify`       | prior slice                   | MFA verify attempt budget        | M3     | Backend    | security-full        |     |
+| 7     | `feat/api-security-hardening-app-scopes`       | prior slice                   | empty scopes fail closed         | M4     | Backend    | security-full        |     |
+| 8     | `feat/api-security-hardening-oauth-refresh`    | prior slice                   | refresh ∩ current app.scopes     | M5     | Backend    | security-full        |     |
+| 9     | `feat/api-security-hardening-cache-delete`     | prior slice                   | invalidate authz cache on delete | M6     | Backend    | security-full        |     |
+| 10    | `feat/api-security-hardening-gql-cost`         | prior slice                   | query cost + clamp `limit`       | M7     | Backend    | security-full        |     |
+| 11    | `feat/api-security-hardening-org-members`      | prior slice                   | org member list SQL page         | M8     | Backend    | light                |     |
+| 12    | `feat/api-security-hardening-tenant-lists`     | prior slice                   | tenant lists page in DB          | M9     | Backend    | light                |     |
+| 13    | `feat/api-security-hardening-cascade-chunk`    | prior slice                   | chunk IAM cascade + outbox       | M10    | Backend    | security-full        |     |
+| 14    | `feat/api-security-hardening-min-aal`          | prior slice                   | unnamed GraphQL min-AAL          | L1     | Backend    | security-full        |     |
+| 15    | `feat/api-security-hardening-refresh-reuse`    | prior slice                   | revoke family on refresh reuse   | L2     | Backend    | security-full        |     |
+| 16    | `feat/api-security-hardening-jwks-cache`       | prior slice                   | JWKS HTTP short-TTL cache        | L5     | Backend    | light                |     |
+| 17    | `feat/api-security-hardening-docs`             | prior slice                   | residual JWT window + trusted IP | L3, L4 | Backend    | light                |     |
+| final | `feat/api-security-hardening`                  | `main`                        | integration                      | all    | Principal  | deep + security-full |     |
 
 Prefer layer order: **db → schema → api → web**. This story is almost all API. The only database slice is #3 (RLS), stacked after the application bind in #2 so the hole is closed before the policy lands.
 

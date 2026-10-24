@@ -226,8 +226,6 @@ export interface IUserSessionService {
     transaction?: unknown,
     userAgent?: string | null,
     ipAddress?: string | null,
-    isVerified?: boolean,
-    mfaVerified?: boolean,
     issuerBaseUrl?: string
   ): Promise<CreateSessionResult | null>;
 
