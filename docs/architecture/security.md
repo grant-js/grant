@@ -482,7 +482,7 @@ Without **`AUTH_MFA_SECRET_ENCRYPTION_KEY`**, MFA enrollment cannot be persisted
 :::
 
 ::: details GraphQL `operationName` and min-AAL
-Name-based min-AAL enforcement uses the GraphQL **`operationName`**. Clients that omit it may skip that gate in the current implementation — **send `operationName`** in production. Tightening server-side resolution from the document alone is a possible hardening follow-up.
+Name-based min-AAL enforcement uses the GraphQL **`operationName`** (request body or the document AST). When **`AUTH_MIN_AAL_AT_LOGIN=aal2`** and the user has MFA enrolled, a missing or empty name **fails closed** (`MFA_REQUIRED`). Allowlisted names (`Me`, `VerifyMfa`, `RefreshSession`, recovery, and the other AAL1-safe operations) still pass. REST `/api/*` min-AAL is unchanged.
 :::
 
 ### Rate limiting

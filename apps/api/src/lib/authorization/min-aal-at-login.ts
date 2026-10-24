@@ -62,6 +62,7 @@ function tokenAalFromUser(user: NonNullable<RequestContext['user']>): Aal {
 
 /**
  * Throws `MFA_REQUIRED` when the session must step up to AAL2 before calling this operation.
+ * A missing or empty operation name fails closed — it is not treatable as allowlisted.
  */
 export async function assertMinAalAtLoginGraphql(
   context: GraphqlContext,
@@ -77,15 +78,12 @@ export async function assertMinAalAtLoginGraphql(
   if (!needsMinAalStepUp(tokenAalFromUser(user))) {
     return;
   }
-  if (operationName == null || operationName === '') {
-    return;
-  }
 
   const enrolled = await context.handlers.me.hasActiveMfaEnrollmentForUser(user.userId);
   if (!enrolled) {
     return;
   }
-  if (SAFE_AAL1_GRAPHQL_OPERATION_NAMES.has(operationName)) {
+  if (operationName && SAFE_AAL1_GRAPHQL_OPERATION_NAMES.has(operationName)) {
     return;
   }
   throw new AuthorizationError('MFA required', 'MFA_REQUIRED', {
