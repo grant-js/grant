@@ -26,9 +26,12 @@ import {
   Tenant,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { type RoleListHydrationContext, roleListHydrators } from '@/hydrators/roles.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { runWithOutboxBatch } from '@/lib/events';
+import { runInChunks } from '@/lib/iam-cascade.lib';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -288,16 +291,21 @@ export class RoleHandler extends CacheHandler {
         }
       }
 
-      await Promise.all([
-        ...tagIds.map((tagId) => this.roleTags.removeRoleTag({ roleId, tagId }, tx)),
-        ...groupIds.map((groupId) => this.roleGroups.removeRoleGroup({ roleId, groupId }, tx)),
-        ...permissionIds.map((permissionId) =>
+      const chunkSize = config.system.iamCascadeChunkSize;
+      await runWithOutboxBatch(tx, async () => {
+        await runInChunks(tagIds, chunkSize, (tagId) =>
+          this.roleTags.removeRoleTag({ roleId, tagId }, tx)
+        );
+        await runInChunks(groupIds, chunkSize, (groupId) =>
+          this.roleGroups.removeRoleGroup({ roleId, groupId }, tx)
+        );
+        await runInChunks(permissionIds, chunkSize, (permissionId) =>
           this.rolePermissions.revokeRolePermission({ roleId, permissionId, scope }, tx)
-        ),
-        ...userRoleRelations.map((ur) =>
+        );
+        await runInChunks(userRoleRelations, chunkSize, (ur) =>
           this.userRoles.removeUserRole({ userId: ur.userId, roleId: ur.roleId }, tx)
-        ),
-      ]);
+        );
+      });
 
       await this.removeRoleIdFromScopeCache(scope, roleId);
       await this.invalidatePermissionsCacheForAllScopes();
