@@ -166,4 +166,23 @@ describe('UserHandler list hydration', () => {
       }),
     ]);
   });
+
+  it('forwards unbounded so an internal complete-set list is not page-clamped', async () => {
+    const { handler, usersService } = createHandler();
+
+    await handler.getUsers({
+      scope,
+      limit: -1,
+      unbounded: true,
+      requestedFields: ['id', 'name'],
+    } as never);
+
+    expect(usersService.getUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ids: ['user-1', 'user-2'],
+        limit: -1,
+        unbounded: true,
+      })
+    );
+  });
 });

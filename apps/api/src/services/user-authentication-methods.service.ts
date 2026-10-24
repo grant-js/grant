@@ -26,6 +26,7 @@ import {
 } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { normalizeVerifiedContactEmail } from '@/lib/oauth-contact-email.lib';
+import { unboundedList } from '@/lib/pagination.lib';
 import { generateSecureToken, hashToken, isTokenValid, tokenHashesEqual } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { Otp } from '@/types';
@@ -779,10 +780,11 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
   public async invalidateAllUserSessions(userId: string, transaction?: Transaction): Promise<void> {
     const sessions = await this.userSessionRepository.getUserSessions(
-      {
+      unboundedList({
         userId,
+        limit: -1,
         requestedFields: ['id'],
-      },
+      }),
       transaction
     );
 
