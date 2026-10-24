@@ -11,6 +11,9 @@ export const SYSTEM_SIGNING_KEY_CACHE_KEY = 'system:current';
 /** Cache key prefix for verification (public key by kid). TTL only; no invalidation on rotation. */
 export const VERIFICATION_KEY_CACHE_PREFIX = 'verification:';
 
+/** Cache key prefix for JWKS HTTP payloads per issuer. TTL only. */
+export const JWKS_HTTP_CACHE_PREFIX = 'jwks:http:';
+
 // ----- Auth (permissions namespace: authorization result cache) -----
 
 /** Prefix for cached authorization results. Key: auth:result:{userId}:{scope}:{resource}:{action}:{contextHash}, or for project-app tokens with grantedScopes: auth:result:{userId}:{scope}:{grantedScopesSignature}:{resource}:{action}:{contextHash} */

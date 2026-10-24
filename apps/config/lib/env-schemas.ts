@@ -233,6 +233,7 @@ const schemas: Record<string, z.ZodType<string>> = {
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: positiveIntSchema,
   JWT_REFRESH_TOKEN_EXPIRATION_DAYS: positiveIntSchema,
   JWT_JWKS_MAX_AGE_SECONDS: positiveIntSchema,
+  JWT_JWKS_HTTP_CACHE_TTL_SECONDS: positiveIntSchema,
   JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS: positiveIntSchema,
   AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS: positiveIntSchema,
   AUTH_OTP_VALIDITY_MINUTES: positiveIntSchema,

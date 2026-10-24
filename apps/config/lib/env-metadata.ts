@@ -266,6 +266,16 @@ const META: EnvVarMeta[] = [
     section: 'JWT',
   },
   {
+    key: 'JWT_JWKS_HTTP_CACHE_TTL_SECONDS',
+    category: 'auth',
+    label: 'JWKS HTTP origin cache TTL (s)',
+    description:
+      'Origin-side TTL for the JWKS payload per issuer (default: 30). Independent of Cache-Control and the kid cache.',
+    envFiles: ['.env'],
+    digitsOnly: true,
+    section: 'JWT',
+  },
+  {
     key: 'JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS',
     category: 'auth',
     label: 'Signing key cache TTL (s)',

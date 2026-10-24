@@ -146,7 +146,7 @@ Keys are stored in the `signing_keys` table. Each scope can have multiple keys (
 
 The API verifies Bearer tokens **in-process** — it does not call its own JWKS HTTP endpoint. The verification path is: context middleware → `Grant.authenticate` → `TokenManager.verifyToken` → `GrantService.getVerificationKey(kid)` → database (with cache). Public keys are cached by `kid` with a configurable TTL (default 300s). Old `kid` values remain valid for verification until their tokens expire; new `kid` values are cached on first use.
 
-The JWKS HTTP endpoints exist for **external verifiers** (your backend services, API gateways, etc.). Responses include a `Cache-Control: public, max-age=…` header so consumers can cache them.
+The JWKS HTTP endpoints exist for **external verifiers** (your backend services, API gateways, etc.). Responses include a `Cache-Control: public, max-age=…` header so consumers can cache them. The origin also keeps a short-TTL cache of the `getPublicKeysForJwks` payload **per issuer** (`JWT_JWKS_HTTP_CACHE_TTL_SECONDS`, default 30s). That cache is independent of the in-process `kid` verification cache and does not change `Cache-Control`.
 
 ### Project OAuth
 
