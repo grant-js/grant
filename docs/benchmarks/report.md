@@ -99,7 +99,7 @@ Warm p95 (7–8 ms) is roughly **2–4×** faster than cold p95 (10–32 ms). In
 
 ## How to watch the parking spot (H1)
 
-H1 is the RLS request transaction that keeps a pool client checked out until COMMIT. Today `contextMiddleware` opens `db.transaction`, runs `SET LOCAL ROLE` + tenant GUCs, and holds that client until the handler ends the response (`finish` / `close` + `holdResponseEndUntil`). After-commit work (jobs / webhooks) then runs, then the body is flushed. `DB_POOL_MAX` defaults to **20**. Unscoped, system, and `SECURITY_ENABLE_RLS=false` paths do not open this transaction.
+H1 is the RLS request transaction that keeps a pool client checked out until COMMIT. `contextMiddleware` opens `db.transaction`, runs `SET LOCAL ROLE` + tenant GUCs, and holds that client until the handler ends the response (`finish` / `close` + `holdResponseEndUntil`). COMMIT then returns the client to the pool. After-commit work (jobs / webhooks) runs on the pool afterward, then the body is flushed. `DB_POOL_MAX` defaults to **20**. Unscoped, system, and `SECURITY_ENABLE_RLS=false` paths do not open this transaction.
 
 There is **no** pool-checkout or pool-wait metric today. Do not read `http_request_duration_seconds` / `http_requests_total` (the existing Prometheus series when `METRICS_ENABLED=true`) as time-in-pool — those are HTTP duration and count, labeled `method`, `route`, `status_code`.
 
@@ -131,7 +131,7 @@ WHERE datname = current_database()
   AND pid <> pg_backend_pid();
 ```
 
-To hold a request long enough to see it, issue a scoped call that you can pause on the client (or add a temporary handler delay locally — do not commit that). Slice 2 of the request-chassis story is the change that should return the client at COMMIT instead of after the response ends.
+To hold a request long enough to see it, issue a scoped call that you can pause on the client (or add a temporary handler delay locally — do not commit that). After COMMIT the client is back; after-commit no longer occupies the parking spot.
 
 ## How to reproduce
 

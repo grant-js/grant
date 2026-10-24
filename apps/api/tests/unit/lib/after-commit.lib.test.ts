@@ -5,6 +5,7 @@ import {
   createAfterCommitQueue,
   createImmediateAfterCommit,
   holdResponseEndUntil,
+  releaseTransactionThenAfterCommit,
 } from '@/lib/after-commit.lib';
 
 const options = { timeoutMs: 50 };
@@ -126,6 +127,52 @@ describe('createImmediateAfterCommit', () => {
     gate.resolve();
     await settled;
     expect(finished).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('releaseTransactionThenAfterCommit', () => {
+  it('releases the transaction, waits for COMMIT, then runs after-commit', async () => {
+    const order: string[] = [];
+    const commit = deferred();
+    const releaseTransaction = vi.fn(() => {
+      order.push('release');
+    });
+    const afterCommit = {
+      run: vi.fn(async () => {
+        order.push('after-commit');
+      }),
+    };
+
+    const running = releaseTransactionThenAfterCommit(
+      releaseTransaction,
+      commit.promise.then(() => {
+        order.push('commit');
+      }),
+      afterCommit
+    );
+
+    await Promise.resolve();
+    expect(releaseTransaction).toHaveBeenCalledTimes(1);
+    expect(afterCommit.run).not.toHaveBeenCalled();
+    expect(order).toEqual(['release']);
+
+    commit.resolve();
+    await running;
+    expect(order).toEqual(['release', 'commit', 'after-commit']);
+  });
+
+  it('does not run after-commit when COMMIT fails', async () => {
+    const afterCommit = { run: vi.fn(async () => undefined) };
+
+    await expect(
+      releaseTransactionThenAfterCommit(
+        () => undefined,
+        Promise.reject(new Error('COMMIT failed')),
+        afterCommit
+      )
+    ).rejects.toThrow('COMMIT failed');
+
+    expect(afterCommit.run).not.toHaveBeenCalled();
   });
 });
 

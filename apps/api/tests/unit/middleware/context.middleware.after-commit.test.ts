@@ -16,6 +16,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const events: string[] = [];
 const requestLogger = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
+const setRlsContext = vi.hoisted(() => vi.fn(async () => undefined));
+
+type RequestTx = { checkedOut: boolean };
+const requestTxState: { current: RequestTx | null } = { current: null };
 
 const dbState = { commitFails: false };
 const mockConfig = {
@@ -28,12 +32,18 @@ const mockConfig = {
 const db = {
   transaction: vi.fn(async (callback: (tx: unknown) => Promise<void>) => {
     events.push('begin');
-    await callback({});
+    const tx: RequestTx = { checkedOut: true };
+    requestTxState.current = tx;
+    await callback(tx);
     if (dbState.commitFails) {
       events.push('rollback');
+      tx.checkedOut = false;
+      events.push('client-released');
       throw new Error('COMMIT failed');
     }
     events.push('commit');
+    tx.checkedOut = false;
+    events.push('client-released');
   }),
 };
 
@@ -52,7 +62,7 @@ vi.mock('@/lib/token', () => ({ JwtTokenProvider: class {} }));
 vi.mock('@/lib/rls', () => ({
   hasRlsKeys: () => true,
   scopeToRlsContext: () => ({ accountId: 'a', projectId: 'p' }),
-  setRlsContext: vi.fn(async () => undefined),
+  setRlsContext,
 }));
 vi.mock('@/lib/transaction-manager.lib', () => ({ DrizzleTransactionalConnection: class {} }));
 vi.mock('@/middleware/request-logging.middleware', () => ({
@@ -94,6 +104,7 @@ const schedule = (req: Request, fn: () => void | Promise<void>) =>
 describe('contextMiddleware after-commit callbacks', () => {
   beforeEach(() => {
     events.length = 0;
+    requestTxState.current = null;
     dbState.commitFails = false;
     mockConfig.security.enableRls = true;
     mockConfig.jobs.afterCommitTimeoutMs = 5000;
@@ -119,10 +130,43 @@ describe('contextMiddleware after-commit callbacks', () => {
     expect(events).toEqual([
       'begin',
       'commit',
+      'client-released',
       'enqueue-start',
       'enqueue-done',
       'response-flushed',
     ]);
+  });
+
+  it('does not run after-commit on the request transaction client', async () => {
+    const app = buildApp((req, res) => {
+      schedule(req, () => {
+        events.push(
+          requestTxState.current?.checkedOut
+            ? 'after-commit-on-request-client'
+            : 'after-commit-on-pool'
+        );
+      });
+      res.status(202).json({ status: 'pending' });
+    });
+
+    const response = await request(app).post('/enqueue');
+
+    expect(response.status).toBe(202);
+    expect(events).toEqual(['begin', 'commit', 'client-released', 'after-commit-on-pool']);
+  });
+
+  it('still applies SET LOCAL tenant context on the request transaction', async () => {
+    const app = buildApp((_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+
+    await request(app).post('/enqueue').expect(200);
+
+    expect(setRlsContext).toHaveBeenCalledTimes(1);
+    expect(setRlsContext).toHaveBeenCalledWith(requestTxState.current, {
+      accountId: 'a',
+      projectId: 'p',
+    });
   });
 
   it('does not enqueue, and answers with an error, when the transaction does not commit', async () => {
@@ -137,7 +181,7 @@ describe('contextMiddleware after-commit callbacks', () => {
     const response = await request(app).post('/enqueue');
 
     expect(enqueue).not.toHaveBeenCalled();
-    expect(events).toEqual(['begin', 'rollback']);
+    expect(events).toEqual(['begin', 'rollback', 'client-released']);
     // The 202 was held back: the client must not be told a job exists when its row was rolled back.
     expect(response.status).toBe(500);
     expect(response.body).toEqual({ error: 'COMMIT failed' });
@@ -175,7 +219,7 @@ describe('contextMiddleware after-commit callbacks', () => {
     const response = await request(app).post('/enqueue');
 
     expect(response.status).toBe(200);
-    expect(events).toEqual(['begin', 'commit', 'response-flushed']);
+    expect(events).toEqual(['begin', 'commit', 'client-released', 'response-flushed']);
   });
 
   it('also waits for after-commit callbacks when the request has no transaction', async () => {
@@ -221,7 +265,7 @@ describe('contextMiddleware after-commit callbacks', () => {
     expect(response.status).toBe(202);
     expect(neverSettles).toBe(true);
     expect(Date.now() - startedAt).toBeLessThan(2000);
-    expect(events).toEqual(['begin', 'commit', 'response-flushed']);
+    expect(events).toEqual(['begin', 'commit', 'client-released', 'response-flushed']);
     expect(requestLogger.warn).toHaveBeenCalledWith(
       { pending: ['project-sync:job-1'], timeoutMs: 50 },
       expect.stringContaining('still pending at the timeout')
@@ -260,7 +304,13 @@ describe('contextMiddleware after-commit callbacks', () => {
       // The 202 arrived while the job body is still blocked on its gate.
       expect(response.status).toBe(202);
       expect(events).not.toContain('job-body-done');
-      expect(events.slice(0, 4)).toEqual(['begin', 'commit', 'accepted', 'response-flushed']);
+      expect(events.slice(0, 5)).toEqual([
+        'begin',
+        'commit',
+        'client-released',
+        'accepted',
+        'response-flushed',
+      ]);
 
       finishJobBody();
       await jobs.shutdown();

@@ -11,6 +11,7 @@ import {
   createAfterCommitQueue,
   createImmediateAfterCommit,
   holdResponseEndUntil,
+  releaseTransactionThenAfterCommit,
 } from '@/lib/after-commit.lib';
 import { DrizzleAuditLogger } from '@/lib/audit';
 import { extractScopeFromRequest } from '@/lib/authorization/scope-extractor';
@@ -93,68 +94,64 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
 
       let releaseTransaction: () => void = () => undefined;
 
-      const committed = db
-        .transaction(async (tx) => {
-          await setRlsContext(tx, rlsCtx);
+      const transactionSettled = db.transaction(async (tx) => {
+        await setRlsContext(tx, rlsCtx);
 
-          const scopedDb = tx as unknown as DbSchema;
-          const scopedRepositories = createRepositories(scopedDb);
-          const services = createServices(scopedRepositories, user, scopedDb, cache, grant, {
-            scheduleAfterCommit,
-            // The platform credential tables are out of the restricted role's reach.
-            baseDb: db,
-            // The sign-in lockout counts failures on the pool, outside this transaction.
-            durableDb: db,
-          });
-          const txConnection = new DrizzleTransactionalConnection(scopedDb);
-          const handlers = createHandlers(cache, services, txConnection, grant, {
-            scheduleAfterCommit,
-          });
-          const resourceResolvers = createResourceResolvers();
-
-          (req as ContextRequest).context = {
-            grant,
-            user,
-            handlers,
-            resourceResolvers,
-            scheduleAfterCommit,
-            requestLogger,
-            origin,
-            requestBaseUrl,
-            locale,
-            userAgent,
-            ipAddress,
-          };
-
-          // Keep the transaction open until the handler ends the response (see
-          // holdResponseEndUntil below). 'finish' / 'close' are the fallback for responses
-          // that were flushed before end() (streaming) or aborted by the client. Either way
-          // the transaction should commit (RLS only filters reads/writes; partial-mutation
-          // rollback is handled by handler-level savepoints as before).
-          return new Promise<void>((resolve) => {
-            releaseTransaction = resolve;
-            res.on('finish', resolve);
-            res.on('close', resolve);
-            next();
-          });
-        })
-        .then(() => {
-          // Runs after Drizzle's transaction promise settles (COMMIT finished). Queue workers
-          // and other pool connections must not run until the row is visible. Awaited so the
-          // response is not flushed before the callbacks (e.g. an SQS SendMessage) complete.
-          return afterCommit.run();
+        const scopedDb = tx as unknown as DbSchema;
+        const scopedRepositories = createRepositories(scopedDb);
+        const services = createServices(scopedRepositories, user, scopedDb, cache, grant, {
+          scheduleAfterCommit,
+          // The platform credential tables are out of the restricted role's reach.
+          baseDb: db,
+          // The sign-in lockout counts failures on the pool, outside this transaction.
+          durableDb: db,
         });
+        const txConnection = new DrizzleTransactionalConnection(scopedDb);
+        const handlers = createHandlers(cache, services, txConnection, grant, {
+          scheduleAfterCommit,
+        });
+        const resourceResolvers = createResourceResolvers();
 
-      // Commit and run the after-commit callbacks BEFORE the response is flushed. On Lambda
-      // the environment is frozen once the response is returned, which silently dropped
-      // enqueues that were still in flight. A failed COMMIT now also reaches the client as an
-      // error instead of a success that was never persisted.
-      const responseHold = holdResponseEndUntil(res, async () => {
-        releaseTransaction();
-        await committed.catch(() => undefined);
+        (req as ContextRequest).context = {
+          grant,
+          user,
+          handlers,
+          resourceResolvers,
+          scheduleAfterCommit,
+          requestLogger,
+          origin,
+          requestBaseUrl,
+          locale,
+          userAgent,
+          ipAddress,
+        };
+
+        // Keep the transaction open until the handler ends the response (see
+        // holdResponseEndUntil below). 'finish' / 'close' are the fallback for responses
+        // that were flushed before end() (streaming) or aborted by the client. Either way
+        // the transaction should commit (RLS only filters reads/writes; partial-mutation
+        // rollback is handled by handler-level savepoints as before).
+        return new Promise<void>((resolve) => {
+          releaseTransaction = resolve;
+          res.on('finish', resolve);
+          res.on('close', resolve);
+          next();
+        });
       });
 
-      committed.catch((err: unknown) => {
+      // COMMIT returns the request client to the pool, then after-commit runs on the pool,
+      // then the body is flushed. On Lambda the environment is frozen once the response is
+      // returned, which silently dropped enqueues that were still in flight. A failed COMMIT
+      // reaches the client as an error instead of a success that was never persisted.
+      const responseHold = holdResponseEndUntil(res, async () => {
+        await releaseTransactionThenAfterCommit(
+          () => releaseTransaction(),
+          transactionSettled,
+          afterCommit
+        ).catch(() => undefined);
+      });
+
+      transactionSettled.catch((err: unknown) => {
         if (res.headersSent || res.writableEnded) {
           requestLogger.error({ err }, 'Request transaction failed after the response was sent');
           return;
