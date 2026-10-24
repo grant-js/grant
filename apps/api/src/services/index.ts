@@ -372,7 +372,8 @@ export function createServices(
       repositories.userMfaRecoveryCodeRepository,
       audit(userMfaFactorAuditLogs, 'userMfaFactorId', user, db),
       events,
-      secrets
+      secrets,
+      cache.rateLimit
     ),
     userSessions: new UserSessionService(
       repositories.userSessionRepository,

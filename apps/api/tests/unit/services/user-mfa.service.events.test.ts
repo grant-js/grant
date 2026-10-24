@@ -22,8 +22,12 @@ vi.mock('@/config', () => ({
         totpPeriodSeconds: 30,
         totpWindow: 1,
         totpIssuer: 'Grant',
+        verifyMaxAttempts: 5,
+        verifyWindowMinutes: 15,
       },
     },
+    app: { isDevelopment: false },
+    logging: { level: 'silent', prettyPrint: false },
   },
 }));
 
@@ -63,7 +67,12 @@ function buildService() {
       {} as IUserMfaRecoveryCodeRepository,
       audit,
       events,
-      { resolve: () => Promise.resolve('0123456789abcdef0123456789abcdef') }
+      { resolve: () => Promise.resolve('0123456789abcdef0123456789abcdef') },
+      {
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn(),
+        delete: vi.fn(),
+      } as never
     ),
     events,
     userMfaFactorRepository,

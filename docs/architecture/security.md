@@ -473,8 +473,8 @@ Values below match **`apps/api`** defaults in **`.env.example`**. See [Authentic
 | **`AUTH_MFA_TOTP_ISSUER`**             | `Grant`   | Issuer label in `otpauth://` URIs.                                                                                              |
 | **`AUTH_MFA_TOTP_PERIOD_SECONDS`**     | `30`      | TOTP time step.                                                                                                                 |
 | **`AUTH_MFA_TOTP_WINDOW`**             | `1`       | Allowed drift windows (±) for clock skew.                                                                                       |
-| **`AUTH_MFA_VERIFY_MAX_ATTEMPTS`**     | `5`       | Max verification attempts per rolling window (when wired on the verify path).                                                   |
-| **`AUTH_MFA_VERIFY_WINDOW_MINUTES`**   | `15`      | Rolling window for verify attempts.                                                                                             |
+| **`AUTH_MFA_VERIFY_MAX_ATTEMPTS`**     | `5`       | Max TOTP/recovery verify attempts per user per rolling window (platform and project).                                           |
+| **`AUTH_MFA_VERIFY_WINDOW_MINUTES`**   | `15`      | Rolling window for those verify attempts.                                                                                       |
 | **`AUTH_MFA_SESSION_TTL_MINUTES`**     | `1440`    | How long MFA verification stays valid for sensitive actions (minutes; see Config app / `env.config`).                           |
 
 ::: warning Secret encryption key

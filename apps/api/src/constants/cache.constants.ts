@@ -39,6 +39,9 @@ export const PROJECT_OAUTH_CODE_KEY_PREFIX = 'oauth:project-code:';
 /** Prefix for a pending project password sign-in awaiting MFA. Full key: oauth:project-mfa:{mfaToken} */
 export const PROJECT_OAUTH_MFA_KEY_PREFIX = 'oauth:project-mfa:';
 
+/** Prefix for the per-user MFA TOTP/recovery verify rolling window. Full key: mfa-verify:{userId} */
+export const MFA_VERIFY_ATTEMPT_KEY_PREFIX = 'mfa-verify:';
+
 // TTLs for these flows live in `config.projectOAuth.*TtlSeconds`. This module is
 // imported transitively by most handlers, so it stays free of config reads —
 // evaluating config at module scope here crashes any consumer that mocks it partially.
