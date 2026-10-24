@@ -122,7 +122,7 @@ await scopeCache.roles.delete('organization:123');
 await scopeCache.roles.clear();
 ```
 
-Cache entries are automatically invalidated when entities are created, updated, or deleted through the API. If you modify data directly in the database, clear the relevant cache manually.
+Cache entries are automatically invalidated when entities are created, updated, or deleted through the API. Deleting a role, group, or permission also clears the `permissions` namespace so cached `isAuthorized` results cannot outlive the grant. If you modify data directly in the database, clear the relevant cache manually.
 
 ::: tip Extending
 The cache system is designed for extensibility. To add a new backend (e.g., Valkey), implement `ICacheAdapter` and register it in `CacheFactory`. See `packages/@grantjs/cache/src/` for reference implementations.

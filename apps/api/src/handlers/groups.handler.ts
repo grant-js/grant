@@ -279,6 +279,7 @@ export class GroupHandler extends CacheHandler {
       ]);
 
       await this.removeGroupIdFromScopeCache(scope, groupId);
+      await this.invalidatePermissionsCacheForAllScopes();
 
       return await this.groups.deleteGroup(params, tx);
     });

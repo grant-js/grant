@@ -35,7 +35,13 @@ function build() {
     deleteGroup: vi.fn().mockImplementation(async () => (calls.push('deleteGroup'), {})),
   };
   const projectGroups = { removeProjectGroup: track('removeProjectGroup') };
-  const cache = { groups: { has: vi.fn().mockResolvedValue(false) } };
+  const permissionsClear = vi
+    .fn()
+    .mockImplementation(async () => void calls.push('permissions.clear'));
+  const cache = {
+    groups: { has: vi.fn().mockResolvedValue(false) },
+    permissions: { clear: permissionsClear },
+  };
   const tx = { __tx: true };
 
   const handler = new GroupHandler(
@@ -50,7 +56,7 @@ function build() {
     {} as never,
     { withTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => fn(tx) } as never
   );
-  return { handler, userGroups, groupPermissions, roleGroups, groups, calls, tx };
+  return { handler, userGroups, groupPermissions, roleGroups, groups, permissionsClear, calls, tx };
 }
 
 describe('GroupHandler.deleteGroup cascade', () => {
@@ -87,5 +93,25 @@ describe('GroupHandler.deleteGroup cascade', () => {
 
     expect(userGroups.removeUserGroup).not.toHaveBeenCalled();
     expect(groups.deleteGroup).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the permissions authz cache after cascade', async () => {
+    const { handler, permissionsClear, calls } = build();
+
+    await handler.deleteGroup({ id: groupId, scope } as never);
+
+    expect(permissionsClear).toHaveBeenCalledTimes(1);
+    expect(calls.indexOf('permissions.clear')).toBeLessThan(calls.indexOf('deleteGroup'));
+  });
+
+  it('clears the permissions authz cache when the group has no remaining relations', async () => {
+    const { handler, permissionsClear, groupPermissions, roleGroups, userGroups } = build();
+    groupPermissions.getGroupPermissions.mockResolvedValue([]);
+    roleGroups.getRoleGroups.mockResolvedValue([]);
+    userGroups.getUserGroups.mockResolvedValue([]);
+
+    await handler.deleteGroup({ id: groupId, scope } as never);
+
+    expect(permissionsClear).toHaveBeenCalledTimes(1);
   });
 });
