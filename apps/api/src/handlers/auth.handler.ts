@@ -1,7 +1,9 @@
 import type {
+  CredentialLockoutStatus,
   IAccountRoleService,
   IAccountService,
   IAuthService,
+  ICredentialLockoutService,
   ICredentialService,
   IEmailService,
   ILogger,
@@ -49,6 +51,7 @@ import {
   trackProductEventAfterCommit,
 } from '@/lib/analytics';
 import { IEntityCacheAdapter } from '@/lib/cache';
+import { verifyCredentialPassword } from '@/lib/credential-verifier.lib';
 import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { contactEmailFromOAuthProviderData } from '@/lib/oauth-contact-email.lib';
@@ -260,6 +263,7 @@ export class AuthHandler extends CacheHandler {
     private readonly auth: IAuthService,
     private readonly organizationInvitations: IOrganizationInvitationService,
     private readonly credentials: ICredentialService,
+    private readonly credentialLockouts: ICredentialLockoutService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
@@ -474,17 +478,31 @@ export class AuthHandler extends CacheHandler {
         if (provider === UserAuthenticationMethodProvider.Email) {
           // Only the platform credential is checked (ADR 0011 § 1): a project credential is
           // never accepted here. A missing credential costs the same compare as a wrong one.
+          //
+          // Lockout (ADR 0011 § 5, per user, keyed by the resolved user id): record before
+          // verify, on a connection that survives this request transaction — never pass `tx`.
+          // Unknown emails already threw above and never invent a key from the typed address.
+          const credentialScope = { scope: 'platform' } as const;
+          const userId = userAuthenticationMethod.userId;
+          const password = processedProviderData.password as string;
+          const attempt = await this.credentialLockouts.recordFailure(credentialScope, userId);
+          if (!this.passwordAttemptWithinBudget(attempt)) {
+            verifyCredentialPassword(password, null);
+            this.logger.warn({ userId }, 'Platform login refused: credential locked');
+            throw new AuthenticationError('Invalid credentials');
+          }
           const passwordMatches = await this.credentials.verifyPassword(
             {
-              scope: { scope: 'platform' },
-              userId: userAuthenticationMethod.userId,
-              password: processedProviderData.password as string,
+              scope: credentialScope,
+              userId,
+              password,
             },
             tx
           );
           if (!passwordMatches) {
             throw new AuthenticationError('Invalid credentials');
           }
+          await this.credentialLockouts.reset(credentialScope, userId);
         }
 
         const isVerifiedByInvitationProof = await this.validatesInvitationEmailProof(
@@ -676,6 +694,17 @@ export class AuthHandler extends CacheHandler {
     }
   }
 
+  /**
+   * Whether the attempt just recorded may be verified. The count includes this attempt, so
+   * the Nth attempt (count == max, which is also the one that sets the lock) is the last
+   * one allowed. An active lock with a lower count means the counter restarted when its
+   * window lapsed while the lock was still running: that attempt is refused.
+   */
+  private passwordAttemptWithinBudget(attempt: CredentialLockoutStatus): boolean {
+    const max = config.auth.maxFailedLoginAttempts;
+    return attempt.failedAttempts <= max && (!attempt.locked || attempt.failedAttempts === max);
+  }
+
   public async refreshSession(
     refreshToken: string,
     userAgent?: string | null,
@@ -688,8 +717,6 @@ export class AuthHandler extends CacheHandler {
         tx,
         userAgent,
         ipAddress,
-        undefined, // isVerified defaults to true in signSession
-        undefined, // mfaVerified derives from session state
         requestBaseUrl
       );
 

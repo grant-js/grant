@@ -21,9 +21,12 @@ import {
   Tenant,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import { type GroupListHydrationContext, groupListHydrators } from '@/hydrators/groups.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { runWithOutboxBatch } from '@/lib/events';
+import { runInChunks } from '@/lib/iam-cascade.lib';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -83,6 +86,7 @@ export class GroupHandler extends CacheHandler {
       sort,
       search,
       requestedFields: repositoryRequestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     return hydrateList({
@@ -263,22 +267,24 @@ export class GroupHandler extends CacheHandler {
           break;
         }
       }
-      await Promise.all([
-        ...tagIds.map((tagId) => this.groupTags.removeGroupTag({ groupId, tagId }, tx)),
-        ...permissionIds.map((permissionId) =>
+      const chunkSize = config.system.iamCascadeChunkSize;
+      await runWithOutboxBatch(tx, async () => {
+        await runInChunks(tagIds, chunkSize, (tagId) =>
+          this.groupTags.removeGroupTag({ groupId, tagId }, tx)
+        );
+        await runInChunks(permissionIds, chunkSize, (permissionId) =>
           this.groupPermissions.removeGroupPermission({ groupId, permissionId }, tx)
-        ),
-        // Remove all RoleGroup relationships
-        ...roleGroupRelations.map((rg) =>
+        );
+        await runInChunks(roleGroupRelations, chunkSize, (rg) =>
           this.roleGroups.removeRoleGroup({ roleId: rg.roleId, groupId: rg.groupId }, tx)
-        ),
-        // Remove every membership: one `user.group_revoked` per member, in this transaction
-        ...userGroupRelations.map((ug) =>
+        );
+        await runInChunks(userGroupRelations, chunkSize, (ug) =>
           this.userGroups.removeUserGroup({ userId: ug.userId, groupId: ug.groupId }, tx)
-        ),
-      ]);
+        );
+      });
 
       await this.removeGroupIdFromScopeCache(scope, groupId);
+      await this.invalidatePermissionsCacheForAllScopes();
 
       return await this.groups.deleteGroup(params, tx);
     });

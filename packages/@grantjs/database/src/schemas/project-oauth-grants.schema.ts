@@ -18,6 +18,10 @@ export const projectOAuthGrants = pgTable(
     scopeId: varchar('scope_id', { length: 255 }).notNull(),
     scopes: jsonb('scopes').$type<string[]>(),
     token: varchar('token', { length: 255 }).notNull().unique(),
+    /** Last rotated-away refresh hash; reuse of this value revokes the family. */
+    previousToken: varchar('previous_token', { length: 255 }),
+    /** Rotation family; reused refresh secrets revoke every live grant that shares it. */
+    familyId: uuid('family_id').notNull().defaultRandom(),
     expiresAt: timestamp('expires_at').notNull(),
     lastUsedAt: timestamp('last_used_at'),
     userAgent: varchar('user_agent', { length: 500 }),
@@ -28,6 +32,8 @@ export const projectOAuthGrants = pgTable(
   },
   (t) => [
     index('project_oauth_grants_token_idx').on(t.token),
+    index('project_oauth_grants_previous_token_idx').on(t.previousToken),
+    index('project_oauth_grants_family_id_idx').on(t.familyId),
     index('project_oauth_grants_project_app_id_idx').on(t.projectAppId),
     index('project_oauth_grants_user_id_idx').on(t.userId),
     index('project_oauth_grants_expires_at_idx').on(t.expiresAt),

@@ -97,6 +97,11 @@ export const envSchema = z.object({
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: optionalNumber(15),
   JWT_REFRESH_TOKEN_EXPIRATION_DAYS: optionalNumber(30),
   JWT_JWKS_MAX_AGE_SECONDS: optionalNumber(300),
+  /**
+   * Origin-side TTL for the JWKS HTTP payload (`getPublicKeysForJwks`) per issuer.
+   * Independent of Cache-Control (`JWT_JWKS_MAX_AGE_SECONDS`) and the in-process kid cache.
+   */
+  JWT_JWKS_HTTP_CACHE_TTL_SECONDS: optionalNumber(30),
   JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS: optionalNumber(300),
   AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS: optionalNumber(7),
   AUTH_OTP_VALIDITY_MINUTES: optionalNumber(5),
@@ -175,6 +180,24 @@ export const envSchema = z.object({
   // Pagination
   PAGINATION_DEFAULT_PAGE_SIZE: optionalNumber(50),
   PAGINATION_MAX_PAGE_SIZE: optionalNumber(100),
+
+  /**
+   * GraphQL selection-set depth cap (fragments included). Introspection
+   * trees (`__schema` / `__type`) are not counted so the sandbox still works.
+   */
+  GRAPHQL_MAX_DEPTH: optionalNumber(15),
+  /**
+   * GraphQL query complexity cap. Each field costs 1 × the product of
+   * ancestor `limit` arguments (capped at PAGINATION_MAX_PAGE_SIZE).
+   */
+  GRAPHQL_MAX_COMPLEXITY: optionalNumber(10000),
+
+  /**
+   * How many IAM cascade pivot revokes (and outbox inserts) run in one
+   * Promise.all / INSERT. Large group/role/permission deletes stay one event
+   * per subject; this only bounds concurrent work.
+   */
+  IAM_CASCADE_CHUNK_SIZE: optionalNumber(50),
 
   // CDM document limits. These bound the `JSON` scalar fields of a sync
   // document, which GraphQL accepts without inspecting. Defaults are generous

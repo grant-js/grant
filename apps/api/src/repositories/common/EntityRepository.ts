@@ -20,7 +20,7 @@ import {
 import { config } from '@/config';
 import { NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { hasNextPageByCount } from '@/lib/pagination.lib';
+import { clampPageLimit, hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 interface BaseEntity extends Auditable {
@@ -53,6 +53,8 @@ interface BaseQueryArgs<TModel, TEntity> extends Searchable {
   sort?: BaseSortable<TModel> | null;
   requestedFields?: Array<keyof TEntity> | null;
   filters?: Filter<TModel> | null; // New flexible filter system
+  /** Internal complete-set loads. Public lists must not set this. */
+  unbounded?: boolean;
 }
 
 interface BasePageResult<T> {
@@ -335,8 +337,11 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
 
     const { ids, search, sort } = params;
     const page = params.page ?? 1;
-    const safeLimit = params.limit ?? config.system.defaultPageSize;
-    const limit = safeLimit > -1 ? safeLimit : undefined;
+    const limit = clampPageLimit(params.limit, {
+      defaultPageSize: config.system.defaultPageSize,
+      maxPageSize: config.system.maxPageSize,
+      unbounded: params.unbounded === true,
+    });
     const offset = limit ? (page - 1) * limit : undefined;
 
     try {

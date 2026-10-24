@@ -102,7 +102,10 @@ export interface IProjectRepository extends IEntityExistence {
 }
 
 export interface IProjectUserRepository {
-  getProjectUsers(params: QueryProjectUsersInput, transaction?: unknown): Promise<ProjectUser[]>;
+  getProjectUsers(
+    params: QueryProjectUsersInput & { userIds?: readonly string[] | null },
+    transaction?: unknown
+  ): Promise<ProjectUser[]>;
 
   addProjectUser(params: AddProjectUserInput, transaction?: unknown): Promise<ProjectUser>;
 

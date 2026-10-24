@@ -117,7 +117,7 @@ export class ProjectUserService implements IProjectUserService {
   }
 
   public async getProjectUsers(
-    params: { projectId?: string; userId?: string },
+    params: { projectId?: string; userId?: string; userIds?: string[] },
     transaction?: Transaction
   ): Promise<ProjectUser[]> {
     const context = 'ProjectUserService.getProjectUsers';

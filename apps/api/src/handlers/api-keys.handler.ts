@@ -23,6 +23,7 @@ import {
 
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
@@ -113,10 +114,12 @@ export class ApiKeysHandler extends CacheHandler {
       return apiKeys.map((k) => ({ ...k, role: null }));
     }
 
-    const rolesResult = await this.roles.getRoles({
-      ids: roleIds,
-      limit: -1,
-    });
+    const rolesResult = await this.roles.getRoles(
+      unboundedList({
+        ids: roleIds,
+        limit: -1,
+      })
+    );
     const roleById = new Map(rolesResult.roles.map((r) => [r.id, r]));
     const roleIdByApiKeyId = new Map(pivotRows.map((r) => [r.apiKeyId, r.roleId]));
 

@@ -152,6 +152,7 @@ export class UserHandler extends CacheHandler {
       sort,
       search: effectiveSearch,
       requestedFields: repositoryRequestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     const fieldList = requestedFields as Array<keyof User> | undefined;
@@ -164,7 +165,11 @@ export class UserHandler extends CacheHandler {
       (wantsMetadata || wantsName || wantsPicture)
     ) {
       const projectId = this.extractProjectIdFromScope(scope);
-      const pivots = await this.projectUsers.getProjectUsers({ projectId });
+      const pageUserIds = usersResult.users.map((user) => user.id);
+      const pivots =
+        pageUserIds.length === 0
+          ? []
+          : await this.projectUsers.getProjectUsers({ projectId, userIds: pageUserIds });
       const pivotByUserId = new Map(pivots.map((pu) => [pu.userId, pu]));
       usersResult.users = usersResult.users.map((u) => {
         const pu = pivotByUserId.get(u.id);

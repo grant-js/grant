@@ -19,13 +19,26 @@ import {
   SortOrder,
   User,
 } from '@grantjs/schema';
-import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 
 import { config } from '@/config';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { hasNextPageByCount } from '@/lib/pagination.lib';
+import { clampPageLimit, hasNextPageByCount } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
+
+type OrganizationMemberPageRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  roleName: string | null;
+  createdAt: Date;
+  memberType: string;
+  roleId: string | null;
+  userId: string | null;
+  invitationId: string | null;
+  status: string | null;
+};
 
 export class OrganizationMemberRepository implements IOrganizationMemberRepository {
   private readonly logger = createLogger('OrganizationMemberRepository');
@@ -40,45 +53,34 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
     const { scope, page = 1, limit, search, sort, status } = params;
     const { id: organizationId } = scope;
     const safePage = page ?? 1;
-    const safeLimit = limit ?? config.system.defaultPageSize;
+    const safeLimit =
+      clampPageLimit(limit, {
+        defaultPageSize: config.system.defaultPageSize,
+        maxPageSize: config.system.maxPageSize,
+      }) ?? config.system.defaultPageSize;
 
     try {
-      // Fetch members (users)
-      const memberWhereConditions = [
-        eq(organizationUsers.organizationId, organizationId),
-        isNull(organizationUsers.deletedAt),
-        isNull(users.deletedAt),
-      ];
-
-      if (search) {
-        const searchLower = `%${search.toLowerCase()}%`;
-        memberWhereConditions.push(
-          or(
-            ilike(users.name, searchLower),
-            // Search in providerId (for email auth) or providerData.email (for OAuth)
-            ilike(userAuthenticationMethods.providerId, searchLower),
-            sql`${userAuthenticationMethods.providerData}->>'email' ILIKE ${searchLower}`
-          )!
-        );
-      }
-
-      // Build email expression that extracts email from providerId (for email auth)
-      // or from providerData.email (for OAuth providers like GitHub)
-      const emailExpression = sql<string>`
-        CASE 
+      const memberWhere = this.memberWhere(organizationId, search);
+      const invitationWhere = this.invitationWhere(organizationId, status, search);
+      const emailExpression = sql<string | null>`
+        CASE
           WHEN ${userAuthenticationMethods.provider} = 'email' THEN ${userAuthenticationMethods.providerId}
           ELSE ${userAuthenticationMethods.providerData}->>'email'
         END
-      `.as('user_email');
+      `.as('email');
 
-      const membersData = await dbInstance
+      const membersSelect = dbInstance
         .select({
-          userId: users.id,
-          userName: users.name,
-          userEmail: emailExpression,
-          roleId: roles.id,
+          id: users.id,
+          name: users.name,
+          email: emailExpression,
           roleName: roles.name,
-          userCreatedAt: users.createdAt,
+          createdAt: users.createdAt,
+          memberType: sql<string>`'member'`.as('member_type'),
+          roleId: roles.id,
+          userId: sql<string | null>`${users.id}`.as('user_id'),
+          invitationId: sql<string | null>`null::uuid`.as('invitation_id'),
+          status: sql<string | null>`null::varchar`.as('status'),
         })
         .from(organizationUsers)
         .innerJoin(users, eq(organizationUsers.userId, users.id))
@@ -91,205 +93,58 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
             isNull(userAuthenticationMethods.deletedAt)
           )
         )
-        .where(and(...memberWhereConditions));
+        .where(memberWhere);
 
-      // Fetch invitations
-      const invitationWhereConditions = [
-        eq(organizationInvitations.organizationId, organizationId),
-        isNull(organizationInvitations.deletedAt),
-      ];
-
-      if (status) {
-        invitationWhereConditions.push(eq(organizationInvitations.status, status));
-      } else {
-        invitationWhereConditions.push(
-          eq(organizationInvitations.status, OrganizationInvitationStatus.Pending)
-        );
-      }
-
-      if (search) {
-        const searchLower = `%${search.toLowerCase()}%`;
-        invitationWhereConditions.push(ilike(organizationInvitations.email, searchLower));
-      }
-
-      const invitationsData = await dbInstance
+      const invitationsSelect = dbInstance
         .select({
-          invitationId: organizationInvitations.id,
-          invitationEmail: organizationInvitations.email,
-          roleId: roles.id,
+          id: organizationInvitations.id,
+          name: organizationInvitations.email,
+          email: sql<string | null>`${organizationInvitations.email}`.as('email'),
           roleName: roles.name,
-          status: organizationInvitations.status,
-          invitationCreatedAt: organizationInvitations.createdAt,
-          invitedBy: organizationInvitations.invitedBy,
+          createdAt: organizationInvitations.createdAt,
+          memberType: sql<string>`'invitation'`.as('member_type'),
+          roleId: roles.id,
+          userId: sql<string | null>`null::uuid`.as('user_id'),
+          invitationId: sql<string | null>`${organizationInvitations.id}`.as('invitation_id'),
+          status: sql<string | null>`${organizationInvitations.status}`.as('status'),
         })
         .from(organizationInvitations)
         .innerJoin(roles, eq(organizationInvitations.roleId, roles.id))
-        .where(and(...invitationWhereConditions));
+        .where(invitationWhere);
 
-      // Transform to unified format
-      const allMembers: Array<{
-        id: string;
-        name: string;
-        email: string | null;
-        roleId: string | null;
-        roleName: string | null;
-        type: MemberType;
-        status: OrganizationInvitationStatus | null;
-        createdAt: Date;
-        userId?: string;
-        invitationId?: string;
-      }> = [];
+      const pageRows = (await membersSelect
+        .unionAll(invitationsSelect)
+        .orderBy(...this.pageOrderBy(sort))
+        .limit(safeLimit)
+        .offset((safePage - 1) * safeLimit)) as OrganizationMemberPageRow[];
 
-      // Add members (one row per membership; role from organization_users.role_id)
-      for (const member of membersData) {
-        allMembers.push({
-          id: member.userId,
-          name: member.userName,
-          email: member.userEmail || null,
-          roleId: member.roleId,
-          roleName: member.roleName,
-          type: MemberType.Member,
-          status: null,
-          createdAt: member.userCreatedAt,
-          userId: member.userId,
-        });
-      }
+      const [memberCountRow] = await dbInstance
+        .select({ count: count() })
+        .from(organizationUsers)
+        .innerJoin(users, eq(organizationUsers.userId, users.id))
+        .innerJoin(roles, eq(organizationUsers.roleId, roles.id))
+        .leftJoin(
+          userAuthenticationMethods,
+          and(
+            eq(userAuthenticationMethods.userId, users.id),
+            eq(userAuthenticationMethods.isPrimary, true),
+            isNull(userAuthenticationMethods.deletedAt)
+          )
+        )
+        .where(memberWhere);
 
-      // Add invitations
-      for (const invitation of invitationsData) {
-        allMembers.push({
-          id: invitation.invitationId,
-          name: invitation.invitationEmail,
-          email: invitation.invitationEmail,
-          roleId: invitation.roleId || null,
-          roleName: invitation.roleName || null,
-          type: MemberType.Invitation,
-          status: invitation.status as OrganizationInvitationStatus,
-          createdAt: invitation.invitationCreatedAt,
-          invitationId: invitation.invitationId,
-        });
-      }
+      const [invitationCountRow] = await dbInstance
+        .select({ count: count() })
+        .from(organizationInvitations)
+        .innerJoin(roles, eq(organizationInvitations.roleId, roles.id))
+        .where(invitationWhere);
 
-      // Sort combined results
-      const sortField = sort?.field ?? OrganizationMemberSortableField.Name;
-      const sortOrder = sort?.order ?? SortOrder.Asc;
-
-      allMembers.sort((a, b) => {
-        const comparison = (() => {
-          switch (sortField) {
-            case OrganizationMemberSortableField.Name:
-              return a.name.localeCompare(b.name);
-            case OrganizationMemberSortableField.Email:
-              return (a.email || '').localeCompare(b.email || '');
-            case OrganizationMemberSortableField.CreatedAt:
-              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-            case OrganizationMemberSortableField.Role:
-              return (a.roleName || '').localeCompare(b.roleName || '');
-            default:
-              return a.name.localeCompare(b.name);
-          }
-        })();
-        return sortOrder === SortOrder.Asc ? comparison : -comparison;
-      });
-
-      const totalCount = allMembers.length;
-
-      // Apply pagination
-      const paginationLimit = safeLimit > -1 ? safeLimit : undefined;
-      const startIndex = paginationLimit ? (safePage - 1) * paginationLimit : 0;
-      const endIndex = paginationLimit ? startIndex + paginationLimit : allMembers.length;
-      const paginatedMembers = allMembers.slice(startIndex, endIndex);
-
-      // Fetch full entity data for paginated results
-      const members: OrganizationMember[] = await Promise.all(
-        paginatedMembers.map(async (member) => {
-          if (member.type === MemberType.Member && member.userId && member.roleId) {
-            // Fetch full user and role (role from organization_users.role_id)
-            const [user] = await dbInstance
-              .select()
-              .from(users)
-              .where(eq(users.id, member.userId))
-              .limit(1);
-
-            const [roleRow] = await dbInstance
-              .select()
-              .from(roles)
-              .where(eq(roles.id, member.roleId))
-              .limit(1);
-
-            if (!roleRow) {
-              throw new BadRequestError(`User ${member.userId} has invalid role ${member.roleId}`);
-            }
-
-            return {
-              id: member.id,
-              name: member.name,
-              email: member.email,
-              type: MemberType.Member,
-              role: roleRow as unknown as Role,
-              user: user as unknown as User,
-              invitation: null,
-              status: null,
-              createdAt: member.createdAt,
-            } as OrganizationMember;
-          } else if (member.type === MemberType.Invitation && member.invitationId) {
-            // Fetch full invitation with inviter and role
-            const [invitationWithInviter] = await dbInstance
-              .select({
-                invitation: organizationInvitations,
-                inviter: users,
-              })
-              .from(organizationInvitations)
-              .innerJoin(
-                users,
-                and(eq(organizationInvitations.invitedBy, users.id), isNull(users.deletedAt))
-              )
-              .where(eq(organizationInvitations.id, member.invitationId))
-              .limit(1);
-
-            if (!invitationWithInviter) {
-              throw new NotFoundError('Invitation', member.invitationId);
-            }
-
-            const [roleData] = await dbInstance
-              .select()
-              .from(roles)
-              .where(eq(roles.id, member.roleId!))
-              .limit(1);
-
-            if (!roleData) {
-              throw new NotFoundError('Role', member.roleId ?? undefined);
-            }
-
-            // Construct invitation with inviter relation
-            const invitationData = {
-              ...invitationWithInviter.invitation,
-              inviter: invitationWithInviter.inviter,
-            } as unknown as OrganizationInvitation;
-
-            return {
-              id: member.id,
-              name: member.name,
-              email: member.email,
-              type: MemberType.Invitation,
-              role: roleData as unknown as Role,
-              user: null,
-              invitation: invitationData,
-              status: member.status,
-              createdAt: member.createdAt,
-            } as OrganizationMember;
-          }
-
-          // Fallback (shouldn't happen)
-          throw new BadRequestError(
-            `Invalid member type or missing required data for member ${member.id}`
-          );
-        })
-      );
-
+      const totalCount =
+        Number(memberCountRow?.count ?? 0) + Number(invitationCountRow?.count ?? 0);
+      const members = await this.hydratePage(pageRows, dbInstance);
       const hasNextPage = hasNextPageByCount({
         page: safePage,
-        limit: paginationLimit,
+        limit: safeLimit,
         totalCount,
       });
 
@@ -400,5 +255,179 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
       });
       throw error;
     }
+  }
+
+  private memberWhere(organizationId: string, search?: string | null) {
+    const conditions = [
+      eq(organizationUsers.organizationId, organizationId),
+      isNull(organizationUsers.deletedAt),
+      isNull(users.deletedAt),
+    ];
+
+    if (search) {
+      const searchLower = `%${search.toLowerCase()}%`;
+      conditions.push(
+        or(
+          ilike(users.name, searchLower),
+          ilike(userAuthenticationMethods.providerId, searchLower),
+          sql`${userAuthenticationMethods.providerData}->>'email' ILIKE ${searchLower}`
+        )!
+      );
+    }
+
+    return and(...conditions);
+  }
+
+  private invitationWhere(
+    organizationId: string,
+    status?: OrganizationInvitationStatus | null,
+    search?: string | null
+  ) {
+    const conditions = [
+      eq(organizationInvitations.organizationId, organizationId),
+      isNull(organizationInvitations.deletedAt),
+      eq(organizationInvitations.status, status ?? OrganizationInvitationStatus.Pending),
+    ];
+
+    if (search) {
+      conditions.push(ilike(organizationInvitations.email, `%${search.toLowerCase()}%`));
+    }
+
+    return and(...conditions);
+  }
+
+  private pageOrderBy(sort?: QueryOrganizationMembersArgs['sort']): SQL[] {
+    const sortField = sort?.field ?? OrganizationMemberSortableField.Name;
+    const sortOrder = sort?.order ?? SortOrder.Asc;
+    const direction = sortOrder === SortOrder.Desc ? desc : asc;
+    const sortColumn = (() => {
+      switch (sortField) {
+        case OrganizationMemberSortableField.Email:
+          return sql`coalesce("email", '')`;
+        case OrganizationMemberSortableField.CreatedAt:
+          return sql`"createdAt"`;
+        case OrganizationMemberSortableField.Role:
+          return sql`coalesce("roleName", '')`;
+        case OrganizationMemberSortableField.Name:
+        default:
+          return sql`"name"`;
+      }
+    })();
+
+    return [direction(sortColumn), direction(sql`"id"`)];
+  }
+
+  private async hydratePage(
+    pageRows: OrganizationMemberPageRow[],
+    dbInstance: DbSchema | Transaction
+  ): Promise<OrganizationMember[]> {
+    const userIds = [
+      ...new Set(
+        pageRows
+          .filter((row) => row.memberType === MemberType.Member && row.userId)
+          .map((row) => row.userId as string)
+      ),
+    ];
+    const roleIds = [
+      ...new Set(pageRows.map((row) => row.roleId).filter((roleId): roleId is string => !!roleId)),
+    ];
+    const invitationIds = [
+      ...new Set(
+        pageRows
+          .filter((row) => row.memberType === MemberType.Invitation && row.invitationId)
+          .map((row) => row.invitationId as string)
+      ),
+    ];
+
+    const [userRows, roleRows, invitationRows] = await Promise.all([
+      userIds.length > 0
+        ? dbInstance.select().from(users).where(inArray(users.id, userIds))
+        : Promise.resolve([]),
+      roleIds.length > 0
+        ? dbInstance.select().from(roles).where(inArray(roles.id, roleIds))
+        : Promise.resolve([]),
+      invitationIds.length > 0
+        ? dbInstance
+            .select({
+              invitation: organizationInvitations,
+              inviter: users,
+            })
+            .from(organizationInvitations)
+            .innerJoin(
+              users,
+              and(eq(organizationInvitations.invitedBy, users.id), isNull(users.deletedAt))
+            )
+            .where(inArray(organizationInvitations.id, invitationIds))
+        : Promise.resolve([]),
+    ]);
+
+    const userById = new Map(userRows.map((user) => [user.id, user]));
+    const roleById = new Map(roleRows.map((role) => [role.id, role]));
+    const invitationById = new Map(invitationRows.map((row) => [row.invitation.id, row] as const));
+
+    return pageRows.map((row) => this.hydrateRow(row, userById, roleById, invitationById));
+  }
+
+  private hydrateRow(
+    row: OrganizationMemberPageRow,
+    userById: Map<string, typeof users.$inferSelect>,
+    roleById: Map<string, typeof roles.$inferSelect>,
+    invitationById: Map<
+      string,
+      {
+        invitation: typeof organizationInvitations.$inferSelect;
+        inviter: typeof users.$inferSelect;
+      }
+    >
+  ): OrganizationMember {
+    if (row.memberType === MemberType.Member && row.userId && row.roleId) {
+      const roleRow = roleById.get(row.roleId);
+      if (!roleRow) {
+        throw new BadRequestError(`User ${row.userId} has invalid role ${row.roleId}`);
+      }
+
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email || null,
+        type: MemberType.Member,
+        role: roleRow as unknown as Role,
+        user: (userById.get(row.userId) ?? null) as unknown as User,
+        invitation: null,
+        status: null,
+        createdAt: row.createdAt,
+      } as OrganizationMember;
+    }
+
+    if (row.memberType === MemberType.Invitation && row.invitationId) {
+      const invitationWithInviter = invitationById.get(row.invitationId);
+      if (!invitationWithInviter) {
+        throw new NotFoundError('Invitation', row.invitationId);
+      }
+
+      const roleData = row.roleId ? roleById.get(row.roleId) : undefined;
+      if (!roleData) {
+        throw new NotFoundError('Role', row.roleId ?? undefined);
+      }
+
+      const invitationData = {
+        ...invitationWithInviter.invitation,
+        inviter: invitationWithInviter.inviter,
+      } as unknown as OrganizationInvitation;
+
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        type: MemberType.Invitation,
+        role: roleData as unknown as Role,
+        user: null,
+        invitation: invitationData,
+        status: row.status as OrganizationInvitationStatus,
+        createdAt: row.createdAt,
+      } as OrganizationMember;
+    }
+
+    throw new BadRequestError(`Invalid member type or missing required data for member ${row.id}`);
   }
 }

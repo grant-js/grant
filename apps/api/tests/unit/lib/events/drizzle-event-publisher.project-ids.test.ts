@@ -29,8 +29,12 @@ describe('DrizzleEventPublisher project links (ADR 0012)', () => {
   } as GrantAuth;
 
   const publisher = () => new DrizzleEventPublisher(orgUser, db as never, { projectLinks });
-  const storedPayload = () =>
-    (values.mock.calls[0]?.[0] as { payload: Record<string, unknown> }).payload;
+  const storedRow = () => {
+    const arg = values.mock.calls[0]?.[0];
+    const row = Array.isArray(arg) ? arg[0] : arg;
+    return row as { payload: Record<string, unknown> };
+  };
+  const storedPayload = () => storedRow().payload;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -54,7 +58,7 @@ describe('DrizzleEventPublisher project links (ADR 0012)', () => {
     expect(getLinkedProjectIds).toHaveBeenCalledWith('role', 'role-1', tx);
     expect(storedPayload().projectIds).toEqual([projectA, projectB]);
     // The request scope is untouched: notifications and the envelope keep reading it.
-    expect(values.mock.calls[0]?.[0]).toMatchObject({
+    expect(storedRow()).toMatchObject({
       scopeTenant: Tenant.Organization,
       scopeId: 'org-1',
     });

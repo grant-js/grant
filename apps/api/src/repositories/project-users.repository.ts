@@ -62,10 +62,23 @@ export class ProjectUserRepository
   }
 
   public async getProjectUsers(
-    params: QueryProjectUsersInput,
+    params: QueryProjectUsersInput & { userIds?: readonly string[] | null },
     transaction?: Transaction
   ): Promise<ProjectUser[]> {
-    return this.query(params, transaction);
+    if (params.userIds !== undefined && params.userIds !== null) {
+      if (params.userIds.length === 0) {
+        return [];
+      }
+      if (params.projectId) {
+        return this.queryIntersection(
+          { projectId: [params.projectId], userId: [...params.userIds] },
+          transaction
+        );
+      }
+      return this.queryByFieldValues('userId', [...params.userIds], transaction);
+    }
+
+    return this.query({ projectId: params.projectId, userId: params.userId }, transaction);
   }
 
   public async addProjectUser(

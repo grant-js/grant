@@ -443,7 +443,7 @@ describe('Webhook cascades and lifecycle events', () => {
     expect(res.status).toBe(200);
 
     // The relay enqueue after commit is coalesced, so an event that lands while a relay run
-    // is draining can wait for the one-minute sweep: allow for it.
+    // is draining can wait for the one-minute sweep: allow for it. File testTimeout is 60s.
     const rows = await waitForDeliveries(
       subscriptionId,
       'user.deleted',
@@ -458,7 +458,7 @@ describe('Webhook cascades and lifecycle events', () => {
     expect(envelope.data.after).toEqual({ id: memberUserId, hardDelete: false });
     // The name of a user who asked to be erased is not in the event.
     expect(JSON.stringify(row.payload)).not.toContain(member.name);
-  });
+  }, 100_000);
 
   it('a user renaming themselves in an organization scope delivers one user.updated to the project they belong to', async () => {
     const member = await TestUser.create({ withOrgAccount: true });

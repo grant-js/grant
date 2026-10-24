@@ -188,11 +188,16 @@ export class Grant {
     }
 
     // Project-app tokens: cap effective permissions by the token's granted scopes (resource:action).
+    // Missing or empty scopes fail closed — they must not fall through to the user's full RBAC.
     // Compare case-insensitively so "Document:Create" matches granted "document:create" from DB slugs.
-    if (type === TokenType.ProjectApp && grantedScopes && grantedScopes.length > 0) {
+    if (type === TokenType.ProjectApp) {
+      const slugs = grantedScopes ?? [];
+      if (slugs.length === 0) {
+        return { authorized: false, reason: AuthorizationReason.ScopeNotGranted };
+      }
       const slug = `${permission.resource}:${permission.action}`;
       const slugLower = slug.toLowerCase();
-      const hasScope = grantedScopes.some((s) => (s ?? '').toLowerCase() === slugLower);
+      const hasScope = slugs.some((s) => (s ?? '').toLowerCase() === slugLower);
       if (!hasScope) {
         return { authorized: false, reason: AuthorizationReason.ScopeNotGranted };
       }

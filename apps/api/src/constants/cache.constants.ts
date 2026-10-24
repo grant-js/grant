@@ -11,6 +11,9 @@ export const SYSTEM_SIGNING_KEY_CACHE_KEY = 'system:current';
 /** Cache key prefix for verification (public key by kid). TTL only; no invalidation on rotation. */
 export const VERIFICATION_KEY_CACHE_PREFIX = 'verification:';
 
+/** Cache key prefix for JWKS HTTP payloads per issuer. TTL only. */
+export const JWKS_HTTP_CACHE_PREFIX = 'jwks:http:';
+
 // ----- Auth (permissions namespace: authorization result cache) -----
 
 /** Prefix for cached authorization results. Key: auth:result:{userId}:{scope}:{resource}:{action}:{contextHash}, or for project-app tokens with grantedScopes: auth:result:{userId}:{scope}:{grantedScopesSignature}:{resource}:{action}:{contextHash} */
@@ -38,6 +41,9 @@ export const PROJECT_OAUTH_CODE_KEY_PREFIX = 'oauth:project-code:';
 
 /** Prefix for a pending project password sign-in awaiting MFA. Full key: oauth:project-mfa:{mfaToken} */
 export const PROJECT_OAUTH_MFA_KEY_PREFIX = 'oauth:project-mfa:';
+
+/** Prefix for the per-user MFA TOTP/recovery verify rolling window. Full key: mfa-verify:{userId} */
+export const MFA_VERIFY_ATTEMPT_KEY_PREFIX = 'mfa-verify:';
 
 // TTLs for these flows live in `config.projectOAuth.*TtlSeconds`. This module is
 // imported transitively by most handlers, so it stays free of config reads —

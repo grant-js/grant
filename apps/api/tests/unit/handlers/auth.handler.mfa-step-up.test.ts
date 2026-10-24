@@ -70,6 +70,10 @@ function createHandler(): AuthHandler {
     mockAuth as never,
     mockOrganizationInvitations as never,
     mockCredentials as never,
+    {
+      recordFailure: vi.fn(async () => ({ failedAttempts: 1, lockedUntil: null, locked: false })),
+      reset: vi.fn(async () => undefined),
+    } as never,
     mockCache as never,
     mockScopeServices as never,
     mockDb as never,
@@ -228,8 +232,6 @@ describe('AuthHandler refreshSession', () => {
       expect.anything(),
       'ua',
       '127.0.0.1',
-      undefined,
-      undefined,
       'http://api.test'
     );
   });

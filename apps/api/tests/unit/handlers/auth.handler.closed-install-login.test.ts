@@ -18,7 +18,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashSecret } from '@/lib/token.lib';
 
 const { mockAuthCfg } = vi.hoisted(() => ({
-  mockAuthCfg: { publicSignupEnabled: true, minAalAtLogin: 'aal1' as 'aal1' | 'aal2' },
+  mockAuthCfg: {
+    publicSignupEnabled: true,
+    minAalAtLogin: 'aal1' as 'aal1' | 'aal2',
+    maxFailedLoginAttempts: 5,
+  },
 }));
 
 vi.mock('@/config', () => ({
@@ -79,6 +83,12 @@ const mockCredentials = {
   ),
 };
 const mockCache = { get: vi.fn(), set: vi.fn(), delete: vi.fn(), clear: vi.fn() };
+const mockCredentialLockouts = {
+  recordFailure: vi.fn(async () => ({ failedAttempts: 1, lockedUntil: null, locked: false })),
+  reset: vi.fn(async () => undefined),
+  getStatus: vi.fn(),
+  resetAllForUser: vi.fn(),
+};
 
 function createHandler() {
   return new AuthHandler(
@@ -93,6 +103,7 @@ function createHandler() {
     { getAuth: vi.fn(), isPersonalScope: vi.fn() } as never,
     mockOrganizationInvitations as never,
     mockCredentials as never,
+    mockCredentialLockouts as never,
     mockCache as never,
     {} as never,
     { withTransaction: mockWithTransaction } as never,

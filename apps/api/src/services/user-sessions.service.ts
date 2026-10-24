@@ -3,6 +3,7 @@ import {
   Grant,
   type IAuditLogger,
   type IEventPublisher,
+  type IUserAuthenticationMethodRepository,
   type IUserSessionRepository,
   type IUserSessionService,
   type SessionSignOptions,
@@ -38,6 +39,7 @@ interface CreateSessionResult {
 export class UserSessionService implements IUserSessionService {
   constructor(
     private readonly userSessionRepository: IUserSessionRepository,
+    private readonly userAuthenticationMethodRepository: IUserAuthenticationMethodRepository,
     private readonly audit: IAuditLogger,
     private readonly grant: Grant,
     private readonly events: IEventPublisher
@@ -83,7 +85,7 @@ export class UserSessionService implements IUserSessionService {
 
   public async signSession(
     session: UserSession,
-    isVerified: boolean = true,
+    isVerified: boolean = false,
     mfaVerified: boolean = false,
     issuerBaseUrl?: string,
     signOptions?: SessionSignOptions
@@ -173,7 +175,7 @@ export class UserSessionService implements IUserSessionService {
 
     return this.signSession(
       session,
-      params.isVerified ?? true,
+      params.isVerified === true,
       Boolean((session as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt),
       issuerBaseUrl
     );
@@ -188,8 +190,6 @@ export class UserSessionService implements IUserSessionService {
     transaction?: Transaction,
     userAgent?: string | null,
     ipAddress?: string | null,
-    isVerified?: boolean,
-    mfaVerified?: boolean,
     issuerBaseUrl?: string
   ): Promise<CreateSessionResult | null> {
     const session = await this.userSessionRepository.getSessionByRefreshToken(
@@ -198,6 +198,13 @@ export class UserSessionService implements IUserSessionService {
     );
 
     if (!session) {
+      const reusedFamilyId = await this.userSessionRepository.findFamilyIdByPreviousRefreshToken(
+        refreshToken,
+        transaction
+      );
+      if (reusedFamilyId) {
+        await this.revokeSessionFamily(reusedFamilyId, transaction);
+      }
       return null;
     }
 
@@ -208,6 +215,7 @@ export class UserSessionService implements IUserSessionService {
 
     const refreshedSession = await this.userSessionRepository.refreshUserSession(
       session.id,
+      refreshToken,
       newRefreshToken,
       this.getRefreshTokenExpirationDate(now),
       new Date(),
@@ -216,15 +224,49 @@ export class UserSessionService implements IUserSessionService {
       transaction
     );
 
+    if (!refreshedSession) {
+      const familyId = await this.userSessionRepository.getSessionFamilyId(session.id, transaction);
+      if (familyId) {
+        await this.revokeSessionFamily(familyId, transaction);
+      }
+      return null;
+    }
+
+    const isVerified = await this.resolveIsVerifiedFromAuthMethod(session, transaction);
+
     return this.signSession(
       refreshedSession,
-      isVerified ??
-        (refreshedSession as unknown as { emailVerified?: boolean }).emailVerified ??
-        true,
-      mfaVerified ??
-        Boolean((refreshedSession as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt),
+      isVerified,
+      Boolean((refreshedSession as unknown as { mfaVerifiedAt?: Date | null }).mfaVerifiedAt),
       issuerBaseUrl
     );
+  }
+
+  private async resolveIsVerifiedFromAuthMethod(
+    session: UserSession,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    const methodId = session.userAuthenticationMethodId;
+    if (!methodId) {
+      return false;
+    }
+
+    const method = await this.userAuthenticationMethodRepository.getUserAuthenticationMethod(
+      methodId,
+      transaction
+    );
+
+    return method?.isVerified === true;
+  }
+
+  private async revokeSessionFamily(familyId: string, transaction?: Transaction): Promise<void> {
+    const members = await this.userSessionRepository.listActiveSessionsInFamily(
+      familyId,
+      transaction
+    );
+    for (const member of members) {
+      await this.revokeSession(member.id, transaction);
+    }
   }
 
   public async revokeSession(id: string, transaction?: Transaction): Promise<UserSession> {

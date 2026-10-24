@@ -127,6 +127,12 @@ const JWT_CONFIG = {
   /** Cache-Control max-age for GET /.well-known/jwks.json response (seconds). For external verifiers only. */
   jwksMaxAgeSeconds: env.JWT_JWKS_MAX_AGE_SECONDS,
 
+  /**
+   * Origin-side TTL for the JWKS HTTP payload per issuer. Does not change
+   * Cache-Control or the in-process verification kid cache.
+   */
+  jwksHttpCacheTtlSeconds: env.JWT_JWKS_HTTP_CACHE_TTL_SECONDS,
+
   /** TTL in seconds for in-app key caches: system signing key and verification keys by kid (GrantService). Invalidated on rotation for signing key; verification keys use TTL only. */
   systemSigningKeyCacheTtlSeconds: env.JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS,
 } as const;
@@ -500,6 +506,18 @@ const APOLLO_CONFIG = {
 
   /** Include stack traces in errors (default: true in development) */
   includeStacktrace: env.APOLLO_INCLUDE_STACKTRACE ?? APP_CONFIG.isDevelopment,
+
+  /**
+   * Maximum GraphQL selection-set depth, including fragments. Sized for the
+   * largest dashboard query (list + nested tags/roles/permissions).
+   */
+  maxDepth: env.GRAPHQL_MAX_DEPTH,
+
+  /**
+   * Maximum GraphQL query complexity. Each field costs 1 × ancestor `limit`
+   * multipliers (those multipliers themselves cap at `PAGINATION_MAX_PAGE_SIZE`).
+   */
+  maxComplexity: env.GRAPHQL_MAX_COMPLEXITY,
 } as const;
 
 // ============================================================================
@@ -1078,6 +1096,12 @@ const SYSTEM_CONSTANTS = {
 
   /** Maximum page size for pagination */
   maxPageSize: env.PAGINATION_MAX_PAGE_SIZE,
+
+  /**
+   * Concurrent IAM cascade revokes and outbox INSERT row count per statement.
+   * Deletes still emit one event per subject.
+   */
+  iamCascadeChunkSize: env.IAM_CASCADE_CHUNK_SIZE,
 } as const;
 
 // ============================================================================

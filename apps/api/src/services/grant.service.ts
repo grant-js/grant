@@ -10,6 +10,7 @@ import { Permission, Scope, TokenType } from '@grantjs/schema';
 
 import { config } from '@/config';
 import {
+  JWKS_HTTP_CACHE_PREFIX,
   SYSTEM_SIGNING_KEY_CACHE_KEY,
   VERIFICATION_KEY_CACHE_PREFIX,
 } from '@/constants/cache.constants';
@@ -74,11 +75,24 @@ export class GrantService implements IGrantService {
   ): Promise<Array<{ kid: string; publicKeyPem: string }>> {
     const effectiveTenant = scope?.tenant ?? SYSTEM_SCOPE.tenant;
     const effectiveId = scope?.id ?? SYSTEM_SCOPE.id;
-    return this.signingKeyService.getPublicKeysForJwksByScope(
+    const cacheKey = `${JWKS_HTTP_CACHE_PREFIX}${effectiveTenant}:${effectiveId}`;
+    const ttlSeconds = config.jwt.jwksHttpCacheTtlSeconds;
+    if (ttlSeconds > 0) {
+      const cached =
+        await this.cache.signingKeys.get<Array<{ kid: string; publicKeyPem: string }>>(cacheKey);
+      if (cached != null) {
+        return cached;
+      }
+    }
+    const keys = await this.signingKeyService.getPublicKeysForJwksByScope(
       effectiveTenant,
       effectiveId,
       retentionCutoff
     );
+    if (ttlSeconds > 0) {
+      await this.cache.signingKeys.set(cacheKey, keys, ttlSeconds);
+    }
+    return keys;
   }
 
   async invalidateSessionSigningKeyCache(): Promise<void> {

@@ -112,7 +112,8 @@ function createHandler() {
 
 describe('UserHandler list hydration', () => {
   it('hydrates scoped tags and counts with grouped calls for the page', async () => {
-    const { handler, scopeServices, userRoles, userTags, usersService } = createHandler();
+    const { handler, projectUsers, scopeServices, userRoles, userTags, usersService } =
+      createHandler();
 
     const result = await handler.getUsers({
       scope,
@@ -133,10 +134,18 @@ describe('UserHandler list hydration', () => {
         requestedFields: ['id', 'name'],
       })
     );
+    expect(projectUsers.getProjectUsers).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      userIds: ['user-1', 'user-2'],
+    });
     expect(userTags.getUserTagsByUserIds).toHaveBeenCalledTimes(1);
     expect(userTags.getUserTagsByUserIds).toHaveBeenCalledWith(['user-1', 'user-2']);
     expect(scopeServices.tags.getTags).toHaveBeenCalledTimes(1);
-    expect(scopeServices.tags.getTags).toHaveBeenCalledWith({ ids: ['tag-1'], limit: -1 });
+    expect(scopeServices.tags.getTags).toHaveBeenCalledWith({
+      ids: ['tag-1'],
+      limit: -1,
+      unbounded: true,
+    });
     expect(userRoles.getUserRolesByUserIds).toHaveBeenCalledTimes(1);
     expect(scopeServices.projectUserApiKeys.countProjectUserApiKeysByUserIds).toHaveBeenCalledWith({
       projectId: 'project-1',
@@ -161,5 +170,24 @@ describe('UserHandler list hydration', () => {
         projectUserApiKeyCount: 0,
       }),
     ]);
+  });
+
+  it('forwards unbounded so an internal complete-set list is not page-clamped', async () => {
+    const { handler, usersService } = createHandler();
+
+    await handler.getUsers({
+      scope,
+      limit: -1,
+      unbounded: true,
+      requestedFields: ['id', 'name'],
+    } as never);
+
+    expect(usersService.getUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ids: ['user-1', 'user-2'],
+        limit: -1,
+        unbounded: true,
+      })
+    );
   });
 });

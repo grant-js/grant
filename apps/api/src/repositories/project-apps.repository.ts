@@ -19,8 +19,6 @@ import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
   BaseCreateArgs,
-  BaseDeleteArgs,
-  BaseUpdateArgs,
   EntityRepository,
   FilterCondition,
   RelationsConfig,
@@ -89,6 +87,7 @@ export class ProjectAppRepository
         limit: params.limit ?? undefined,
         requestedFields: params.requestedFields ?? undefined,
         filters: projectIdFilter,
+        unbounded: (params as { unbounded?: boolean }).unbounded === true,
       },
       transaction
     );
@@ -188,8 +187,23 @@ export class ProjectAppRepository
     if (params.showHelpPanel !== undefined) input.showHelpPanel = params.showHelpPanel ?? null;
     if (params.themeMode !== undefined) input.themeMode = params.themeMode ?? null;
 
-    const baseParams: BaseUpdateArgs = { id: params.id, input };
-    const updated = await this.update(baseParams, transaction);
+    const dbInstance = transaction ?? this.db;
+    const updated = this.first(
+      await dbInstance
+        .update(this.table)
+        .set({
+          ...input,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(this.table.id, params.id),
+            eq(this.table.projectId, params.projectId),
+            isNull(this.table.deletedAt)
+          )
+        )
+        .returning()
+    );
     if (!updated) {
       throw new NotFoundError('ProjectApp');
     }
@@ -212,8 +226,23 @@ export class ProjectAppRepository
     params: Omit<MutationDeleteProjectAppArgs, 'scope'> & { projectId: string },
     transaction?: Transaction
   ): Promise<ProjectApp> {
-    const baseParams: BaseDeleteArgs = { id: params.id };
-    const deleted = await this.softDelete(baseParams, transaction);
+    const dbInstance = transaction ?? this.db;
+    const deleted = this.first(
+      await dbInstance
+        .update(this.table)
+        .set({
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(this.table.id, params.id),
+            eq(this.table.projectId, params.projectId),
+            isNull(this.table.deletedAt)
+          )
+        )
+        .returning()
+    );
     if (!deleted) {
       throw new NotFoundError('ProjectApp');
     }

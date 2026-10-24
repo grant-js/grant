@@ -1461,6 +1461,99 @@ describe('ProjectOAuthHandler', () => {
       ).rejects.toThrow('invalid_grant');
     });
 
+    it('intersects stored grant scopes with the current app allowlist on refresh', async () => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue({
+        ...validApp,
+        scopes: ['document:read'],
+      });
+      mockProjectOAuthGrants.rotateByRefreshToken.mockResolvedValue({
+        grant: {
+          id: 'grant-id',
+          projectAppId: validApp.id,
+          userId: 'user-id',
+          scopeTenant: Tenant.OrganizationProject,
+          scopeId: 'org-id:project-id',
+          scopes: ['document:read', 'document:write'],
+        },
+        refreshToken: 'rotated-refresh-token',
+      });
+      mockGrant.getGrantedScopeSlugs.mockResolvedValue(['document:read']);
+      const handler = createHandler();
+      const result = await handler.handleProjectToken({
+        grantType: 'refresh_token',
+        clientId: validApp.clientId,
+        refreshToken: 'current-refresh',
+      });
+      expect(result.accessToken).toBe('jwt-project-app');
+      expect(result.scope).toBe('document:read');
+      expect(mockGrant.getGrantedScopeSlugs).toHaveBeenCalledWith('user-id', expect.anything(), [
+        'document:read',
+      ]);
+      expect(mockGrant.signProjectAppToken).toHaveBeenCalledWith(
+        expect.objectContaining({ scopes: ['document:read'] }),
+        expect.anything()
+      );
+      expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
+    });
+
+    it('does not keep stored grant scopes when the app allowlist is cleared', async () => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue({
+        ...validApp,
+        scopes: [],
+      });
+      mockProjectOAuthGrants.rotateByRefreshToken.mockResolvedValue({
+        grant: {
+          id: 'grant-id',
+          projectAppId: validApp.id,
+          userId: 'user-id',
+          scopeTenant: Tenant.OrganizationProject,
+          scopeId: 'org-id:project-id',
+          scopes: ['document:read'],
+        },
+        refreshToken: 'rotated-refresh-token',
+      });
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'refresh_token',
+          clientId: validApp.clientId,
+          refreshToken: 'current-refresh',
+        })
+      ).rejects.toThrow('invalid_scope');
+      expect(mockGrant.signProjectAppToken).not.toHaveBeenCalled();
+      expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
+      expect(mockProjectOAuthGrants.revokeGrant).toHaveBeenCalledWith('grant-id');
+    });
+
+    it('refuses refresh when grant scopes and the current allowlist do not overlap', async () => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue({
+        ...validApp,
+        scopes: ['document:read'],
+      });
+      mockProjectOAuthGrants.rotateByRefreshToken.mockResolvedValue({
+        grant: {
+          id: 'grant-id',
+          projectAppId: validApp.id,
+          userId: 'user-id',
+          scopeTenant: Tenant.OrganizationProject,
+          scopeId: 'org-id:project-id',
+          scopes: ['document:write'],
+        },
+        refreshToken: 'rotated-refresh-token',
+      });
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'refresh_token',
+          clientId: validApp.clientId,
+          refreshToken: 'current-refresh',
+        })
+      ).rejects.toThrow('invalid_scope');
+      expect(mockGrant.getGrantedScopeSlugs).not.toHaveBeenCalled();
+      expect(mockGrant.signProjectAppToken).not.toHaveBeenCalled();
+      expect(mockProjectOAuthGrants.revokeGrant).toHaveBeenCalledWith('grant-id');
+    });
+
     it('requires client_secret for confidential apps', async () => {
       mockProjectApps.getClientSecretHash.mockResolvedValue(
         hashSecret('confidential-secret-value')
@@ -1485,6 +1578,31 @@ describe('ProjectOAuthHandler', () => {
           clientId: validApp.clientId,
         })
       ).rejects.toThrow('unsupported_grant_type');
+    });
+
+    it('refuses to mint projectApp when the consent intersection is empty', async () => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue({
+        ...validApp,
+        scopes: ['document:read'],
+      });
+      mockCacheOauth.get.mockResolvedValue({
+        ...codePayload,
+        requestedScopeSlugs: ['document:read'],
+      });
+      mockGrant.getGrantedScopeSlugs.mockResolvedValue([]);
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'authorization_code',
+          clientId: validApp.clientId,
+          redirectUri: 'https://example.com/callback',
+          code: 'auth-code',
+          codeVerifier: RFC_PKCE.verifier,
+        })
+      ).rejects.toThrow('invalid_scope');
+      expect(mockGrant.getGrantedScopeSlugs).toHaveBeenCalled();
+      expect(mockGrant.signProjectAppToken).not.toHaveBeenCalled();
+      expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
     });
   });
 });

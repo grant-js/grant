@@ -1,6 +1,7 @@
 import type { Tag } from '@grantjs/schema';
 
 import type { GraphqlContext } from '@/graphql/types';
+import { unboundedList } from '@/lib/pagination.lib';
 
 type TagPivot = { tagId: string; isPrimary: boolean };
 
@@ -29,11 +30,13 @@ export async function resolvePrimaryTagFromPivots(
   if (!resolvedTag) {
     const primaryPivots = pivots.filter((p) => p.isPrimary);
     const scopedCandidates = primaryPivots.length > 0 ? primaryPivots : [primaryPivot];
-    const { tags: scopedTags } = await context.handlers.tags.getTags({
-      scope,
-      ids: scopedCandidates.map((p) => p.tagId),
-      limit: -1,
-    });
+    const { tags: scopedTags } = await context.handlers.tags.getTags(
+      unboundedList({
+        scope,
+        ids: scopedCandidates.map((p) => p.tagId),
+        limit: -1,
+      })
+    );
     const scopedTagById = new Map(scopedTags.map((candidate) => [candidate.id, candidate]));
     resolvedTag = scopedCandidates
       .map((p) => scopedTagById.get(p.tagId))

@@ -11,6 +11,7 @@ import type {
 import { type DomainEvent, type Scope, Tenant } from '@grantjs/schema';
 
 import { translateStatic } from '@/i18n';
+import { unboundedList } from '@/lib/pagination.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 /** Resolved display labels used when composing notification title/body. */
@@ -70,7 +71,7 @@ export class NotificationDisplayContextResolver {
     const names = new Map<string, string>();
     if (ids.length === 0) return names;
 
-    const { users } = await this.users.getUsers({ ids, limit: ids.length }, tx);
+    const { users } = await this.users.getUsers(unboundedList({ ids, limit: -1 }), tx);
     for (const user of users) {
       const name = user.name?.trim();
       if (name) names.set(user.id, name);

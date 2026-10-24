@@ -26,10 +26,9 @@ export interface CredentialLockoutRepositories {
  * budget; it counts whether or not that user has a credential, so a locked and an unlocked
  * user look alike.
  *
- * Built in slice 1 and enabled by nothing: no sign-in path calls it before slice 4
- * (project scope) and slice 7 (platform scope). A caller must record a failure on the
- * connection that survives the failing request, not inside a transaction the failure
- * rolls back.
+ * Built in ADR 0011 slice 1; project-app password and platform (console) email login
+ * both call it. A caller must record a failure on the connection that survives the
+ * failing request, not inside a transaction the failure rolls back.
  */
 export class CredentialLockoutService implements ICredentialLockoutService {
   constructor(

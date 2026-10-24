@@ -292,6 +292,7 @@ describe('getScopedProjectAppIds', () => {
       projectId: 'proj-1',
       page: 1,
       limit: -1,
+      unbounded: true,
     });
   });
 });

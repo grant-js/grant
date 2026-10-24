@@ -66,7 +66,15 @@ All JWTs include a **`type`** claim (`TokenType`) that identifies how the token 
 - **scopes** — Only when type is projectApp. Array of granted scope slugs (resource:action) — intersection of the app's configured scopes and the user's project permissions. Authorization is capped to this list.
 - **isVerified** — Only for session tokens (email verification status). Omitted for API key and project-app tokens (treated as verified).
 - **aud** / **iss** — For sessions, both are the platform API URL per RFC 7519. For project-app tokens, aud is the ProjectApp client_id and iss is the project JWKS issuer.
-- **jti** — Identifies the session, API key, or project-app token, enabling targeted revocation.
+- **jti** — Identifies the session, API key, or project-app grant. Verification does not denylist `jti`; see [Residual access JWT window](#residual-access-jwt-window).
+
+### Residual access JWT window
+
+Revoking an API key or a project-app grant rejects **new** token exchange and grant refresh. Access JWTs already issued stay valid until `exp` (default 15 minutes, `JWT_ACCESS_TOKEN_EXPIRATION_MINUTES`).
+
+`Grant.getAuth` verifies signature, `type`, and claims. It does not look up the key or grant, and it does not denylist `jti`. That is the documented exchange-time model. There is no `jti` revocation list or introspection endpoint; add one only if a later story needs a shorter residual window.
+
+The same `exp` bound applies after a project password reset that revokes every grant in that project: those access tokens live until they expire.
 
 ## Session Management
 
@@ -107,12 +115,12 @@ sequenceDiagram
 
 ### Session Operations
 
-| Operation      | Behavior                                                                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Create**     | On login or registration. If a session already matches the device, it is reused and `lastUsedAt` is updated.                                  |
-| **Refresh**    | Validates the refresh token, issues new access + refresh tokens, maintains the same session ID (`jti`).                                       |
-| **Revoke**     | Individual revocation. Revoking the current session logs the user out immediately.                                                            |
-| **Expiration** | Access tokens are short-lived (default 15 min); refresh tokens are long-lived (default 30 days). Expired sessions are filtered automatically. |
+| Operation      | Behavior                                                                                                                                                              |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Create**     | On login or registration. If a session already matches the device, it is reused and `lastUsedAt` is updated.                                                          |
+| **Refresh**    | Validates the refresh token, issues new access + refresh tokens, maintains the same session ID (`jti`). Reuse of a rotated refresh secret revokes the session family. |
+| **Revoke**     | Individual revocation. Revoking the current session logs the user out immediately.                                                                                    |
+| **Expiration** | Access tokens are short-lived (default 15 min); refresh tokens are long-lived (default 30 days). Expired sessions are filtered automatically.                         |
 
 ## JWKS and Signing Keys
 
@@ -146,7 +154,7 @@ Keys are stored in the `signing_keys` table. Each scope can have multiple keys (
 
 The API verifies Bearer tokens **in-process** — it does not call its own JWKS HTTP endpoint. The verification path is: context middleware → `Grant.authenticate` → `TokenManager.verifyToken` → `GrantService.getVerificationKey(kid)` → database (with cache). Public keys are cached by `kid` with a configurable TTL (default 300s). Old `kid` values remain valid for verification until their tokens expire; new `kid` values are cached on first use.
 
-The JWKS HTTP endpoints exist for **external verifiers** (your backend services, API gateways, etc.). Responses include a `Cache-Control: public, max-age=…` header so consumers can cache them.
+The JWKS HTTP endpoints exist for **external verifiers** (your backend services, API gateways, etc.). Responses include a `Cache-Control: public, max-age=…` header so consumers can cache them. The origin also keeps a short-TTL cache of the `getPublicKeysForJwks` payload **per issuer** (`JWT_JWKS_HTTP_CACHE_TTL_SECONDS`, default 30s). That cache is independent of the in-process `kid` verification cache and does not change `Cache-Control`.
 
 ### Project OAuth
 
@@ -192,7 +200,7 @@ sequenceDiagram
 
 Public apps (no `clientSecretHash`) authenticate with PKCE only. Confidential apps must send `client_secret`. The endpoint rejects `client_credentials`, does not issue `id_token`, and does not implement DPoP.
 
-Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails. Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
+Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails and revokes the grant family (the live grant and any siblings that share `family_id`). Revoking a grant stops refresh; access JWTs already issued stay valid until `exp` (see [Residual access JWT window](#residual-access-jwt-window)). Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
 
 JSON envelope: `{ success, data: { accessToken, tokenType, expiresIn, refreshToken, scope? } }`.
 
@@ -237,7 +245,7 @@ Project-app tokens use the same base structure as [JWT Token Structure](#jwt-tok
 - **Password reset ("Forgot password?")** ([ADR 0011](https://github.com/grant-js/grant/blob/main/decisions/0011-password-as-a-scoped-credential.md) § 6): the password view links to `/auth/project/forgot-password`, which posts the address to `POST /api/auth/project/password/forgot`. The link is sent only to an **existing member** of the app's project that has an Email method, and the response is the same `200` for an unknown address, a non-member, an address over its limit and a member who was sent a link (a failure to send is logged, never returned). Completing it (`POST /api/auth/project/password/reset`, opened from the emailed link) runs in **one transaction**: the token is consumed, the project credential is written (`source: reset`, so a later import never overwrites it), the `(project, user)` lockout is cleared, the global Email method is marked `isVerified` (the link proved the mailbox; the platform credential is untouched), and **every project-app grant the user holds in that project is revoked** (grants in other projects and platform sessions are untouched; access tokens already issued live until they expire). No sign-in is performed, so MFA at the ceremony still applies afterwards.
   - **Token:** 256 bits of randomness, stored only as a **SHA-256 digest** scoped to `(project, user)` and looked up by digest (a copy of the table cannot be replayed), compared in constant time, valid for `PROJECT_PASSWORD_RESET_TOKEN_TTL_SECONDS` (default 30 minutes) and **single-use** (the row is locked while it is claimed, so simultaneous completions cannot both succeed). A newer link replaces the previous one. The token travels in the **URL fragment** of the emailed link, which no server, proxy log or `Referer` sees, and opening the link consumes nothing: only the form's submit does, so a mail scanner that follows the link cannot burn it. A password the policy rejects does not use the token up.
   - **Limits:** the shared per-IP limiter covers both routes, and each `(project, member)` may be sent `PROJECT_PASSWORD_RESET_MAX_REQUESTS` links (default 5) per `PROJECT_PASSWORD_RESET_REQUEST_WINDOW_SECONDS` (default one hour), counted by one atomic upsert on the token row; a request over the limit is answered like any other and sends nothing. As with the credential lockout, someone who knows a member's address can spend that budget.
-- **Project-app token type:** When the app has scopes configured (resource:action strings), the issued token has type **projectApp** and a **scopes** claim (intersection of app scopes and user's project permissions). Authorization is capped to those scopes; session and API key tokens are not capped.
+- **Project-app token type:** When the app has scopes configured (resource:action strings), the issued token has type **projectApp** and a **scopes** claim (intersection of app scopes and user's project permissions). An empty intersection is not minted. Refresh always intersects the stored grant with the **current** `app.scopes`; an empty app allowlist is no OAuth scopes (not “keep the stored grant”) and fails closed. `Grant.isAuthorized` denies `projectApp` when `scopes` is missing or empty. Session and API key tokens are not capped.
 - **Extensibility:** Providers are implemented via **IProjectOAuthProvider**. GitHub and Google are built in; adding another provider requires implementing the interface, registering in the handler, and adding callback handling.
 
 **Related:** ProjectApp is created via GraphQL **createProjectApp** (scope: accountProject or organizationProject). Multi-provider flow (GitHub, email magic link), optional enabled providers per app, and project-app token type with scope capping are described above.
@@ -339,7 +347,7 @@ Passwords are hashed with bcrypt before storage. The cost factor is configurable
 
 **Account lockout:**
 
-`AUTH_MAX_FAILED_LOGIN_ATTEMPTS` (default: 5) and `AUTH_LOCKOUT_DURATION_MINUTES` (default: 15) are enforced for the **project-app `password` provider**, per `(project, user)` (see [Project OAuth](#project-oauth)). Platform (console) login does not enforce them yet: rate limiting on the auth endpoints (see [Rate Limiting](#rate-limiting)) is its primary brute-force mitigation.
+`AUTH_MAX_FAILED_LOGIN_ATTEMPTS` (default: 5) and `AUTH_LOCKOUT_DURATION_MINUTES` (default: 15) are enforced for the **project-app `password` provider**, per `(project, user)` (see [Project OAuth](#project-oauth)), and for **platform (console) email/password login**, per user. Both record the attempt before verifying the password, on a connection that survives the failing request, and key the counter by the resolved user id (never the typed address). Rate limiting on the auth endpoints (see [Rate Limiting](#rate-limiting)) remains an additional IP-level mitigation.
 
 ## Email Verification
 
@@ -473,8 +481,8 @@ Values below match **`apps/api`** defaults in **`.env.example`**. See [Authentic
 | **`AUTH_MFA_TOTP_ISSUER`**             | `Grant`   | Issuer label in `otpauth://` URIs.                                                                                              |
 | **`AUTH_MFA_TOTP_PERIOD_SECONDS`**     | `30`      | TOTP time step.                                                                                                                 |
 | **`AUTH_MFA_TOTP_WINDOW`**             | `1`       | Allowed drift windows (±) for clock skew.                                                                                       |
-| **`AUTH_MFA_VERIFY_MAX_ATTEMPTS`**     | `5`       | Max verification attempts per rolling window (when wired on the verify path).                                                   |
-| **`AUTH_MFA_VERIFY_WINDOW_MINUTES`**   | `15`      | Rolling window for verify attempts.                                                                                             |
+| **`AUTH_MFA_VERIFY_MAX_ATTEMPTS`**     | `5`       | Max TOTP/recovery verify attempts per user per rolling window (platform and project).                                           |
+| **`AUTH_MFA_VERIFY_WINDOW_MINUTES`**   | `15`      | Rolling window for those verify attempts.                                                                                       |
 | **`AUTH_MFA_SESSION_TTL_MINUTES`**     | `1440`    | How long MFA verification stays valid for sensitive actions (minutes; see Config app / `env.config`).                           |
 
 ::: warning Secret encryption key
@@ -482,12 +490,14 @@ Without **`AUTH_MFA_SECRET_ENCRYPTION_KEY`**, MFA enrollment cannot be persisted
 :::
 
 ::: details GraphQL `operationName` and min-AAL
-Name-based min-AAL enforcement uses the GraphQL **`operationName`**. Clients that omit it may skip that gate in the current implementation — **send `operationName`** in production. Tightening server-side resolution from the document alone is a possible hardening follow-up.
+Name-based min-AAL enforcement uses the GraphQL **`operationName`** (request body or the document AST). When **`AUTH_MIN_AAL_AT_LOGIN=aal2`** and the user has MFA enrolled, a missing or empty name **fails closed** (`MFA_REQUIRED`). Allowlisted names (`Me`, `VerifyMfa`, `RefreshSession`, recovery, and the other AAL1-safe operations) still pass. REST `/api/*` min-AAL is unchanged.
 :::
 
 ### Rate limiting
 
-MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
+MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). GraphQL `login`, `register`, and `refreshSession` (by operation name, and unnamed documents that are those operations) use the same bucket. Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
+
+GraphQL documents are also bounded per request: Apollo `validationRules` reject selection-set depth above **`GRAPHQL_MAX_DEPTH`** (default 15) and complexity above **`GRAPHQL_MAX_COMPLEXITY`** (default 10000). Every list `limit` is clamped to **`PAGINATION_MAX_PAGE_SIZE`** (default 100) in `EntityRepository.query`; public `-1` is capped, not a full-table scan. Organization member lists page that union in SQL and reject public `-1` at the REST and service schemas. Project-scoped user lists load `project_users` only for the page’s user ids, not the whole tenant map. IAM cascade deletes (group, role, permission) still emit one revoke per subject; teardown and outbox inserts run in chunks of **`IAM_CASCADE_CHUNK_SIZE`** (default 50).
 
 ### Automated testing and recovery
 
@@ -508,8 +518,10 @@ Three layers are available:
 
 The `/health` endpoint is always excluded. Storage uses the same cache backend as the rest of the app (in-memory or Redis).
 
-::: warning
-Deploy the API behind a trusted reverse proxy (Nginx, Caddy, cloud LB) so `X-Forwarded-For` reflects real client IPs. Without a trusted proxy, rate limits are keyed by the connecting host and may be ineffective. See [Self-hosting](/deployment/self-hosting) for reverse-proxy setup.
+::: warning Trusted client IP
+In production, set `SECURITY_TRUSTED_CLIENT_IP_HEADER` to a header the edge **overwrites** (not appends). Rate limits and audit IPs use that header exclusively. Do not key limits on the leftmost `X-Forwarded-For` hop: proxies that append leave the first entry attacker-controlled.
+
+When the trusted header is unset, the API falls back to the first `X-Forwarded-For` entry (then `X-Real-IP`, then the connecting host). That path is only safe behind a proxy that builds the chain itself. AWS sets `cloudfront-viewer-address`; see [AWS serverless — Client IP and rate limiting](/deployment/aws-serverless#client-ip-and-rate-limiting). Reverse-proxy setup: [Self-hosting](/deployment/self-hosting).
 :::
 
 **Response when limit exceeded:** `429 Too Many Requests` with `Retry-After` header:
@@ -526,16 +538,17 @@ Deploy the API behind a trusted reverse proxy (Nginx, Caddy, cloud LB) so `X-For
 
 ### Configuration
 
-| Variable                                        | Default       | Description                       |
-| ----------------------------------------------- | ------------- | --------------------------------- |
-| `SECURITY_ENABLE_RATE_LIMIT`                    | `true` (prod) | Enable global rate limiting       |
-| `SECURITY_RATE_LIMIT_MAX`                       | `100`         | Global requests per window        |
-| `SECURITY_RATE_LIMIT_WINDOW_MINUTES`            | `15`          | Global window                     |
-| `SECURITY_RATE_LIMIT_AUTH_MAX`                  | `20`          | Auth endpoint requests per window |
-| `SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`       | `15`          | Auth endpoint window              |
-| `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED`        | `false`       | Enable per-tenant limiting        |
-| `SECURITY_RATE_LIMIT_PER_TENANT_MAX`            | `200`         | Per-tenant requests per window    |
-| `SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES` | `15`          | Per-tenant window                 |
+| Variable                                        | Default       | Description                                                                                                              |
+| ----------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `SECURITY_TRUSTED_CLIENT_IP_HEADER`             | _(empty)_     | Header the edge overwrites with the real client IP. When set, used exclusively (no XFF fallback). Required in production |
+| `SECURITY_ENABLE_RATE_LIMIT`                    | `true` (prod) | Enable global rate limiting                                                                                              |
+| `SECURITY_RATE_LIMIT_MAX`                       | `100`         | Global requests per window                                                                                               |
+| `SECURITY_RATE_LIMIT_WINDOW_MINUTES`            | `15`          | Global window                                                                                                            |
+| `SECURITY_RATE_LIMIT_AUTH_MAX`                  | `20`          | Auth endpoint requests per window                                                                                        |
+| `SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`       | `15`          | Auth endpoint window                                                                                                     |
+| `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED`        | `false`       | Enable per-tenant limiting                                                                                               |
+| `SECURITY_RATE_LIMIT_PER_TENANT_MAX`            | `200`         | Per-tenant requests per window                                                                                           |
+| `SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES` | `15`          | Per-tenant window                                                                                                        |
 
 ## Row-Level Security (RLS)
 
@@ -567,7 +580,7 @@ Platform-scope credential operations (login verification, register, change, rese
 
 ### Policy coverage
 
-RLS policies apply to pivot tables only (organization_users, project_resources, account_projects, etc.). Core/shared tables (users, roles, groups, permissions, resources, tags) do not have RLS — they are accessible only through tenant-scoped pivots, so filtering at the pivot level protects the entire data graph.
+RLS policies apply to pivot tables (organization_users, project_resources, account_projects, etc.) and to project-owned tables that carry a `project_id` column (`project_apps`, `project_oauth_connections`, `project_sync_jobs`, `project_password_resets`, and the project credential siblings). Core/shared tables (users, roles, groups, permissions, resources, tags) do not have RLS — they are accessible only through tenant-scoped pivots or those project-owned rows, so filtering at that layer protects the entire data graph.
 
 ## Security Best Practices
 

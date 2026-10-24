@@ -99,6 +99,13 @@ function createTestApp(
     }
   }
 
+  app.post('/graphql', (_req, res) => {
+    res.json({ ok: true });
+  });
+  app.post('/graphql/foo', (_req, res) => {
+    res.json({ ok: true });
+  });
+
   return app;
 }
 
@@ -166,6 +173,56 @@ describe('rate limit integration', () => {
 
       const res = await request(app).post('/api/auth/login').send({});
       expect(res.status).toBe(429);
+    });
+
+    it('applies the auth bucket to GraphQL login and unnamed login documents', async () => {
+      await request(app)
+        .post('/graphql')
+        .send({
+          operationName: 'login',
+          query: 'mutation login { login { accessToken } }',
+        })
+        .expect(200);
+      await request(app)
+        .post('/graphql')
+        .send({ query: 'mutation { login { accessToken } }' })
+        .expect(200);
+
+      const res = await request(app)
+        .post('/graphql')
+        .send({ query: 'mutation { register { accessToken } }' });
+      expect(res.status).toBe(429);
+      expect(res.body.error?.code).toBe('rate_limit_exceeded');
+    });
+
+    it('applies the auth bucket to POST /graphql/foo login', async () => {
+      await request(app)
+        .post('/graphql/foo')
+        .send({
+          operationName: 'login',
+          query: 'mutation login { login { accessToken } }',
+        })
+        .expect(200);
+      await request(app)
+        .post('/graphql/foo')
+        .send({ query: 'mutation { login { accessToken } }' })
+        .expect(200);
+
+      const res = await request(app)
+        .post('/graphql/foo')
+        .send({ query: 'mutation { login { accessToken } }' });
+      expect(res.status).toBe(429);
+      expect(res.body.error?.code).toBe('rate_limit_exceeded');
+    });
+
+    it('does not apply the auth bucket to an unrelated GraphQL operation', async () => {
+      mockSecurity.rateLimitMax = 100;
+      for (let i = 0; i < 4; i++) {
+        const res = await request(app)
+          .post('/graphql')
+          .send({ operationName: 'Me', query: 'query Me { me { id } }' });
+        expect(res.status).toBe(200);
+      }
     });
 
     it('counts MFA auth routes toward the same auth-sensitive rate limit bucket', async () => {

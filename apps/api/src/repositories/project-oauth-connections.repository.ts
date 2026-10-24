@@ -76,6 +76,7 @@ export class ProjectOAuthConnectionRepository
         filters: this.projectProviderFilters(projectId),
         sort: { field: 'provider', order: SortOrder.Asc },
         limit: -1,
+        unbounded: true,
       },
       transaction
     );

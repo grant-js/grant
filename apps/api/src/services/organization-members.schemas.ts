@@ -15,6 +15,15 @@ const organizationMemberSortInputSchema = z.object({
   order: sortOrderSchema,
 });
 
+const publicPageLimitSchema = z
+  .union([z.string(), z.number(), z.null()])
+  .optional()
+  .transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return typeof val === 'string' ? parseInt(val, 10) : val;
+  })
+  .pipe(z.number().int().min(1).max(100, 'errors.validation.limitRange').optional());
+
 export const getOrganizationMembersParamsSchema = queryParamsSchema.extend({
   scope: scopeSchema,
   status: z
@@ -26,6 +35,7 @@ export const getOrganizationMembersParamsSchema = queryParamsSchema.extend({
     )
     .optional(),
   sort: organizationMemberSortInputSchema.nullable().optional(),
+  limit: publicPageLimitSchema,
 });
 
 export const updateOrganizationMemberInputSchema = z.object({

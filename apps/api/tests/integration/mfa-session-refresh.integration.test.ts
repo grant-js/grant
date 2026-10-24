@@ -7,8 +7,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserSessionService } from '@/services/user-sessions.service';
 
 const mockConfig = vi.hoisted(() => ({
-  app: { url: 'http://localhost:3000' },
+  app: { url: 'http://localhost:3000', isDevelopment: false },
   jwt: { accessTokenExpirationMinutes: 15, refreshTokenExpirationDays: 30 },
+  logging: { level: 'silent', prettyPrint: false },
 }));
 
 vi.mock('@/config', () => ({ config: mockConfig }));
@@ -45,9 +46,15 @@ describe('UserSessionService markMfaVerified (integration with repository)', () 
   });
 
   it('calls repository.updateUserSession with mfaVerifiedAt for the session row', async () => {
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
-      publish: vi.fn(),
-    } as never);
+    const service = new UserSessionService(
+      mockRepo as never,
+      { getUserAuthenticationMethod: vi.fn() } as never,
+      mockAudit as never,
+      mockGrant,
+      {
+        publish: vi.fn(),
+      } as never
+    );
     await service.markMfaVerified('550e8400-e29b-41d4-a716-446655440000');
 
     expect(updateUserSession).toHaveBeenCalledTimes(1);

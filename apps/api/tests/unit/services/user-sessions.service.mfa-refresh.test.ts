@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserSessionService } from '@/services/user-sessions.service';
 
 const mockConfig = vi.hoisted(() => ({
-  app: { url: 'http://localhost:3000' },
+  app: { url: 'http://localhost:3000', isDevelopment: false },
   jwt: { accessTokenExpirationMinutes: 15, refreshTokenExpirationDays: 30 },
+  logging: { level: 'silent', prettyPrint: false },
 }));
 
 vi.mock('@/config', () => ({ config: mockConfig }));
@@ -30,6 +31,22 @@ const mockRepo = {
   softDeleteUserSession: vi.fn(),
   hardDeleteUserSession: vi.fn(),
 };
+
+const mockAuthMethods = {
+  getUserAuthenticationMethod: vi.fn().mockResolvedValue({ isVerified: true }),
+};
+
+function createService(): UserSessionService {
+  return new UserSessionService(
+    mockRepo as never,
+    mockAuthMethods as never,
+    mockAudit as never,
+    mockGrant,
+    {
+      publish: vi.fn(),
+    } as never
+  );
+}
 
 function sessionFixture(
   overrides: Partial<UserSession> & { mfaVerifiedAt?: Date | null }
@@ -62,9 +79,7 @@ describe('UserSessionService refreshSessionByRefreshToken (MFA / AAL)', () => {
     mockRepo.getSessionByRefreshToken.mockResolvedValue(before);
     mockRepo.refreshUserSession.mockResolvedValue(after);
 
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
-      publish: vi.fn(),
-    } as never);
+    const service = createService();
 
     await service.refreshSessionByRefreshToken('old-rt');
 
@@ -85,9 +100,7 @@ describe('UserSessionService refreshSessionByRefreshToken (MFA / AAL)', () => {
     mockRepo.getSessionByRefreshToken.mockResolvedValue(before);
     mockRepo.refreshUserSession.mockResolvedValue(after);
 
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
-      publish: vi.fn(),
-    } as never);
+    const service = createService();
 
     await service.refreshSessionByRefreshToken('old-rt');
 

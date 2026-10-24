@@ -131,6 +131,7 @@ describe('scoped entity tags field resolvers', () => {
       scope: orgProjectScope,
       ids: [tagT1.id, tagT2.id],
       limit: -1,
+      unbounded: true,
     });
   });
 
@@ -193,6 +194,7 @@ describe('scoped entity tags field resolvers', () => {
       expect.objectContaining({
         scope: orgProjectScope,
         limit: -1,
+        unbounded: true,
         ids: manyPivots.map((p) => p.tagId),
       })
     );

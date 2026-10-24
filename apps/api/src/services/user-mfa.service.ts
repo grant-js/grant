@@ -1,5 +1,7 @@
+import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import {
   IAuditLogger,
+  ICacheAdapter,
   IEventPublisher,
   ISecretResolver,
   IUserMfaFactorRepository,
@@ -10,7 +12,9 @@ import {
 } from '@grantjs/core';
 
 import { config } from '@/config';
+import { MFA_VERIFY_ATTEMPT_KEY_PREFIX } from '@/constants/cache.constants';
 import { AuthenticationError, ConfigurationError } from '@/lib/errors';
+import { createLogger } from '@/lib/logger';
 import {
   buildOtpauthUrl,
   decryptMfaSecret,
@@ -21,14 +25,53 @@ import {
 import { generateRandomBytes, hashSecret, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
+type MfaVerifyAttemptWindow = {
+  attempts: number[];
+};
+
+let dummyRecoveryHash: string | null = null;
+
+function dummyRecoveryCompare(code: string): void {
+  dummyRecoveryHash ??= hashSecret(generateRandomBytes(8).toString('hex'));
+  verifySecret(code, dummyRecoveryHash);
+}
+
 export class UserMfaService implements IUserMfaService {
+  private readonly logger = createLogger('UserMfaService');
+
   constructor(
     private readonly userMfaFactorRepository: IUserMfaFactorRepository,
     private readonly userMfaRecoveryCodeRepository: IUserMfaRecoveryCodeRepository,
     private readonly audit: IAuditLogger,
     private readonly events: IEventPublisher,
-    private readonly secrets: ISecretResolver
+    private readonly secrets: ISecretResolver,
+    private readonly cache: ICacheAdapter
   ) {}
+
+  private verifyAttemptKey(userId: string) {
+    return `${MFA_VERIFY_ATTEMPT_KEY_PREFIX}${userId}`;
+  }
+
+  /**
+   * Record this verify before the code is checked. The count includes this attempt,
+   * so the Nth (count == max) is the last one allowed. Cache, not the request
+   * transaction, so a thrown failure still spends the try.
+   */
+  private async recordVerifyAttempt(userId: string): Promise<boolean> {
+    const max = config.auth.mfa.verifyMaxAttempts;
+    const windowMs = config.auth.mfa.verifyWindowMinutes * MILLISECONDS_PER_MINUTE;
+    const now = Date.now();
+    const key = this.verifyAttemptKey(userId);
+    const stored = await this.cache.get<MfaVerifyAttemptWindow>(key);
+    const recent = (stored?.attempts ?? []).filter((at) => now - at < windowMs);
+    recent.push(now);
+    await this.cache.set(key, { attempts: recent }, Math.max(1, Math.ceil(windowMs / 1000)));
+    return recent.length <= max;
+  }
+
+  private async clearVerifyAttempts(userId: string): Promise<void> {
+    await this.cache.delete(this.verifyAttemptKey(userId));
+  }
 
   /**
    * Resolved per use rather than read once at boot, so a rotated key is picked up
@@ -96,6 +139,10 @@ export class UserMfaService implements IUserMfaService {
     if (!factor) {
       throw new AuthenticationError('MFA factor not set up');
     }
+    if (!(await this.recordVerifyAttempt(userId))) {
+      this.logger.warn({ userId }, 'MFA TOTP verify refused: attempt budget exhausted');
+      return { factorId: factor.id, verified: false };
+    }
     const secret = decryptMfaSecret({
       encryptedSecret: factor.encryptedSecret,
       secretIv: factor.secretIv,
@@ -111,6 +158,7 @@ export class UserMfaService implements IUserMfaService {
     if (!isValid) {
       return { factorId: factor.id, verified: false };
     }
+    await this.clearVerifyAttempts(userId);
     const wasEnabled = factor.isEnabled;
     if (!wasEnabled) {
       await this.userMfaFactorRepository.enableFactor(factor.id, transaction);
@@ -215,10 +263,16 @@ export class UserMfaService implements IUserMfaService {
     recoveryCode: string,
     transaction?: Transaction
   ): Promise<boolean> {
+    if (!(await this.recordVerifyAttempt(userId))) {
+      this.logger.warn({ userId }, 'MFA recovery verify refused: attempt budget exhausted');
+      dummyRecoveryCompare(recoveryCode);
+      return false;
+    }
     const codes = await this.userMfaRecoveryCodeRepository.listCodes(userId, transaction);
     const match = codes.find((c) => verifySecret(recoveryCode, c.codeHash));
     if (!match) return false;
     await this.userMfaRecoveryCodeRepository.markCodeUsed(match.id, transaction);
+    await this.clearVerifyAttempts(userId);
     return true;
   }
 

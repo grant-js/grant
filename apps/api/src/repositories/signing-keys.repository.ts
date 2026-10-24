@@ -63,7 +63,10 @@ export class SigningKeyRepository
   }
 
   async getActivePublicKeys(transaction?: Transaction): Promise<SigningKeyPublic[]> {
-    const result = await this.query({ filters: this.activeFilter(), limit: -1 }, transaction);
+    const result = await this.query(
+      { filters: this.activeFilter(), limit: -1, unbounded: true },
+      transaction
+    );
     return result.items.map((row) => ({
       kid: row.kid,
       publicKeyPem: row.publicKeyPem ?? '',
@@ -81,7 +84,7 @@ export class SigningKeyRepository
         { field: 'rotatedAt', operator: 'gte', value: retentionCutoff },
       ],
     };
-    const result = await this.query({ filters, limit: -1 }, transaction);
+    const result = await this.query({ filters, limit: -1, unbounded: true }, transaction);
     return result.items.map((row) => ({
       kid: row.kid,
       publicKeyPem: row.publicKeyPem ?? '',
@@ -104,7 +107,7 @@ export class SigningKeyRepository
         ],
       },
     ];
-    const result = await this.query({ filters, limit: -1 }, transaction);
+    const result = await this.query({ filters, limit: -1, unbounded: true }, transaction);
     return result.items.map((row) => ({
       kid: row.kid,
       publicKeyPem: row.publicKeyPem ?? '',

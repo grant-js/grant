@@ -20,12 +20,15 @@ import {
   Tenant,
 } from '@grantjs/schema';
 
+import { config } from '@/config';
 import {
   type PermissionListHydrationContext,
   permissionListHydrators,
 } from '@/hydrators/permissions.hydrators';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { runWithOutboxBatch } from '@/lib/events';
+import { runInChunks } from '@/lib/iam-cascade.lib';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -90,6 +93,7 @@ export class PermissionHandler extends CacheHandler {
       sort,
       search,
       requestedFields: repositoryRequestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     return hydrateList({
@@ -267,32 +271,33 @@ export class PermissionHandler extends CacheHandler {
         }
       }
 
-      await Promise.all([
-        ...tagIds.map((tagId) =>
+      const chunkSize = config.system.iamCascadeChunkSize;
+      await runWithOutboxBatch(tx, async () => {
+        await runInChunks(tagIds, chunkSize, (tagId) =>
           this.permissionTags.removePermissionTag({ permissionId, tagId }, tx)
-        ),
-        // Remove all GroupPermission relationships
-        ...groupPermissionRelations.map((gp) =>
+        );
+        await runInChunks(groupPermissionRelations, chunkSize, (gp) =>
           this.groupPermissions.removeGroupPermission(
             { groupId: gp.groupId, permissionId: gp.permissionId },
             tx
           )
-        ),
-        ...rolePermissionRelations.map((rp) =>
+        );
+        await runInChunks(rolePermissionRelations, chunkSize, (rp) =>
           this.rolePermissions.revokeRolePermission(
             { roleId: rp.roleId, permissionId: rp.permissionId, scope },
             tx
           )
-        ),
-        ...userPermissionRelations.map((up) =>
+        );
+        await runInChunks(userPermissionRelations, chunkSize, (up) =>
           this.userPermissions.revokeUserPermission(
             { userId: up.userId, permissionId: up.permissionId, scope },
             tx
           )
-        ),
-      ]);
+        );
+      });
 
       await this.removePermissionIdFromScopeCache(scope, permissionId);
+      await this.invalidatePermissionsCacheForAllScopes();
 
       return await this.permissions.deletePermission(params, tx);
     });

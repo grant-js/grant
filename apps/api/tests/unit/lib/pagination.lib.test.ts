@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { hasNextPageByCount, takePage } from '@/lib/pagination.lib';
+import { clampPageLimit, hasNextPageByCount, takePage, unboundedList } from '@/lib/pagination.lib';
 
 /**
  * These lock in the behaviour of the four call sites this helper replaced, so a
@@ -65,5 +65,45 @@ describe('takePage', () => {
     page.rows.push(3);
 
     expect(rows).toEqual([1, 2]);
+  });
+});
+
+describe('clampPageLimit', () => {
+  const bounds = { defaultPageSize: 50, maxPageSize: 100 };
+
+  it('uses the default when limit is missing', () => {
+    expect(clampPageLimit(undefined, bounds)).toBe(50);
+    expect(clampPageLimit(null, bounds)).toBe(50);
+  });
+
+  it('caps -1 and values above max to maxPageSize', () => {
+    expect(clampPageLimit(-1, bounds)).toBe(100);
+    expect(clampPageLimit(1000, bounds)).toBe(100);
+  });
+
+  it('keeps an in-range positive limit', () => {
+    expect(clampPageLimit(25, bounds)).toBe(25);
+    expect(clampPageLimit(100, bounds)).toBe(100);
+  });
+
+  it('replaces non-positive values other than -1 with the default', () => {
+    expect(clampPageLimit(0, bounds)).toBe(50);
+    expect(clampPageLimit(-5, bounds)).toBe(50);
+  });
+
+  it('leaves -1 unlimited when unbounded is set', () => {
+    expect(clampPageLimit(-1, { ...bounds, unbounded: true })).toBeUndefined();
+    expect(clampPageLimit(undefined, { ...bounds, unbounded: true })).toBeUndefined();
+    expect(clampPageLimit(12, { ...bounds, unbounded: true })).toBe(12);
+  });
+});
+
+describe('unboundedList', () => {
+  it('sets unbounded on the same object without changing the public type', () => {
+    const args = { ids: ['a'], limit: -1 };
+    const marked = unboundedList(args);
+
+    expect(marked).toBe(args);
+    expect((marked as { unbounded?: boolean }).unbounded).toBe(true);
   });
 });

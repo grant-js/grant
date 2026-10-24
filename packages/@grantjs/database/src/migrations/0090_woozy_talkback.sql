@@ -1,0 +1,6 @@
+ALTER TABLE "project_apps" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "project_oauth_connections" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "tenant_isolation_policy" ON "project_apps" AS RESTRICTIVE FOR SELECT TO public USING (NULLIF(current_setting('app.current_project_id', true), '') IS NULL OR project_id = NULLIF(current_setting('app.current_project_id', true), '')::uuid);--> statement-breakpoint
+CREATE POLICY "tenant_rls_allow" ON "project_apps" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);--> statement-breakpoint
+CREATE POLICY "tenant_isolation_policy" ON "project_oauth_connections" AS RESTRICTIVE FOR SELECT TO public USING (NULLIF(current_setting('app.current_project_id', true), '') IS NULL OR project_id = NULLIF(current_setting('app.current_project_id', true), '')::uuid);--> statement-breakpoint
+CREATE POLICY "tenant_rls_allow" ON "project_oauth_connections" AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);

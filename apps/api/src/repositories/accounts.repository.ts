@@ -72,6 +72,7 @@ export class AccountRepository
       {
         filters: [{ field: 'ownerId', operator: 'eq', value: ownerId }],
         limit: -1,
+        unbounded: true,
         requestedFields,
       },
       transaction
