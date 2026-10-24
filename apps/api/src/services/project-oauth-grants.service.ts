@@ -88,11 +88,16 @@ export class ProjectOAuthGrantService implements IProjectOAuthGrantService {
     meta?: ProjectOAuthGrantRotationMeta,
     transaction?: Transaction
   ): Promise<ProjectOAuthGrantIssued | null> {
-    const existing = await this.grants.findActiveByTokenHash(
-      hashProjectOAuthRefreshToken(refreshToken),
-      transaction
-    );
+    const presentedHash = hashProjectOAuthRefreshToken(refreshToken);
+    const existing = await this.grants.findActiveByTokenHash(presentedHash, transaction);
     if (!existing) {
+      const reusedFamilyId = await this.grants.findFamilyIdByPreviousTokenHash(
+        presentedHash,
+        transaction
+      );
+      if (reusedFamilyId) {
+        await this.revokeGrantFamily(reusedFamilyId, transaction);
+      }
       return null;
     }
 
@@ -100,6 +105,7 @@ export class ProjectOAuthGrantService implements IProjectOAuthGrantService {
     const grant = await this.grants.rotateGrant(
       {
         id: existing.id,
+        expectedTokenHash: presentedHash,
         tokenHash: hashProjectOAuthRefreshToken(nextRefreshToken),
         expiresAt: refreshTokenExpirationDate(),
         lastUsedAt: new Date(),
@@ -108,6 +114,10 @@ export class ProjectOAuthGrantService implements IProjectOAuthGrantService {
       },
       transaction
     );
+    if (!grant) {
+      await this.revokeGrantFamily(existing.familyId, transaction);
+      return null;
+    }
     await this.audit.logUpdate(
       grant.id,
       grantAuditValues(existing),
@@ -116,6 +126,13 @@ export class ProjectOAuthGrantService implements IProjectOAuthGrantService {
       transaction
     );
     return { grant, refreshToken: nextRefreshToken };
+  }
+
+  private async revokeGrantFamily(familyId: string, transaction?: Transaction): Promise<void> {
+    const ids = await this.grants.listActiveGrantIdsInFamily(familyId, transaction);
+    for (const id of ids) {
+      await this.revokeGrant(id, transaction);
+    }
   }
 
   async revokeGrant(id: string, transaction?: Transaction): Promise<void> {

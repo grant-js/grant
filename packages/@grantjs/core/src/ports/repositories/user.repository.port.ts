@@ -157,15 +157,26 @@ export interface IUserSessionRepository {
 
   updateUserSession(params: UpdateUserSessionInput, transaction?: unknown): Promise<UserSession>;
 
+  /**
+   * CAS rotate: succeeds only when `id` still holds `expectedToken`.
+   * Stores `expectedToken` as `previousToken` so later reuse can be detected.
+   */
   refreshUserSession(
     id: string,
-    token: string,
+    expectedToken: string,
+    nextToken: string,
     expiresAt: Date,
     lastUsedAt: Date,
     userAgent?: string | null,
     ipAddress?: string | null,
     transaction?: unknown
-  ): Promise<UserSession>;
+  ): Promise<UserSession | null>;
+
+  findFamilyIdByPreviousRefreshToken(token: string, transaction?: unknown): Promise<string | null>;
+
+  getSessionFamilyId(sessionId: string, transaction?: unknown): Promise<string | null>;
+
+  listActiveSessionsInFamily(familyId: string, transaction?: unknown): Promise<UserSession[]>;
 
   softDeleteUserSession(
     params: DeleteUserSessionInput,

@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserSessionService } from '@/services/user-sessions.service';
 
 const mockConfig = vi.hoisted(() => ({
-  app: { url: 'http://localhost:3000' },
+  app: { url: 'http://localhost:3000', isDevelopment: false },
   jwt: { accessTokenExpirationMinutes: 15, refreshTokenExpirationDays: 30 },
+  logging: { level: 'silent', prettyPrint: false },
 }));
 
 vi.mock('@/config', () => ({ config: mockConfig }));

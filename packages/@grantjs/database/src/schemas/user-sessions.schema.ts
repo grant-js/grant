@@ -15,6 +15,10 @@ export const userSessions = pgTable(
       .references(() => userAuthenticationMethods.id, { onDelete: 'cascade' })
       .notNull(),
     token: varchar('token', { length: 255 }).notNull().unique(),
+    /** Last rotated-away refresh secret; reuse of this value revokes the family. */
+    previousToken: varchar('previous_token', { length: 255 }),
+    /** Rotation family; reused refresh secrets revoke every live session that shares it. */
+    familyId: uuid('family_id').notNull().defaultRandom(),
     audience: varchar('audience', { length: 255 }).notNull(),
     expiresAt: timestamp('expires_at').notNull(),
     emailVerified: boolean('email_verified').default(true).notNull(),
@@ -28,6 +32,8 @@ export const userSessions = pgTable(
   },
   (t) => [
     index('user_sessions_token_idx').on(t.token),
+    index('user_sessions_previous_token_idx').on(t.previousToken),
+    index('user_sessions_family_id_idx').on(t.familyId),
     index('user_sessions_user_id_idx').on(t.userId),
     index('user_sessions_expires_at_idx').on(t.expiresAt),
     index('user_sessions_user_authentication_method_id_idx').on(t.userAuthenticationMethodId),

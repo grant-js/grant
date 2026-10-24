@@ -11,6 +11,7 @@ export interface ProjectOAuthGrantRecord {
   scopeTenant: string;
   scopeId: string;
   scopes: string[] | null;
+  familyId: string;
   expiresAt: Date;
   lastUsedAt: Date | null;
   userAgent: string | null;
@@ -34,6 +35,7 @@ export interface CreateProjectOAuthGrantParams {
 
 export interface RotateProjectOAuthGrantParams {
   id: string;
+  expectedTokenHash: string;
   tokenHash: string;
   expiresAt: Date;
   lastUsedAt: Date;
@@ -55,7 +57,11 @@ export interface IProjectOAuthGrantRepository {
   rotateGrant(
     params: RotateProjectOAuthGrantParams,
     transaction?: unknown
-  ): Promise<ProjectOAuthGrantRecord>;
+  ): Promise<ProjectOAuthGrantRecord | null>;
+
+  findFamilyIdByPreviousTokenHash(tokenHash: string, transaction?: unknown): Promise<string | null>;
+
+  listActiveGrantIdsInFamily(familyId: string, transaction?: unknown): Promise<string[]>;
 
   softDeleteGrant(id: string, transaction?: unknown): Promise<void>;
 
