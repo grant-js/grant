@@ -20,9 +20,7 @@ function isCountedIntrospectionField(name: string): boolean {
   return name.startsWith('__') && name !== '__typename';
 }
 
-export function collectFragmentMap(
-  context: ValidationContext
-): Map<string, FragmentDefinitionNode> {
+function collectFragmentMap(context: ValidationContext): Map<string, FragmentDefinitionNode> {
   const fragments = new Map<string, FragmentDefinitionNode>();
   for (const def of context.getDocument().definitions) {
     if (def.kind === Kind.FRAGMENT_DEFINITION) {
@@ -149,7 +147,7 @@ export function computeSelectionComplexity(
   return total;
 }
 
-export function createMaxDepthRule(maxDepth: number): ValidationRule {
+function createMaxDepthRule(maxDepth: number): ValidationRule {
   return function MaxDepthRule(context) {
     const fragments = collectFragmentMap(context);
     return {
@@ -167,7 +165,7 @@ export function createMaxDepthRule(maxDepth: number): ValidationRule {
   };
 }
 
-export function createMaxComplexityRule(limits: GraphqlCostLimits): ValidationRule {
+function createMaxComplexityRule(limits: GraphqlCostLimits): ValidationRule {
   return function MaxComplexityRule(context) {
     const fragments = collectFragmentMap(context);
     return {
