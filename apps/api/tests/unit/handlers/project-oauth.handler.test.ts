@@ -1486,5 +1486,30 @@ describe('ProjectOAuthHandler', () => {
         })
       ).rejects.toThrow('unsupported_grant_type');
     });
+
+    it('refuses to mint projectApp when the consent intersection is empty', async () => {
+      mockProjectApps.getProjectAppByClientId.mockResolvedValue({
+        ...validApp,
+        scopes: ['document:read'],
+      });
+      mockCacheOauth.get.mockResolvedValue({
+        ...codePayload,
+        requestedScopeSlugs: ['document:read'],
+      });
+      mockGrant.getGrantedScopeSlugs.mockResolvedValue([]);
+      const handler = createHandler();
+      await expect(
+        handler.handleProjectToken({
+          grantType: 'authorization_code',
+          clientId: validApp.clientId,
+          redirectUri: 'https://example.com/callback',
+          code: 'auth-code',
+          codeVerifier: RFC_PKCE.verifier,
+        })
+      ).rejects.toThrow('invalid_scope');
+      expect(mockGrant.getGrantedScopeSlugs).toHaveBeenCalled();
+      expect(mockGrant.signProjectAppToken).not.toHaveBeenCalled();
+      expect(mockGrant.signApiKeyToken).not.toHaveBeenCalled();
+    });
   });
 });

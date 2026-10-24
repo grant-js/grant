@@ -70,7 +70,8 @@ function createMockGrantService(): IGrantService {
 function createValidToken(
   type: TokenType = TokenType.Session,
   scope?: { tenant: Tenant; id: string },
-  isVerified?: boolean
+  isVerified?: boolean,
+  scopes?: string[]
 ): string {
   const payload = {
     sub: 'user-123',
@@ -82,6 +83,7 @@ function createValidToken(
     type,
     ...(scope && { scope }),
     ...(isVerified !== undefined && { isVerified }),
+    ...(scopes !== undefined && { scopes }),
   };
   return jwt.sign(payload, privateKeyPem, { algorithm: 'RS256', keyid: TEST_KID });
 }
@@ -442,10 +444,15 @@ describe('Grant', () => {
 
       const grant = new Grant(mockService, jwtTokenProvider);
 
-      const token = createValidToken(TokenType.ProjectApp, {
-        tenant: Tenant.AccountProject,
-        id: 'acc-1:proj-1',
-      });
+      const token = createValidToken(
+        TokenType.ProjectApp,
+        {
+          tenant: Tenant.AccountProject,
+          id: 'acc-1:proj-1',
+        },
+        undefined,
+        ['document:read']
+      );
       await grant.authenticate(`Bearer ${token}`);
 
       await grant.isAuthorized({ resource: 'document', action: 'read' }, { resource: null });
@@ -473,10 +480,15 @@ describe('Grant', () => {
 
       const grant = new Grant(mockService, jwtTokenProvider);
 
-      const token = createValidToken(TokenType.ProjectApp, {
-        tenant: Tenant.OrganizationProject,
-        id: 'org-1:proj-1',
-      });
+      const token = createValidToken(
+        TokenType.ProjectApp,
+        {
+          tenant: Tenant.OrganizationProject,
+          id: 'org-1:proj-1',
+        },
+        undefined,
+        ['document:read']
+      );
       await grant.authenticate(`Bearer ${token}`);
 
       await grant.isAuthorized({ resource: 'document', action: 'read' }, { resource: null });
@@ -488,6 +500,75 @@ describe('Grant', () => {
         'read',
         TokenType.ProjectApp
       );
+    });
+
+    it('denies projectApp when scopes is missing', async () => {
+      const mockService = createMockGrantService();
+      mockService.getUserPermissions = vi.fn().mockResolvedValue([
+        {
+          id: 'perm-1',
+          name: 'Read Documents',
+          action: 'read',
+          resourceId: 'resource-1',
+          condition: null,
+        } as Permission,
+      ]);
+      const grant = new Grant(mockService, jwtTokenProvider);
+      const token = createValidToken(TokenType.ProjectApp, {
+        tenant: Tenant.AccountProject,
+        id: 'acc-1:proj-1',
+      });
+      await grant.authenticate(`Bearer ${token}`);
+
+      const result = await grant.isAuthorized(
+        { resource: 'document', action: 'read' },
+        { resource: null }
+      );
+
+      expect(result).toEqual({ authorized: false, reason: AuthorizationReason.ScopeNotGranted });
+      expect(mockService.getUserPermissions).not.toHaveBeenCalled();
+    });
+
+    it('denies projectApp when scopes is empty', async () => {
+      const mockService = createMockGrantService();
+      mockService.getUserPermissions = vi.fn();
+      const grant = new Grant(mockService, jwtTokenProvider);
+      const token = createValidToken(
+        TokenType.ProjectApp,
+        { tenant: Tenant.AccountProject, id: 'acc-1:proj-1' },
+        undefined,
+        []
+      );
+      await grant.authenticate(`Bearer ${token}`);
+
+      const result = await grant.isAuthorized(
+        { resource: 'document', action: 'read' },
+        { resource: null }
+      );
+
+      expect(result).toEqual({ authorized: false, reason: AuthorizationReason.ScopeNotGranted });
+      expect(mockService.getUserPermissions).not.toHaveBeenCalled();
+    });
+
+    it('denies projectApp when the permission is not in granted scopes', async () => {
+      const mockService = createMockGrantService();
+      mockService.getUserPermissions = vi.fn();
+      const grant = new Grant(mockService, jwtTokenProvider);
+      const token = createValidToken(
+        TokenType.ProjectApp,
+        { tenant: Tenant.AccountProject, id: 'acc-1:proj-1' },
+        undefined,
+        ['document:read']
+      );
+      await grant.authenticate(`Bearer ${token}`);
+
+      const result = await grant.isAuthorized(
+        { resource: 'document', action: 'delete' },
+        { resource: null }
+      );
+
+      expect(result).toEqual({ authorized: false, reason: AuthorizationReason.ScopeNotGranted });
+      expect(mockService.getUserPermissions).not.toHaveBeenCalled();
     });
   });
 });
