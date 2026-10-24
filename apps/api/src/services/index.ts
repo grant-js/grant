@@ -376,6 +376,7 @@ export function createServices(
     ),
     userSessions: new UserSessionService(
       repositories.userSessionRepository,
+      repositories.userAuthenticationMethodRepository,
       audit(userSessionAuditLogs, 'userSessionId', user, db),
       grant,
       events

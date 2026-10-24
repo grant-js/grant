@@ -31,6 +31,22 @@ const mockRepo = {
   hardDeleteUserSession: vi.fn(),
 };
 
+const mockAuthMethods = {
+  getUserAuthenticationMethod: vi.fn().mockResolvedValue({ isVerified: true }),
+};
+
+function createService(): UserSessionService {
+  return new UserSessionService(
+    mockRepo as never,
+    mockAuthMethods as never,
+    mockAudit as never,
+    mockGrant,
+    {
+      publish: vi.fn(),
+    } as never
+  );
+}
+
 function sessionFixture(
   overrides: Partial<UserSession> & { mfaVerifiedAt?: Date | null }
 ): UserSession {
@@ -62,9 +78,7 @@ describe('UserSessionService refreshSessionByRefreshToken (MFA / AAL)', () => {
     mockRepo.getSessionByRefreshToken.mockResolvedValue(before);
     mockRepo.refreshUserSession.mockResolvedValue(after);
 
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
-      publish: vi.fn(),
-    } as never);
+    const service = createService();
 
     await service.refreshSessionByRefreshToken('old-rt');
 
@@ -85,9 +99,7 @@ describe('UserSessionService refreshSessionByRefreshToken (MFA / AAL)', () => {
     mockRepo.getSessionByRefreshToken.mockResolvedValue(before);
     mockRepo.refreshUserSession.mockResolvedValue(after);
 
-    const service = new UserSessionService(mockRepo as never, mockAudit as never, mockGrant, {
-      publish: vi.fn(),
-    } as never);
+    const service = createService();
 
     await service.refreshSessionByRefreshToken('old-rt');
 
