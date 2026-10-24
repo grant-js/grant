@@ -88,15 +88,30 @@ describe('assertMinAalAtLoginGraphql', () => {
     await expect(assertMinAalAtLoginGraphql(ctx, 'CreateProject')).resolves.toBeUndefined();
   });
 
-  it('returns when operationName is null (documents bypass when operation name absent)', async () => {
-    const ctx = createGqlContext(sessionUserAal1(), true);
+  it.each([null, undefined, ''] as const)(
+    'throws MFA_REQUIRED when operationName is %s (fail closed)',
+    async (operationName) => {
+      const ctx = createGqlContext(sessionUserAal1(), true);
+      await expect(assertMinAalAtLoginGraphql(ctx, operationName)).rejects.toMatchObject({
+        code: 'FORBIDDEN',
+        reason: 'MFA_REQUIRED',
+        metadata: { hasActiveEnrollment: true },
+      });
+    }
+  );
+
+  it('still returns for an unnamed operation when the user has no MFA enrollment', async () => {
+    const ctx = createGqlContext(sessionUserAal1(), false);
     await expect(assertMinAalAtLoginGraphql(ctx, null)).resolves.toBeUndefined();
   });
 
-  it('returns when operationName is empty string', async () => {
-    const ctx = createGqlContext(sessionUserAal1(), true);
-    await expect(assertMinAalAtLoginGraphql(ctx, '')).resolves.toBeUndefined();
-  });
+  it.each(['Me', 'VerifyMfa', 'RefreshSession', 'VerifyMfaRecoveryCode'] as const)(
+    'allows required AAL1-safe op %s after unnamed fail-closed',
+    async (op) => {
+      const ctx = createGqlContext(sessionUserAal1(), true);
+      await expect(assertMinAalAtLoginGraphql(ctx, op)).resolves.toBeUndefined();
+    }
+  );
 
   it('returns when user has no MFA enrollment', async () => {
     const ctx = createGqlContext(sessionUserAal1(), false);
@@ -140,11 +155,41 @@ describe('graphqlMinAalAtLoginMiddleware', () => {
     expect(next).toHaveBeenCalledOnce();
   });
 
-  it('POST continues when operation cannot be resolved (anonymous query; min-AAL not applied here)', async () => {
+  it('POST of an unnamed document fails closed with MFA_REQUIRED', async () => {
     const next = vi.fn();
+    const json = vi.fn();
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      json,
+    };
     const req = {
       method: 'POST',
       body: { query: '{ __typename }' },
+    } as ContextRequest;
+    req.context = createGqlContext(sessionUserAal1(), true) as never;
+    graphqlMinAalAtLoginMiddleware(req as never, res as never, next);
+    await vi.waitFor(() => {
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+    expect(next).not.toHaveBeenCalled();
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: null,
+        errors: [
+          expect.objectContaining({
+            extensions: expect.objectContaining({ reason: 'MFA_REQUIRED' }),
+          }),
+        ],
+      })
+    );
+  });
+
+  it('POST continues when the document names an allowlisted operation', async () => {
+    const next = vi.fn();
+    const req = {
+      method: 'POST',
+      body: { query: 'query Me { me { id } }' },
     } as ContextRequest;
     req.context = createGqlContext(sessionUserAal1(), true) as never;
     graphqlMinAalAtLoginMiddleware(req as never, {} as never, next);
