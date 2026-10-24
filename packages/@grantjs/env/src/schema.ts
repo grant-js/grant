@@ -97,6 +97,11 @@ export const envSchema = z.object({
   JWT_ACCESS_TOKEN_EXPIRATION_MINUTES: optionalNumber(15),
   JWT_REFRESH_TOKEN_EXPIRATION_DAYS: optionalNumber(30),
   JWT_JWKS_MAX_AGE_SECONDS: optionalNumber(300),
+  /**
+   * Origin-side TTL for the JWKS HTTP payload (`getPublicKeysForJwks`) per issuer.
+   * Independent of Cache-Control (`JWT_JWKS_MAX_AGE_SECONDS`) and the in-process kid cache.
+   */
+  JWT_JWKS_HTTP_CACHE_TTL_SECONDS: optionalNumber(30),
   JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS: optionalNumber(300),
   AUTH_PROVIDER_VERIFICATION_EXPIRATION_DAYS: optionalNumber(7),
   AUTH_OTP_VALIDITY_MINUTES: optionalNumber(5),

@@ -127,6 +127,12 @@ const JWT_CONFIG = {
   /** Cache-Control max-age for GET /.well-known/jwks.json response (seconds). For external verifiers only. */
   jwksMaxAgeSeconds: env.JWT_JWKS_MAX_AGE_SECONDS,
 
+  /**
+   * Origin-side TTL for the JWKS HTTP payload per issuer. Does not change
+   * Cache-Control or the in-process verification kid cache.
+   */
+  jwksHttpCacheTtlSeconds: env.JWT_JWKS_HTTP_CACHE_TTL_SECONDS,
+
   /** TTL in seconds for in-app key caches: system signing key and verification keys by kid (GrantService). Invalidated on rotation for signing key; verification keys use TTL only. */
   systemSigningKeyCacheTtlSeconds: env.JWT_SYSTEM_SIGNING_KEY_CACHE_TTL_SECONDS,
 } as const;
