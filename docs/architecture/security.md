@@ -487,7 +487,7 @@ Name-based min-AAL enforcement uses the GraphQL **`operationName`**. Clients tha
 
 ### Rate limiting
 
-MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
+MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). GraphQL `login`, `register`, and `refreshSession` (by operation name, and unnamed documents that are those operations) use the same bucket. Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
 
 ### Automated testing and recovery
 
