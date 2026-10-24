@@ -3,6 +3,50 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.3
+
+### Platform
+
+**Docker images:** tagged `:1.18.3` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.3** (fixed group with apps).
+
+### Patch Changes
+
+- 9eff88e: GraphQL `login`, `register`, and `refreshSession` now share the auth-sensitive rate-limit bucket with REST login (including unnamed documents that are those operations), so GraphQL password guessing is not limited only by the global IP cap.
+
+- 9eff88e: GraphQL min-AAL now fails closed on unnamed operations when AUTH_MIN_AAL_AT_LOGIN=aal2.
+
+- 9eff88e: GraphQL queries now have depth and complexity limits, and list `limit` is clamped to the configured max page size. Public `-1` is no longer an unbounded scan.
+
+- 9eff88e: IAM cascade deletes now chunk teardown and batch outbox inserts, still emitting one revoke per subject.
+
+- 9eff88e: Deleting a role, group, or permission now clears the authorization cache so cached grants cannot outlive the cascade.
+
+- 9eff88e: JWKS HTTP endpoints now cache getPublicKeysForJwks payloads per issuer for a short TTL.
+
+- 9eff88e: TOTP and recovery-code verification now enforce `AUTH_MFA_VERIFY_MAX_ATTEMPTS` per user in a rolling `AUTH_MFA_VERIFY_WINDOW_MINUTES` window, so MFA codes cannot be guessed without bound on platform or project verify paths.
+
+- 9eff88e: Project OAuth refresh now always intersects the stored grant with the current app scope allowlist. Clearing the allowlist (or leaving no overlap) fails closed instead of keeping the old grant slugs.
+
+- 9eff88e: Organization member lists now page members and invitations in SQL and reject public `limit: -1`.
+
+- 9eff88e: Platform (console) email/password login now enforces the same per-user lockout as the project-app password provider (`AUTH_MAX_FAILED_LOGIN_ATTEMPTS` / `AUTH_LOCKOUT_DURATION_MINUTES`), recording the attempt before verification so parallel guesses cannot share one remaining try.
+
+- 9eff88e: Project-app tokens no longer mint when the consent intersection is empty, and `Grant.isAuthorized` denies `projectApp` when `scopes` is missing or empty, so an empty claim cannot fall through to the user's full project RBAC.
+
+- 9eff88e: Project-app update and delete now require the app to belong to the scoped project and persist with `{ id, projectId }`, so a cross-project id cannot mutate or soft-delete another project's OAuth app.
+
+- 9eff88e: Enable PostgreSQL row-level security on `project_apps` and `project_oauth_connections` so a missed application `WHERE` cannot read another project's OAuth app or social-connection row.
+
+- 9eff88e: Session refresh now copies `isVerified` from the session’s authentication method (the same source as login) instead of defaulting the JWT claim to `true`. Unverified users stay behind the email-verification wall after the access token refreshes.
+
+- 9eff88e: Reuse of a rotated refresh token now revokes the session or project-OAuth grant family.
+
+- 9eff88e: Project-scoped user lists now load `project_users` only for the current page of user ids.
+
+- 9eff88e: Document residual access JWT window and production trusted client IP header.
+
 ## 1.18.2
 
 ### Platform
