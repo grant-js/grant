@@ -10,6 +10,7 @@ import { deleteSchema, idSchema } from './common/schemas';
 export const getProjectUsersParamsSchema = z.object({
   projectId: idSchema.optional(),
   userId: idSchema.optional(),
+  userIds: z.array(idSchema).optional(),
 });
 
 export const addProjectUserParamsSchema = z.object({

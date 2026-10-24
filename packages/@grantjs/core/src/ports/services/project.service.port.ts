@@ -93,7 +93,7 @@ export interface IProjectService {
 
 export interface IProjectUserService {
   getProjectUsers(
-    params: { projectId?: string; userId?: string },
+    params: { projectId?: string; userId?: string; userIds?: string[] },
     transaction?: unknown
   ): Promise<ProjectUser[]>;
 

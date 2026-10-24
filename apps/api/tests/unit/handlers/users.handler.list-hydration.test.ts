@@ -112,7 +112,8 @@ function createHandler() {
 
 describe('UserHandler list hydration', () => {
   it('hydrates scoped tags and counts with grouped calls for the page', async () => {
-    const { handler, scopeServices, userRoles, userTags, usersService } = createHandler();
+    const { handler, projectUsers, scopeServices, userRoles, userTags, usersService } =
+      createHandler();
 
     const result = await handler.getUsers({
       scope,
@@ -133,6 +134,10 @@ describe('UserHandler list hydration', () => {
         requestedFields: ['id', 'name'],
       })
     );
+    expect(projectUsers.getProjectUsers).toHaveBeenCalledWith({
+      projectId: 'project-1',
+      userIds: ['user-1', 'user-2'],
+    });
     expect(userTags.getUserTagsByUserIds).toHaveBeenCalledTimes(1);
     expect(userTags.getUserTagsByUserIds).toHaveBeenCalledWith(['user-1', 'user-2']);
     expect(scopeServices.tags.getTags).toHaveBeenCalledTimes(1);
