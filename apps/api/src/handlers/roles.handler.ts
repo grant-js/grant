@@ -88,6 +88,7 @@ export class RoleHandler extends CacheHandler {
       sort,
       search,
       requestedFields: repositoryRequestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     return hydrateList({

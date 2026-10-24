@@ -53,6 +53,7 @@ import { IEntityCacheAdapter } from '@/lib/cache';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
 import { assertEmailProviderForDirectAuth } from '@/lib/oauth-direct-auth.lib';
+import { unboundedList } from '@/lib/pagination.lib';
 import { assertPlatformSelfSignupAllowed } from '@/lib/signup-policy.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { Otp } from '@/types';
@@ -446,11 +447,13 @@ export class MeHandler extends CacheHandler {
       updatedAt: credential.updatedAt,
     }));
 
-    const sessionsPage = await this.userSessions.getUserSessions({
-      userId,
-      limit: -1,
-      requestedFields: ['userAgent', 'ipAddress', 'lastUsedAt', 'expiresAt', 'createdAt'],
-    });
+    const sessionsPage = await this.userSessions.getUserSessions(
+      unboundedList({
+        userId,
+        limit: -1,
+        requestedFields: ['userAgent', 'ipAddress', 'lastUsedAt', 'expiresAt', 'createdAt'],
+      })
+    );
 
     const sessionsData = (sessionsPage.userSessions || []).map((session) => ({
       userAgent: session.userAgent || null,

@@ -105,6 +105,7 @@ export class UserSessionRepository
         ids: params.ids,
         filters,
         requestedFields: params.requestedFields,
+        unbounded: (params as { unbounded?: boolean }).unbounded === true,
       },
       transaction
     );

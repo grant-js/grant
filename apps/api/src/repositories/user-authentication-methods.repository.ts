@@ -71,6 +71,7 @@ export class UserAuthenticationMethodRepository
         filters,
         requestedFields,
         limit: -1,
+        unbounded: true,
       },
       transaction
     );

@@ -135,6 +135,8 @@ To authenticate in the sandbox:
 Schema introspection is enabled by default in non-production environments (`APOLLO_INTROSPECTION=true`). It is automatically disabled in production.
 :::
 
+Apollo also enforces selection-set **depth** (`GRAPHQL_MAX_DEPTH`, default 15) and **complexity** (`GRAPHQL_MAX_COMPLEXITY`, default 10000). List `limit` arguments multiply child cost and are themselves capped at `PAGINATION_MAX_PAGE_SIZE` (default 100). `EntityRepository.query` clamps the same way; `limit: -1` on public lists becomes the max page size. Internal complete-set loads (MFA factors, JWKS keys, field-resolver hydration) opt out explicitly.
+
 ## GraphQL Operations
 
 The GraphQL API provides queries and mutations covering the shared resources above (exact counts drift as the schema grows). Key operation groups:

@@ -489,6 +489,8 @@ Name-based min-AAL enforcement uses the GraphQL **`operationName`**. Clients tha
 
 MFA **setup**, **verify**, **recovery verify**, recovery **status**, and project OAuth **authorize** / **consent** / **token** share the **auth-sensitive** rate-limit bucket with login/refresh (`AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS`). GraphQL `login`, `register`, and `refreshSession` (by operation name, and unnamed documents that are those operations) use the same bucket. Discovery well-known URLs use the global IP bucket only. Tune **`SECURITY_RATE_LIMIT_AUTH_MAX`** / **`SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`** with global limits.
 
+GraphQL documents are also bounded per request: Apollo `validationRules` reject selection-set depth above **`GRAPHQL_MAX_DEPTH`** (default 15) and complexity above **`GRAPHQL_MAX_COMPLEXITY`** (default 10000). Every list `limit` is clamped to **`PAGINATION_MAX_PAGE_SIZE`** (default 100) in `EntityRepository.query`; public `-1` is capped, not a full-table scan.
+
 ### Automated testing and recovery
 
 - [MFA testing](/contributing/testing#mfa-testing) — unit, integration, E2E; optional **`aal2`** job / **`E2E_EXPECT_MIN_AAL_AT_LOGIN`**.

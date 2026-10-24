@@ -1161,6 +1161,23 @@ const META: EnvVarMeta[] = [
     section: 'GraphQL',
   },
   {
+    key: 'GRAPHQL_MAX_DEPTH',
+    category: 'optional',
+    label: 'GraphQL max query depth',
+    description: 'Maximum selection-set depth, including fragments (default: 15).',
+    envFiles: ['.env'],
+    section: 'GraphQL',
+  },
+  {
+    key: 'GRAPHQL_MAX_COMPLEXITY',
+    category: 'optional',
+    label: 'GraphQL max query complexity',
+    description:
+      'Maximum query complexity. Each field costs 1 × ancestor limit multipliers (default: 10000).',
+    envFiles: ['.env'],
+    section: 'GraphQL',
+  },
+  {
     key: 'SWAGGER_ENABLED',
     category: 'optional',
     label: 'Enable Swagger UI',

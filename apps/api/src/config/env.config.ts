@@ -500,6 +500,18 @@ const APOLLO_CONFIG = {
 
   /** Include stack traces in errors (default: true in development) */
   includeStacktrace: env.APOLLO_INCLUDE_STACKTRACE ?? APP_CONFIG.isDevelopment,
+
+  /**
+   * Maximum GraphQL selection-set depth, including fragments. Sized for the
+   * largest dashboard query (list + nested tags/roles/permissions).
+   */
+  maxDepth: env.GRAPHQL_MAX_DEPTH,
+
+  /**
+   * Maximum GraphQL query complexity. Each field costs 1 × ancestor `limit`
+   * multipliers (those multipliers themselves cap at `PAGINATION_MAX_PAGE_SIZE`).
+   */
+  maxComplexity: env.GRAPHQL_MAX_COMPLEXITY,
 } as const;
 
 // ============================================================================

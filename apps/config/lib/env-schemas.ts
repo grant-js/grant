@@ -272,6 +272,8 @@ const schemas: Record<string, z.ZodType<string>> = {
   APOLLO_INTROSPECTION: booleanSchema,
   APOLLO_PLAYGROUND: booleanSchema,
   APOLLO_INCLUDE_STACKTRACE: booleanSchema,
+  GRAPHQL_MAX_DEPTH: positiveIntSchema,
+  GRAPHQL_MAX_COMPLEXITY: positiveIntSchema,
   SWAGGER_ENABLED: booleanSchema,
   SWAGGER_PERSIST_AUTHORIZATION: booleanSchema,
   SWAGGER_DISPLAY_REQUEST_DURATION: booleanSchema,

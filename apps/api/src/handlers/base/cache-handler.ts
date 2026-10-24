@@ -27,6 +27,7 @@ import { createHash } from 'crypto';
 import { AUTH_RESULT_CACHE_KEY_PREFIX } from '@/constants/cache.constants';
 import { CacheKey, ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import {
   accountProjectFromScopeOrThrow,
   organizationProjectFromScopeOrThrow,
@@ -452,11 +453,13 @@ export class CacheHandler implements IScopedIdProvider {
       return [];
     }
 
-    const page = await this.scopeServices.projectApps.getProjectApps({
-      projectId,
-      page: 1,
-      limit: -1,
-    });
+    const page = await this.scopeServices.projectApps.getProjectApps(
+      unboundedList({
+        projectId,
+        page: 1,
+        limit: -1,
+      })
+    );
     const projectAppIds = page.projectApps.map((app) => app.id);
     await this.cache.projectApps.set(cacheKey, new Set(projectAppIds));
     return projectAppIds;
@@ -566,7 +569,9 @@ export class CacheHandler implements IScopedIdProvider {
     }
 
     const tagIds = [...new Set(scopedPivots.map((pivot) => pivot.tagId))];
-    const { tags } = await this.scopeServices.tags.getTags({ ids: tagIds, limit: -1 });
+    const { tags } = await this.scopeServices.tags.getTags(
+      unboundedList({ ids: tagIds, limit: -1 })
+    );
     const tagsById = new Map(tags.map((tag) => [tag.id, tag]));
 
     for (const pivot of scopedPivots) {

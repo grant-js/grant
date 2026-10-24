@@ -1,6 +1,7 @@
 import { UserResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { unboundedList } from '@/lib/pagination.lib';
 
 export const userRolesResolver: UserResolvers<GraphqlContext>['roles'] = async (
   parent,
@@ -13,11 +14,13 @@ export const userRolesResolver: UserResolvers<GraphqlContext>['roles'] = async (
   if (scope) {
     const roleIds = await context.handlers.users.getUserRoleIdsInScope(userId, scope);
     if (roleIds.length === 0) return [];
-    const rolesPage = await context.handlers.roles.getRoles({
-      scope,
-      ids: roleIds,
-      limit: -1,
-    });
+    const rolesPage = await context.handlers.roles.getRoles(
+      unboundedList({
+        scope,
+        ids: roleIds,
+        limit: -1,
+      })
+    );
     return rolesPage.roles ?? [];
   }
 

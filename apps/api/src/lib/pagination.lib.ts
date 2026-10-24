@@ -56,3 +56,36 @@ export function takePage<T>(
     hasNextPage,
   };
 }
+
+/**
+ * Public list `limit`: missing → default page size; `-1` or above max → max.
+ * Internal complete-set loads pass `unbounded` so `-1` still means no SQL LIMIT.
+ */
+export function clampPageLimit(
+  limit: number | null | undefined,
+  bounds: { defaultPageSize: number; maxPageSize: number; unbounded?: boolean }
+): number | undefined {
+  const { defaultPageSize, maxPageSize, unbounded } = bounds;
+
+  if (unbounded) {
+    const requested = limit ?? -1;
+    return requested > -1 ? requested : undefined;
+  }
+
+  const requested = limit ?? defaultPageSize;
+  if (requested === -1 || requested > maxPageSize) {
+    return maxPageSize;
+  }
+  if (requested < 1) {
+    return defaultPageSize;
+  }
+  return requested;
+}
+
+/**
+ * Marks an internal complete-set list so `EntityRepository.query` does not cap
+ * `limit: -1`. Return type stays `T` so service/handler signatures do not change.
+ */
+export function unboundedList<T extends object>(args: T): T {
+  return Object.assign(args, { unbounded: true });
+}
