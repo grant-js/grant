@@ -47,7 +47,7 @@ One audit finding per slice. Init `gh stack` with **slice 1 only**. `gh stack ad
 | 14    | `feat/api-security-hardening-min-aal`          | prior slice                   | unnamed GraphQL min-AAL          | L1     | Backend    | security-full        | [#584](https://github.com/grant-js/grant/pull/584) |
 | 15    | `feat/api-security-hardening-refresh-reuse`    | prior slice                   | revoke family on refresh reuse   | L2     | Backend    | security-full        | [#585](https://github.com/grant-js/grant/pull/585) |
 | 16    | `feat/api-security-hardening-jwks-cache`       | prior slice                   | JWKS HTTP short-TTL cache        | L5     | Backend    | light                | [#586](https://github.com/grant-js/grant/pull/586) |
-| 17    | `feat/api-security-hardening-docs`             | prior slice                   | residual JWT window + trusted IP | L3, L4 | Backend    | light                |                                                    |
+| 17    | `feat/api-security-hardening-docs`             | prior slice                   | residual JWT window + trusted IP | L3, L4 | Backend    | light                | [#587](https://github.com/grant-js/grant/pull/587) |
 | final | `feat/api-security-hardening`                  | `main`                        | integration                      | all    | Principal  | deep + security-full |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story is almost all API. The only database slice is #3 (RLS), stacked after the application bind in #2 so the hole is closed before the policy lands.

@@ -37,6 +37,6 @@ Principal Engineer issues one per active stack PR. Implementer stays inside this
 ## Done when
 
 - [x] Implementation complete within this slice only
-- [ ] Verifier run (typecheck / lint / tests / layers / OpenAPI as applicable)
-- [ ] PR opened with correct base; links stack plan + upstream/downstream PRs
+- [x] Verifier run (typecheck / lint / tests / layers / OpenAPI as applicable) — format PASS; type-check / lint / tests / OpenAPI SKIP (docs only)
+- [x] PR opened with correct base; links stack plan + upstream/downstream PRs ([#587](https://github.com/grant-js/grant/pull/587), base slice 16 / #586)
 - [x] Senior Security notified if `security-full` (not required — review bar is light)
