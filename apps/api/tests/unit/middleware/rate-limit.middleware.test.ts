@@ -156,6 +156,80 @@ describe('rateLimitMiddleware', () => {
       expect(res.setHeader).toHaveBeenCalledWith('Retry-After', expect.any(String));
     });
 
+    it('applies the auth bucket to GraphQL login by operation name', async () => {
+      const req = createMockReq({
+        method: 'POST',
+        path: '/graphql',
+        body: {
+          operationName: 'login',
+          query: 'mutation login { login { accessToken } }',
+        },
+      });
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('applies the auth bucket to an unnamed GraphQL login document', async () => {
+      const req = createMockReq({
+        method: 'POST',
+        path: '/graphql',
+        body: { query: 'mutation { login { accessToken } }' },
+      });
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('shares one auth bucket between REST login and GraphQL refreshSession', async () => {
+      const restLogin = createMockReq({ method: 'POST', path: '/api/auth/login' });
+      const gqlRefresh = createMockReq({
+        method: 'POST',
+        path: '/graphql',
+        body: {
+          operationName: 'refreshSession',
+          query: 'mutation refreshSession { refreshSession { accessToken } }',
+        },
+      });
+      const res = createMockRes();
+
+      await middleware(restLogin, res, next);
+      await middleware(gqlRefresh, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      await middleware(restLogin, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('does not apply the auth bucket to an unrelated GraphQL operation', async () => {
+      mockSecurity.rateLimitMax = 100;
+      const req = createMockReq({
+        method: 'POST',
+        path: '/graphql',
+        body: { operationName: 'Me', query: 'query Me { me { id } }' },
+      });
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(3);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
     it('applies same auth bucket to POST /api/auth/token (shared with login)', async () => {
       const reqLogin = createMockReq({
         method: 'POST',
