@@ -11,8 +11,10 @@ import {
 import { config } from '@/config';
 import { EVENT_RELAY_JOB_ID } from '@/constants/event-relay.constants';
 import type { ScheduleAfterCommit } from '@/lib/after-commit.lib';
+import { getActiveOutboxBatch } from '@/lib/events/event-outbox-batch.lib';
 import { linkedEntityRefsOf } from '@/lib/events/event-project-links.lib';
 import { isEventPublishingSuppressed } from '@/lib/events/event-suppression.lib';
+import { chunkArray } from '@/lib/iam-cascade.lib';
 import { getJobAdapter } from '@/lib/jobs/initialize';
 import { createLogger } from '@/lib/logger';
 import type { Transaction } from '@/lib/transaction-manager.lib';
@@ -110,20 +112,44 @@ export class DrizzleEventPublisher implements IEventPublisher {
   }
 
   async publish(event: DomainEventInput, transaction?: unknown): Promise<void> {
-    if (isEventPublishingSuppressed()) {
-      logger.debug({
-        msg: 'Skipping domain event publish (suppressed)',
-        type: event.type,
-      });
+    await this.publishMany([event], transaction);
+  }
+
+  async publishMany(events: DomainEventInput[], transaction?: unknown): Promise<void> {
+    if (events.length === 0 || isEventPublishingSuppressed()) {
+      if (events.length > 0 && isEventPublishingSuppressed()) {
+        logger.debug({
+          msg: 'Skipping domain event publish (suppressed)',
+          count: events.length,
+        });
+      }
       return;
     }
 
-    const dbInstance = (transaction as Transaction | undefined) ?? this.db;
+    const rows: NewEventLogModel[] = [];
+    for (const event of events) {
+      rows.push(await this.buildRow(event, transaction));
+    }
+
+    const batch = getActiveOutboxBatch();
+    if (batch) {
+      batch.rows.push(...rows);
+      batch.flush = (pending, tx) => this.writeRows(pending, tx);
+      return;
+    }
+
+    await this.writeRows(rows, transaction);
+  }
+
+  private async buildRow(
+    event: DomainEventInput,
+    transaction?: unknown
+  ): Promise<NewEventLogModel> {
     const scope = this.resolveScope(event);
     const entry = getEventCatalogEntry(event.type);
     const projectIds = await this.resolveProjectIds(event, transaction);
 
-    const row: NewEventLogModel = {
+    return {
       type: event.type,
       category: entry.category,
       deliveryClass: entry.deliveryClass,
@@ -139,16 +165,23 @@ export class DrizzleEventPublisher implements IEventPublisher {
       occurredAt: event.occurredAt ?? new Date(),
       relayStatus: 'pending',
     };
+  }
+
+  private async writeRows(rows: NewEventLogModel[], transaction?: unknown): Promise<void> {
+    if (rows.length === 0) {
+      return;
+    }
+
+    const dbInstance = (transaction as Transaction | undefined) ?? this.db;
 
     try {
-      await (dbInstance as DbSchema).insert(eventLog).values(row);
+      for (const chunk of chunkArray(rows, config.system.iamCascadeChunkSize)) {
+        await (dbInstance as DbSchema).insert(eventLog).values(chunk);
+      }
     } catch (error) {
-      // Never let event emission break the business transaction's primary work.
-      // A failed insert here will roll back with the surrounding tx anyway; we
-      // log so it is observable.
       logger.error({
-        msg: 'Failed to write domain event to event_log',
-        type: event.type,
+        msg: 'Failed to write domain events to event_log',
+        count: rows.length,
         err: error,
       });
       throw error;

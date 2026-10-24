@@ -1,6 +1,7 @@
 import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
+import { config } from '@/config';
 import { GroupHandler } from '@/handlers/groups.handler';
 
 const groupId = '10000000-0000-4000-8000-0000000000d1';
@@ -102,6 +103,26 @@ describe('GroupHandler.deleteGroup cascade', () => {
 
     expect(permissionsClear).toHaveBeenCalledTimes(1);
     expect(calls.indexOf('permissions.clear')).toBeLessThan(calls.indexOf('deleteGroup'));
+  });
+
+  it('revokes every member and never overlaps more than the cascade chunk', async () => {
+    const members = Array.from({ length: 75 }, (_, index) => `user-${index}`);
+    const { handler, userGroups } = build();
+    userGroups.getUserGroups.mockResolvedValue(members.map((userId) => ({ userId, groupId })));
+    let inFlight = 0;
+    let maxInFlight = 0;
+    userGroups.removeUserGroup.mockImplementation(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await Promise.resolve();
+      inFlight -= 1;
+    });
+
+    await handler.deleteGroup({ id: groupId, scope } as never);
+
+    expect(userGroups.removeUserGroup).toHaveBeenCalledTimes(75);
+    expect(maxInFlight).toBeLessThanOrEqual(config.system.iamCascadeChunkSize);
+    expect(maxInFlight).toBeGreaterThan(1);
   });
 
   it('clears the permissions authz cache when the group has no remaining relations', async () => {

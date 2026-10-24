@@ -40,7 +40,11 @@ function buildService(repo: Partial<IUserAuthenticationMethodRepository>) {
     } as IUserAuthenticationMethodRepository,
     {} as IUserSessionRepository,
     { logCreate: vi.fn() } as unknown as IAuditLogger,
-    { publish: vi.fn(), resolveLinkedProjectIds: vi.fn() } as IEventPublisher,
+    {
+      publish: vi.fn(),
+      publishMany: vi.fn(),
+      resolveLinkedProjectIds: vi.fn(),
+    } as IEventPublisher,
     {} as ICredentialService
   );
 }

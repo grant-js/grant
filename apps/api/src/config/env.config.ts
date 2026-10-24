@@ -1090,6 +1090,12 @@ const SYSTEM_CONSTANTS = {
 
   /** Maximum page size for pagination */
   maxPageSize: env.PAGINATION_MAX_PAGE_SIZE,
+
+  /**
+   * Concurrent IAM cascade revokes and outbox INSERT row count per statement.
+   * Deletes still emit one event per subject.
+   */
+  iamCascadeChunkSize: env.IAM_CASCADE_CHUNK_SIZE,
 } as const;
 
 // ============================================================================

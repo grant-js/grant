@@ -1,6 +1,7 @@
 import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
+import { config } from '@/config';
 import { PermissionHandler } from '@/handlers/permissions.handler';
 
 const permissionId = '10000000-0000-4000-8000-0000000000d1';
@@ -82,6 +83,28 @@ describe('PermissionHandler.deletePermission cascade', () => {
     expect(permissionsClear).toHaveBeenCalledTimes(1);
     expect(calls.indexOf('permissions.clear')).toBeLessThan(calls.indexOf('deletePermission'));
     expect(calls.indexOf('deletePermission')).toBe(calls.length - 1);
+  });
+
+  it('revokes every subject and never overlaps more than the cascade chunk', async () => {
+    const members = Array.from({ length: 75 }, (_, index) => `user-${index}`);
+    const { handler, userPermissions } = build();
+    userPermissions.getUserPermissions.mockResolvedValue(
+      members.map((userId) => ({ userId, permissionId }))
+    );
+    let inFlight = 0;
+    let maxInFlight = 0;
+    userPermissions.revokeUserPermission.mockImplementation(async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await Promise.resolve();
+      inFlight -= 1;
+    });
+
+    await handler.deletePermission({ id: permissionId, scope } as never);
+
+    expect(userPermissions.revokeUserPermission).toHaveBeenCalledTimes(75);
+    expect(maxInFlight).toBeLessThanOrEqual(config.system.iamCascadeChunkSize);
+    expect(maxInFlight).toBeGreaterThan(1);
   });
 
   it('clears the permissions authz cache when the permission has no remaining relations', async () => {

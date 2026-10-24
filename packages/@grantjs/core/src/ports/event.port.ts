@@ -12,6 +12,13 @@ export interface IEventPublisher {
   publish(event: DomainEventInput, transaction?: unknown): Promise<void>;
 
   /**
+   * Write many outbox rows in the same transaction. Empty input is a no-op.
+   * Callers still pass one event per affected subject — this only batches
+   * the insert, it does not drop or collapse events.
+   */
+  publishMany(events: DomainEventInput[], transaction?: unknown): Promise<void>;
+
+  /**
    * Ids of the projects the given entities (role, group, permission, resource,
    * apiKey, tag) are currently linked to, or, for a `user`, the projects the user
    * is a member of. A caller that is about to destroy the links

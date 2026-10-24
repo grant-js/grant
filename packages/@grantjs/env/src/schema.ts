@@ -187,6 +187,13 @@ export const envSchema = z.object({
    */
   GRAPHQL_MAX_COMPLEXITY: optionalNumber(10000),
 
+  /**
+   * How many IAM cascade pivot revokes (and outbox inserts) run in one
+   * Promise.all / INSERT. Large group/role/permission deletes stay one event
+   * per subject; this only bounds concurrent work.
+   */
+  IAM_CASCADE_CHUNK_SIZE: optionalNumber(50),
+
   // CDM document limits. These bound the `JSON` scalar fields of a sync
   // document, which GraphQL accepts without inspecting. Defaults are generous
   // on purpose — they exist to stop unbounded writes, not to shape payloads.
