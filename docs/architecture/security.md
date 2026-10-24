@@ -339,7 +339,7 @@ Passwords are hashed with bcrypt before storage. The cost factor is configurable
 
 **Account lockout:**
 
-`AUTH_MAX_FAILED_LOGIN_ATTEMPTS` (default: 5) and `AUTH_LOCKOUT_DURATION_MINUTES` (default: 15) are enforced for the **project-app `password` provider**, per `(project, user)` (see [Project OAuth](#project-oauth)). Platform (console) login does not enforce them yet: rate limiting on the auth endpoints (see [Rate Limiting](#rate-limiting)) is its primary brute-force mitigation.
+`AUTH_MAX_FAILED_LOGIN_ATTEMPTS` (default: 5) and `AUTH_LOCKOUT_DURATION_MINUTES` (default: 15) are enforced for the **project-app `password` provider**, per `(project, user)` (see [Project OAuth](#project-oauth)), and for **platform (console) email/password login**, per user. Both record the attempt before verifying the password, on a connection that survives the failing request, and key the counter by the resolved user id (never the typed address). Rate limiting on the auth endpoints (see [Rate Limiting](#rate-limiting)) remains an additional IP-level mitigation.
 
 ## Email Verification
 
