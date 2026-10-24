@@ -71,6 +71,7 @@ export function createHandlers(
     services.auth,
     services.organizationInvitations,
     services.credentials,
+    services.credentialSignInLockouts,
     cache,
     services,
     db,
