@@ -299,6 +299,7 @@ export class RoleHandler extends CacheHandler {
       ]);
 
       await this.removeRoleIdFromScopeCache(scope, roleId);
+      await this.invalidatePermissionsCacheForAllScopes();
 
       return await this.roles.deleteRole(params, tx);
     });
