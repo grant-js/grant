@@ -87,6 +87,7 @@ export class ProjectAppRepository
         limit: params.limit ?? undefined,
         requestedFields: params.requestedFields ?? undefined,
         filters: projectIdFilter,
+        unbounded: (params as { unbounded?: boolean }).unbounded === true,
       },
       transaction
     );

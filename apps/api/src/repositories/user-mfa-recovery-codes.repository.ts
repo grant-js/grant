@@ -28,7 +28,7 @@ export class UserMfaRecoveryCodeRepository
       { field: 'isUsed', operator: 'eq', value: false },
       { field: 'deletedAt', operator: 'isNull', value: undefined },
     ];
-    const result = await this.query({ filters, limit: -1 }, transaction);
+    const result = await this.query({ filters, limit: -1, unbounded: true }, transaction);
     return result.items;
   }
 
@@ -41,7 +41,7 @@ export class UserMfaRecoveryCodeRepository
       { field: 'isUsed', operator: 'eq', value: false },
       { field: 'deletedAt', operator: 'isNull', value: undefined },
     ];
-    const result = await this.query({ filters, limit: -1 }, transaction);
+    const result = await this.query({ filters, limit: -1, unbounded: true }, transaction);
     const items = result.items;
     if (items.length === 0) {
       return { activeCount: 0, lastGeneratedAt: null };

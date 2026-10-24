@@ -1,6 +1,7 @@
 import { ResourceResolvers } from '@grantjs/schema';
 
 import { GraphqlContext } from '@/graphql/types';
+import { unboundedList } from '@/lib/pagination.lib';
 
 /**
  * Resolves Resource.tags scoped to the caller's tenant.
@@ -35,11 +36,13 @@ export const resourceTagsResolver: ResourceResolvers<GraphqlContext>['tags'] = a
   }
 
   const ids = pivots.map((p) => p.tagId);
-  const { tags } = await context.handlers.tags.getTags({
-    scope,
-    ids,
-    limit: -1,
-  });
+  const { tags } = await context.handlers.tags.getTags(
+    unboundedList({
+      scope,
+      ids,
+      limit: -1,
+    })
+  );
 
   const isPrimaryByTagId = new Map(pivots.map((p) => [p.tagId, p.isPrimary]));
   return tags.map((t) => ({ ...t, isPrimary: isPrimaryByTagId.get(t.id) ?? false }));

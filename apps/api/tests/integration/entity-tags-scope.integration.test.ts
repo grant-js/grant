@@ -111,6 +111,7 @@ describe('entity tags scope (cross-project leak regression)', () => {
         scope: scopeA,
         ids: [tagProjectA.id, tagProjectB.id],
         limit: -1,
+        unbounded: true,
       })
     );
   });
@@ -127,6 +128,7 @@ describe('entity tags scope (cross-project leak regression)', () => {
         scope: scopeB,
         ids: [tagProjectA.id, tagProjectB.id],
         limit: -1,
+        unbounded: true,
       })
     );
   });
@@ -162,6 +164,7 @@ describe('entity tags scope (cross-project leak regression)', () => {
       scope: scopeA,
       ids: [tagProjectA.id],
       limit: -1,
+      unbounded: true,
     });
   });
 });

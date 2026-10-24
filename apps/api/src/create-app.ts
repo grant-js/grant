@@ -38,6 +38,7 @@ import {
 } from '@grantjs/database';
 import cors from 'cors';
 import express from 'express';
+import { specifiedRules } from 'graphql';
 import helmet from 'helmet';
 import http from 'http';
 import swaggerUi from 'swagger-ui-express';
@@ -49,6 +50,7 @@ import { i18nMiddleware, initializeI18n } from '@/i18n';
 import { graphqlMinAalAtLoginMiddleware } from '@/lib/authorization/min-aal-at-login';
 import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
+import { createGraphqlCostValidationRules } from '@/lib/graphql/query-cost.lib';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
 import {
@@ -154,6 +156,15 @@ export async function createApp(): Promise<CreatedApp> {
     schema,
     introspection: config.apollo.introspection,
     formatError: formatGraphQLError,
+    validationRules: [
+      ...specifiedRules,
+      ...createGraphqlCostValidationRules({
+        maxDepth: config.apollo.maxDepth,
+        maxComplexity: config.apollo.maxComplexity,
+        defaultPageSize: config.system.defaultPageSize,
+        maxPageSize: config.system.maxPageSize,
+      }),
+    ],
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
       ...(config.apollo.playground

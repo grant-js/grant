@@ -67,6 +67,7 @@ export class TagHandler extends CacheHandler {
       sort,
       search,
       requestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     return tagsResult;

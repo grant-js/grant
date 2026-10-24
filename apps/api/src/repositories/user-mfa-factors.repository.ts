@@ -23,7 +23,7 @@ export class UserMfaFactorRepository
     const filters: FilterCondition<UserMfaFactorModel>[] = [
       { field: 'userId', operator: 'eq', value: userId },
     ];
-    const result = await this.query({ filters, limit: -1 }, transaction);
+    const result = await this.query({ filters, limit: -1, unbounded: true }, transaction);
     return result.items;
   }
 

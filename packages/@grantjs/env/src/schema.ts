@@ -176,6 +176,17 @@ export const envSchema = z.object({
   PAGINATION_DEFAULT_PAGE_SIZE: optionalNumber(50),
   PAGINATION_MAX_PAGE_SIZE: optionalNumber(100),
 
+  /**
+   * GraphQL selection-set depth cap (fragments included). Introspection
+   * trees (`__schema` / `__type`) are not counted so the sandbox still works.
+   */
+  GRAPHQL_MAX_DEPTH: optionalNumber(15),
+  /**
+   * GraphQL query complexity cap. Each field costs 1 × the product of
+   * ancestor `limit` arguments (capped at PAGINATION_MAX_PAGE_SIZE).
+   */
+  GRAPHQL_MAX_COMPLEXITY: optionalNumber(10000),
+
   // CDM document limits. These bound the `JSON` scalar fields of a sync
   // document, which GraphQL accepts without inspecting. Defaults are generous
   // on purpose — they exist to stop unbounded writes, not to shape payloads.

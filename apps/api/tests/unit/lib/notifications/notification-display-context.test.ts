@@ -105,5 +105,13 @@ describe('NotificationDisplayContextResolver', () => {
     expect(ctx.subjectName).toBe('Bob Member');
     expect(ctx.permissionName).toBe('Read users');
     expect(ctx.groupName).toBe('Editors');
+    expect(users.getUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ids: expect.arrayContaining(['actor-1', 'user-1']),
+        limit: -1,
+        unbounded: true,
+      }),
+      undefined
+    );
   });
 });

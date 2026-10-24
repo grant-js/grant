@@ -152,6 +152,7 @@ export class UserHandler extends CacheHandler {
       sort,
       search: effectiveSearch,
       requestedFields: repositoryRequestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     const fieldList = requestedFields as Array<keyof User> | undefined;

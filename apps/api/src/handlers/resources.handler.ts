@@ -99,6 +99,7 @@ export class ResourceHandler extends CacheHandler {
       search,
       isActive,
       requestedFields: repositoryRequestedFields,
+      ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
 
     return hydrateList({
