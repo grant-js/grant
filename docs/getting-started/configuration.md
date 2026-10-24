@@ -118,6 +118,10 @@ Who attaches `x-origin-verify` (never a CloudFront Function):
 
 Web needs `ORIGIN_VERIFY_SECRET` at **server** runtime when Next is the front. Direct `curl` against the API origin must send the header; against the web origin it must not — the front attaches it. Deploy notes: [Docker](/deployment/docker), [Kubernetes](/deployment/kubernetes), [AWS](/deployment/aws-serverless#security-model).
 
+### Trusted client IP (production)
+
+Rate limits and audit IPs key on the client address. In production set `SECURITY_TRUSTED_CLIENT_IP_HEADER` to a header the edge **overwrites** (for example `cloudfront-viewer-address` on AWS). Do not trust the leftmost `X-Forwarded-For` hop. Details: [Security — Rate Limiting](/architecture/security#rate-limiting).
+
 ## Using config in code
 
 The API reads env via a centralized, type-safe config:
