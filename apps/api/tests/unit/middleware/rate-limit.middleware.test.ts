@@ -214,6 +214,48 @@ describe('rateLimitMiddleware', () => {
       expect(res.status).toHaveBeenCalledWith(429);
     });
 
+    it('applies the auth bucket to POST /graphql/foo login', async () => {
+      const req = createMockReq({
+        method: 'POST',
+        path: '/graphql/foo',
+        body: {
+          operationName: 'login',
+          query: 'mutation login { login { accessToken } }',
+        },
+      });
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('increments a bucket for a cyclic GraphQL document without hanging', async () => {
+      mockSecurity.rateLimitMax = 2;
+      const req = createMockReq({
+        method: 'POST',
+        path: '/graphql',
+        body: {
+          query:
+            'fragment A on Mutation { ...B } fragment B on Mutation { ...A } mutation { ...A }',
+        },
+      });
+      const res = createMockRes();
+
+      await middleware(req, res, next);
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).not.toHaveBeenCalled();
+
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
     it('does not apply the auth bucket to an unrelated GraphQL operation', async () => {
       mockSecurity.rateLimitMax = 100;
       const req = createMockReq({

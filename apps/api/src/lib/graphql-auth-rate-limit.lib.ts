@@ -21,7 +21,10 @@ export const AUTH_SENSITIVE_GRAPHQL_OPERATION_NAMES = [
 
 const AUTH_SENSITIVE_GRAPHQL_NAME_SET = new Set<string>(AUTH_SENSITIVE_GRAPHQL_OPERATION_NAMES);
 
-const GRAPHQL_PATHS = new Set(['/graphql', '/graphql/']);
+/** Apollo is mounted at `/graphql`; leftover path (`/graphql/foo`) is still GraphQL. */
+export function isGraphqlHttpPath(path: string): boolean {
+  return path === '/graphql' || path.startsWith('/graphql/');
+}
 
 type GraphqlRequestBody = {
   query?: unknown;
@@ -35,20 +38,26 @@ function isFragmentDefinition(node: DefinitionNode): node is FragmentDefinitionN
 function collectFieldNames(
   selections: readonly SelectionNode[],
   fragments: Map<string, FragmentDefinitionNode>,
-  out: Set<string>
+  out: Set<string>,
+  visitedFragments: Set<string>
 ): void {
   for (const sel of selections) {
     if (sel.kind === Kind.FIELD) {
       out.add(sel.name.value);
       if (sel.selectionSet) {
-        collectFieldNames(sel.selectionSet.selections, fragments, out);
+        collectFieldNames(sel.selectionSet.selections, fragments, out, visitedFragments);
       }
     } else if (sel.kind === Kind.INLINE_FRAGMENT) {
-      collectFieldNames(sel.selectionSet.selections, fragments, out);
+      collectFieldNames(sel.selectionSet.selections, fragments, out, visitedFragments);
     } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
-      const fragment = fragments.get(sel.name.value);
+      const fragmentName = sel.name.value;
+      if (visitedFragments.has(fragmentName)) {
+        continue;
+      }
+      const fragment = fragments.get(fragmentName);
       if (fragment) {
-        collectFieldNames(fragment.selectionSet.selections, fragments, out);
+        visitedFragments.add(fragmentName);
+        collectFieldNames(fragment.selectionSet.selections, fragments, out, visitedFragments);
       }
     }
   }
@@ -87,7 +96,7 @@ export function graphqlDocumentUsesAuthSensitiveOperation(
   }
 
   const names = new Set<string>();
-  collectFieldNames(op.selectionSet.selections, fragments, names);
+  collectFieldNames(op.selectionSet.selections, fragments, names, new Set());
   for (const name of names) {
     if (AUTH_SENSITIVE_GRAPHQL_NAME_SET.has(name)) {
       return true;
@@ -117,17 +126,23 @@ function bodyUsesAuthSensitiveOperation(body: GraphqlRequestBody): boolean {
 export function isAuthSensitiveGraphqlRequest(
   req: Pick<Request, 'method' | 'path' | 'body'>
 ): boolean {
-  if (req.method !== 'POST' || !GRAPHQL_PATHS.has(req.path)) {
+  if (req.method !== 'POST' || !isGraphqlHttpPath(req.path)) {
     return false;
   }
-  const raw = req.body;
-  if (Array.isArray(raw)) {
-    return raw.some(
-      (item) => item && typeof item === 'object' && bodyUsesAuthSensitiveOperation(item)
-    );
+  try {
+    const raw = req.body;
+    if (Array.isArray(raw)) {
+      return raw.some(
+        (item) => item && typeof item === 'object' && bodyUsesAuthSensitiveOperation(item)
+      );
+    }
+    if (!raw || typeof raw !== 'object') {
+      return false;
+    }
+    return bodyUsesAuthSensitiveOperation(raw as GraphqlRequestBody);
+  } catch {
+    // Classification blew up (should be rare after the fragment cycle guard).
+    // Fail closed so this request still increments the auth bucket.
+    return true;
   }
-  if (!raw || typeof raw !== 'object') {
-    return false;
-  }
-  return bodyUsesAuthSensitiveOperation(raw as GraphqlRequestBody);
 }

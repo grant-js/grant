@@ -3,7 +3,10 @@ import { NextFunction, Request, Response } from 'express';
 import { config } from '@/config';
 import { t } from '@/i18n';
 import { ICacheAdapter } from '@/lib/cache';
-import { isAuthSensitiveGraphqlRequest } from '@/lib/graphql-auth-rate-limit.lib';
+import {
+  isAuthSensitiveGraphqlRequest,
+  isGraphqlHttpPath,
+} from '@/lib/graphql-auth-rate-limit.lib';
 import { getClientIp } from '@/lib/headers.lib';
 import { ContextRequest } from '@/types';
 
@@ -95,11 +98,16 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
 
     const ip = getClientIp(req) ?? 'unknown';
     const methodPath = `${req.method} ${path}`;
-    const isAuthSensitive =
-      AUTH_RATE_LIMIT_PATHS.has(methodPath) || isAuthSensitiveGraphqlRequest(req);
     const now = Date.now();
 
     try {
+      let isAuthSensitive = AUTH_RATE_LIMIT_PATHS.has(methodPath);
+      try {
+        isAuthSensitive = isAuthSensitive || isAuthSensitiveGraphqlRequest(req);
+      } catch {
+        isAuthSensitive = isAuthSensitive || (req.method === 'POST' && isGraphqlHttpPath(req.path));
+      }
+
       if (isAuthSensitive) {
         const authWindowMs = config.security.rateLimitAuthWindowMinutes * 60 * 1000;
         const authKey = `auth:${ip}`;

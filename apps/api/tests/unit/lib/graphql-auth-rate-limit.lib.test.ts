@@ -96,4 +96,56 @@ describe('graphql auth-sensitive rate-limit classification', () => {
       })
     ).toBe(false);
   });
+
+  it('treats leftover GraphQL mount paths as GraphQL', () => {
+    expect(
+      isAuthSensitiveGraphqlRequest({
+        method: 'POST',
+        path: '/graphql/foo',
+        body: {
+          operationName: 'login',
+          query: 'mutation login { login { accessToken } }',
+        },
+      })
+    ).toBe(true);
+    expect(
+      isAuthSensitiveGraphqlRequest({
+        method: 'POST',
+        path: '/graphql//',
+        body: { query: 'mutation { login { accessToken } }' },
+      })
+    ).toBe(true);
+  });
+
+  it('does not treat /graphql-admin as the GraphQL mount', () => {
+    expect(
+      isAuthSensitiveGraphqlRequest({
+        method: 'POST',
+        path: '/graphql-admin',
+        body: {
+          operationName: 'login',
+          query: 'mutation login { login { accessToken } }',
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('does not hang on a cyclic fragment document', () => {
+    const cyclic =
+      'fragment A on Mutation { ...B } fragment B on Mutation { ...A } mutation { ...A }';
+    expect(graphqlDocumentUsesAuthSensitiveOperation(cyclic)).toBe(false);
+    expect(
+      isAuthSensitiveGraphqlRequest({
+        method: 'POST',
+        path: '/graphql',
+        body: { query: cyclic },
+      })
+    ).toBe(false);
+  });
+
+  it('still sees login through an acyclic fragment after the cycle guard', () => {
+    const cyclicWithLogin =
+      'fragment A on Mutation { login { accessToken } ...B } fragment B on Mutation { ...A } mutation { ...A }';
+    expect(graphqlDocumentUsesAuthSensitiveOperation(cyclicWithLogin)).toBe(true);
+  });
 });
