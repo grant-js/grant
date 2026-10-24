@@ -1519,12 +1519,13 @@ export class ProjectOAuthHandler {
       };
       const appSlugs = app.scopes ?? [];
       const grantSlugs = issued.grant.scopes ?? [];
-      const candidateSlugs =
-        grantSlugs.length > 0 && appSlugs.length > 0
-          ? grantSlugs.filter((slug) => appSlugs.includes(slug))
-          : grantSlugs.length > 0
-            ? grantSlugs
-            : appSlugs;
+      const candidateSlugs = grantSlugs.filter((slug) => appSlugs.includes(slug));
+      // Empty app allowlist is "no OAuth scopes", not "keep the stored grant". An empty
+      // intersection (allowlist cleared, or no overlap) shares the mint fail-closed rule.
+      // Apps that never configured scopes (grant and app both empty) still mint apiKey.
+      if (candidateSlugs.length === 0 && (appSlugs.length > 0 || grantSlugs.length > 0)) {
+        throw new AuthenticationError('invalid_scope');
+      }
       const accessToken = await this.signProjectScopedToken(
         issued.grant.userId,
         app,
