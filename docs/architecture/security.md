@@ -66,7 +66,15 @@ All JWTs include a **`type`** claim (`TokenType`) that identifies how the token 
 - **scopes** — Only when type is projectApp. Array of granted scope slugs (resource:action) — intersection of the app's configured scopes and the user's project permissions. Authorization is capped to this list.
 - **isVerified** — Only for session tokens (email verification status). Omitted for API key and project-app tokens (treated as verified).
 - **aud** / **iss** — For sessions, both are the platform API URL per RFC 7519. For project-app tokens, aud is the ProjectApp client_id and iss is the project JWKS issuer.
-- **jti** — Identifies the session, API key, or project-app token, enabling targeted revocation.
+- **jti** — Identifies the session, API key, or project-app grant. Verification does not denylist `jti`; see [Residual access JWT window](#residual-access-jwt-window).
+
+### Residual access JWT window
+
+Revoking an API key or a project-app grant rejects **new** token exchange and grant refresh. Access JWTs already issued stay valid until `exp` (default 15 minutes, `JWT_ACCESS_TOKEN_EXPIRATION_MINUTES`).
+
+`Grant.getAuth` verifies signature, `type`, and claims. It does not look up the key or grant, and it does not denylist `jti`. That is the documented exchange-time model. There is no `jti` revocation list or introspection endpoint; add one only if a later story needs a shorter residual window.
+
+The same `exp` bound applies after a project password reset that revokes every grant in that project: those access tokens live until they expire.
 
 ## Session Management
 
@@ -192,7 +200,7 @@ sequenceDiagram
 
 Public apps (no `clientSecretHash`) authenticate with PKCE only. Confidential apps must send `client_secret`. The endpoint rejects `client_credentials`, does not issue `id_token`, and does not implement DPoP.
 
-Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails and revokes the grant family (the live grant and any siblings that share `family_id`). Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
+Refresh secrets are stored as SHA-256 hex on `project_oauth_grants`. Access JWT **jti** is the grant id. Reusing a rotated refresh token fails and revokes the grant family (the live grant and any siblings that share `family_id`). Revoking a grant stops refresh; access JWTs already issued stay valid until `exp` (see [Residual access JWT window](#residual-access-jwt-window)). Grant rows cascade-delete with the user; hashed secrets are not included in GDPR export.
 
 JSON envelope: `{ success, data: { accessToken, tokenType, expiresIn, refreshToken, scope? } }`.
 
@@ -510,8 +518,10 @@ Three layers are available:
 
 The `/health` endpoint is always excluded. Storage uses the same cache backend as the rest of the app (in-memory or Redis).
 
-::: warning
-Deploy the API behind a trusted reverse proxy (Nginx, Caddy, cloud LB) so `X-Forwarded-For` reflects real client IPs. Without a trusted proxy, rate limits are keyed by the connecting host and may be ineffective. See [Self-hosting](/deployment/self-hosting) for reverse-proxy setup.
+::: warning Trusted client IP
+In production, set `SECURITY_TRUSTED_CLIENT_IP_HEADER` to a header the edge **overwrites** (not appends). Rate limits and audit IPs use that header exclusively. Do not key limits on the leftmost `X-Forwarded-For` hop: proxies that append leave the first entry attacker-controlled.
+
+When the trusted header is unset, the API falls back to the first `X-Forwarded-For` entry (then `X-Real-IP`, then the connecting host). That path is only safe behind a proxy that builds the chain itself. AWS sets `cloudfront-viewer-address`; see [AWS serverless — Client IP and rate limiting](/deployment/aws-serverless#client-ip-and-rate-limiting). Reverse-proxy setup: [Self-hosting](/deployment/self-hosting).
 :::
 
 **Response when limit exceeded:** `429 Too Many Requests` with `Retry-After` header:
@@ -528,16 +538,17 @@ Deploy the API behind a trusted reverse proxy (Nginx, Caddy, cloud LB) so `X-For
 
 ### Configuration
 
-| Variable                                        | Default       | Description                       |
-| ----------------------------------------------- | ------------- | --------------------------------- |
-| `SECURITY_ENABLE_RATE_LIMIT`                    | `true` (prod) | Enable global rate limiting       |
-| `SECURITY_RATE_LIMIT_MAX`                       | `100`         | Global requests per window        |
-| `SECURITY_RATE_LIMIT_WINDOW_MINUTES`            | `15`          | Global window                     |
-| `SECURITY_RATE_LIMIT_AUTH_MAX`                  | `20`          | Auth endpoint requests per window |
-| `SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`       | `15`          | Auth endpoint window              |
-| `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED`        | `false`       | Enable per-tenant limiting        |
-| `SECURITY_RATE_LIMIT_PER_TENANT_MAX`            | `200`         | Per-tenant requests per window    |
-| `SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES` | `15`          | Per-tenant window                 |
+| Variable                                        | Default       | Description                                                                                                              |
+| ----------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `SECURITY_TRUSTED_CLIENT_IP_HEADER`             | _(empty)_     | Header the edge overwrites with the real client IP. When set, used exclusively (no XFF fallback). Required in production |
+| `SECURITY_ENABLE_RATE_LIMIT`                    | `true` (prod) | Enable global rate limiting                                                                                              |
+| `SECURITY_RATE_LIMIT_MAX`                       | `100`         | Global requests per window                                                                                               |
+| `SECURITY_RATE_LIMIT_WINDOW_MINUTES`            | `15`          | Global window                                                                                                            |
+| `SECURITY_RATE_LIMIT_AUTH_MAX`                  | `20`          | Auth endpoint requests per window                                                                                        |
+| `SECURITY_RATE_LIMIT_AUTH_WINDOW_MINUTES`       | `15`          | Auth endpoint window                                                                                                     |
+| `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED`        | `false`       | Enable per-tenant limiting                                                                                               |
+| `SECURITY_RATE_LIMIT_PER_TENANT_MAX`            | `200`         | Per-tenant requests per window                                                                                           |
+| `SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES` | `15`          | Per-tenant window                                                                                                        |
 
 ## Row-Level Security (RLS)
 

@@ -97,7 +97,7 @@ The exchange endpoint (`/auth/token`) is not permission-guarded — it authentic
 ## Security
 
 - **Secret shown once** — the `clientSecret` is returned only at creation time. It is hashed with bcrypt before storage and cannot be retrieved again.
-- **Revocation** — revoked keys are immediately rejected on exchange. Revocation records who revoked the key and when.
+- **Revocation** — revoked keys are immediately rejected on **exchange**. Access JWTs already issued stay valid until `exp` (default 15 minutes). `Grant.getAuth` does not denylist `jti`. See [Security — Residual access JWT window](/architecture/security#residual-access-jwt-window).
 - **Expiration** — keys can have an optional `expiresAt` date. Expired keys are rejected on exchange.
 - **Audit logging** — all key operations (create, revoke, delete, exchange) are recorded in the audit log with scope metadata.
 

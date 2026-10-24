@@ -53,6 +53,7 @@ Everything else has safe defaults; you can tighten it later (rate limits, Redis 
    - Run migrations and seed via the `api` service (see [Docker deployment](/deployment/docker)).
 4. **Put a reverse proxy in front**
    - Terminate TLS and route traffic to `web` (`3000`) and `api` (`4000`) or terminate TLS directly in your infrastructure (load balancer, ingress controller).
+   - In production, set `SECURITY_TRUSTED_CLIENT_IP_HEADER` to a header that proxy **overwrites**; do not key rate limits on the leftmost `X-Forwarded-For` hop. See [Security — Rate Limiting](/architecture/security#rate-limiting).
 
 `demo.grantjs.org` uses `docker-compose.demo.yml`: an nginx gateway, one API replica, and Postgres and Redis on the host. Raise the API count with `--scale api=N` when clustering needs a live check. For Kubernetes, the same images and environment variables apply; use the [Kubernetes (Helm)](/deployment/kubernetes) guide and the `charts/grant-platform` chart.
 
