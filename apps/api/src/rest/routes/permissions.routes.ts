@@ -7,6 +7,7 @@ import {
 } from '@grantjs/schema';
 import { Router } from 'express';
 
+import { requestContext } from '@/rest/request-context';
 import { createCrudRouter, CrudListArgs } from '@/rest/routes/common/crud-router';
 import {
   createPermissionRequestSchema,
@@ -17,7 +18,7 @@ import {
 } from '@/rest/schemas';
 import { RequestContext } from '@/types';
 
-export function createPermissionsRouter(context: RequestContext): Router {
+export function createPermissionsRouter(fallback?: RequestContext): Router {
   return createCrudRouter({
     resource: ResourceSlug.Permission,
     schemas: {
@@ -27,12 +28,13 @@ export function createPermissionsRouter(context: RequestContext): Router {
       params: permissionParamsSchema,
       scopeQuery: deletePermissionQuerySchema,
     },
-    list: (args: CrudListArgs<Permission, PermissionSortInput>) =>
-      context.handlers.permissions.getPermissions(args),
-    create: (input: CreatePermissionInput) =>
-      context.handlers.permissions.createPermission({ input }),
-    update: (id, input: UpdatePermissionInput) =>
-      context.handlers.permissions.updatePermission({ id, input }),
-    remove: (id, scope) => context.handlers.permissions.deletePermission({ id, scope }),
+    list: (args: CrudListArgs<Permission, PermissionSortInput>, req) =>
+      requestContext(req, fallback).handlers.permissions.getPermissions(args),
+    create: (input: CreatePermissionInput, req) =>
+      requestContext(req, fallback).handlers.permissions.createPermission({ input }),
+    update: (id, input: UpdatePermissionInput, req) =>
+      requestContext(req, fallback).handlers.permissions.updatePermission({ id, input }),
+    remove: (id, scope, req) =>
+      requestContext(req, fallback).handlers.permissions.deletePermission({ id, scope }),
   });
 }

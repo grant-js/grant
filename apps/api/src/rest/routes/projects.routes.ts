@@ -16,6 +16,7 @@ import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization
 import { AuthenticationError } from '@/lib/errors';
 import { resolveSyncJobEnqueuedById } from '@/lib/resolve-sync-job-enqueued-by.lib';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   clearProjectPictureRequestSchema,
   confirmProjectPictureUploadRequestSchema,
@@ -38,7 +39,7 @@ import { buildSortInput, queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createProjectsRouter(context: RequestContext): Router {
+export function createProjectsRouter(fallback?: RequestContext): Router {
   const router = Router();
 
   router.get(
@@ -60,7 +61,7 @@ export function createProjectsRouter(context: RequestContext): Router {
         tenant,
       });
 
-      const result = await context.handlers.projects.getProjects({
+      const result = await requestContext(req, fallback).handlers.projects.getProjects({
         page,
         limit,
         search,
@@ -87,7 +88,9 @@ export function createProjectsRouter(context: RequestContext): Router {
         input: req.body,
       };
 
-      const project: Project = await context.handlers.projects.createProject(variables);
+      const project: Project = await requestContext(req, fallback).handlers.projects.createProject(
+        variables
+      );
 
       sendSuccessResponse(res, project, 201);
     }
@@ -112,7 +115,10 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scope, contentLength, contentType } = req.body;
 
-      const result = await context.handlers.projects.requestProjectSyncUploadUrl({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.requestProjectSyncUploadUrl({
         id,
         scope,
         input: { contentLength, contentType },
@@ -141,7 +147,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scope, ...input } = req.body;
 
-      const enqueuedById = resolveSyncJobEnqueuedById(context.user);
+      const enqueuedById = resolveSyncJobEnqueuedById(requestContext(req, fallback).user);
       if (!enqueuedById) {
         throw new AuthenticationError('Authenticated user required to start a sync job');
       }
@@ -153,7 +159,10 @@ export function createProjectsRouter(context: RequestContext): Router {
        * strings; the handler/service layer normalises them to `Date` again,
        * so the cast through `unknown` is a contract gap, not a runtime bug.
        */
-      const job: ProjectSyncJob = await context.handlers.projects.startProjectSync({
+      const job: ProjectSyncJob = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.startProjectSync({
         id,
         scope,
         input: input as unknown as SyncProjectInput,
@@ -183,12 +192,15 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id } = req.params;
       const { scope, version, jobName, sections, includeUserApiKeys, mode } = req.body;
 
-      const enqueuedById = resolveSyncJobEnqueuedById(context.user);
+      const enqueuedById = resolveSyncJobEnqueuedById(requestContext(req, fallback).user);
       if (!enqueuedById) {
         throw new AuthenticationError('Authenticated user required to start an export job');
       }
 
-      const job: ProjectSyncJob = await context.handlers.projects.startProjectExport({
+      const job: ProjectSyncJob = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.startProjectExport({
         id,
         scope,
         input: {
@@ -228,7 +240,7 @@ export function createProjectsRouter(context: RequestContext): Router {
 
       const sort = buildSortInput<ProjectSyncJobSortableField>(sortField, sortOrder);
 
-      const result = await context.handlers.projects.listProjectSyncJobs({
+      const result = await requestContext(req, fallback).handlers.projects.listProjectSyncJobs({
         id,
         scope: { id: scopeId, tenant },
         page,
@@ -263,11 +275,13 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id, jobId } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const result = await context.handlers.projects.getProjectSyncJobPayload({
-        id,
-        jobId,
-        scope: { id: scopeId, tenant },
-      });
+      const result = await requestContext(req, fallback).handlers.projects.getProjectSyncJobPayload(
+        {
+          id,
+          jobId,
+          scope: { id: scopeId, tenant },
+        }
+      );
 
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       if (result.byReference) {
@@ -304,7 +318,10 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id, jobId } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const { snapshot } = await context.handlers.projects.getProjectSyncJobSnapshot({
+      const { snapshot } = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.getProjectSyncJobSnapshot({
         id,
         jobId,
         scope: { id: scopeId, tenant },
@@ -338,7 +355,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id, jobId } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const job = await context.handlers.projects.getProjectSyncJob({
+      const job = await requestContext(req, fallback).handlers.projects.getProjectSyncJob({
         id,
         jobId,
         scope: { id: scopeId, tenant },
@@ -370,7 +387,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       const { id, jobId } = req.params;
       const { scopeId, tenant } = req.query;
 
-      const job = await context.handlers.projects.cancelProjectSync({
+      const job = await requestContext(req, fallback).handlers.projects.cancelProjectSync({
         id,
         jobId,
         scope: { id: scopeId, tenant },
@@ -403,7 +420,9 @@ export function createProjectsRouter(context: RequestContext): Router {
         input: req.body,
       };
 
-      const project: Project = await context.handlers.projects.updateProject(variables);
+      const project: Project = await requestContext(req, fallback).handlers.projects.updateProject(
+        variables
+      );
 
       sendSuccessResponse(res, project);
     }
@@ -429,7 +448,7 @@ export function createProjectsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
       const { file, filename, contentType, scope } = req.body;
-      const result = await context.handlers.projects.uploadProjectPicture({
+      const result = await requestContext(req, fallback).handlers.projects.uploadProjectPicture({
         projectId: id,
         file,
         filename,
@@ -460,7 +479,10 @@ export function createProjectsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
       const { filename, contentType, contentLength, scope } = req.body;
-      const result = await context.handlers.projects.requestProjectPictureUploadUrl({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.requestProjectPictureUploadUrl({
         projectId: id,
         filename,
         contentType,
@@ -491,7 +513,10 @@ export function createProjectsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
       const { filename, scope } = req.body;
-      const result = await context.handlers.projects.confirmProjectPictureUpload({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.confirmProjectPictureUpload({
         projectId: id,
         filename,
         scope,
@@ -519,7 +544,7 @@ export function createProjectsRouter(context: RequestContext): Router {
       res
     ) => {
       const { id } = req.params;
-      const project = await context.handlers.projects.clearProjectPicture({
+      const project = await requestContext(req, fallback).handlers.projects.clearProjectPicture({
         projectId: id,
         scope: req.body.scope,
       });
@@ -551,7 +576,9 @@ export function createProjectsRouter(context: RequestContext): Router {
         scope: { id: scopeId, tenant },
       };
 
-      const project: Project = await context.handlers.projects.deleteProject(variables);
+      const project: Project = await requestContext(req, fallback).handlers.projects.deleteProject(
+        variables
+      );
 
       sendSuccessResponse(res, project);
     }

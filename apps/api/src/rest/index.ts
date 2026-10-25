@@ -19,31 +19,30 @@ import { createSigningKeysRoutes } from '@/rest/routes/signing-keys.routes';
 import { createTagsRouter } from '@/rest/routes/tags.routes';
 import { createUserRoutes } from '@/rest/routes/users.routes';
 import { createWebhookSubscriptionsRoutes } from '@/rest/routes/webhook-subscriptions.routes';
-import { RequestContext } from '@/types';
 
-export function createRestRouter(context: RequestContext): Router {
+export function createRestRouter(): Router {
   const router = Router();
 
   router.use(minAalAtLoginRestMiddleware);
 
   router.use('/config', createConfigRoutes());
-  router.use('/api-keys', createApiKeysRoutes(context));
-  router.use('/auth', createAuthRoutes(context));
-  router.use('/signing-keys', createSigningKeysRoutes(context));
-  router.use('/me', createMeRouter(context));
-  router.use('/groups', createGroupsRouter(context));
-  router.use('/organization-invitations', createOrganizationInvitationsRoutes(context));
-  router.use('/organization-members', createOrganizationMembersRoutes(context));
-  router.use('/organizations', createOrganizationRoutes(context));
-  router.use('/permissions', createPermissionsRouter(context));
-  router.use('/project-apps', createProjectAppsRouter(context));
-  router.use('/project-oauth-connections', createProjectOAuthConnectionsRoutes(context));
-  router.use('/projects', createProjectsRouter(context));
-  router.use('/resources', createResourcesRouter(context));
-  router.use('/roles', createRolesRouter(context));
-  router.use('/tags', createTagsRouter(context));
-  router.use('/users', createUserRoutes(context));
-  router.use('/webhook-subscriptions', createWebhookSubscriptionsRoutes(context));
+  router.use('/api-keys', createApiKeysRoutes());
+  router.use('/auth', createAuthRoutes());
+  router.use('/signing-keys', createSigningKeysRoutes());
+  router.use('/me', createMeRouter());
+  router.use('/groups', createGroupsRouter());
+  router.use('/organization-invitations', createOrganizationInvitationsRoutes());
+  router.use('/organization-members', createOrganizationMembersRoutes());
+  router.use('/organizations', createOrganizationRoutes());
+  router.use('/permissions', createPermissionsRouter());
+  router.use('/project-apps', createProjectAppsRouter());
+  router.use('/project-oauth-connections', createProjectOAuthConnectionsRoutes());
+  router.use('/projects', createProjectsRouter());
+  router.use('/resources', createResourcesRouter());
+  router.use('/roles', createRolesRouter());
+  router.use('/tags', createTagsRouter());
+  router.use('/users', createUserRoutes());
+  router.use('/webhook-subscriptions', createWebhookSubscriptionsRoutes());
 
   return router;
 }

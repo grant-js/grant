@@ -6,6 +6,7 @@ import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization
 import { AuthenticationError } from '@/lib/errors';
 import { NotFoundError } from '@/lib/errors';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   createUserRequestSchema,
   deleteUserQuerySchema,
@@ -18,7 +19,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createUserRoutes(context: RequestContext) {
+export function createUserRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.get(
@@ -52,7 +53,7 @@ export function createUserRoutes(context: RequestContext) {
         tenant,
       });
 
-      const result = await context.handlers.users.getUsers({
+      const result = await requestContext(req, fallback).handlers.users.getUsers({
         page,
         limit,
         search,
@@ -95,7 +96,7 @@ export function createUserRoutes(context: RequestContext) {
         tenant,
       });
 
-      const result = await context.handlers.users.getUsers({
+      const result = await requestContext(req, fallback).handlers.users.getUsers({
         ids: [id],
         limit: 1,
         scope: { id: scopeId, tenant },
@@ -121,7 +122,7 @@ export function createUserRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof createUserRequestSchema }>, res: Response) => {
       const { name, scope, roleIds, groupIds, permissionIds, tagIds, primaryTagId } = req.body;
 
-      const user = await context.handlers.users.createUser({
+      const user = await requestContext(req, fallback).handlers.users.createUser({
         input: {
           name,
           scope,
@@ -156,12 +157,12 @@ export function createUserRoutes(context: RequestContext) {
       const { name, roleIds, groupIds, tagIds, primaryTagId, scope, pictureUrl, metadata } =
         req.body;
 
-      const actorUserId = context.user?.userId;
+      const actorUserId = requestContext(req, fallback).user?.userId;
       if (!actorUserId) {
         throw new AuthenticationError('Authentication required');
       }
 
-      const user = await context.handlers.users.updateUser({
+      const user = await requestContext(req, fallback).handlers.users.updateUser({
         id,
         input: { name, roleIds, groupIds, tagIds, primaryTagId, scope, pictureUrl, metadata },
         actorUserId,
@@ -189,7 +190,7 @@ export function createUserRoutes(context: RequestContext) {
       const { id } = req.params;
       const { scopeId, tenant, hardDelete } = req.query;
 
-      const user = await context.handlers.users.deleteUser({
+      const user = await requestContext(req, fallback).handlers.users.deleteUser({
         id,
         scope: { id: scopeId, tenant },
         hardDelete: hardDelete ?? false,
