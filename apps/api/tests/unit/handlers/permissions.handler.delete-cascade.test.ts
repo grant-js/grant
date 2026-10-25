@@ -35,13 +35,16 @@ function build() {
     deletePermission: vi.fn().mockImplementation(async () => (calls.push('deletePermission'), {})),
   };
   const projectPermissions = { removeProjectPermission: track('removeProjectPermission') };
-  const permissionsClear = vi
+  const permissionsInvalidate = vi
     .fn()
-    .mockImplementation(async () => void calls.push('permissions.clear'));
+    .mockImplementation(async () => (calls.push('permissions.invalidate'), []));
+  const permissionsClear = vi.fn();
   const cache = {
     permissions: {
       has: vi.fn().mockResolvedValue(false),
       clear: permissionsClear,
+      keys: permissionsInvalidate,
+      delete: vi.fn(),
     },
   };
   const tx = { __tx: true };
@@ -65,6 +68,7 @@ function build() {
     userPermissions,
     permissions,
     permissionsClear,
+    permissionsInvalidate,
     calls,
     tx,
   };
@@ -72,7 +76,8 @@ function build() {
 
 describe('PermissionHandler.deletePermission cascade', () => {
   it('clears the permissions authz cache after cascade', async () => {
-    const { handler, permissionsClear, calls, userPermissions, tx } = build();
+    const { handler, permissionsInvalidate, permissionsClear, calls, userPermissions, tx } =
+      build();
 
     await handler.deletePermission({ id: permissionId, scope } as never);
 
@@ -80,8 +85,9 @@ describe('PermissionHandler.deletePermission cascade', () => {
       { userId: memberA, permissionId, scope },
       tx
     );
-    expect(permissionsClear).toHaveBeenCalledTimes(1);
-    expect(calls.indexOf('permissions.clear')).toBeLessThan(calls.indexOf('deletePermission'));
+    expect(permissionsInvalidate).toHaveBeenCalledTimes(1);
+    expect(permissionsClear).not.toHaveBeenCalled();
+    expect(calls.indexOf('permissions.invalidate')).toBeLessThan(calls.indexOf('deletePermission'));
     expect(calls.indexOf('deletePermission')).toBe(calls.length - 1);
   });
 
@@ -108,14 +114,21 @@ describe('PermissionHandler.deletePermission cascade', () => {
   });
 
   it('clears the permissions authz cache when the permission has no remaining relations', async () => {
-    const { handler, permissionsClear, groupPermissions, rolePermissions, userPermissions } =
-      build();
+    const {
+      handler,
+      permissionsInvalidate,
+      permissionsClear,
+      groupPermissions,
+      rolePermissions,
+      userPermissions,
+    } = build();
     groupPermissions.getGroupPermissions.mockResolvedValue([]);
     rolePermissions.getRolePermissions.mockResolvedValue([]);
     userPermissions.getUserPermissions.mockResolvedValue([]);
 
     await handler.deletePermission({ id: permissionId, scope } as never);
 
-    expect(permissionsClear).toHaveBeenCalledTimes(1);
+    expect(permissionsInvalidate).toHaveBeenCalledTimes(1);
+    expect(permissionsClear).not.toHaveBeenCalled();
   });
 });

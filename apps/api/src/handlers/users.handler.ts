@@ -336,7 +336,7 @@ export class UserHandler extends CacheHandler {
             this.syncDirectUserPermissionAdd({ userId, permissionId, scope }, tx)
           )
         );
-        await this.invalidatePermissionsCacheForAllScopes();
+        await this.invalidatePermissionsCacheForAllScopes(scope);
       }
 
       await this.addUserIdToScopeCache(scope, userId);
@@ -544,7 +544,7 @@ export class UserHandler extends CacheHandler {
         );
 
         if (newGroupIds.length > 0 || removedGroupIds.length > 0) {
-          await this.invalidatePermissionsCacheForAllScopes();
+          await this.invalidatePermissionsCacheForAllScopes(scope);
         }
       }
 
@@ -662,7 +662,7 @@ export class UserHandler extends CacheHandler {
     }
 
     if (roleIds.length > 0 || projectUserGroups.length > 0 || projectUserPermissions.length > 0) {
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
     }
   }
 
@@ -864,7 +864,7 @@ export class UserHandler extends CacheHandler {
         },
         tx
       );
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(params.scope);
       return userPermission;
     });
   }
@@ -890,7 +890,7 @@ export class UserHandler extends CacheHandler {
         }
       }
 
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
       return userPermission;
     });
   }
