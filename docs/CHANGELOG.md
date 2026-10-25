@@ -1,5 +1,9 @@
 # grant-docs
 
+## 1.18.6
+
+No changes in this release.
+
 ## 1.18.5
 
 No changes in this release.
