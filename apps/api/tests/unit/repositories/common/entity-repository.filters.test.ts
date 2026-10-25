@@ -331,4 +331,43 @@ describe('query', () => {
     const result = await repo.callQuery({ accessibleIdSource: 'empty', page: 1, limit: 50 });
     expect(result).toEqual({ items: [], totalCount: 0, hasNextPage: false });
   });
+
+  it('pages a pivot subquery with select() instead of relational findMany', async () => {
+    const findMany = vi.fn();
+    const selectBuilder = {
+      from() {
+        return this;
+      },
+      where() {
+        return this;
+      },
+      orderBy() {
+        return this;
+      },
+      limit() {
+        return this;
+      },
+      offset() {
+        return this;
+      },
+      then(onFulfilled: (value: unknown) => unknown, onRejected?: (reason: unknown) => unknown) {
+        return Promise.resolve([]).then(onFulfilled, onRejected);
+      },
+    };
+    const db = {
+      select: vi.fn(() => selectBuilder),
+      query: { probe: { findMany } },
+    };
+    const scoped = new ProbeRepository(db as never);
+
+    const result = await scoped.callQuery({
+      accessibleIdSource: { queryChunks: ['(SELECT 1)'] },
+      page: 1,
+      limit: 50,
+    });
+
+    expect(db.select).toHaveBeenCalled();
+    expect(findMany).not.toHaveBeenCalled();
+    expect(result).toEqual({ items: [], totalCount: 0, hasNextPage: false });
+  });
 });
