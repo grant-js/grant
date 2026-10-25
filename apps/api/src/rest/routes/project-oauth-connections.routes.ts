@@ -3,6 +3,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   clearProjectOAuthConnectionRequestSchema,
   listProjectOAuthConnectionsQuerySchema,
@@ -12,7 +13,7 @@ import { TypedRequest } from '@/rest/types';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createProjectOAuthConnectionsRoutes(context: RequestContext): Router {
+export function createProjectOAuthConnectionsRoutes(fallback?: RequestContext): Router {
   const router = Router();
 
   const mfa = () =>
@@ -34,7 +35,10 @@ export function createProjectOAuthConnectionsRoutes(context: RequestContext): Ro
       res: Response
     ) => {
       const { scopeId, tenant } = req.query;
-      const result = await context.handlers.projectOAuthConnections.getProjectOAuthConnections({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuthConnections.getProjectOAuthConnections({
         id: scopeId!,
         tenant: tenant!,
       });
@@ -58,9 +62,10 @@ export function createProjectOAuthConnectionsRoutes(context: RequestContext): Ro
       req: TypedRequest<{ body: typeof upsertProjectOAuthConnectionRequestSchema }>,
       res: Response
     ) => {
-      const result = await context.handlers.projectOAuthConnections.upsertProjectOAuthConnection(
-        req.body
-      );
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuthConnections.upsertProjectOAuthConnection(req.body);
       sendSuccessResponse(res, result);
     }
   );
@@ -81,9 +86,10 @@ export function createProjectOAuthConnectionsRoutes(context: RequestContext): Ro
       req: TypedRequest<{ body: typeof clearProjectOAuthConnectionRequestSchema }>,
       res: Response
     ) => {
-      const cleared = await context.handlers.projectOAuthConnections.clearProjectOAuthConnection(
-        req.body
-      );
+      const cleared = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuthConnections.clearProjectOAuthConnection(req.body);
       sendSuccessResponse(res, { cleared });
     }
   );

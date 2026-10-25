@@ -10,6 +10,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   getOrganizationMembersQuerySchema,
   removeOrganizationMemberBodySchema,
@@ -22,7 +23,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createOrganizationMembersRoutes(context: RequestContext) {
+export function createOrganizationMembersRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.get(
@@ -54,7 +55,10 @@ export function createOrganizationMembersRoutes(context: RequestContext) {
         sort,
       } as QueryOrganizationMembersArgs;
 
-      const result = await context.handlers.organizationMembers.getOrganizationMembers(params);
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationMembers.getOrganizationMembers(params);
 
       sendSuccessResponse(res, {
         items: result.members,
@@ -85,7 +89,10 @@ export function createOrganizationMembersRoutes(context: RequestContext) {
       const { userId } = req.params;
       const { scope, roleId } = req.body;
 
-      const result = await context.handlers.organizationMembers.updateOrganizationMember({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationMembers.updateOrganizationMember({
         userId,
         input: { scope, roleId },
       });
@@ -115,7 +122,10 @@ export function createOrganizationMembersRoutes(context: RequestContext) {
       const { userId } = req.params;
       const { scope } = req.body;
 
-      const result = await context.handlers.organizationMembers.removeOrganizationMember({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationMembers.removeOrganizationMember({
         userId,
         input: { scope },
       });

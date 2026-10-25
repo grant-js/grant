@@ -252,11 +252,13 @@ export async function createApp(): Promise<CreatedApp> {
     res.send(getOpenApiDocument());
   });
 
-  app.use('/api', (req, res, next) => {
-    const contextReq = req as ContextRequest;
-    const restRouter = createRestRouter(contextReq.context);
+  // One REST router. Handlers still come from request context (`requestContext(req)`).
+  let restRouter: express.Router | undefined;
+  const lazyRestRouter: express.RequestHandler = (req, res, next) => {
+    restRouter ??= createRestRouter();
     restRouter(req, res, next);
-  });
+  };
+  app.use('/api', lazyRestRouter);
 
   app.use(
     '/graphql',

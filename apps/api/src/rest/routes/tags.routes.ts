@@ -10,6 +10,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   createTagRequestSchema,
   deleteTagBodySchema,
@@ -22,7 +23,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createTagsRouter(context: RequestContext): Router {
+export function createTagsRouter(fallback?: RequestContext): Router {
   const router = Router();
 
   router.get(
@@ -42,7 +43,7 @@ export function createTagsRouter(context: RequestContext): Router {
         tenant,
       });
 
-      const result = await context.handlers.tags.getTags({
+      const result = await requestContext(req, fallback).handlers.tags.getTags({
         page,
         limit,
         search,
@@ -67,7 +68,7 @@ export function createTagsRouter(context: RequestContext): Router {
         input: req.body,
       };
 
-      const tag: Tag = await context.handlers.tags.createTag(variables);
+      const tag: Tag = await requestContext(req, fallback).handlers.tags.createTag(variables);
 
       sendSuccessResponse(res, tag, 201);
     }
@@ -99,7 +100,7 @@ export function createTagsRouter(context: RequestContext): Router {
         input: req.body,
       };
 
-      const tag: Tag = await context.handlers.tags.updateTag(variables);
+      const tag: Tag = await requestContext(req, fallback).handlers.tags.updateTag(variables);
 
       sendSuccessResponse(res, tag);
     }
@@ -128,7 +129,7 @@ export function createTagsRouter(context: RequestContext): Router {
         scope: req.body.scope,
       };
 
-      const tag: Tag = await context.handlers.tags.deleteTag(variables);
+      const tag: Tag = await requestContext(req, fallback).handlers.tags.deleteTag(variables);
 
       sendSuccessResponse(res, tag);
     }

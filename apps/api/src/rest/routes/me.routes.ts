@@ -5,6 +5,7 @@ import { authenticateRestRoute } from '@/lib/authorization';
 import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
 import { clearRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import { TypedRequest } from '@/rest/types';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
@@ -26,16 +27,16 @@ import {
   uploadMyUserPictureRequestSchema,
 } from '../schemas/me.schemas';
 
-export function createMeRouter(context: RequestContext): Router {
+export function createMeRouter(fallback?: RequestContext): Router {
   const router = Router();
 
   router.get('/', authenticateRestRoute, async (req, res) => {
-    const me = await context.handlers.me.getMe();
+    const me = await requestContext(req, fallback).handlers.me.getMe();
     sendSuccessResponse(res, me);
   });
 
   router.post('/accounts', authenticateRestRoute, async (req, res) => {
-    const result = await context.handlers.me.createMySecondaryAccount();
+    const result = await requestContext(req, fallback).handlers.me.createMySecondaryAccount();
     sendSuccessResponse(res, result, 201);
   });
 
@@ -44,7 +45,7 @@ export function createMeRouter(context: RequestContext): Router {
     validate({ body: deleteMyAccountsBodySchema }),
     authenticateRestRoute,
     async (req: TypedRequest<{ body: typeof deleteMyAccountsBodySchema }>, res: Response) => {
-      const result = await context.handlers.me.deleteMyAccounts({
+      const result = await requestContext(req, fallback).handlers.me.deleteMyAccounts({
         hardDelete: req.body.hardDelete ?? false,
       });
       sendSuccessResponse(res, result);
@@ -52,7 +53,7 @@ export function createMeRouter(context: RequestContext): Router {
   );
 
   router.get('/export', authenticateRestRoute, async (req, res) => {
-    const { data, filename } = await context.handlers.me.myUserDataExport();
+    const { data, filename } = await requestContext(req, fallback).handlers.me.myUserDataExport();
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.json(data);
@@ -63,7 +64,7 @@ export function createMeRouter(context: RequestContext): Router {
     validate({ body: uploadMyUserPictureRequestSchema }),
     authenticateRestRoute,
     async (req: TypedRequest<{ body: typeof uploadMyUserPictureRequestSchema }>, res: Response) => {
-      const result = await context.handlers.me.uploadMyUserPicture({
+      const result = await requestContext(req, fallback).handlers.me.uploadMyUserPicture({
         file: req.body.file,
         filename: req.body.filename,
         contentType: req.body.contentType,
@@ -81,7 +82,7 @@ export function createMeRouter(context: RequestContext): Router {
       req: TypedRequest<{ body: typeof requestMyUserPictureUploadUrlRequestSchema }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.requestMyUserPictureUploadUrl({
+      const result = await requestContext(req, fallback).handlers.me.requestMyUserPictureUploadUrl({
         filename: req.body.filename,
         contentType: req.body.contentType,
         contentLength: req.body.contentLength,
@@ -99,7 +100,7 @@ export function createMeRouter(context: RequestContext): Router {
       req: TypedRequest<{ body: typeof confirmMyUserPictureUploadRequestSchema }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.confirmMyUserPictureUpload({
+      const result = await requestContext(req, fallback).handlers.me.confirmMyUserPictureUpload({
         filename: req.body.filename,
       });
       sendSuccessResponse(res, result, 201);
@@ -107,12 +108,12 @@ export function createMeRouter(context: RequestContext): Router {
   );
 
   router.get('/authentication-methods', authenticateRestRoute, async (req, res) => {
-    const methods = await context.handlers.me.myUserAuthenticationMethods();
+    const methods = await requestContext(req, fallback).handlers.me.myUserAuthenticationMethods();
     sendSuccessResponse(res, methods);
   });
 
   router.get('/mfa/recovery-codes/status', authenticateRestRoute, async (req, res) => {
-    const status = await context.handlers.me.myMfaRecoveryCodeStatus();
+    const status = await requestContext(req, fallback).handlers.me.myMfaRecoveryCodeStatus();
     sendSuccessResponse(res, status);
   });
 
@@ -126,7 +127,10 @@ export function createMeRouter(context: RequestContext): Router {
       }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.createMyUserAuthenticationMethod(
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.me.createMyUserAuthenticationMethod(
         {
           provider: req.body.provider,
           providerId: req.body.providerId,
@@ -134,8 +138,8 @@ export function createMeRouter(context: RequestContext): Router {
           isVerified: req.body.isVerified,
           isPrimary: req.body.isPrimary,
         },
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
       sendSuccessResponse(res, result, 201);
     }
@@ -146,7 +150,7 @@ export function createMeRouter(context: RequestContext): Router {
     validate({ body: changeMyPasswordRequestSchema }),
     authenticateRestRoute,
     async (req: TypedRequest<{ body: typeof changeMyPasswordRequestSchema }>, res: Response) => {
-      await context.handlers.me.changeMyPassword({
+      await requestContext(req, fallback).handlers.me.changeMyPassword({
         currentPassword: req.body.currentPassword,
         newPassword: req.body.newPassword,
       });
@@ -162,7 +166,7 @@ export function createMeRouter(context: RequestContext): Router {
     validate({ query: getMyUserSessionsQuerySchema }),
     authenticateRestRoute,
     async (req: TypedRequest<{ query: typeof getMyUserSessionsQuerySchema }>, res: Response) => {
-      const result = await context.handlers.me.myUserSessions({
+      const result = await requestContext(req, fallback).handlers.me.myUserSessions({
         audience: req.query.audience,
         page: req.query.page,
         limit: req.query.limit,
@@ -183,7 +187,7 @@ export function createMeRouter(context: RequestContext): Router {
       }>,
       res: Response
     ) => {
-      await context.handlers.me.revokeMyUserSession(req.params.sessionId);
+      await requestContext(req, fallback).handlers.me.revokeMyUserSession(req.params.sessionId);
       sendSuccessResponse(res, {
         success: true,
         message: t(req, 'common.success.sessionRevoked'),
@@ -196,7 +200,7 @@ export function createMeRouter(context: RequestContext): Router {
     validate({ query: listMyNotificationsQuerySchema }),
     authenticateRestRoute,
     async (req: TypedRequest<{ query: typeof listMyNotificationsQuerySchema }>, res: Response) => {
-      const result = await context.handlers.me.myNotifications({
+      const result = await requestContext(req, fallback).handlers.me.myNotifications({
         unreadOnly: req.query.unreadOnly,
         page: req.query.page,
         limit: req.query.limit,
@@ -206,12 +210,12 @@ export function createMeRouter(context: RequestContext): Router {
   );
 
   router.get('/notifications/unread-count', authenticateRestRoute, async (req, res) => {
-    const result = await context.handlers.me.myUnreadNotificationCount();
+    const result = await requestContext(req, fallback).handlers.me.myUnreadNotificationCount();
     sendSuccessResponse(res, result);
   });
 
   router.post('/notifications/read-all', authenticateRestRoute, async (req, res) => {
-    const result = await context.handlers.me.markAllMyNotificationsRead();
+    const result = await requestContext(req, fallback).handlers.me.markAllMyNotificationsRead();
     sendSuccessResponse(res, result);
   });
 
@@ -220,7 +224,7 @@ export function createMeRouter(context: RequestContext): Router {
     validate({ params: myNotificationParamsSchema }),
     authenticateRestRoute,
     async (req: TypedRequest<{ params: typeof myNotificationParamsSchema }>, res: Response) => {
-      await context.handlers.me.markMyNotificationRead(req.params.id);
+      await requestContext(req, fallback).handlers.me.markMyNotificationRead(req.params.id);
       sendSuccessResponse(res, { success: true });
     }
   );
@@ -233,7 +237,9 @@ export function createMeRouter(context: RequestContext): Router {
       req: TypedRequest<{ query: typeof listMyNotificationPreferencesQuerySchema }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.myNotificationPreferences(req.query.scopeTenant);
+      const result = await requestContext(req, fallback).handlers.me.myNotificationPreferences(
+        req.query.scopeTenant
+      );
       sendSuccessResponse(res, result);
     }
   );
@@ -246,13 +252,15 @@ export function createMeRouter(context: RequestContext): Router {
       req: TypedRequest<{ body: typeof setMyNotificationPreferenceRequestSchema }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.setMyNotificationPreference(req.body);
+      const result = await requestContext(req, fallback).handlers.me.setMyNotificationPreference(
+        req.body
+      );
       sendSuccessResponse(res, result, 201);
     }
   );
 
-  router.get('/project-memberships', authenticateRestRoute, async (_req, res) => {
-    const result = await context.handlers.me.myProjectMemberships();
+  router.get('/project-memberships', authenticateRestRoute, async (req, res) => {
+    const result = await requestContext(req, fallback).handlers.me.myProjectMemberships();
     sendSuccessResponse(res, result);
   });
 
@@ -264,7 +272,9 @@ export function createMeRouter(context: RequestContext): Router {
       req: TypedRequest<{ params: typeof myProjectMembershipParamsSchema }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.myProjectMembership(req.params.projectId);
+      const result = await requestContext(req, fallback).handlers.me.myProjectMembership(
+        req.params.projectId
+      );
       sendSuccessResponse(res, { membership: result });
     }
   );
@@ -283,7 +293,7 @@ export function createMeRouter(context: RequestContext): Router {
       }>,
       res: Response
     ) => {
-      const result = await context.handlers.me.updateMyProjectMembership({
+      const result = await requestContext(req, fallback).handlers.me.updateMyProjectMembership({
         projectId: req.params.projectId,
         ...req.body,
       });
@@ -294,7 +304,7 @@ export function createMeRouter(context: RequestContext): Router {
   router.post('/logout', async (req: TypedRequest<Record<string, never>>, res: Response) => {
     const refreshTokenFromCookie = getRefreshTokenFromCookie(req);
     if (refreshTokenFromCookie) {
-      await context.handlers.auth.logout(refreshTokenFromCookie);
+      await requestContext(req, fallback).handlers.auth.logout(refreshTokenFromCookie);
     }
     clearRefreshTokenCookie(res);
     sendSuccessResponse(res, { message: t(req, 'common.success.loggedOut') });

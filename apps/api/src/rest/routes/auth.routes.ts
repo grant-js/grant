@@ -10,6 +10,7 @@ import { getRefreshTokenFromCookie } from '@/lib/headers.lib';
 import { assertEmailProviderForDirectAuth } from '@/lib/oauth-direct-auth.lib';
 import { clearRefreshTokenCookie, setRefreshTokenCookie } from '@/lib/refresh-cookie.lib';
 import { validate, validateBody, validateQuery } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   cliCallbackRequestSchema,
   handleGithubCallbackQuerySchema,
@@ -52,7 +53,7 @@ import {
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createAuthRoutes(context: RequestContext) {
+export function createAuthRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.post(
@@ -62,7 +63,7 @@ export function createAuthRoutes(context: RequestContext) {
       const { provider, providerId, providerData, emailVerificationProof } = req.body;
       assertEmailProviderForDirectAuth(provider);
 
-      const result = await context.handlers.auth.login(
+      const result = await requestContext(req, fallback).handlers.auth.login(
         {
           input: {
             provider,
@@ -71,9 +72,9 @@ export function createAuthRoutes(context: RequestContext) {
             emailVerificationProof,
           },
         },
-        context.userAgent,
-        context.ipAddress,
-        context.requestBaseUrl
+        requestContext(req, fallback).userAgent,
+        requestContext(req, fallback).ipAddress,
+        requestContext(req, fallback).requestBaseUrl
       );
 
       setRefreshTokenCookie(res, result.refreshToken);
@@ -84,15 +85,18 @@ export function createAuthRoutes(context: RequestContext) {
   router.post(
     '/mfa/setup',
     authenticateRestRoute,
-    async (_req: TypedRequest<Record<string, never>>, res: Response) => {
-      const user = context.user;
+    async (req: TypedRequest<Record<string, never>>, res: Response) => {
+      const user = requestContext(req, fallback).user;
       const userId = user?.userId;
       if (!userId) {
         throw new AuthenticationError('Unauthorized');
       }
-      const me = await context.handlers.me.getMe();
+      const me = await requestContext(req, fallback).handlers.me.getMe();
       const accountName = me.email?.trim() || userId;
-      const result = await context.handlers.auth.setupMfa(userId, accountName);
+      const result = await requestContext(req, fallback).handlers.auth.setupMfa(
+        userId,
+        accountName
+      );
       sendSuccessResponse(res, result);
     }
   );
@@ -102,17 +106,17 @@ export function createAuthRoutes(context: RequestContext) {
     authenticateRestRoute,
     validateBody(verifyMfaRequestSchema),
     async (req: TypedRequest<{ body: typeof verifyMfaRequestSchema }>, res: Response) => {
-      const user = context.user;
+      const user = requestContext(req, fallback).user;
       const userId = user?.userId;
       const sessionId = user?.tokenId;
       if (!userId || !sessionId) {
         throw new AuthenticationError('Unauthorized');
       }
-      const result = await context.handlers.auth.verifyMfa(
+      const result = await requestContext(req, fallback).handlers.auth.verifyMfa(
         userId,
         sessionId,
         req.body.code,
-        context.requestBaseUrl
+        requestContext(req, fallback).requestBaseUrl
       );
       setRefreshTokenCookie(res, result.refreshToken);
       sendSuccessResponse(res, result);
@@ -127,17 +131,17 @@ export function createAuthRoutes(context: RequestContext) {
       req: TypedRequest<{ body: typeof verifyMfaRecoveryCodeRequestSchema }>,
       res: Response
     ) => {
-      const user = context.user;
+      const user = requestContext(req, fallback).user;
       const userId = user?.userId;
       const sessionId = user?.tokenId;
       if (!userId || !sessionId) {
         throw new AuthenticationError('Unauthorized');
       }
-      const result = await context.handlers.auth.verifyMfaRecoveryCode(
+      const result = await requestContext(req, fallback).handlers.auth.verifyMfaRecoveryCode(
         userId,
         sessionId,
         req.body.code,
-        context.requestBaseUrl
+        requestContext(req, fallback).requestBaseUrl
       );
       setRefreshTokenCookie(res, result.refreshToken);
       sendSuccessResponse(res, result);
@@ -151,7 +155,7 @@ export function createAuthRoutes(context: RequestContext) {
       const { type, provider, providerId, providerData, emailVerificationProof } = req.body;
       assertEmailProviderForDirectAuth(provider);
 
-      const result = await context.handlers.auth.register(
+      const result = await requestContext(req, fallback).handlers.auth.register(
         {
           type,
           provider,
@@ -159,15 +163,15 @@ export function createAuthRoutes(context: RequestContext) {
           providerData,
           emailVerificationProof,
         },
-        context.locale,
-        context.userAgent,
-        context.ipAddress,
-        context.requestLogger,
-        context.requestBaseUrl
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).userAgent,
+        requestContext(req, fallback).ipAddress,
+        requestContext(req, fallback).requestLogger,
+        requestContext(req, fallback).requestBaseUrl
       );
 
       setRefreshTokenCookie(res, result.refreshToken);
-      context.requestLogger.info({
+      requestContext(req, fallback).requestLogger.info({
         msg: 'User registered',
         accountId: result.account?.id,
       });
@@ -185,11 +189,11 @@ export function createAuthRoutes(context: RequestContext) {
         throw new AuthenticationError('Invalid or expired refresh token');
       }
       try {
-        const result = await context.handlers.auth.refreshSession(
+        const result = await requestContext(req, fallback).handlers.auth.refreshSession(
           refreshToken,
-          context.userAgent,
-          context.ipAddress,
-          context.requestBaseUrl
+          requestContext(req, fallback).userAgent,
+          requestContext(req, fallback).ipAddress,
+          requestContext(req, fallback).requestBaseUrl
         );
         setRefreshTokenCookie(res, result.refreshToken);
         sendSuccessResponse(res, {
@@ -210,9 +214,12 @@ export function createAuthRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof verifyEmailRequestSchema }>, res: Response) => {
       const { token } = req.body;
 
-      const result = await context.handlers.auth.verifyEmail(token, context.locale);
+      const result = await requestContext(req, fallback).handlers.auth.verifyEmail(
+        token,
+        requestContext(req, fallback).locale
+      );
 
-      context.requestLogger.info({ msg: 'Email verified' });
+      requestContext(req, fallback).requestLogger.info({ msg: 'Email verified' });
       sendSuccessResponse(res, result);
     }
   );
@@ -223,10 +230,10 @@ export function createAuthRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof resendVerificationRequestSchema }>, res: Response) => {
       const { email } = req.body;
 
-      const result = await context.handlers.auth.resendVerificationEmail(
+      const result = await requestContext(req, fallback).handlers.auth.resendVerificationEmail(
         email,
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
 
       sendSuccessResponse(res, result);
@@ -242,10 +249,10 @@ export function createAuthRoutes(context: RequestContext) {
     ) => {
       const { email } = req.body;
 
-      const result = await context.handlers.auth.requestPasswordReset(
+      const result = await requestContext(req, fallback).handlers.auth.requestPasswordReset(
         email,
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
 
       sendSuccessResponse(res, result);
@@ -258,21 +265,21 @@ export function createAuthRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof resetPasswordRequestSchema }>, res: Response) => {
       const { token, newPassword } = req.body;
 
-      const result = await context.handlers.auth.resetPassword(
+      const result = await requestContext(req, fallback).handlers.auth.resetPassword(
         token,
         newPassword,
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
 
       sendSuccessResponse(res, result);
     }
   );
 
-  router.get('/providers', async (_req: TypedRequest<Record<string, never>>, res: Response) => {
+  router.get('/providers', async (req: TypedRequest<Record<string, never>>, res: Response) => {
     const [providers, signupPolicy] = await Promise.all([
-      context.handlers.oauth.listProviders(),
-      context.handlers.auth.getSignupPolicy(),
+      requestContext(req, fallback).handlers.oauth.listProviders(),
+      requestContext(req, fallback).handlers.auth.getSignupPolicy(),
     ]);
     sendSuccessResponse(res, {
       providers,
@@ -288,20 +295,22 @@ export function createAuthRoutes(context: RequestContext) {
         const { redirect, accountType, action } = req.query;
 
         if (action === UserAuthenticationEmailProviderAction.Connect) {
-          let userId = context.user?.userId;
+          let userId = requestContext(req, fallback).user?.userId;
 
           if (!userId) {
             const refreshToken = getRefreshTokenFromCookie(req);
             if (refreshToken) {
               try {
-                const result = await context.handlers.auth.refreshSession(
+                const result = await requestContext(req, fallback).handlers.auth.refreshSession(
                   refreshToken,
-                  context.userAgent,
-                  context.ipAddress,
-                  context.requestBaseUrl
+                  requestContext(req, fallback).userAgent,
+                  requestContext(req, fallback).ipAddress,
+                  requestContext(req, fallback).requestBaseUrl
                 );
                 setRefreshTokenCookie(res, result.refreshToken);
-                const claims = await context.grant.verifyToken(result.accessToken);
+                const claims = await requestContext(req, fallback).grant.verifyToken(
+                  result.accessToken
+                );
                 userId = claims.sub;
               } catch {
                 // Invalid or expired refresh token
@@ -311,13 +320,13 @@ export function createAuthRoutes(context: RequestContext) {
 
           if (!userId) {
             const frontendUrl = config.security.frontendUrl;
-            const locale = context.locale || 'en';
+            const locale = requestContext(req, fallback).locale || 'en';
             res.redirect(`${frontendUrl}/${locale}/auth/login?error=authenticationRequired`);
             return;
           }
 
           const authorizationUrl = await handleOAuthConnectFlow(
-            context,
+            requestContext(req, fallback),
             socialProvider,
             redirect,
             userId
@@ -327,22 +336,28 @@ export function createAuthRoutes(context: RequestContext) {
         }
 
         if (redirect && !validateRedirectUrl(redirect)) {
-          context.requestLogger.warn({
+          requestContext(req, fallback).requestLogger.warn({
             msg: 'OAuth initiate - invalid redirect URL',
             provider: socialProvider,
             redirectUrl: redirect,
             expectedOrigin: new URL(config.security.frontendUrl).origin,
           });
-          const result = await context.handlers.oauth.initiateAuth(socialProvider, {});
+          const result = await requestContext(req, fallback).handlers.oauth.initiateAuth(
+            socialProvider,
+            {}
+          );
           res.redirect(result.authorizationUrl);
           return;
         }
 
-        const result = await context.handlers.oauth.initiateAuth(socialProvider, {
-          redirectUrl: redirect,
-          accountType,
-          action: action || UserAuthenticationEmailProviderAction.Login,
-        });
+        const result = await requestContext(req, fallback).handlers.oauth.initiateAuth(
+          socialProvider,
+          {
+            redirectUrl: redirect,
+            accountType,
+            action: action || UserAuthenticationEmailProviderAction.Login,
+          }
+        );
 
         res.redirect(result.authorizationUrl);
       }
@@ -356,12 +371,14 @@ export function createAuthRoutes(context: RequestContext) {
         res: Response
       ) => {
         const { error, error_description, code, state } = req.query;
-        const locale = context.locale || 'en';
+        const locale = requestContext(req, fallback).locale || 'en';
         const frontendUrl = config.security.frontendUrl;
 
         if (error) {
           if (state && typeof state === 'string') {
-            const storedState = await context.handlers.oauth.getStoredState(state);
+            const storedState = await requestContext(req, fallback).handlers.oauth.getStoredState(
+              state
+            );
             if (
               storedState?.redirectUrl &&
               isCliRedirectUrl(storedState.redirectUrl, frontendUrl)
@@ -374,7 +391,7 @@ export function createAuthRoutes(context: RequestContext) {
             }
           }
           handleOAuthError(
-            context.requestLogger,
+            requestContext(req, fallback).requestLogger,
             res,
             error,
             error_description,
@@ -386,36 +403,48 @@ export function createAuthRoutes(context: RequestContext) {
 
         let cliRedirectUrl: string | null = null;
         if (state && typeof state === 'string') {
-          const storedState = await context.handlers.oauth.getStoredState(state);
+          const storedState = await requestContext(req, fallback).handlers.oauth.getStoredState(
+            state
+          );
           if (storedState?.redirectUrl && isCliRedirectUrl(storedState.redirectUrl, frontendUrl)) {
             cliRedirectUrl = storedState.redirectUrl;
           }
         }
 
         try {
-          const oauthResult = await context.handlers.oauth.handleCallback(
+          const oauthResult = await requestContext(req, fallback).handlers.oauth.handleCallback(
             socialProvider,
             code,
             state
           );
 
-          const handledConnect = await handleOAuthCallbackConnect(context, res, oauthResult);
+          const handledConnect = await handleOAuthCallbackConnect(
+            requestContext(req, fallback),
+            res,
+            oauthResult
+          );
           if (handledConnect) {
             return;
           }
 
-          const loginResult = await handleOAuthCallbackAuth(context, oauthResult);
+          const loginResult = await handleOAuthCallbackAuth(
+            requestContext(req, fallback),
+            oauthResult
+          );
 
           const isCli = isCliRedirectUrl(oauthResult.redirectUrl, frontendUrl);
 
           if (oauthResult.redirectUrl && isCli) {
-            const oneTimeCode = await context.handlers.oauth.storeCliCallbackPayload(
+            const oneTimeCode = await requestContext(
+              req,
+              fallback
+            ).handlers.oauth.storeCliCallbackPayload(
               {
                 accessToken: loginResult.accessToken,
                 refreshToken: loginResult.refreshToken,
                 accounts: loginResult.accounts,
               },
-              context.requestLogger
+              requestContext(req, fallback).requestLogger
             );
             const url = new URL(oauthResult.redirectUrl);
             url.searchParams.set('code', oneTimeCode);
@@ -436,7 +465,7 @@ export function createAuthRoutes(context: RequestContext) {
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
           const errorCode = determineErrorCode(err);
-          context.requestLogger.error({
+          requestContext(req, fallback).requestLogger.error({
             msg: 'Error handling OAuth callback',
             provider: socialProvider,
             err,
@@ -463,9 +492,9 @@ export function createAuthRoutes(context: RequestContext) {
     validateBody(cliCallbackRequestSchema),
     async (req: TypedRequest<{ body: typeof cliCallbackRequestSchema }>, res: Response) => {
       const { code } = req.body;
-      const payload = await context.handlers.oauth.consumeCliCallbackCode(
+      const payload = await requestContext(req, fallback).handlers.oauth.consumeCliCallbackCode(
         code,
-        context.requestLogger
+        requestContext(req, fallback).requestLogger
       );
       if (!payload) {
         res.status(400).json({
@@ -488,7 +517,7 @@ export function createAuthRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof exchangeApiKeyRequestSchema }>, res: Response) => {
       const { clientId, clientSecret, scope } = req.body;
 
-      const result = await context.handlers.apiKeys.exchangeApiKey(
+      const result = await requestContext(req, fallback).handlers.apiKeys.exchangeApiKey(
         {
           input: {
             clientId,
@@ -496,7 +525,7 @@ export function createAuthRoutes(context: RequestContext) {
             scope,
           },
         },
-        context.requestBaseUrl
+        requestContext(req, fallback).requestBaseUrl
       );
 
       sendSuccessResponse(res, result);
@@ -508,7 +537,7 @@ export function createAuthRoutes(context: RequestContext) {
     authenticateRestRoute,
     validate({ body: isAuthorizedRequestSchema }),
     async (req: TypedRequest<{ body: typeof isAuthorizedRequestSchema }>, res: Response) => {
-      const result = await context.handlers.auth.isAuthorized(req.body);
+      const result = await requestContext(req, fallback).handlers.auth.isAuthorized(req.body);
       sendSuccessResponse(res, result);
     }
   );
@@ -530,7 +559,10 @@ export function createAuthRoutes(context: RequestContext) {
         code_challenge,
         code_challenge_method,
       } = req.query;
-      const result = await context.handlers.projectOAuth.initiateProjectAuthorize(
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuth.initiateProjectAuthorize(
         client_id,
         redirect_uri,
         state,
@@ -553,7 +585,7 @@ export function createAuthRoutes(context: RequestContext) {
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectEmailRequestSchema }>, res: Response) => {
       const { client_id, redirect_uri, state, email, client_state, scope, locale } = req.body;
-      await context.handlers.projectOAuth.requestProjectEmailMagicLink(
+      await requestContext(req, fallback).handlers.projectOAuth.requestProjectEmailMagicLink(
         client_id,
         redirect_uri,
         state,
@@ -561,7 +593,7 @@ export function createAuthRoutes(context: RequestContext) {
         client_state,
         scope,
         locale,
-        context.requestBaseUrl
+        requestContext(req, fallback).requestBaseUrl
       );
       res.status(202).send();
     }
@@ -573,7 +605,10 @@ export function createAuthRoutes(context: RequestContext) {
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectPasswordSignInSchema }>, res: Response) => {
       const { client_id, redirect_uri, state, email, password, locale } = req.body;
-      const result = await context.handlers.projectOAuth.signInWithProjectPassword({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuth.signInWithProjectPassword({
         clientId: client_id,
         redirectUri: redirect_uri,
         stateId: state,
@@ -591,7 +626,10 @@ export function createAuthRoutes(context: RequestContext) {
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectPasswordMfaSchema }>, res: Response) => {
       const { mfa_token, code, method } = req.body;
-      const { redirectUrl } = await context.handlers.projectOAuth.verifyProjectPasswordMfa({
+      const { redirectUrl } = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuth.verifyProjectPasswordMfa({
         mfaToken: mfa_token,
         code,
         method,
@@ -609,12 +647,12 @@ export function createAuthRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { client_id, redirect_uri, email, state, locale } = req.body;
-      await context.handlers.projectPasswordReset.requestReset({
+      await requestContext(req, fallback).handlers.projectPasswordReset.requestReset({
         clientId: client_id,
         redirectUri: redirect_uri,
         email,
         stateId: state,
-        locale: locale ?? context.locale,
+        locale: locale ?? requestContext(req, fallback).locale,
       });
       // One body for every address: it does not say whether a member exists or an email went out.
       sendSuccessResponse(res, { status: 'reset_requested' });
@@ -630,7 +668,7 @@ export function createAuthRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { client_id, redirect_uri, token, password } = req.body;
-      await context.handlers.projectPasswordReset.completeReset({
+      await requestContext(req, fallback).handlers.projectPasswordReset.completeReset({
         clientId: client_id,
         redirectUri: redirect_uri,
         token,
@@ -648,8 +686,14 @@ export function createAuthRoutes(context: RequestContext) {
       try {
         const result =
           code != null && code !== ''
-            ? await context.handlers.projectOAuth.handleProjectCallback(code, state)
-            : await context.handlers.projectOAuth.handleProjectCallbackEmailFlow(token!, state);
+            ? await requestContext(req, fallback).handlers.projectOAuth.handleProjectCallback(
+                code,
+                state
+              )
+            : await requestContext(
+                req,
+                fallback
+              ).handlers.projectOAuth.handleProjectCallbackEmailFlow(token!, state);
         if ('consentUrl' in result) {
           res.redirect(result.consentUrl);
           return;
@@ -684,7 +728,10 @@ export function createAuthRoutes(context: RequestContext) {
             state: state ?? '',
           };
         } else if (state) {
-          entryParams = await context.handlers.projectOAuth.getProjectEntryParamsFromState(state);
+          entryParams = await requestContext(
+            req,
+            fallback
+          ).handlers.projectOAuth.getProjectEntryParamsFromState(state);
         }
         const locale =
           entryParams?.locale &&
@@ -712,11 +759,10 @@ export function createAuthRoutes(context: RequestContext) {
     validateQuery(projectAppInfoQuerySchema),
     async (req: TypedRequest<{ query: typeof projectAppInfoQuerySchema }>, res: Response) => {
       const { client_id, scope, redirect_uri } = req.query;
-      const info = await context.handlers.projectOAuth.getProjectAppPublicInfo(
-        client_id,
-        scope,
-        redirect_uri
-      );
+      const info = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuth.getProjectAppPublicInfo(client_id, scope, redirect_uri);
       sendSuccessResponse(res, info);
     }
   );
@@ -727,9 +773,9 @@ export function createAuthRoutes(context: RequestContext) {
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ query: typeof projectConsentInfoQuerySchema }>, res: Response) => {
       const { consent_token } = req.query;
-      const info = await context.handlers.projectOAuth.getProjectConsentInfo(
+      const info = await requestContext(req, fallback).handlers.projectOAuth.getProjectConsentInfo(
         consent_token,
-        context.requestLogger
+        requestContext(req, fallback).requestLogger
       );
       sendSuccessResponse(res, info);
     }
@@ -741,8 +787,10 @@ export function createAuthRoutes(context: RequestContext) {
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectConsentApproveBodySchema }>, res: Response) => {
       const { consent_token } = req.body;
-      const { redirectUrl } =
-        await context.handlers.projectOAuth.handleProjectConsentApprove(consent_token);
+      const { redirectUrl } = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuth.handleProjectConsentApprove(consent_token);
       sendSuccessResponse(res, { redirectUrl });
     }
   );
@@ -752,7 +800,7 @@ export function createAuthRoutes(context: RequestContext) {
     validate({ body: projectTokenBodySchema }),
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectTokenBodySchema }>, res: Response) => {
-      const result = await context.handlers.projectOAuth.handleProjectToken({
+      const result = await requestContext(req, fallback).handlers.projectOAuth.handleProjectToken({
         grantType: req.body.grant_type,
         clientId: req.body.client_id,
         redirectUri: req.body.redirect_uri,
@@ -760,8 +808,8 @@ export function createAuthRoutes(context: RequestContext) {
         codeVerifier: req.body.code_verifier,
         refreshToken: req.body.refresh_token,
         clientSecret: req.body.client_secret,
-        userAgent: context.userAgent,
-        ipAddress: context.ipAddress,
+        userAgent: requestContext(req, fallback).userAgent,
+        ipAddress: requestContext(req, fallback).ipAddress,
       });
       sendSuccessResponse(res, result);
     }
@@ -773,8 +821,10 @@ export function createAuthRoutes(context: RequestContext) {
     // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     async (req: TypedRequest<{ body: typeof projectConsentDenyBodySchema }>, res: Response) => {
       const { consent_token } = req.body;
-      const { redirectUrl } =
-        await context.handlers.projectOAuth.handleProjectConsentDeny(consent_token);
+      const { redirectUrl } = await requestContext(
+        req,
+        fallback
+      ).handlers.projectOAuth.handleProjectConsentDeny(consent_token);
       sendSuccessResponse(res, { redirectUrl });
     }
   );

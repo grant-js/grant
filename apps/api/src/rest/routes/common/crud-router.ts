@@ -93,10 +93,10 @@ export interface CrudRouterOptions<
 > {
   resource: ResourceSlug;
   schemas: CrudRouterSchemas;
-  list(args: CrudListArgs<TEntity, TSortInput>): Promise<object>;
-  create(input: TCreateInput): Promise<TEntity>;
-  update(id: string, input: TUpdateInput): Promise<TEntity>;
-  remove(id: string, scope: Scope): Promise<TEntity>;
+  list(args: CrudListArgs<TEntity, TSortInput>, req: Request): Promise<object>;
+  create(input: TCreateInput, req: Request): Promise<TEntity>;
+  update(id: string, input: TUpdateInput, req: Request): Promise<TEntity>;
+  remove(id: string, scope: Scope, req: Request): Promise<TEntity>;
 }
 
 export function createCrudRouter<
@@ -142,15 +142,18 @@ export function createCrudRouter<
         tenant,
       });
 
-      const result = await options.list({
-        page,
-        limit,
-        search,
-        sort,
-        tagIds,
-        scope: scope!,
-        requestedFields,
-      });
+      const result = await options.list(
+        {
+          page,
+          limit,
+          search,
+          sort,
+          tagIds,
+          scope: scope!,
+          requestedFields,
+        },
+        req
+      );
 
       sendSuccessResponse(res, result);
     }
@@ -162,7 +165,7 @@ export function createCrudRouter<
     mfaGuard(),
     authorizeRestRoute({ resource, action: ResourceAction.Create }),
     async (req, res) => {
-      const entity = await options.create(req.body as TCreateInput);
+      const entity = await options.create(req.body as TCreateInput, req);
       sendSuccessResponse(res, entity, 201);
     }
   );
@@ -175,10 +178,14 @@ export function createCrudRouter<
     async (req: Request, res: Response) => {
       const { params, query } = req as unknown as CrudMutationRequest;
 
-      const entity = await options.update(params.id, {
-        ...req.body,
-        scope: { id: query.scopeId, tenant: query.tenant },
-      } as TUpdateInput);
+      const entity = await options.update(
+        params.id,
+        {
+          ...req.body,
+          scope: { id: query.scopeId, tenant: query.tenant },
+        } as TUpdateInput,
+        req
+      );
 
       sendSuccessResponse(res, entity);
     }
@@ -192,7 +199,11 @@ export function createCrudRouter<
     async (req: Request, res: Response) => {
       const { params, query } = req as unknown as CrudMutationRequest;
 
-      const entity = await options.remove(params.id, { id: query.scopeId, tenant: query.tenant });
+      const entity = await options.remove(
+        params.id,
+        { id: query.scopeId, tenant: query.tenant },
+        req
+      );
 
       sendSuccessResponse(res, entity);
     }

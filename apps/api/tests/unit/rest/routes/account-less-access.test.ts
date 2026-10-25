@@ -178,8 +178,7 @@ const scoped = routes.filter((route) => !listed.includes(route.label));
 
 describe('the route lists match the routers', () => {
   it('covers every router mounted by createRestRouter', () => {
-    const mounted = (createRestRouter(context) as unknown as { stack: Array<{ name: string }> })
-      .stack;
+    const mounted = (createRestRouter() as unknown as { stack: Array<{ name: string }> }).stack;
     expect(mounted.filter((layer) => layer.name === 'router')).toHaveLength(MOUNTS.length);
   });
 
