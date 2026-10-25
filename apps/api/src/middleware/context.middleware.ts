@@ -39,7 +39,11 @@ const tokenProvider = new JwtTokenProvider();
 
 /** Context middleware: builds Grant with GrantService (RS256 only; keys from DB via grantService). */
 export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async function requestContext(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     const headers = req.headers;
     const { origin, userAgent } = getContextHeaders(headers);
     const requestBaseUrl = getRequestBaseUrl(req);

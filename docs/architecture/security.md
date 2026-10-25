@@ -508,6 +508,8 @@ GraphQL documents are also bounded per request: Apollo `validationRules` reject 
 
 Rate limiting protects against brute force, abuse, and noisy-neighbor scenarios by capping requests per client IP.
 
+IP `auth:` / `global:` buckets run **before** request context, so a 429 does not pay JWT authenticate or the handler toolbox. The optional per-tenant bucket stays **after** authenticate because it keys on `context.user.scope`. Origin verification stays first. `jsonBodyParser` stays before GraphQL auth-sensitive detection.
+
 Three layers are available:
 
 | Layer                     | Scope                                                                                             | Default                                |
