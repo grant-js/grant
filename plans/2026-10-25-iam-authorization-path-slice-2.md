@@ -57,5 +57,5 @@ Empty-role and empty-group skips stay. `tokenType` and project id still flow thr
 
 - [x] Implementation complete within this slice only
 - [x] Verifier run (grant-api type-check, lint, unit tests for grant.service)
-- [ ] PR opened with correct base; links stack plan + upstream #607
+- [x] PR opened with correct base; links stack plan + upstream #607 (#608)
 - [x] Senior Security notified (`security-full`) — allow; 0 Critical / High / Medium

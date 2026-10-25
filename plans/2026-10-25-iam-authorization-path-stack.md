@@ -38,7 +38,7 @@ Principal may collapse slices 2 and 3 into one PR if the combined diff stays rev
 | #     | Branch                                   | Base                          | Concern                                        | Owner role | Review bar           | PR                                                 |
 | ----- | ---------------------------------------- | ----------------------------- | ---------------------------------------------- | ---------- | -------------------- | -------------------------------------------------- |
 | 1     | `feat/iam-authorization-path-measure`    | `feat/iam-authorization-path` | post-H1–H3 `is-authorized` bench + query shape | Backend    | light                | [#607](https://github.com/grant-js/grant/pull/607) |
-| 2     | `feat/iam-authorization-path-walk`       | prior slice                   | cold-miss RBAC walk (fewer sequential queries) | Backend    | security-full        |                                                    |
+| 2     | `feat/iam-authorization-path-walk`       | prior slice                   | cold-miss RBAC walk (fewer sequential queries) | Backend    | security-full        | [#608](https://github.com/grant-js/grant/pull/608) |
 | 3     | `feat/iam-authorization-path-invalidate` | prior slice                   | stop global `permissions.clear()`              | Backend    | security-full        |                                                    |
 | final | `feat/iam-authorization-path`            | `main`                        | integration                                    | Principal  | deep + security-full |                                                    |
 
