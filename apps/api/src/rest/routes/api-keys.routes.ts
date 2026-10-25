@@ -4,6 +4,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   apiKeyIdParamsSchema,
   createApiKeyRequestSchema,
@@ -17,7 +18,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createApiKeysRoutes(context: RequestContext) {
+export function createApiKeysRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.get(
@@ -37,7 +38,7 @@ export function createApiKeysRoutes(context: RequestContext) {
         tenant,
       });
 
-      const apiKeys = await context.handlers.apiKeys.getApiKeys({
+      const apiKeys = await requestContext(req, fallback).handlers.apiKeys.getApiKeys({
         scope: scope!,
         page,
         limit,
@@ -61,7 +62,7 @@ export function createApiKeysRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof createApiKeyRequestSchema }>, res: Response) => {
       const { name, description, expiresAt, scope, roleId } = req.body;
 
-      const result = await context.handlers.apiKeys.createApiKey({
+      const result = await requestContext(req, fallback).handlers.apiKeys.createApiKey({
         input: {
           name,
           description,
@@ -93,7 +94,7 @@ export function createApiKeysRoutes(context: RequestContext) {
       const { id } = req.params;
       const { scope } = req.body;
 
-      const apiKey = await context.handlers.apiKeys.revokeApiKey({
+      const apiKey = await requestContext(req, fallback).handlers.apiKeys.revokeApiKey({
         input: { id, scope },
       });
 
@@ -119,7 +120,7 @@ export function createApiKeysRoutes(context: RequestContext) {
       const { id } = req.params;
       const { scope } = req.body;
 
-      const result = await context.handlers.apiKeys.rotateApiKey({
+      const result = await requestContext(req, fallback).handlers.apiKeys.rotateApiKey({
         input: { id, scope },
       });
 
@@ -145,7 +146,7 @@ export function createApiKeysRoutes(context: RequestContext) {
       const { id } = req.params;
       const { hardDelete, scope } = req.body;
 
-      const apiKey = await context.handlers.apiKeys.deleteApiKey({
+      const apiKey = await requestContext(req, fallback).handlers.apiKeys.deleteApiKey({
         input: { id, hardDelete, scope },
       });
 

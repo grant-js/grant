@@ -180,35 +180,46 @@ describe('handler dispatch', () => {
   }
 
   it('creates with the parsed body and responds 201', async () => {
-    await invoke('post', '/', { body: { name: 'n' } });
+    const req = { body: { name: 'n' } };
+    await invoke('post', '/', req);
 
-    expect(handlers.create).toHaveBeenCalledWith({ name: 'n' });
+    expect(handlers.create).toHaveBeenCalledWith({ name: 'n' }, req);
     expect(sendSuccessResponse).toHaveBeenCalledWith(res, { id: 'new' }, 201);
   });
 
   it('folds the scope query into the update input', async () => {
-    await invoke('patch', '/:id', {
+    const req = {
       params: { id: 'r1' },
       query: { scopeId: 'acct:proj', tenant: Tenant.AccountProject },
       body: { name: 'n' },
-    });
+    };
+    await invoke('patch', '/:id', req);
 
-    expect(handlers.update).toHaveBeenCalledWith('r1', {
-      name: 'n',
-      scope: { id: 'acct:proj', tenant: Tenant.AccountProject },
-    });
+    expect(handlers.update).toHaveBeenCalledWith(
+      'r1',
+      {
+        name: 'n',
+        scope: { id: 'acct:proj', tenant: Tenant.AccountProject },
+      },
+      req
+    );
   });
 
   it('passes the scope as a separate argument on delete', async () => {
-    await invoke('delete', '/:id', {
+    const req = {
       params: { id: 'r1' },
       query: { scopeId: 'acct:proj', tenant: Tenant.AccountProject },
-    });
+    };
+    await invoke('delete', '/:id', req);
 
-    expect(handlers.remove).toHaveBeenCalledWith('r1', {
-      id: 'acct:proj',
-      tenant: Tenant.AccountProject,
-    });
+    expect(handlers.remove).toHaveBeenCalledWith(
+      'r1',
+      {
+        id: 'acct:proj',
+        tenant: Tenant.AccountProject,
+      },
+      req
+    );
   });
 
   it('responds with the list result without a status override', async () => {

@@ -3,6 +3,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   getSigningKeysQuerySchema,
   rotateSigningKeyRequestSchema,
@@ -11,7 +12,7 @@ import { TypedRequest } from '@/rest/types';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createSigningKeysRoutes(context: RequestContext) {
+export function createSigningKeysRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.get(
@@ -25,7 +26,9 @@ export function createSigningKeysRoutes(context: RequestContext) {
     async (req: TypedRequest<{ query: typeof getSigningKeysQuerySchema }>, res: Response) => {
       const { scopeId, tenant, limit } = req.query;
       const scope = { id: scopeId!, tenant: tenant! };
-      const keys = await context.handlers.signingKeys.getSigningKeys(scope, { limit });
+      const keys = await requestContext(req, fallback).handlers.signingKeys.getSigningKeys(scope, {
+        limit,
+      });
       sendSuccessResponse(res, keys);
     }
   );
@@ -40,7 +43,9 @@ export function createSigningKeysRoutes(context: RequestContext) {
     }),
     async (req: TypedRequest<{ body: typeof rotateSigningKeyRequestSchema }>, res: Response) => {
       const { scope } = req.body;
-      const newKey = await context.handlers.signingKeys.rotateSigningKey(scope);
+      const newKey = await requestContext(req, fallback).handlers.signingKeys.rotateSigningKey(
+        scope
+      );
       sendSuccessResponse(res, newKey, 201);
     }
   );

@@ -1,4 +1,4 @@
-import { Grant } from '@grantjs/core';
+import { Grant, type GrantAuth } from '@grantjs/core';
 import { DbSchema, signingKeyAuditLogs } from '@grantjs/database';
 import { Tenant } from '@grantjs/schema';
 import { NextFunction, Request, Response } from 'express';
@@ -29,45 +29,62 @@ import { DrizzleTransactionalConnection } from '@/lib/transaction-manager.lib';
 import { getRequestLogger } from '@/middleware/request-logging.middleware';
 import { createRepositories } from '@/repositories';
 import { GrantRepository } from '@/repositories/grant.repository';
+import { SigningKeyRepository } from '@/repositories/signing-keys.repository';
 import { createResourceResolvers } from '@/resource-resolvers';
-import { createServices } from '@/services';
+import { createServices, type CreateServicesOptions } from '@/services';
 import { GrantService } from '@/services/grant.service';
 import { SigningKeyService } from '@/services/signing-keys.service';
 import { ContextRequest } from '@/types';
 
 const tokenProvider = new JwtTokenProvider();
 
+/** Thin unscoped Grant bootstrap for JWT authenticate. Not the request handler graph. */
+function createAuthGrant(db: DbSchema, cache: IEntityCacheAdapter): Grant {
+  const signingKeyService = new SigningKeyService(
+    new SigningKeyRepository(db),
+    new DrizzleAuditLogger(signingKeyAuditLogs, 'signingKeyId', SYSTEM_USER, db),
+    new DrizzleEventPublisher(SYSTEM_USER, db)
+  );
+  const grantService = new GrantService(cache, new GrantRepository(db), signingKeyService, {
+    cacheTtlSeconds: config.jwt.systemSigningKeyCacheTtlSeconds,
+  });
+  return new Grant(grantService, tokenProvider);
+}
+
+/** Repositories, services, and handlers once, on the connection the request will query. */
+function createRequestToolbox(
+  graphDb: DbSchema,
+  user: GrantAuth | null,
+  cache: IEntityCacheAdapter,
+  grant: Grant,
+  serviceOptions: CreateServicesOptions
+) {
+  const repositories = createRepositories(graphDb);
+  const services = createServices(repositories, user, graphDb, cache, grant, serviceOptions);
+  const handlers = createHandlers(
+    cache,
+    services,
+    new DrizzleTransactionalConnection(graphDb),
+    grant,
+    { scheduleAfterCommit: serviceOptions.scheduleAfterCommit }
+  );
+  return { handlers, resourceResolvers: createResourceResolvers() };
+}
+
 /** Context middleware: builds Grant with GrantService (RS256 only; keys from DB via grantService). */
 export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async function requestContext(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     const headers = req.headers;
     const { origin, userAgent } = getContextHeaders(headers);
     const requestBaseUrl = getRequestBaseUrl(req);
     const locale = getLocale(req);
     const ipAddress = getClientIp(req);
 
-    // --- Auth phase: uses global db (system-level, no RLS) ---
-    const repositories = createRepositories(db);
-    const grantRepository = new GrantRepository(db);
-
-    const signingKeyAudit = new DrizzleAuditLogger(
-      signingKeyAuditLogs,
-      'signingKeyId',
-      SYSTEM_USER,
-      db
-    );
-    const bootstrapEvents = new DrizzleEventPublisher(SYSTEM_USER, db);
-    const signingKeyService = new SigningKeyService(
-      repositories.signingKeyRepository,
-      signingKeyAudit,
-      bootstrapEvents
-    );
-
-    const grantService = new GrantService(cache, grantRepository, signingKeyService, {
-      cacheTtlSeconds: config.jwt.systemSigningKeyCacheTtlSeconds,
-    });
-
-    const grant = new Grant(grantService, tokenProvider);
+    const grant = createAuthGrant(db, cache);
 
     const authToken = getAuthorizationToken(req);
     const requestScope = extractScopeFromRequest(req);
@@ -98,19 +115,13 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
         await setRlsContext(tx, rlsCtx);
 
         const scopedDb = tx as unknown as DbSchema;
-        const scopedRepositories = createRepositories(scopedDb);
-        const services = createServices(scopedRepositories, user, scopedDb, cache, grant, {
+        const { handlers, resourceResolvers } = createRequestToolbox(scopedDb, user, cache, grant, {
           scheduleAfterCommit,
           // The platform credential tables are out of the restricted role's reach.
           baseDb: db,
           // The sign-in lockout counts failures on the pool, outside this transaction.
           durableDb: db,
         });
-        const txConnection = new DrizzleTransactionalConnection(scopedDb);
-        const handlers = createHandlers(cache, services, txConnection, grant, {
-          scheduleAfterCommit,
-        });
-        const resourceResolvers = createResourceResolvers();
 
         (req as ContextRequest).context = {
           grant,
@@ -168,15 +179,10 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
       // Lambda an unfinished SQS SendMessage is lost once the response is returned.
       holdResponseEndUntil(res, () => afterCommit.settled());
 
-      const services = createServices(repositories, user, db, cache, grant, {
+      const { handlers, resourceResolvers } = createRequestToolbox(db, user, cache, grant, {
         scheduleAfterCommit,
         durableDb: db,
       });
-      const txConnection = new DrizzleTransactionalConnection(db);
-      const handlers = createHandlers(cache, services, txConnection, grant, {
-        scheduleAfterCommit,
-      });
-      const resourceResolvers = createResourceResolvers();
 
       (req as ContextRequest).context = {
         grant,

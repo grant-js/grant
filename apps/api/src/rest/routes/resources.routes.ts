@@ -10,6 +10,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   createResourceRequestSchema,
   deleteResourceQuerySchema,
@@ -22,7 +23,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createResourcesRouter(context: RequestContext): Router {
+export function createResourcesRouter(fallback?: RequestContext): Router {
   const router = Router();
 
   router.get(
@@ -43,7 +44,7 @@ export function createResourcesRouter(context: RequestContext): Router {
         tenant,
       });
 
-      const result = await context.handlers.resources.getResources({
+      const result = await requestContext(req, fallback).handlers.resources.getResources({
         page,
         limit,
         search,
@@ -70,10 +71,10 @@ export function createResourcesRouter(context: RequestContext): Router {
         input: req.body,
       };
 
-      const resource: Resource = await context.handlers.resources.createResource(
-        variables,
-        context.locale
-      );
+      const resource: Resource = await requestContext(
+        req,
+        fallback
+      ).handlers.resources.createResource(variables, requestContext(req, fallback).locale);
 
       sendSuccessResponse(res, resource, 201);
     }
@@ -110,7 +111,10 @@ export function createResourcesRouter(context: RequestContext): Router {
         },
       };
 
-      const resource: Resource = await context.handlers.resources.updateResource(variables);
+      const resource: Resource = await requestContext(
+        req,
+        fallback
+      ).handlers.resources.updateResource(variables);
 
       sendSuccessResponse(res, resource);
     }
@@ -139,7 +143,10 @@ export function createResourcesRouter(context: RequestContext): Router {
         scope: { id: scopeId, tenant },
       };
 
-      const resource: Resource = await context.handlers.resources.deleteResource(variables);
+      const resource: Resource = await requestContext(
+        req,
+        fallback
+      ).handlers.resources.deleteResource(variables);
 
       sendSuccessResponse(res, resource);
     }

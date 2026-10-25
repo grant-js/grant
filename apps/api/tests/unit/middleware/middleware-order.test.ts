@@ -1,15 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Holds the one ordering the edge trust model depends on: origin verification runs
- * before the rate limiter.
+ * Holds the edge-trust and composition order: origin verification, then IP/auth
+ * rate limits, then request context, then the optional tenant bucket.
  *
  * Verify first and a request that did not arrive through the CDN is refused before it
  * can consume a rate-limit budget or the cache round-trip that budget costs. Verify
  * second and an unauthenticated caller reaching the Function URL directly can exhaust
- * counters keyed by an IP it does not own. `create-app.ts` has had the right order
- * since the origin-verify middleware landed; nothing asserted it, so nothing would
- * have noticed it moving.
+ * counters keyed by an IP it does not own.
+ *
+ * IP `auth:` / `global:` run before context so a 429 does not authenticate or
+ * construct the handler toolbox. The tenant bucket keys on `context.user.scope` after
+ * authenticate, so it stays later. `jsonBodyParser` stays before the IP limiter
+ * because GraphQL auth-sensitive detection reads the parsed body.
  *
  * Asserted by *relative* position, never by index. Absolute indices would make every
  * unrelated `app.use` in the pipeline a failing test, and a test that fails for
@@ -88,20 +91,30 @@ afterEach(() => {
 });
 
 describe('createApp middleware order', () => {
-  it('mounts origin verification before the rate limiter', async () => {
+  it('mounts origin < IP/auth limit < context < tenant limit, with JSON parsed first', async () => {
     const { names, shutdown } = await mountedPipeline();
 
     try {
       const originVerify = names.indexOf('verifyOrigin');
+      // Factory and handler share a name; the compiled handler is `jsonBodyParser2`.
+      const jsonBodyParser = names.findIndex((name) => name.startsWith('jsonBodyParser'));
       const rateLimit = names.indexOf('rateLimit');
+      const requestContext = names.indexOf('requestContext');
+      const rateLimitTenant = names.indexOf('rateLimitTenant');
 
       // Asserted separately from the comparison. `indexOf` returns -1 for a name that
       // is not there, and -1 < anything — so a renamed or dropped middleware would
       // otherwise pass this test while proving nothing.
       expect(originVerify, 'verifyOrigin is not mounted').toBeGreaterThanOrEqual(0);
+      expect(jsonBodyParser, 'jsonBodyParser is not mounted').toBeGreaterThanOrEqual(0);
       expect(rateLimit, 'rateLimit is not mounted').toBeGreaterThanOrEqual(0);
+      expect(requestContext, 'requestContext is not mounted').toBeGreaterThanOrEqual(0);
+      expect(rateLimitTenant, 'rateLimitTenant is not mounted').toBeGreaterThanOrEqual(0);
 
       expect(originVerify).toBeLessThan(rateLimit);
+      expect(jsonBodyParser).toBeLessThan(rateLimit);
+      expect(rateLimit).toBeLessThan(requestContext);
+      expect(requestContext).toBeLessThan(rateLimitTenant);
     } finally {
       await shutdown();
     }

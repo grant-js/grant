@@ -62,7 +62,7 @@ import { contextMiddleware } from '@/middleware/context.middleware';
 import { errorHandler } from '@/middleware/error.middleware';
 import { jsonBodyParser } from '@/middleware/json-body.middleware';
 import { originVerifyMiddleware } from '@/middleware/origin-verify.middleware';
-import { rateLimitMiddleware } from '@/middleware/rate-limit.middleware';
+import { rateLimitMiddleware, tenantRateLimitMiddleware } from '@/middleware/rate-limit.middleware';
 import { requestLoggingMiddleware } from '@/middleware/request-logging.middleware';
 import { storageMiddleware, uploadMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
@@ -223,8 +223,11 @@ export async function createApp(): Promise<CreatedApp> {
   }
 
   app.use(requestLoggingMiddleware);
-  app.use(contextMiddleware(db, cache));
+  // IP `auth:` / `global:` before context so a 429 does not pay JWT or the handler
+  // toolbox. Optional `tenant:` stays after authenticate — it keys on scope.
   app.use(rateLimitMiddleware(cache.rateLimit));
+  app.use(contextMiddleware(db, cache));
+  app.use(tenantRateLimitMiddleware(cache.rateLimit));
   if (config.metrics.enabled) {
     app.use(metricsMiddleware);
   }
@@ -249,11 +252,13 @@ export async function createApp(): Promise<CreatedApp> {
     res.send(getOpenApiDocument());
   });
 
-  app.use('/api', (req, res, next) => {
-    const contextReq = req as ContextRequest;
-    const restRouter = createRestRouter(contextReq.context);
+  // One REST router. Handlers still come from request context (`requestContext(req)`).
+  let restRouter: express.Router | undefined;
+  const lazyRestRouter: express.RequestHandler = (req, res, next) => {
+    restRouter ??= createRestRouter();
     restRouter(req, res, next);
-  });
+  };
+  app.use('/api', lazyRestRouter);
 
   app.use(
     '/graphql',

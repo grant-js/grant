@@ -3,6 +3,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   createWebhookSubscriptionRequestSchema,
   listWebhookDeliveriesQuerySchema,
@@ -17,7 +18,7 @@ import { TypedRequest } from '@/rest/types';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createWebhookSubscriptionsRoutes(context: RequestContext) {
+export function createWebhookSubscriptionsRoutes(fallback?: RequestContext) {
   const router = Router();
 
   const mfa = () =>
@@ -34,7 +35,10 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
     ) => {
       const { scopeId, tenant, subscriptionId, status, page, limit } = req.query;
       const scope = { id: scopeId!, tenant: tenant! };
-      const result = await context.handlers.webhookSubscriptions.listDeliveries(scope, {
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.webhookSubscriptions.listDeliveries(scope, {
         subscriptionId,
         status,
         page,
@@ -63,10 +67,10 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       }>,
       res: Response
     ) => {
-      const result = await context.handlers.webhookSubscriptions.replayDelivery(
-        req.body.scope,
-        req.params.deliveryId
-      );
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.webhookSubscriptions.replayDelivery(req.body.scope, req.params.deliveryId);
       sendSuccessResponse(res, result);
     }
   );
@@ -81,7 +85,7 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { scopeId, tenant } = req.query;
-      const result = await context.handlers.webhookSubscriptions.list({
+      const result = await requestContext(req, fallback).handlers.webhookSubscriptions.list({
         id: scopeId!,
         tenant: tenant!,
       });
@@ -99,7 +103,10 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { scope, ...input } = req.body;
-      const result = await context.handlers.webhookSubscriptions.create(scope, input);
+      const result = await requestContext(req, fallback).handlers.webhookSubscriptions.create(
+        scope,
+        input
+      );
       sendSuccessResponse(res, result, 201);
     }
   );
@@ -117,7 +124,7 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { scopeId, tenant } = req.query;
-      const result = await context.handlers.webhookSubscriptions.getById(
+      const result = await requestContext(req, fallback).handlers.webhookSubscriptions.getById(
         { id: scopeId!, tenant: tenant! },
         req.params.id
       );
@@ -145,7 +152,7 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { scope, ...input } = req.body;
-      const result = await context.handlers.webhookSubscriptions.update(
+      const result = await requestContext(req, fallback).handlers.webhookSubscriptions.update(
         scope,
         req.params.id,
         input
@@ -173,7 +180,7 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       }>,
       res: Response
     ) => {
-      const result = await context.handlers.webhookSubscriptions.rotateSecret(
+      const result = await requestContext(req, fallback).handlers.webhookSubscriptions.rotateSecret(
         req.body.scope,
         req.params.id
       );
@@ -198,7 +205,7 @@ export function createWebhookSubscriptionsRoutes(context: RequestContext) {
       res: Response
     ) => {
       const { scopeId, tenant } = req.query;
-      await context.handlers.webhookSubscriptions.delete(
+      await requestContext(req, fallback).handlers.webhookSubscriptions.delete(
         { id: scopeId!, tenant: tenant! },
         req.params.id
       );

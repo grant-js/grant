@@ -3,6 +3,7 @@ import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   clearProjectAppPictureRequestSchema,
   confirmProjectAppPictureUploadRequestSchema,
@@ -19,7 +20,7 @@ import { buildScope } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createProjectAppsRouter(context: RequestContext): Router {
+export function createProjectAppsRouter(fallback?: RequestContext): Router {
   const router = Router();
 
   router.get(
@@ -34,7 +35,7 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       const { scopeId, tenant, page, limit, ids } = req.query;
       const scope = buildScope(scopeId, tenant)!;
 
-      const result = await context.handlers.projectApps.getProjectApps({
+      const result = await requestContext(req, fallback).handlers.projectApps.getProjectApps({
         scope,
         page,
         limit,
@@ -71,7 +72,7 @@ export function createProjectAppsRouter(context: RequestContext): Router {
         primaryTagId,
       } = req.body;
 
-      const result = await context.handlers.projectApps.createProjectApp({
+      const result = await requestContext(req, fallback).handlers.projectApps.createProjectApp({
         input: {
           scope,
           name,
@@ -134,7 +135,7 @@ export function createProjectAppsRouter(context: RequestContext): Router {
         primaryTagId,
       } = req.body;
 
-      const updated = await context.handlers.projectApps.updateProjectApp({
+      const updated = await requestContext(req, fallback).handlers.projectApps.updateProjectApp({
         id,
         input: {
           scope,
@@ -176,7 +177,10 @@ export function createProjectAppsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
       const { file, filename, contentType, scope } = req.body;
-      const result = await context.handlers.projectApps.uploadProjectAppPicture({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectApps.uploadProjectAppPicture({
         projectAppId: id,
         file,
         filename,
@@ -210,7 +214,10 @@ export function createProjectAppsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
       const { filename, contentType, contentLength, scope } = req.body;
-      const result = await context.handlers.projectApps.requestProjectAppPictureUploadUrl({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectApps.requestProjectAppPictureUploadUrl({
         projectAppId: id,
         filename,
         contentType,
@@ -244,7 +251,10 @@ export function createProjectAppsRouter(context: RequestContext): Router {
     ) => {
       const { id } = req.params;
       const { filename, scope } = req.body;
-      const result = await context.handlers.projectApps.confirmProjectAppPictureUpload({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.projectApps.confirmProjectAppPictureUpload({
         projectAppId: id,
         filename,
         scope,
@@ -272,7 +282,10 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       res: Response
     ) => {
       const { id } = req.params;
-      const projectApp = await context.handlers.projectApps.clearProjectAppPicture({
+      const projectApp = await requestContext(
+        req,
+        fallback
+      ).handlers.projectApps.clearProjectAppPicture({
         projectAppId: id,
         scope: req.body.scope,
       });
@@ -300,7 +313,10 @@ export function createProjectAppsRouter(context: RequestContext): Router {
       const { scopeId, tenant } = req.query;
       const scope = buildScope(scopeId, tenant)!;
 
-      const projectApp = await context.handlers.projectApps.deleteProjectApp({ id, scope });
+      const projectApp = await requestContext(req, fallback).handlers.projectApps.deleteProjectApp({
+        id,
+        scope,
+      });
 
       sendSuccessResponse(res, projectApp);
     }

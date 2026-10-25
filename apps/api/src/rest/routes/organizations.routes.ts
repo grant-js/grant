@@ -5,6 +5,7 @@ import { Response, Router } from 'express';
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
 import { AuthenticationError } from '@/lib/errors';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   confirmOrganizationPictureUploadRequestSchema,
   createOrganizationRequestSchema,
@@ -20,7 +21,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createOrganizationRoutes(context: RequestContext) {
+export function createOrganizationRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.get(
@@ -39,7 +40,7 @@ export function createOrganizationRoutes(context: RequestContext) {
         sortOrder,
       });
 
-      const result = await context.handlers.organizations.getOrganizations({
+      const result = await requestContext(req, fallback).handlers.organizations.getOrganizations({
         page,
         limit,
         search,
@@ -66,20 +67,23 @@ export function createOrganizationRoutes(context: RequestContext) {
     }),
     async (req: TypedRequest<{ body: typeof createOrganizationRequestSchema }>, res: Response) => {
       const { name, scope } = req.body;
-      const userId = context.user?.userId;
+      const userId = requestContext(req, fallback).user?.userId;
 
       if (!userId) {
         throw new AuthenticationError('Authentication required');
       }
 
-      const organization = await context.handlers.organizations.createOrganization(
+      const organization = await requestContext(
+        req,
+        fallback
+      ).handlers.organizations.createOrganization(
         {
           input: { name, scope },
         },
         userId
       );
 
-      context.requestLogger.info({
+      requestContext(req, fallback).requestLogger.info({
         msg: 'Organization created',
         organizationId: organization.id,
       });
@@ -105,7 +109,10 @@ export function createOrganizationRoutes(context: RequestContext) {
       const { id } = req.params;
       const { name, scope } = req.body;
 
-      const organization = await context.handlers.organizations.updateOrganization({
+      const organization = await requestContext(
+        req,
+        fallback
+      ).handlers.organizations.updateOrganization({
         id,
         input: { name, scope },
       });
@@ -137,7 +144,10 @@ export function createOrganizationRoutes(context: RequestContext) {
       const { id } = req.params;
       const { file, filename, contentType, scope } = req.body;
 
-      const result = await context.handlers.organizations.uploadOrganizationPicture({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizations.uploadOrganizationPicture({
         organizationId: id,
         file,
         filename,
@@ -171,7 +181,10 @@ export function createOrganizationRoutes(context: RequestContext) {
     ) => {
       const { id } = req.params;
       const { filename, contentType, contentLength, scope } = req.body;
-      const result = await context.handlers.organizations.requestOrganizationPictureUploadUrl({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizations.requestOrganizationPictureUploadUrl({
         organizationId: id,
         filename,
         contentType,
@@ -204,7 +217,10 @@ export function createOrganizationRoutes(context: RequestContext) {
     ) => {
       const { id } = req.params;
       const { filename, scope } = req.body;
-      const result = await context.handlers.organizations.confirmOrganizationPictureUpload({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizations.confirmOrganizationPictureUpload({
         organizationId: id,
         filename,
         scope,
@@ -231,7 +247,10 @@ export function createOrganizationRoutes(context: RequestContext) {
       const { id } = req.params;
       const { hardDelete } = req.query;
 
-      const organization = await context.handlers.organizations.deleteOrganization({
+      const organization = await requestContext(
+        req,
+        fallback
+      ).handlers.organizations.deleteOrganization({
         id,
         hardDelete: hardDelete ?? false,
       });

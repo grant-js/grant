@@ -12,6 +12,7 @@ import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization
 import { NotFoundError } from '@/lib/errors';
 import { parseRelations } from '@/lib/field-selection.lib';
 import { validate } from '@/middleware/validation.middleware';
+import { requestContext } from '@/rest/request-context';
 import {
   acceptInvitationRequestSchema,
   getInvitationByTokenQuerySchema,
@@ -26,7 +27,7 @@ import { queryListCommons } from '@/rest/utils/list-query';
 import { sendSuccessResponse } from '@/rest/utils/response';
 import { RequestContext } from '@/types';
 
-export function createOrganizationInvitationsRoutes(context: RequestContext) {
+export function createOrganizationInvitationsRoutes(fallback?: RequestContext) {
   const router = Router();
 
   router.post(
@@ -40,10 +41,13 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof inviteMemberRequestSchema }>, res: Response) => {
       const { scope, email, roleId } = req.body;
 
-      const invitation = await context.handlers.organizationInvitations.inviteMember(
+      const invitation = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.inviteMember(
         { scope, email, roleId },
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
 
       sendSuccessResponse(res, invitation, 201);
@@ -59,12 +63,15 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
     async (req: TypedRequest<{ body: typeof acceptInvitationRequestSchema }>, res: Response) => {
       const { token, userData } = req.body;
 
-      const result = await context.handlers.organizationInvitations.acceptInvitation({
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.acceptInvitation({
         token,
         userData,
       });
 
-      context.requestLogger.info({
+      requestContext(req, fallback).requestLogger.info({
         msg: 'Invitation accepted',
         organizationId: result.invitation?.organizationId,
       });
@@ -91,7 +98,10 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
 
       const requestedFields = parseRelations<OrganizationInvitation>(relations);
 
-      const invitation = await context.handlers.organizationInvitations.getInvitation({
+      const invitation = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.getInvitation({
         token,
         requestedFields,
       });
@@ -137,8 +147,10 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
         ids,
       } as QueryOrganizationInvitationsArgs;
 
-      const result =
-        await context.handlers.organizationInvitations.getOrganizationInvitations(params);
+      const result = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.getOrganizationInvitations(params);
 
       sendSuccessResponse(res, {
         items: result.invitations,
@@ -165,10 +177,13 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
     ) => {
       const { id } = req.params;
 
-      const invitation = await context.handlers.organizationInvitations.resendInvitationEmail(
+      const invitation = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.resendInvitationEmail(
         id,
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
 
       sendSuccessResponse(res, invitation);
@@ -192,10 +207,13 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
     ) => {
       const { id } = req.params;
 
-      const invitation = await context.handlers.organizationInvitations.renewInvitation(
+      const invitation = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.renewInvitation(
         id,
-        context.locale,
-        context.requestLogger
+        requestContext(req, fallback).locale,
+        requestContext(req, fallback).requestLogger
       );
 
       sendSuccessResponse(res, invitation);
@@ -219,7 +237,10 @@ export function createOrganizationInvitationsRoutes(context: RequestContext) {
     ) => {
       const { id } = req.params;
 
-      const invitation = await context.handlers.organizationInvitations.revokeInvitation(id);
+      const invitation = await requestContext(
+        req,
+        fallback
+      ).handlers.organizationInvitations.revokeInvitation(id);
 
       sendSuccessResponse(res, invitation);
     }

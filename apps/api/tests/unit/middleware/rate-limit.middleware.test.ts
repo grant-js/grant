@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS,
   rateLimitMiddleware,
+  tenantRateLimitMiddleware,
 } from '@/middleware/rate-limit.middleware';
 
 type MockSecurity = {
@@ -74,6 +75,7 @@ describe('rateLimitMiddleware', () => {
   const next = vi.fn();
   const store = new InMemoryCacheAdapter();
   const middleware = rateLimitMiddleware(store);
+  const tenantMiddleware = tenantRateLimitMiddleware(store);
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -347,13 +349,13 @@ describe('rateLimitMiddleware', () => {
       });
       const res = createMockRes();
 
-      await middleware(req, res, next);
-      await middleware(req, res, next);
+      await tenantMiddleware(req, res, next);
+      await tenantMiddleware(req, res, next);
       expect(next).toHaveBeenCalledTimes(2);
       expect(res.status).not.toHaveBeenCalled();
     });
 
-    it('returns 429 when per-tenant limit exceeded and scope is present', async () => {
+    it('returns 429 when per-tenant limit exceeded and scope is present after auth', async () => {
       const req = createMockReq({
         path: '/api/other',
         context: {
@@ -365,11 +367,11 @@ describe('rateLimitMiddleware', () => {
       const res = createMockRes();
 
       for (let i = 0; i < 3; i++) {
-        await middleware(req, res, next);
+        await tenantMiddleware(req, res, next);
         expect(next).toHaveBeenCalledTimes(i + 1);
       }
 
-      await middleware(req, res, next);
+      await tenantMiddleware(req, res, next);
       expect(next).toHaveBeenCalledTimes(3);
       expect(res.status).toHaveBeenCalledWith(429);
       expect(res.setHeader).toHaveBeenCalledWith('Retry-After', expect.any(String));
@@ -381,8 +383,8 @@ describe('rateLimitMiddleware', () => {
       const req = createMockReq({ path: '/api/other' }); // no context.user.scope
       const res = createMockRes();
 
-      await middleware(req, res, next);
-      await middleware(req, res, next);
+      await tenantMiddleware(req, res, next);
+      await tenantMiddleware(req, res, next);
       expect(next).toHaveBeenCalledTimes(2);
       expect(res.status).not.toHaveBeenCalled();
     });
@@ -407,11 +409,11 @@ describe('rateLimitMiddleware', () => {
       });
       const res = createMockRes();
 
-      await middleware(reqA, res, next);
-      await middleware(reqA, res, next);
+      await tenantMiddleware(reqA, res, next);
+      await tenantMiddleware(reqA, res, next);
       expect(next).toHaveBeenCalledTimes(2);
 
-      await middleware(reqA, res, next);
+      await tenantMiddleware(reqA, res, next);
       expect(next).toHaveBeenCalledTimes(2);
       expect(res.status).toHaveBeenCalledWith(429);
 
@@ -419,8 +421,8 @@ describe('rateLimitMiddleware', () => {
       (res.status as ReturnType<typeof vi.fn>).mockClear();
       (res.setHeader as ReturnType<typeof vi.fn>).mockClear();
 
-      await middleware(reqB, res, next);
-      await middleware(reqB, res, next);
+      await tenantMiddleware(reqB, res, next);
+      await tenantMiddleware(reqB, res, next);
       expect(next).toHaveBeenCalledTimes(2);
       expect(res.status).not.toHaveBeenCalled();
     });
