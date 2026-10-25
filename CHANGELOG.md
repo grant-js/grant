@@ -3,6 +3,20 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.7
+
+### Platform
+
+**Docker images:** tagged `:1.18.7` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.7** (fixed group with apps).
+
+### Patch Changes
+
+- c58ac17: Overlap independent RBAC lookups on an authorization cache miss so `getUserPermissions` no longer walks the four permission sources as a single sequential chain.
+
+- c58ac17: Invalidate cached authorization results for the written tenant only, so an IAM write in tenant A no longer drops tenant B's hot allow-cache.
+
 ## 1.18.6
 
 ### Platform
