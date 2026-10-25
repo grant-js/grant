@@ -47,7 +47,7 @@ type TenantAccess = 'empty' | 'sql';
  * Per-kind tenant classification. A tenant missing from a map is rejected,
  * never silently empty — the same fail-closed rule as CacheHandler.
  */
-export const SCOPED_ID_TENANTS: Record<ScopedIdKind, Partial<Record<Tenant, TenantAccess>>> = {
+const SCOPED_ID_TENANTS: Record<ScopedIdKind, Partial<Record<Tenant, TenantAccess>>> = {
   projects: {
     [Tenant.Account]: 'sql',
     [Tenant.Organization]: 'sql',
