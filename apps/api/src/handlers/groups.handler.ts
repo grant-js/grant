@@ -28,7 +28,6 @@ import { BadRequestError } from '@/lib/errors';
 import { runWithOutboxBatch } from '@/lib/events';
 import { runInChunks } from '@/lib/iam-cascade.lib';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -53,34 +52,14 @@ export class GroupHandler extends CacheHandler {
   public async getGroups(params: QueryGroupsArgs & SelectedFields<Group>): Promise<GroupPage> {
     const { scope, page, limit, sort, search, ids, tagIds, requestedFields } = params;
 
-    let groupIds = await this.getScopedGroupIds(scope);
-
-    if (tagIds && tagIds.length > 0) {
-      const groupTags = await this.groupTags.getGroupTagIntersection({
-        groupIds,
-        tagIds,
-      });
-      groupIds = groupTags
-        .filter(({ groupId, tagId }) => groupIds.includes(groupId) && tagIds.includes(tagId))
-        .map(({ groupId }) => groupId);
-    }
-
-    groupIds = intersectScopedIds(groupIds, ids);
-
-    if (groupIds.length === 0) {
-      return {
-        groups: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
     const repositoryRequestedFields = stripHydratedFields<Group>(
       requestedFields,
       groupListHydrators
     );
     const groupsResult = await this.groups.getGroups({
-      ids: groupIds,
+      scope,
+      ids,
+      tagIds,
       page,
       limit,
       sort,

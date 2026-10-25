@@ -15,8 +15,7 @@ import type {
   UpdatePermissionTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IPermissionService
@@ -24,7 +23,7 @@ import type { DeleteParams } from '../repositories/common';
 
 export interface IPermissionService {
   getPermissions(
-    params: Omit<QueryPermissionsArgs, 'scope' | 'tagIds'> & SelectedFields<Permission>
+    params: Omit<QueryPermissionsArgs, 'scope'> & OptionalListScope & SelectedFields<Permission>
   ): Promise<PermissionPage>;
 
   getPermissionsByResourceId(resourceId: string, transaction?: unknown): Promise<Permission[]>;

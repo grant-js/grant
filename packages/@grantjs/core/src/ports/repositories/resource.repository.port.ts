@@ -16,11 +16,11 @@ import type {
   UpdateResourceTagInput,
 } from '@grantjs/schema';
 
-import type { IEntityExistence, SelectedFields } from './common';
+import type { IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
 export interface IResourceRepository extends IEntityExistence {
   getResources(
-    params: Omit<QueryResourcesArgs, 'scope' | 'tagIds'> & SelectedFields<Resource>,
+    params: Omit<QueryResourcesArgs, 'scope'> & OptionalListScope & SelectedFields<Resource>,
     transaction?: unknown
   ): Promise<ResourcePage>;
 

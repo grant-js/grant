@@ -50,7 +50,7 @@ import {
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
-import { intersectScopedIds, tryProjectIdFromScope } from '@/lib/scope.lib';
+import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -107,50 +107,15 @@ export class UserHandler extends CacheHandler {
   public async getUsers(params: QueryUsersArgs & SelectedFields<User>): Promise<UserPage> {
     const { scope, page, limit, sort, search, ids, tagIds, requestedFields } = params;
 
-    let userIds = await this.getScopedUserIds(scope);
-
-    if (tagIds && tagIds.length > 0) {
-      const userTags = await this.userTags.getUserTagIntersection(userIds, tagIds);
-      userIds = userTags
-        .filter(({ userId, tagId }) => userIds.includes(userId) && tagIds.includes(tagId))
-        .map(({ userId }) => userId);
-    }
-
-    userIds = intersectScopedIds(userIds, ids);
-
-    if (userIds.length === 0) {
-      return {
-        users: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
-    let effectiveSearch = search;
-    if (search != null && search.trim() !== '' && isProjectScopedUserMetadataTenant(scope.tenant)) {
-      const projectId = this.extractProjectIdFromScope(scope);
-      userIds = await this.projectUsers.filterUserIdsBySearchDocument({
-        projectId,
-        userIds,
-        search: search.trim(),
-      });
-      if (userIds.length === 0) {
-        return {
-          users: [],
-          totalCount: 0,
-          hasNextPage: false,
-        };
-      }
-      effectiveSearch = undefined;
-    }
-
     const repositoryRequestedFields = stripHydratedFields<User>(requestedFields, userListHydrators);
     const usersResult = await this.users.getUsers({
-      ids: userIds,
+      scope,
+      ids,
+      tagIds,
       page,
       limit,
       sort,
-      search: effectiveSearch,
+      search,
       requestedFields: repositoryRequestedFields,
       ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });

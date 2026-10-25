@@ -16,8 +16,7 @@ import type {
   UpdateResourceTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IResourceService
@@ -25,7 +24,7 @@ import type { DeleteParams } from '../repositories/common';
 
 export interface IResourceService {
   getResources(
-    params: Omit<QueryResourcesArgs, 'scope'> & SelectedFields<Resource>
+    params: Omit<QueryResourcesArgs, 'scope'> & OptionalListScope & SelectedFields<Resource>
   ): Promise<ResourcePage>;
 
   /** Resolve resource by id (e.g. for Permission.resource when permission was loaded in scoped context). */

@@ -20,7 +20,7 @@ Docs + existing unit/integration only. No new k6/Artillery harness. Do not skip 
 
 Sort and page already run in SQL on the entity query. They do **not** run on the ID set first. M9 already narrowed project-user **row** hydration to the page (`users.handler.project-pivot-page.test.ts` stubs 500 scoped ids and asserts `getProjectUsers` sees only the page). The leftover is this ID set: a 50-row page can still resolve 1k+ IDs and pass all of them into `IN (...)`.
 
-`PivotRepository.query` has no SQL `LIMIT`. That is a sibling list path, not this recipe’s chosen page.
+`PivotRepository.query` had no SQL `LIMIT` on the SHA this recipe measured. Slice 2 (`feat/iam-scoped-id-lists-page`) pages list queries with a pivot subquery so a 50-row page does not bind the full accessible `IN` list; `PivotRepository.query` applies `ORDER BY created_at` + `LIMIT` when the caller asks for a page. Keep this recipe as the before-picture.
 
 Public args are `scope`, `page`, `limit`, `search`, `sort`, `ids`, and `tagIds`. There is no GraphQL `filters` argument. Do not add one to measure.
 

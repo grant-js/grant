@@ -1,4 +1,4 @@
-import type { ITagRepository } from '@grantjs/core';
+import type { ITagRepository, OptionalListScope } from '@grantjs/core';
 import { TagModel, tags } from '@grantjs/database';
 import {
   CreateTagInput,
@@ -17,6 +17,7 @@ import {
   BaseUpdateArgs,
   EntityRepository,
   RelationsConfig,
+  requireAccessibleIdSource,
 } from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
@@ -28,10 +29,13 @@ export class TagRepository extends EntityRepository<TagModel, Tag> implements IT
   protected relations: RelationsConfig<Tag> = {};
 
   public async getTags(
-    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>,
+    params: Omit<QueryTagsArgs, 'scope'> & OptionalListScope & SelectedFields<Tag>,
     transaction?: Transaction
   ): Promise<TagPage> {
-    const result = await this.query(params, transaction);
+    const accessibleIdSource = params.scope
+      ? requireAccessibleIdSource('tags', params.scope)
+      : undefined;
+    const result = await this.query({ ...params, accessibleIdSource }, transaction);
 
     return {
       tags: result.items,

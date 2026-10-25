@@ -1,5 +1,11 @@
 import { GROUP_DEFINITIONS } from '@grantjs/constants';
-import type { IAuditLogger, IEventPublisher, IGroupRepository, IGroupService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IEventPublisher,
+  IGroupRepository,
+  IGroupService,
+  OptionalListScope,
+} from '@grantjs/core';
 import {
   CreateGroupInput,
   Group,
@@ -64,7 +70,7 @@ export class GroupService implements IGroupService {
   }
 
   public async getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>,
+    params: Omit<QueryGroupsArgs, 'scope'> & OptionalListScope & SelectedFields<Group>,
     transaction?: Transaction
   ): Promise<GroupPage> {
     const context = 'GroupService.getGroups';

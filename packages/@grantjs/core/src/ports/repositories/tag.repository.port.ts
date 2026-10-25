@@ -11,11 +11,11 @@ import type {
   UpdateTagInput,
 } from '@grantjs/schema';
 
-import type { IEntityExistence, SelectedFields } from './common';
+import type { IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
 export interface ITagRepository extends IEntityExistence {
   getTags(
-    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>,
+    params: Omit<QueryTagsArgs, 'scope'> & OptionalListScope & SelectedFields<Tag>,
     transaction?: unknown
   ): Promise<TagPage>;
 

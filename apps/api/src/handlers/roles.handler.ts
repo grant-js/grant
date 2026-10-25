@@ -33,7 +33,6 @@ import { BadRequestError } from '@/lib/errors';
 import { runWithOutboxBatch } from '@/lib/events';
 import { runInChunks } from '@/lib/iam-cascade.lib';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -64,28 +63,11 @@ export class RoleHandler extends CacheHandler {
   public async getRoles(params: QueryRolesArgs & SelectedFields<Role>): Promise<RolePage> {
     const { scope, page, limit, sort, search, ids, tagIds, requestedFields } = params;
 
-    let roleIds = await this.getScopedRoleIds(scope);
-
-    if (tagIds && tagIds.length > 0) {
-      const roleTags = await this.roleTags.getRoleTagIntersection({ roleIds, tagIds });
-      roleIds = roleTags
-        .filter(({ roleId, tagId }) => roleIds.includes(roleId) && tagIds.includes(tagId))
-        .map(({ roleId }) => roleId);
-    }
-
-    roleIds = intersectScopedIds(roleIds, ids);
-
-    if (roleIds.length === 0) {
-      return {
-        roles: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
     const repositoryRequestedFields = stripHydratedFields<Role>(requestedFields, roleListHydrators);
     const rolesResult = await this.roles.getRoles({
-      ids: roleIds,
+      scope,
+      ids,
+      tagIds,
       page,
       limit,
       sort,

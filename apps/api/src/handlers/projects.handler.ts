@@ -72,7 +72,6 @@ import {
   ValidationError,
 } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -108,67 +107,16 @@ export class ProjectHandler extends CacheHandler {
   ): Promise<ProjectPage> {
     const { scope, page, limit, sort, search, ids, tagIds, requestedFields } = params;
 
-    let projectIds = await this.getScopedProjectIds(scope);
-
-    if (tagIds && tagIds.length > 0) {
-      switch (scope.tenant) {
-        case Tenant.Organization:
-          {
-            const organizationId = scope.id;
-            const organizationProjectTags =
-              await this.organizationProjectTags.getOrganizationProjectTagIntersection(
-                organizationId,
-                projectIds,
-                tagIds
-              );
-            projectIds = organizationProjectTags
-              .filter(
-                ({ projectId, tagId }) => projectIds.includes(projectId) && tagIds.includes(tagId)
-              )
-              .map(({ projectId }) => projectId);
-          }
-          break;
-        case Tenant.Account:
-          {
-            const accountId = scope.id;
-            const accountProjectTags =
-              await this.accountProjectTags.getAccountProjectTagIntersection(
-                accountId,
-                projectIds,
-                tagIds
-              );
-            projectIds = accountProjectTags
-              .filter(
-                ({ projectId, tagId }) => projectIds.includes(projectId) && tagIds.includes(tagId)
-              )
-              .map(({ projectId }) => projectId);
-          }
-          break;
-        default:
-          throw new BadRequestError('Invalid scope');
-      }
-    }
-
-    projectIds = intersectScopedIds(projectIds, ids);
-
-    if (projectIds.length === 0) {
-      return {
-        projects: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
-    const projectsResult = await this.projects.getProjects({
-      ids: projectIds,
+    return this.projects.getProjects({
+      scope,
+      ids,
+      tagIds,
       page,
       limit,
       sort,
       search,
       requestedFields,
     });
-
-    return projectsResult;
   }
 
   public async startProjectSync(

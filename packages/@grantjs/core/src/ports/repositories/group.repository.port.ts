@@ -20,11 +20,11 @@ import type {
   UpdateGroupTagInput,
 } from '@grantjs/schema';
 
-import type { IEntityExistence, SelectedFields } from './common';
+import type { IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
 export interface IGroupRepository extends IEntityExistence {
   getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>,
+    params: Omit<QueryGroupsArgs, 'scope'> & OptionalListScope & SelectedFields<Group>,
     transaction?: unknown
   ): Promise<GroupPage>;
 

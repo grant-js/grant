@@ -6,6 +6,7 @@ import {
   type IFileStorageService,
   type IUserRepository,
   type IUserService,
+  type OptionalListScope,
 } from '@grantjs/core';
 import {
   CreateUserInput,
@@ -69,7 +70,7 @@ export class UserService implements IUserService {
   }
 
   public async getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
+    params: Omit<QueryUsersArgs, 'scope'> & OptionalListScope & SelectedFields<User>,
     transaction?: Transaction
   ): Promise<UserPage> {
     const context = 'UserService.getUsers';

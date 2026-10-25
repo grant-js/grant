@@ -33,12 +33,12 @@ Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that 
 
 Principal may collapse slices 2 and 3 into one PR if the combined diff stays reviewable, or drop slice 3 if slice 2 already keeps search / tags / explicit ids / sort on the full accessible set. Keep them separate unless that collapse is explicit at slice-2 start. Offset → keyset is **not** a required slice (M4 leftover); add it only if PE says the page-ID fix requires it.
 
-| #     | Branch                             | Base                       | Concern                                         | Owner role | Review bar           | PR                                                 |
-| ----- | ---------------------------------- | -------------------------- | ----------------------------------------------- | ---------- | -------------------- | -------------------------------------------------- |
-| 1     | `feat/iam-scoped-id-lists-measure` | `feat/iam-scoped-id-lists` | list-page cost vs scoped-id set size (recipe)   | Backend    | light                | [#602](https://github.com/grant-js/grant/pull/602) |
-| 2     | `feat/iam-scoped-id-lists-page`    | prior slice                | filter + sort + page, then hydrate              | Backend    | security-full        |                                                    |
-| 3     | `feat/iam-scoped-id-lists-search`  | prior slice                | search/tag/ids still on the full accessible set | Backend    | security-full        |                                                    |
-| final | `feat/iam-scoped-id-lists`         | `main`                     | integration                                     | Principal  | deep + security-full |                                                    |
+| #     | Branch                             | Base                       | Concern                                          | Owner role | Review bar           | PR                                                 |
+| ----- | ---------------------------------- | -------------------------- | ------------------------------------------------ | ---------- | -------------------- | -------------------------------------------------- |
+| 1     | `feat/iam-scoped-id-lists-measure` | `feat/iam-scoped-id-lists` | list-page cost vs scoped-id set size (recipe)    | Backend    | light                | [#602](https://github.com/grant-js/grant/pull/602) |
+| 2     | `feat/iam-scoped-id-lists-page`    | prior slice                | filter + sort + page, then hydrate               | Backend    | security-full        | [#603](https://github.com/grant-js/grant/pull/603) |
+| 3     | `feat/iam-scoped-id-lists-search`  | prior slice                | skipped — slice 2 SQL covers full accessible set | Backend    | security-full        | skipped                                            |
+| final | `feat/iam-scoped-id-lists`         | `main`                     | integration                                      | Principal  | deep + security-full |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has no db/schema/web slices. Slice 1 is docs + existing unit/integration. Slices 2–3 are `apps/api` handlers / repositories (and `@grantjs/core` only if the scoped-id port grows).
 
@@ -106,7 +106,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - Owner files: `apps/api/src/services/user-tags.service.ts` / `apps/api/src/repositories/user-tags.repository.ts` (`getUserTagIntersection`), `apps/api/src/services/project-users.service.ts` / `apps/api/src/repositories/project-users.repository.ts` (`filterUserIdsBySearchDocument`), sibling tag intersections (e.g. `getGroupTagIntersection` in `groups.handler.ts`).
 - Today: `tagIds` and project-user search shrink the full id list in the handler; org-scoped `search` and `sort` run later in SQL on that whole `IN` list. `ids` is an intersect (`intersectScopedIds`).
 - Outcome: after slice 2, search, tags, and explicit `ids` still match against the caller’s full accessible set (or an equivalent SQL filter that cannot return an ID outside that set). Sort stays the entity `ORDER BY`. Paging 50 IDs first and then searching/sorting only those 50 is a product bug — do not ship that.
-- Skip this slice if slice 2 already pushes filter+sort+page into SQL and PE records the collapse at slice-2 start.
+- **Skipped.** Slice 2 pushes search / tags / explicit ids / sort / page into the same SQL as the accessible-id subquery. PE records the collapse here at slice-2 start — do not cut `feat/iam-scoped-id-lists-search`.
 - Tests: tagged/search/sorted page 1 matches today’s membership and order; a match that exists outside page 1 still appears; no out-of-scope ID in the result. Security-full if this slice changes who matches.
 - **UX:** no web files.
 

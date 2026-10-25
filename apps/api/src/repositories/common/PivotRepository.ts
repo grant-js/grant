@@ -131,7 +131,19 @@ export abstract class PivotRepository<
         ? and(unique, isNull(this.table.deletedAt))
         : isNull(this.table.deletedAt);
 
-      const result = await db.select().from(this.table).where(notSoftDeleted);
+      const page = typeof params.page === 'number' ? params.page : undefined;
+      const limit = typeof params.limit === 'number' ? params.limit : undefined;
+
+      const base = db.select().from(this.table).where(notSoftDeleted);
+      const result =
+        limit == null
+          ? await base
+          : page && page > 1
+            ? await base
+                .orderBy(this.table.createdAt)
+                .limit(limit)
+                .offset((page - 1) * limit)
+            : await base.orderBy(this.table.createdAt).limit(limit);
 
       return result.map((item: TPivotModel) => this.toEntity(item));
     } catch (error) {

@@ -31,7 +31,6 @@ import { defaultLocale, getFixedT } from '@/i18n/config';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -63,36 +62,14 @@ export class ResourceHandler extends CacheHandler {
   ): Promise<ResourcePage> {
     const { scope, page, limit, sort, search, ids, tagIds, isActive, requestedFields } = params;
 
-    let resourceIds = await this.getScopedResourceIds(scope);
-
-    if (tagIds && tagIds.length > 0) {
-      const resourceTags = await this.resourceTags.getResourceTagIntersection({
-        resourceIds,
-        tagIds,
-      });
-      resourceIds = resourceTags
-        .filter(
-          ({ resourceId, tagId }) => resourceIds.includes(resourceId) && tagIds.includes(tagId)
-        )
-        .map(({ resourceId }) => resourceId);
-    }
-
-    resourceIds = intersectScopedIds(resourceIds, ids);
-
-    if (resourceIds.length === 0) {
-      return {
-        resources: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
     const repositoryRequestedFields = stripHydratedFields<Resource>(
       requestedFields,
       resourceListHydrators
     );
     const resourcesResult = await this.resources.getResources({
-      ids: resourceIds,
+      scope,
+      ids,
+      tagIds,
       page,
       limit,
       sort,

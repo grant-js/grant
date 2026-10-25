@@ -30,7 +30,6 @@ import { BadRequestError } from '@/lib/errors';
 import { runWithOutboxBatch } from '@/lib/events';
 import { runInChunks } from '@/lib/iam-cascade.lib';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -57,37 +56,14 @@ export class PermissionHandler extends CacheHandler {
   ): Promise<PermissionPage> {
     const { scope, page, limit, sort, search, ids, tagIds, requestedFields } = params;
 
-    let permissionIds = await this.getScopedPermissionIds(scope);
-
-    if (tagIds && tagIds.length > 0) {
-      const permissionTags = await this.permissionTags.getPermissionTagIntersection({
-        permissionIds,
-        tagIds,
-      });
-      permissionIds = permissionTags
-        .filter(
-          ({ permissionId, tagId }) =>
-            permissionIds.includes(permissionId) && tagIds.includes(tagId)
-        )
-        .map(({ permissionId }) => permissionId);
-    }
-
-    permissionIds = intersectScopedIds(permissionIds, ids);
-
-    if (permissionIds.length === 0) {
-      return {
-        permissions: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
     const repositoryRequestedFields = stripHydratedFields<Permission>(
       requestedFields,
       permissionListHydrators
     );
     const permissionsResult = await this.permissions.getPermissions({
-      ids: permissionIds,
+      scope,
+      ids,
+      tagIds,
       page,
       limit,
       sort,

@@ -1,5 +1,11 @@
 import { ROLES } from '@grantjs/constants';
-import type { IAuditLogger, IEventPublisher, IRoleRepository, IRoleService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IEventPublisher,
+  IRoleRepository,
+  IRoleService,
+  OptionalListScope,
+} from '@grantjs/core';
 import {
   CreateRoleInput,
   MutationDeleteRoleArgs,
@@ -72,7 +78,7 @@ export class RoleService implements IRoleService {
   }
 
   public async getRoles(
-    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>
+    params: Omit<QueryRolesArgs, 'scope'> & OptionalListScope & SelectedFields<Role>
   ): Promise<RolePage> {
     const context = 'RoleService.getRoles';
     validateInput(getRolesParamsSchema, params, context);

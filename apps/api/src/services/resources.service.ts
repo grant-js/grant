@@ -3,6 +3,7 @@ import type {
   IEventPublisher,
   IResourceRepository,
   IResourceService,
+  OptionalListScope,
 } from '@grantjs/core';
 import {
   CreateResourceInput,
@@ -63,7 +64,7 @@ export class ResourceService implements IResourceService {
   }
 
   public async getResources(
-    params: Omit<QueryResourcesArgs, 'scope'> & SelectedFields<Resource>
+    params: Omit<QueryResourcesArgs, 'scope'> & OptionalListScope & SelectedFields<Resource>
   ): Promise<ResourcePage> {
     const context = 'ResourceService.getResources';
     validateInput(getResourcesParamsSchema, params, context);
