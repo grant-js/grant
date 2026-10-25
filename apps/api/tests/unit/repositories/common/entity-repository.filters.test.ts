@@ -144,9 +144,7 @@ describe('where', () => {
 
     expect(JSON.stringify(result)).not.toContain('id-0');
     expect(JSON.stringify(result)).not.toContain(thousand[0]);
-    const inArrayCall = result.args.find(
-      (arg): arg is Tagged => (arg as Tagged).op === 'inArray'
-    );
+    const inArrayCall = result.args.find((arg): arg is Tagged => (arg as Tagged).op === 'inArray');
     expect(inArrayCall).toBeUndefined();
   });
 

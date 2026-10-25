@@ -33,12 +33,12 @@ Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that 
 
 Principal may collapse slices 2 and 3 into one PR if the combined diff stays reviewable, or drop slice 3 if slice 2 already keeps search / tags / explicit ids / sort on the full accessible set. Keep them separate unless that collapse is explicit at slice-2 start. Offset → keyset is **not** a required slice (M4 leftover); add it only if PE says the page-ID fix requires it.
 
-| #     | Branch                             | Base                       | Concern                                         | Owner role | Review bar           | PR                                                 |
-| ----- | ---------------------------------- | -------------------------- | ----------------------------------------------- | ---------- | -------------------- | -------------------------------------------------- |
-| 1     | `feat/iam-scoped-id-lists-measure` | `feat/iam-scoped-id-lists` | list-page cost vs scoped-id set size (recipe)   | Backend    | light                | [#602](https://github.com/grant-js/grant/pull/602) |
-| 2     | `feat/iam-scoped-id-lists-page`    | prior slice                | filter + sort + page, then hydrate              | Backend    | security-full        |                                                    |
-| 3     | `feat/iam-scoped-id-lists-search`  | prior slice                | skipped — slice 2 SQL covers full accessible set | Backend    | security-full        | skipped |
-| final | `feat/iam-scoped-id-lists`         | `main`                     | integration                                     | Principal  | deep + security-full |                                                    |
+| #     | Branch                             | Base                       | Concern                                          | Owner role | Review bar           | PR                                                 |
+| ----- | ---------------------------------- | -------------------------- | ------------------------------------------------ | ---------- | -------------------- | -------------------------------------------------- |
+| 1     | `feat/iam-scoped-id-lists-measure` | `feat/iam-scoped-id-lists` | list-page cost vs scoped-id set size (recipe)    | Backend    | light                | [#602](https://github.com/grant-js/grant/pull/602) |
+| 2     | `feat/iam-scoped-id-lists-page`    | prior slice                | filter + sort + page, then hydrate               | Backend    | security-full        |                                                    |
+| 3     | `feat/iam-scoped-id-lists-search`  | prior slice                | skipped — slice 2 SQL covers full accessible set | Backend    | security-full        | skipped                                            |
+| final | `feat/iam-scoped-id-lists`         | `main`                     | integration                                      | Principal  | deep + security-full |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has no db/schema/web slices. Slice 1 is docs + existing unit/integration. Slices 2–3 are `apps/api` handlers / repositories (and `@grantjs/core` only if the scoped-id port grows).
 
