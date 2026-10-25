@@ -1,5 +1,27 @@
 # grant-api
 
+## 1.18.5
+
+### Patch Changes
+
+- f344d18: Run IP and auth-sensitive rate limits before request context so a 429 does not authenticate or construct the handler toolbox. Optional per-tenant limits still run after authenticate.
+- f344d18: Build the request handler toolbox once after authenticate. Scoped RLS requests keep SET LOCAL on the request transaction; auth uses a thin unscoped Grant bootstrap.
+- f344d18: Mount one REST router for `/api` instead of allocating the route tree per request. Handlers still come from the request context.
+- @grantjs/schema@1.18.5
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.4
 
 ### Patch Changes
