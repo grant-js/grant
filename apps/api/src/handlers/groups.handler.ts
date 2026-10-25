@@ -206,7 +206,7 @@ export class GroupHandler extends CacheHandler {
         );
 
         if (newPermissionIds.length > 0 || removedPermissionIds.length > 0) {
-          await this.invalidatePermissionsCacheForAllScopes();
+          await this.invalidatePermissionsCacheForAllScopes(input.scope);
         }
       }
       return updatedGroup;
@@ -263,7 +263,7 @@ export class GroupHandler extends CacheHandler {
       });
 
       await this.removeGroupIdFromScopeCache(scope, groupId);
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
 
       return await this.groups.deleteGroup(params, tx);
     });

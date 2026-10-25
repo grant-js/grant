@@ -25,6 +25,7 @@ import { AuthorizationResult, Scope, Tag, Tenant } from '@grantjs/schema';
 import { createHash } from 'crypto';
 
 import { AUTH_RESULT_CACHE_KEY_PREFIX } from '@/constants/cache.constants';
+import { authResultKeyMatchesTenant } from '@/lib/auth-result-cache.lib';
 import { CacheKey, ICacheAdapter, IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
 import { unboundedList } from '@/lib/pagination.lib';
@@ -593,8 +594,17 @@ export class CacheHandler implements IScopedIdProvider {
     return { tagsByOwnerId, primaryTagByOwnerId, tagCountByOwnerId };
   }
 
-  async invalidatePermissionsCacheForAllScopes(): Promise<void> {
-    await this.cache.permissions.clear();
+  /**
+   * Drops cached allow/deny results for this tenant and its child scopes.
+   * Other tenants' results and scoped-id sets in the permissions namespace stay.
+   */
+  async invalidatePermissionsCacheForAllScopes(scope: Scope): Promise<void> {
+    const keys = await this.cache.permissions.keys(`${AUTH_RESULT_CACHE_KEY_PREFIX}*`);
+    await Promise.all(
+      keys
+        .filter((key) => authResultKeyMatchesTenant(key, scope))
+        .map((key) => this.cache.permissions.delete(key))
+    );
   }
 
   /**
