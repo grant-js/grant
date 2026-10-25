@@ -48,6 +48,7 @@ vi.mock('@/middleware/request-logging.middleware', () => ({
 }));
 vi.mock('@/repositories', () => ({ createRepositories: () => ({ signingKeyRepository: {} }) }));
 vi.mock('@/repositories/grant.repository', () => ({ GrantRepository: class {} }));
+vi.mock('@/repositories/signing-keys.repository', () => ({ SigningKeyRepository: class {} }));
 vi.mock('@/resource-resolvers', () => ({ createResourceResolvers: () => ({}) }));
 vi.mock('@/services', () => ({ createServices }));
 vi.mock('@/services/grant.service', () => ({ GrantService: class {} }));
