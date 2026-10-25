@@ -13,48 +13,48 @@ Dashboard GraphQL list queries are out of scope here; see [Field Selection](/adv
 
 ## Environment
 
-| Field              | Value                                                                                                                                              |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date**           | 2026-10-24                                                                                                                                         |
-| **SHA**            | `f3abf2ef` (`main` / story trunk `feat/iam-request-chassis` at measure time; this docs slice does not change the API)                              |
-| **API**            | Local (`http://localhost:4000`), `NODE_ENV=development`                                                                                            |
-| **Datastore**      | PostgreSQL 16 and Redis 7 on the host (this VM has no Docker; same ports as Compose)                                                               |
-| **Rate limit**     | Off (`SECURITY_ENABLE_RATE_LIMIT=false`). The published 20-run series plus throughput exceeds the production default of 100 requests / 15 minutes. |
-| **Scope**          | `accountProject` (fresh personal-account project on the seed permission model)                                                                     |
-| **Catalog size**   | 68 permissions, 2 users (system + bench). **Not** the 2026-07-20 CDM-imported project (~371 permissions, ~272 users).                              |
-| **Endpoint**       | `POST /api/auth/is-authorized`                                                                                                                     |
-| **Runs per check** | 20                                                                                                                                                 |
-| **Throughput**     | 30 cold checks, concurrency 3                                                                                                                      |
-| **Host**           | Linux 6.12, 4 CPUs, 16 GiB RAM                                                                                                                     |
+| Field              | Value                                                                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Date**           | 2026-10-25                                                                                                                                                                                                               |
+| **SHA**            | `85a82b19` (`main` after H3 [#605](https://github.com/grant-js/grant/pull/605) and version packages [#606](https://github.com/grant-js/grant/pull/606); this docs slice does not change the API)                         |
+| **API**            | Local (`http://localhost:4000`), `NODE_ENV=development`                                                                                                                                                                  |
+| **Datastore**      | PostgreSQL 16 and Redis 7 via Compose (`postgres:16-alpine`, `redis:7-alpine`) on the same ports as the example stack                                                                                                    |
+| **Rate limit**     | Off for this series only (`SECURITY_ENABLE_RATE_LIMIT=false` in gitignored `.env.local`). The published 20-run series plus throughput exceeds the production default of 100 requests / 15 minutes. Not a product change. |
+| **Scope**          | `accountProject` (fresh personal-account project on the seed permission model)                                                                                                                                           |
+| **Catalog size**   | 68 permissions, 2 users (system + bench). **Not** the 2026-07-20 CDM-imported project (~371 permissions, ~272 users).                                                                                                    |
+| **Endpoint**       | `POST /api/auth/is-authorized`                                                                                                                                                                                           |
+| **Runs per check** | 20                                                                                                                                                                                                                       |
+| **Throughput**     | 30 cold checks, concurrency 3                                                                                                                                                                                            |
+| **Host**           | Linux 6.12, 4 CPUs, 16 GiB RAM                                                                                                                                                                                           |
 
 Cold runs vary `context.resource.id` so each call bypasses the AuthHandler result cache and exercises real evaluation. Warm runs reuse a fixed context after a prime request (cache hit).
 
-A first attempt on this host with the example `.env` (`NODE_ENV=production`, rate limit on) returned `rate_limit_exceeded` from Role.Query onward. Those rows were discarded. The table below is the second run, after rate limit was turned off.
+Rate limit was off for this series (`SECURITY_ENABLE_RATE_LIMIT=false` in gitignored `.env.local` only). The table below is that run.
 
 ## Results
 
 | Check                      | mode | p50 (ms) | p95 (ms) | min | max | mean | authorized | reason                            | ok  | Target               |
 | -------------------------- | ---- | -------- | -------- | --- | --- | ---- | ---------- | --------------------------------- | --- | -------------------- |
-| allow: Project.Query       | cold | 12       | 32       | 8   | 39  | 16   | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass (p95 &lt; 50ms) |
-| allow: Project.Query       | warm | 5        | 8        | 5   | 8   | 6    | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass (p95 &lt; 15ms) |
-| allow: Permission.Query    | cold | 9        | 20       | 8   | 25  | 11   | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
-| allow: Permission.Query    | warm | 5        | 8        | 5   | 9   | 6    | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
-| allow: Role.Query          | cold | 10       | 13       | 8   | 13  | 10   | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
-| allow: Role.Query          | warm | 5        | 8        | 5   | 8   | 6    | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
-| deny: unknown resource     | cold | 10       | 20       | 7   | 28  | 11   | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
-| deny: unknown resource     | warm | 5        | 7        | 5   | 8   | 6    | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
-| deny: ungranted CDM action | cold | 9        | 10       | 7   | 10  | 8    | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
-| deny: ungranted CDM action | warm | 5        | 7        | 5   | 7   | 5    | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
+| allow: Project.Query       | cold | 14       | 37       | 9   | 47  | 17   | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass (p95 &lt; 50ms) |
+| allow: Project.Query       | warm | 6        | 9        | 4   | 10  | 6    | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass (p95 &lt; 15ms) |
+| allow: Permission.Query    | cold | 13       | 17       | 9   | 18  | 13   | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
+| allow: Permission.Query    | warm | 5        | 8        | 4   | 8   | 5    | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
+| allow: Role.Query          | cold | 9        | 13       | 8   | 14  | 10   | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
+| allow: Role.Query          | warm | 4        | 5        | 4   | 7   | 4    | true       | `PERMISSION_GRANTED_NO_CONDITION` | yes | Pass                 |
+| deny: unknown resource     | cold | 9        | 23       | 8   | 29  | 11   | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
+| deny: unknown resource     | warm | 4        | 7        | 4   | 8   | 5    | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
+| deny: ungranted CDM action | cold | 9        | 12       | 7   | 13  | 9    | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
+| deny: ungranted CDM action | warm | 4        | 6        | 4   | 7   | 4    | false      | `NO_MATCHING_PERMISSION_FOUND`    | yes | Pass                 |
 
 ### Throughput
 
 | Check                       | total | concurrency | wall (ms) | checks/s | p50 | p95 | ok  |
 | --------------------------- | ----- | ----------- | --------- | -------- | --- | --- | --- |
-| allow: Project.Query (cold) | 30    | 3           | 205       | **146**  | 19  | 28  | yes |
+| allow: Project.Query (cold) | 30    | 3           | 198       | **152**  | 16  | 36  | yes |
 
 ## Targets
 
-Published targets are unchanged. This story does **not** invent H1 (pool-hold) p95 targets.
+Published targets are unchanged. This story does **not** invent a new H4 p95.
 
 - Cold evaluation **p95 &lt; 50ms**
 - Warm (cached) **p95 &lt; 15ms**
@@ -63,9 +63,27 @@ Published targets are unchanged. This story does **not** invent H1 (pool-hold) p
 
 All checks met these targets on this run.
 
-## Previous snapshot (2026-07-20)
+## Previous snapshot (2026-10-24)
 
-Last committed numbers before this re-run, against a CDM-imported `accountProject` (~371 permissions, ~272 users) on local `http://localhost:4000`. Kept so the catalog-size difference is visible. Cold Project.Query p95 was 23 ms; warm 5 ms; throughput 156 checks/s.
+Last committed numbers before this re-run, on `f3abf2ef` (H1 trunk `feat/iam-request-chassis`, pre-#600 / #605). Same seed catalog (68 permissions / 2 users), local `http://localhost:4000`. Cold Project.Query p95 was 32 ms; warm 8 ms; throughput 146 checks/s. The older **2026-07-20** CDM-imported snapshot (~371 permissions / ~272 users; cold p95 10–23 ms, warm 5–8 ms; 156 checks/s) is still not current.
+
+## Observed cold-miss query shape (2026-10-25)
+
+One isolated `POST /api/auth/is-authorized` allow (`Project.Query`, unique `context.resource.id`, API-key `accountProject`, unconditional grant). Postgres `log_min_duration_statement=0` for this call only. Not a p95. HTTP wall for that single first call was 52.4 ms (JWT verify + RLS GUC setup + walk); the published series above is the latency picture.
+
+`GrantService.getUserPermissions` still awaits the walk **in order**. All seven `GrantRepository` methods ran because a role, role-groups, and permission IDs were present. No `getUser` / `getUserRoles` / `getUserGroups` — those fire only for conditional grants.
+
+| #   | Method                           | SQL (shape)                                                                | execute (ms) | parse+bind (ms) |
+| --- | -------------------------------- | -------------------------------------------------------------------------- | ------------ | --------------- |
+| 1   | `getUserRoleIdsInScope`          | `account_project_api_keys.account_role_id` by apiKeyId + account + project | 0.049        | 0.214           |
+| 2   | `getGroupIdsForRoles`            | `role_groups.group_id` `IN` 1 role                                         | 0.032        | 0.734           |
+| 3   | `getDirectGroupIdsForUser`       | `user_groups` ⋈ `project_user_groups` (apiKeyId as userId)                 | 0.010        | 1.244           |
+| 4   | `getPermissionIdsForGroups`      | `group_permissions.permission_id` `IN` 16 groups                           | 0.045        | 0.654           |
+| 5   | `getDirectPermissionIdsForRoles` | `role_permissions` ⋈ `project_role_permissions` `IN` 1 role                | 0.010        | 1.049           |
+| 6   | `getDirectPermissionIdsForUser`  | `user_permissions` ⋈ `project_user_permissions`                            | 0.009        | 1.071           |
+| 7   | `getPermissionsByIds`            | `permissions` ⟕ `resources` `IN` 51 ids + `lower(action)` / `lower(slug)`  | 0.102        | 1.582           |
+
+Execute sum of the seven is **0.26 ms**. Sequential round-trips plus parse/bind dominate the walk, not row work. Diagnosis H4 (5–6 queries; 7 when every source is present) is still true after H1–H3. No EXPLAIN named a missing reverse index (M5) as blocking this walk — execute times are sub-millisecond on the seed catalog.
 
 ## Interpretation
 
@@ -79,7 +97,7 @@ Each call unions permission sources for the caller in scope (role→group, user�
 | **Warm**       | AuthHandler cache hit — typical repeat check for the same permission + context within the token TTL |
 | **Throughput** | Bounded-concurrency cold checks — rough sustained capacity under light parallel load                |
 
-This is the H1 **before-picture** for permission-check latency only. It does not prove the request transaction client is back in the pool.
+This is the H4 **after-H1–H3 picture** for permission-check latency. It does not prove the request transaction client is back in the pool. H1 hold, H2 composition, and H3 scoped list SQL are unchanged.
 
 ### Allow vs deny
 
@@ -87,15 +105,16 @@ Deny paths (`NO_MATCHING_PERMISSION_FOUND`) are in the same band as allow on thi
 
 ### Cache effect
 
-Warm p95 (7–8 ms) is roughly **2–4×** faster than cold p95 (10–32 ms). Integrations that re-check the same permission+context benefit from the server-side authorization cache automatically.
+Warm p95 (5–9 ms) is roughly **2–4×** faster than cold p95 (12–37 ms). Integrations that re-check the same permission+context benefit from the server-side authorization cache automatically.
 
 ### Takeaways
 
-- Permission evaluation stays under 50 ms p95 cold on this seed-sized project.
+- Permission evaluation stays under 50 ms p95 cold on this seed-sized project after H1–H3.
 - Cached checks are single-digit milliseconds.
 - ~150 cold checks/s at concurrency 3 on a local API is a useful floor for capacity planning (staging/production will differ with hardware, catalog size, and pool size).
+- A cache-miss walk still pays **seven sequential** `GrantRepository` queries when every source is present. That is the H4 leftover.
 - Avoid unbounded parallel fan-out against `is-authorized` from a single client; use modest concurrency (the benchmark defaults to 3).
-- A production-shaped global rate limit (100 / 15 min) cannot finish this published series. Turn rate limit off, or raise `SECURITY_RATE_LIMIT_MAX`, for a local re-run.
+- A production-shaped global rate limit (100 / 15 min) cannot finish this published series. Turn rate limit off, or raise `SECURITY_RATE_LIMIT_MAX`, for a local re-run only.
 
 ## How to watch the parking spot (H1)
 
@@ -162,4 +181,5 @@ Script: `scripts/benchmarks/permission-evaluation.mjs`. Fresh dated JSON/MD file
 - [RBAC](/architecture/rbac) — permission sources and evaluation steps
 - [Data Model](/architecture/data-model) — core authorization EER
 - [Client SDK](/integration/client-sdk) / [Server SDK](/integration/server-sdk) — `isAuthorized()` wrappers
-- Story brief: `plans/2026-10-24-iam-request-chassis-brief.md` (H1 request-chassis)
+- Story brief: `plans/2026-10-25-iam-authorization-path-brief.md` (H4 authorization path)
+- Previous H1 snapshot: `plans/2026-10-24-iam-request-chassis-brief.md`
