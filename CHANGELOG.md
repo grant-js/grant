@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.6
+
+### Platform
+
+**Docker images:** tagged `:1.18.6` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.6** (fixed group with apps).
+
+### Patch Changes
+
+- 3950594: Page scoped IAM lists in SQL (search, tags, explicit ids, sort, limit) against a pivot subquery so a 50-row page does not materialize the full accessible ID set.
+
 ## 1.18.5
 
 ### Platform
