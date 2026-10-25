@@ -130,3 +130,4 @@ Tiny fixes may use a single short-lived branch and PR directly to `main`. Weekly
 - [Architecture Overview](/architecture/overview) — System design and package graph
 - [Adding REST Endpoints](/contributing/rest-api) — REST development guide
 - [Testing](/contributing/testing) — Test setup and patterns
+- [Scoped ID list measure](/contributing/scoped-id-list-measure) — H3 list-page recipe (not the H4 authz bench)
