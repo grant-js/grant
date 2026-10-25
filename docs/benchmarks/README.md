@@ -24,6 +24,8 @@ Raw results are written to `docs/benchmarks/authz-{date}.json` and `.md` (local-
 
 This bench is `POST /api/auth/is-authorized` (H4). It is not a pool-wait measurement. To watch the H1 parking spot (RLS client held until COMMIT), use the `pg_stat_activity` recipe in [report.md](./report.md#how-to-watch-the-parking-spot-h1). There is no pool-checkout metric today — `http_request_duration_seconds` is HTTP duration only.
 
+Scoped list-page cost vs ID-set size (H3) is a different recipe: [Scoped ID list measure](/contributing/scoped-id-list-measure). Do not treat this report as that target.
+
 Credentials JSON may include a `checks` array to customize permission cases (`name`, `permission.resource` / `permission.action`, `expectAuthorized`).
 
 ## Reading the report
