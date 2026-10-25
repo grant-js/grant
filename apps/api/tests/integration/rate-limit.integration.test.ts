@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS,
   rateLimitMiddleware,
+  tenantRateLimitMiddleware,
 } from '@/middleware/rate-limit.middleware';
 
 type MockSecurity = {
@@ -72,10 +73,11 @@ function createTestApp(
 ): express.Express {
   const app = express();
   app.use(express.json());
+  app.use(rateLimitMiddleware(store));
   if (options.withScopeContext) {
     app.use(contextWithScopeMiddleware(options.withScopeContext));
   }
-  app.use(rateLimitMiddleware(store));
+  app.use(tenantRateLimitMiddleware(store));
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });

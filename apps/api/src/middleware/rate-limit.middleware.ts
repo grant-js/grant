@@ -78,26 +78,30 @@ async function checkLimit(
   return { allowed: true, retryAfterSeconds: 0 };
 }
 
-export function rateLimitMiddleware(store: ICacheAdapter) {
-  // Named, not anonymous. Express records `layer.handle.name` and nothing else that
-  // identifies a middleware, so a name is what lets the pipeline be asserted from the
-  // outside — see `middleware-order.test.ts`. `verifyOrigin` in
-  // `origin-verify.middleware.ts` sets the same precedent, and a name in a stack trace
-  // is worth having regardless.
-  return async function rateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
-    if (config.security.enableRateLimit === false) {
-      next();
-      return;
-    }
+function shouldBypassRateLimit(req: Request): boolean {
+  return config.security.enableRateLimit === false || SKIP_PATHS.has(req.path);
+}
 
-    const path = req.path;
-    if (SKIP_PATHS.has(path)) {
+/**
+ * IP `auth:` / `global:` buckets. Mounted before `contextMiddleware` so a 429 does not
+ * authenticate or construct the handler toolbox. GraphQL auth-sensitive detection reads
+ * the parsed body — `jsonBodyParser` must stay earlier in the pipeline.
+ *
+ * Named, not anonymous. Express records `layer.handle.name` and nothing else that
+ * identifies a middleware, so a name is what lets the pipeline be asserted from the
+ * outside — see `middleware-order.test.ts`. `verifyOrigin` in
+ * `origin-verify.middleware.ts` sets the same precedent, and a name in a stack trace
+ * is worth having regardless.
+ */
+export function rateLimitMiddleware(store: ICacheAdapter) {
+  return async function rateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+    if (shouldBypassRateLimit(req)) {
       next();
       return;
     }
 
     const ip = getClientIp(req) ?? 'unknown';
-    const methodPath = `${req.method} ${path}`;
+    const methodPath = `${req.method} ${req.path}`;
     const now = Date.now();
 
     try {
@@ -138,23 +142,47 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
         return;
       }
 
-      if (config.security.rateLimitPerTenantEnabled) {
-        const contextReq = req as ContextRequest;
-        const scope = contextReq.context?.user?.scope ?? null;
-        if (scope && typeof scope.tenant === 'string' && typeof scope.id === 'string') {
-          const tenantKey = `tenant:${scope.tenant}:${scope.id}`;
-          const tenantWindowMs = config.security.rateLimitPerTenantWindowMinutes * 60 * 1000;
-          const { allowed: tenantAllowed, retryAfterSeconds: tenantRetry } = await checkLimit(
-            store,
-            tenantKey,
-            tenantWindowMs,
-            config.security.rateLimitPerTenantMax,
-            now
-          );
-          if (!tenantAllowed) {
-            sendTooManyRequests(req, res, tenantRetry);
-            return;
-          }
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+/**
+ * Optional `tenant:` bucket. Keys on `context.user.scope` after authenticate, so it
+ * must stay after `contextMiddleware`. A tenant 429 may have paid JWT + one graph;
+ * an IP 429 must not.
+ */
+export function tenantRateLimitMiddleware(store: ICacheAdapter) {
+  return async function rateLimitTenant(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    if (shouldBypassRateLimit(req) || !config.security.rateLimitPerTenantEnabled) {
+      next();
+      return;
+    }
+
+    const now = Date.now();
+
+    try {
+      const contextReq = req as ContextRequest;
+      const scope = contextReq.context?.user?.scope ?? null;
+      if (scope && typeof scope.tenant === 'string' && typeof scope.id === 'string') {
+        const tenantKey = `tenant:${scope.tenant}:${scope.id}`;
+        const tenantWindowMs = config.security.rateLimitPerTenantWindowMinutes * 60 * 1000;
+        const { allowed: tenantAllowed, retryAfterSeconds: tenantRetry } = await checkLimit(
+          store,
+          tenantKey,
+          tenantWindowMs,
+          config.security.rateLimitPerTenantMax,
+          now
+        );
+        if (!tenantAllowed) {
+          sendTooManyRequests(req, res, tenantRetry);
+          return;
         }
       }
 
