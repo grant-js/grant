@@ -309,8 +309,8 @@ importers:
         specifier: ^6.0.6
         version: 6.0.11
       nodemailer:
-        specifier: ^10.1.1
-        version: 10.1.1
+        specifier: ^10.1.4
+        version: 10.1.4
       pino:
         specifier: ^10.4.0
         version: 10.4.0
@@ -433,8 +433,8 @@ importers:
         specifier: ^6
         version: 6.0.11
       nodemailer:
-        specifier: ^10.1.1
-        version: 10.1.1
+        specifier: ^10.1.4
+        version: 10.1.4
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
@@ -1094,8 +1094,8 @@ importers:
         specifier: ^6.0.6
         version: 6.0.11
       nodemailer:
-        specifier: ^10.1.1
-        version: 10.1.1
+        specifier: ^10.1.4
+        version: 10.1.4
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: /@typescript/typescript6@6.0.2
@@ -16704,8 +16704,8 @@ packages:
     resolution: {integrity: sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==}
     engines: {node: '>=18'}
 
-  /nodemailer@10.1.1:
-    resolution: {integrity: sha512-pbqZRoeYUO+1E8TJ/11WeY4D2EVujj1hsYjz3qff/vUFDtGnmi7p3iqzTFslYOfQ6PnjVcWxx/CIUSHCSrO/QA==}
+  /nodemailer@10.1.4:
+    resolution: {integrity: sha512-EsMnOR2oRv4LGnWvHgcVYkkQ4O2j8KO4WTw6l+PHR4sOXo8SAgIraxtEnGDmotjbhv0hDsu3IuDIFZm8iXwO4A==}
     engines: {node: '>=20.0.0'}
 
   /non-layered-tidy-tree-layout@2.0.2:
