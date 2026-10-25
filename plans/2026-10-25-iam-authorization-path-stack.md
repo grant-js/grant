@@ -39,7 +39,7 @@ Principal may collapse slices 2 and 3 into one PR if the combined diff stays rev
 | ----- | ---------------------------------------- | ----------------------------- | ---------------------------------------------- | ---------- | -------------------- | -------------------------------------------------- |
 | 1     | `feat/iam-authorization-path-measure`    | `feat/iam-authorization-path` | post-H1–H3 `is-authorized` bench + query shape | Backend    | light                | [#607](https://github.com/grant-js/grant/pull/607) |
 | 2     | `feat/iam-authorization-path-walk`       | prior slice                   | cold-miss RBAC walk (fewer sequential queries) | Backend    | security-full        | [#608](https://github.com/grant-js/grant/pull/608) |
-| 3     | `feat/iam-authorization-path-invalidate` | prior slice                   | stop global `permissions.clear()`              | Backend    | security-full        |                                                    |
+| 3     | `feat/iam-authorization-path-invalidate` | prior slice                   | stop global `permissions.clear()`              | Backend    | security-full        | [#610](https://github.com/grant-js/grant/pull/610) |
 | final | `feat/iam-authorization-path`            | `main`                        | integration                                    | Principal  | deep + security-full |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has no schema/web slices. Slice 1 is the existing authz bench + docs. Slices 2–3 are `apps/api` grant/auth handlers + `@grantjs/core` `PermissionChecker` / `Grant` (and `@grantjs/cache` only if invalidate needs an adapter helper). Optional db index only if PE names it after measure.

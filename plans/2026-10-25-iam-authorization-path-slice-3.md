@@ -38,7 +38,7 @@ An organization write also misses `organizationProject` / `organizationProjectUs
 
 ## Done when
 
-- [ ] Implementation complete within this slice only
-- [ ] Verifier run
-- [ ] PR opened with correct base; links #608
-- [ ] Senior Security notified (`security-full`)
+- [x] Implementation complete within this slice only
+- [x] Verifier run
+- [x] PR opened with correct base; links #608 (#610)
+- [x] Senior Security notified (`security-full`) — allow; 0 Critical / High / Medium
