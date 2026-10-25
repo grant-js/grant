@@ -42,5 +42,5 @@ Principal Engineer issues one per active stack PR. Implementer stays inside this
 
 - [x] Implementation complete within this slice only
 - [x] Verifier run (format check; docs-only slice — no API/web/OpenAPI)
-- [ ] PR opened with correct base; links stack plan + upstream/downstream PRs
+- [x] PR opened with correct base; links stack plan + upstream/downstream PRs
 - [ ] Senior Security notified if `security-full` (not this slice)
