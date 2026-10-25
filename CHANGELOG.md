@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.4
+
+### Platform
+
+**Docker images:** tagged `:1.18.4` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.4** (fixed group with apps).
+
+### Patch Changes
+
+- 0148f5f: Return the scoped RLS request-transaction client to the pool at COMMIT. After-commit work (job and webhook enqueue) runs on the pool afterward, still before the HTTP response is flushed, so Lambda freeze cannot drop the enqueue and a failed COMMIT is not answered as success.
+
 ## 1.18.3
 
 ### Platform

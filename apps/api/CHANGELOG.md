@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.18.4
+
+### Patch Changes
+
+- 0148f5f: Return the scoped RLS request-transaction client to the pool at COMMIT. After-commit work (job and webhook enqueue) runs on the pool afterward, still before the HTTP response is flushed, so Lambda freeze cannot drop the enqueue and a failed COMMIT is not answered as success.
+- @grantjs/schema@1.18.4
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.3
 
 ### Patch Changes
