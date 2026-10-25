@@ -1,4 +1,4 @@
-import type { IUserRepository } from '@grantjs/core';
+import type { IUserRepository, OptionalListScope } from '@grantjs/core';
 import {
   accounts,
   roles,
@@ -6,6 +6,7 @@ import {
   userAuthenticationMethods,
   UserModel,
   users,
+  userTags,
 } from '@grantjs/database';
 import {
   Account,
@@ -22,8 +23,15 @@ import {
 } from '@grantjs/schema';
 import { and, count, isNull, ne, sql } from 'drizzle-orm';
 
+import { isProjectScopedUserMetadataTenant } from '@/lib/effective-project-user-metadata.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { EntityRepository, RelationsConfig } from '@/repositories/common';
+import {
+  anyTagExistsSql,
+  EntityRepository,
+  projectUserSearchSql,
+  RelationsConfig,
+  requireAccessibleIdSource,
+} from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
 export class UserRepository extends EntityRepository<UserModel, User> implements IUserRepository {
@@ -56,10 +64,39 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
   };
 
   public async getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
+    params: Omit<QueryUsersArgs, 'scope'> & OptionalListScope & SelectedFields<User>,
     transaction?: Transaction
   ): Promise<UserPage> {
-    const result = await this.query(params, transaction);
+    const extraConditions = [];
+    let skipSearch = false;
+    let accessibleIdSource;
+    if (params.scope) {
+      accessibleIdSource = requireAccessibleIdSource('users', params.scope);
+      if (params.tagIds?.length) {
+        extraConditions.push(
+          anyTagExistsSql(
+            this.table.id,
+            {
+              table: userTags,
+              ownerColumn: userTags.userId,
+              tagColumn: userTags.tagId,
+              deletedAt: userTags.deletedAt,
+            },
+            params.tagIds
+          )
+        );
+      }
+      if (params.search?.trim() && isProjectScopedUserMetadataTenant(params.scope.tenant)) {
+        extraConditions.push(
+          projectUserSearchSql(this.table.id, params.scope, params.search.trim())
+        );
+        skipSearch = true;
+      }
+    }
+    const result = await this.query(
+      { ...params, accessibleIdSource, extraConditions, skipSearch },
+      transaction
+    );
 
     return {
       users: result.items,

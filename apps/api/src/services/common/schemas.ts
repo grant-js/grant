@@ -99,6 +99,7 @@ export const queryParamsSchema = z.object({
   search: searchSchema,
   tagIds: z.array(idSchema).nullable().optional(),
   requestedFields: requestedFieldsSchema,
+  scope: scopeSchema.optional(),
 });
 
 export const sortableParamsSchema = queryParamsSchema.extend({

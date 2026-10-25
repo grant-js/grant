@@ -1,6 +1,6 @@
-import type { IRoleRepository } from '@grantjs/core';
+import type { IRoleRepository, OptionalListScope } from '@grantjs/core';
 import { groups } from '@grantjs/database';
-import { tags } from '@grantjs/database';
+import { roleTags, tags } from '@grantjs/database';
 import { RoleModel, roles } from '@grantjs/database';
 import {
   CreateRoleInput,
@@ -15,7 +15,12 @@ import {
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { EntityRepository, RelationsConfig } from '@/repositories/common';
+import {
+  anyTagExistsSql,
+  EntityRepository,
+  RelationsConfig,
+  requireAccessibleIdSource,
+} from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
 export class RoleRepository extends EntityRepository<RoleModel, Role> implements IRoleRepository {
@@ -38,10 +43,32 @@ export class RoleRepository extends EntityRepository<RoleModel, Role> implements
   };
 
   public async getRoles(
-    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>,
+    params: Omit<QueryRolesArgs, 'scope'> & OptionalListScope & SelectedFields<Role>,
     transaction?: Transaction
   ): Promise<RolePage> {
-    const result = await this.query(params, transaction);
+    const extraConditions = [];
+    let accessibleIdSource;
+    if (params.scope) {
+      accessibleIdSource = requireAccessibleIdSource('roles', params.scope);
+      if (params.tagIds?.length) {
+        extraConditions.push(
+          anyTagExistsSql(
+            this.table.id,
+            {
+              table: roleTags,
+              ownerColumn: roleTags.roleId,
+              tagColumn: roleTags.tagId,
+              deletedAt: roleTags.deletedAt,
+            },
+            params.tagIds
+          )
+        );
+      }
+    }
+    const result = await this.query(
+      { ...params, accessibleIdSource, extraConditions },
+      transaction
+    );
 
     return {
       roles: result.items,

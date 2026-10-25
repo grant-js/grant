@@ -1,4 +1,4 @@
-import type { IProjectRepository } from '@grantjs/core';
+import type { IProjectRepository, OptionalListScope } from '@grantjs/core';
 import {
   accountProjectTags,
   projectGroups,
@@ -27,16 +27,21 @@ import {
   ProjectTag,
   ProjectUser,
   QueryProjectsArgs,
+  Tenant,
 } from '@grantjs/schema';
 
+import { BadRequestError } from '@/lib/errors';
 import { slugifySafe } from '@/lib/slugify.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
+  accountProjectTagExistsSql,
   BaseCreateArgs,
   BaseDeleteArgs,
   BaseUpdateArgs,
   EntityRepository,
+  organizationProjectTagExistsSql,
   RelationsConfig,
+  requireAccessibleIdSource,
 } from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
@@ -97,10 +102,31 @@ export class ProjectRepository
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'scope' | 'tagIds'> & SelectedFields<Project>,
+    params: Omit<QueryProjectsArgs, 'scope'> & OptionalListScope & SelectedFields<Project>,
     transaction?: Transaction
   ): Promise<ProjectPage> {
-    const result = await this.query(params, transaction);
+    const extraConditions = [];
+    let accessibleIdSource;
+    if (params.scope) {
+      accessibleIdSource = requireAccessibleIdSource('projects', params.scope);
+      if (params.tagIds?.length) {
+        if (params.scope.tenant === Tenant.Organization) {
+          extraConditions.push(
+            organizationProjectTagExistsSql(this.table.id, params.scope.id, params.tagIds)
+          );
+        } else if (params.scope.tenant === Tenant.Account) {
+          extraConditions.push(
+            accountProjectTagExistsSql(this.table.id, params.scope.id, params.tagIds)
+          );
+        } else {
+          throw new BadRequestError('Invalid scope');
+        }
+      }
+    }
+    const result = await this.query(
+      { ...params, accessibleIdSource, extraConditions },
+      transaction
+    );
 
     return {
       projects: result.items,

@@ -49,7 +49,15 @@ interface FilterGroup<TModel> {
 export type Filter<TModel> =
   FilterCondition<TModel> | FilterGroup<TModel> | (FilterCondition<TModel> | FilterGroup<TModel>)[];
 
-interface BaseQueryArgs<TModel, TEntity> extends Searchable {
+export interface ScopedListQuery {
+  /** Pivot subquery (`IN (SELECT ...)`) or `'empty'` for a fail-closed empty page. */
+  accessibleIdSource?: SQL | 'empty';
+  extraConditions?: SQL[];
+  /** Skip entity ILIKE when a tenant-specific search (e.g. project_users.search_document) already ran. */
+  skipSearch?: boolean;
+}
+
+interface BaseQueryArgs<TModel, TEntity> extends Searchable, ScopedListQuery {
   sort?: BaseSortable<TModel> | null;
   requestedFields?: Array<keyof TEntity> | null;
   filters?: Filter<TModel> | null; // New flexible filter system
@@ -98,16 +106,29 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     return dbInstance.query[this.schemaName];
   }
 
-  private where(ids?: string[] | null, search?: string | null, filters?: Filter<TModel> | null) {
+  private where(
+    ids?: string[] | null,
+    search?: string | null,
+    filters?: Filter<TModel> | null,
+    options?: Pick<ScopedListQuery, 'accessibleIdSource' | 'extraConditions' | 'skipSearch'>
+  ) {
     const conditions: any[] = [];
 
-    // Legacy support for ids parameter
+    if (options?.accessibleIdSource && options.accessibleIdSource !== 'empty') {
+      conditions.push(sql`${this.table.id} IN ${options.accessibleIdSource}`);
+    }
+
+    // Explicit id intersect (or the legacy full-set IN when no subquery is supplied)
     if (ids && ids.length > 0) {
       conditions.push(inArray(this.table.id, ids));
     }
 
+    if (options?.extraConditions?.length) {
+      conditions.push(...options.extraConditions);
+    }
+
     // Legacy support for search parameter
-    if (search && search.trim()) {
+    if (!options?.skipSearch && search && search.trim()) {
       const searchTerm = `%${search.trim()}%`;
       const searchConditions: any[] = [];
 
@@ -344,9 +365,17 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     });
     const offset = limit ? (page - 1) * limit : undefined;
 
+    if (params.accessibleIdSource === 'empty') {
+      return { items: [], totalCount: 0, hasNextPage: false };
+    }
+
     try {
       const withRelations = this.withRelations(requestedFields);
-      const where = this.where(ids, search, params.filters);
+      const where = this.where(ids, search, params.filters, {
+        accessibleIdSource: params.accessibleIdSource,
+        extraConditions: params.extraConditions,
+        skipSearch: params.skipSearch,
+      });
       const orderBy = this.orderBy(sort);
       const hasRelations = withRelations && Object.keys(withRelations).length > 0;
       const totalCount = await this.getTotalCount(where, transaction);

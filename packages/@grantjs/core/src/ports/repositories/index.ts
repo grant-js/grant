@@ -1,6 +1,6 @@
 export * from './account.repository.port';
 export * from './api-key.repository.port';
-export type { SelectedFields } from './common';
+export type { OptionalListScope, SelectedFields } from './common';
 export * from './credential.repository.port';
 export * from './grant.repository.port';
 export * from './group.repository.port';

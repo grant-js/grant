@@ -1,4 +1,4 @@
-import type { IGroupRepository } from '@grantjs/core';
+import type { IGroupRepository, OptionalListScope } from '@grantjs/core';
 import { GroupModel, groupPermissions, groups, groupTags } from '@grantjs/database';
 import {
   CreateGroupInput,
@@ -13,7 +13,12 @@ import {
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { EntityRepository, RelationsConfig } from '@/repositories/common';
+import {
+  anyTagExistsSql,
+  EntityRepository,
+  RelationsConfig,
+  requireAccessibleIdSource,
+} from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
 export class GroupRepository
@@ -38,10 +43,32 @@ export class GroupRepository
   };
 
   public async getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>,
+    params: Omit<QueryGroupsArgs, 'scope'> & OptionalListScope & SelectedFields<Group>,
     transaction?: Transaction
   ): Promise<GroupPage> {
-    const result = await this.query(params, transaction);
+    const extraConditions = [];
+    let accessibleIdSource;
+    if (params.scope) {
+      accessibleIdSource = requireAccessibleIdSource('groups', params.scope);
+      if (params.tagIds?.length) {
+        extraConditions.push(
+          anyTagExistsSql(
+            this.table.id,
+            {
+              table: groupTags,
+              ownerColumn: groupTags.groupId,
+              tagColumn: groupTags.tagId,
+              deletedAt: groupTags.deletedAt,
+            },
+            params.tagIds
+          )
+        );
+      }
+    }
+    const result = await this.query(
+      { ...params, accessibleIdSource, extraConditions },
+      transaction
+    );
 
     return {
       groups: result.items,

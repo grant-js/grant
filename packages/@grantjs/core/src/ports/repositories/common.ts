@@ -1,6 +1,12 @@
 /** Subset of selected fields requested by GraphQL field selection */
 export type SelectedFields<T> = { requestedFields?: Array<keyof T> };
 
+/**
+ * Optional tenancy on list queries that page in SQL against the accessible set.
+ * Absent scope keeps the legacy `IN (ids)` path used by internal lookups.
+ */
+export type OptionalListScope = { scope?: import('@grantjs/schema').Scope };
+
 /** Optional params for delete operations (e.g. hard vs soft delete) */
 export interface DeleteParams {
   hardDelete?: boolean | null;

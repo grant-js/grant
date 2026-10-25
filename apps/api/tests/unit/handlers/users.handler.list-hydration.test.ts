@@ -130,10 +130,15 @@ describe('UserHandler list hydration', () => {
 
     expect(usersService.getUsers).toHaveBeenCalledWith(
       expect.objectContaining({
-        ids: ['user-1', 'user-2'],
+        scope,
         requestedFields: ['id', 'name'],
       })
     );
+    expect(usersService.getUsers.mock.calls[0][0].ids).toBeUndefined();
+    expect(userTags.getUserTagIntersection).not.toHaveBeenCalled();
+    expect(
+      (handler as unknown as { getScopedUserIds: ReturnType<typeof vi.fn> }).getScopedUserIds
+    ).not.toHaveBeenCalled();
     expect(projectUsers.getProjectUsers).toHaveBeenCalledWith({
       projectId: 'project-1',
       userIds: ['user-1', 'user-2'],
@@ -184,10 +189,11 @@ describe('UserHandler list hydration', () => {
 
     expect(usersService.getUsers).toHaveBeenCalledWith(
       expect.objectContaining({
-        ids: ['user-1', 'user-2'],
+        scope,
         limit: -1,
         unbounded: true,
       })
     );
+    expect(usersService.getUsers.mock.calls[0][0].ids).toBeUndefined();
   });
 });

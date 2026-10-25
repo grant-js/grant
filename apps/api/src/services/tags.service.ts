@@ -1,4 +1,10 @@
-import type { IAuditLogger, IEventPublisher, ITagRepository, ITagService } from '@grantjs/core';
+import type {
+  IAuditLogger,
+  IEventPublisher,
+  ITagRepository,
+  ITagService,
+  OptionalListScope,
+} from '@grantjs/core';
 import {
   CreateTagInput,
   MutationDeleteTagArgs,
@@ -46,7 +52,7 @@ export class TagService implements ITagService {
   }
 
   public async getTags(
-    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>,
+    params: Omit<QueryTagsArgs, 'scope'> & OptionalListScope & SelectedFields<Tag>,
     transaction?: Transaction
   ): Promise<TagPage> {
     const context = 'TagService.getTags';

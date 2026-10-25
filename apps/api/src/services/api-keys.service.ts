@@ -6,6 +6,7 @@ import type {
   IAuditLogger,
   IEventPublisher,
   IOrganizationProjectRepository,
+  OptionalListScope,
 } from '@grantjs/core';
 import { Grant, GrantAuth } from '@grantjs/core';
 import {
@@ -398,7 +399,7 @@ export class ApiKeyService implements IApiKeyService {
   }
 
   public async getApiKeys(
-    params: Omit<QueryApiKeysArgs, 'scope'> & SelectedFields<ApiKey>,
+    params: Omit<QueryApiKeysArgs, 'scope'> & OptionalListScope & SelectedFields<ApiKey>,
     transaction?: Transaction
   ): Promise<ApiKeyPage> {
     const context = 'ApiKeyService.getApiKeys';

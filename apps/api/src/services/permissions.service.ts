@@ -3,6 +3,7 @@ import type {
   IEventPublisher,
   IPermissionRepository,
   IPermissionService,
+  OptionalListScope,
 } from '@grantjs/core';
 import {
   CreatePermissionInput,
@@ -57,7 +58,7 @@ export class PermissionService implements IPermissionService {
   }
 
   public async getPermissions(
-    params: Omit<QueryPermissionsArgs, 'scope' | 'tagIds'> & SelectedFields<Permission>
+    params: Omit<QueryPermissionsArgs, 'scope'> & OptionalListScope & SelectedFields<Permission>
   ): Promise<PermissionPage> {
     const context = 'PermissionService.getPermissions';
     validateInput(getPermissionsParamsSchema, params, context);

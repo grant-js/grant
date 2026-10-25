@@ -70,13 +70,13 @@ function createHandler(pageUsers: User[]) {
     getScopedRoleIds: vi.fn().mockResolvedValue([]),
   });
 
-  return { handler, projectUsers };
+  return { handler, projectUsers, usersService };
 }
 
 describe('UserHandler project-user pivot page', () => {
   it('loads project_users only for the page user ids, not the whole tenant', async () => {
     const pageUsers = [user('page-1'), user('page-2')];
-    const { handler, projectUsers } = createHandler(pageUsers);
+    const { handler, projectUsers, usersService } = createHandler(pageUsers);
 
     await handler.getUsers({
       scope,
@@ -85,6 +85,17 @@ describe('UserHandler project-user pivot page', () => {
       requestedFields: ['id', 'name', 'metadata', 'pictureUrl'],
     });
 
+    expect(usersService.getUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope,
+        page: 1,
+        limit: 2,
+      })
+    );
+    expect(usersService.getUsers.mock.calls[0][0].ids).toBeUndefined();
+    expect(
+      (handler as unknown as { getScopedUserIds: ReturnType<typeof vi.fn> }).getScopedUserIds
+    ).not.toHaveBeenCalled();
     expect(projectUsers.getProjectUsers).toHaveBeenCalledTimes(1);
     expect(projectUsers.getProjectUsers).toHaveBeenCalledWith({
       projectId: 'project-1',

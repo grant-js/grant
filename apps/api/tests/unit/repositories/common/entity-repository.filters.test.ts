@@ -62,6 +62,10 @@ class ProbeRepository extends EntityRepository<never, never> {
     return this.exposedWhere(...args);
   }
 
+  public callQuery(params: Record<string, unknown>) {
+    return (this as unknown as Record<string, CallableFunction>).query(params);
+  }
+
   public callFilter(filter: unknown) {
     return this.exposedFilter(filter);
   }
@@ -71,8 +75,18 @@ class ProbeRepository extends EntityRepository<never, never> {
   }
 
   // `private` is erased at runtime; these reach the real implementations.
-  private exposedWhere(ids?: string[] | null, search?: string | null, filters?: unknown) {
-    return (this as unknown as Record<string, CallableFunction>).where(ids, search, filters);
+  private exposedWhere(
+    ids?: string[] | null,
+    search?: string | null,
+    filters?: unknown,
+    options?: unknown
+  ) {
+    return (this as unknown as Record<string, CallableFunction>).where(
+      ids,
+      search,
+      filters,
+      options
+    );
   }
 
   private exposedFilter(filter: unknown) {
@@ -120,6 +134,44 @@ describe('where', () => {
 
     const result = repo.callWhere(['a', 'b']) as Tagged;
     expect(result.args).toContainEqual({ op: 'inArray', args: ['col:id', ['a', 'b']] });
+  });
+
+  it('does not bind a materialized id array when a subquery source is supplied', () => {
+    const thousand = Array.from({ length: 1000 }, (_, i) => `id-${i}`);
+    const result = repo.callWhere(null, null, null, {
+      accessibleIdSource: { query: 'SELECT user_id FROM organization_users' },
+    }) as Tagged;
+
+    expect(JSON.stringify(result)).not.toContain('id-0');
+    expect(JSON.stringify(result)).not.toContain(thousand[0]);
+    const inArrayCall = result.args.find(
+      (arg): arg is Tagged => (arg as Tagged).op === 'inArray'
+    );
+    expect(inArrayCall).toBeUndefined();
+  });
+
+  it('intersects an explicit id list with the subquery instead of replacing it', () => {
+    const result = repo.callWhere(['only-these'], null, null, {
+      accessibleIdSource: { query: 'SELECT user_id FROM organization_users' },
+    }) as Tagged;
+
+    expect(result.args).toContainEqual({ op: 'inArray', args: ['col:id', ['only-these']] });
+  });
+
+  it('ANDs extraConditions onto the same where as the subquery', () => {
+    const extra = { extra: true };
+    const result = repo.callWhere(null, null, null, {
+      accessibleIdSource: { query: 'SELECT 1' },
+      extraConditions: [extra as never],
+    }) as Tagged;
+
+    expect(result.args).toContainEqual(extra);
+    expect(result.args).toContainEqual({ op: 'isNull', args: ['col:deletedAt'] });
+  });
+
+  it('skips entity ILIKE when skipSearch is set', () => {
+    const result = repo.callWhere(null, 'term', null, { skipSearch: true });
+    expect(result).toEqual({ op: 'isNull', args: ['col:deletedAt'] });
   });
 
   it('searches every configured field with a wrapped term', () => {
@@ -273,5 +325,12 @@ describe('orderBy', () => {
     expect(repo.callOrderBy({ field: 'email', order: SortOrder.Asc })).toEqual([
       { op: 'asc', args: ['col:email'] },
     ]);
+  });
+});
+
+describe('query', () => {
+  it('returns an empty page without querying when the accessible source is empty', async () => {
+    const result = await repo.callQuery({ accessibleIdSource: 'empty', page: 1, limit: 50 });
+    expect(result).toEqual({ items: [], totalCount: 0, hasNextPage: false });
   });
 });
