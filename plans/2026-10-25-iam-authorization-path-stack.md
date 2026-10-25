@@ -101,6 +101,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - Keep H1 hold, H2 composition, H3 list paging. Do not set `SECURITY_ENABLE_RATE_LIMIT=false`. Do not raise `DB_POOL_MAX`. Do not set `SECURITY_ENABLE_RLS=false`.
 - Do not add a new `@grantjs/core` port unless a batched `getUserPermissions` shape is the chosen design; if one appears, activate Architect then.
 - M2 (`getGrantedScopeSlugs` N × this walk) stays out unless PE can fold “one walk, many slugs” into this slice without growing the diff past reviewable. Record the skip or fold at slice-2 start.
+- **Slice-2 start (2026-10-25):** M2 skipped — folding would drop/relocate the action+resource filter or add a batched port (Architect). Slices 2 and 3 stay separate. No M5 index (slice 1 EXPLAIN did not name one). Walk is parallel waves behind existing `IGrantService.getUserPermissions` (see `plans/2026-10-25-iam-authorization-path-slice-2.md`).
 - **E2e lock:** allow/deny on `POST /api/auth/is-authorized` in the e2e suite is the contract. Adapt the walk to those tests. Do not weaken e2e to match a new query shape.
 - Tests: existing grant / permission-checker / account-less / project-app fail-closed stay green; add a unit assertion that a miss does not require the old sequential chain as the only legal shape (query count or equivalent). Security-full review (independent Security, not the author).
 - **UX:** no web files.

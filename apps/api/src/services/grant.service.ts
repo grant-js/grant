@@ -129,34 +129,27 @@ export class GrantService implements IGrantService {
     tokenType?: TokenType
   ): Promise<Permission[]> {
     const projectId = tryProjectIdFromScope(scope);
-    const roleIds = await this.grantRepository.getUserRoleIdsInScope(userId, scope, undefined, {
-      tokenType,
-    });
 
-    const permissionIdSets: string[][] = [];
+    const [roleIds, directUserGroupIds, directUserPermissionIds] = await Promise.all([
+      this.grantRepository.getUserRoleIdsInScope(userId, scope, undefined, { tokenType }),
+      this.grantRepository.getDirectGroupIdsForUser(userId, projectId),
+      this.grantRepository.getDirectPermissionIdsForUser(userId, projectId),
+    ]);
 
-    const roleGroupIds =
-      roleIds.length > 0 ? await this.grantRepository.getGroupIdsForRoles(roleIds) : [];
-    const directUserGroupIds = await this.grantRepository.getDirectGroupIdsForUser(
-      userId,
-      projectId
-    );
+    const [roleGroupIds, directRolePermissionIds] = await Promise.all([
+      roleIds.length > 0 ? this.grantRepository.getGroupIdsForRoles(roleIds) : Promise.resolve([]),
+      roleIds.length > 0
+        ? this.grantRepository.getDirectPermissionIdsForRoles(roleIds, projectId)
+        : Promise.resolve([]),
+    ]);
+
     const groupIds = [...new Set([...roleGroupIds, ...directUserGroupIds])];
-    if (groupIds.length > 0) {
-      permissionIdSets.push(await this.grantRepository.getPermissionIdsForGroups(groupIds));
-    }
+    const groupPermissionIds =
+      groupIds.length > 0 ? await this.grantRepository.getPermissionIdsForGroups(groupIds) : [];
 
-    if (roleIds.length > 0) {
-      permissionIdSets.push(
-        await this.grantRepository.getDirectPermissionIdsForRoles(roleIds, projectId)
-      );
-    }
-
-    permissionIdSets.push(
-      await this.grantRepository.getDirectPermissionIdsForUser(userId, projectId)
-    );
-
-    const permissionIds = [...new Set(permissionIdSets.flat())];
+    const permissionIds = [
+      ...new Set([...groupPermissionIds, ...directRolePermissionIds, ...directUserPermissionIds]),
+    ];
 
     if (permissionIds.length === 0) {
       return [];
