@@ -3,6 +3,22 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.5
+
+### Platform
+
+**Docker images:** tagged `:1.18.5` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.5** (fixed group with apps).
+
+### Patch Changes
+
+- f344d18: Run IP and auth-sensitive rate limits before request context so a 429 does not authenticate or construct the handler toolbox. Optional per-tenant limits still run after authenticate.
+
+- f344d18: Build the request handler toolbox once after authenticate. Scoped RLS requests keep SET LOCAL on the request transaction; auth uses a thin unscoped Grant bootstrap.
+
+- f344d18: Mount one REST router for `/api` instead of allocating the route tree per request. Handlers still come from the request context.
+
 ## 1.18.4
 
 ### Platform
