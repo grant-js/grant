@@ -10,11 +10,11 @@ import type {
   SigningKey,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from './common';
+import type { OptionalListScope, SelectedFields } from './common';
 
 export interface IApiKeyRepository {
   getApiKeys(
-    params: Omit<QueryApiKeysArgs, 'scope'> & SelectedFields<ApiKey>,
+    params: Omit<QueryApiKeysArgs, 'scope'> & OptionalListScope & SelectedFields<ApiKey>,
     transaction?: unknown
   ): Promise<ApiKeyPage>;
 

@@ -3,6 +3,7 @@ import type {
   IFileStorageService,
   IProjectRepository,
   IProjectService,
+  OptionalListScope,
 } from '@grantjs/core';
 import {
   CreateProjectInput,
@@ -59,7 +60,7 @@ export class ProjectService implements IProjectService {
   }
 
   public async getProjects(
-    params: Omit<QueryProjectsArgs, 'scope' | 'tagIds'> & SelectedFields<Project>
+    params: Omit<QueryProjectsArgs, 'scope'> & OptionalListScope & SelectedFields<Project>
   ): Promise<ProjectPage> {
     const validationContext = 'ProjectService.getProjects';
     validateInput(getProjectsParamsSchema, params, validationContext);

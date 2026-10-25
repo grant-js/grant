@@ -23,8 +23,7 @@ import type {
   UpdateRoleTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IRoleService
@@ -32,7 +31,7 @@ import type { DeleteParams } from '../repositories/common';
 
 export interface IRoleService {
   getRoles(
-    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>
+    params: Omit<QueryRolesArgs, 'scope'> & OptionalListScope & SelectedFields<Role>
   ): Promise<RolePage>;
 
   /** Resolve role by id (e.g. for ProjectApp.signUpRole). */

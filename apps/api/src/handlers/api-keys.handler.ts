@@ -24,7 +24,6 @@ import {
 import { IEntityCacheAdapter } from '@/lib/cache';
 import { BadRequestError } from '@/lib/errors';
 import { unboundedList } from '@/lib/pagination.lib';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -47,20 +46,9 @@ export class ApiKeysHandler extends CacheHandler {
   public async getApiKeys(params: QueryApiKeysArgs & SelectedFields<ApiKey>): Promise<ApiKeyPage> {
     const { scope, page, limit, sort, search, ids, requestedFields } = params;
 
-    let apiKeyIds = await this.getScopedApiKeyIds(scope);
-
-    apiKeyIds = intersectScopedIds(apiKeyIds, ids);
-
-    if (apiKeyIds.length === 0) {
-      return {
-        apiKeys: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
     const apiKeysResult = await this.apiKeys.getApiKeys({
-      ids: apiKeyIds,
+      scope,
+      ids,
       page,
       limit,
       sort,

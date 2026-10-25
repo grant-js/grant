@@ -69,11 +69,11 @@ import type {
   UpdateProjectTagInput,
 } from '@grantjs/schema';
 
-import type { DeleteParams, IEntityExistence, SelectedFields } from './common';
+import type { DeleteParams, IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
 export interface IProjectRepository extends IEntityExistence {
   getProjects(
-    params: Omit<QueryProjectsArgs, 'scope' | 'tagIds'> & SelectedFields<Project>,
+    params: Omit<QueryProjectsArgs, 'scope'> & OptionalListScope & SelectedFields<Project>,
     transaction?: unknown
   ): Promise<ProjectPage>;
 

@@ -249,4 +249,5 @@ i18n correctness is covered at three levels:
 **Related:**
 
 - [Development Guide](/contributing/guide) — Project structure and workflow
+- [Scoped ID list measure](/contributing/scoped-id-list-measure) — H3 users-page recipe (1k / 10k scoped ids); not the H4 `is-authorized` bench
 - [Security Audit](/contributing/security-audit) — Dependency vulnerability scanning

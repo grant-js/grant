@@ -24,11 +24,11 @@ import type {
   UpdateRoleTagInput,
 } from '@grantjs/schema';
 
-import type { IEntityExistence, SelectedFields } from './common';
+import type { IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
 export interface IRoleRepository extends IEntityExistence {
   getRoles(
-    params: Omit<QueryRolesArgs, 'scope' | 'tagIds'> & SelectedFields<Role>,
+    params: Omit<QueryRolesArgs, 'scope'> & OptionalListScope & SelectedFields<Role>,
     transaction?: unknown
   ): Promise<RolePage>;
 

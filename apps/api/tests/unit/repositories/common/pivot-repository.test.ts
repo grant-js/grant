@@ -39,6 +39,7 @@ const columns = {
   id: 'col:id',
   groupId: 'col:groupId',
   tagId: 'col:tagId',
+  createdAt: 'col:createdAt',
   deletedAt: 'col:deletedAt',
 } as const;
 
@@ -62,13 +63,23 @@ class ProbePivotRepository extends PivotRepository<never, never> {
   public callCountActive(params: Record<string, unknown>) {
     return (this as unknown as Record<string, CallableFunction>).countActive(params);
   }
+
+  public callQuery(params: Record<string, unknown>) {
+    return (this as unknown as Record<string, CallableFunction>).query(params);
+  }
 }
 
 let repo: ProbePivotRepository;
 let where: ReturnType<typeof vi.fn>;
+let orderBy: ReturnType<typeof vi.fn>;
+let limit: ReturnType<typeof vi.fn>;
+let offset: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  where = vi.fn().mockResolvedValue([{ count: 7 }]);
+  offset = vi.fn().mockResolvedValue([]);
+  limit = vi.fn().mockReturnValue({ offset });
+  orderBy = vi.fn().mockReturnValue({ limit });
+  where = vi.fn().mockImplementation(() => Promise.resolve([{ count: 7 }]));
   const from = vi.fn().mockReturnValue({ where });
   const select = vi.fn().mockReturnValue({ from });
   repo = new ProbePivotRepository({ select } as never);
@@ -158,6 +169,42 @@ describe('toInsertValues', () => {
 
   it('lets a caller-supplied deletedAt be overridden to null', () => {
     expect(repo.callToInsertValues({ deletedAt: new Date() }).deletedAt).toBeNull();
+  });
+});
+
+describe('query paging', () => {
+  it('does not LIMIT when the caller omitted page and limit', async () => {
+    where.mockResolvedValue([]);
+    await repo.callQuery({ groupId: 'g1' });
+    expect(orderBy).not.toHaveBeenCalled();
+    expect(limit).not.toHaveBeenCalled();
+  });
+
+  it('applies ORDER BY createdAt and LIMIT when the caller asked for a page', async () => {
+    const rows = [{ id: 'p1' }];
+    where.mockReturnValue({ orderBy });
+    orderBy.mockReturnValue({ limit });
+    limit.mockResolvedValue(rows);
+
+    const result = await repo.callQuery({ groupId: 'g1', page: 1, limit: 50 });
+
+    expect(orderBy).toHaveBeenCalledWith('col:createdAt');
+    expect(limit).toHaveBeenCalledWith(50);
+    expect(offset).not.toHaveBeenCalled();
+    expect(result).toEqual(rows);
+  });
+
+  it('offsets page N rather than taking the first unsorted ids', async () => {
+    where.mockReturnValue({ orderBy });
+    orderBy.mockReturnValue({ limit });
+    limit.mockReturnValue({ offset });
+    offset.mockResolvedValue([]);
+
+    await repo.callQuery({ groupId: 'g1', page: 3, limit: 50 });
+
+    expect(orderBy).toHaveBeenCalledWith('col:createdAt');
+    expect(limit).toHaveBeenCalledWith(50);
+    expect(offset).toHaveBeenCalledWith(100);
   });
 });
 

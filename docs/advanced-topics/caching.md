@@ -96,6 +96,8 @@ Keys are scoped by tenant:
 {tenant}:{id}
 ```
 
+List pages no longer read this set. `getUsers` and the sibling scoped lists pass `scope` into the repository, which applies search / tags / explicit ids / sort / page as SQL against a pivot subquery (`IN (SELECT …)`). `CacheHandler.resolveScopedIds` still stores the **full** accessible id set under `${scope.tenant}:${scope.id}` for mutations and other callers of `getScoped*Ids`. Do not put a page window in that cache — invalidation (`addIdToCache` / `removeIdFromCache`) assumes the stored value is the complete set.
+
 Redis adds an entity prefix to prevent collisions:
 
 ```

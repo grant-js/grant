@@ -49,7 +49,15 @@ interface FilterGroup<TModel> {
 export type Filter<TModel> =
   FilterCondition<TModel> | FilterGroup<TModel> | (FilterCondition<TModel> | FilterGroup<TModel>)[];
 
-interface BaseQueryArgs<TModel, TEntity> extends Searchable {
+export interface ScopedListQuery {
+  /** Pivot subquery (`IN (SELECT ...)`) or `'empty'` for a fail-closed empty page. */
+  accessibleIdSource?: SQL | 'empty';
+  extraConditions?: SQL[];
+  /** Skip entity ILIKE when a tenant-specific search (e.g. project_users.search_document) already ran. */
+  skipSearch?: boolean;
+}
+
+interface BaseQueryArgs<TModel, TEntity> extends Searchable, ScopedListQuery {
   sort?: BaseSortable<TModel> | null;
   requestedFields?: Array<keyof TEntity> | null;
   filters?: Filter<TModel> | null; // New flexible filter system
@@ -98,16 +106,29 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     return dbInstance.query[this.schemaName];
   }
 
-  private where(ids?: string[] | null, search?: string | null, filters?: Filter<TModel> | null) {
+  private where(
+    ids?: string[] | null,
+    search?: string | null,
+    filters?: Filter<TModel> | null,
+    options?: Pick<ScopedListQuery, 'accessibleIdSource' | 'extraConditions' | 'skipSearch'>
+  ) {
     const conditions: any[] = [];
 
-    // Legacy support for ids parameter
+    if (options?.accessibleIdSource && options.accessibleIdSource !== 'empty') {
+      conditions.push(sql`${this.table.id} IN ${options.accessibleIdSource}`);
+    }
+
+    // Explicit id intersect (or the legacy full-set IN when no subquery is supplied)
     if (ids && ids.length > 0) {
       conditions.push(inArray(this.table.id, ids));
     }
 
+    if (options?.extraConditions?.length) {
+      conditions.push(...options.extraConditions);
+    }
+
     // Legacy support for search parameter
-    if (search && search.trim()) {
+    if (!options?.skipSearch && search && search.trim()) {
       const searchTerm = `%${search.trim()}%`;
       const searchConditions: any[] = [];
 
@@ -344,32 +365,54 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
     });
     const offset = limit ? (page - 1) * limit : undefined;
 
+    if (params.accessibleIdSource === 'empty') {
+      return { items: [], totalCount: 0, hasNextPage: false };
+    }
+
     try {
       const withRelations = this.withRelations(requestedFields);
-      const where = this.where(ids, search, params.filters);
+      const where = this.where(ids, search, params.filters, {
+        accessibleIdSource: params.accessibleIdSource,
+        extraConditions: params.extraConditions,
+        skipSearch: params.skipSearch,
+      });
       const orderBy = this.orderBy(sort);
       const hasRelations = withRelations && Object.keys(withRelations).length > 0;
       const totalCount = await this.getTotalCount(where, transaction);
       const hasNextPage = hasNextPageByCount({ page, limit, totalCount });
-      const filter = {
-        where,
-        orderBy,
-        limit,
-        offset,
-      };
+      const usesForeignTableSql = this.usesForeignTableSql(params);
 
       let results = [];
 
-      if (hasRelations) {
+      if (usesForeignTableSql) {
+        results = await this.selectPage(where, orderBy, limit, offset, transaction);
+        if (hasRelations && results.length > 0) {
+          results = await this.hydrateRelationsByPageIds(
+            results,
+            withRelations,
+            orderBy,
+            requestedFields,
+            transaction
+          );
+        }
+      } else if (hasRelations) {
         results = await this.queryBuilder(transaction).findMany({
           with: withRelations,
-          ...filter,
+          where,
+          orderBy,
+          limit,
+          offset,
         });
         results = results.map((row: TModel & TEntity) =>
           this.extractRelations(row, requestedFields)
         );
       } else {
-        results = await this.queryBuilder(transaction).findMany(filter);
+        results = await this.queryBuilder(transaction).findMany({
+          where,
+          orderBy,
+          limit,
+          offset,
+        });
       }
 
       return {
@@ -384,6 +427,61 @@ export abstract class EntityRepository<TModel extends Auditable, TEntity extends
       });
       return { items: [], totalCount: 0, hasNextPage: false };
     }
+  }
+
+  /**
+   * Relational `findMany({ where })` remaps every Column in the SQL to this
+   * entity's alias. A pivot subquery (`IN (SELECT organization_roles.role_id
+   * ...)`) would become `roles.role_id` and fail. Page those queries with
+   * `select()`, then hydrate relations by page id.
+   */
+  private usesForeignTableSql(params: ScopedListQuery): boolean {
+    return (
+      (params.accessibleIdSource != null && params.accessibleIdSource !== 'empty') ||
+      Boolean(params.extraConditions?.length)
+    );
+  }
+
+  private async selectPage(
+    where: SQL,
+    orderBy: unknown[],
+    limit: number | undefined,
+    offset: number | undefined,
+    transaction?: Transaction
+  ): Promise<TEntity[]> {
+    const dbInstance = transaction ?? (this.db as any);
+    let query = dbInstance
+      .select()
+      .from(this.table)
+      .where(where)
+      .orderBy(...orderBy);
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    if (offset) {
+      query = query.offset(offset);
+    }
+    return query as Promise<TEntity[]>;
+  }
+
+  private async hydrateRelationsByPageIds(
+    pageRows: TEntity[],
+    withRelations: Record<keyof TEntity, unknown>,
+    orderBy: unknown[],
+    requestedFields: Array<keyof TEntity> | null | undefined,
+    transaction?: Transaction
+  ): Promise<TEntity[]> {
+    const pageIds = pageRows.map((row) => row.id as string);
+    const related = await this.queryBuilder(transaction).findMany({
+      with: withRelations,
+      where: and(inArray(this.table.id, pageIds), isNull(this.table.deletedAt)),
+      orderBy,
+    });
+    const extracted = related.map((row: TModel & TEntity) =>
+      this.extractRelations(row, requestedFields)
+    ) as TEntity[];
+    const byId = new Map<unknown, TEntity>(extracted.map((row) => [row.id, row]));
+    return pageRows.map((row) => byId.get(row.id) ?? row);
   }
 
   protected async create(data: BaseCreateArgs, transaction?: Transaction): Promise<TEntity> {

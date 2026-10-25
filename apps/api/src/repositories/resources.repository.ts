@@ -1,6 +1,13 @@
 import { DEFAULT_RESOURCE_ACTIONS } from '@grantjs/constants';
-import type { IResourceRepository } from '@grantjs/core';
-import { PermissionModel, permissions, ResourceModel, resources, tags } from '@grantjs/database';
+import type { IResourceRepository, OptionalListScope } from '@grantjs/core';
+import {
+  PermissionModel,
+  permissions,
+  ResourceModel,
+  resources,
+  resourceTags,
+  tags,
+} from '@grantjs/database';
 import {
   CreateResourceInput,
   MutationDeleteResourceArgs,
@@ -14,7 +21,13 @@ import {
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { EntityRepository, FilterCondition, RelationsConfig } from '@/repositories/common';
+import {
+  anyTagExistsSql,
+  EntityRepository,
+  FilterCondition,
+  RelationsConfig,
+  requireAccessibleIdSource,
+} from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
 export class ResourceRepository
@@ -55,10 +68,32 @@ export class ResourceRepository
   };
 
   public async getResources(
-    params: Omit<QueryResourcesArgs, 'scope' | 'tagIds'> & SelectedFields<Resource>,
+    params: Omit<QueryResourcesArgs, 'scope'> & OptionalListScope & SelectedFields<Resource>,
     transaction?: Transaction
   ): Promise<ResourcePage> {
-    const result = await this.query(params, transaction);
+    const extraConditions = [];
+    let accessibleIdSource;
+    if (params.scope) {
+      accessibleIdSource = requireAccessibleIdSource('resources', params.scope);
+      if (params.tagIds?.length) {
+        extraConditions.push(
+          anyTagExistsSql(
+            this.table.id,
+            {
+              table: resourceTags,
+              ownerColumn: resourceTags.resourceId,
+              tagColumn: resourceTags.tagId,
+              deletedAt: resourceTags.deletedAt,
+            },
+            params.tagIds
+          )
+        );
+      }
+    }
+    const result = await this.query(
+      { ...params, accessibleIdSource, extraConditions },
+      transaction
+    );
 
     return {
       resources: result.items,

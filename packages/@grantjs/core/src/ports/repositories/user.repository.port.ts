@@ -39,11 +39,11 @@ import type {
   UserTag,
 } from '@grantjs/schema';
 
-import type { IEntityExistence, SelectedFields } from './common';
+import type { IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
 export interface IUserRepository extends IEntityExistence {
   getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
+    params: Omit<QueryUsersArgs, 'scope'> & OptionalListScope & SelectedFields<User>,
     transaction?: unknown
   ): Promise<UserPage>;
 

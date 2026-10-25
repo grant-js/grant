@@ -143,6 +143,7 @@ export default withMermaid({
             { text: 'Versioning and Release', link: '/contributing/versioning' },
             { text: 'Adding REST Endpoints', link: '/contributing/rest-api' },
             { text: 'Testing', link: '/contributing/testing' },
+            { text: 'Scoped ID list measure', link: '/contributing/scoped-id-list-measure' },
             { text: 'Security Audit', link: '/contributing/security-audit' },
             { text: 'Code Quality', link: '/contributing/code-quality/' },
           ],

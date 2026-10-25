@@ -21,7 +21,6 @@ import {
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
-import { intersectScopedIds } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams, SelectedFields } from '@/types';
 
@@ -48,20 +47,9 @@ export class TagHandler extends CacheHandler {
   public async getTags(params: QueryTagsArgs & SelectedFields<Tag>): Promise<TagPage> {
     const { scope, page, limit, sort, search, ids, requestedFields } = params;
 
-    let tagIds = await this.getScopedTagIds(scope);
-
-    tagIds = intersectScopedIds(tagIds, ids);
-
-    if (tagIds.length === 0) {
-      return {
-        tags: [],
-        totalCount: 0,
-        hasNextPage: false,
-      };
-    }
-
-    const tagsResult = await this.tags.getTags({
-      ids: tagIds,
+    return this.tags.getTags({
+      scope,
+      ids,
       page,
       limit,
       sort,
@@ -69,8 +57,6 @@ export class TagHandler extends CacheHandler {
       requestedFields,
       ...((params as { unbounded?: boolean }).unbounded ? { unbounded: true } : {}),
     });
-
-    return tagsResult;
   }
 
   public async createTag(params: MutationCreateTagArgs): Promise<Tag> {

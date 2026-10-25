@@ -1,5 +1,5 @@
-import type { IPermissionRepository } from '@grantjs/core';
-import { PermissionModel, permissions, resources, tags } from '@grantjs/database';
+import type { IPermissionRepository, OptionalListScope } from '@grantjs/core';
+import { PermissionModel, permissions, permissionTags, resources, tags } from '@grantjs/database';
 import {
   CreatePermissionInput,
   MutationDeletePermissionArgs,
@@ -14,7 +14,12 @@ import {
 import { and, eq, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { EntityRepository, RelationsConfig } from '@/repositories/common';
+import {
+  anyTagExistsSql,
+  EntityRepository,
+  RelationsConfig,
+  requireAccessibleIdSource,
+} from '@/repositories/common';
 import { SelectedFields } from '@/types';
 
 export class PermissionRepository
@@ -40,10 +45,32 @@ export class PermissionRepository
   };
 
   public async getPermissions(
-    params: Omit<QueryPermissionsArgs, 'scope' | 'tagIds'> & SelectedFields<Permission>,
+    params: Omit<QueryPermissionsArgs, 'scope'> & OptionalListScope & SelectedFields<Permission>,
     transaction?: Transaction
   ): Promise<PermissionPage> {
-    const result = await this.query(params, transaction);
+    const extraConditions = [];
+    let accessibleIdSource;
+    if (params.scope) {
+      accessibleIdSource = requireAccessibleIdSource('permissions', params.scope);
+      if (params.tagIds?.length) {
+        extraConditions.push(
+          anyTagExistsSql(
+            this.table.id,
+            {
+              table: permissionTags,
+              ownerColumn: permissionTags.permissionId,
+              tagColumn: permissionTags.tagId,
+              deletedAt: permissionTags.deletedAt,
+            },
+            params.tagIds
+          )
+        );
+      }
+    }
+    const result = await this.query(
+      { ...params, accessibleIdSource, extraConditions },
+      transaction
+    );
 
     return {
       permissions: result.items,

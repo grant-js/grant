@@ -11,8 +11,7 @@ import type {
   UpdateTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // ITagService
@@ -20,7 +19,7 @@ import type { DeleteParams } from '../repositories/common';
 
 export interface ITagService {
   getTags(
-    params: Omit<QueryTagsArgs, 'scope'> & SelectedFields<Tag>,
+    params: Omit<QueryTagsArgs, 'scope'> & OptionalListScope & SelectedFields<Tag>,
     transaction?: unknown
   ): Promise<TagPage>;
 

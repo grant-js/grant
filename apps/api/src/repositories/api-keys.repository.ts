@@ -1,4 +1,4 @@
-import type { IApiKeyRepository } from '@grantjs/core';
+import type { IApiKeyRepository, OptionalListScope } from '@grantjs/core';
 import type {
   AccountProjectApiKeyModel,
   ApiKeyModel,
@@ -31,6 +31,7 @@ import {
   FilterCondition,
   RelationsConfig,
 } from './common/EntityRepository';
+import { requireAccessibleIdSource } from './common/scoped-id-source';
 
 export class ApiKeyRepository
   extends EntityRepository<ApiKeyModel, ApiKey>
@@ -64,10 +65,13 @@ export class ApiKeyRepository
   }
 
   public async getApiKeys(
-    params: Omit<QueryApiKeysArgs, 'scope'> & SelectedFields<ApiKey>,
+    params: Omit<QueryApiKeysArgs, 'scope'> & OptionalListScope & SelectedFields<ApiKey>,
     transaction?: Transaction
   ): Promise<ApiKeyPage> {
-    const result = await this.query(params, transaction);
+    const accessibleIdSource = params.scope
+      ? requireAccessibleIdSource('apiKeys', params.scope)
+      : undefined;
+    const result = await this.query({ ...params, accessibleIdSource }, transaction);
 
     return {
       apiKeys: result.items,

@@ -37,7 +37,7 @@ import type {
   UserTag,
 } from '@grantjs/schema';
 
-import type { DeleteParams, SelectedFields } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IUserService
@@ -45,7 +45,7 @@ import type { DeleteParams, SelectedFields } from '../repositories/common';
 
 export interface IUserService {
   getUsers(
-    params: Omit<QueryUsersArgs, 'scope'> & SelectedFields<User>,
+    params: Omit<QueryUsersArgs, 'scope'> & OptionalListScope & SelectedFields<User>,
     transaction?: unknown
   ): Promise<UserPage>;
 

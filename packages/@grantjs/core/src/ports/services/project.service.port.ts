@@ -55,8 +55,7 @@ import type {
   UpdateProjectTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 import type { ProjectSyncJobPayloadReference } from '../repositories/project.repository.port';
 
 // ---------------------------------------------------------------------------
@@ -65,7 +64,7 @@ import type { ProjectSyncJobPayloadReference } from '../repositories/project.rep
 
 export interface IProjectService {
   getProjects(
-    params: Omit<QueryProjectsArgs, 'scope' | 'tagIds'> & SelectedFields<Project>
+    params: Omit<QueryProjectsArgs, 'scope'> & OptionalListScope & SelectedFields<Project>
   ): Promise<ProjectPage>;
 
   createProject(

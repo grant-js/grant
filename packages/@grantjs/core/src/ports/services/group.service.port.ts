@@ -19,8 +19,7 @@ import type {
   UpdateGroupTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
-import type { DeleteParams } from '../repositories/common';
+import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IGroupService
@@ -28,7 +27,7 @@ import type { DeleteParams } from '../repositories/common';
 
 export interface IGroupService {
   getGroups(
-    params: Omit<QueryGroupsArgs, 'scope'> & SelectedFields<Group>,
+    params: Omit<QueryGroupsArgs, 'scope'> & OptionalListScope & SelectedFields<Group>,
     transaction?: unknown
   ): Promise<GroupPage>;
 
