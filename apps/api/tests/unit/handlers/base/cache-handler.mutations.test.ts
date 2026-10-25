@@ -184,6 +184,28 @@ describe('invalidators', () => {
     expect(cache.permissions.clear).not.toHaveBeenCalled();
   });
 
+  it('invalidatePermissionsCacheForAllScopes drops ProjectUser allow for the org and keeps tenant B', async () => {
+    const { handler, cache } = createCacheHandler();
+    const orgAllow = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-1:organization:org-1:doc:read:none`;
+    const projectUserAllow = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-1:projectUser:proj-of-org-1:u1:doc:read:none`;
+    const tenantB = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-2:organization:org-2:doc:read:none`;
+    const tenantBProjectUser = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-2:projectUser:proj-of-org-2:u2:doc:read:none`;
+    cache.permissions.store.set(orgAllow, { allowed: true });
+    cache.permissions.store.set(projectUserAllow, { allowed: true });
+    cache.permissions.store.set(tenantB, { allowed: true });
+    cache.permissions.store.set(tenantBProjectUser, { allowed: true });
+
+    await handler.invalidatePermissionsCacheForAllScopes({
+      tenant: Tenant.Organization,
+      id: 'org-1',
+    });
+
+    expect([...cache.permissions.store.keys()].sort()).toEqual(
+      [tenantB, tenantBProjectUser].sort()
+    );
+    expect(cache.permissions.clear).not.toHaveBeenCalled();
+  });
+
   it('invalidatePermissionsCacheForAllScopes rejects when keys() fails', async () => {
     const { handler, cache } = createCacheHandler();
     cache.permissions.keys.mockRejectedValue(new Error('scan failed'));

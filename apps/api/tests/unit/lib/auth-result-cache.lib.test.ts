@@ -26,6 +26,16 @@ describe('authResultTenantPrefixes', () => {
       'projectUser:proj-1:',
     ]);
   });
+
+  it('adds projectUser prefixes for listed org projects', () => {
+    expect(authResultTenantPrefixes(org, ['proj-1', 'proj-2'])).toEqual([
+      'organization:org-1:',
+      'organizationProject:org-1:',
+      'organizationProjectUser:org-1:',
+      'projectUser:proj-1:',
+      'projectUser:proj-2:',
+    ]);
+  });
 });
 
 describe('authResultKeyMatchesTenant', () => {
@@ -37,6 +47,10 @@ describe('authResultKeyMatchesTenant', () => {
     expect(authResultKeyMatchesTenant(key('organizationProject', 'org-1:proj-1'), org)).toBe(true);
     expect(authResultKeyMatchesTenant(key('organizationProjectUser', 'org-1:proj-1:u1'), org)).toBe(
       true
+    );
+    expect(authResultKeyMatchesTenant(key('projectUser', 'proj-1:u1'), org, ['proj-1'])).toBe(true);
+    expect(authResultKeyMatchesTenant(key('projectUser', 'proj-2:u1'), org, ['proj-1'])).toBe(
+      false
     );
   });
 

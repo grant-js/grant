@@ -599,10 +599,14 @@ export class CacheHandler implements IScopedIdProvider {
    * Other tenants' results and scoped-id sets in the permissions namespace stay.
    */
   async invalidatePermissionsCacheForAllScopes(scope: Scope): Promise<void> {
+    const projectIds =
+      scope.tenant === Tenant.Organization || scope.tenant === Tenant.Account
+        ? await this.getScopedProjectIds(scope)
+        : [];
     const keys = await this.cache.permissions.keys(`${AUTH_RESULT_CACHE_KEY_PREFIX}*`);
     await Promise.all(
       keys
-        .filter((key) => authResultKeyMatchesTenant(key, scope))
+        .filter((key) => authResultKeyMatchesTenant(key, scope, projectIds))
         .map((key) => this.cache.permissions.delete(key))
     );
   }

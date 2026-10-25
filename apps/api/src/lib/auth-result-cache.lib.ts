@@ -8,17 +8,30 @@ import { tryProjectIdFromScope } from '@/lib/scope.lib';
  * `auth:result:{userId}:…` key. A write in this scope must miss every listed
  * prefix; neighbouring ids (`org-1` vs `org-10`) do not share a prefix.
  */
-export function authResultTenantPrefixes(scope: Scope): string[] {
+export function authResultTenantPrefixes(
+  scope: Scope,
+  projectIds: readonly string[] = []
+): string[] {
   const prefixes = new Set<string>([`${scope.tenant}:${scope.id}:`]);
+
+  const addProjectUserPrefixes = () => {
+    for (const projectId of projectIds) {
+      if (projectId) {
+        prefixes.add(`${Tenant.ProjectUser}:${projectId}:`);
+      }
+    }
+  };
 
   switch (scope.tenant) {
     case Tenant.Organization:
       prefixes.add(`${Tenant.OrganizationProject}:${scope.id}:`);
       prefixes.add(`${Tenant.OrganizationProjectUser}:${scope.id}:`);
+      addProjectUserPrefixes();
       break;
     case Tenant.Account:
       prefixes.add(`${Tenant.AccountProject}:${scope.id}:`);
       prefixes.add(`${Tenant.AccountProjectUser}:${scope.id}:`);
+      addProjectUserPrefixes();
       break;
     case Tenant.OrganizationProject:
       prefixes.add(`${Tenant.OrganizationProjectUser}:${scope.id}:`);
@@ -45,7 +58,11 @@ export function authResultTenantPrefixes(scope: Scope): string[] {
   return [...prefixes];
 }
 
-export function authResultKeyMatchesTenant(key: string, scope: Scope): boolean {
+export function authResultKeyMatchesTenant(
+  key: string,
+  scope: Scope,
+  projectIds: readonly string[] = []
+): boolean {
   if (!key.startsWith(AUTH_RESULT_CACHE_KEY_PREFIX)) {
     return false;
   }
@@ -57,5 +74,5 @@ export function authResultKeyMatchesTenant(key: string, scope: Scope): boolean {
   }
 
   const afterUser = afterPrefix.slice(userEnd + 1);
-  return authResultTenantPrefixes(scope).some((prefix) => afterUser.startsWith(prefix));
+  return authResultTenantPrefixes(scope, projectIds).some((prefix) => afterUser.startsWith(prefix));
 }
