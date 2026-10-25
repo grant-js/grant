@@ -273,7 +273,7 @@ export class PermissionHandler extends CacheHandler {
       });
 
       await this.removePermissionIdFromScopeCache(scope, permissionId);
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
 
       return await this.permissions.deletePermission(params, tx);
     });

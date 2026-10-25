@@ -49,7 +49,11 @@ function build() {
     },
   };
   const cache = {
-    permissions: { clear: vi.fn().mockResolvedValue(undefined) },
+    permissions: {
+      clear: vi.fn().mockResolvedValue(undefined),
+      keys: vi.fn().mockResolvedValue([]),
+      delete: vi.fn(),
+    },
     users: { has: vi.fn().mockResolvedValue(false) },
     roles: { keys: vi.fn().mockResolvedValue([]), delete: vi.fn() },
   };
@@ -109,7 +113,8 @@ describe('UserHandler.deleteUser at project scope', () => {
     );
     expect(h.calls[h.calls.length - 1]).toBe('removeProjectUser');
     expect(h.calls.filter((c) => c === 'removeProjectUser')).toHaveLength(1);
-    expect(h.cache.permissions.clear).toHaveBeenCalled();
+    expect(h.cache.permissions.keys).toHaveBeenCalled();
+    expect(h.cache.permissions.clear).not.toHaveBeenCalled();
   });
 
   it('tolerates a project row whose global membership is already gone, and still removes the member', async () => {
@@ -145,6 +150,7 @@ describe('UserHandler.deleteUser at project scope', () => {
     await h.handler.deleteUser({ id: userId, scope } as never);
 
     expect(h.calls).toEqual(['removeProjectUser']);
+    expect(h.cache.permissions.keys).not.toHaveBeenCalled();
     expect(h.cache.permissions.clear).not.toHaveBeenCalled();
   });
 });

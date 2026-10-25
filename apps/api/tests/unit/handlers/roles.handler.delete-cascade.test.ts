@@ -32,12 +32,17 @@ function build() {
     deleteRole: vi.fn().mockImplementation(async () => (calls.push('deleteRole'), {})),
   };
   const projectRoles = { removeProjectRole: track('removeProjectRole') };
-  const permissionsClear = vi
+  const permissionsInvalidate = vi
     .fn()
-    .mockImplementation(async () => void calls.push('permissions.clear'));
+    .mockImplementation(async () => (calls.push('permissions.invalidate'), []));
+  const permissionsClear = vi.fn();
   const cache = {
     roles: { has: vi.fn().mockResolvedValue(false) },
-    permissions: { clear: permissionsClear },
+    permissions: {
+      clear: permissionsClear,
+      keys: permissionsInvalidate,
+      delete: vi.fn(),
+    },
   };
   const tx = { __tx: true };
 
@@ -55,18 +60,29 @@ function build() {
     {} as never,
     { withTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => fn(tx) } as never
   );
-  return { handler, userRoles, rolePermissions, roleGroups, roles, permissionsClear, calls, tx };
+  return {
+    handler,
+    userRoles,
+    rolePermissions,
+    roleGroups,
+    roles,
+    permissionsClear,
+    permissionsInvalidate,
+    calls,
+    tx,
+  };
 }
 
 describe('RoleHandler.deleteRole cascade', () => {
   it('clears the permissions authz cache after cascade', async () => {
-    const { handler, permissionsClear, calls, userRoles, tx } = build();
+    const { handler, permissionsInvalidate, permissionsClear, calls, userRoles, tx } = build();
 
     await handler.deleteRole({ id: roleId, scope } as never);
 
     expect(userRoles.removeUserRole).toHaveBeenCalledWith({ userId: memberA, roleId }, tx);
-    expect(permissionsClear).toHaveBeenCalledTimes(1);
-    expect(calls.indexOf('permissions.clear')).toBeLessThan(calls.indexOf('deleteRole'));
+    expect(permissionsInvalidate).toHaveBeenCalledTimes(1);
+    expect(permissionsClear).not.toHaveBeenCalled();
+    expect(calls.indexOf('permissions.invalidate')).toBeLessThan(calls.indexOf('deleteRole'));
     expect(calls.indexOf('deleteRole')).toBe(calls.length - 1);
   });
 
@@ -91,13 +107,21 @@ describe('RoleHandler.deleteRole cascade', () => {
   });
 
   it('clears the permissions authz cache when the role has no remaining relations', async () => {
-    const { handler, permissionsClear, roleGroups, rolePermissions, userRoles } = build();
+    const {
+      handler,
+      permissionsInvalidate,
+      permissionsClear,
+      roleGroups,
+      rolePermissions,
+      userRoles,
+    } = build();
     roleGroups.getRoleGroups.mockResolvedValue([]);
     rolePermissions.getRolePermissions.mockResolvedValue([]);
     userRoles.getUserRoles.mockResolvedValue([]);
 
     await handler.deleteRole({ id: roleId, scope } as never);
 
-    expect(permissionsClear).toHaveBeenCalledTimes(1);
+    expect(permissionsInvalidate).toHaveBeenCalledTimes(1);
+    expect(permissionsClear).not.toHaveBeenCalled();
   });
 });

@@ -155,7 +155,7 @@ export class RoleHandler extends CacheHandler {
             }
           })
         );
-        await this.invalidatePermissionsCacheForAllScopes();
+        await this.invalidatePermissionsCacheForAllScopes(scope);
       }
 
       if (tagIds && tagIds.length > 0) {
@@ -235,7 +235,7 @@ export class RoleHandler extends CacheHandler {
         // Invalidate permissions cache when role-group relationships change
         // as this affects the permission cascade
         if (newGroupIds.length > 0 || removedGroupIds.length > 0) {
-          await this.invalidatePermissionsCacheForAllScopes();
+          await this.invalidatePermissionsCacheForAllScopes(input.scope);
         }
       }
       return updatedRole;
@@ -290,7 +290,7 @@ export class RoleHandler extends CacheHandler {
       });
 
       await this.removeRoleIdFromScopeCache(scope, roleId);
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
 
       return await this.roles.deleteRole(params, tx);
     });
@@ -362,7 +362,7 @@ export class RoleHandler extends CacheHandler {
         }
       }
 
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
       return rolePermission;
     });
   }
@@ -388,7 +388,7 @@ export class RoleHandler extends CacheHandler {
         }
       }
 
-      await this.invalidatePermissionsCacheForAllScopes();
+      await this.invalidatePermissionsCacheForAllScopes(scope);
       return rolePermission;
     });
   }

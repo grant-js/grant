@@ -36,12 +36,17 @@ function build() {
     deleteGroup: vi.fn().mockImplementation(async () => (calls.push('deleteGroup'), {})),
   };
   const projectGroups = { removeProjectGroup: track('removeProjectGroup') };
-  const permissionsClear = vi
+  const permissionsInvalidate = vi
     .fn()
-    .mockImplementation(async () => void calls.push('permissions.clear'));
+    .mockImplementation(async () => (calls.push('permissions.invalidate'), []));
+  const permissionsClear = vi.fn();
   const cache = {
     groups: { has: vi.fn().mockResolvedValue(false) },
-    permissions: { clear: permissionsClear },
+    permissions: {
+      clear: permissionsClear,
+      keys: permissionsInvalidate,
+      delete: vi.fn(),
+    },
   };
   const tx = { __tx: true };
 
@@ -57,7 +62,17 @@ function build() {
     {} as never,
     { withTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => fn(tx) } as never
   );
-  return { handler, userGroups, groupPermissions, roleGroups, groups, permissionsClear, calls, tx };
+  return {
+    handler,
+    userGroups,
+    groupPermissions,
+    roleGroups,
+    groups,
+    permissionsClear,
+    permissionsInvalidate,
+    calls,
+    tx,
+  };
 }
 
 describe('GroupHandler.deleteGroup cascade', () => {
@@ -97,12 +112,13 @@ describe('GroupHandler.deleteGroup cascade', () => {
   });
 
   it('clears the permissions authz cache after cascade', async () => {
-    const { handler, permissionsClear, calls } = build();
+    const { handler, permissionsInvalidate, permissionsClear, calls } = build();
 
     await handler.deleteGroup({ id: groupId, scope } as never);
 
-    expect(permissionsClear).toHaveBeenCalledTimes(1);
-    expect(calls.indexOf('permissions.clear')).toBeLessThan(calls.indexOf('deleteGroup'));
+    expect(permissionsInvalidate).toHaveBeenCalledTimes(1);
+    expect(permissionsClear).not.toHaveBeenCalled();
+    expect(calls.indexOf('permissions.invalidate')).toBeLessThan(calls.indexOf('deleteGroup'));
   });
 
   it('revokes every member and never overlaps more than the cascade chunk', async () => {
@@ -126,13 +142,21 @@ describe('GroupHandler.deleteGroup cascade', () => {
   });
 
   it('clears the permissions authz cache when the group has no remaining relations', async () => {
-    const { handler, permissionsClear, groupPermissions, roleGroups, userGroups } = build();
+    const {
+      handler,
+      permissionsInvalidate,
+      permissionsClear,
+      groupPermissions,
+      roleGroups,
+      userGroups,
+    } = build();
     groupPermissions.getGroupPermissions.mockResolvedValue([]);
     roleGroups.getRoleGroups.mockResolvedValue([]);
     userGroups.getUserGroups.mockResolvedValue([]);
 
     await handler.deleteGroup({ id: groupId, scope } as never);
 
-    expect(permissionsClear).toHaveBeenCalledTimes(1);
+    expect(permissionsInvalidate).toHaveBeenCalledTimes(1);
+    expect(permissionsClear).not.toHaveBeenCalled();
   });
 });

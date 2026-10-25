@@ -156,14 +156,65 @@ describe('invalidators', () => {
     expect(cache.roles.store.has(otherScopeKey)).toBe(true);
   });
 
-  it('invalidatePermissionsCacheForAllScopes clears the whole namespace', async () => {
+  it('invalidatePermissionsCacheForAllScopes drops only this tenant auth results', async () => {
     const { handler, cache } = createCacheHandler();
-    cache.permissions.store.set(key, new Set(['a']));
-    cache.permissions.store.set(otherScopeKey, new Set(['b']));
+    const authKey = (user: string, org: string) =>
+      `${AUTH_RESULT_CACHE_KEY_PREFIX}${user}:organization:${org}:doc:read:none`;
+    const tenantA = authKey('user-1', 'org-1');
+    const tenantAProject = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-1:organizationProject:org-1:proj-1:doc:read:none`;
+    const tenantAProjectUser = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-1:organizationProjectUser:org-1:proj-1:u1:doc:read:none`;
+    const tenantB = authKey('user-2', 'org-2');
+    const tenantBLookalike = authKey('user-3', 'org-10');
+    cache.permissions.store.set(tenantA, { allowed: true });
+    cache.permissions.store.set(tenantAProject, { allowed: true });
+    cache.permissions.store.set(tenantAProjectUser, { allowed: true });
+    cache.permissions.store.set(tenantB, { allowed: true });
+    cache.permissions.store.set(tenantBLookalike, { allowed: true });
+    cache.permissions.store.set(key, new Set(['scoped-id-a']));
+    cache.permissions.store.set(otherScopeKey, new Set(['scoped-id-b']));
 
-    await handler.invalidatePermissionsCacheForAllScopes();
+    await handler.invalidatePermissionsCacheForAllScopes({
+      tenant: Tenant.Organization,
+      id: 'org-1',
+    });
 
-    expect(cache.permissions.store.size).toBe(0);
+    expect([...cache.permissions.store.keys()].sort()).toEqual(
+      [tenantB, tenantBLookalike, key, otherScopeKey].sort()
+    );
+    expect(cache.permissions.clear).not.toHaveBeenCalled();
+  });
+
+  it('invalidatePermissionsCacheForAllScopes drops ProjectUser allow for the org and keeps tenant B', async () => {
+    const { handler, cache } = createCacheHandler();
+    const orgAllow = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-1:organization:org-1:doc:read:none`;
+    const projectUserAllow = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-1:projectUser:proj-of-org-1:u1:doc:read:none`;
+    const tenantB = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-2:organization:org-2:doc:read:none`;
+    const tenantBProjectUser = `${AUTH_RESULT_CACHE_KEY_PREFIX}user-2:projectUser:proj-of-org-2:u2:doc:read:none`;
+    cache.permissions.store.set(orgAllow, { allowed: true });
+    cache.permissions.store.set(projectUserAllow, { allowed: true });
+    cache.permissions.store.set(tenantB, { allowed: true });
+    cache.permissions.store.set(tenantBProjectUser, { allowed: true });
+
+    await handler.invalidatePermissionsCacheForAllScopes({
+      tenant: Tenant.Organization,
+      id: 'org-1',
+    });
+
+    expect([...cache.permissions.store.keys()].sort()).toEqual(
+      [tenantB, tenantBProjectUser].sort()
+    );
+    expect(cache.permissions.clear).not.toHaveBeenCalled();
+  });
+
+  it('invalidatePermissionsCacheForAllScopes rejects when keys() fails', async () => {
+    const { handler, cache } = createCacheHandler();
+    cache.permissions.keys.mockRejectedValue(new Error('scan failed'));
+
+    await expect(
+      handler.invalidatePermissionsCacheForAllScopes({ tenant: Tenant.Organization, id: 'org-1' })
+    ).rejects.toThrow('scan failed');
+    expect(cache.permissions.delete).not.toHaveBeenCalled();
+    expect(cache.permissions.clear).not.toHaveBeenCalled();
   });
 
   it('invalidateSigningKeysCacheForScope deletes by prefix, not exact key', async () => {

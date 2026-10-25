@@ -55,6 +55,8 @@ describe('GrantService.getUserPermissions', () => {
     const result = await service.getUserPermissions(userId, scope, 'resource', 'read');
 
     expect(grantRepository.getDirectGroupIdsForUser).toHaveBeenCalledWith(userId, null);
+    expect(grantRepository.getGroupIdsForRoles).not.toHaveBeenCalled();
+    expect(grantRepository.getDirectPermissionIdsForRoles).not.toHaveBeenCalled();
     expect(grantRepository.getPermissionIdsForGroups).toHaveBeenCalledWith([directGroupId]);
     expect(result).toHaveLength(1);
     expect(result[0]?.id).toBe(permissionId);
@@ -116,6 +118,126 @@ describe('GrantService.getUserPermissions', () => {
 
     expect(grantRepository.getDirectGroupIdsForUser).toHaveBeenCalledWith(
       userId,
+      '10000000-0000-4000-8000-000000000003'
+    );
+    expect(grantRepository.getUserRoleIdsInScope).toHaveBeenCalledWith(
+      userId,
+      projectScope,
+      undefined,
+      { tokenType: TokenType.ProjectApp }
+    );
+    expect(grantRepository.getDirectPermissionIdsForUser).toHaveBeenCalledWith(
+      userId,
+      '10000000-0000-4000-8000-000000000003'
+    );
+  });
+
+  it('unions permissions from all four sources', async () => {
+    vi.mocked(grantRepository.getUserRoleIdsInScope).mockResolvedValue(['role-1']);
+    vi.mocked(grantRepository.getGroupIdsForRoles).mockResolvedValue(['g-role']);
+    vi.mocked(grantRepository.getDirectGroupIdsForUser).mockResolvedValue(['g-user']);
+    vi.mocked(grantRepository.getPermissionIdsForGroups).mockImplementation(async (groupIds) => {
+      const ids: string[] = [];
+      if (groupIds.includes('g-role')) ids.push('p-role-group');
+      if (groupIds.includes('g-user')) ids.push('p-user-group');
+      return ids;
+    });
+    vi.mocked(grantRepository.getDirectPermissionIdsForRoles).mockResolvedValue(['p-role']);
+    vi.mocked(grantRepository.getDirectPermissionIdsForUser).mockResolvedValue(['p-user']);
+    vi.mocked(grantRepository.getPermissionsByIds).mockImplementation(async (ids) =>
+      ids.map((id) => buildPermission(id))
+    );
+
+    const result = await service.getUserPermissions(userId, scope, 'resource', 'read');
+
+    expect(grantRepository.getPermissionIdsForGroups).toHaveBeenCalledWith(['g-role', 'g-user']);
+    expect(vi.mocked(grantRepository.getPermissionsByIds).mock.calls[0]?.[0].sort()).toEqual(
+      ['p-role-group', 'p-user-group', 'p-role', 'p-user'].sort()
+    );
+    expect(result.map((permission) => permission.id).sort()).toEqual(
+      ['p-role-group', 'p-user-group', 'p-role', 'p-user'].sort()
+    );
+  });
+
+  it('overlaps independent repository queries on a full-source miss', async () => {
+    const events: string[] = [];
+    const delayMs = 40;
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const delayed = <T>(name: string, value: T) =>
+      vi.fn(async () => {
+        events.push(`${name}:start`);
+        await delay(delayMs);
+        events.push(`${name}:end`);
+        return value;
+      });
+
+    grantRepository.getUserRoleIdsInScope = delayed('roles', ['role-1']);
+    grantRepository.getDirectGroupIdsForUser = delayed('userGroups', ['g-user']);
+    grantRepository.getDirectPermissionIdsForUser = delayed('userPerms', ['p-user']);
+    grantRepository.getGroupIdsForRoles = delayed('roleGroups', ['g-role']);
+    grantRepository.getDirectPermissionIdsForRoles = delayed('rolePerms', ['p-role']);
+    grantRepository.getPermissionIdsForGroups = delayed('groupPerms', ['p-group']);
+    vi.mocked(grantRepository.getPermissionsByIds).mockImplementation(async (ids) =>
+      ids.map((id) => buildPermission(id))
+    );
+
+    const startedAt = Date.now();
+    const result = await service.getUserPermissions(userId, scope, 'resource', 'read');
+    const elapsedMs = Date.now() - startedAt;
+
+    const firstWave1End = Math.min(
+      events.indexOf('roles:end'),
+      events.indexOf('userGroups:end'),
+      events.indexOf('userPerms:end')
+    );
+    expect(events.indexOf('roles:start')).toBeLessThan(firstWave1End);
+    expect(events.indexOf('userGroups:start')).toBeLessThan(firstWave1End);
+    expect(events.indexOf('userPerms:start')).toBeLessThan(firstWave1End);
+
+    const firstWave2End = Math.min(
+      events.indexOf('roleGroups:end'),
+      events.indexOf('rolePerms:end')
+    );
+    expect(events.indexOf('roleGroups:start')).toBeLessThan(firstWave2End);
+    expect(events.indexOf('rolePerms:start')).toBeLessThan(firstWave2End);
+    expect(events.indexOf('roles:end')).toBeLessThan(events.indexOf('roleGroups:start'));
+    expect(events.indexOf('roles:end')).toBeLessThan(events.indexOf('rolePerms:start'));
+
+    expect(events.indexOf('roleGroups:end')).toBeLessThan(events.indexOf('groupPerms:start'));
+    expect(events.indexOf('userGroups:end')).toBeLessThan(events.indexOf('groupPerms:start'));
+
+    // Sequential seven-call chain would be ≥ 7 × delayMs. Four waves of delayMs
+    // (three overlapping pairs plus two dependents) must finish well under that.
+    expect(elapsedMs).toBeLessThan(delayMs * 5);
+    expect(result.map((permission) => permission.id).sort()).toEqual(
+      ['p-group', 'p-role', 'p-user'].sort()
+    );
+  });
+
+  it('rejects when a repository lookup fails instead of returning empty', async () => {
+    vi.mocked(grantRepository.getUserRoleIdsInScope).mockRejectedValue(
+      new Error('role lookup failed')
+    );
+
+    await expect(service.getUserPermissions(userId, scope, 'resource', 'read')).rejects.toThrow(
+      'role lookup failed'
+    );
+    expect(grantRepository.getPermissionsByIds).not.toHaveBeenCalled();
+  });
+
+  it('passes project id to role-direct permissions for API-key tokens', async () => {
+    vi.mocked(grantRepository.getUserRoleIdsInScope).mockResolvedValue(['role-1']);
+
+    await service.getUserPermissions(userId, projectScope, 'resource', 'read', TokenType.ApiKey);
+
+    expect(grantRepository.getUserRoleIdsInScope).toHaveBeenCalledWith(
+      userId,
+      projectScope,
+      undefined,
+      { tokenType: TokenType.ApiKey }
+    );
+    expect(grantRepository.getDirectPermissionIdsForRoles).toHaveBeenCalledWith(
+      ['role-1'],
       '10000000-0000-4000-8000-000000000003'
     );
   });
