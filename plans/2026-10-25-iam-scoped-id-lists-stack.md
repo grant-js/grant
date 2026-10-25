@@ -36,7 +36,7 @@ Principal may collapse slices 2 and 3 into one PR if the combined diff stays rev
 | #     | Branch                             | Base                       | Concern                                          | Owner role | Review bar           | PR                                                 |
 | ----- | ---------------------------------- | -------------------------- | ------------------------------------------------ | ---------- | -------------------- | -------------------------------------------------- |
 | 1     | `feat/iam-scoped-id-lists-measure` | `feat/iam-scoped-id-lists` | list-page cost vs scoped-id set size (recipe)    | Backend    | light                | [#602](https://github.com/grant-js/grant/pull/602) |
-| 2     | `feat/iam-scoped-id-lists-page`    | prior slice                | filter + sort + page, then hydrate               | Backend    | security-full        |                                                    |
+| 2     | `feat/iam-scoped-id-lists-page`    | prior slice                | filter + sort + page, then hydrate               | Backend    | security-full        | [#603](https://github.com/grant-js/grant/pull/603) |
 | 3     | `feat/iam-scoped-id-lists-search`  | prior slice                | skipped — slice 2 SQL covers full accessible set | Backend    | security-full        | skipped                                            |
 | final | `feat/iam-scoped-id-lists`         | `main`                     | integration                                      | Principal  | deep + security-full |                                                    |
 
