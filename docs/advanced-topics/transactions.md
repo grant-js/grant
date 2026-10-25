@@ -85,6 +85,14 @@ async create(data: TCreate, performedBy: string, tx?: Transaction): Promise<TEnt
 }
 ```
 
+## Request-scoped RLS transaction
+
+Scoped requests (authenticated, non-system, `SECURITY_ENABLE_RLS` default `true`) open one Drizzle transaction in `contextMiddleware`. `SET LOCAL ROLE` and tenant GUCs apply for every query on that transaction. Unscoped, system, and RLS-off requests do not open this transaction.
+
+The request client stays checked out until the handler ends the response (`releaseTransaction` from `holdResponseEndUntil`, with `finish` / `close` as fallback). Drizzle then COMMITs and returns the client to the pool. After-commit callbacks (`scheduleAfterCommit` — job and webhook enqueue) run on the pool (`db` / `durableDb`), not on the request client, and only after COMMIT so workers see the row. The HTTP body is flushed after those callbacks settle (or after `jobs.afterCommitTimeoutMs`), so a Lambda freeze cannot drop an in-flight enqueue, and a failed COMMIT is not answered as success.
+
+Do not raise `DB_POOL_MAX` or set `SECURITY_ENABLE_RLS=false` to shorten this hold. Handler-level `withTransaction` savepoints still roll back partial mutations inside the request transaction.
+
 ## Error Handling
 
 Transactions automatically roll back on any thrown error. GraphQL resolvers and REST handlers catch transaction failures and convert them to appropriate error responses:
