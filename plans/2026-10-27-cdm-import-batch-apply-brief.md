@@ -9,7 +9,7 @@ Source: [CDM import performance diagnosis](./2026-10-27-cdm-import-performance-d
 - **Slug**: `cdm-import-batch-apply`
 - **Date**: 2026-10-27
 - **Author** (human / PM agent): PM agent; Gate 1 approved by Alejandro
-- **Status**: approved — Gate 1 passed 2026-10-27 by Alejandro / in-progress
+- **Status**: approved — Gate 3 passed 2026-10-27 by Alejandro; Gate 4 open
 
 ## Objective
 
@@ -71,4 +71,4 @@ Senior Frontend stays inactive (no web). Architect stays inactive unless a new `
 ## Human gate
 
 - [x] Gate 1: Story brief approved — 2026-10-27 by Alejandro.
-- [ ] Gate 4: Story → `main` — not open; trunk is `feat/cdm-import-batch-apply` from `main`.
+- [ ] Gate 4: Story → `main` — open; agents do not merge.

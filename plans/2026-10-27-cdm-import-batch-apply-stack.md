@@ -10,7 +10,7 @@ Gates 1–2 approved by Alejandro 2026-10-27. Copy this brief + stack into repo 
 
 - **Slug**: `cdm-import-batch-apply`
 - **Story brief**: `plans/2026-10-27-cdm-import-batch-apply-brief.md` (store copy linked above; copy into repo `plans/` with the first slice)
-- **Status**: approved — Gate 2 passed 2026-10-27 by Alejandro / in-progress
+- **Status**: approved — Gate 3 passed 2026-10-27 by Alejandro (slices #614 #615 #617 merged to trunk); Gate 4 open
 - **Story trunk**: `feat/cdm-import-batch-apply` from `main`
 - **worktree_path**: not required unless another writer is on `main` / another story trunk in the same checkout
 
@@ -165,8 +165,8 @@ These are explicit **non-slices**. Do not add them under a “while we’re here
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-10-27 by Alejandro.
-- [ ] Gate 3: Stack PRs merged into trunk (light on 1 and on 4 if export isolation is unchanged; security-full on 2 and 3).
-- [ ] Gate 4: Story → `main` deep + security-full — not open.
+- [x] Gate 3: Stack PRs merged into trunk — 2026-10-27 by Alejandro (#614 light, #615 security-full, #617 security-full; slice 4 skipped).
+- [ ] Gate 4: Story → `main` deep + security-full — open; agents do not merge.
 
 ## Cleanup
 
