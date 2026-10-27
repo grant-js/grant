@@ -116,6 +116,28 @@ export const CDM_SCALE_PROFILES: readonly CdmScaleProfile[] = [
   },
 ] as const;
 
+/**
+ * Inverse of {@link CDM_SCALE_PROFILES}: few users, many BYOK keys, and repeated
+ * `users[].roles` listings against a handful of templates. The key-fanout shape
+ * that motivated `plans/2026-10-27-cdm-import-batch-apply-brief.md`.
+ *
+ * Do not reuse `enterprise` / `entropy-bound` as this shape — those profiles are
+ * many seats, 0–1 key each, and they omit the key + listing fan-out.
+ */
+export const KEY_FANOUT_CDM_SHAPE = {
+  name: 'key-fanout',
+  shape: 'few users, many BYOK keys, repeated role listings (inverse of CDM_SCALE_PROFILES)',
+  users: 11,
+  roles: 7,
+  groups: 57,
+  resources: 46,
+  permissions: 336,
+  tags: 0,
+  groupPermissionLinks: 494,
+  apiKeys: 1_124,
+  userRoleListings: 1_883,
+} as const;
+
 // ---------------------------------------------------------------------------
 // Deterministic generation
 // ---------------------------------------------------------------------------
@@ -454,4 +476,130 @@ function sampleKeys(rand: () => number, pool: string[], min: number, max: number
 
 function samplePermissions(rand: () => number, pool: string[], min: number, max: number): string[] {
   return pool.length === 0 ? [] : sampleKeys(rand, pool, min, max);
+}
+
+/**
+ * Build the key-fanout document. Exact listing / key / link counts, with
+ * repeated `users[].roles` keys — not 1,883 distinct roles.
+ */
+export function generateKeyFanoutCdm(seed = 0x1f4a01): CdmDocumentInput {
+  const rand = createRandom(seed);
+  const shape = KEY_FANOUT_CDM_SHAPE;
+
+  // 14 resources × 8 actions + 32 × 7 = 336 permissions. ACTIONS has eight names.
+  const resources = Array.from({ length: shape.resources }, (_, i) => {
+    const actionCount = i < 14 ? 8 : 7;
+    const key = `${pick(rand, RESOURCE_NOUNS)}-${pick(rand, RESOURCE_QUALIFIERS)}-${i}`;
+    const actions = ACTIONS.slice(0, actionCount);
+    return {
+      key,
+      slug: key,
+      name: titleCase(key.replace(/-/g, ' ')),
+      description: sentence(rand, 14),
+      actions,
+      tags: [] as string[],
+      primaryTag: null,
+      metadata: entityMetadata(rand),
+    };
+  });
+
+  const permissions = resources.flatMap((resource) =>
+    resource.actions.map((action) => ({
+      key: `${resource.key}:${action}`,
+      resource: resource.key,
+      action,
+      name: `${resource.name}: ${action}`,
+      description: rand() < 0.15 ? sentence(rand, 10) : null,
+      condition:
+        rand() < 0.15 ? { StringEquals: { 'metadata.department': pick(rand, DEPARTMENTS) } } : null,
+      groups: [] as string[],
+      tags: [] as string[],
+      primaryTag: null,
+      metadata: rand() < 0.3 ? entityMetadata(rand) : null,
+    }))
+  );
+  const permissionKeys = permissions.map((p) => p.key);
+
+  // 38 groups × 9 + 19 × 8 = 494 unique (group, permission) pairs. Walk the
+  // permission list so every key appears at least once (494 > 336).
+  let permissionCursor = 0;
+  const groups = Array.from({ length: shape.groups }, (_, i) => {
+    const linkCount = i < 38 ? 9 : 8;
+    const groupPermissions: string[] = [];
+    for (let n = 0; n < linkCount; n += 1) {
+      groupPermissions.push(permissionKeys[permissionCursor % permissionKeys.length]!);
+      permissionCursor += 1;
+    }
+    const key = `group-${pick(rand, DEPARTMENTS)}-${i}`;
+    return {
+      key,
+      name: titleCase(key.replace(/-/g, ' ')),
+      description: sentence(rand, 12),
+      permissions: groupPermissions,
+      tags: [] as string[],
+      primaryTag: null,
+      metadata: entityMetadata(rand),
+    };
+  });
+  const groupKeys = groups.map((g) => g.key);
+
+  const roles = Array.from({ length: shape.roles }, (_, i) => {
+    const key = `role-${pick(rand, DEPARTMENTS)}-${i}`;
+    return {
+      key,
+      name: titleCase(key.replace(/-/g, ' ')),
+      description: sentence(rand, 12),
+      groups: [] as string[],
+      permissions: samplePermissions(rand, permissionKeys, 3, 6),
+      tags: [] as string[],
+      primaryTag: null,
+      metadata: entityMetadata(rand),
+    };
+  });
+  const roleKeys = roles.map((r) => r.key);
+
+  // 1,124 = 2×103 + 9×102. 1,883 = 2×172 + 9×171. Listings cycle the 7 templates.
+  const users = Array.from({ length: shape.users }, (_, i) => {
+    const first = pick(rand, FIRST_NAMES);
+    const last = pick(rand, LAST_NAMES);
+    const keyCount = i < 2 ? 103 : 102;
+    const listingCount = i < 2 ? 172 : 171;
+    const apiKeys = Array.from({ length: keyCount }, () => ({
+      key: `key-${hex(rand, 8)}`,
+      // Merge creates new key rows; a repeated clientId fails closed.
+      clientId: null,
+      clientSecret: secret(rand, 48),
+      name: `${titleCase(first)} service key`,
+      description: null,
+      expiresAt: null,
+      metadata: null,
+    }));
+
+    return {
+      key: {
+        value: `${first}.${last}${i}@${pick(rand, DOMAINS)}`,
+        findBy: CdmFindBy.Email,
+      },
+      name: `${titleCase(first)} ${titleCase(last)}`,
+      roles: Array.from({ length: listingCount }, (_, n) => roleKeys[n % roleKeys.length]!),
+      // First user lists every group so createDocumentGroup runs 57 times.
+      groups: i === 0 ? [...groupKeys] : [],
+      permissions: [] as string[],
+      tags: [] as string[],
+      primaryTag: null,
+      apiKeys,
+      metadata: entityMetadata(rand),
+    };
+  });
+
+  return {
+    version: 1,
+    mode: { strategy: CdmModeStrategy.Merge, onConflict: null, confirmDestructive: false },
+    tags: [],
+    resources,
+    permissions,
+    groups,
+    roles,
+    users,
+  };
 }

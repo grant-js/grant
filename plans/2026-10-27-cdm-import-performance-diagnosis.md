@@ -1,6 +1,6 @@
-# CDM import performance diagnosis (Alteos)
+# CDM import performance diagnosis (key-fanout)
 
-**Audience:** Grant / Alteos — why one production import took ~11 minutes and a later attempt hit Lambda’s 15-minute wall  
+**Audience:** Grant — why one production import took ~11 minutes and a later attempt hit Lambda’s 15-minute wall  
 **Scope:** diagnosis only. No implementation, no PR, no e2e-contract changes, no language rewrite.  
 **Method:** read-only traversal of the import module against the reported counters. Wall-clock shares below are **order-of-magnitude from code shape + prior Grant measurements**, not a new production trace.  
 **Date:** 2026-10-27
@@ -11,7 +11,7 @@ Related: `docs/core-concepts/cdm-import-export.md`, `apps/api/src/lib/cdm/README
 
 ## Executive summary
 
-The 11-minute Alteos import is **Grant-code bound**, not “Lambda is too small” and not “Postgres cannot write 4k rows.” The worker applies the document **one service call at a time, inside one transaction**, through the same single-entity APIs used by HTTP mutations. Two volumes dominate this payload:
+The 11-minute key-fanout import is **Grant-code bound**, not “Lambda is too small” and not “Postgres cannot write 4k rows.” The worker applies the document **one service call at a time, inside one transaction**, through the same single-entity APIs used by HTTP mutations. Two volumes dominate this payload:
 
 1. **1,124 user API keys** — each does a **synchronous bcrypt** (`hashSecret` / `TOKEN_BCRYPT_ROUNDS`, default **10**) _inside_ the open transaction, then insert + audit + pivot insert + audit.
 2. **1,883 `addUserRole` calls** for **11 users** and only **7 roles created** — almost certainly **repeated `users[].roles` keys**. The counter increments on every listing; the service still does existence reads (and a full `user_roles` list) even when the assignment already exists.
@@ -20,7 +20,7 @@ Everything else (7 roles, 57 groups, 494 group→permission links, 11 provisione
 
 Moving the worker to Fargate / Lambda VM **removes the 15-minute ceiling** (ADR 0002 already measured a 28,880-_entity_ import at **62.3 minutes** locally). It does **not** make this apply path fast. The same sequential service API will still take on the order of **10+ minutes** for this shape, and a **repeat** import is worse because the pre-apply snapshot now walks the graph that the first import just wrote.
 
-`CDM_IMPORT_MAX_ENTITIES` (default 5,000) would **not** have refused this document. It counts `roles + users + resources + permissions + groups + tags` only — **not** API keys or role/group links. Alteos is ~457 of those entities and ~3,000 of the expensive edges.
+`CDM_IMPORT_MAX_ENTITIES` (default 5,000) would **not** have refused this document. It counts `roles + users + resources + permissions + groups + tags` only — **not** API keys or role/group links. This payload is ~457 of those entities and ~3,000 of the expensive edges.
 
 ---
 
@@ -59,7 +59,7 @@ Default runtime is **`JOBS_SYNC_RUNTIME=inprocess`**. That is the API Lambda (15
 | User roles assigned: 1883                                             | `userRolesAssigned`         | one increment per `roleTemplateKeys` entry                  | **1883 sequential `UserRoleService.addUserRole`**. See below — this cannot be 1883 distinct `(user, role)` pairs against 7 new roles.                                               |
 | User API keys created: 1124                                           | `projectUserApiKeysCreated` | `ProjectUserApiKeyCdmEntity.apply`                          | 1124 sequential `createApiKeyForCdmImport` + `addProjectUserApiKey`.                                                                                                                |
 
-Registry order (`createDefaultCdmEntities`): resource (2) → permission (4) → tag (5) → role template (10) → user provision (15) → user assignment (20) → project-user API key (300). `UserProvisionCdmEntity.postApply` (passwords) runs after every `apply`, still in the same TX. Alteos did not report password counters; if hashes were present they are a small extra batched write, not the 11 minutes.
+Registry order (`createDefaultCdmEntities`): resource (2) → permission (4) → tag (5) → role template (10) → user provision (15) → user assignment (20) → project-user API key (300). `UserProvisionCdmEntity.postApply` (passwords) runs after every `apply`, still in the same TX. The reported job did not include password counters; if hashes were present they are a small extra batched write, not the 11 minutes.
 
 `mode.onConflict` is parsed on the document and **never read** during apply. Merge always creates new role/group/key rows; it does not upsert by `externalKey`.
 
@@ -76,13 +76,13 @@ Shares assume ~11 minutes wall clock on Lambda → RDS, bcrypt cost 10, and the 
 |    3 |              **~0.5–2 min** | (1) N+1 list-all                                    | **494 group→permission links** via `createDocumentGroup`: `groupHasPermission` lists **all** group permissions; `addGroupPermission` does group/permission exists + **lists them again**; `ensureProjectPermissionAndResource` lists **all** `project_permissions` and `project_resources` every time. Superlinear as those lists grow toward 336 / 46. **~4k–6k statements**, heavier rows than a pivot insert.                                                                                            |
 |    4 |        **~seconds–minutes** | (2) one giant TX                                    | Snapshot + apply share one connection and one WAL/lock horizon. **First import into an empty project:** snapshot is cheap. **Later attempt:** snapshot is `exportProjectCdm` of the _already imported_ graph (11 users × ~102 keys × large `users[].roles`) _before_ apply runs again. The measure harness already warned: a repeat import is snapshot(existing) + apply, and duration models from payload size alone are wrong. This is the best explanation for “11 min succeeded, next run exceeded 15.” |
 |    5 |            **~0.5–1.5 min** | (1) + (3) audit                                     | Audit is **not** suppressed. Every create/link writes `DrizzleAuditLogger.logCreate` in the same TX. Events **are** suppressed (`runWithEventSuppression` → `DrizzleEventPublisher.publishMany` no-ops). No webhook/outbox flood during apply. Audit volume tracks inserts (keys, pivots, roles, groups, 494 links, …), not 1,883 duplicate role listings.                                                                                                                                                  |
-|    6 |                 **seconds** | (3) post-write                                      | `invalidateCachesForImportResult` after commit: 7 entity-cache deletes for the project scope, `getProjectUsers`, then ~2 related scope keys × 7 namespaces × 11 members (**~150 sequential deletes**). Auth-result prefix delete only for `users[].key.findBy === id` — Alteos _created_ 11 users, so `collectUserIds` is likely **empty**. One `project_sync.completed` at `markCompleted`. Not minutes.                                                                                                   |
+|    6 |                 **seconds** | (3) post-write                                      | `invalidateCachesForImportResult` after commit: 7 entity-cache deletes for the project scope, `getProjectUsers`, then ~2 related scope keys × 7 namespaces × 11 members (**~150 sequential deletes**). Auth-result prefix delete only for `users[].key.findBy === id` — the import _created_ 11 users, so `collectUserIds` is likely **empty**. One `project_sync.completed` at `markCompleted`. Not minutes.                                                                                               |
 |    7 |                 **seconds** | (1) small creates                                   | 7 roles, 57 groups, 11 users, 11 memberships, 336/46 project pivots that actually insert once. Drowned by (1)–(2).                                                                                                                                                                                                                                                                                                                                                                                          |
 |    8 | **negligible on this path** | (6) H1–H4                                           | See dedicated section.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 **Lambda vs Grant-code vs Postgres:** Grant’s sequential service API + bcrypt-in-TX is the bottleneck. Postgres is executing many tiny statements, not a heavy plan. Lambda supplies the 15-minute wall, 1 vCPU for bcrypt, and ~1 ms RTT that turns 20k–30k statements into minutes. Raising `DB_POOL_MAX` or turning RLS off does not shorten this job: it uses **one** connection for the apply.
 
-Prior Grant measurement (different shape — many users, few keys): **~48–105 SQL statements per CDM entity**, superlinear as tables fill, 28,880 entities → 62.3 min. Alteos is the inverse: few entities, huge **key + role-listing** fan-out that those entity counts do not include.
+Prior Grant measurement (different shape — many users, few keys): **~48–105 SQL statements per CDM entity**, superlinear as tables fill, 28,880 entities → 62.3 min. Key-fanout is the inverse: few entities, huge **key + role-listing** fan-out that those entity counts do not include.
 
 ---
 
@@ -216,7 +216,7 @@ Passwords (if any) use `credentials.importProjectPasswordHashes` in `postApply` 
 | **Lambda**     | 15-minute **hard** timeout; typically 1 vCPU (bcrypt serial); ~1 ms/statement RTT to RDS (prior write-up: 3M statements × 1 ms ≈ 50 min RTT alone at enterprise scale). Freeze on timeout rolls back the giant TX. |
 | **Postgres**   | Capable of the writes. Pain is **chatty statements + long TX + RLS on each query**, not missing indexes on “insert 1,124 keys.”                                                                                    |
 
-Fargate/Lambda VM: **necessary** so a 11–20+ minute job can finish; **not sufficient** to make Alteos-sized imports snappy. ADR 0002 already chose the hatch because cheap memoization of lookups capped at **~1.54×** and a 28,880-entity import needed **~4.15×** to fit 15 minutes.
+Fargate/Lambda VM: **necessary** so a 11–20+ minute job can finish; **not sufficient** to make key-fanout imports snappy. ADR 0002 already chose the hatch because cheap memoization of lookups capped at **~1.54×** and a 28,880-entity import needed **~4.15×** to fit 15 minutes.
 
 ---
 
@@ -287,4 +287,4 @@ Do **not**: chunk the import into multiple committing transactions (partial auth
 
 ## Bottom line
 
-Alteos is slow because Grant imports **like 3,000 HTTP mutations in a single transaction**, and this document’s expensive mutations are **API keys (bcrypt) and repeated user-role listings**, not the 7 roles / 57 groups. Lambda’s 15-minute cap is a **wall**, not the root cause. Fargate lets the job finish; a faster Grant import needs a **batch apply** (and/or ETL dedupe + cheaper key hashing), without changing e2e contracts.
+Key-fanout is slow because Grant imports **like 3,000 HTTP mutations in a single transaction**, and this document’s expensive mutations are **API keys (bcrypt) and repeated user-role listings**, not the 7 roles / 57 groups. Lambda’s 15-minute cap is a **wall**, not the root cause. Fargate lets the job finish; a faster Grant import needs a **batch apply** (and/or ETL dedupe + cheaper key hashing), without changing e2e contracts.

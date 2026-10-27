@@ -41,7 +41,12 @@ import { describe, expect, it } from 'vitest';
 
 import { startProjectSyncRequestSchema } from '@/rest/schemas/projects.schemas';
 
-import { CDM_SCALE_PROFILES, generateCdmAtScale } from '../../../helpers/cdm-scale-fixtures';
+import {
+  CDM_SCALE_PROFILES,
+  generateCdmAtScale,
+  generateKeyFanoutCdm,
+  KEY_FANOUT_CDM_SHAPE,
+} from '../../../helpers/cdm-scale-fixtures';
 
 const SCOPE = {
   id: '123e4567-e89b-12d3-a456-426614174005',
@@ -144,5 +149,81 @@ describe('CDM scale fixtures', () => {
     const secrets = cdm.users.flatMap((u) => (u.apiKeys ?? []).map((k) => k.clientSecret));
     expect(secrets.length).toBeGreaterThan(0);
     expect(new Set(secrets).size).toBe(secrets.length);
+  });
+});
+
+describe('key-fanout CDM fixture', () => {
+  it('is not one of the many-user scale profiles', () => {
+    expect(CDM_SCALE_PROFILES.map((profile) => profile.name)).not.toContain(
+      KEY_FANOUT_CDM_SHAPE.name
+    );
+  });
+
+  it('produces a document startProjectSyncRequestSchema accepts', () => {
+    const result = startProjectSyncRequestSchema.safeParse({
+      scope: SCOPE,
+      ...generateKeyFanoutCdm(),
+    });
+    expect(result.error?.issues[0] ?? null).toBeNull();
+    expect(result.success).toBe(true);
+  });
+
+  it('produces permission conditions the service will also accept', () => {
+    const conditions = (generateKeyFanoutCdm().permissions ?? [])
+      .map((permission) => permission.condition)
+      .filter((condition) => condition != null);
+
+    expect(conditions.length).toBeGreaterThan(0);
+    for (const condition of conditions) {
+      const result = permissionConditionSchema.safeParse(condition);
+      expect(
+        result.error?.issues[0]?.message ?? null,
+        `condition rejected: ${JSON.stringify(condition)}`
+      ).toBeNull();
+    }
+  });
+
+  it('resolves every user by a key that provisions one', () => {
+    const cdm = generateKeyFanoutCdm();
+    expect(cdm.users).toHaveLength(KEY_FANOUT_CDM_SHAPE.users);
+    for (const user of cdm.users) {
+      expect(user.key.findBy, `user ${user.key.value} must not resolve by id`).not.toBe(
+        CdmFindBy.Id
+      );
+    }
+  });
+
+  it('matches the key-fanout entity, key, listing, and link counts', () => {
+    const cdm = generateKeyFanoutCdm();
+    const roleListings = cdm.users.flatMap((user) => user.roles ?? []);
+    const apiKeys = cdm.users.flatMap((user) => user.apiKeys ?? []);
+    const groupPermissionLinks = (cdm.groups ?? []).reduce(
+      (total, group) => total + (group.permissions?.length ?? 0),
+      0
+    );
+
+    expect(cdm.users).toHaveLength(KEY_FANOUT_CDM_SHAPE.users);
+    expect(cdm.roles).toHaveLength(KEY_FANOUT_CDM_SHAPE.roles);
+    expect(cdm.groups).toHaveLength(KEY_FANOUT_CDM_SHAPE.groups);
+    expect(cdm.resources).toHaveLength(KEY_FANOUT_CDM_SHAPE.resources);
+    expect(cdm.permissions).toHaveLength(KEY_FANOUT_CDM_SHAPE.permissions);
+    expect(cdm.tags ?? []).toHaveLength(KEY_FANOUT_CDM_SHAPE.tags);
+    expect(apiKeys).toHaveLength(KEY_FANOUT_CDM_SHAPE.apiKeys);
+    expect(roleListings).toHaveLength(KEY_FANOUT_CDM_SHAPE.userRoleListings);
+    expect(groupPermissionLinks).toBe(KEY_FANOUT_CDM_SHAPE.groupPermissionLinks);
+    expect(new Set(roleListings).size).toBe(KEY_FANOUT_CDM_SHAPE.roles);
+    expect(roleListings.length).toBeGreaterThan(cdm.roles.length);
+  });
+
+  it('is deterministic — the same seed produces identical bytes', () => {
+    expect(JSON.stringify(generateKeyFanoutCdm())).toBe(JSON.stringify(generateKeyFanoutCdm()));
+  });
+
+  it('carries distinct API-key secrets and omits clientId so merge-repeat can finish', () => {
+    const keys = generateKeyFanoutCdm().users.flatMap((user) => user.apiKeys ?? []);
+    const secrets = keys.map((key) => key.clientSecret);
+    expect(keys).toHaveLength(KEY_FANOUT_CDM_SHAPE.apiKeys);
+    expect(new Set(secrets).size).toBe(secrets.length);
+    expect(keys.every((key) => key.clientId == null)).toBe(true);
   });
 });
