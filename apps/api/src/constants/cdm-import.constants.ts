@@ -3,6 +3,12 @@ import { ValidationError } from '@/lib/errors';
 /** Metadata key for roles/groups created by project CDM import. */
 export const CDM_IMPORT_METADATA_KEY = 'cdmImport' as const;
 
+/**
+ * HMAC-SHA256 hex of a BYOK secret, stored only under `metadata.cdmImport`.
+ * Classification on replace — never a verifier, never exportable.
+ */
+export const CDM_API_KEY_SECRET_FINGERPRINT_KEY = 'secretFingerprint' as const;
+
 /** Importer-owned payload merged under this key (never overwrites `cdmImport`). */
 export const CDM_SOURCE_METADATA_KEY = 'cdmSource' as const;
 
@@ -98,16 +104,22 @@ export type CdmImportMetadata = {
     | 'permission'
     | 'user';
   externalKey?: string;
+  secretFingerprint?: string;
 };
 
 export function buildCdmImportMetadata(
   projectId: string,
   kind: CdmImportMetadata['kind'],
-  externalKey?: string
+  externalKey?: string,
+  secretFingerprint?: string
 ): Record<string, unknown> {
-  const payload: CdmImportMetadata = externalKey
-    ? { projectId, kind, externalKey }
-    : { projectId, kind };
+  const payload: CdmImportMetadata = { projectId, kind };
+  if (externalKey) {
+    payload.externalKey = externalKey;
+  }
+  if (secretFingerprint) {
+    payload.secretFingerprint = secretFingerprint;
+  }
   return { [CDM_IMPORT_METADATA_KEY]: payload };
 }
 
@@ -130,6 +142,11 @@ export function mergeCdmImporterMetadata(
   if (Object.prototype.hasOwnProperty.call(importer, CDM_IMPORT_METADATA_KEY)) {
     throw new ValidationError(
       `CDM metadata must not include reserved top-level key "${CDM_IMPORT_METADATA_KEY}"`
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(importer, CDM_API_KEY_SECRET_FINGERPRINT_KEY)) {
+    throw new ValidationError(
+      `CDM metadata must not include reserved top-level key "${CDM_API_KEY_SECRET_FINGERPRINT_KEY}"`
     );
   }
   const prev = out[CDM_SOURCE_METADATA_KEY];
@@ -161,13 +178,19 @@ export function extractProjectUserMetadataForCdmExport(
   const source = metadata[CDM_SOURCE_METADATA_KEY];
   if (source != null && typeof source === 'object' && !Array.isArray(source)) {
     for (const [k, v] of Object.entries(source as Record<string, unknown>)) {
-      if (k === CDM_IMPORT_METADATA_KEY) continue;
+      if (k === CDM_IMPORT_METADATA_KEY || k === CDM_API_KEY_SECRET_FINGERPRINT_KEY) continue;
       out[k] = v;
     }
   }
 
   for (const [k, v] of Object.entries(metadata)) {
-    if (k === CDM_IMPORT_METADATA_KEY || k === CDM_SOURCE_METADATA_KEY) continue;
+    if (
+      k === CDM_IMPORT_METADATA_KEY ||
+      k === CDM_SOURCE_METADATA_KEY ||
+      k === CDM_API_KEY_SECRET_FINGERPRINT_KEY
+    ) {
+      continue;
+    }
     out[k] = v;
   }
 

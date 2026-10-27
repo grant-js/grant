@@ -1126,6 +1126,13 @@ const CDM_CONFIG = {
    * an asynchronous `FAILED` job, not a synchronous 4xx (ADR 0009).
    */
   maxImportEntities: env.CDM_IMPORT_MAX_ENTITIES,
+
+  /**
+   * Server-side HMAC key for `metadata.cdmImport.secretFingerprint`. Classification
+   * only — not a verifier. Overlayed from `ISecretResolver` at boot. Empty means
+   * every stored fingerprint misses (rotate-all).
+   */
+  apiKeyFingerprintHmacSecret: env.CDM_API_KEY_FINGERPRINT_HMAC_SECRET,
 } as const;
 
 // ============================================================================

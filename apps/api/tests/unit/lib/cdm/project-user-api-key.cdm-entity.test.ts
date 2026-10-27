@@ -1,10 +1,28 @@
 import type { CdmApplyContext, CdmExportContext, CdmTeardownContext } from '@grantjs/core';
-import { Scope, SyncProjectResult, Tenant } from '@grantjs/schema';
+import { CdmModeStrategy, Scope, SyncProjectResult, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CDM_IMPORT_METADATA_KEY } from '@/constants/cdm-import.constants';
+import { fingerprintCdmApiKeySecret } from '@/lib/cdm/cdm-api-key-fingerprint.lib';
 import { ProjectUserApiKeyCdmEntity } from '@/lib/cdm/entities/project-user-api-key.cdm-entity';
 import { buildExternalKey } from '@/lib/cdm/identity.lib';
+import * as tokenLib from '@/lib/token.lib';
+
+vi.mock('@/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config')>();
+  return {
+    ...actual,
+    config: {
+      ...actual.config,
+      cdm: {
+        ...actual.config.cdm,
+        apiKeyFingerprintHmacSecret: 'unit-test-cdm-api-key-fingerprint',
+      },
+    },
+  };
+});
+
+const HMAC = 'unit-test-cdm-api-key-fingerprint';
 
 const projectId = '10000000-0000-4000-8000-000000000011';
 const accountId = '20000000-0000-4000-8000-000000000020';
@@ -30,6 +48,9 @@ function baseResult(): SyncProjectResult {
     usersCreated: 0,
     userRolesAssigned: 0,
     projectUserApiKeysCreated: 0,
+    projectUserApiKeysUnchanged: 0,
+    projectUserApiKeysRotated: 0,
+    projectUserApiKeysDeleted: 0,
     passwordsImported: 0,
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
@@ -46,7 +67,11 @@ function baseResult(): SyncProjectResult {
 }
 
 function buildHandler(deps?: {
-  importRepo?: { listCdmProjectUserApiKeyIdsForProject: ReturnType<typeof vi.fn> };
+  importRepo?: {
+    listCdmProjectUserApiKeyIdsForProject?: ReturnType<typeof vi.fn>;
+    listCdmProjectUserApiKeysForReplace?: ReturnType<typeof vi.fn>;
+    updateCdmProjectUserApiKeyMetadata?: ReturnType<typeof vi.fn>;
+  };
   exportRepo?: {
     getProjectUserApiKeysForCdmExport: ReturnType<typeof vi.fn>;
     getProjectUserApiKeyExportIdentities: ReturnType<typeof vi.fn>;
@@ -55,20 +80,26 @@ function buildHandler(deps?: {
   apiKeys?: {
     createApiKeysForCdmImport: ReturnType<typeof vi.fn>;
     deleteApiKeysForCdmImport: ReturnType<typeof vi.fn>;
+    rotateApiKeysForCdmImport?: ReturnType<typeof vi.fn>;
   };
   projectUserApiKeys?: { addProjectUserApiKeysForCdmImport: ReturnType<typeof vi.fn> };
 }) {
-  const importRepo = deps?.importRepo ?? {
+  const importRepo = {
     listCdmProjectUserApiKeyIdsForProject: vi.fn().mockResolvedValue([]),
+    listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([]),
+    updateCdmProjectUserApiKeyMetadata: vi.fn().mockResolvedValue(undefined),
+    ...deps?.importRepo,
   };
   const exportRepo = deps?.exportRepo ?? {
     getProjectUserApiKeysForCdmExport: vi.fn().mockResolvedValue([]),
     getProjectUserApiKeyExportIdentities: vi.fn().mockResolvedValue(new Map()),
     getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
   };
-  const apiKeys = deps?.apiKeys ?? {
+  const apiKeys = {
     createApiKeysForCdmImport: vi.fn(),
     deleteApiKeysForCdmImport: vi.fn(),
+    rotateApiKeysForCdmImport: vi.fn().mockResolvedValue(undefined),
+    ...deps?.apiKeys,
   };
   const projectUserApiKeys = deps?.projectUserApiKeys ?? {
     addProjectUserApiKeysForCdmImport: vi.fn(),
@@ -130,15 +161,9 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     ).toThrow();
   });
 
-  it('teardown hard-deletes CDM api keys in one call', async () => {
-    const apiKeyIds = [
-      '40000000-0000-4000-8000-000000000001',
-      '40000000-0000-4000-8000-000000000002',
-    ];
-    const listCdmProjectUserApiKeyIdsForProject = vi.fn().mockResolvedValue(apiKeyIds);
+  it('teardown is a no-op so apply can keep unchanged keys', async () => {
     const deleteApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
-    const { handler } = buildHandler({
-      importRepo: { listCdmProjectUserApiKeyIdsForProject },
+    const { handler, importRepo } = buildHandler({
       apiKeys: {
         createApiKeysForCdmImport: vi.fn(),
         deleteApiKeysForCdmImport,
@@ -148,8 +173,8 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     const ctx: CdmTeardownContext = { projectId, scope, tx: {} };
     await handler.teardown(ctx);
 
-    expect(deleteApiKeysForCdmImport).toHaveBeenCalledTimes(1);
-    expect(deleteApiKeysForCdmImport).toHaveBeenCalledWith({ ids: apiKeyIds }, ctx.tx);
+    expect(deleteApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(importRepo.listCdmProjectUserApiKeyIdsForProject).not.toHaveBeenCalled();
   });
 
   it('apply rejects userId not in assignmentUserIds', async () => {
@@ -378,4 +403,221 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     );
     expect(out[0]?.externalKey).toBe(buildExternalKey('apikey', 'client-id-1', userId));
   });
+
+  it('export omits cdmImport secretFingerprint', async () => {
+    const getProjectUserApiKeysForCdmExport = vi.fn().mockResolvedValue([
+      {
+        apiKeyId,
+        userId,
+        clientId: 'client-id-1',
+        name: 'Key A',
+        description: null,
+        expiresAt: null,
+        pivotMetadata: {
+          [CDM_IMPORT_METADATA_KEY]: {
+            projectId,
+            kind: 'projectUserApiKey',
+            externalKey: 'ext-1',
+            secretFingerprint: 'should-never-export',
+          },
+          cdmSource: { legacy: 1 },
+        },
+      },
+    ]);
+    const { handler } = buildHandler({
+      exportRepo: {
+        getProjectUserApiKeysForCdmExport,
+        getProjectUserApiKeyExportIdentities: vi.fn().mockResolvedValue(new Map()),
+        getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
+      },
+    });
+
+    const out = await handler.export({ projectId, scope });
+    expect(JSON.stringify(out)).not.toContain('should-never-export');
+    expect(JSON.stringify(out)).not.toContain('secretFingerprint');
+    expect(out[0]?.metadata).toEqual({ legacy: 1 });
+  });
+
+  it('replace keep skips bcrypt and preserves the existing key', async () => {
+    const hashSpy = vi.spyOn(tokenLib, 'hashSecretAsync');
+    const listCdmProjectUserApiKeysForReplace = vi.fn().mockResolvedValue([
+      {
+        apiKeyId,
+        userId,
+        clientId: 'cid-1',
+        externalKey: 'ext-1',
+        secretFingerprint: fingerprintCdmApiKeySecret(BYOK_SECRET, HMAC),
+        metadata: {
+          [CDM_IMPORT_METADATA_KEY]: {
+            projectId,
+            kind: 'projectUserApiKey',
+            externalKey: 'ext-1',
+            secretFingerprint: fingerprintCdmApiKeySecret(BYOK_SECRET, HMAC),
+          },
+        },
+      },
+    ]);
+    const createApiKeysForCdmImport = vi.fn();
+    const deleteApiKeysForCdmImport = vi.fn();
+    const rotateApiKeysForCdmImport = vi.fn();
+    const { handler } = buildHandler({
+      importRepo: { listCdmProjectUserApiKeysForReplace },
+      apiKeys: {
+        createApiKeysForCdmImport,
+        deleteApiKeysForCdmImport,
+        rotateApiKeysForCdmImport,
+      },
+    });
+    const result = baseResult();
+    const ctx = applyCtx(result, CdmModeStrategy.Replace);
+
+    await handler.apply(ctx, [{ userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET }]);
+
+    expect(result.projectUserApiKeysCreated).toBe(0);
+    expect(result.projectUserApiKeysUnchanged).toBe(1);
+    expect(result.projectUserApiKeysRotated).toBe(0);
+    expect(result.projectUserApiKeysDeleted).toBe(0);
+    expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(rotateApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(deleteApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(hashSpy).not.toHaveBeenCalled();
+    hashSpy.mockRestore();
+  });
+
+  it('replace rotate with a missing fingerprint hashes one secret and keeps the id', async () => {
+    const hashSpy = vi.spyOn(tokenLib, 'hashSecretAsync');
+    const listCdmProjectUserApiKeysForReplace = vi.fn().mockResolvedValue([
+      {
+        apiKeyId,
+        userId,
+        clientId: 'cid-1',
+        externalKey: 'ext-1',
+        secretFingerprint: null,
+        metadata: {
+          [CDM_IMPORT_METADATA_KEY]: {
+            projectId,
+            kind: 'projectUserApiKey',
+            externalKey: 'ext-1',
+          },
+        },
+      },
+    ]);
+    const rotateApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
+    const createApiKeysForCdmImport = vi.fn();
+    const { handler, importRepo } = buildHandler({
+      importRepo: { listCdmProjectUserApiKeysForReplace },
+      apiKeys: {
+        createApiKeysForCdmImport,
+        deleteApiKeysForCdmImport: vi.fn(),
+        rotateApiKeysForCdmImport,
+      },
+    });
+    const result = baseResult();
+    const ctx = applyCtx(result, CdmModeStrategy.Replace);
+
+    await handler.apply(ctx, [{ userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET }]);
+
+    expect(result.projectUserApiKeysRotated).toBe(1);
+    expect(result.projectUserApiKeysCreated).toBe(0);
+    expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(rotateApiKeysForCdmImport).toHaveBeenCalledWith(
+      { keys: [{ id: apiKeyId, clientSecretHash: expect.stringMatching(/^\$2[aby]\$/) }] },
+      ctx.tx
+    );
+    expect(hashSpy).toHaveBeenCalledTimes(1);
+    expect(importRepo.updateCdmProjectUserApiKeyMetadata).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          apiKeyId,
+          projectId,
+          metadata: expect.objectContaining({
+            [CDM_IMPORT_METADATA_KEY]: expect.objectContaining({
+              secretFingerprint: fingerprintCdmApiKeySecret(BYOK_SECRET, HMAC),
+            }),
+          }),
+        }),
+      ],
+      ctx.tx
+    );
+    hashSpy.mockRestore();
+  });
+
+  it('replace deletes missing externalKeys and creates new ones', async () => {
+    const listCdmProjectUserApiKeysForReplace = vi.fn().mockResolvedValue([
+      {
+        apiKeyId,
+        userId,
+        clientId: 'cid-old',
+        externalKey: 'old-key',
+        secretFingerprint: 'abc',
+        metadata: {},
+      },
+    ]);
+    const createApiKeysForCdmImport = vi
+      .fn()
+      .mockResolvedValue([{ id: '50000000-0000-4000-8000-000000000077', clientId: 'cid-new' }]);
+    const deleteApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
+    const { handler } = buildHandler({
+      importRepo: { listCdmProjectUserApiKeysForReplace },
+      apiKeys: {
+        createApiKeysForCdmImport,
+        deleteApiKeysForCdmImport,
+        rotateApiKeysForCdmImport: vi.fn(),
+      },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport: vi.fn().mockResolvedValue([]) },
+    });
+    const result = baseResult();
+    const ctx = applyCtx(result, CdmModeStrategy.Replace);
+
+    await handler.apply(ctx, [{ userId, externalKey: 'new-key', clientSecret: BYOK_SECRET }]);
+
+    expect(deleteApiKeysForCdmImport).toHaveBeenCalledWith({ ids: [apiKeyId] }, ctx.tx);
+    expect(createApiKeysForCdmImport).toHaveBeenCalledTimes(1);
+    expect(result.projectUserApiKeysDeleted).toBe(1);
+    expect(result.projectUserApiKeysCreated).toBe(1);
+    expect(result.projectUserApiKeysUnchanged).toBe(0);
+  });
+
+  it('merge still creates even when an existing fingerprint would match', async () => {
+    const createApiKeysForCdmImport = vi
+      .fn()
+      .mockResolvedValue([{ id: '50000000-0000-4000-8000-000000000077', clientId: 'cid-1' }]);
+    const { handler, importRepo } = buildHandler({
+      apiKeys: {
+        createApiKeysForCdmImport,
+        deleteApiKeysForCdmImport: vi.fn(),
+      },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport: vi.fn().mockResolvedValue([]) },
+    });
+    const result = baseResult();
+    const ctx = applyCtx(result, CdmModeStrategy.Merge);
+
+    await handler.apply(ctx, [{ userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET }]);
+
+    expect(importRepo.listCdmProjectUserApiKeysForReplace).not.toHaveBeenCalled();
+    expect(createApiKeysForCdmImport).toHaveBeenCalledTimes(1);
+    expect(result.projectUserApiKeysCreated).toBe(1);
+    expect(result.projectUserApiKeysUnchanged).toBe(0);
+  });
 });
+
+function applyCtx(result: SyncProjectResult, modeStrategy?: CdmModeStrategy): CdmApplyContext {
+  return {
+    projectId,
+    scope,
+    tx: { __tx: true },
+    lookupResolvedRef: () => ({}),
+    result,
+    produced: {
+      roleIdsByKey: new Map(),
+      tagIds: new Map(),
+      resourceIds: new Map(),
+      permissionIds: new Map(),
+      userIds: new Map(),
+      groupIdsByKey: new Map(),
+    },
+    documentGroupsByKey: new Map(),
+    assignmentUserIds: new Set([userId]),
+    modeStrategy,
+  };
+}

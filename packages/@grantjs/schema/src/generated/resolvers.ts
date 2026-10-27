@@ -3319,6 +3319,9 @@ export type SyncProjectResultResolvers<
   projectRolesLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectTagsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectUserApiKeysCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectUserApiKeysDeleted?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectUserApiKeysRotated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectUserApiKeysUnchanged?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectUsersEnsured?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   resourcesCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   roleGroupsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

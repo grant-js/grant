@@ -21,6 +21,7 @@ configureLogger({
     '*.refreshToken',
     '*.secret',
     '*.clientSecret',
+    '*.secretFingerprint',
     '*.encryptedSecret',
     '*.secretIv',
     '*.secretTag',

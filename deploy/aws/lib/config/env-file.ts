@@ -48,7 +48,7 @@ export const RESOLVER_SECRET_KEYS = [
 
   // Routed rather than refused since `apps/api/src/config/credentials.ts` began
   // overlaying resolver-provided values onto `config` in the composition root, before
-  // the first adapter is built. Thirteen keys, in the same order as the table there so
+  // the first adapter is built. Fourteen keys, in the same order as the table there so
   // the two lists can be diffed by eye — that file is the other half of this one, and a
   // key present here but absent there would be written to the platform secret and read
   // by nothing.
@@ -65,6 +65,7 @@ export const RESOLVER_SECRET_KEYS = [
   'STORAGE_S3_SECRET_ACCESS_KEY',
   'JOBS_AWS_ACCESS_KEY_ID',
   'JOBS_AWS_SECRET_ACCESS_KEY',
+  'CDM_API_KEY_FINGERPRINT_HMAC_SECRET',
 ] as const;
 
 /**

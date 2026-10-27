@@ -3661,6 +3661,21 @@ export type SyncProjectResult = {
   projectRolesLinked: Scalars['Int']['output'];
   projectTagsLinked: Scalars['Int']['output'];
   projectUserApiKeysCreated: Scalars['Int']['output'];
+  /**
+   * CDM-managed project-user API keys present before replace and missing from the document
+   * (or lacking an importer `externalKey`).
+   */
+  projectUserApiKeysDeleted: Scalars['Int']['output'];
+  /**
+   * Existing CDM-managed project-user API keys whose secret changed (or had no fingerprint
+   * yet). The stored bcrypt hash is replaced; `api_keys.id` and `clientId` stay.
+   */
+  projectUserApiKeysRotated: Scalars['Int']['output'];
+  /**
+   * CDM-managed project-user API keys whose `externalKey` and secret fingerprint already
+   * matched on replace. Creates only increment `projectUserApiKeysCreated`.
+   */
+  projectUserApiKeysUnchanged: Scalars['Int']['output'];
   projectUsersEnsured: Scalars['Int']['output'];
   resourcesCreated: Scalars['Int']['output'];
   roleGroupsLinked: Scalars['Int']['output'];

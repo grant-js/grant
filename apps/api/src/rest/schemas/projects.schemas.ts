@@ -474,6 +474,18 @@ const syncProjectResultSchema = z.object({
   usersCreated: z.number(),
   userRolesAssigned: z.number(),
   projectUserApiKeysCreated: z.number(),
+  projectUserApiKeysUnchanged: z.number().openapi({
+    description:
+      'CDM-managed project-user API keys whose externalKey and secret fingerprint already matched on replace.',
+  }),
+  projectUserApiKeysRotated: z.number().openapi({
+    description:
+      'Existing CDM-managed project-user API keys whose secret changed (or had no fingerprint yet).',
+  }),
+  projectUserApiKeysDeleted: z.number().openapi({
+    description:
+      'CDM-managed project-user API keys present before replace and missing from the document.',
+  }),
   passwordsImported: z.number().openapi({
     description:
       "Users whose `password` hash was stored as the importing project's credential for the first time.",

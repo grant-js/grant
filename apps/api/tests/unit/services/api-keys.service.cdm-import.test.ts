@@ -186,3 +186,23 @@ describe('ApiKeyService.deleteApiKeysForCdmImport', () => {
     expect(audit.logHardDelete).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('ApiKeyService.rotateApiKeysForCdmImport', () => {
+  it('updates the stored hash in place and never audits the hash', async () => {
+    const { service, apiKeyRepository, audit } = buildService({
+      getApiKey: vi.fn().mockResolvedValue(apiKey()),
+      updateClientSecretHash: vi.fn().mockResolvedValue(apiKey()),
+    });
+
+    await service.rotateApiKeysForCdmImport({ keys: [{ id: apiKeyId, clientSecretHash }] }, tx);
+
+    expect(apiKeyRepository.updateClientSecretHash).toHaveBeenCalledWith(
+      apiKeyId,
+      clientSecretHash,
+      tx
+    );
+    const updateAudit = audit.logUpdate.mock.calls[0];
+    expect(JSON.stringify(updateAudit)).not.toContain(clientSecretHash);
+    expect(JSON.stringify(updateAudit)).not.toContain(clientSecret);
+  });
+});

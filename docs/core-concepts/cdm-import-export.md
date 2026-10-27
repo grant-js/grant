@@ -281,10 +281,10 @@ Schema version written into the export (`version`, currently **`1`**). Must matc
 
 #### Strategy {#export-reimport-mode}
 
-| Value     | On import                                                                                        |
-| --------- | ------------------------------------------------------------------------------------------------ |
-| `merge`   | Apply alongside existing CDM-managed rows (default)                                              |
-| `replace` | Remove CDM-managed rows, then apply; requires [confirm destructive](#export-confirm-destructive) |
+| Value     | On import                                                                                                                                                                                                 |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `merge`   | Apply alongside existing CDM-managed rows (default)                                                                                                                                                       |
+| `replace` | Remove CDM-managed rows, then apply; requires [confirm destructive](#export-confirm-destructive). Project-user API keys [keep or rotate by fingerprint](#replace-api-key-identity) instead of delete-all. |
 
 #### On conflict {#export-on-conflict}
 
@@ -293,6 +293,20 @@ Maps to `mode.onConflict` when set: `fail`, `skip`, or `update`. **Importer defa
 #### Confirm destructive {#export-confirm-destructive}
 
 Required when strategy is **`replace`** (`mode.confirmDestructive: true` in JSON). Acknowledges that a future replace import may delete CDM-managed data. **Does not delete anything during export.**
+
+#### Replace API-key identity {#replace-api-key-identity}
+
+On **replace**, CDM-managed project-user API keys are matched by importer `externalKey` plus a **server-side HMAC-SHA256 fingerprint** of the BYOK secret, stored under `metadata.cdmImport.secretFingerprint` (never under `cdmSource`).
+
+| Existing vs document                       | Outcome                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------ |
+| Fingerprint equal                          | **Keep** — no bcrypt, no delete, no insert                               |
+| Fingerprint different or missing           | **Rotate** — bcrypt-10 the new secret, keep `api_keys.id` and `clientId` |
+| Document key with no existing row          | **Create**                                                               |
+| Existing CDM key missing from the document | **Delete**                                                               |
+| Key without `externalKey`                  | Tear down and recreate (no keep/rotate)                                  |
+
+The HMAC key is `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`, resolved like other credentials (not a Lambda environment literal). Rotating or leaving it empty makes every fingerprint miss, so the next replace re-hashes. Importers cannot supply a fingerprint or a pre-computed hash. Export, snapshots, job payloads, warnings, audit values, and logs omit the fingerprint. Merge still creates new key rows. Replace fails closed if the same `externalKey` already exists on more than one CDM key (for example after repeated merges) instead of rebinding a secret to the first row. `SyncProjectResult` reports `projectUserApiKeysCreated` / `Unchanged` / `Rotated` / `Deleted`.
 
 ## Sync jobs
 
@@ -368,7 +382,7 @@ List-view text search uses denormalized **`search_document`** columns (not raw J
 
 On import, `searchable` is merged into **`metadata.cdmSource.searchable`** for export round-trip. Grant also extracts allowlisted metadata paths (e.g. `cdmSource.legacy.email`) when `searchable` is absent.
 
-**Never indexed:** `passwordHash`, `clientSecret`, `accessKeySecretReferenceId`, raw `permissionJson`, and similar secret fields.
+**Never indexed:** `passwordHash`, `clientSecret`, `secretFingerprint`, `accessKeySecretReferenceId`, raw `permissionJson`, and similar secret fields.
 
 **Backfill:** Re-run a CDM replace import after deploying Grant + ETL with `searchable` support; pivot and entity rows are recomputed on apply.
 
@@ -376,10 +390,10 @@ On import, `searchable` is merged into **`metadata.cdmSource.searchable`** for e
 
 CDM-managed rows carry:
 
-| Field                | Role                                                                      |
-| -------------------- | ------------------------------------------------------------------------- |
-| `metadata.cdmImport` | `projectId`, `kind`, `externalKey` — teardown, export filter, correlation |
-| `metadata.cdmSource` | Trace ids (`grantRoleId`, `grantUserId`, …) and importer-owned JSON       |
+| Field                | Role                                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `metadata.cdmImport` | `projectId`, `kind`, `externalKey`, and for API keys `secretFingerprint` (HMAC only; never exported) |
+| `metadata.cdmSource` | Trace ids (`grantRoleId`, `grantUserId`, …) and importer-owned JSON                                  |
 
 For a `findBy: email` or `findBy: key` user the import also writes this project's `metadata.cdmImport` (`kind: 'user'`, the user's external key) on the **project membership row**, whether it created the identity or reused an existing one. The project-scoped `users` read merges the global user's metadata with the membership row's (the row wins), so a project that imported a user always sees its own marker, even when the identity pre-existed and its global metadata carries none or another project's. The global metadata of a reused identity is never changed.
 

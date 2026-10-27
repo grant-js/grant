@@ -44,7 +44,7 @@
 import { performance } from 'node:perf_hooks';
 
 import { accountProjects, accounts, initializeDBConnection, projects } from '@grantjs/database';
-import { type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
+import { CdmModeStrategy, type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
 import { eq } from 'drizzle-orm';
 
 import { config } from '@/config';
@@ -119,7 +119,8 @@ function entityCount(cdm: CdmDocumentInput): number {
 function appliedCount(result: SyncProjectResult): number {
   return Object.entries(result).reduce<number>(
     (total, [key, value]) =>
-      typeof value === 'number' && /Created$|Linked$|Ensured$|Assigned$/.test(key)
+      typeof value === 'number' &&
+      /Created$|Linked$|Ensured$|Assigned$|Unchanged$|Rotated$|Deleted$/.test(key)
         ? total + value
         : total,
     0
@@ -266,6 +267,10 @@ async function main(): Promise<void> {
       let hashPrepSeconds = 0;
       let secretCount = 0;
 
+      const existing =
+        input.mode?.strategy === CdmModeStrategy.Replace
+          ? await projectImport.listCdmProjectUserApiKeysForReplace(project.id)
+          : undefined;
       const enveloped = await withHashedCdmApiKeySecrets(
         input,
         async () =>
@@ -296,6 +301,10 @@ async function main(): Promise<void> {
         (prep) => {
           secretCount = prep.secretCount;
           hashPrepSeconds = prep.hashPrepSeconds;
+        },
+        {
+          strategy: input.mode?.strategy,
+          existing,
         }
       );
 

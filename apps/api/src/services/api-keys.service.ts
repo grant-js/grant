@@ -54,6 +54,7 @@ import {
   queryApiKeysArgsSchema,
   revokeApiKeyParamsSchema,
   rotateApiKeyParamsSchema,
+  rotateApiKeysForCdmImportParamsSchema,
 } from './api-keys.schemas';
 
 interface ExchangeTokenResult {
@@ -505,6 +506,54 @@ export class ApiKeyService implements IApiKeyService {
       );
     }
     await this.apiKeyRepository.hardDeleteApiKeys(ids, transaction);
+  }
+
+  public async rotateApiKeysForCdmImport(
+    params: {
+      keys: readonly {
+        id: string;
+        clientSecretHash: string;
+      }[];
+    },
+    transaction?: Transaction
+  ): Promise<void> {
+    const context = 'ApiKeyService.rotateApiKeysForCdmImport';
+    const validatedParams = validateInput(rotateApiKeysForCdmImportParamsSchema, params, context);
+    if (validatedParams.keys.length === 0) {
+      return;
+    }
+
+    for (const key of validatedParams.keys) {
+      const existing = await this.apiKeyRepository.getApiKey(key.id, transaction);
+      if (!existing) {
+        throw new NotFoundError('ApiKey');
+      }
+      const before = {
+        id: existing.id,
+        clientId: existing.clientId,
+        name: existing.name,
+        description: existing.description,
+        expiresAt: existing.expiresAt,
+      };
+      const rotated = await this.apiKeyRepository.updateClientSecretHash(
+        key.id,
+        key.clientSecretHash,
+        transaction
+      );
+      await this.audit.logUpdate(
+        key.id,
+        before,
+        {
+          id: rotated.id,
+          clientId: rotated.clientId,
+          name: rotated.name,
+          description: rotated.description,
+          expiresAt: rotated.expiresAt,
+        },
+        { action: 'ROTATE_API_KEY_CDM' },
+        transaction
+      );
+    }
   }
 
   public async getApiKeys(

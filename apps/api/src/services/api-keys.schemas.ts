@@ -108,6 +108,15 @@ export const deleteApiKeysForCdmImportParamsSchema = z.object({
   ids: z.array(idSchema),
 });
 
+export const rotateApiKeysForCdmImportParamsSchema = z.object({
+  keys: z.array(
+    z.object({
+      id: idSchema,
+      clientSecretHash: z.string().min(1),
+    })
+  ),
+});
+
 export const createApiKeyRequestSchema = z
   .object({
     name: nameSchema.nullable().optional(),

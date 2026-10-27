@@ -82,6 +82,7 @@ export class TestUser {
     refreshToken: string;
     accountId: string;
     orgAccountId: string | null;
+    userId: string | null;
   }) {
     this.email = opts.email;
     this.password = opts.password;
@@ -90,6 +91,7 @@ export class TestUser {
     this.refreshToken = opts.refreshToken;
     this.accountId = opts.accountId;
     this.orgAccountId = opts.orgAccountId;
+    this.userId = opts.userId;
   }
 
   // -------------------------------------------------------------------------
@@ -121,7 +123,9 @@ export class TestUser {
       })
       .expect(201);
 
-    const accountId = regRes.body.data.account.id;
+    const accountId = regRes.body.data.account.id as string;
+    const registeredUserId =
+      (regRes.body.data.account.ownerId as string | null | undefined) ?? null;
 
     // 2. Verify email
     const verifyToken = await getVerificationTokenForEmail(email);
@@ -139,8 +143,12 @@ export class TestUser {
       })
       .expect(200);
 
-    const accessToken = loginRes.body.data.accessToken;
-    const refreshToken = loginRes.body.data.refreshToken;
+    const accessToken = loginRes.body.data.accessToken as string;
+    const refreshToken = loginRes.body.data.refreshToken as string;
+    const loginAccounts = (loginRes.body.data.accounts ?? []) as Array<{
+      ownerId?: string | null;
+    }>;
+    const userId = registeredUserId ?? loginAccounts[0]?.ownerId ?? null;
 
     // 4. Optionally create org account
     let orgAccountId: string | null = null;
@@ -161,6 +169,7 @@ export class TestUser {
       refreshToken,
       accountId,
       orgAccountId,
+      userId,
     });
   }
 

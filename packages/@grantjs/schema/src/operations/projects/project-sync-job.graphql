@@ -22,6 +22,9 @@ query ProjectSyncJob($id: ID!, $scope: Scope!, $jobId: ID!) {
       usersCreated
       userRolesAssigned
       projectUserApiKeysCreated
+      projectUserApiKeysUnchanged
+      projectUserApiKeysRotated
+      projectUserApiKeysDeleted
       passwordsImported
       passwordsUpdated
       passwordsUnchanged
