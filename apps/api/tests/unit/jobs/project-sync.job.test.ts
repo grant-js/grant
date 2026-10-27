@@ -4,7 +4,7 @@
  * transaction, and post-commit cache invalidation. We mock the transactional
  * connection so tests are independent of Postgres.
  */
-import { ConflictError } from '@grantjs/core';
+import { ConflictError, type ILogger } from '@grantjs/core';
 import {
   CdmFindBy,
   CdmModeStrategy,
@@ -374,6 +374,50 @@ describe('ProjectSyncJob worker', () => {
       userIds: [userId],
     });
     expect(mocks.markFailed).not.toHaveBeenCalled();
+  });
+
+  it('logs hash-prep duration and secret count, never the secret', async () => {
+    const clientSecret = 'm'.repeat(32);
+    mocks.loadForExecution.mockResolvedValue({
+      ...buildExecData(),
+      payload: emptyCanonicalPayload({
+        users: [
+          {
+            key: { value: userId, findBy: CdmFindBy.Id },
+            name: 'User',
+            roles: [],
+            groups: [],
+            permissions: [],
+            tags: [],
+            primaryTag: null,
+            apiKeys: [{ clientSecret }],
+            metadata: null,
+          },
+        ],
+      }),
+    });
+    mocks.importProjectCdm.mockResolvedValue(buildSyncResult());
+
+    const info = vi.fn();
+    const job = buildJobInstance(mocks);
+    job.setLogger({
+      trace: vi.fn(),
+      debug: vi.fn(),
+      info,
+      warn: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      child: vi.fn(),
+    } as unknown as ILogger);
+
+    await job.apply(enqueueScope, jobRecordId);
+
+    const hashLog = info.mock.calls
+      .map((call) => call[0] as Record<string, unknown> | undefined)
+      .find((entry) => entry?.msg === 'CDM API-key hash-prep finished');
+    expect(hashLog?.secretCount).toBe(1);
+    expect(hashLog?.hashPrepSeconds).toBeGreaterThan(0);
+    expect(JSON.stringify(info.mock.calls)).not.toContain(clientSecret);
   });
 
   it('export job: materialises CDM, saves snapshot, marks completed with null result', async () => {

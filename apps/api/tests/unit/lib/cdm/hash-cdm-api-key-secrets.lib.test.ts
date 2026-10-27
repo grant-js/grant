@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import {
+  collectCdmDocumentApiKeySecrets,
+  hashCdmApiKeySecretsSerially,
   peekPreparedCdmApiKeyHashes,
   withHashedCdmApiKeySecrets,
 } from '@/lib/cdm/hash-cdm-api-key-secrets.lib';
@@ -38,5 +40,31 @@ describe('hash-cdm-api-key-secrets', () => {
       expect(verifySecret(secretB, hashes![1]!)).toBe(true);
     });
     expect(peekPreparedCdmApiKeyHashes()).toBeUndefined();
+  });
+
+  it('reports hash-prep count and seconds without exposing secrets', async () => {
+    const input = documentWithKeys();
+    const events: Array<{ secretCount: number; hashPrepSeconds: number }> = [];
+    await withHashedCdmApiKeySecrets(
+      input,
+      async () => undefined,
+      (prep) => {
+        events.push(prep);
+      }
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]?.secretCount).toBe(2);
+    expect(events[0]?.hashPrepSeconds).toBeGreaterThan(0);
+    expect(JSON.stringify(events)).not.toContain(secretA);
+    expect(JSON.stringify(events)).not.toContain(secretB);
+  });
+
+  it('serial hash-prep times the same secret count on one thread', () => {
+    const secrets = collectCdmDocumentApiKeySecrets(documentWithKeys());
+    expect(secrets).toEqual([secretA, secretB]);
+    const prep = hashCdmApiKeySecretsSerially(secrets);
+    expect(prep.secretCount).toBe(2);
+    expect(prep.hashPrepSeconds).toBeGreaterThan(0);
+    expect(JSON.stringify(prep)).not.toContain(secretA);
   });
 });

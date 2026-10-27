@@ -96,8 +96,9 @@ cleared at the start of each `importProjectCdm`.
 `users[].apiKeys` are hashed at bcrypt-10 (`TOKEN_BCRYPT_ROUNDS`) **before** the
 import transaction on the worker path (`withHashedCdmApiKeySecrets`), then
 inserted in one `createApiKeysForCdmImport` + `addProjectUserApiKeysForCdmImport`
-write. Direct `importProjectCdm` callers hash with the same async bcrypt before
-the key inserts. Only hashes are persisted; plaintext is not audited. HTTP
+write. The worker logs `hashPrepSeconds` and `secretCount` only — never secrets
+or hashes. Direct `importProjectCdm` callers hash with the same async bcrypt
+before the key inserts. Only hashes are persisted; plaintext is not audited. HTTP
 `createApiKey` stays sequential. Replace teardown hard-deletes CDM keys in one
 `deleteApiKeysForCdmImport` write.
 
