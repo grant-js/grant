@@ -128,6 +128,8 @@ A role may also carry **no permissions at all**: `roles[]` without `permissions`
 
 Export emits the same fields. Users may have **roles only**, **direct permissions only**, **direct groups only**, or any combination.
 
+Duplicate `users[].roles` keys are kept in the expanded document. Import writes each unique `(user, role)` pair once and still counts `userRolesAssigned` once per listing. HTTP role assignment stays one request per pair.
+
 **Legacy documents:** if `users[].roles` contains `synthetic:role:user:…:direct`, import strips those keys and adds a job warning. Use `users.permissions` instead.
 
 Replace-import removes existing **CDM-managed** rows for the project, then applies the payload. See [RBAC](/architecture/rbac) for how roles, groups, and permissions connect.

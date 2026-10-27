@@ -19,6 +19,7 @@ import { DeleteParams } from '@/types';
 import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addProjectResourceInputSchema,
+  addProjectResourcesForCdmImportParamsSchema,
   getProjectResourcesParamsSchema,
   projectResourceSchema,
   removeProjectResourceInputSchema,
@@ -135,6 +136,68 @@ export class ProjectResourceService implements IProjectResourceService {
     return validateOutput(
       createDynamicSingleSchema(projectResourceSchema),
       projectResource,
+      context
+    );
+  }
+
+  public async addProjectResourcesForCdmImport(
+    params: { projectId: string; resourceIds: readonly string[] },
+    transaction?: Transaction
+  ): Promise<ProjectResource[]> {
+    const context = 'ProjectResourceService.addProjectResourcesForCdmImport';
+    const validatedParams = validateInput(
+      addProjectResourcesForCdmImportParamsSchema,
+      params,
+      context
+    );
+    const resourceIds = [...new Set(validatedParams.resourceIds)];
+    if (resourceIds.length === 0) {
+      return [];
+    }
+
+    await this.projectExists(validatedParams.projectId, transaction);
+    const [resources, existing] = await Promise.all([
+      this.resourceRepository.getResources(
+        { ids: resourceIds, limit: resourceIds.length },
+        transaction
+      ),
+      this.projectResourceRepository.getProjectResources(
+        { projectId: validatedParams.projectId },
+        transaction
+      ),
+    ]);
+    if (resources.resources.length !== resourceIds.length) {
+      throw new NotFoundError('Resource');
+    }
+
+    const existingIds = new Set(existing.map((row) => row.resourceId));
+    const missing = resourceIds.filter((resourceId) => !existingIds.has(resourceId));
+    if (missing.length === 0) {
+      return [];
+    }
+
+    const created = await this.projectResourceRepository.addProjectResources(
+      missing.map((resourceId) => ({ projectId: validatedParams.projectId, resourceId })),
+      transaction
+    );
+    for (const projectResource of created) {
+      await this.audit.logCreate(
+        projectResource.id,
+        {
+          id: projectResource.id,
+          projectId: projectResource.projectId,
+          resourceId: projectResource.resourceId,
+          createdAt: projectResource.createdAt,
+          updatedAt: projectResource.updatedAt,
+        },
+        { context },
+        transaction
+      );
+    }
+
+    return validateOutput(
+      createDynamicSingleSchema(projectResourceSchema).array(),
+      created,
       context
     );
   }

@@ -20,6 +20,7 @@ import { DeleteParams } from '@/types';
 import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addUserRoleInputSchema,
+  addUserRolesForCdmImportParamsSchema,
   queryUserRolesArgsSchema,
   removeUserRoleInputSchema,
   userRoleSchema,
@@ -160,6 +161,69 @@ export class UserRoleService implements IUserRoleService {
     return validateOutput(createDynamicSingleSchema(userRoleSchema), userRole, context);
   }
 
+  public async addUserRolesForCdmImport(
+    params: { assignments: readonly { userId: string; roleId: string }[] },
+    transaction?: Transaction
+  ): Promise<UserRole[]> {
+    const context = 'UserRoleService.addUserRolesForCdmImport';
+    const validatedParams = validateInput(addUserRolesForCdmImportParamsSchema, params, context);
+    const unique = uniquePairs(
+      validatedParams.assignments,
+      (row) => row.userId,
+      (row) => row.roleId
+    );
+    if (unique.length === 0) {
+      return [];
+    }
+
+    const userIds = [...new Set(unique.map((row) => row.userId))];
+    const roleIds = [...new Set(unique.map((row) => row.roleId))];
+    const [users, roles, existing] = await Promise.all([
+      this.userRepository.getUsers({ ids: userIds, limit: userIds.length }, transaction),
+      this.roleRepository.getRoles({ ids: roleIds, limit: roleIds.length }, transaction),
+      this.userRoleRepository.getUserRolesByUserIds(userIds, transaction),
+    ]);
+    if (users.users.length !== userIds.length) {
+      throw new NotFoundError('User');
+    }
+    if (roles.roles.length !== roleIds.length) {
+      throw new NotFoundError('Role');
+    }
+
+    const existingKeys = new Set(existing.map((row) => `${row.userId}\0${row.roleId}`));
+    const missing = unique.filter((row) => !existingKeys.has(`${row.userId}\0${row.roleId}`));
+    if (missing.length === 0) {
+      return existing.filter((row) =>
+        unique.some((wanted) => wanted.userId === row.userId && wanted.roleId === row.roleId)
+      );
+    }
+
+    const created = await this.userRoleRepository.addUserRoles(missing, transaction);
+    const roleNameById = new Map(roles.roles.map((role) => [role.id, role.name]));
+    for (const userRole of created) {
+      const newValues = {
+        id: userRole.id,
+        userId: userRole.userId,
+        roleId: userRole.roleId,
+        roleName: roleNameById.get(userRole.roleId),
+        createdAt: userRole.createdAt,
+        updatedAt: userRole.updatedAt,
+      };
+      await this.audit.logCreate(userRole.id, newValues, { context }, transaction);
+      await this.events.publish(
+        {
+          type: 'user.role_assigned',
+          aggregate: { kind: 'userRole', id: userRole.id },
+          subjectUserId: userRole.userId,
+          data: { after: newValues },
+        },
+        transaction
+      );
+    }
+
+    return validateOutput(createDynamicSingleSchema(userRoleSchema).array(), created, context);
+  }
+
   public async removeUserRole(
     params: RemoveUserRoleInput & DeleteParams,
     transaction?: Transaction
@@ -217,4 +281,20 @@ export class UserRoleService implements IUserRoleService {
 
     return validateOutput(createDynamicSingleSchema(userRoleSchema), userRole, context);
   }
+}
+
+function uniquePairs<T>(
+  rows: readonly T[],
+  left: (row: T) => string,
+  right: (row: T) => string
+): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const row of rows) {
+    const key = `${left(row)}\0${right(row)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+  return unique;
 }

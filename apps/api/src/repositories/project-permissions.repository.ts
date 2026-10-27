@@ -41,6 +41,13 @@ export class ProjectPermissionRepository
     return this.add(params, transaction);
   }
 
+  public async addProjectPermissions(
+    params: readonly AddProjectPermissionInput[],
+    transaction?: Transaction
+  ): Promise<ProjectPermission[]> {
+    return this.addMany(params, transaction);
+  }
+
   public async softDeleteProjectPermission(
     params: RemoveProjectPermissionInput,
     transaction?: Transaction

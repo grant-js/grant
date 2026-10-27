@@ -21,7 +21,10 @@ function build() {
     mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
     syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   };
-  const userRoles = { addUserRole: vi.fn().mockResolvedValue(undefined) };
+  const userRoles = {
+    addUserRole: vi.fn().mockResolvedValue(undefined),
+    addUserRolesForCdmImport: vi.fn().mockResolvedValue([]),
+  };
   const handler = new UserAssignmentCdmEntity(
     {} as never,
     {} as never,

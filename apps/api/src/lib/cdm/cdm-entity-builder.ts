@@ -89,6 +89,9 @@ function buildCdmEntityMetadata(
  * it without forking the orchestrator.
  */
 export class CdmEntityBuilder {
+  private readonly projectPermissionIds = new Map<string, Set<string>>();
+  private readonly projectResourceIds = new Map<string, Set<string>>();
+
   constructor(
     private readonly importRepo: ProjectImportRepository,
     private readonly roles: IRoleService,
@@ -162,22 +165,12 @@ export class CdmEntityBuilder {
     );
     await this.projectGroups.addProjectGroup({ projectId, groupId: group.id }, tx);
 
-    let groupPermissionsLinked = 0;
-    let projectPermissionsLinked = 0;
-    let projectResourcesLinked = 0;
-    for (const p of perms) {
-      const hasGp = await this.groupHasPermission(group.id, p.id, tx);
-      if (!hasGp) {
-        await this.groupPermissions.addGroupPermission(
-          { groupId: group.id, permissionId: p.id },
-          tx
-        );
-        groupPermissionsLinked += 1;
-      }
-      const n = await this.ensureProjectPermissionAndResource(projectId, p, tx);
-      projectPermissionsLinked += n.permissions;
-      projectResourcesLinked += n.resources;
-    }
+    const groupPermissionRows = await this.groupPermissions.addGroupPermissionsForCdmImport(
+      { links: perms.map((p) => ({ groupId: group.id, permissionId: p.id })) },
+      tx
+    );
+    const groupPermissionsLinked = groupPermissionRows.length;
+    const projectLinks = await this.ensureProjectPermissionsAndResources(projectId, perms, tx);
 
     const roleName = this.truncateName(name.trim());
     const roleMetadata = buildCdmEntityMetadata(
@@ -216,10 +209,10 @@ export class CdmEntityBuilder {
         userPermissions: 0,
         projectRoles: 1,
         projectGroups: 1,
-        projectPermissions: projectPermissionsLinked,
+        projectPermissions: projectLinks.permissions,
         projectRolePermissions: 0,
         projectUserPermissions: 0,
-        projectResources: projectResourcesLinked,
+        projectResources: projectLinks.resources,
       },
     };
   }
@@ -266,17 +259,14 @@ export class CdmEntityBuilder {
     await this.projectRoles.addProjectRole({ projectId, roleId: role.id }, tx);
 
     let rolePermissionsLinked = 0;
-    let projectPermissionsLinked = 0;
     let projectRolePermissionsLinked = 0;
-    let projectResourcesLinked = 0;
 
     for (const p of perms) {
       const linked = await this.linkDirectPermissionToRole(projectId, scope, role.id, p, tx);
       rolePermissionsLinked += linked.rolePermissions;
       projectRolePermissionsLinked += linked.projectRolePermissions;
-      projectPermissionsLinked += linked.projectPermissions;
-      projectResourcesLinked += linked.projectResources;
     }
+    const projectLinks = await this.ensureProjectPermissionsAndResources(projectId, perms, tx);
 
     return {
       roleId: role.id,
@@ -288,10 +278,10 @@ export class CdmEntityBuilder {
         userPermissions: 0,
         projectRoles: 1,
         projectGroups: 0,
-        projectPermissions: projectPermissionsLinked,
+        projectPermissions: projectLinks.permissions,
         projectRolePermissions: projectRolePermissionsLinked,
         projectUserPermissions: 0,
-        projectResources: projectResourcesLinked,
+        projectResources: projectLinks.resources,
       },
     };
   }
@@ -310,8 +300,6 @@ export class CdmEntityBuilder {
   > {
     let userPermissionsLinked = 0;
     let projectUserPermissionsLinked = 0;
-    let projectPermissionsLinked = 0;
-    let projectResourcesLinked = 0;
 
     for (const p of perms) {
       const hasUp = await this.userHasPermission(userId, p.id, tx);
@@ -330,16 +318,14 @@ export class CdmEntityBuilder {
         );
         projectUserPermissionsLinked += 1;
       }
-      const n = await this.ensureProjectPermissionAndResource(projectId, p, tx);
-      projectPermissionsLinked += n.permissions;
-      projectResourcesLinked += n.resources;
     }
+    const projectLinks = await this.ensureProjectPermissionsAndResources(projectId, perms, tx);
 
     return {
       userPermissions: userPermissionsLinked,
       projectUserPermissions: projectUserPermissionsLinked,
-      projectPermissions: projectPermissionsLinked,
-      projectResources: projectResourcesLinked,
+      projectPermissions: projectLinks.permissions,
+      projectResources: projectLinks.resources,
     };
   }
 
@@ -390,29 +376,18 @@ export class CdmEntityBuilder {
     );
     await this.projectGroups.addProjectGroup({ projectId, groupId: group.id }, tx);
 
-    let groupPermissionsLinked = 0;
-    let projectPermissionsLinked = 0;
-    let projectResourcesLinked = 0;
-    for (const p of perms) {
-      const hasGp = await this.groupHasPermission(group.id, p.id, tx);
-      if (!hasGp) {
-        await this.groupPermissions.addGroupPermission(
-          { groupId: group.id, permissionId: p.id },
-          tx
-        );
-        groupPermissionsLinked += 1;
-      }
-      const n = await this.ensureProjectPermissionAndResource(projectId, p, tx);
-      projectPermissionsLinked += n.permissions;
-      projectResourcesLinked += n.resources;
-    }
+    const groupPermissionRows = await this.groupPermissions.addGroupPermissionsForCdmImport(
+      { links: perms.map((p) => ({ groupId: group.id, permissionId: p.id })) },
+      tx
+    );
+    const projectLinks = await this.ensureProjectPermissionsAndResources(projectId, perms, tx);
 
     return {
       groupId: group.id,
-      groupPermissions: groupPermissionsLinked,
+      groupPermissions: groupPermissionRows.length,
       projectGroups: 1,
-      projectPermissions: projectPermissionsLinked,
-      projectResources: projectResourcesLinked,
+      projectPermissions: projectLinks.permissions,
+      projectResources: projectLinks.resources,
     };
   }
 
@@ -467,8 +442,6 @@ export class CdmEntityBuilder {
   ): Promise<{
     rolePermissions: number;
     projectRolePermissions: number;
-    projectPermissions: number;
-    projectResources: number;
   }> {
     let rolePermissions = 0;
     let projectRolePermissions = 0;
@@ -490,10 +463,8 @@ export class CdmEntityBuilder {
       );
       projectRolePermissions = 1;
     }
-    const { permissions: projectPermissions, resources: projectResources } =
-      await this.ensureProjectPermissionAndResource(projectId, permission, tx);
 
-    return { rolePermissions, projectRolePermissions, projectPermissions, projectResources };
+    return { rolePermissions, projectRolePermissions };
   }
 
   private async roleHasPermission(
@@ -570,37 +541,58 @@ export class CdmEntityBuilder {
     return name.length > 255 ? name.slice(0, 252) + '…' : name;
   }
 
-  private async groupHasPermission(
-    groupId: string,
-    permissionId: string,
-    tx: Transaction
-  ): Promise<boolean> {
-    const list = await this.groupPermissions.getGroupPermissions({ groupId }, tx);
-    return list.some((g) => g.permissionId === permissionId);
-  }
-
-  private async ensureProjectPermissionAndResource(
+  private async ensureProjectPermissionsAndResources(
     projectId: string,
-    p: ResolvedCdmPermission,
+    perms: readonly ResolvedCdmPermission[],
     tx: Transaction
   ): Promise<{ permissions: number; resources: number }> {
-    let permissions = 0;
-    let resources = 0;
-    const pList = await this.projectPermissions.getProjectPermissions({ projectId }, tx);
-    if (!pList.some((x) => x.permissionId === p.id)) {
-      await this.projectPermissions.addProjectPermission({ projectId, permissionId: p.id }, tx);
-      permissions = 1;
+    const permissionSet = await this.loadProjectPermissionIds(projectId, tx);
+    const resourceSet = await this.loadProjectResourceIds(projectId, tx);
+
+    const missingPermissionIds = [
+      ...new Set(perms.map((p) => p.id).filter((id) => !permissionSet.has(id))),
+    ];
+    const missingResourceIds = [
+      ...new Set(
+        perms
+          .map((p) => p.resourceId)
+          .filter((id): id is string => id != null && !resourceSet.has(id))
+      ),
+    ];
+
+    if (missingPermissionIds.length > 0) {
+      await this.projectPermissions.addProjectPermissionsForCdmImport(
+        { projectId, permissionIds: missingPermissionIds },
+        tx
+      );
+      for (const id of missingPermissionIds) permissionSet.add(id);
     }
-    if (p.resourceId) {
-      const rList = await this.projectResources.getProjectResources({ projectId }, tx);
-      if (!rList.some((x) => x.resourceId === p.resourceId)) {
-        await this.projectResources.addProjectResource(
-          { projectId, resourceId: p.resourceId! },
-          tx
-        );
-        resources = 1;
-      }
+    if (missingResourceIds.length > 0) {
+      await this.projectResources.addProjectResourcesForCdmImport(
+        { projectId, resourceIds: missingResourceIds },
+        tx
+      );
+      for (const id of missingResourceIds) resourceSet.add(id);
     }
-    return { permissions, resources };
+
+    return { permissions: missingPermissionIds.length, resources: missingResourceIds.length };
+  }
+
+  private async loadProjectPermissionIds(projectId: string, tx: Transaction): Promise<Set<string>> {
+    const cached = this.projectPermissionIds.get(projectId);
+    if (cached) return cached;
+    const list = await this.projectPermissions.getProjectPermissions({ projectId }, tx);
+    const next = new Set(list.map((row) => row.permissionId));
+    this.projectPermissionIds.set(projectId, next);
+    return next;
+  }
+
+  private async loadProjectResourceIds(projectId: string, tx: Transaction): Promise<Set<string>> {
+    const cached = this.projectResourceIds.get(projectId);
+    if (cached) return cached;
+    const list = await this.projectResources.getProjectResources({ projectId }, tx);
+    const next = new Set(list.map((row) => row.resourceId));
+    this.projectResourceIds.set(projectId, next);
+    return next;
   }
 }

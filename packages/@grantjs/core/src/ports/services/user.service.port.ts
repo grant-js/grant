@@ -86,6 +86,15 @@ export interface IUserRoleService {
 
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
 
+  /**
+   * Import-only: set-membership + multi-row insert for unique `(userId, roleId)`
+   * pairs. HTTP `addUserRole` stays sequential.
+   */
+  addUserRolesForCdmImport(
+    params: { assignments: readonly AddUserRoleInput[] },
+    transaction?: unknown
+  ): Promise<UserRole[]>;
+
   removeUserRole(
     params: RemoveUserRoleInput & DeleteParams,
     transaction?: unknown

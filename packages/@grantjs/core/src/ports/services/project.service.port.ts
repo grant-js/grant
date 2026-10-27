@@ -300,6 +300,15 @@ export interface IProjectPermissionService {
     transaction?: unknown
   ): Promise<ProjectPermission>;
 
+  /**
+   * Import-only: one list + multi-row insert of missing project permissions.
+   * HTTP `addProjectPermission` stays sequential.
+   */
+  addProjectPermissionsForCdmImport(
+    params: { projectId: string; permissionIds: readonly string[] },
+    transaction?: unknown
+  ): Promise<ProjectPermission[]>;
+
   removeProjectPermission(
     params: RemoveProjectPermissionInput & DeleteParams,
     transaction?: unknown
@@ -325,6 +334,15 @@ export interface IProjectResourceService {
     params: AddProjectResourceInput,
     transaction?: unknown
   ): Promise<ProjectResource>;
+
+  /**
+   * Import-only: one list + multi-row insert of missing project resources.
+   * HTTP `addProjectResource` stays sequential.
+   */
+  addProjectResourcesForCdmImport(
+    params: { projectId: string; resourceIds: readonly string[] },
+    transaction?: unknown
+  ): Promise<ProjectResource[]>;
 
   removeProjectResource(
     params: RemoveProjectResourceInput & DeleteParams,

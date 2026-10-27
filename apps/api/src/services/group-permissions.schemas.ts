@@ -16,6 +16,10 @@ export const addGroupPermissionParamsSchema = z.object({
   permissionId: idSchema,
 });
 
+export const addGroupPermissionsForCdmImportParamsSchema = z.object({
+  links: z.array(addGroupPermissionParamsSchema),
+});
+
 export const removeGroupPermissionParamsSchema = deleteSchema.extend({
   groupId: idSchema,
   permissionId: idSchema,

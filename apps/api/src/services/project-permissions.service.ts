@@ -19,6 +19,7 @@ import { DeleteParams } from '@/types';
 import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addProjectPermissionInputSchema,
+  addProjectPermissionsForCdmImportParamsSchema,
   getProjectPermissionsParamsSchema,
   projectPermissionSchema,
   removeProjectPermissionInputSchema,
@@ -147,6 +148,68 @@ export class ProjectPermissionService implements IProjectPermissionService {
     return validateOutput(
       createDynamicSingleSchema(projectPermissionSchema),
       projectPermission,
+      context
+    );
+  }
+
+  public async addProjectPermissionsForCdmImport(
+    params: { projectId: string; permissionIds: readonly string[] },
+    transaction?: Transaction
+  ): Promise<ProjectPermission[]> {
+    const context = 'ProjectPermissionService.addProjectPermissionsForCdmImport';
+    const validatedParams = validateInput(
+      addProjectPermissionsForCdmImportParamsSchema,
+      params,
+      context
+    );
+    const permissionIds = [...new Set(validatedParams.permissionIds)];
+    if (permissionIds.length === 0) {
+      return [];
+    }
+
+    await this.projectExists(validatedParams.projectId, transaction);
+    const [permissions, existing] = await Promise.all([
+      this.permissionRepository.getPermissions(
+        { ids: permissionIds, limit: permissionIds.length },
+        transaction
+      ),
+      this.projectPermissionRepository.getProjectPermissions(
+        { projectId: validatedParams.projectId },
+        transaction
+      ),
+    ]);
+    if (permissions.permissions.length !== permissionIds.length) {
+      throw new NotFoundError('Permission');
+    }
+
+    const existingIds = new Set(existing.map((row) => row.permissionId));
+    const missing = permissionIds.filter((permissionId) => !existingIds.has(permissionId));
+    if (missing.length === 0) {
+      return [];
+    }
+
+    const created = await this.projectPermissionRepository.addProjectPermissions(
+      missing.map((permissionId) => ({ projectId: validatedParams.projectId, permissionId })),
+      transaction
+    );
+    for (const projectPermission of created) {
+      await this.audit.logCreate(
+        projectPermission.id,
+        {
+          id: projectPermission.id,
+          projectId: projectPermission.projectId,
+          permissionId: projectPermission.permissionId,
+          createdAt: projectPermission.createdAt,
+          updatedAt: projectPermission.updatedAt,
+        },
+        { context },
+        transaction
+      );
+    }
+
+    return validateOutput(
+      createDynamicSingleSchema(projectPermissionSchema).array(),
+      created,
       context
     );
   }
