@@ -40,7 +40,7 @@ Slice 4 is **optional**: PE decides at the end of slice 2 (or 3 if keys are take
 | #     | Branch                                 | Base                          | Concern                                         | Owner role | Review bar                                        | PR                                                 |
 | ----- | -------------------------------------- | ----------------------------- | ----------------------------------------------- | ---------- | ------------------------------------------------- | -------------------------------------------------- |
 | 1     | `feat/cdm-import-batch-apply-measure`  | `feat/cdm-import-batch-apply` | Key-fanout first + repeat baseline              | Backend    | light                                             | [#614](https://github.com/grant-js/grant/pull/614) |
-| 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     |                                                    |
+| 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     | [#615](https://github.com/grant-js/grant/pull/615) |
 | 3     | `feat/cdm-import-batch-apply-keys`     | prior slice                   | batch key insert / hash-outside-TX at bcrypt-10 | Backend    | security-full                                     |                                                    |
 | 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat only if still needed          | Backend    | light (security-full if export isolation changes) |                                                    |
 | final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              |                                                    |
@@ -99,6 +99,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - **UX:** no web files.
 - **Fan-out:** none. Serial; one writer.
 - **Slice-1 start (2026-10-27):** Write-up is `docs/benchmarks/cdm-import-key-fanout.md`. Existing `measure:cdm-import` only. Docker was not available on the Cloud Agent VM; measure ran against a disposable local PostgreSQL 16 after the same migrate/seed as `e2e.sh`.
+- **Slice-2 start (2026-10-27):** Import-only batch on existing ports (`addUserRolesForCdmImport`, `addGroupPermissionsForCdmImport`, `addProjectPermissionsForCdmImport`, `addProjectResourcesForCdmImport`). Apply-time unique `(user, role)` writes; `userRolesAssigned` still counts listings. HTTP `addUserRole` / `addGroupPermission` unchanged. No key/KDF work.
 
 ### 2 — Batch pivots and roles (the structural N+1)
 

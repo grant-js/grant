@@ -42,6 +42,7 @@ describe('ProjectImportService CDM metadata', () => {
   const groupPermissions = {
     getGroupPermissions: vi.fn().mockResolvedValue([]),
     addGroupPermission: vi.fn(),
+    addGroupPermissionsForCdmImport: vi.fn().mockResolvedValue([]),
     removeGroupPermission: vi.fn(),
   };
   const userPermissions = {
@@ -64,6 +65,7 @@ describe('ProjectImportService CDM metadata', () => {
   const projectPermissions = {
     getProjectPermissions: vi.fn().mockResolvedValue([]),
     addProjectPermission: vi.fn(),
+    addProjectPermissionsForCdmImport: vi.fn().mockResolvedValue([]),
   };
   const projectRolePermissions = {
     getProjectRolePermissions: vi.fn().mockResolvedValue([]),
@@ -76,6 +78,7 @@ describe('ProjectImportService CDM metadata', () => {
   const projectResources = {
     getProjectResources: vi.fn().mockResolvedValue([]),
     addProjectResource: vi.fn(),
+    addProjectResourcesForCdmImport: vi.fn().mockResolvedValue([]),
   };
   const projectUsers = {
     addProjectUser: vi.fn(),
@@ -83,7 +86,12 @@ describe('ProjectImportService CDM metadata', () => {
     syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
     getProjectUsers: vi.fn().mockResolvedValue([]),
   };
-  const userRoles = { addUserRole: vi.fn(), removeUserRole: vi.fn(), getUserRoles: vi.fn() };
+  const userRoles = {
+    addUserRole: vi.fn(),
+    addUserRolesForCdmImport: vi.fn().mockResolvedValue([]),
+    removeUserRole: vi.fn(),
+    getUserRoles: vi.fn(),
+  };
   const apiKeys = {
     deleteApiKey: vi.fn(),
     createApiKeyForCdmImport: vi.fn(),

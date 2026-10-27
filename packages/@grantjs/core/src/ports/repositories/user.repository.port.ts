@@ -88,6 +88,7 @@ export interface IUserRoleRepository {
   countUserRoles(params: { userId: string }, transaction?: unknown): Promise<number>;
   countUserRolesByUserIds(userIds: string[], transaction?: unknown): Promise<Map<string, number>>;
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
+  addUserRoles(params: readonly AddUserRoleInput[], transaction?: unknown): Promise<UserRole[]>;
   softDeleteUserRole(params: RemoveUserRoleInput, transaction?: unknown): Promise<UserRole>;
   hardDeleteUserRole(params: RemoveUserRoleInput, transaction?: unknown): Promise<UserRole>;
 }

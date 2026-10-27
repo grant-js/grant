@@ -20,6 +20,11 @@ export const addProjectResourceInputSchema = z.object({
   resourceId: idSchema,
 });
 
+export const addProjectResourcesForCdmImportParamsSchema = z.object({
+  projectId: idSchema,
+  resourceIds: z.array(idSchema),
+});
+
 export const removeProjectResourceInputSchema = deleteSchema.extend({
   projectId: idSchema,
   resourceId: idSchema,

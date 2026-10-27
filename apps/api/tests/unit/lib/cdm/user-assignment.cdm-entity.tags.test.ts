@@ -68,7 +68,10 @@ function buildHandler(deps?: {
     mergeProjectUserCdmMetadata: ReturnType<typeof vi.fn>;
     syncProjectUserSearchDocument: ReturnType<typeof vi.fn>;
   };
-  userRoles?: { addUserRole: ReturnType<typeof vi.fn> };
+  userRoles?: {
+    addUserRole?: ReturnType<typeof vi.fn>;
+    addUserRolesForCdmImport?: ReturnType<typeof vi.fn>;
+  };
   userTags?: { addUserTag: ReturnType<typeof vi.fn> };
 }) {
   const exportRepo = deps?.exportRepo ?? {
@@ -89,7 +92,11 @@ function buildHandler(deps?: {
     mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
     syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   };
-  const userRoles = deps?.userRoles ?? { addUserRole: vi.fn().mockResolvedValue(undefined) };
+  const userRoles = {
+    addUserRole: vi.fn().mockResolvedValue(undefined),
+    addUserRolesForCdmImport: vi.fn().mockResolvedValue([]),
+    ...deps?.userRoles,
+  };
   const userTags = deps?.userTags ?? { addUserTag: vi.fn().mockResolvedValue(undefined) };
   const builder = { createRoleWithGroup: vi.fn() };
   return {

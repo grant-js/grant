@@ -62,6 +62,14 @@ export interface IGroupPermissionRepository {
     params: AddGroupPermissionInput,
     transaction?: unknown
   ): Promise<GroupPermission>;
+  addGroupPermissions(
+    params: readonly AddGroupPermissionInput[],
+    transaction?: unknown
+  ): Promise<GroupPermission[]>;
+  getGroupPermissionsByGroupIds(
+    groupIds: string[],
+    transaction?: unknown
+  ): Promise<GroupPermission[]>;
   softDeleteGroupPermission(
     params: RemoveGroupPermissionInput,
     transaction?: unknown

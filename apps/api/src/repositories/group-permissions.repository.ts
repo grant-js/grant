@@ -56,6 +56,20 @@ export class GroupPermissionRepository
     return this.add(params, transaction);
   }
 
+  public async addGroupPermissions(
+    params: readonly AddGroupPermissionInput[],
+    transaction?: Transaction
+  ): Promise<GroupPermission[]> {
+    return this.addMany(params, transaction);
+  }
+
+  public async getGroupPermissionsByGroupIds(
+    groupIds: string[],
+    transaction?: Transaction
+  ): Promise<GroupPermission[]> {
+    return this.queryByFieldValues('groupId', groupIds, transaction);
+  }
+
   public async softDeleteGroupPermission(
     params: RemoveGroupPermissionInput,
     transaction?: Transaction

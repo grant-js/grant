@@ -402,7 +402,10 @@ describe('CDM round-trip integration', () => {
       mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
       syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
     };
-    const userRoles = { addUserRole: vi.fn().mockResolvedValue(undefined) };
+    const userRoles = {
+      addUserRole: vi.fn().mockResolvedValue(undefined),
+      addUserRolesForCdmImport: vi.fn().mockResolvedValue([]),
+    };
     const userTags = { addUserTag: vi.fn().mockResolvedValue(undefined) };
     const userAssignmentHandler = new UserAssignmentCdmEntity(
       {} as never,

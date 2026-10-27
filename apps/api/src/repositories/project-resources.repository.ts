@@ -35,6 +35,13 @@ export class ProjectResourceRepository
     return this.add(params, transaction);
   }
 
+  public async addProjectResources(
+    params: readonly AddProjectResourceInput[],
+    transaction?: Transaction
+  ): Promise<ProjectResource[]> {
+    return this.addMany(params, transaction);
+  }
+
   public async softDeleteProjectResource(
     params: RemoveProjectResourceInput,
     transaction?: Transaction
