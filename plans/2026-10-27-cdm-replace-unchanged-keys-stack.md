@@ -10,8 +10,8 @@ Gates 1–2 approved by Alejandro 2026-10-27. Copy this brief + stack into repo 
 
 - **Slug**: `cdm-replace-unchanged-keys`
 - **Story brief**: `plans/2026-10-27-cdm-replace-unchanged-keys-brief.md` (store copy linked above; copy into repo `plans/` with the first slice)
-- **Status**: approved
-- **Story trunk**: `feat/cdm-replace-unchanged-keys` from `main` **after #618 lands**. If Gate 4 of batch-apply is still open, do not root this stack on `main` until that merge; do not silently stack on `feat/cdm-import-batch-apply`.
+- **Status**: approved — Gate 3 passed 2026-10-27 by Alejandro (slices #622 #623 merged to trunk); Gate 4 open
+- **Story trunk**: `feat/cdm-replace-unchanged-keys` from `main` after #618. Slices #622 and #623 merged into the trunk 2026-10-27.
 - **worktree_path**: not required unless another writer is on `main` / another story trunk in the same checkout
 
 **Slug justification:** names the outcome — a replace of unchanged CDM API keys must not re-hash them — not a tactic (`hmac-fingerprint`, `skip-teardown`). Follows the prior story’s problem-shaped slug (`cdm-import-batch-apply`).
@@ -35,13 +35,13 @@ Architect stays off the roster unless the fingerprint leaves `metadata.cdmImport
 
 Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that slice starts — never declare the whole list up front.
 
-Slice 3 is **optional**: PE decides at the end of slice 2 from post-commit numbers. Cheaper KDF, pre-hashed CDM secrets, and merge upsert are **not** slices — see [Out of this stack](#out-of-this-stack).
+Slice 3 is **optional** and was **skipped** after #623 (hash-prep win is the story; post-commit tail stays out). Cheaper KDF, pre-hashed CDM secrets, and merge upsert are **not** slices — see [Out of this stack](#out-of-this-stack).
 
 | #     | Branch                                        | Base                              | Concern                                         | Owner role | Review bar                                            | PR                                                 |
 | ----- | --------------------------------------------- | --------------------------------- | ----------------------------------------------- | ---------- | ----------------------------------------------------- | -------------------------------------------------- |
 | 1     | `feat/cdm-replace-unchanged-keys-measure`     | `feat/cdm-replace-unchanged-keys` | Replace + hash-prep baseline (1-CPU / job logs) | Backend    | light                                                 | [#622](https://github.com/grant-js/grant/pull/622) |
 | 2     | `feat/cdm-replace-unchanged-keys-fingerprint` | prior slice                       | HMAC fingerprint + skip unchanged on replace    | Backend    | security-full                                         | [#623](https://github.com/grant-js/grant/pull/623) |
-| 3     | `feat/cdm-replace-unchanged-keys-postcommit`  | prior slice                       | post-commit tail — **optional**                 | Backend    | light (security-full if invalidate isolation changes) |                                                    |
+| 3     | `feat/cdm-replace-unchanged-keys-postcommit`  | prior slice                       | post-commit tail — **skipped** (see below)      | Backend    | light (security-full if invalidate isolation changes) | skipped after #623                                 |
 | final | `feat/cdm-replace-unchanged-keys`             | `main`                            | integration                                     | Principal  | deep + security-full                                  |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has **no db migration** (fingerprint lives on existing pivot `metadata.cdmImport`) and **no web**. Schema codegen for additive `SyncProjectResult` counters **folds into slice 2** (a few GraphQL fields + `pnpm --filter @grantjs/schema generate` + REST zod / OpenAPI). Do not open a standalone schema PR for three integers.
@@ -129,6 +129,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - Today: diagnosis called this **seconds**. Follow-on saw the Lambda **invocation** linger ~40 s after the job row was terminal. That may be cache invalidate, object delete, runtime freeze, or work _after_ `markCompleted` that the job status does not include.
 - Outcome (only if still needed after slice 2): explain the tail in the measure write-up; fix only **unexpected** post-commit work (e.g. a second walk of the key set, a blocking hash, a retry loop). Do not turn cache invalidate into a second all-or-nothing TX. Failure of invalidate stays logged and must not fail the job. Adapter-correct prefix-delete (memory / Redis / DynamoDB trailing `*`) if this slice touches cache keys — preferences.
 - Skip if slice 1+2 show the tail is explained (runtime drain, best-effort invalidate of ~11 members) and small next to the hash-prep win. Record the skip.
+- **Skip recorded 2026-10-27** after #623. Hash-prep is the remaining minutes on unchanged replace (slice 1: one-thread 55.80 s / worker async 14.04 s of 17.90 s; post-commit **0.00 s**). The hash-prep win is the story. The optional post-commit tail stays out — invalidate is small next to hash-prep; no unexpected post-commit work to fix. No cheaper KDF. No slice-3 branch or PR.
 - Review: light unless invalidate isolation or which scopes are cleared changes — then security-full.
 - **UX:** no web files.
 
@@ -154,7 +155,7 @@ These are explicit **non-slices**. Do not add them under a “while we’re here
 - **Depends on #618** (batch apply + hash-outside-TX). Trunk from `main` after that Gate 4 merge.
 - Slice 1 before 2 so we do not store HMAC material until hash-prep is confirmed as the remaining minutes on **replace**.
 - Slice 2 before 3 — a 40 s tail is in the noise if we are still hashing ~1.2k secrets.
-- Slice 3 last and optional.
+- Slice 3 last, optional, and **skipped** after #623 (hash-prep win is the story).
 - **Atomicity:** keep import all-or-nothing. Classify + remainder-hash + writes + snapshot roll back together.
 - **E2e lock (preferences):** implementation adapts to locked tests; contract tests that encode delete-all-on-replace are updated, not gutted.
 - **No customer tenant names** in repo plans, benchmarks, fixtures, PRs, or docs (preferences 2026-10-27). Shape language only: key-fanout replace, ~1.2k CDM keys.
@@ -165,7 +166,7 @@ These are explicit **non-slices**. Do not add them under a “while we’re here
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — 2026-10-27 by Alejandro.
-- [ ] Gate 3: Stack PRs merged into trunk (light / security-full as listed).
+- [x] Gate 3: Stack PRs merged into trunk — 2026-10-27 by Alejandro (#622 light, #623 security-full; slice 3 skipped).
 - [ ] Gate 4: Story → `main` deep + security-full review complete.
 
 ## Cleanup
