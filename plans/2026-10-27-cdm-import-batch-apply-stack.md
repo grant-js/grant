@@ -37,13 +37,13 @@ Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that 
 
 Slice 4 is **optional**: PE decides at the end of slice 2 (or 3 if keys are taken) from the new measure numbers. Cheaper KDF for BYOK and Fargate are **not** slices — see [Out of this stack](#out-of-this-stack).
 
-| #     | Branch                                 | Base                          | Concern                                         | Owner role | Review bar                                        | PR  |
-| ----- | -------------------------------------- | ----------------------------- | ----------------------------------------------- | ---------- | ------------------------------------------------- | --- |
-| 1     | `feat/cdm-import-batch-apply-measure`  | `feat/cdm-import-batch-apply` | Alteos-shaped first + repeat baseline           | Backend    | light                                             |     |
-| 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     |     |
-| 3     | `feat/cdm-import-batch-apply-keys`     | prior slice                   | batch key insert / hash-outside-TX at bcrypt-10 | Backend    | security-full                                     |     |
-| 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat only if still needed          | Backend    | light (security-full if export isolation changes) |     |
-| final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              |     |
+| #     | Branch                                 | Base                          | Concern                                         | Owner role | Review bar                                        | PR                                                 |
+| ----- | -------------------------------------- | ----------------------------- | ----------------------------------------------- | ---------- | ------------------------------------------------- | -------------------------------------------------- |
+| 1     | `feat/cdm-import-batch-apply-measure`  | `feat/cdm-import-batch-apply` | Alteos-shaped first + repeat baseline           | Backend    | light                                             | [#614](https://github.com/grant-js/grant/pull/614) |
+| 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     |                                                    |
+| 3     | `feat/cdm-import-batch-apply-keys`     | prior slice                   | batch key insert / hash-outside-TX at bcrypt-10 | Backend    | security-full                                     |                                                    |
+| 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat only if still needed          | Backend    | light (security-full if export isolation changes) |                                                    |
+| final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has no schema/web slices. Slice 1 is the existing measure tool + an Alteos-shaped fixture + docs. Slices 2–4 are `apps/api` CDM apply / job TX. Optional db index only if PE names it after measure.
 
