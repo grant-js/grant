@@ -462,6 +462,11 @@ export interface IProjectUserApiKeyRepository {
     transaction?: unknown
   ): Promise<ProjectUserApiKey>;
 
+  addProjectUserApiKeys(
+    params: readonly AddProjectUserApiKeyInput[],
+    transaction?: unknown
+  ): Promise<ProjectUserApiKey[]>;
+
   softDeleteProjectUserApiKey(
     params: RemoveProjectUserApiKeyInput,
     transaction?: unknown

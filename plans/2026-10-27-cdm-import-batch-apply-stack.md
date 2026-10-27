@@ -100,6 +100,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - **Fan-out:** none. Serial; one writer.
 - **Slice-1 start (2026-10-27):** Write-up is `docs/benchmarks/cdm-import-key-fanout.md`. Existing `measure:cdm-import` only. Docker was not available on the Cloud Agent VM; measure ran against a disposable local PostgreSQL 16 after the same migrate/seed as `e2e.sh`.
 - **Slice-2 start (2026-10-27):** Import-only batch on existing ports (`addUserRolesForCdmImport`, `addGroupPermissionsForCdmImport`, `addProjectPermissionsForCdmImport`, `addProjectResourcesForCdmImport`). Apply-time unique `(user, role)` writes; `userRolesAssigned` still counts listings. HTTP `addUserRole` / `addGroupPermission` unchanged. No key/KDF work.
+- **Slice-3 start (2026-10-27):** Import-only batch on existing ports (`createApiKeysForCdmImport`, `addProjectUserApiKeysForCdmImport`, `deleteApiKeysForCdmImport`). Worker hashes BYOK secrets at bcrypt-10 before the import TX; apply inserts hashes only. HTTP `createApiKey` unchanged. No KDF / rounds change.
 
 ### 2 — Batch pivots and roles (the structural N+1)
 

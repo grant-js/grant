@@ -94,9 +94,14 @@ describe('ProjectImportService CDM metadata', () => {
   };
   const apiKeys = {
     deleteApiKey: vi.fn(),
+    deleteApiKeysForCdmImport: vi.fn(),
     createApiKeyForCdmImport: vi.fn(),
+    createApiKeysForCdmImport: vi.fn().mockResolvedValue([]),
   };
-  const projectUserApiKeys = { addProjectUserApiKey: vi.fn() };
+  const projectUserApiKeys = {
+    addProjectUserApiKey: vi.fn(),
+    addProjectUserApiKeysForCdmImport: vi.fn().mockResolvedValue([]),
+  };
 
   const cache = {
     permissions: { delete: vi.fn(), keys: vi.fn().mockResolvedValue([]) },

@@ -53,10 +53,10 @@ function buildHandler(deps?: {
     getProjectCdmProvisionedUsers: ReturnType<typeof vi.fn>;
   };
   apiKeys?: {
-    createApiKeyForCdmImport: ReturnType<typeof vi.fn>;
-    deleteApiKey: ReturnType<typeof vi.fn>;
+    createApiKeysForCdmImport: ReturnType<typeof vi.fn>;
+    deleteApiKeysForCdmImport: ReturnType<typeof vi.fn>;
   };
-  projectUserApiKeys?: { addProjectUserApiKey: ReturnType<typeof vi.fn> };
+  projectUserApiKeys?: { addProjectUserApiKeysForCdmImport: ReturnType<typeof vi.fn> };
 }) {
   const importRepo = deps?.importRepo ?? {
     listCdmProjectUserApiKeyIdsForProject: vi.fn().mockResolvedValue([]),
@@ -67,11 +67,11 @@ function buildHandler(deps?: {
     getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
   };
   const apiKeys = deps?.apiKeys ?? {
-    createApiKeyForCdmImport: vi.fn(),
-    deleteApiKey: vi.fn(),
+    createApiKeysForCdmImport: vi.fn(),
+    deleteApiKeysForCdmImport: vi.fn(),
   };
   const projectUserApiKeys = deps?.projectUserApiKeys ?? {
-    addProjectUserApiKey: vi.fn(),
+    addProjectUserApiKeysForCdmImport: vi.fn(),
   };
   return {
     handler: new ProjectUserApiKeyCdmEntity(
@@ -130,27 +130,26 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     ).toThrow();
   });
 
-  it('teardown deletes each CDM api key with hard delete', async () => {
+  it('teardown hard-deletes CDM api keys in one call', async () => {
     const apiKeyIds = [
       '40000000-0000-4000-8000-000000000001',
       '40000000-0000-4000-8000-000000000002',
     ];
     const listCdmProjectUserApiKeyIdsForProject = vi.fn().mockResolvedValue(apiKeyIds);
-    const deleteApiKey = vi.fn().mockResolvedValue(undefined);
+    const deleteApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
     const { handler } = buildHandler({
       importRepo: { listCdmProjectUserApiKeyIdsForProject },
       apiKeys: {
-        createApiKeyForCdmImport: vi.fn(),
-        deleteApiKey,
+        createApiKeysForCdmImport: vi.fn(),
+        deleteApiKeysForCdmImport,
       },
     });
 
     const ctx: CdmTeardownContext = { projectId, scope, tx: {} };
     await handler.teardown(ctx);
 
-    expect(deleteApiKey).toHaveBeenCalledTimes(2);
-    expect(deleteApiKey).toHaveBeenNthCalledWith(1, { id: apiKeyIds[0], hardDelete: true }, ctx.tx);
-    expect(deleteApiKey).toHaveBeenNthCalledWith(2, { id: apiKeyIds[1], hardDelete: true }, ctx.tx);
+    expect(deleteApiKeysForCdmImport).toHaveBeenCalledTimes(1);
+    expect(deleteApiKeysForCdmImport).toHaveBeenCalledWith({ ids: apiKeyIds }, ctx.tx);
   });
 
   it('apply rejects userId not in assignmentUserIds', async () => {
@@ -185,14 +184,14 @@ describe('ProjectUserApiKeyCdmEntity', () => {
 
   it('apply creates api key, pivot with CDM metadata, and increments counter', async () => {
     const createdKey = { id: '50000000-0000-4000-8000-000000000077', clientId: 'cid-1' };
-    const createApiKeyForCdmImport = vi.fn().mockResolvedValue(createdKey);
-    const addProjectUserApiKey = vi.fn().mockResolvedValue(undefined);
+    const createApiKeysForCdmImport = vi.fn().mockResolvedValue([createdKey]);
+    const addProjectUserApiKeysForCdmImport = vi.fn().mockResolvedValue([]);
     const { handler } = buildHandler({
       apiKeys: {
-        createApiKeyForCdmImport,
-        deleteApiKey: vi.fn(),
+        createApiKeysForCdmImport,
+        deleteApiKeysForCdmImport: vi.fn(),
       },
-      projectUserApiKeys: { addProjectUserApiKey },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport },
     });
 
     const result = baseResult();
@@ -225,30 +224,79 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     ]);
 
     expect(result.projectUserApiKeysCreated).toBe(1);
-    expect(createApiKeyForCdmImport).toHaveBeenCalledWith(
-      expect.objectContaining({
-        clientSecret: BYOK_SECRET,
-        name: 'Bot',
-      }),
-      ctx.tx
-    );
-    expect(addProjectUserApiKey).toHaveBeenCalledWith(
-      expect.objectContaining({
-        projectId,
-        userId,
-        apiKeyId: createdKey.id,
-        metadata: expect.objectContaining({
-          [CDM_IMPORT_METADATA_KEY]: expect.objectContaining({
-            projectId,
-            kind: 'projectUserApiKey',
-            externalKey: 'ext-1',
+    expect(createApiKeysForCdmImport).toHaveBeenCalledTimes(1);
+    expect(createApiKeysForCdmImport).toHaveBeenCalledWith(
+      {
+        keys: [
+          expect.objectContaining({
+            clientSecretHash: expect.stringMatching(/^\$2[aby]\$/),
+            name: 'Bot',
           }),
-          cdmSource: { legacyKey: 'L1' },
-        }),
-      }),
+        ],
+      },
       ctx.tx
     );
-    expect(createApiKeyForCdmImport).toHaveBeenCalledTimes(1);
+    const createdArgs = createApiKeysForCdmImport.mock.calls[0][0] as {
+      keys: Array<{ clientSecretHash: string }>;
+    };
+    expect(createdArgs.keys[0]?.clientSecretHash).not.toBe(BYOK_SECRET);
+    expect(addProjectUserApiKeysForCdmImport).toHaveBeenCalledWith(
+      {
+        links: [
+          expect.objectContaining({
+            projectId,
+            userId,
+            apiKeyId: createdKey.id,
+            metadata: expect.objectContaining({
+              [CDM_IMPORT_METADATA_KEY]: expect.objectContaining({
+                projectId,
+                kind: 'projectUserApiKey',
+                externalKey: 'ext-1',
+              }),
+              cdmSource: { legacyKey: 'L1' },
+            }),
+          }),
+        ],
+      },
+      ctx.tx
+    );
+  });
+
+  it('propagates a mid-batch pivot throw on the same import transaction', async () => {
+    const createApiKeysForCdmImport = vi
+      .fn()
+      .mockResolvedValue([{ id: '50000000-0000-4000-8000-000000000077', clientId: 'cid-1' }]);
+    const addProjectUserApiKeysForCdmImport = vi.fn().mockRejectedValue(new Error('constraint'));
+    const { handler } = buildHandler({
+      apiKeys: {
+        createApiKeysForCdmImport,
+        deleteApiKeysForCdmImport: vi.fn(),
+      },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport },
+    });
+    const ctx: CdmApplyContext = {
+      projectId,
+      scope,
+      tx: { __tx: true },
+      lookupResolvedRef: () => ({}),
+      result: baseResult(),
+      produced: {
+        roleIdsByKey: new Map(),
+        tagIds: new Map(),
+        resourceIds: new Map(),
+        permissionIds: new Map(),
+        userIds: new Map(),
+        groupIdsByKey: new Map(),
+      },
+      documentGroupsByKey: new Map(),
+      assignmentUserIds: new Set([userId]),
+    };
+
+    await expect(handler.apply(ctx, [{ userId, clientSecret: BYOK_SECRET }])).rejects.toThrow(
+      'constraint'
+    );
+    expect(createApiKeysForCdmImport).toHaveBeenCalledWith(expect.anything(), ctx.tx);
+    expect(addProjectUserApiKeysForCdmImport).toHaveBeenCalledWith(expect.anything(), ctx.tx);
   });
 
   it('export maps rows without secrets', async () => {

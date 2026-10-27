@@ -63,6 +63,13 @@ export class ProjectUserApiKeyRepository
     return this.add(params, transaction);
   }
 
+  public async addProjectUserApiKeys(
+    params: readonly AddProjectUserApiKeyInput[],
+    transaction?: Transaction
+  ): Promise<ProjectUserApiKey[]> {
+    return this.addMany(params, transaction);
+  }
+
   public async softDeleteProjectUserApiKey(
     params: RemoveProjectUserApiKeyInput,
     transaction?: Transaction

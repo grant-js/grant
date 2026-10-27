@@ -93,6 +93,14 @@ unchanged. Import-only existence loads (`getUsers` / `getRoles` / `getGroups` /
 `PAGINATION_MAX_PAGE_SIZE` still resolves. `CdmEntityBuilder` pivot memos are
 cleared at the start of each `importProjectCdm`.
 
+`users[].apiKeys` are hashed at bcrypt-10 (`TOKEN_BCRYPT_ROUNDS`) **before** the
+import transaction on the worker path (`withHashedCdmApiKeySecrets`), then
+inserted in one `createApiKeysForCdmImport` + `addProjectUserApiKeysForCdmImport`
+write. Direct `importProjectCdm` callers hash with the same async bcrypt before
+the key inserts. Only hashes are persisted; plaintext is not audited. HTTP
+`createApiKey` stays sequential. Replace teardown hard-deletes CDM keys in one
+`deleteApiKeysForCdmImport` write.
+
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.
 

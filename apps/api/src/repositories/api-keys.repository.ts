@@ -20,7 +20,7 @@ import {
   QueryApiKeysArgs,
   User,
 } from '@grantjs/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
@@ -284,6 +284,41 @@ export class ApiKeyRepository
     transaction?: Transaction
   ): Promise<ApiKey> {
     return this.create(params, transaction);
+  }
+
+  public async createApiKeys(
+    params: readonly (Omit<CreateApiKeyInput, 'scope'> & {
+      clientId: string;
+      clientSecretHash: string;
+      createdBy: string;
+    })[],
+    transaction?: Transaction
+  ): Promise<ApiKey[]> {
+    if (params.length === 0) {
+      return [];
+    }
+    const dbInstance = transaction ?? this.db;
+    const now = new Date();
+    const result = await dbInstance
+      .insert(this.table)
+      .values(
+        params.map((row) => ({
+          ...row,
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        }))
+      )
+      .returning();
+    return (Array.isArray(result) ? result : [result]) as ApiKey[];
+  }
+
+  public async hardDeleteApiKeys(ids: readonly string[], transaction?: Transaction): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
+    const dbInstance = transaction ?? this.db;
+    await dbInstance.delete(this.table).where(inArray(this.table.id, [...ids]));
   }
 
   public async updateClientSecretHash(
