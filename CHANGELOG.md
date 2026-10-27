@@ -3,6 +3,20 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.8
+
+### Platform
+
+**Docker images:** tagged `:1.18.8` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.8** (fixed group with apps).
+
+### Patch Changes
+
+- 06d78e1: Batch CDM import API-key inserts and hash BYOK secrets outside the import transaction at bcrypt-10. HTTP `createApiKey` stays sequential. Persist only hashes; client-id uniqueness stays fail-closed. The import remains one all-or-nothing transaction.
+
+- 06d78e1: Batch CDM import user-role, group-permission, and project pivot writes. Import-only existence loads use `unboundedList` so batches larger than the public page cap still resolve. HTTP assignment APIs stay sequential. The import remains one all-or-nothing transaction.
+
 ## 1.18.7
 
 ### Platform
