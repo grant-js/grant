@@ -43,6 +43,12 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     getClientSecretHash: vi.fn().mockResolvedValue(hashSecret(clientSecret)),
     getOwningUserIds: vi.fn().mockResolvedValue([]),
     createApiKey: vi.fn().mockImplementation(async (params) => apiKey(params)),
+    createApiKeys: vi
+      .fn()
+      .mockImplementation(async (rows: Array<Partial<ApiKey>>) =>
+        rows.map((row, index) => apiKey({ ...row, id: `${apiKeyId.slice(0, -1)}${index}` }))
+      ),
+    hardDeleteApiKeys: vi.fn(),
     updateLastUsedAt: vi.fn().mockImplementation(async (id) => apiKey({ id })),
     updateClientSecretHash: vi.fn().mockImplementation(async (id) => apiKey({ id })),
     getApiKeys: vi.fn(),

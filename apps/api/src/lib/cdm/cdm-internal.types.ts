@@ -79,6 +79,8 @@ export interface CdmProjectUserApiKeyInternal {
   userKey?: string | null;
   clientId?: string | null;
   clientSecret?: string | null;
+  /** Import-only: bcrypt hash prepared before the import TX. Never exported. */
+  clientSecretHash?: string | null;
   name?: string | null;
   description?: string | null;
   expiresAt?: string | Date | null;

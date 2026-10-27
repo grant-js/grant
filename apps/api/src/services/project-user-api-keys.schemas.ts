@@ -10,6 +10,10 @@ export const addProjectUserApiKeyParamsSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
+export const addProjectUserApiKeysForCdmImportParamsSchema = z.object({
+  links: z.array(addProjectUserApiKeyParamsSchema),
+});
+
 export const removeProjectUserApiKeyParamsSchema = deleteSchema.extend({
   projectId: idSchema,
   userId: idSchema,

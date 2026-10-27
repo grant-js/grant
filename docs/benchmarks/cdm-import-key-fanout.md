@@ -94,3 +94,50 @@ On this host the **repeat snapshot stayed cheap** (0.04 s). That does **not** ca
 - Not a new Lambda-fit target. Do not scale 65.73 s by a guessed RDS RTT factor.
 - Not the ADR 0002 28,880-entity / 62.3 min row (inverse shape: many users, few keys).
 - Not a reason to skip slice 2. The sequential service loop and bcrypt-in-TX are still the apply path; this slice only wrote the key-fanout before-picture.
+
+## After slices 2 and 3 (batch pivots + batch keys)
+
+Same harness, same fixture, same host, same disposable PostgreSQL 16. Apply SHA `e99635c9` on `feat/cdm-import-batch-apply-keys` ([#617](https://github.com/grant-js/grant/pull/617), stacked on [#615](https://github.com/grant-js/grant/pull/615)). Command: `NODE_ENV=test DB_URL=… pnpm --filter grant-api measure:cdm-import -- --repeat key-fanout`. `pg_stat_statements` reset immediately before the command. **No p50/p95/p99. No Lambda-fit SLA.**
+
+The measure tool calls `importProjectCdm` inside the snapshot+import transaction **without** `withHashedCdmApiKeySecrets`. Hashing 1,124 secrets at bcrypt-10 is therefore inside **import seconds** (async `hashSecretAsync`, parallel on this host). The worker hashes before `withTransaction`; worker import seconds would exclude that CPU.
+
+| Profile      | Entities | Pass   | Snapshot |  Import |       Total | Applied | ms/entity | vs 15 min | vs slice 1 |
+| ------------ | -------: | ------ | -------: | ------: | ----------: | ------: | --------: | --------: | ---------: |
+| `key-fanout` |      457 | first  |   0.05 s | 17.30 s | **17.35 s** |   4,415 |      38.0 |      1.9% |     −73.6% |
+| `key-fanout` |      457 | repeat |   0.04 s | 17.16 s | **17.20 s** |   4,393 |      37.6 |      1.9% |     −73.7% |
+
+| Field                | Slice 1 (`588183f9`) | After 2+3 (`e99635c9`) |
+| -------------------- | -------------------: | ---------------------: |
+| First total          |              65.73 s |                17.35 s |
+| Repeat total         |              65.30 s |                17.20 s |
+| First snapshot       |               0.02 s |                 0.05 s |
+| Repeat snapshot      |               0.04 s |                 0.04 s |
+| SQL calls (both)     |               59,047 |                 20,438 |
+| Distinct queries     |                  138 |                    143 |
+| SQL exec time (both) |               1.87 s |                 0.81 s |
+| Wall first+repeat    |             131.03 s |                34.55 s |
+
+Counters match slice 1: 7 roles, 57 groups, 494 group-permission links, 1,124 keys, 1,883 role listings, 11 users on first (`usersCreated` / `projectUsersEnsured` 0 on repeat). Repeat applied **4,393** vs first **4,415** — the same 22-increment gap. Password / tag / role-group counters stayed 0.
+
+SQL is **~2.3%** of the 34.55 s wall (was ~1.4% of 131 s). About **10.2k statements per pass**, down from ~29.5k.
+
+Hottest statements by total exec time (both passes):
+
+| Calls |  Total |    Mean | Shape                                                             |
+| ----: | -----: | ------: | ----------------------------------------------------------------- |
+|   674 | 216 ms | 0.32 ms | `SELECT` all `project_permissions` for the project (list-all)     |
+| 2,248 |  56 ms | 0.02 ms | `INSERT api_key_audit_logs`                                       |
+| 2,248 |  48 ms | 0.02 ms | `INSERT project_user_api_key_audit_logs`                          |
+|     2 |  45 ms | 22.6 ms | `INSERT project_user_api_keys` (multi-row; 1,124 rows × 2 passes) |
+|   672 |  38 ms | 0.06 ms | `INSERT permissions`                                              |
+|     2 |  33 ms | 16.7 ms | `INSERT api_keys` (multi-row; 1,124 rows × 2 passes)              |
+
+Slice 1's 2,248 single-row `INSERT api_keys` / `INSERT project_user_api_keys` are now **two** multi-row inserts. `INSERT user_roles` is two multi-row statements. `INSERT group_permissions` dropped from 988 calls to 114 batched inserts. The 3,766 `SELECT user_roles` / 3,934 `SELECT roles` shapes left the hot list.
+
+Repeat is **apply again**, not snapshot: snapshot stayed **0.04–0.05 s**; repeat import **17.16 s** vs first **17.30 s**. Merge still creates 7 roles, 57 groups, and 1,124 keys. That is the stack plan's skip rule for slice 4 — snapshot is not the remaining minutes.
+
+### Skip slice 4
+
+**Skip `feat/cdm-import-batch-apply-snapshot`.** First+repeat are a significant cut vs slice 1 (65.73 s / 65.30 s → 17.35 s / 17.20 s) and the repeat is explained by merge-creates-again plus bcrypt-10 of 1,124 secrets in the measure's import seconds. Snapshot is tens of milliseconds on this host, not minutes. Do not invent a Lambda export cost from this local snapshot.
+
+Remaining apply time on this host is process time (hashing in the measure path, leftover sequential permission/project-permission writes). Cheaper KDF is **out of this stack**. This page still does not publish a Lambda-fit SLA.

@@ -389,6 +389,22 @@ export interface IProjectUserApiKeyService {
     transaction?: unknown
   ): Promise<ProjectUserApiKey>;
 
+  /**
+   * Import-only: multi-row insert for `project_user_api_keys`.
+   * HTTP `addProjectUserApiKey` stays sequential.
+   */
+  addProjectUserApiKeysForCdmImport(
+    params: {
+      links: readonly {
+        projectId: string;
+        userId: string;
+        apiKeyId: string;
+        metadata?: Record<string, unknown> | null;
+      }[];
+    },
+    transaction?: unknown
+  ): Promise<ProjectUserApiKey[]>;
+
   removeProjectUserApiKey(
     params: { projectId: string; userId: string; apiKeyId: string } & DeleteParams,
     transaction?: unknown
