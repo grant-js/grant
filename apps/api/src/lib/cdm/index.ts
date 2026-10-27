@@ -7,5 +7,5 @@ export { TagCdmEntity } from './entities/tag.cdm-entity';
 export { UserAssignmentCdmEntity } from './entities/user-assignment.cdm-entity';
 export { expandCdmSyncInput } from './expand-cdm-sync-input.lib';
 export { refDedupKey, resolveAllPermissionRefs } from './permission-ref.lib';
-export type { CdmEntityRegistry, CdmEntityRegistryDeps } from './registry';
+export type { CdmEntityRegistryDeps } from './registry';
 export { createDefaultCdmEntities, createDefaultCdmRegistry } from './registry';

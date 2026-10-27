@@ -77,7 +77,7 @@ export interface CdmEntityRegistryDeps {
   credentials: ICredentialService;
 }
 
-export interface CdmEntityRegistry {
+interface CdmEntityRegistry {
   handlers: ReadonlyArray<ICdmEntityHandler>;
   builder: CdmEntityBuilder;
 }
