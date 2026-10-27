@@ -3,7 +3,7 @@
 **Audience:** Grant / Alteos — why one production import took ~11 minutes and a later attempt hit Lambda’s 15-minute wall  
 **Scope:** diagnosis only. No implementation, no PR, no e2e-contract changes, no language rewrite.  
 **Method:** read-only traversal of the import module against the reported counters. Wall-clock shares below are **order-of-magnitude from code shape + prior Grant measurements**, not a new production trace.  
-**Date:** 2026-10-27  
+**Date:** 2026-10-27
 
 Related: `docs/core-concepts/cdm-import-export.md`, `apps/api/src/lib/cdm/README.md`, `docs/advanced-topics/job-scheduling.md`, `docs/advanced-topics/transactions.md`, ADR 0002 / `plans/2026-09-09-aws-followups-closeout-measurements.md`.
 
@@ -13,12 +13,12 @@ Related: `docs/core-concepts/cdm-import-export.md`, `apps/api/src/lib/cdm/README
 
 The 11-minute Alteos import is **Grant-code bound**, not “Lambda is too small” and not “Postgres cannot write 4k rows.” The worker applies the document **one service call at a time, inside one transaction**, through the same single-entity APIs used by HTTP mutations. Two volumes dominate this payload:
 
-1. **1,124 user API keys** — each does a **synchronous bcrypt** (`hashSecret` / `TOKEN_BCRYPT_ROUNDS`, default **10**) *inside* the open transaction, then insert + audit + pivot insert + audit.
+1. **1,124 user API keys** — each does a **synchronous bcrypt** (`hashSecret` / `TOKEN_BCRYPT_ROUNDS`, default **10**) _inside_ the open transaction, then insert + audit + pivot insert + audit.
 2. **1,883 `addUserRole` calls** for **11 users** and only **7 roles created** — almost certainly **repeated `users[].roles` keys**. The counter increments on every listing; the service still does existence reads (and a full `user_roles` list) even when the assignment already exists.
 
 Everything else (7 roles, 57 groups, 494 group→permission links, 11 provisioned users, one summary event, post-commit cache invalidate) is smaller. H1–H4 (RLS request hold, per-request toolbox, tenant ID lists, tenant-scoped authz invalidate) are **not** why this job is slow. They barely touch the worker apply loop.
 
-Moving the worker to Fargate / Lambda VM **removes the 15-minute ceiling** (ADR 0002 already measured a 28,880-*entity* import at **62.3 minutes** locally). It does **not** make this apply path fast. The same sequential service API will still take on the order of **10+ minutes** for this shape, and a **repeat** import is worse because the pre-apply snapshot now walks the graph that the first import just wrote.
+Moving the worker to Fargate / Lambda VM **removes the 15-minute ceiling** (ADR 0002 already measured a 28,880-_entity_ import at **62.3 minutes** locally). It does **not** make this apply path fast. The same sequential service API will still take on the order of **10+ minutes** for this shape, and a **repeat** import is worse because the pre-apply snapshot now walks the graph that the first import just wrote.
 
 `CDM_IMPORT_MAX_ENTITIES` (default 5,000) would **not** have refused this document. It counts `roles + users + resources + permissions + groups + tags` only — **not** API keys or role/group links. Alteos is ~457 of those entities and ~3,000 of the expensive edges.
 
@@ -47,17 +47,17 @@ Default runtime is **`JOBS_SYNC_RUNTIME=inprocess`**. That is the API Lambda (15
 
 ## Reported counters → code
 
-| Reported | `SyncProjectResult` field | Where it increments | What the code did |
-| -------- | ------------------------- | ------------------- | ----------------- |
-| Roles created: 7 | `rolesCreated` | `RoleTemplateCdmEntity.apply` | 7 sequential `createRole` (+ project link). **`roleGroupsLinked = 0`** ⇒ `usesGroupPath` was false ⇒ `CdmEntityBuilder.createRoleWithDirectPermissions`, not `createRoleWithGroup`. |
-| Groups created: 57 | `groupsCreated` | `UserAssignmentCdmEntity.apply` → `createDocumentGroup` | Standalone groups from `users[].groups` / `groups[]`, created on first reference. Not paired with the 7 roles. |
-| Roles → groups: 0 | `roleGroupsLinked` | only `createRoleWithGroup` | Roles have no CDM group path. |
-| Groups → permissions: 494 | `groupPermissionsLinked` | `createDocumentGroup` inner `perms` loop | 494 sequential `addGroupPermission` after a full-list existence check. |
-| Project → roles / groups / permissions / resources: 7 / 57 / 336 / 46 | `project*Linked` | builder `ensureProjectPermissionAndResource` + entity apply | First-time project pivots. Later calls still **re-list the whole project** to decide idempotency. |
-| Project users: 11 | `projectUsersEnsured` | `ProjectUserService.addProjectUser` | 11 membership upserts. `projectHasUser` lists **all** `project_users` for the project each time. |
-| Grant users created: 11 | `usersCreated` | `UserProvisionCdmEntity.apply` | 11 `createUser` (+ email auth method if `findBy: email`). |
-| User roles assigned: 1883 | `userRolesAssigned` | one increment per `roleTemplateKeys` entry | **1883 sequential `UserRoleService.addUserRole`**. See below — this cannot be 1883 distinct `(user, role)` pairs against 7 new roles. |
-| User API keys created: 1124 | `projectUserApiKeysCreated` | `ProjectUserApiKeyCdmEntity.apply` | 1124 sequential `createApiKeyForCdmImport` + `addProjectUserApiKey`. |
+| Reported                                                              | `SyncProjectResult` field   | Where it increments                                         | What the code did                                                                                                                                                                   |
+| --------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Roles created: 7                                                      | `rolesCreated`              | `RoleTemplateCdmEntity.apply`                               | 7 sequential `createRole` (+ project link). **`roleGroupsLinked = 0`** ⇒ `usesGroupPath` was false ⇒ `CdmEntityBuilder.createRoleWithDirectPermissions`, not `createRoleWithGroup`. |
+| Groups created: 57                                                    | `groupsCreated`             | `UserAssignmentCdmEntity.apply` → `createDocumentGroup`     | Standalone groups from `users[].groups` / `groups[]`, created on first reference. Not paired with the 7 roles.                                                                      |
+| Roles → groups: 0                                                     | `roleGroupsLinked`          | only `createRoleWithGroup`                                  | Roles have no CDM group path.                                                                                                                                                       |
+| Groups → permissions: 494                                             | `groupPermissionsLinked`    | `createDocumentGroup` inner `perms` loop                    | 494 sequential `addGroupPermission` after a full-list existence check.                                                                                                              |
+| Project → roles / groups / permissions / resources: 7 / 57 / 336 / 46 | `project*Linked`            | builder `ensureProjectPermissionAndResource` + entity apply | First-time project pivots. Later calls still **re-list the whole project** to decide idempotency.                                                                                   |
+| Project users: 11                                                     | `projectUsersEnsured`       | `ProjectUserService.addProjectUser`                         | 11 membership upserts. `projectHasUser` lists **all** `project_users` for the project each time.                                                                                    |
+| Grant users created: 11                                               | `usersCreated`              | `UserProvisionCdmEntity.apply`                              | 11 `createUser` (+ email auth method if `findBy: email`).                                                                                                                           |
+| User roles assigned: 1883                                             | `userRolesAssigned`         | one increment per `roleTemplateKeys` entry                  | **1883 sequential `UserRoleService.addUserRole`**. See below — this cannot be 1883 distinct `(user, role)` pairs against 7 new roles.                                               |
+| User API keys created: 1124                                           | `projectUserApiKeysCreated` | `ProjectUserApiKeyCdmEntity.apply`                          | 1124 sequential `createApiKeyForCdmImport` + `addProjectUserApiKey`.                                                                                                                |
 
 Registry order (`createDefaultCdmEntities`): resource (2) → permission (4) → tag (5) → role template (10) → user provision (15) → user assignment (20) → project-user API key (300). `UserProvisionCdmEntity.postApply` (passwords) runs after every `apply`, still in the same TX. Alteos did not report password counters; if hashes were present they are a small extra batched write, not the 11 minutes.
 
@@ -69,16 +69,16 @@ Registry order (`createDefaultCdmEntities`): resource (2) → permission (4) →
 
 Shares assume ~11 minutes wall clock on Lambda → RDS, bcrypt cost 10, and the statement-latency band already measured locally (0.3–0.6 ms/statement) vs ~1 ms Lambda→RDS.
 
-| Rank | Cost | Category | Why |
-| ---: | ---: | -------- | --- |
-| 1 | **~2–6 min** | (4) API-key / user-role volume + (1) per-row writes | **1,124 × `bcrypt.hashSync`** in `ApiKeyService.createApiKeyForCdmImport`, then 2 inserts + 2 audits each. On a 1-vCPU Lambda, cost-10 bcrypt is commonly **80–200 ms/hash** → **1.5–4 min of CPU alone**, event-loop blocked (`hashSync` is sync). SQL on top: ~4–6 statements/key → **~4.5k–7k statements**. |
-| 2 | **~1.5–4 min** | (1) N+1 + (4) volume | **1,883 × `UserRoleService.addUserRole`**. Each call: `userExists` + `roleExists` + `getUserRoles({ userId })` (full list) + either a second `getUserRoles` (already assigned) or insert + `getRoleName` + audit. **5–8 statements per listing**, list grows as unique assignments accumulate. **~9k–15k statements**. Against 7 roles / 11 users this is mostly **duplicate keys in `users[].roles`**, each still paid in full. |
-| 3 | **~0.5–2 min** | (1) N+1 list-all | **494 group→permission links** via `createDocumentGroup`: `groupHasPermission` lists **all** group permissions; `addGroupPermission` does group/permission exists + **lists them again**; `ensureProjectPermissionAndResource` lists **all** `project_permissions` and `project_resources` every time. Superlinear as those lists grow toward 336 / 46. **~4k–6k statements**, heavier rows than a pivot insert. |
-| 4 | **~seconds–minutes** | (2) one giant TX | Snapshot + apply share one connection and one WAL/lock horizon. **First import into an empty project:** snapshot is cheap. **Later attempt:** snapshot is `exportProjectCdm` of the *already imported* graph (11 users × ~102 keys × large `users[].roles`) *before* apply runs again. The measure harness already warned: a repeat import is snapshot(existing) + apply, and duration models from payload size alone are wrong. This is the best explanation for “11 min succeeded, next run exceeded 15.” |
-| 5 | **~0.5–1.5 min** | (1) + (3) audit | Audit is **not** suppressed. Every create/link writes `DrizzleAuditLogger.logCreate` in the same TX. Events **are** suppressed (`runWithEventSuppression` → `DrizzleEventPublisher.publishMany` no-ops). No webhook/outbox flood during apply. Audit volume tracks inserts (keys, pivots, roles, groups, 494 links, …), not 1,883 duplicate role listings. |
-| 6 | **seconds** | (3) post-write | `invalidateCachesForImportResult` after commit: 7 entity-cache deletes for the project scope, `getProjectUsers`, then ~2 related scope keys × 7 namespaces × 11 members (**~150 sequential deletes**). Auth-result prefix delete only for `users[].key.findBy === id` — Alteos *created* 11 users, so `collectUserIds` is likely **empty**. One `project_sync.completed` at `markCompleted`. Not minutes. |
-| 7 | **seconds** | (1) small creates | 7 roles, 57 groups, 11 users, 11 memberships, 336/46 project pivots that actually insert once. Drowned by (1)–(2). |
-| 8 | **negligible on this path** | (6) H1–H4 | See dedicated section. |
+| Rank |                        Cost | Category                                            | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---: | --------------------------: | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    1 |                **~2–6 min** | (4) API-key / user-role volume + (1) per-row writes | **1,124 × `bcrypt.hashSync`** in `ApiKeyService.createApiKeyForCdmImport`, then 2 inserts + 2 audits each. On a 1-vCPU Lambda, cost-10 bcrypt is commonly **80–200 ms/hash** → **1.5–4 min of CPU alone**, event-loop blocked (`hashSync` is sync). SQL on top: ~4–6 statements/key → **~4.5k–7k statements**.                                                                                                                                                                                              |
+|    2 |              **~1.5–4 min** | (1) N+1 + (4) volume                                | **1,883 × `UserRoleService.addUserRole`**. Each call: `userExists` + `roleExists` + `getUserRoles({ userId })` (full list) + either a second `getUserRoles` (already assigned) or insert + `getRoleName` + audit. **5–8 statements per listing**, list grows as unique assignments accumulate. **~9k–15k statements**. Against 7 roles / 11 users this is mostly **duplicate keys in `users[].roles`**, each still paid in full.                                                                            |
+|    3 |              **~0.5–2 min** | (1) N+1 list-all                                    | **494 group→permission links** via `createDocumentGroup`: `groupHasPermission` lists **all** group permissions; `addGroupPermission` does group/permission exists + **lists them again**; `ensureProjectPermissionAndResource` lists **all** `project_permissions` and `project_resources` every time. Superlinear as those lists grow toward 336 / 46. **~4k–6k statements**, heavier rows than a pivot insert.                                                                                            |
+|    4 |        **~seconds–minutes** | (2) one giant TX                                    | Snapshot + apply share one connection and one WAL/lock horizon. **First import into an empty project:** snapshot is cheap. **Later attempt:** snapshot is `exportProjectCdm` of the _already imported_ graph (11 users × ~102 keys × large `users[].roles`) _before_ apply runs again. The measure harness already warned: a repeat import is snapshot(existing) + apply, and duration models from payload size alone are wrong. This is the best explanation for “11 min succeeded, next run exceeded 15.” |
+|    5 |            **~0.5–1.5 min** | (1) + (3) audit                                     | Audit is **not** suppressed. Every create/link writes `DrizzleAuditLogger.logCreate` in the same TX. Events **are** suppressed (`runWithEventSuppression` → `DrizzleEventPublisher.publishMany` no-ops). No webhook/outbox flood during apply. Audit volume tracks inserts (keys, pivots, roles, groups, 494 links, …), not 1,883 duplicate role listings.                                                                                                                                                  |
+|    6 |                 **seconds** | (3) post-write                                      | `invalidateCachesForImportResult` after commit: 7 entity-cache deletes for the project scope, `getProjectUsers`, then ~2 related scope keys × 7 namespaces × 11 members (**~150 sequential deletes**). Auth-result prefix delete only for `users[].key.findBy === id` — Alteos _created_ 11 users, so `collectUserIds` is likely **empty**. One `project_sync.completed` at `markCompleted`. Not minutes.                                                                                                   |
+|    7 |                 **seconds** | (1) small creates                                   | 7 roles, 57 groups, 11 users, 11 memberships, 336/46 project pivots that actually insert once. Drowned by (1)–(2).                                                                                                                                                                                                                                                                                                                                                                                          |
+|    8 | **negligible on this path** | (6) H1–H4                                           | See dedicated section.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 **Lambda vs Grant-code vs Postgres:** Grant’s sequential service API + bcrypt-in-TX is the bottleneck. Postgres is executing many tiny statements, not a heavy plan. Lambda supplies the 15-minute wall, 1 vCPU for bcrypt, and ~1 ms RTT that turns 20k–30k statements into minutes. Raising `DB_POOL_MAX` or turning RLS off does not shorten this job: it uses **one** connection for the apply.
 
@@ -173,7 +173,7 @@ Consequences for time:
 - WAL / snapshot isolation / lock duration grow with the TX. Repeat imports also **read** the large graph before writing.
 - Lambda timeout **aborts the client**; the in-flight TX rolls back. The later 15-minute failure likely left **no** partial import from that attempt — and wasted the snapshot+apply work.
 
-`mode.onConflict` / merge does **not** skip creates. A second merge into the same project **creates another 7 roles, 57 groups, and 1,124 keys**, then pays 1,883 `addUserRole` calls again (now mostly idempotent reads against *new* role IDs for the new templates). That is slower than the first run, not faster.
+`mode.onConflict` / merge does **not** skip creates. A second merge into the same project **creates another 7 roles, 57 groups, and 1,124 keys**, then pays 1,883 `addUserRole` calls again (now mostly idempotent reads against _new_ role IDs for the new templates). That is slower than the first run, not faster.
 
 Replace mode would also **teardown** first (`RoleTemplateCdmEntity.teardown` loops `deleteCdmRole` / `deleteCdmGroup`; API-key teardown **hard-deletes each CDM key one by one**). A replace of this project after a successful import would add minutes of sequential deletes before recreate.
 
@@ -181,12 +181,12 @@ Replace mode would also **teardown** first (`RoleTemplateCdmEntity.teardown` loo
 
 ## 3) Post-write work (cache, audit, webhooks, events)
 
-| Work | During apply TX? | Cost on this job |
-| ---- | ---------------- | ---------------- |
-| Entity domain events (`user.role_assigned`, `group.created`, `api_key.created`, …) | Called, **suppressed** | ALS check + debug log. **No** `event_log`, **no** webhook enqueue, **no** in-app notification fan-out. |
-| Audit | **Yes**, every mutation | One insert per create/link. Material, not #1. |
-| `project_sync.completed` | After apply, in `markCompleted` | **One** event + audit + payload redact. |
-| `invalidateCachesForImportResult` | **After commit** | Entity-cache deletes for project + per-member related scopes. Auth-result `keys(prefix*)` only for `findBy: id`. Seconds. Failure is logged and **does not fail the job**. |
+| Work                                                                               | During apply TX?                | Cost on this job                                                                                                                                                           |
+| ---------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entity domain events (`user.role_assigned`, `group.created`, `api_key.created`, …) | Called, **suppressed**          | ALS check + debug log. **No** `event_log`, **no** webhook enqueue, **no** in-app notification fan-out.                                                                     |
+| Audit                                                                              | **Yes**, every mutation         | One insert per create/link. Material, not #1.                                                                                                                              |
+| `project_sync.completed`                                                           | After apply, in `markCompleted` | **One** event + audit + payload redact.                                                                                                                                    |
+| `invalidateCachesForImportResult`                                                  | **After commit**                | Entity-cache deletes for project + per-member related scopes. Auth-result `keys(prefix*)` only for `findBy: id`. Seconds. Failure is logged and **does not fail the job**. |
 
 H4’s `CacheHandler.invalidatePermissionsCacheForAllScopes` (tenant-filtered `AUTH_RESULT*` scan) is used by **HTTP** role/group/permission handlers. The import worker **does not call it**. Import invalidation is the service method above.
 
@@ -210,11 +210,11 @@ Passwords (if any) use `credentials.importProjectPasswordHashes` in `postApply` 
 
 ## 5) Lambda vs Grant-code vs Postgres
 
-| Layer | What it does to this job |
-| ----- | ------------------------ |
-| **Grant code** | Dominant. Sequential service API, full-list existence checks, bcrypt-in-TX, snapshot-before-apply. |
-| **Lambda** | 15-minute **hard** timeout; typically 1 vCPU (bcrypt serial); ~1 ms/statement RTT to RDS (prior write-up: 3M statements × 1 ms ≈ 50 min RTT alone at enterprise scale). Freeze on timeout rolls back the giant TX. |
-| **Postgres** | Capable of the writes. Pain is **chatty statements + long TX + RLS on each query**, not missing indexes on “insert 1,124 keys.” |
+| Layer          | What it does to this job                                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Grant code** | Dominant. Sequential service API, full-list existence checks, bcrypt-in-TX, snapshot-before-apply.                                                                                                                 |
+| **Lambda**     | 15-minute **hard** timeout; typically 1 vCPU (bcrypt serial); ~1 ms/statement RTT to RDS (prior write-up: 3M statements × 1 ms ≈ 50 min RTT alone at enterprise scale). Freeze on timeout rolls back the giant TX. |
+| **Postgres**   | Capable of the writes. Pain is **chatty statements + long TX + RLS on each query**, not missing indexes on “insert 1,124 keys.”                                                                                    |
 
 Fargate/Lambda VM: **necessary** so a 11–20+ minute job can finish; **not sufficient** to make Alteos-sized imports snappy. ADR 0002 already chose the hatch because cheap memoization of lookups capped at **~1.54×** and a 28,880-entity import needed **~4.15×** to fit 15 minutes.
 
@@ -224,12 +224,12 @@ Fargate/Lambda VM: **necessary** so a 11–20+ minute job can finish; **not suff
 
 H1–H4 targeted the **HTTP authorize / list** path (`plans/2026-10-24-iam-performance-diagnosis.md`). Mapped to this job:
 
-| Hypothesis | Import impact |
-| ---------- | ------------- |
+| Hypothesis                                                | Import impact                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **H1 — RLS holds a pool connection for the HTTP request** | **Does not apply.** The worker is not `contextMiddleware`. It opens its **own** `withTransaction` + `setRlsContext`. Connection hold is the **import TX** (category 2), pre-existing, required for atomicity. Do not set `SECURITY_ENABLE_RLS=false` or raise `DB_POOL_MAX` to “speed up” import (`docs/advanced-topics/transactions.md`). |
-| **H2 — per-request toolbox** | **Does not apply to the apply loop.** `createAppContext` / `createRepositories` / `createServices` run **once** when the worker process starts (`app-context.lib.ts`, `jobs/index.ts`). Not per entity. |
-| **H3 — full tenant ID sets on list** | Import does not walk `resolveScopedIds`. `getProjectUsers({ projectId })` in invalidate/membership is 11 rows. |
-| **H4 — tenant-scoped authz invalidate** | **After commit, small N.** Import never used global `permissions.clear()`. H4’s tenant filter on HTTP IAM writes is not on this path. Sequential `cache.*.delete` for 11 members is seconds. **H4 did not make imports slower.** |
+| **H2 — per-request toolbox**                              | **Does not apply to the apply loop.** `createAppContext` / `createRepositories` / `createServices` run **once** when the worker process starts (`app-context.lib.ts`, `jobs/index.ts`). Not per entity.                                                                                                                                    |
+| **H3 — full tenant ID sets on list**                      | Import does not walk `resolveScopedIds`. `getProjectUsers({ projectId })` in invalidate/membership is 11 rows.                                                                                                                                                                                                                             |
+| **H4 — tenant-scoped authz invalidate**                   | **After commit, small N.** Import never used global `permissions.clear()`. H4’s tenant filter on HTTP IAM writes is not on this path. Sequential `cache.*.delete` for 11 members is seconds. **H4 did not make imports slower.**                                                                                                           |
 
 RLS on the job TX still means **every** one of those 20k+ statements is planned under tenant policies. That is a constant factor, not a new H1 hold. Toolbox construction is not in the 11-minute window.
 
@@ -266,22 +266,22 @@ Do **not**: chunk the import into multiple committing transactions (partial auth
 
 ## File / function index
 
-| Piece | Path | Notes |
-| ----- | ---- | ----- |
-| Worker | `apps/api/src/jobs/project-sync.job.ts` `apply` | Snapshot + import in one TX; invalidate after commit |
-| Container entry | `apps/api/src/run-sync-job.ts` | ADR 0002; memory cache; calls `apply` not `execute` |
-| Orchestrator | `apps/api/src/services/project-import.service.ts` `importProjectCdm` / `applyProjectCdmImport` / `invalidateCachesForImportResult` | Event suppression; handler loop; post-commit cache |
-| Job envelope | `apps/api/src/services/project-sync-job.service.ts` `markCompleted` | One `project_sync.completed` |
-| Expand | `apps/api/src/lib/cdm/expand-cdm-sync-input.lib.ts` | `users.roles` → `roleTemplateKeys` (no dedupe) |
-| Registry | `apps/api/src/lib/cdm/registry.ts` `createDefaultCdmEntities` | Order 2…300 |
-| Builder | `apps/api/src/lib/cdm/cdm-entity-builder.ts` | `createDocumentGroup`, `ensureProjectPermissionAndResource`, list-all helpers |
-| Roles | `apps/api/src/lib/cdm/entities/role-template.cdm-entity.ts` | Direct-permission path when no group link |
-| Users | `…/user-provision.cdm-entity.ts`, `…/user-assignment.cdm-entity.ts` | 11 creates; 1,883 role assignments |
-| Keys | `…/project-user-api-key.cdm-entity.ts` | 1,124-loop |
-| bcrypt | `apps/api/src/lib/token.lib.ts` `hashSecret`; `apps/api/src/services/api-keys.service.ts` `createApiKeyForCdmImport` | Default 10 rounds |
-| Events | `apps/api/src/lib/events/event-suppression.lib.ts`, `drizzle-event-publisher.ts` | Suppressed during apply |
-| Audit | `apps/api/src/lib/audit/drizzle-audit-logger.ts` | Not suppressed |
-| Entity cap | `countCdmEntities` in `apps/api/src/lib/cdm/cdm-document.schemas.ts` | Omits keys and links |
+| Piece           | Path                                                                                                                               | Notes                                                                         |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Worker          | `apps/api/src/jobs/project-sync.job.ts` `apply`                                                                                    | Snapshot + import in one TX; invalidate after commit                          |
+| Container entry | `apps/api/src/run-sync-job.ts`                                                                                                     | ADR 0002; memory cache; calls `apply` not `execute`                           |
+| Orchestrator    | `apps/api/src/services/project-import.service.ts` `importProjectCdm` / `applyProjectCdmImport` / `invalidateCachesForImportResult` | Event suppression; handler loop; post-commit cache                            |
+| Job envelope    | `apps/api/src/services/project-sync-job.service.ts` `markCompleted`                                                                | One `project_sync.completed`                                                  |
+| Expand          | `apps/api/src/lib/cdm/expand-cdm-sync-input.lib.ts`                                                                                | `users.roles` → `roleTemplateKeys` (no dedupe)                                |
+| Registry        | `apps/api/src/lib/cdm/registry.ts` `createDefaultCdmEntities`                                                                      | Order 2…300                                                                   |
+| Builder         | `apps/api/src/lib/cdm/cdm-entity-builder.ts`                                                                                       | `createDocumentGroup`, `ensureProjectPermissionAndResource`, list-all helpers |
+| Roles           | `apps/api/src/lib/cdm/entities/role-template.cdm-entity.ts`                                                                        | Direct-permission path when no group link                                     |
+| Users           | `…/user-provision.cdm-entity.ts`, `…/user-assignment.cdm-entity.ts`                                                                | 11 creates; 1,883 role assignments                                            |
+| Keys            | `…/project-user-api-key.cdm-entity.ts`                                                                                             | 1,124-loop                                                                    |
+| bcrypt          | `apps/api/src/lib/token.lib.ts` `hashSecret`; `apps/api/src/services/api-keys.service.ts` `createApiKeyForCdmImport`               | Default 10 rounds                                                             |
+| Events          | `apps/api/src/lib/events/event-suppression.lib.ts`, `drizzle-event-publisher.ts`                                                   | Suppressed during apply                                                       |
+| Audit           | `apps/api/src/lib/audit/drizzle-audit-logger.ts`                                                                                   | Not suppressed                                                                |
+| Entity cap      | `countCdmEntities` in `apps/api/src/lib/cdm/cdm-document.schemas.ts`                                                               | Omits keys and links                                                          |
 
 ---
 
