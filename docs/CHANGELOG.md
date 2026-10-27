@@ -1,5 +1,12 @@
 # grant-docs
 
+## 1.18.8
+
+### Patch Changes
+
+- 06d78e1: Batch CDM import API-key inserts and hash BYOK secrets outside the import transaction at bcrypt-10. HTTP `createApiKey` stays sequential. Persist only hashes; client-id uniqueness stays fail-closed. The import remains one all-or-nothing transaction.
+- 06d78e1: Batch CDM import user-role, group-permission, and project pivot writes. Import-only existence loads use `unboundedList` so batches larger than the public page cap still resolve. HTTP assignment APIs stay sequential. The import remains one all-or-nothing transaction.
+
 ## 1.18.7
 
 No changes in this release.
