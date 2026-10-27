@@ -2,7 +2,7 @@
 
 Committed summary: **[Benchmark report](./report.md)**.
 
-Key-fanout CDM import first + repeat (batch-apply slice 1) is a different recipe: [Key-fanout CDM import baseline](./cdm-import-key-fanout.md). Do not treat this H4 `is-authorized` report as that target.
+Key-fanout CDM import first + repeat (batch-apply slice 1) is a different recipe: [Key-fanout CDM import baseline](./cdm-import-key-fanout.md). Replace + hash-prep (follow-on slice 1) is [Key-fanout CDM replace hash-prep](./cdm-import-key-fanout-replace.md). Do not treat this H4 `is-authorized` report as those targets.
 
 Measures `POST /api/auth/is-authorized` (cold vs warm cache, allow vs deny, throughput) against a running Grant API:
 
