@@ -1,5 +1,26 @@
 # grant-api
 
+## 1.18.9
+
+### Patch Changes
+
+- ecc6a27: Skip unchanged CDM API keys on replace: HMAC-SHA256 fingerprint, classify before bcrypt, and additive created/unchanged/rotated/deleted counters.
+- Updated dependencies [ecc6a27]
+  - @grantjs/schema@1.18.9
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.8
 
 ### Patch Changes

@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.9
+
+### Platform
+
+**Docker images:** tagged `:1.18.9` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.9** (fixed group with apps).
+
+### Patch Changes
+
+- ecc6a27: Skip unchanged CDM API keys on replace: HMAC-SHA256 fingerprint, classify before bcrypt, and additive created/unchanged/rotated/deleted counters.
+
 ## 1.18.8
 
 ### Platform
