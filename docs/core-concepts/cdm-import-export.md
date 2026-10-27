@@ -306,7 +306,7 @@ On **replace**, CDM-managed project-user API keys are matched by importer `exter
 | Existing CDM key missing from the document | **Delete**                                                               |
 | Key without `externalKey`                  | Tear down and recreate (no keep/rotate)                                  |
 
-The HMAC key is `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`. Rotating or leaving it empty makes every fingerprint miss, so the next replace re-hashes. Importers cannot supply a fingerprint or a pre-computed hash. Export, snapshots, job payloads, warnings, audit values, and logs omit the fingerprint. Merge still creates new key rows. `SyncProjectResult` reports `projectUserApiKeysCreated` / `Unchanged` / `Rotated` / `Deleted`.
+The HMAC key is `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`, resolved like other credentials (not a Lambda environment literal). Rotating or leaving it empty makes every fingerprint miss, so the next replace re-hashes. Importers cannot supply a fingerprint or a pre-computed hash. Export, snapshots, job payloads, warnings, audit values, and logs omit the fingerprint. Merge still creates new key rows. Replace fails closed if the same `externalKey` already exists on more than one CDM key (for example after repeated merges) instead of rebinding a secret to the first row. `SyncProjectResult` reports `projectUserApiKeysCreated` / `Unchanged` / `Rotated` / `Deleted`.
 
 ## Sync jobs
 

@@ -36,6 +36,7 @@ const BASE_ENV: Record<string, string> = {
   JOBS_AWS_ACCESS_KEY_ID: '',
   JOBS_AWS_SECRET_ACCESS_KEY: '',
   EMAIL_SES_CLIENT_SECRET: '',
+  CDM_API_KEY_FINGERPRINT_HMAC_SECRET: '',
 };
 
 /**
@@ -103,16 +104,20 @@ describe('the overlay writes resolved credentials into config', () => {
     expect(config.cache.dynamodb.secretAccessKey).toBe('resolved:CACHE_DYNAMODB_SECRET_ACCESS_KEY');
     expect(config.jobs.aws.accessKeyId).toBe('resolved:JOBS_AWS_ACCESS_KEY_ID');
     expect(config.jobs.aws.secretAccessKey).toBe('resolved:JOBS_AWS_SECRET_ACCESS_KEY');
+    expect(config.cdm.apiKeyFingerprintHmacSecret).toBe(
+      'resolved:CDM_API_KEY_FINGERPRINT_HMAC_SECRET'
+    );
   });
 
-  it('routes thirteen keys, and no more', async () => {
+  it('routes fourteen keys, and no more', async () => {
     // Diffed by eye against CREDENTIAL_KEYS in deploy/aws/lib/config/env-file.ts:
-    // seventeen there, thirteen here, four deliberately absent. If this number moves,
+    // eighteen there, fourteen here, four deliberately absent. If this number moves,
     // slice 8's list has to move with it — and if it moved by accident, this is where
     // that shows up rather than in a template review.
     const { RESOLVABLE_CREDENTIAL_KEYS } = await load();
 
-    expect(RESOLVABLE_CREDENTIAL_KEYS).toHaveLength(13);
+    expect(RESOLVABLE_CREDENTIAL_KEYS).toHaveLength(14);
+    expect(RESOLVABLE_CREDENTIAL_KEYS).toContain('CDM_API_KEY_FINGERPRINT_HMAC_SECRET');
     expect(RESOLVABLE_CREDENTIAL_KEYS).not.toContain('DB_GRANT_ROLE_URL');
     expect(RESOLVABLE_CREDENTIAL_KEYS).not.toContain('POSTGRES_PASSWORD');
     expect(RESOLVABLE_CREDENTIAL_KEYS).not.toContain('E2E_DB_URL');
@@ -171,6 +176,15 @@ describe('the environment-backed path is unchanged', () => {
     await resolveCredentials(rawResolverWith({ STORAGE_S3_ACCESS_KEY_ID: '' }));
 
     expect(config.storage.s3.accessKeyId).toBeUndefined();
+  });
+
+  it('leaves an empty HMAC secret empty so replace stays rotate-all', async () => {
+    const { config, resolveCredentials } = await load();
+
+    const summary = await resolveCredentials(resolverWith({}));
+
+    expect(config.cdm.apiKeyFingerprintHmacSecret).toBe('');
+    expect(summary.resolved).not.toContain('CDM_API_KEY_FINGERPRINT_HMAC_SECRET');
   });
 
   it('lets the resolver win over the environment when both are set', async () => {

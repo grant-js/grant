@@ -98,10 +98,12 @@ HMAC-SHA256 fingerprint stored on `metadata.cdmImport.secretFingerprint`. Hash
 prep (`withHashedCdmApiKeySecrets`) bcrypts **create + rotate only**. Unchanged
 keys are kept (no bcrypt). Rotate updates the stored hash in place (stable
 `api_keys.id` / `clientId`). Keys without `externalKey` still tear down and
-recreate. Merge still creates. The worker logs `hashPrepSeconds` and
+recreate. Merge still creates. Replace fails closed if the same `externalKey`
+already exists on more than one CDM key. The worker logs `hashPrepSeconds` and
 `secretCount` only — never secrets, hashes, or fingerprints. HTTP `createApiKey`
 stays sequential. Key teardown is a no-op; apply owns the set-diff inside the
-same import transaction.
+same import transaction. The HMAC key is resolver-backed
+(`CDM_API_KEY_FINGERPRINT_HMAC_SECRET`); empty stays rotate-all.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

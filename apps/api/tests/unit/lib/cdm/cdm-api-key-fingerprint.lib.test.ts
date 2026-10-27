@@ -129,6 +129,29 @@ describe('cdm-api-key-fingerprint', () => {
     expect(result.keep).toHaveLength(0);
   });
 
+  it('fails closed when the same externalKey exists on more than one CDM key', () => {
+    expect(() =>
+      classifyCdmApiKeyReplace(
+        [documentKey('k1', SECRET_A)],
+        [
+          existingKey({
+            apiKeyId: 'id-a',
+            userId: 'user-a',
+            externalKey: 'k1',
+            secretFingerprint: fingerprintCdmApiKeySecret(SECRET_A, HMAC),
+          }),
+          existingKey({
+            apiKeyId: 'id-b',
+            userId: 'user-b',
+            externalKey: 'k1',
+            secretFingerprint: fingerprintCdmApiKeySecret(SECRET_B, HMAC),
+          }),
+        ],
+        HMAC
+      )
+    ).toThrow(/multiple existing CDM keys for externalKey 'k1'/);
+  });
+
   it('fail-safes to rotate when the HMAC secret is empty', () => {
     const result = classifyCdmApiKeyReplace(
       [documentKey('k1', SECRET_A)],

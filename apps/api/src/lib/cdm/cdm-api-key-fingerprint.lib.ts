@@ -2,6 +2,7 @@ import {
   CDM_API_KEY_SECRET_FINGERPRINT_KEY,
   CDM_IMPORT_METADATA_KEY,
 } from '@/constants/cdm-import.constants';
+import { ValidationError } from '@/lib/errors';
 import { hmacSha256Hex, tokenHashesEqual } from '@/lib/token.lib';
 
 export type CdmExistingApiKeyFingerprint = {
@@ -120,10 +121,12 @@ export function classifyCdmApiKeyReplace(
     }
     seenExternalKeys.add(externalKey);
     const matches = existingByKey.get(externalKey) ?? [];
-    const [primary, ...duplicates] = matches;
-    for (const extra of duplicates) {
-      toDelete.push(extra);
+    if (matches.length > 1) {
+      throw new ValidationError(
+        `projectUserApiKeys: replace matched multiple existing CDM keys for externalKey '${externalKey}'`
+      );
     }
+    const [primary] = matches;
     if (!primary) {
       create.push({ document });
       continue;

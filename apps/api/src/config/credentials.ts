@@ -74,8 +74,8 @@ function writable<T extends object>(target: T): { -readonly [K in keyof T]: T[K]
  * Every credential that resolves through the port, and where each one lands.
  *
  * Enumerated, never reflective. This list is meant to be diffed by eye against
- * `CREDENTIAL_KEYS` in `deploy/aws/lib/config/env-file.ts`: thirteen entries here, four
- * deliberately absent, seventeen in total. The four and their reasons:
+ * `CREDENTIAL_KEYS` in `deploy/aws/lib/config/env-file.ts`: fourteen entries here, four
+ * deliberately absent, eighteen in total. The four and their reasons:
  *
  *   - `DB_GRANT_ROLE_URL` — read by `@grantjs/database`'s `grant-rls-login-role.lib.ts`
  *     during a migration, outside any composition root, and it is a **superuser** URL.
@@ -192,6 +192,14 @@ const CREDENTIAL_BINDINGS: readonly CredentialBinding[] = [
       writable(config.jobs.aws).secretAccessKey = value;
     },
   },
+  {
+    key: 'CDM_API_KEY_FINGERPRINT_HMAC_SECRET',
+    path: 'cdm.apiKeyFingerprintHmacSecret',
+    read: () => config.cdm.apiKeyFingerprintHmacSecret,
+    apply: (value) => {
+      writable(config.cdm).apiKeyFingerprintHmacSecret = value;
+    },
+  },
 ];
 
 /** The keys this module routes, for tests and for the AWS target's own list. */
@@ -225,8 +233,8 @@ export interface CredentialResolutionSummary {
  * starting wrong.
  *
  * Resolved in parallel because the AWS resolver caches the whole secret payload on the
- * first lookup, so thirteen keys cost one network call either way — but thirteen
- * sequential awaits would still be thirteen round trips on a cold start if that ever
+ * first lookup, so fourteen keys cost one network call either way — but fourteen
+ * sequential awaits would still be fourteen round trips on a cold start if that ever
  * changed.
  */
 export async function resolveCredentials(
