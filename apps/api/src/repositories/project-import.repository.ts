@@ -1,4 +1,5 @@
 import {
+  apiKeys,
   DbSchema,
   groupPermissions,
   groups,
@@ -27,6 +28,11 @@ import {
 } from '@grantjs/database';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 
+import {
+  type CdmExistingApiKeyFingerprint,
+  readCdmApiKeyExternalKey,
+  readCdmApiKeySecretFingerprint,
+} from '@/lib/cdm/cdm-api-key-fingerprint.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 /** Resolved permission row for CDM linking (group_permissions, project_permissions). */
@@ -272,6 +278,68 @@ export class ProjectImportRepository {
         )
       );
     return rows.map((r) => r.apiKeyId);
+  }
+
+  /**
+   * CDM project-user API keys for replace classify: pivot metadata + public client id.
+   * Does not return secrets, hashes, or log fingerprints.
+   */
+  public async listCdmProjectUserApiKeysForReplace(
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<CdmExistingApiKeyFingerprint[]> {
+    const db = transaction ?? this.db;
+    const rows = await db
+      .select({
+        apiKeyId: projectUserApiKeys.apiKeyId,
+        userId: projectUserApiKeys.userId,
+        clientId: apiKeys.clientId,
+        metadata: projectUserApiKeys.metadata,
+      })
+      .from(projectUserApiKeys)
+      .innerJoin(apiKeys, eq(apiKeys.id, projectUserApiKeys.apiKeyId))
+      .where(
+        and(
+          eq(projectUserApiKeys.projectId, projectId),
+          isNull(projectUserApiKeys.deletedAt),
+          isNull(apiKeys.deletedAt),
+          sql`${projectUserApiKeys.metadata}->'cdmImport'->>'projectId' = ${projectId}`,
+          sql`${projectUserApiKeys.metadata}->'cdmImport'->>'kind' = 'projectUserApiKey'`
+        )
+      );
+    return rows.map((row) => ({
+      apiKeyId: row.apiKeyId,
+      userId: row.userId,
+      clientId: row.clientId,
+      metadata: row.metadata ?? null,
+      externalKey: readCdmApiKeyExternalKey(row.metadata),
+      secretFingerprint: readCdmApiKeySecretFingerprint(row.metadata),
+    }));
+  }
+
+  public async updateCdmProjectUserApiKeyMetadata(
+    updates: readonly { apiKeyId: string; projectId: string; metadata: Record<string, unknown> }[],
+    transaction?: Transaction
+  ): Promise<void> {
+    if (updates.length === 0) {
+      return;
+    }
+    const db = transaction ?? this.db;
+    for (const update of updates) {
+      await db
+        .update(projectUserApiKeys)
+        .set({
+          metadata: update.metadata,
+          updatedAt: sql`clock_timestamp()`,
+        })
+        .where(
+          and(
+            eq(projectUserApiKeys.apiKeyId, update.apiKeyId),
+            eq(projectUserApiKeys.projectId, update.projectId),
+            isNull(projectUserApiKeys.deletedAt)
+          )
+        );
+    }
   }
 
   public listActiveUserRolesForRoleIds(

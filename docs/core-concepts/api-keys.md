@@ -100,6 +100,7 @@ The exchange endpoint (`/auth/token`) is not permission-guarded — it authentic
 - **Revocation** — revoked keys are immediately rejected on **exchange**. Access JWTs already issued stay valid until `exp` (default 15 minutes). `Grant.getAuth` does not denylist `jti`. See [Security — Residual access JWT window](/architecture/security#residual-access-jwt-window).
 - **Expiration** — keys can have an optional `expiresAt` date. Expired keys are rejected on exchange.
 - **Audit logging** — all key operations (create, revoke, delete, exchange) are recorded in the audit log with scope metadata.
+- **CDM replace** — unchanged BYOK secrets keep the existing `api_keys.id` and `clientId`. A changed secret rotates the stored hash in place. See [CDM import — replace API-key identity](/core-concepts/cdm-import-export#replace-api-key-identity).
 
 ---
 

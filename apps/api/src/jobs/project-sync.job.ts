@@ -8,6 +8,7 @@ import type {
 } from '@grantjs/core';
 import {
   CdmFindBy,
+  CdmModeStrategy,
   ProjectSyncJobOperation,
   ProjectSyncJobStatus,
   type Scope,
@@ -202,6 +203,10 @@ export default class ProjectSyncJob extends Job {
     let result: SyncProjectResult;
     try {
       const txConn = new DrizzleTransactionalConnection(this.appContext.db);
+      const existing =
+        importPayload.mode?.strategy === CdmModeStrategy.Replace
+          ? await projectImport.listCdmProjectUserApiKeysForReplace(execData.job.projectId)
+          : undefined;
       result = await withHashedCdmApiKeySecrets(
         importPayload,
         () =>
@@ -243,6 +248,10 @@ export default class ProjectSyncJob extends Job {
             hashPrepSeconds,
             msg: 'CDM API-key hash-prep finished',
           });
+        },
+        {
+          strategy: importPayload.mode?.strategy,
+          existing,
         }
       );
     } catch (error) {

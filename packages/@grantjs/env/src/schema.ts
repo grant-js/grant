@@ -219,6 +219,12 @@ export const envSchema = z.object({
    * `0` is unlimited, for container-runtime deployments.
    */
   CDM_IMPORT_MAX_ENTITIES: optionalNumber(5000),
+  /**
+   * HMAC-SHA256 key for CDM API-key secret fingerprints (replace classify only).
+   * Empty: every fingerprint misses and replace rotates (fail-safe on rotation).
+   * Distinct from AUTH_MFA_SECRET_ENCRYPTION_KEY and TOKEN_BCRYPT_ROUNDS.
+   */
+  CDM_API_KEY_FINGERPRINT_HMAC_SECRET: optionalString(''),
 
   // Cache / Redis
   CACHE_STRATEGY: z.enum(['memory', 'redis', 'dynamodb']).optional().default('memory'),

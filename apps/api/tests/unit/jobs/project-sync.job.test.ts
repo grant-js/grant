@@ -185,6 +185,9 @@ function buildSyncResult(): SyncProjectResult {
     usersCreated: 0,
     userRolesAssigned: 1,
     projectUserApiKeysCreated: 0,
+    projectUserApiKeysUnchanged: 0,
+    projectUserApiKeysRotated: 0,
+    projectUserApiKeysDeleted: 0,
     passwordsImported: 0,
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
@@ -227,6 +230,7 @@ function buildJobInstance(mocks: MockServices) {
       projectImport: {
         importProjectCdm: mocks.importProjectCdm,
         invalidateCachesForImportResult: mocks.invalidateCachesForImportResult,
+        listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([]),
       },
       projectExport: {
         exportProjectCdm: mocks.exportProjectCdm,

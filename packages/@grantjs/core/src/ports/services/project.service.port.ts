@@ -442,6 +442,24 @@ export interface IProjectImportService {
    * authorization cache for every user touched by the import.
    */
   invalidateCachesForImportResult(params: { scope: Scope; userIds: string[] }): Promise<void>;
+
+  /**
+   * CDM-managed project-user API keys for replace classify (HMAC fingerprint).
+   * Read-only; used before hash-prep so unchanged secrets are not bcrypt'd.
+   */
+  listCdmProjectUserApiKeysForReplace(
+    projectId: string,
+    transaction?: unknown
+  ): Promise<
+    Array<{
+      apiKeyId: string;
+      userId: string;
+      clientId: string;
+      externalKey: string | null;
+      secretFingerprint: string | null;
+      metadata: Record<string, unknown> | null;
+    }>
+  >;
 }
 
 // ---------------------------------------------------------------------------

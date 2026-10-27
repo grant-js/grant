@@ -1,5 +1,11 @@
 /** CDM entity sync port. Implemented in apps/api as `*CdmEntity` under `lib/cdm/entities/`. */
-import type { CdmHandlerInputKey, GroupCdmInput, Scope, SyncProjectResult } from '@grantjs/schema';
+import type {
+  CdmHandlerInputKey,
+  CdmModeStrategy,
+  GroupCdmInput,
+  Scope,
+  SyncProjectResult,
+} from '@grantjs/schema';
 
 export interface CdmPermissionRefSpec {
   resourceSlug?: string | null;
@@ -89,6 +95,11 @@ export interface CdmApplyContext {
    * only to users from this payload.
    */
   assignmentUserIds: Set<string>;
+  /**
+   * Import strategy. Key apply classifies keep/rotate/delete only on `replace`.
+   * Omitted or `merge` keeps today's create-all path.
+   */
+  modeStrategy?: CdmModeStrategy;
 }
 
 export interface CdmExportContext {

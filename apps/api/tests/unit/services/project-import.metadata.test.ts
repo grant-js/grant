@@ -18,6 +18,8 @@ describe('ProjectImportService CDM metadata', () => {
     listCdmRoleIdsForProject: vi.fn().mockResolvedValue([]),
     listCdmGroupIdsForProject: vi.fn().mockResolvedValue([]),
     listCdmProjectUserApiKeyIdsForProject: vi.fn().mockResolvedValue([]),
+    listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([]),
+    updateCdmProjectUserApiKeyMetadata: vi.fn().mockResolvedValue(undefined),
     listCdmTagIdsForProject: vi.fn().mockResolvedValue([]),
     bulkSoftDeleteCdmTags: vi.fn().mockResolvedValue(undefined),
     listCdmResourceIdsForProject: vi.fn().mockResolvedValue([]),
@@ -97,6 +99,7 @@ describe('ProjectImportService CDM metadata', () => {
     deleteApiKeysForCdmImport: vi.fn(),
     createApiKeyForCdmImport: vi.fn(),
     createApiKeysForCdmImport: vi.fn().mockResolvedValue([]),
+    rotateApiKeysForCdmImport: vi.fn(),
   };
   const projectUserApiKeys = {
     addProjectUserApiKey: vi.fn(),

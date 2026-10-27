@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildCdmImportMetadata,
+  CDM_API_KEY_SECRET_FINGERPRINT_KEY,
   CDM_EXPORT_CATALOG_SNAPSHOT_KEY,
   CDM_IMPORT_METADATA_KEY,
   CDM_SOURCE_METADATA_KEY,
@@ -64,6 +65,14 @@ describe('mergeCdmImporterMetadata', () => {
     ).toThrow(ValidationError);
   });
 
+  it('rejects a CDM-supplied secret fingerprint', () => {
+    expect(() =>
+      mergeCdmImporterMetadata(buildCdmImportMetadata('p1', 'projectUserApiKey', 'k1'), {
+        [CDM_API_KEY_SECRET_FINGERPRINT_KEY]: 'abc',
+      })
+    ).toThrow(/secretFingerprint/);
+  });
+
   it('rejects non-object importer payload', () => {
     expect(() => mergeCdmImporterMetadata({}, [])).toThrow(ValidationError);
   });
@@ -79,6 +88,25 @@ describe('extractProjectUserMetadataForCdmExport', () => {
       legacyId: '99',
     });
     expect(extractProjectUserMetadataForCdmExport(md)).toEqual({ legacyId: '99' });
+  });
+
+  it('never exports a secret fingerprint from cdmImport or cdmSource', () => {
+    const md = {
+      [CDM_IMPORT_METADATA_KEY]: {
+        projectId: 'p1',
+        kind: 'projectUserApiKey',
+        externalKey: 'k1',
+        [CDM_API_KEY_SECRET_FINGERPRINT_KEY]: 'should-not-export',
+      },
+      [CDM_SOURCE_METADATA_KEY]: {
+        legacyId: '99',
+        [CDM_API_KEY_SECRET_FINGERPRINT_KEY]: 'also-no',
+      },
+    };
+    expect(extractProjectUserMetadataForCdmExport(md)).toEqual({ legacyId: '99' });
+    expect(JSON.stringify(extractProjectUserMetadataForCdmExport(md))).not.toContain(
+      'should-not-export'
+    );
   });
 
   it('includes top-level metadata keys outside cdmSource (e.g. API updates)', () => {
