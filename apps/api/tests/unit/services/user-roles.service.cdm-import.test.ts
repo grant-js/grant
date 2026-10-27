@@ -101,4 +101,31 @@ describe('UserRoleService.addUserRolesForCdmImport', () => {
       tx
     );
   });
+
+  it('resolves more than 100 unique user ids in one batch', async () => {
+    const userIds = Array.from(
+      { length: 101 },
+      (_, i) => `30000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
+    );
+    const { service, userRepository, roleRepository, userRoleRepository } = build();
+    userRepository.getUsers.mockImplementation(async (args: { ids?: string[] }) => ({
+      users: (args.ids ?? []).map((id) => ({ id })),
+    }));
+    roleRepository.getRoles.mockImplementation(async (args: { ids?: string[] }) => ({
+      roles: (args.ids ?? []).map((id) => ({ id, name: 'viewer' })),
+    }));
+
+    const created = await service.addUserRolesForCdmImport(
+      { assignments: userIds.map((id) => ({ userId: id, roleId: viewerRoleId })) },
+      tx
+    );
+
+    expect(userRepository.getUsers).toHaveBeenCalledWith(
+      expect.objectContaining({ ids: userIds, limit: -1, unbounded: true }),
+      tx
+    );
+    expect(created).toHaveLength(101);
+    expect(userRoleRepository.addUserRoles).toHaveBeenCalledTimes(1);
+    expect(userRoleRepository.addUserRoles.mock.calls[0][0]).toHaveLength(101);
+  });
 });

@@ -136,4 +136,16 @@ describe('CdmEntityBuilder batch pivots', () => {
       tx
     );
   });
+
+  it('clears the project pivot memo so a later apply does not reuse a stale set', async () => {
+    const { builder, projectPermissions, projectResources } = build();
+    const perms = [perm('p1', 'r1')];
+
+    await builder.createDocumentGroup(projectId, 'a', 'A', null, perms, null, tx);
+    builder.resetPivotMemo();
+    await builder.createDocumentGroup(projectId, 'b', 'B', null, perms, null, tx);
+
+    expect(projectPermissions.getProjectPermissions).toHaveBeenCalledTimes(2);
+    expect(projectResources.getProjectResources).toHaveBeenCalledTimes(2);
+  });
 });

@@ -77,9 +77,12 @@ export interface CdmEntityRegistryDeps {
   credentials: ICredentialService;
 }
 
-export function createDefaultCdmEntities(
-  deps: CdmEntityRegistryDeps
-): ReadonlyArray<ICdmEntityHandler> {
+export interface CdmEntityRegistry {
+  handlers: ReadonlyArray<ICdmEntityHandler>;
+  builder: CdmEntityBuilder;
+}
+
+export function createDefaultCdmRegistry(deps: CdmEntityRegistryDeps): CdmEntityRegistry {
   const builder = new CdmEntityBuilder(
     deps.importRepo,
     deps.roles,
@@ -140,5 +143,11 @@ export function createDefaultCdmEntities(
   ];
 
   entities.sort((a, b) => a.order - b.order);
-  return Object.freeze(entities);
+  return { handlers: Object.freeze(entities), builder };
+}
+
+export function createDefaultCdmEntities(
+  deps: CdmEntityRegistryDeps
+): ReadonlyArray<ICdmEntityHandler> {
+  return createDefaultCdmRegistry(deps).handlers;
 }

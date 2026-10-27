@@ -88,7 +88,10 @@ The same holds on the group path (`roles[].groups` set, those groups carrying no
 `users.roles` listings are **not** collapsed at expand. Apply writes each unique
 `(user, role)` pair once (`addUserRolesForCdmImport`) and still increments
 `userRolesAssigned` **per listing**, including duplicates. HTTP `addUserRole` is
-unchanged.
+unchanged. Import-only existence loads (`getUsers` / `getRoles` / `getGroups` /
+`getPermissions` / `getResources`) use `unboundedList` so a batch larger than
+`PAGINATION_MAX_PAGE_SIZE` still resolves. `CdmEntityBuilder` pivot memos are
+cleared at the start of each `importProjectCdm`.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

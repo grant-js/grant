@@ -13,6 +13,7 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -158,7 +159,7 @@ export class ProjectResourceService implements IProjectResourceService {
     await this.projectExists(validatedParams.projectId, transaction);
     const [resources, existing] = await Promise.all([
       this.resourceRepository.getResources(
-        { ids: resourceIds, limit: resourceIds.length },
+        unboundedList({ ids: resourceIds, limit: -1 }),
         transaction
       ),
       this.projectResourceRepository.getProjectResources(

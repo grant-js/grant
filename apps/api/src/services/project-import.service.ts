@@ -48,13 +48,14 @@ import {
 import { AUTH_RESULT_CACHE_KEY_PREFIX } from '@/constants/cache.constants';
 import type { IEntityCacheAdapter } from '@/lib/cache';
 import {
-  createDefaultCdmEntities,
+  createDefaultCdmRegistry,
   expandCdmSyncInput,
   refDedupKey,
   resolveAllPermissionRefs,
   validateCdmJsonFields,
 } from '@/lib/cdm';
 import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
+import type { CdmEntityBuilder } from '@/lib/cdm/cdm-entity-builder';
 import type { ExpandedCdmSyncPayload } from '@/lib/cdm/expand-cdm-sync-input.lib';
 import { ConfigurationError, ConflictError, ValidationError } from '@/lib/errors';
 import { runWithEventSuppression } from '@/lib/events';
@@ -69,6 +70,7 @@ export class ProjectImportService implements IProjectImportService {
   private readonly importRepo: ProjectImportRepository;
   private readonly cache: IEntityCacheAdapter;
   private readonly handlers: ReadonlyArray<ICdmEntityHandler>;
+  private readonly entityBuilder: CdmEntityBuilder | undefined;
   private readonly resourceTags: IResourceTagService;
   private readonly permissionTags: IPermissionTagService;
   private readonly projectUsers: IProjectUserService;
@@ -130,9 +132,11 @@ export class ProjectImportService implements IProjectImportService {
     this.resourceTags = resourceTags;
     this.permissionTags = permissionTags;
     this.projectUsers = projectUsers;
-    this.handlers =
-      handlers ??
-      createDefaultCdmEntities({
+    if (handlers) {
+      this.handlers = handlers;
+      this.entityBuilder = undefined;
+    } else {
+      const registry = createDefaultCdmRegistry({
         importRepo,
         exportRepo: exportRepo ?? createUnboundExportRepo(),
         roles,
@@ -165,6 +169,9 @@ export class ProjectImportService implements IProjectImportService {
         userRepository,
         credentials,
       });
+      this.handlers = registry.handlers;
+      this.entityBuilder = registry.builder;
+    }
   }
 
   /**
@@ -270,6 +277,7 @@ export class ProjectImportService implements IProjectImportService {
   ): Promise<SyncProjectResult> {
     const tx = transaction as Transaction;
     const { projectId, scope, input } = params;
+    this.entityBuilder?.resetPivotMemo();
     this.assertProjectScope(scope);
     const scopeProjectId = this.projectIdFromScope(scope);
     if (scopeProjectId !== projectId) {

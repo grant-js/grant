@@ -111,6 +111,11 @@ export class CdmEntityBuilder {
     private readonly projectUserGroups: IProjectUserGroupService
   ) {}
 
+  public resetPivotMemo(): void {
+    this.projectPermissionIds.clear();
+    this.projectResourceIds.clear();
+  }
+
   /**
    * Create a CDM-marked role + paired group, link permissions to the group,
    * and ensure the project has rows in `project_*` for everything touched.

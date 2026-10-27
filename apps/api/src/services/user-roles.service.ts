@@ -14,6 +14,7 @@ import {
 } from '@grantjs/schema';
 
 import { NotFoundError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -179,8 +180,8 @@ export class UserRoleService implements IUserRoleService {
     const userIds = [...new Set(unique.map((row) => row.userId))];
     const roleIds = [...new Set(unique.map((row) => row.roleId))];
     const [users, roles, existing] = await Promise.all([
-      this.userRepository.getUsers({ ids: userIds, limit: userIds.length }, transaction),
-      this.roleRepository.getRoles({ ids: roleIds, limit: roleIds.length }, transaction),
+      this.userRepository.getUsers(unboundedList({ ids: userIds, limit: -1 }), transaction),
+      this.roleRepository.getRoles(unboundedList({ ids: roleIds, limit: -1 }), transaction),
       this.userRoleRepository.getUserRolesByUserIds(userIds, transaction),
     ]);
     if (users.users.length !== userIds.length) {

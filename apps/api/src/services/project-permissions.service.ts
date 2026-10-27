@@ -13,6 +13,7 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -170,7 +171,7 @@ export class ProjectPermissionService implements IProjectPermissionService {
     await this.projectExists(validatedParams.projectId, transaction);
     const [permissions, existing] = await Promise.all([
       this.permissionRepository.getPermissions(
-        { ids: permissionIds, limit: permissionIds.length },
+        unboundedList({ ids: permissionIds, limit: -1 }),
         transaction
       ),
       this.projectPermissionRepository.getProjectPermissions(

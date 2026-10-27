@@ -14,6 +14,7 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
@@ -183,9 +184,9 @@ export class GroupPermissionService implements IGroupPermissionService {
     const groupIds = [...new Set(unique.map((row) => row.groupId))];
     const permissionIds = [...new Set(unique.map((row) => row.permissionId))];
     const [groups, permissions, existing] = await Promise.all([
-      this.groupRepository.getGroups({ ids: groupIds, limit: groupIds.length }, transaction),
+      this.groupRepository.getGroups(unboundedList({ ids: groupIds, limit: -1 }), transaction),
       this.permissionRepository.getPermissions(
-        { ids: permissionIds, limit: permissionIds.length },
+        unboundedList({ ids: permissionIds, limit: -1 }),
         transaction
       ),
       this.groupPermissionRepository.getGroupPermissionsByGroupIds(groupIds, transaction),
