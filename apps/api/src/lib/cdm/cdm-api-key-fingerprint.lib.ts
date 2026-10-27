@@ -20,17 +20,17 @@ export type CdmDocumentApiKeyForClassify = {
   documentIndex: number;
 };
 
-export type CdmApiKeyKeep = {
+type CdmApiKeyKeep = {
   document: CdmDocumentApiKeyForClassify;
   existing: CdmExistingApiKeyFingerprint;
 };
 
-export type CdmApiKeyRotate = {
+type CdmApiKeyRotate = {
   document: CdmDocumentApiKeyForClassify;
   existing: CdmExistingApiKeyFingerprint;
 };
 
-export type CdmApiKeyCreate = {
+type CdmApiKeyCreate = {
   document: CdmDocumentApiKeyForClassify;
 };
 

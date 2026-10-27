@@ -36,7 +36,7 @@ export function collectCdmDocumentApiKeySecrets(input: CdmDocumentInput): string
   return collectCdmDocumentApiKeys(input).map((row) => row.secret);
 }
 
-export function collectCdmDocumentApiKeys(input: CdmDocumentInput): CdmDocumentApiKeyForClassify[] {
+function collectCdmDocumentApiKeys(input: CdmDocumentInput): CdmDocumentApiKeyForClassify[] {
   const keys: CdmDocumentApiKeyForClassify[] = [];
   let documentIndex = 0;
   for (const user of input.users ?? []) {
