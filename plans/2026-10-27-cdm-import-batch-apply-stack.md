@@ -43,7 +43,7 @@ Slice 4 is **optional**: PE decides at the end of slice 2 (or 3 if keys are take
 | 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     | [#615](https://github.com/grant-js/grant/pull/615) |
 | 3     | `feat/cdm-import-batch-apply-keys`     | prior slice                   | batch key insert / hash-outside-TX at bcrypt-10 | Backend    | security-full                                     | [#617](https://github.com/grant-js/grant/pull/617) |
 | 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat — **skipped** (see below)     | Backend    | light (security-full if export isolation changes) | skipped after #617 remeasure                       |
-| final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              |                                                    |
+| final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              | [#618](https://github.com/grant-js/grant/pull/618) |
 
 Prefer layer order: **db → schema → api → web**. This story has no schema/web slices. Slice 1 is the existing measure tool + a key-fanout fixture + docs. Slices 2–4 are `apps/api` CDM apply / job TX. Optional db index only if PE names it after measure.
 
@@ -166,7 +166,7 @@ These are explicit **non-slices**. Do not add them under a “while we’re here
 
 - [x] Gate 2: Stack plan approved — 2026-10-27 by Alejandro.
 - [x] Gate 3: Stack PRs merged into trunk — 2026-10-27 by Alejandro (#614 light, #615 security-full, #617 security-full; slice 4 skipped).
-- [ ] Gate 4: Story → `main` deep + security-full — open; agents do not merge.
+- [ ] Gate 4: Story → `main` deep + security-full — open [#618](https://github.com/grant-js/grant/pull/618); agents do not merge.
 
 ## Cleanup
 

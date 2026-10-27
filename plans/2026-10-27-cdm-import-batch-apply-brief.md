@@ -71,4 +71,4 @@ Senior Frontend stays inactive (no web). Architect stays inactive unless a new `
 ## Human gate
 
 - [x] Gate 1: Story brief approved — 2026-10-27 by Alejandro.
-- [ ] Gate 4: Story → `main` — open; agents do not merge.
+- [ ] Gate 4: Story → `main` — open [#618](https://github.com/grant-js/grant/pull/618); agents do not merge.
