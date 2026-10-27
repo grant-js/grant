@@ -8,6 +8,7 @@ import type {
 } from '@grantjs/core';
 import {
   CdmFindBy,
+  CdmModeStrategy,
   ProjectSyncJobOperation,
   ProjectSyncJobStatus,
   type Scope,
@@ -202,38 +203,56 @@ export default class ProjectSyncJob extends Job {
     let result: SyncProjectResult;
     try {
       const txConn = new DrizzleTransactionalConnection(this.appContext.db);
-      result = await withHashedCdmApiKeySecrets(importPayload, () =>
-        txConn.withTransaction(async (tx: Transaction) => {
-          await setRlsContext(tx, scopeToRlsContext(execData.scope));
+      const existing =
+        importPayload.mode?.strategy === CdmModeStrategy.Replace
+          ? await projectImport.listCdmProjectUserApiKeysForReplace(execData.job.projectId)
+          : undefined;
+      result = await withHashedCdmApiKeySecrets(
+        importPayload,
+        () =>
+          txConn.withTransaction(async (tx: Transaction) => {
+            await setRlsContext(tx, scopeToRlsContext(execData.scope));
 
-          /**
-           * Capture a pre-sync rollback snapshot inside the same transaction
-           * as the import, BEFORE we call into the sync service (which begins
-           * with `teardownCdmEntities` and immediately mutates project state).
-           *
-           * Why inside the transaction: the snapshot must commit if and only
-           * if the import commits. If `importProjectCdm` throws, the whole
-           * transaction rolls back — including the snapshot write.
-           */
-          const takenAt = new Date();
-          const snapshot = await projectExport.exportProjectCdm(
-            {
-              projectId: execData.job.projectId,
-              scope: execData.scope,
-              version: importPayload.version,
-            },
-            tx
-          );
-          await jobService.saveSnapshot({ jobId: jobRecordId, snapshot, takenAt }, tx);
-          return projectImport.importProjectCdm(
-            {
-              projectId: execData.job.projectId,
-              scope: execData.scope,
-              input: importPayload,
-            },
-            tx
-          );
-        })
+            /**
+             * Capture a pre-sync rollback snapshot inside the same transaction
+             * as the import, BEFORE we call into the sync service (which begins
+             * with `teardownCdmEntities` and immediately mutates project state).
+             *
+             * Why inside the transaction: the snapshot must commit if and only
+             * if the import commits. If `importProjectCdm` throws, the whole
+             * transaction rolls back — including the snapshot write.
+             */
+            const takenAt = new Date();
+            const snapshot = await projectExport.exportProjectCdm(
+              {
+                projectId: execData.job.projectId,
+                scope: execData.scope,
+                version: importPayload.version,
+              },
+              tx
+            );
+            await jobService.saveSnapshot({ jobId: jobRecordId, snapshot, takenAt }, tx);
+            return projectImport.importProjectCdm(
+              {
+                projectId: execData.job.projectId,
+                scope: execData.scope,
+                input: importPayload,
+              },
+              tx
+            );
+          }),
+        ({ secretCount, hashPrepSeconds }) => {
+          this.logger.info({
+            jobRecordId,
+            secretCount,
+            hashPrepSeconds,
+            msg: 'CDM API-key hash-prep finished',
+          });
+        },
+        {
+          strategy: importPayload.mode?.strategy,
+          existing,
+        }
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

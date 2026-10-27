@@ -17,6 +17,21 @@ type SyncProjectResult {
   userRolesAssigned: Int!
   projectUserApiKeysCreated: Int!
   """
+  CDM-managed project-user API keys whose `externalKey` and secret fingerprint already
+  matched on replace. Creates only increment `projectUserApiKeysCreated`.
+  """
+  projectUserApiKeysUnchanged: Int!
+  """
+  Existing CDM-managed project-user API keys whose secret changed (or had no fingerprint
+  yet). The stored bcrypt hash is replaced; `api_keys.id` and `clientId` stay.
+  """
+  projectUserApiKeysRotated: Int!
+  """
+  CDM-managed project-user API keys present before replace and missing from the document
+  (or lacking an importer `externalKey`).
+  """
+  projectUserApiKeysDeleted: Int!
+  """
   Users whose `password` hash was stored as the importing project's credential for the
   first time.
   """

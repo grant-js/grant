@@ -150,6 +150,7 @@ function build() {
       projectImport: {
         importProjectCdm: mocks.importProjectCdm,
         invalidateCachesForImportResult: mocks.invalidateCachesForImportResult,
+        listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([]),
       },
       projectExport: { exportProjectCdm: mocks.exportProjectCdm },
       fileStorage: { download: mocks.download, delete: mocks.delete, getUrl: mocks.getUrl },

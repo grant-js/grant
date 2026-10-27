@@ -267,6 +267,13 @@ export class ProjectImportService implements IProjectImportService {
     return runWithEventSuppression(() => this.applyProjectCdmImport(params, transaction));
   }
 
+  public listCdmProjectUserApiKeysForReplace(projectId: string, transaction?: unknown) {
+    return this.importRepo.listCdmProjectUserApiKeysForReplace(
+      projectId,
+      transaction as Transaction | undefined
+    );
+  }
+
   private async applyProjectCdmImport(
     params: {
       projectId: string;
@@ -337,6 +344,9 @@ export class ProjectImportService implements IProjectImportService {
       usersCreated: 0,
       userRolesAssigned: 0,
       projectUserApiKeysCreated: 0,
+      projectUserApiKeysUnchanged: 0,
+      projectUserApiKeysRotated: 0,
+      projectUserApiKeysDeleted: 0,
       passwordsImported: 0,
       passwordsUpdated: 0,
       passwordsUnchanged: 0,
@@ -394,6 +404,7 @@ export class ProjectImportService implements IProjectImportService {
       produced,
       documentGroupsByKey,
       assignmentUserIds,
+      modeStrategy: expanded.mode?.strategy ?? CdmModeStrategy.Merge,
     };
 
     for (const handler of this.handlers) {

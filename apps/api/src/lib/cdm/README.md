@@ -93,13 +93,17 @@ unchanged. Import-only existence loads (`getUsers` / `getRoles` / `getGroups` /
 `PAGINATION_MAX_PAGE_SIZE` still resolves. `CdmEntityBuilder` pivot memos are
 cleared at the start of each `importProjectCdm`.
 
-`users[].apiKeys` are hashed at bcrypt-10 (`TOKEN_BCRYPT_ROUNDS`) **before** the
-import transaction on the worker path (`withHashedCdmApiKeySecrets`), then
-inserted in one `createApiKeysForCdmImport` + `addProjectUserApiKeysForCdmImport`
-write. Direct `importProjectCdm` callers hash with the same async bcrypt before
-the key inserts. Only hashes are persisted; plaintext is not audited. HTTP
-`createApiKey` stays sequential. Replace teardown hard-deletes CDM keys in one
-`deleteApiKeysForCdmImport` write.
+`users[].apiKeys` are classified on **replace** by importer `externalKey` plus an
+HMAC-SHA256 fingerprint stored on `metadata.cdmImport.secretFingerprint`. Hash
+prep (`withHashedCdmApiKeySecrets`) bcrypts **create + rotate only**. Unchanged
+keys are kept (no bcrypt). Rotate updates the stored hash in place (stable
+`api_keys.id` / `clientId`). Keys without `externalKey` still tear down and
+recreate. Merge still creates. Replace fails closed if the same `externalKey`
+already exists on more than one CDM key. The worker logs `hashPrepSeconds` and
+`secretCount` only — never secrets, hashes, or fingerprints. HTTP `createApiKey`
+stays sequential. Key teardown is a no-op; apply owns the set-diff inside the
+same import transaction. The HMAC key is resolver-backed
+(`CDM_API_KEY_FINGERPRINT_HMAC_SECRET`); empty stays rotate-all.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

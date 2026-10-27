@@ -7,15 +7,26 @@ import type {
   ICdmEntityHandler,
   IProjectUserApiKeyService,
 } from '@grantjs/core';
-import { Tenant } from '@grantjs/schema';
+import { CdmModeStrategy, Tenant } from '@grantjs/schema';
 
+import { config } from '@/config';
 import {
   buildCdmImportMetadata,
   CDM_IMPORT_METADATA_KEY,
   extractProjectUserMetadataForCdmExport,
   mergeCdmImporterMetadata,
 } from '@/constants/cdm-import.constants';
-import { peekPreparedCdmApiKeyHashes } from '@/lib/cdm/hash-cdm-api-key-secrets.lib';
+import {
+  type CdmDocumentApiKeyForClassify,
+  type CdmExistingApiKeyFingerprint,
+  classifyCdmApiKeyReplace,
+  fingerprintCdmApiKeySecret,
+  withCdmApiKeySecretFingerprint,
+} from '@/lib/cdm/cdm-api-key-fingerprint.lib';
+import {
+  peekPreparedCdmApiKeyHashByClassifyKey,
+  peekPreparedCdmApiKeyHashes,
+} from '@/lib/cdm/hash-cdm-api-key-secrets.lib';
 import { ValidationError } from '@/lib/errors';
 import { hashSecretAsync } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -34,9 +45,20 @@ type CdmImportMetadataBlock = {
   externalKey?: string;
 };
 
+type PreparedApiKey = {
+  userId: string;
+  row: CdmProjectUserApiKeyInternal;
+  secret: string;
+  classifyKey: string;
+  documentIndex: number;
+};
+
 /**
  * CDM handler for {@link project_user_api_keys}: export identity (no secret);
  * import requires BYOK `clientSecret`. Runs after {@link UserAssignmentCdmEntity}.
+ *
+ * Replace matches by importer `externalKey` + HMAC fingerprint. Merge still creates.
+ * Keys without `externalKey` do not keep/rotate.
  */
 export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
   CdmProjectUserApiKeyInternal,
@@ -81,78 +103,29 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
     return [];
   }
 
-  public async teardown(ctx: CdmTeardownContext): Promise<void> {
-    const tx = ctx.tx as Transaction;
-    const ids = await this.importRepo.listCdmProjectUserApiKeyIdsForProject(ctx.projectId, tx);
-    await this.apiKeys.deleteApiKeysForCdmImport({ ids }, tx);
-  }
+  /**
+   * Replace set-diff lives in {@link apply} so unchanged keys can be kept.
+   * Other handlers still teardown-then-apply.
+   */
+  public async teardown(_ctx: CdmTeardownContext): Promise<void> {}
 
   public async apply(
     ctx: CdmApplyContext,
     input: readonly CdmProjectUserApiKeyInternal[]
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
-    if (input.length === 0) {
+    const prepared = this.prepareRows(ctx, input);
+
+    if (ctx.modeStrategy === CdmModeStrategy.Replace) {
+      await this.applyReplace(ctx, prepared, tx);
       return;
     }
 
-    const prepared: Array<{
-      userId: string;
-      row: CdmProjectUserApiKeyInternal;
-      secret: string;
-    }> = [];
-    for (const row of input) {
-      const effectiveUserId = resolveApiKeyUserId(row, ctx);
-      if (!ctx.assignmentUserIds.has(effectiveUserId)) {
-        throw new ValidationError(
-          `projectUserApiKeys: user ${effectiveUserId} is not part of this import's user assignments`
-        );
-      }
-      const secret = row.clientSecret?.trim() ?? '';
-      if (!secret && !row.clientSecretHash?.trim()) {
-        throw new ValidationError(
-          `projectUserApiKeys: clientSecret is required for each key (user ${effectiveUserId})`
-        );
-      }
-      prepared.push({ userId: effectiveUserId, row, secret });
+    if (prepared.length === 0) {
+      return;
     }
-
-    const hashes = await resolveCdmApiKeyHashes(prepared);
-    const created = await this.apiKeys.createApiKeysForCdmImport(
-      {
-        keys: prepared.map((item, index) => ({
-          clientSecretHash: hashes[index]!,
-          clientId: item.row.clientId ?? undefined,
-          scope: { tenant: Tenant.ProjectUser, id: `${ctx.projectId}:${item.userId}` },
-          name: item.row.name ?? undefined,
-          description: item.row.description ?? undefined,
-          expiresAt:
-            item.row.expiresAt != null ? new Date(item.row.expiresAt as string | Date) : undefined,
-        })),
-      },
-      tx
-    );
-
-    await this.projectUserApiKeys.addProjectUserApiKeysForCdmImport(
-      {
-        links: created.map((key, index) => {
-          const item = prepared[index]!;
-          const importBase = buildCdmImportMetadata(
-            ctx.projectId,
-            'projectUserApiKey',
-            item.row.externalKey ?? undefined
-          );
-          return {
-            projectId: ctx.projectId,
-            userId: item.userId,
-            apiKeyId: key.id,
-            metadata: mergeCdmImporterMetadata(importBase, item.row.metadata ?? undefined),
-          };
-        }),
-      },
-      tx
-    );
-    ctx.result.projectUserApiKeysCreated += input.length;
+    await this.createKeys(ctx, prepared, tx);
+    ctx.result.projectUserApiKeysCreated += prepared.length;
   }
 
   /**
@@ -164,7 +137,8 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
    *
    * The Grant client id is preserved on the row itself (not as identity); the
    * importer-supplied `cdmSource` history is preserved via
-   * `extractProjectUserMetadataForCdmExport`. `clientSecret` is never emitted.
+   * `extractProjectUserMetadataForCdmExport`. `clientSecret` and `cdmImport`
+   * (including the secret fingerprint) are never emitted.
    */
   public async export(ctx: CdmExportContext): Promise<readonly CdmProjectUserApiKeyInternal[]> {
     const tx = ctx.tx as Transaction | undefined;
@@ -229,24 +203,200 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
       return { ...base, userId, userKey: undefined };
     });
   }
-}
 
-async function resolveCdmApiKeyHashes(
-  prepared: readonly { row: CdmProjectUserApiKeyInternal; secret: string }[]
-): Promise<string[]> {
-  if (prepared.every((item) => item.row.clientSecretHash?.trim())) {
-    return prepared.map((item) => item.row.clientSecretHash!.trim());
+  private prepareRows(
+    ctx: CdmApplyContext,
+    input: readonly CdmProjectUserApiKeyInternal[]
+  ): PreparedApiKey[] {
+    const prepared: PreparedApiKey[] = [];
+    for (const [documentIndex, row] of input.entries()) {
+      const effectiveUserId = resolveApiKeyUserId(row, ctx);
+      if (!ctx.assignmentUserIds.has(effectiveUserId)) {
+        throw new ValidationError(
+          `projectUserApiKeys: user ${effectiveUserId} is not part of this import's user assignments`
+        );
+      }
+      const secret = row.clientSecret?.trim() ?? '';
+      if (!secret && !row.clientSecretHash?.trim()) {
+        throw new ValidationError(
+          `projectUserApiKeys: clientSecret is required for each key (user ${effectiveUserId})`
+        );
+      }
+      const externalKey = row.externalKey?.trim() ? row.externalKey.trim() : null;
+      prepared.push({
+        userId: effectiveUserId,
+        row,
+        secret,
+        classifyKey: externalKey ?? `__anon:${documentIndex}`,
+        documentIndex,
+      });
+    }
+    return prepared;
   }
-  const ready = peekPreparedCdmApiKeyHashes();
-  if (ready != null) {
-    if (ready.length !== prepared.length) {
-      throw new ValidationError(
-        'projectUserApiKeys: prepared secret hash count does not match keys'
+
+  private async applyReplace(
+    ctx: CdmApplyContext,
+    prepared: readonly PreparedApiKey[],
+    tx: Transaction
+  ): Promise<void> {
+    const existing = await this.importRepo.listCdmProjectUserApiKeysForReplace(ctx.projectId, tx);
+    const documentKeys: CdmDocumentApiKeyForClassify[] = prepared.map((item) => ({
+      classifyKey: item.classifyKey,
+      externalKey: item.row.externalKey?.trim() ? item.row.externalKey.trim() : null,
+      secret: item.secret,
+      documentIndex: item.documentIndex,
+    }));
+    const classified = classifyCdmApiKeyReplace(
+      documentKeys,
+      existing,
+      config.cdm.apiKeyFingerprintHmacSecret
+    );
+
+    const deleteIds = classified.delete.map((row) => row.apiKeyId);
+    if (deleteIds.length > 0) {
+      await this.apiKeys.deleteApiKeysForCdmImport({ ids: deleteIds }, tx);
+    }
+    ctx.result.projectUserApiKeysDeleted += classified.delete.length;
+
+    const preparedByClassifyKey = new Map(prepared.map((item) => [item.classifyKey, item]));
+
+    const rotateItems = classified.rotate.map((row) => {
+      const item = preparedByClassifyKey.get(row.document.classifyKey);
+      if (!item) {
+        throw new ValidationError('projectUserApiKeys: replace rotate is missing a document key');
+      }
+      return { item, existing: row.existing };
+    });
+    if (rotateItems.length > 0) {
+      const rotateHashes = await resolveCdmApiKeyHashes(rotateItems.map((row) => row.item));
+      await this.apiKeys.rotateApiKeysForCdmImport(
+        {
+          keys: rotateItems.map((row, index) => ({
+            id: row.existing.apiKeyId,
+            clientSecretHash: rotateHashes[index]!,
+          })),
+        },
+        tx
+      );
+      await this.writeFingerprints(
+        ctx.projectId,
+        rotateItems.map((row) => ({ item: row.item, existing: row.existing })),
+        tx
       );
     }
-    return [...ready];
+    ctx.result.projectUserApiKeysRotated += classified.rotate.length;
+
+    ctx.result.projectUserApiKeysUnchanged += classified.keep.length;
+
+    const createItems = classified.create.map((row) => {
+      const item = preparedByClassifyKey.get(row.document.classifyKey);
+      if (!item) {
+        throw new ValidationError('projectUserApiKeys: replace create is missing a document key');
+      }
+      return item;
+    });
+    if (createItems.length > 0) {
+      await this.createKeys(ctx, createItems, tx);
+    }
+    ctx.result.projectUserApiKeysCreated += createItems.length;
   }
-  return Promise.all(prepared.map((item) => hashSecretAsync(item.secret)));
+
+  private async createKeys(
+    ctx: CdmApplyContext,
+    prepared: readonly PreparedApiKey[],
+    tx: Transaction
+  ): Promise<void> {
+    const hashes = await resolveCdmApiKeyHashes(prepared);
+    const created = await this.apiKeys.createApiKeysForCdmImport(
+      {
+        keys: prepared.map((item, index) => ({
+          clientSecretHash: hashes[index]!,
+          clientId: item.row.clientId ?? undefined,
+          scope: { tenant: Tenant.ProjectUser, id: `${ctx.projectId}:${item.userId}` },
+          name: item.row.name ?? undefined,
+          description: item.row.description ?? undefined,
+          expiresAt:
+            item.row.expiresAt != null ? new Date(item.row.expiresAt as string | Date) : undefined,
+        })),
+      },
+      tx
+    );
+
+    await this.projectUserApiKeys.addProjectUserApiKeysForCdmImport(
+      {
+        links: created.map((key, index) => {
+          const item = prepared[index]!;
+          const fingerprint = fingerprintForSecret(item.secret, item.row.externalKey);
+          const importBase = buildCdmImportMetadata(
+            ctx.projectId,
+            'projectUserApiKey',
+            item.row.externalKey ?? undefined,
+            fingerprint
+          );
+          return {
+            projectId: ctx.projectId,
+            userId: item.userId,
+            apiKeyId: key.id,
+            metadata: mergeCdmImporterMetadata(importBase, item.row.metadata ?? undefined),
+          };
+        }),
+      },
+      tx
+    );
+  }
+
+  private async writeFingerprints(
+    projectId: string,
+    rows: readonly { item: PreparedApiKey; existing: CdmExistingApiKeyFingerprint }[],
+    tx: Transaction
+  ): Promise<void> {
+    const updates = rows.flatMap((row) => {
+      const fingerprint = fingerprintForSecret(row.item.secret, row.item.row.externalKey);
+      if (!fingerprint) {
+        return [];
+      }
+      const metadata = withCdmApiKeySecretFingerprint(row.existing.metadata ?? {}, fingerprint);
+      return [{ apiKeyId: row.existing.apiKeyId, projectId, metadata }];
+    });
+    await this.importRepo.updateCdmProjectUserApiKeyMetadata(updates, tx);
+  }
+}
+
+async function resolveCdmApiKeyHashes(prepared: readonly PreparedApiKey[]): Promise<string[]> {
+  return Promise.all(
+    prepared.map(async (item) => {
+      if (item.row.clientSecretHash?.trim()) {
+        return item.row.clientSecretHash.trim();
+      }
+      const byKey = peekPreparedCdmApiKeyHashByClassifyKey(item.classifyKey);
+      if (byKey) {
+        return byKey;
+      }
+      const ready = peekPreparedCdmApiKeyHashes();
+      if (ready != null && ready.length === prepared.length) {
+        const index = prepared.indexOf(item);
+        const hash = ready[index];
+        if (hash) {
+          return hash;
+        }
+      }
+      if (!item.secret) {
+        throw new ValidationError('projectUserApiKeys: clientSecret is required for each key');
+      }
+      return hashSecretAsync(item.secret);
+    })
+  );
+}
+
+function fingerprintForSecret(
+  secret: string,
+  externalKey: string | null | undefined
+): string | undefined {
+  if (!externalKey?.trim() || !secret) {
+    return undefined;
+  }
+  const digest = fingerprintCdmApiKeySecret(secret, config.cdm.apiKeyFingerprintHmacSecret);
+  return digest || undefined;
 }
 
 function resolveApiKeyUserId(row: CdmProjectUserApiKeyInternal, ctx: CdmApplyContext): string {

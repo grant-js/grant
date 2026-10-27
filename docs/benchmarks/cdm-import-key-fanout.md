@@ -9,6 +9,8 @@ Slice 1 of `plans/2026-10-27-cdm-import-batch-apply-brief.md`. Existing harness 
 
 The diagnosis (`plans/2026-10-27-cdm-import-performance-diagnosis.md`) remains order-of-magnitude for Lambda→RDS (~11 min first import). The numbers below are this host.
 
+Replace + hash-prep (follow-on story): [`cdm-import-key-fanout-replace.md`](./cdm-import-key-fanout-replace.md). `--repeat` below is **merge**, not replace.
+
 ## Environment
 
 | Field         | Value                                                                                                                                                                                                 |

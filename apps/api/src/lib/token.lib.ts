@@ -1,6 +1,6 @@
 import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import { compareSync, hash as hashAsync, hashSync } from 'bcrypt';
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
 
 import { config } from '@/config';
 
@@ -70,4 +70,16 @@ export function tokenHashesEqual(a: string, b: string): boolean {
   const left = Buffer.from(a, 'utf8');
   const right = Buffer.from(b, 'utf8');
   return left.length === right.length && timingSafeEqual(left, right);
+}
+
+/**
+ * HMAC-SHA256 hex digest. Classification / lookup only — not a password KDF and not a
+ * substitute for {@link hashSecret}. An empty key yields an empty digest so callers can
+ * fail closed (treat as a miss) instead of sharing a default HMAC key.
+ */
+export function hmacSha256Hex(key: string, value: string): string {
+  if (!key) {
+    return '';
+  }
+  return createHmac('sha256', key).update(value, 'utf8').digest('hex');
 }

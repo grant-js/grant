@@ -5,6 +5,8 @@
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- department enterprise
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- key-fanout
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- --repeat key-fanout
+ *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- --replace key-fanout
+ *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- --repeat --replace key-fanout
  *
  * **This is the tool whose absence cost an account cycle.** ADR 0002 asks whether a
  * `project-sync` import fits inside Lambda's 15-minute ceiling. Phase C measured one
@@ -25,9 +27,14 @@
  *      function of what is *already* there, not of the payload — which is why a repeat
  *      import costs more than a first one, and why a duration model built from payload
  *      size alone is wrong.
- *   2. **Both passes.** `--repeat` runs each profile twice into the same project: once
- *      into an empty one, once into a full one. The second is the case an adopter
- *      re-importing a corrected export actually hits.
+ *   2. **Merge repeat vs replace.** `--repeat` is merge-creates-again into the same
+ *      project. `--replace` is a later pass of the same document with
+ *      `mode.strategy = replace` + `confirmDestructive`. They are not interchangeable.
+ *   3. **Worker-shaped hash-prep.** Each pass hashes BYOK secrets with
+ *      `withHashedCdmApiKeySecrets` *before* the snapshot+import TX, then times
+ *      post-commit cache invalidate. `--replace` also runs a one-thread
+ *      (`hashSecret` / `hashSync`) bench of the same secrets so a multi-core
+ *      `Promise.all` is not reported as the Lambda number.
  *
  * Requires a disposable database. It creates an account and a project per pass and
  * deletes them afterwards; point it at the e2e stack (`pnpm test:e2e:up`), never at
@@ -37,13 +44,18 @@
 import { performance } from 'node:perf_hooks';
 
 import { accountProjects, accounts, initializeDBConnection, projects } from '@grantjs/database';
-import { type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
+import { CdmModeStrategy, type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
 import { eq } from 'drizzle-orm';
 
 import { config } from '@/config';
 import { createAppContext } from '@/lib/app-context.lib';
 import { CacheFactory } from '@/lib/cache';
 import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
+import {
+  collectCdmDocumentApiKeySecrets,
+  hashCdmApiKeySecretsSerially,
+  withHashedCdmApiKeySecrets,
+} from '@/lib/cdm/hash-cdm-api-key-secrets.lib';
 import { scopeToRlsContext, setRlsContext } from '@/lib/rls';
 
 import {
@@ -52,6 +64,12 @@ import {
   generateKeyFanoutCdm,
   KEY_FANOUT_CDM_SHAPE,
 } from '../helpers/cdm-scale-fixtures';
+import {
+  inputForPass,
+  type MeasurePass,
+  measurePasses,
+  parseMeasureArgs,
+} from '../helpers/measure-cdm-import';
 
 const MEASURE_PROFILES = [
   ...CDM_SCALE_PROFILES,
@@ -67,9 +85,13 @@ const LAMBDA_CEILING_SECONDS = 15 * 60;
 interface PassResult {
   profile: string;
   entities: number;
-  pass: 'first' | 'repeat';
+  pass: MeasurePass;
+  secretCount: number;
+  hashPrepSeconds: number;
   snapshotSeconds: number;
-  importSeconds: number;
+  applySeconds: number;
+  postCommitSeconds: number;
+  envelopedSeconds: number;
   totalSeconds: number;
   applied: number;
   counters: Record<string, number>;
@@ -97,7 +119,8 @@ function entityCount(cdm: CdmDocumentInput): number {
 function appliedCount(result: SyncProjectResult): number {
   return Object.entries(result).reduce<number>(
     (total, [key, value]) =>
-      typeof value === 'number' && /Created$|Linked$|Ensured$|Assigned$/.test(key)
+      typeof value === 'number' &&
+      /Created$|Linked$|Ensured$|Assigned$|Unchanged$|Rotated$|Deleted$/.test(key)
         ? total + value
         : total,
     0
@@ -184,10 +207,9 @@ function fitPowerLaw(points: ReadonlyArray<{ x: number; y: number }>) {
 }
 
 async function main(): Promise<void> {
-  const requested = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
-  const withRepeat = process.argv.includes('--repeat');
+  const flags = parseMeasureArgs(process.argv.slice(2));
   const profiles = MEASURE_PROFILES.filter(
-    (profile) => requested.length === 0 || requested.includes(profile.name)
+    (profile) => flags.requested.length === 0 || flags.requested.includes(profile.name)
   );
 
   if (profiles.length === 0) {
@@ -205,10 +227,25 @@ async function main(): Promise<void> {
   const { projectImport, projectExport } = context.services;
 
   const results: PassResult[] = [];
+  const serialBenches: Array<{
+    profile: string;
+    secretCount: number;
+    hashPrepSeconds: number;
+  }> = [];
 
   for (const profile of profiles) {
     const cdm = documentFor(profile.name);
     const entities = entityCount(cdm);
+    const secrets = collectCdmDocumentApiKeySecrets(cdm);
+
+    if (flags.withHashPrepSerial && secrets.length > 0) {
+      const serial = hashCdmApiKeySecretsSerially(secrets);
+      serialBenches.push({ profile: profile.name, ...serial });
+      process.stderr.write(
+        `${profile.name} (hash-prep serial, ${serial.secretCount} secrets): ` +
+          `${serial.hashPrepSeconds.toFixed(2)} s\n`
+      );
+    }
 
     const [account] = await db
       .insert(accounts)
@@ -225,79 +262,135 @@ async function main(): Promise<void> {
       id: `${account.id}:${project.id}`,
     };
 
-    const passes: Array<'first' | 'repeat'> = withRepeat ? ['first', 'repeat'] : ['first'];
+    for (const pass of measurePasses(flags)) {
+      const input = inputForPass(cdm, pass);
+      let hashPrepSeconds = 0;
+      let secretCount = 0;
 
-    for (const pass of passes) {
-      // One transaction for snapshot plus import, exactly as the worker does it: the
-      // snapshot must commit if and only if the import does. Timing them separately
-      // inside it is the only way to see which one grows.
-      const timings = await db.transaction(async (tx) => {
-        await setRlsContext(tx, scopeToRlsContext(scope));
+      const existing =
+        input.mode?.strategy === CdmModeStrategy.Replace
+          ? await projectImport.listCdmProjectUserApiKeysForReplace(project.id)
+          : undefined;
+      const enveloped = await withHashedCdmApiKeySecrets(
+        input,
+        async () =>
+          db.transaction(async (tx) => {
+            await setRlsContext(tx, scopeToRlsContext(scope));
 
-        const snapshotStart = performance.now();
-        await projectExport.exportProjectCdm(
-          { projectId: project.id, scope, version: cdm.version },
-          tx
-        );
-        const snapshotEnd = performance.now();
+            const snapshotStart = performance.now();
+            await projectExport.exportProjectCdm(
+              { projectId: project.id, scope, version: input.version },
+              tx
+            );
+            const snapshotEnd = performance.now();
 
-        const importResult = await projectImport.importProjectCdm(
-          { projectId: project.id, scope, input: cdm },
-          tx
-        );
-        const importEnd = performance.now();
+            const importResult = await projectImport.importProjectCdm(
+              { projectId: project.id, scope, input },
+              tx
+            );
+            const applyEnd = performance.now();
 
-        return {
-          snapshotSeconds: (snapshotEnd - snapshotStart) / 1000,
-          importSeconds: (importEnd - snapshotEnd) / 1000,
-          totalSeconds: (importEnd - snapshotStart) / 1000,
-          applied: appliedCount(importResult),
-          counters: numericCounters(importResult),
-        };
-      });
+            return {
+              snapshotSeconds: (snapshotEnd - snapshotStart) / 1000,
+              applySeconds: (applyEnd - snapshotEnd) / 1000,
+              envelopedSeconds: (applyEnd - snapshotStart) / 1000,
+              applied: appliedCount(importResult),
+              counters: numericCounters(importResult),
+            };
+          }),
+        (prep) => {
+          secretCount = prep.secretCount;
+          hashPrepSeconds = prep.hashPrepSeconds;
+        },
+        {
+          strategy: input.mode?.strategy,
+          existing,
+        }
+      );
 
-      if (timings.applied === 0) {
+      const postCommitStart = performance.now();
+      await projectImport.invalidateCachesForImportResult({ scope, userIds: [] });
+      const postCommitSeconds = (performance.now() - postCommitStart) / 1000;
+
+      if (enveloped.applied === 0) {
         throw new Error(
           `${profile.name} (${pass}): the import reported zero entities applied. A duration ` +
             'measured from an import that did nothing is not a measurement — refusing to report it.'
         );
       }
 
-      results.push({ profile: profile.name, entities, pass, ...timings });
+      const timings: PassResult = {
+        profile: profile.name,
+        entities,
+        pass,
+        secretCount,
+        hashPrepSeconds,
+        snapshotSeconds: enveloped.snapshotSeconds,
+        applySeconds: enveloped.applySeconds,
+        postCommitSeconds,
+        envelopedSeconds: enveloped.envelopedSeconds,
+        totalSeconds: hashPrepSeconds + enveloped.envelopedSeconds + postCommitSeconds,
+        applied: enveloped.applied,
+        counters: enveloped.counters,
+      };
+
+      results.push(timings);
       process.stderr.write(
         `${profile.name} (${entities} entities, ${pass}): ` +
           `${timings.totalSeconds.toFixed(2)} s ` +
-          `(snapshot ${timings.snapshotSeconds.toFixed(2)} s, ` +
-          `import ${timings.importSeconds.toFixed(2)} s)\n`
+          `(hash-prep ${timings.hashPrepSeconds.toFixed(2)} s, ` +
+          `snapshot ${timings.snapshotSeconds.toFixed(2)} s, ` +
+          `apply ${timings.applySeconds.toFixed(2)} s, ` +
+          `post-commit ${timings.postCommitSeconds.toFixed(2)} s)\n`
       );
     }
 
     await db.delete(accounts).where(eq(accounts.id, account.id));
   }
 
-  report(results);
+  report(results, serialBenches);
   await db.$client.end();
   await CacheFactory.disconnect(cache);
 }
 
-function report(results: ReadonlyArray<PassResult>): void {
+function report(
+  results: ReadonlyArray<PassResult>,
+  serialBenches: ReadonlyArray<{
+    profile: string;
+    secretCount: number;
+    hashPrepSeconds: number;
+  }>
+): void {
   const lines: string[] = [];
+
+  if (serialBenches.length > 0) {
+    lines.push('## One-thread hash-prep (`hashSecret` / bcrypt-10)', '');
+    lines.push('| Profile | Secrets | Hash-prep | ms/secret |');
+    lines.push('| --- | ---: | ---: | ---: |');
+    for (const row of serialBenches) {
+      const perSecret =
+        row.secretCount === 0 ? '0.0' : ((row.hashPrepSeconds / row.secretCount) * 1000).toFixed(1);
+      lines.push(
+        `| \`${row.profile}\` | ${row.secretCount.toLocaleString()} | ` +
+          `**${row.hashPrepSeconds.toFixed(2)} s** | ${perSecret} |`
+      );
+    }
+    lines.push('');
+  }
 
   lines.push('## Measured import durations', '');
   lines.push(
-    '| Profile | Entities | Pass | Snapshot | Import | Total | Applied | ms/entity | vs 15 min |'
+    '| Profile | Entities | Pass | Secrets | Hash-prep | Snapshot | Apply | Post-commit | Total | Applied | vs 15 min |'
   );
-  lines.push('| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+  lines.push('| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
   for (const row of results) {
     const headroom = ((row.totalSeconds / LAMBDA_CEILING_SECONDS) * 100).toFixed(1);
-    // Per-entity cost in the table because it is where superlinearity is visible without
-    // any model at all: if this column climbs, no linear extrapolation is safe.
-    const perEntity = ((row.totalSeconds / row.entities) * 1000).toFixed(1);
     lines.push(
       `| \`${row.profile}\` | ${row.entities.toLocaleString()} | ${row.pass} | ` +
-        `${row.snapshotSeconds.toFixed(2)} s | ${row.importSeconds.toFixed(2)} s | ` +
-        `**${row.totalSeconds.toFixed(2)} s** | ${row.applied.toLocaleString()} | ` +
-        `${perEntity} | ${headroom}% |`
+        `${row.secretCount.toLocaleString()} | ${row.hashPrepSeconds.toFixed(2)} s | ` +
+        `${row.snapshotSeconds.toFixed(2)} s | ${row.applySeconds.toFixed(2)} s | ` +
+        `${row.postCommitSeconds.toFixed(2)} s | **${row.totalSeconds.toFixed(2)} s** | ` +
+        `${row.applied.toLocaleString()} | ${headroom}% |`
     );
   }
 
@@ -381,9 +474,12 @@ function report(results: ReadonlyArray<PassResult>): void {
 
   lines.push(
     '',
-    `Ceiling ${LAMBDA_CEILING_SECONDS} s. Durations are snapshot + import inside one`,
-    'transaction, matching `project-sync.job.ts`. They exclude queue latency and the',
-    'job-row writes that bracket them.'
+    `Ceiling ${LAMBDA_CEILING_SECONDS} s. Worker-shaped path: hash-prep`,
+    '(`withHashedCdmApiKeySecrets`) then snapshot + apply in one transaction, then',
+    'post-commit `invalidateCachesForImportResult`. Totals include those three',
+    'phases. They exclude queue latency and job-row writes (`markCompleted`).',
+    '`--repeat` is merge; `--replace` is replace. One-thread hash-prep uses',
+    '`hashSecret` (sync bcrypt) so a multi-core `Promise.all` is not the Lambda number.'
   );
 
   process.stdout.write(lines.join('\n') + '\n');

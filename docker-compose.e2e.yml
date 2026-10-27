@@ -142,6 +142,9 @@ services:
       # Per-project OAuth BYO (required for connection upsert in E2E)
       PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: e2e-grant-project-oauth-conn-key-min-32-chars
 
+      # HMAC-SHA256 key for CDM API-key secret fingerprints (replace classify; test-only)
+      CDM_API_KEY_FINGERPRINT_HMAC_SECRET: e2e-grant-cdm-api-key-fingerprint-hmac
+
       # Email – console adapter (logs to stdout, no real emails)
       EMAIL_PROVIDER: console
       EMAIL_FROM_ADDRESS: noreply@e2e.grant.dev

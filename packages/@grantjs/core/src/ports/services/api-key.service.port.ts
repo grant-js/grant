@@ -81,6 +81,21 @@ export interface IApiKeyService {
     transaction?: unknown
   ): Promise<void>;
 
+  /**
+   * Import-only replace rotate: write an already-hashed BYOK secret onto existing
+   * keys (preserves `api_keys.id` / `clientId`). HTTP `rotateApiKey` still mints
+   * a new secret.
+   */
+  rotateApiKeysForCdmImport(
+    params: {
+      keys: readonly {
+        id: string;
+        clientSecretHash: string;
+      }[];
+    },
+    transaction?: unknown
+  ): Promise<void>;
+
   getApiKeys(
     params: Omit<QueryApiKeysArgs, 'scope'> & OptionalListScope & SelectedFields<ApiKey>,
     transaction?: unknown
