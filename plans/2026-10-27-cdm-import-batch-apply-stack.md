@@ -42,7 +42,7 @@ Slice 4 is **optional**: PE decides at the end of slice 2 (or 3 if keys are take
 | 1     | `feat/cdm-import-batch-apply-measure`  | `feat/cdm-import-batch-apply` | Key-fanout first + repeat baseline              | Backend    | light                                             | [#614](https://github.com/grant-js/grant/pull/614) |
 | 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     | [#615](https://github.com/grant-js/grant/pull/615) |
 | 3     | `feat/cdm-import-batch-apply-keys`     | prior slice                   | batch key insert / hash-outside-TX at bcrypt-10 | Backend    | security-full                                     | [#617](https://github.com/grant-js/grant/pull/617) |
-| 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat only if still needed          | Backend    | light (security-full if export isolation changes) |                                                    |
+| 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat — **skipped** (see below)     | Backend    | light (security-full if export isolation changes) | skipped after #617 remeasure                       |
 | final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              |                                                    |
 
 Prefer layer order: **db → schema → api → web**. This story has no schema/web slices. Slice 1 is the existing measure tool + a key-fanout fixture + docs. Slices 2–4 are `apps/api` CDM apply / job TX. Optional db index only if PE names it after measure.
@@ -131,6 +131,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - Today: first import into an empty project — snapshot is cheap. Repeat — snapshot walks the graph the first import just wrote (11 users × ~102 key identities × large `users[].roles`) **before** apply, then merge **creates again**. Best explanation for “11 min succeeded, next run exceeded 15.”
 - Outcome (only if still needed): cheaper snapshot inside the same all-or-nothing envelope, and/or memoized list-all for the second apply. Do **not** commit the snapshot in a transaction that can survive a failed apply (today they roll back together — keep that). Do **not** implement `mode.onConflict` upsert so the second merge “is faster.”
 - Skip if first+repeat after slice 2/3 already show a significant cut and a repeat that is explained (recorded numbers, not a guess).
+- **Skip recorded 2026-10-27** after #617, apply SHA `e99635c9`, same harness as slice 1 (`docs/benchmarks/cdm-import-key-fanout.md`). First **17.35 s** (snapshot 0.05 s, import 17.30 s) / repeat **17.20 s** (snapshot 0.04 s, import 17.16 s) vs slice 1 65.73 s / 65.30 s. SQL 20,438 calls / 0.81 s vs 59,047 / 1.87 s. Repeat is merge-creates-again; snapshot is not the remaining minutes. No slice-4 branch or PR.
 - Review: light unless export isolation or snapshot visibility (`hasSnapshot`, `GET …/snapshot`) changes — then security-full.
 - **UX:** no web files.
 
