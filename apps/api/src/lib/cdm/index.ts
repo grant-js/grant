@@ -8,4 +8,4 @@ export { UserAssignmentCdmEntity } from './entities/user-assignment.cdm-entity';
 export { expandCdmSyncInput } from './expand-cdm-sync-input.lib';
 export { refDedupKey, resolveAllPermissionRefs } from './permission-ref.lib';
 export type { CdmEntityRegistryDeps } from './registry';
-export { createDefaultCdmEntities } from './registry';
+export { createDefaultCdmEntities, createDefaultCdmRegistry } from './registry';

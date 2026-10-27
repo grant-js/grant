@@ -131,6 +131,7 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
     input: readonly CdmUserAssignmentInternal[]
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
+    const roleAssignments: { userId: string; roleId: string }[] = [];
 
     for (const ua of input) {
       const effectiveUserId = resolveAssignmentUserId(ua, ctx);
@@ -286,7 +287,7 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         if (!rid) {
           throw new ValidationError(`Unknown roleTemplateKey for user ${effectiveUserId}: ${key}`);
         }
-        await this.userRoles.addUserRole({ userId: effectiveUserId, roleId: rid }, tx);
+        roleAssignments.push({ userId: effectiveUserId, roleId: rid });
         ctx.result.userRolesAssigned += 1;
       }
 
@@ -301,6 +302,10 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         await this.userTags.addUserTag({ userId: effectiveUserId, tagId, isPrimary }, tx);
         ctx.result.userTagsLinked += 1;
       }
+    }
+
+    if (roleAssignments.length > 0) {
+      await this.userRoles.addUserRolesForCdmImport({ assignments: roleAssignments }, tx);
     }
   }
 

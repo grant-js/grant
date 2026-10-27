@@ -56,6 +56,17 @@ export interface IApiKeyRepository {
     transaction?: unknown
   ): Promise<ApiKey>;
 
+  createApiKeys(
+    params: readonly (Omit<CreateApiKeyInput, 'scope'> & {
+      clientId: string;
+      clientSecretHash: string;
+      createdBy: string;
+    })[],
+    transaction?: unknown
+  ): Promise<ApiKey[]>;
+
+  hardDeleteApiKeys(ids: readonly string[], transaction?: unknown): Promise<void>;
+
   updateClientSecretHash(
     id: string,
     clientSecretHash: string,

@@ -53,6 +53,13 @@ export class UserRoleRepository
     return this.add(params, transaction);
   }
 
+  public async addUserRoles(
+    params: readonly AddUserRoleInput[],
+    transaction?: Transaction
+  ): Promise<UserRole[]> {
+    return this.addMany(params, transaction);
+  }
+
   public async softDeleteUserRole(
     params: RemoveUserRoleInput,
     transaction?: Transaction

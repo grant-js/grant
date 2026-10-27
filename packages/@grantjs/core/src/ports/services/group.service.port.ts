@@ -68,6 +68,15 @@ export interface IGroupPermissionService {
     transaction?: unknown
   ): Promise<GroupPermission>;
 
+  /**
+   * Import-only: set-membership + multi-row insert for unique
+   * `(groupId, permissionId)` pairs. HTTP `addGroupPermission` stays sequential.
+   */
+  addGroupPermissionsForCdmImport(
+    params: { links: readonly AddGroupPermissionInput[] },
+    transaction?: unknown
+  ): Promise<GroupPermission[]>;
+
   removeGroupPermission(
     params: RemoveGroupPermissionInput & DeleteParams,
     transaction?: unknown

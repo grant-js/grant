@@ -14,12 +14,14 @@ import {
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
 
 import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
 import {
   addGroupPermissionParamsSchema,
+  addGroupPermissionsForCdmImportParamsSchema,
   getGroupPermissionsParamsSchema,
   groupPermissionSchema,
   removeGroupPermissionParamsSchema,
@@ -160,6 +162,77 @@ export class GroupPermissionService implements IGroupPermissionService {
     );
   }
 
+  public async addGroupPermissionsForCdmImport(
+    params: { links: readonly { groupId: string; permissionId: string }[] },
+    transaction?: Transaction
+  ): Promise<GroupPermission[]> {
+    const context = 'GroupPermissionService.addGroupPermissionsForCdmImport';
+    const validatedParams = validateInput(
+      addGroupPermissionsForCdmImportParamsSchema,
+      params,
+      context
+    );
+    const unique = uniquePairs(
+      validatedParams.links,
+      (row) => row.groupId,
+      (row) => row.permissionId
+    );
+    if (unique.length === 0) {
+      return [];
+    }
+
+    const groupIds = [...new Set(unique.map((row) => row.groupId))];
+    const permissionIds = [...new Set(unique.map((row) => row.permissionId))];
+    const [groups, permissions, existing] = await Promise.all([
+      this.groupRepository.getGroups(unboundedList({ ids: groupIds, limit: -1 }), transaction),
+      this.permissionRepository.getPermissions(
+        unboundedList({ ids: permissionIds, limit: -1 }),
+        transaction
+      ),
+      this.groupPermissionRepository.getGroupPermissionsByGroupIds(groupIds, transaction),
+    ]);
+    if (groups.groups.length !== groupIds.length) {
+      throw new NotFoundError('Group');
+    }
+    if (permissions.permissions.length !== permissionIds.length) {
+      throw new NotFoundError('Permission');
+    }
+
+    const existingKeys = new Set(existing.map((row) => `${row.groupId}\0${row.permissionId}`));
+    const missing = unique.filter(
+      (row) => !existingKeys.has(`${row.groupId}\0${row.permissionId}`)
+    );
+    if (missing.length === 0) {
+      return [];
+    }
+
+    const created = await this.groupPermissionRepository.addGroupPermissions(missing, transaction);
+    for (const groupPermission of created) {
+      const newValues = {
+        id: groupPermission.id,
+        groupId: groupPermission.groupId,
+        permissionId: groupPermission.permissionId,
+        createdAt: groupPermission.createdAt,
+        updatedAt: groupPermission.updatedAt,
+      };
+      await this.audit.logCreate(groupPermission.id, newValues, { context }, transaction);
+      await this.events.publish(
+        {
+          type: 'group.permission_assigned',
+          aggregate: { kind: 'groupPermission', id: groupPermission.id },
+          data: { after: newValues },
+        },
+        transaction
+      );
+    }
+
+    return validateOutput(
+      createDynamicSingleSchema(groupPermissionSchema).array(),
+      created,
+      context
+    );
+  }
+
   public async removeGroupPermission(
     params: RemoveGroupPermissionInput & DeleteParams,
     transaction?: Transaction
@@ -228,4 +301,20 @@ export class GroupPermissionService implements IGroupPermissionService {
       context
     );
   }
+}
+
+function uniquePairs<T>(
+  rows: readonly T[],
+  left: (row: T) => string,
+  right: (row: T) => string
+): T[] {
+  const seen = new Set<string>();
+  const unique: T[] = [];
+  for (const row of rows) {
+    const key = `${left(row)}\0${right(row)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+  return unique;
 }

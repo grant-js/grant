@@ -89,6 +89,7 @@ export default withMermaid({
             { text: 'Data Model', link: '/architecture/data-model' },
             { text: 'Security', link: '/architecture/security' },
             { text: 'Benchmarks', link: '/benchmarks/report' },
+            { text: 'CDM import (key-fanout)', link: '/benchmarks/cdm-import-key-fanout' },
           ],
         },
         {

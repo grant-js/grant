@@ -14,6 +14,7 @@ import { DeleteParams } from '@/types';
 import { validateInput } from './common';
 import {
   addProjectUserApiKeyParamsSchema,
+  addProjectUserApiKeysForCdmImportParamsSchema,
   removeProjectUserApiKeyParamsSchema,
 } from './project-user-api-keys.schemas';
 
@@ -125,6 +126,49 @@ export class ProjectUserApiKeyService implements IProjectUserApiKeyService {
     await this.audit.logCreate(pivot.id, newValues, auditMetadata, transaction);
 
     return pivot;
+  }
+
+  public async addProjectUserApiKeysForCdmImport(
+    params: {
+      links: readonly {
+        projectId: string;
+        userId: string;
+        apiKeyId: string;
+        metadata?: Record<string, unknown> | null;
+      }[];
+    },
+    transaction?: Transaction
+  ): Promise<ProjectUserApiKey[]> {
+    const context = 'ProjectUserApiKeyService.addProjectUserApiKeysForCdmImport';
+    const validatedParams = validateInput(
+      addProjectUserApiKeysForCdmImportParamsSchema,
+      params,
+      context
+    );
+    if (validatedParams.links.length === 0) {
+      return [];
+    }
+
+    const created = await this.projectUserApiKeyRepository.addProjectUserApiKeys(
+      validatedParams.links,
+      transaction
+    );
+    for (const pivot of created) {
+      await this.audit.logCreate(
+        pivot.id,
+        {
+          id: pivot.id,
+          projectId: pivot.projectId,
+          userId: pivot.userId,
+          apiKeyId: pivot.apiKeyId,
+          createdAt: pivot.createdAt,
+          updatedAt: pivot.updatedAt,
+        },
+        { context },
+        transaction
+      );
+    }
+    return created;
   }
 
   public async removeProjectUserApiKey(

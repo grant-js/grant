@@ -20,6 +20,11 @@ export const addProjectPermissionInputSchema = z.object({
   permissionId: idSchema,
 });
 
+export const addProjectPermissionsForCdmImportParamsSchema = z.object({
+  projectId: idSchema,
+  permissionIds: z.array(idSchema),
+});
+
 export const removeProjectPermissionInputSchema = deleteSchema.extend({
   projectId: idSchema,
   permissionId: idSchema,

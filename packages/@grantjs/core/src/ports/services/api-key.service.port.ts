@@ -55,6 +55,32 @@ export interface IApiKeyService {
     transaction?: unknown
   ): Promise<CreateApiKeyResult>;
 
+  /**
+   * Import-only: insert already-hashed BYOK secrets in one write.
+   * HTTP `createApiKey` stays sequential and still hashes inside its own path.
+   */
+  createApiKeysForCdmImport(
+    params: {
+      keys: readonly {
+        clientSecretHash: string;
+        clientId?: string | null;
+        scope?: Scope | null;
+        name?: string | null;
+        description?: string | null;
+        expiresAt?: Date | null;
+      }[];
+    },
+    transaction?: unknown
+  ): Promise<Array<{ id: string; clientId: string }>>;
+
+  /**
+   * Import-only replace teardown: hard-delete CDM API keys in one write.
+   */
+  deleteApiKeysForCdmImport(
+    params: { ids: readonly string[] },
+    transaction?: unknown
+  ): Promise<void>;
+
   getApiKeys(
     params: Omit<QueryApiKeysArgs, 'scope'> & OptionalListScope & SelectedFields<ApiKey>,
     transaction?: unknown

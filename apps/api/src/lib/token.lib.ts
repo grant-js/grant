@@ -1,5 +1,5 @@
 import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
-import { compareSync, hashSync } from 'bcrypt';
+import { compareSync, hash as hashAsync, hashSync } from 'bcrypt';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'crypto';
 
 import { config } from '@/config';
@@ -41,6 +41,14 @@ export function isTokenValid(token: Token): boolean {
 
 export function hashSecret(value: string, rounds: number = config.token.bcryptRounds): string {
   return hashSync(value, rounds);
+}
+
+/** Same KDF and default rounds as {@link hashSecret}; uses the libuv threadpool. */
+export function hashSecretAsync(
+  value: string,
+  rounds: number = config.token.bcryptRounds
+): Promise<string> {
+  return hashAsync(value, rounds);
 }
 
 export function verifySecret(value: string, hash: string): boolean {

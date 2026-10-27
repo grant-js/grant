@@ -76,7 +76,7 @@ The orchestrator deduplicates refs from all entities, then resolves in one pass 
 | ------------------- | ---------------------------------------- | ---------------------------------------------- |
 | `users.permissions` | `userAssignments[].directPermissionRefs` | `user_permissions`, `project_user_permissions` |
 | `users.groups`      | `userAssignments[].directGroupKeys`      | `user_groups`, `project_user_groups`           |
-| `users.roles`       | `userAssignments[].roleTemplateKeys`     | `user_roles`                                   |
+| `users.roles`       | `userAssignments[].roleTemplateKeys`     | `user_roles` (unique pairs; see below)         |
 | `roles.permissions` | `roleTemplates[].permissionRefs`         | `role_permissions` or group path               |
 | `roles.groups`      | paired role + group template             | `role_groups`, `group_permissions`             |
 
@@ -84,6 +84,22 @@ A role template may have an empty `permissionRefs` list (a pure label role): the
 no permission links and exported back with an empty `permissions` list.
 The same holds on the group path (`roles[].groups` set, those groups carrying no permissions):
 `validateInput` accepts the empty list, apply calls `createRoleWithGroup` with `[]` and links no permissions.
+
+`users.roles` listings are **not** collapsed at expand. Apply writes each unique
+`(user, role)` pair once (`addUserRolesForCdmImport`) and still increments
+`userRolesAssigned` **per listing**, including duplicates. HTTP `addUserRole` is
+unchanged. Import-only existence loads (`getUsers` / `getRoles` / `getGroups` /
+`getPermissions` / `getResources`) use `unboundedList` so a batch larger than
+`PAGINATION_MAX_PAGE_SIZE` still resolves. `CdmEntityBuilder` pivot memos are
+cleared at the start of each `importProjectCdm`.
+
+`users[].apiKeys` are hashed at bcrypt-10 (`TOKEN_BCRYPT_ROUNDS`) **before** the
+import transaction on the worker path (`withHashedCdmApiKeySecrets`), then
+inserted in one `createApiKeysForCdmImport` + `addProjectUserApiKeysForCdmImport`
+write. Direct `importProjectCdm` callers hash with the same async bcrypt before
+the key inserts. Only hashes are persisted; plaintext is not audited. HTTP
+`createApiKey` stays sequential. Replace teardown hard-deletes CDM keys in one
+`deleteApiKeysForCdmImport` write.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

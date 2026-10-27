@@ -216,6 +216,67 @@ export abstract class PivotRepository<
     }
   }
 
+  /**
+   * Insert live unique pairs that are not already present. Existing live rows
+   * are returned, not duplicated. Soft-deleted twins are left alone (partial
+   * unique indexes allow a new live row).
+   */
+  protected async addMany(
+    rows: readonly Record<string, unknown>[],
+    transaction?: Transaction
+  ): Promise<TPivotEntity[]> {
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const uniqueRows: Record<string, unknown>[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const key = this.uniqueRowKey(row);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      uniqueRows.push(row);
+    }
+
+    const fieldValues: Record<string, string[]> = {};
+    for (const field of this.uniqueIndexFields) {
+      fieldValues[field as string] = [
+        ...new Set(uniqueRows.map((row) => String(row[field as string]))),
+      ];
+    }
+
+    const existing = await this.queryIntersection(fieldValues, transaction);
+    const existingKeys = new Set(existing.map((row) => this.uniqueRowKey(row)));
+    const existingRequested = existing.filter((row) => seen.has(this.uniqueRowKey(row)));
+
+    const toInsert = uniqueRows.filter((row) => !existingKeys.has(this.uniqueRowKey(row)));
+    if (toInsert.length === 0) {
+      return existingRequested;
+    }
+
+    const db = transaction || this.db;
+    try {
+      const result = await db
+        .insert(this.table)
+        .values(toInsert.map((row) => this.toInsertValues(row)))
+        .returning();
+      const inserted = (Array.isArray(result) ? result : [result]).map((item) =>
+        this.toEntity(item as TPivotModel)
+      );
+      return [...existingRequested, ...inserted];
+    } catch (error) {
+      this.logger.error({
+        msg: 'Error adding pivot relationships',
+        err: error,
+      });
+      throw error;
+    }
+  }
+
+  private uniqueRowKey(row: Record<string, unknown>): string {
+    return this.uniqueIndexFields.map((field) => String(row[field as string] ?? '')).join('\0');
+  }
+
   protected async update(
     params: Record<string, unknown>,
     update: Partial<TPivotModel>,

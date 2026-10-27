@@ -320,6 +320,10 @@ export interface IProjectPermissionRepository {
     params: AddProjectPermissionInput,
     transaction?: unknown
   ): Promise<ProjectPermission>;
+  addProjectPermissions(
+    params: readonly AddProjectPermissionInput[],
+    transaction?: unknown
+  ): Promise<ProjectPermission[]>;
 
   softDeleteProjectPermission(
     params: RemoveProjectPermissionInput,
@@ -342,6 +346,10 @@ export interface IProjectResourceRepository {
     params: AddProjectResourceInput,
     transaction?: unknown
   ): Promise<ProjectResource>;
+  addProjectResources(
+    params: readonly AddProjectResourceInput[],
+    transaction?: unknown
+  ): Promise<ProjectResource[]>;
 
   softDeleteProjectResource(
     params: RemoveProjectResourceInput,
@@ -453,6 +461,11 @@ export interface IProjectUserApiKeyRepository {
     params: AddProjectUserApiKeyInput,
     transaction?: unknown
   ): Promise<ProjectUserApiKey>;
+
+  addProjectUserApiKeys(
+    params: readonly AddProjectUserApiKeyInput[],
+    transaction?: unknown
+  ): Promise<ProjectUserApiKey[]>;
 
   softDeleteProjectUserApiKey(
     params: RemoveProjectUserApiKeyInput,

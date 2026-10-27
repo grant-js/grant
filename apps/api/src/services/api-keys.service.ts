@@ -30,6 +30,7 @@ import {
   NotFoundError,
 } from '@/lib/errors';
 import { buildJwksIssuerUrl } from '@/lib/jwks.lib';
+import { unboundedList } from '@/lib/pagination.lib';
 import { generateRandomBytes, generateUUID, hashSecret, verifySecret } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
@@ -45,7 +46,9 @@ import {
   createApiKeyForCdmImportParamsSchema,
   createApiKeyRequestSchema,
   createApiKeyResponseSchema,
+  createApiKeysForCdmImportParamsSchema,
   deleteApiKeyParamsSchema,
+  deleteApiKeysForCdmImportParamsSchema,
   exchangeApiKeyParamsSchema,
   exchangeApiKeyResponseSchema,
   queryApiKeysArgsSchema,
@@ -396,6 +399,112 @@ export class ApiKeyService implements IApiKeyService {
     };
 
     return validateOutput(createApiKeyResponseSchema, response, context) as CreateApiKeyResult;
+  }
+
+  public async createApiKeysForCdmImport(
+    params: {
+      keys: readonly {
+        clientSecretHash: string;
+        clientId?: string | null;
+        scope?: Scope | null;
+        name?: string | null;
+        description?: string | null;
+        expiresAt?: Date | null;
+      }[];
+    },
+    transaction?: Transaction
+  ): Promise<Array<{ id: string; clientId: string }>> {
+    const context = 'ApiKeyService.createApiKeysForCdmImport';
+    const validatedParams = validateInput(createApiKeysForCdmImportParamsSchema, params, context);
+    if (validatedParams.keys.length === 0) {
+      return [];
+    }
+
+    const createdBy = this.getPerformedBy();
+    const seenClientIds = new Set<string>();
+    const rows = [];
+    for (const key of validatedParams.keys) {
+      const clientId =
+        key.clientId?.trim() && key.clientId.length > 0 ? key.clientId : generateUUID();
+      if (key.clientId) {
+        const scopeKey = key.scope ? `${key.scope.tenant}:${key.scope.id}:${clientId}` : clientId;
+        if (seenClientIds.has(scopeKey)) {
+          throw new ConflictError('clientId is already in use for this scope');
+        }
+        seenClientIds.add(scopeKey);
+        if (key.scope) {
+          await this.assertScopedClientIdAvailable(clientId, key.scope, transaction);
+        } else {
+          const existing = await this.apiKeyRepository.findByClientId(clientId, transaction);
+          if (existing) {
+            throw new ConflictError('clientId is already in use');
+          }
+        }
+      }
+      rows.push({
+        clientId,
+        clientSecretHash: key.clientSecretHash,
+        name: key.name ?? null,
+        description: key.description ?? null,
+        expiresAt: key.expiresAt ?? null,
+        createdBy,
+      });
+    }
+
+    const created = await this.apiKeyRepository.createApiKeys(rows, transaction);
+    for (const apiKey of created) {
+      const newValues = {
+        id: apiKey.id,
+        clientId: apiKey.clientId,
+        name: apiKey.name,
+        description: apiKey.description,
+        expiresAt: apiKey.expiresAt,
+        createdAt: apiKey.createdAt,
+      };
+      await this.audit.logCreate(
+        apiKey.id,
+        newValues,
+        { action: 'CREATE_API_KEY_CDM' },
+        transaction
+      );
+    }
+
+    return created.map((apiKey) => ({ id: apiKey.id, clientId: apiKey.clientId }));
+  }
+
+  public async deleteApiKeysForCdmImport(
+    params: { ids: readonly string[] },
+    transaction?: Transaction
+  ): Promise<void> {
+    const context = 'ApiKeyService.deleteApiKeysForCdmImport';
+    const validatedParams = validateInput(deleteApiKeysForCdmImportParamsSchema, params, context);
+    const ids = [...new Set(validatedParams.ids)];
+    if (ids.length === 0) {
+      return;
+    }
+
+    const { apiKeys } = await this.apiKeyRepository.getApiKeys(
+      unboundedList({ ids, limit: -1 }),
+      transaction
+    );
+    if (apiKeys.length !== ids.length) {
+      throw new NotFoundError('ApiKey');
+    }
+
+    for (const apiKey of apiKeys) {
+      await this.audit.logHardDelete(
+        apiKey.id,
+        {
+          id: apiKey.id,
+          clientId: apiKey.clientId,
+          name: apiKey.name,
+          deletedAt: apiKey.deletedAt,
+        },
+        { action: 'HARD_DELETE_API_KEY' },
+        transaction
+      );
+    }
+    await this.apiKeyRepository.hardDeleteApiKeys(ids, transaction);
   }
 
   public async getApiKeys(

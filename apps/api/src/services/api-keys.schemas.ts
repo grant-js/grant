@@ -66,10 +66,8 @@ export const exchangeApiKeyResponseSchema = z.object({
   expiresIn: z.number(),
 });
 
-/** CDM import: supply plaintext secret (BYOK); optional client id from export round-trip. */
-export const createApiKeyForCdmImportParamsSchema = z
+const cdmImportApiKeyFieldsSchema = z
   .object({
-    clientSecret: clientSecretSchema,
     clientId: clientIdSchema.nullable().optional(),
     scope: scopeSchema.nullable().optional(),
     name: nameSchema.nullable().optional(),
@@ -88,6 +86,27 @@ export const createApiKeyForCdmImportParamsSchema = z
       });
     }
   });
+
+/** CDM import: supply plaintext secret (BYOK); optional client id from export round-trip. */
+export const createApiKeyForCdmImportParamsSchema = cdmImportApiKeyFieldsSchema.and(
+  z.object({
+    clientSecret: clientSecretSchema,
+  })
+);
+
+export const createApiKeysForCdmImportParamsSchema = z.object({
+  keys: z.array(
+    cdmImportApiKeyFieldsSchema.and(
+      z.object({
+        clientSecretHash: z.string().min(1),
+      })
+    )
+  ),
+});
+
+export const deleteApiKeysForCdmImportParamsSchema = z.object({
+  ids: z.array(idSchema),
+});
 
 export const createApiKeyRequestSchema = z
   .object({

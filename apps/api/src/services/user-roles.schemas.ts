@@ -16,6 +16,10 @@ export const addUserRoleInputSchema = z.object({
   userId: idSchema.refine((userId) => userId.trim().length > 0, 'errors.validation.userIdRequired'),
 });
 
+export const addUserRolesForCdmImportParamsSchema = z.object({
+  assignments: z.array(addUserRoleInputSchema),
+});
+
 export const removeUserRoleInputSchema = deleteSchema.extend({
   roleId: idSchema.refine((roleId) => roleId.trim().length > 0, 'errors.validation.roleIdRequired'),
   userId: idSchema.refine((userId) => userId.trim().length > 0, 'errors.validation.userIdRequired'),
