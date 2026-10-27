@@ -37,17 +37,17 @@ Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that 
 
 Slice 4 is **optional**: PE decides at the end of slice 2 (or 3 if keys are taken) from the new measure numbers. Cheaper KDF for BYOK and Fargate are **not** slices — see [Out of this stack](#out-of-this-stack).
 
-| #     | Branch                                    | Base                              | Concern                                              | Owner role | Review bar             | PR  |
-| ----- | ----------------------------------------- | --------------------------------- | ---------------------------------------------------- | ---------- | ---------------------- | --- |
-| 1     | `feat/cdm-import-batch-apply-measure`     | `feat/cdm-import-batch-apply`     | Alteos-shaped first + repeat baseline                | Backend    | light                  |     |
-| 2     | `feat/cdm-import-batch-apply-pivots`      | prior slice                       | batch user-roles + group/project pivots              | Backend    | security-full          |     |
-| 3     | `feat/cdm-import-batch-apply-keys`        | prior slice                       | batch key insert / hash-outside-TX at bcrypt-10      | Backend    | security-full          |     |
-| 4     | `feat/cdm-import-batch-apply-snapshot`    | prior slice                       | snapshot / repeat only if still needed               | Backend    | light (security-full if export isolation changes) |     |
-| final | `feat/cdm-import-batch-apply`             | `main`                            | integration                                          | Principal  | deep + security-full   |     |
+| #     | Branch                                 | Base                          | Concern                                         | Owner role | Review bar                                        | PR  |
+| ----- | -------------------------------------- | ----------------------------- | ----------------------------------------------- | ---------- | ------------------------------------------------- | --- |
+| 1     | `feat/cdm-import-batch-apply-measure`  | `feat/cdm-import-batch-apply` | Alteos-shaped first + repeat baseline           | Backend    | light                                             |     |
+| 2     | `feat/cdm-import-batch-apply-pivots`   | prior slice                   | batch user-roles + group/project pivots         | Backend    | security-full                                     |     |
+| 3     | `feat/cdm-import-batch-apply-keys`     | prior slice                   | batch key insert / hash-outside-TX at bcrypt-10 | Backend    | security-full                                     |     |
+| 4     | `feat/cdm-import-batch-apply-snapshot` | prior slice                   | snapshot / repeat only if still needed          | Backend    | light (security-full if export isolation changes) |     |
+| final | `feat/cdm-import-batch-apply`          | `main`                        | integration                                     | Principal  | deep + security-full                              |     |
 
 Prefer layer order: **db → schema → api → web**. This story has no schema/web slices. Slice 1 is the existing measure tool + an Alteos-shaped fixture + docs. Slices 2–4 are `apps/api` CDM apply / job TX. Optional db index only if PE names it after measure.
 
-**Collapse rules:** Do not fold slice 2 into 3 (RBAC pivots vs API-key hashing are different review bars and different blast radii). Slice 3 may be **skipped** if slice 2 + re-measure already meet the wall-clock goal *and* keys are no longer in the top cost band — record the skip at slice-2 end; do not silently omit. Slice 4 may be skipped the same way.
+**Collapse rules:** Do not fold slice 2 into 3 (RBAC pivots vs API-key hashing are different review bars and different blast radii). Slice 3 may be **skipped** if slice 2 + re-measure already meet the wall-clock goal _and_ keys are no longer in the top cost band — record the skip at slice-2 end; do not silently omit. Slice 4 may be skipped the same way.
 
 ## Stack setup
 
@@ -98,6 +98,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - Light review. Security is not required unless this slice ships production apply code (fixture + measure tool + docs only).
 - **UX:** no web files.
 - **Fan-out:** none. Serial; one writer.
+- **Slice-1 start (2026-10-27):** Write-up is `docs/benchmarks/cdm-import-alteos.md`. Existing `measure:cdm-import` only. Docker was not available on the Cloud Agent VM; measure ran against a disposable local PostgreSQL 16 after the same migrate/seed as `e2e.sh`.
 
 ### 2 — Batch pivots and roles (the structural N+1)
 
@@ -116,7 +117,7 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 - Today: 1,124 sequential hash-in-TX + insert + audit + pivot + audit. `hashSync` blocks the event loop on the worker CPU. Diagnosis rank 1 (~2–6 min on this payload).
 - Outcome: multi-row insert + set membership for keys/pivots, and/or hash **before** the import TX (or async/worker threads) at **bcrypt-10**. Persist only hashes. Do not log or audit the plaintext secret. `projectUserApiKeysCreated` stays 1,124 for this fixture. Client-id uniqueness checks (`assertScopedClientIdAvailable`) stay fail-closed when `clientId` is present.
 - **In this slice:** mechanism only. **Out of this slice (and this stack):** cheaper KDF, lower `TOKEN_BCRYPT_ROUNDS`, “high-entropy BYOK can be SHA-256,” skipping hash, hashing in the API Lambda request path for interactive creates.
-- If slice 2’s re-measure already shows keys are not the remaining minutes *and* the Alteos-shaped first import met the story goal, PE records **skip slice 3** at slice-2 end. If keys still dominate but the only remaining win is a cheaper KDF, **skip this slice too** and leave KDF as a follow-on story — do not smuggle a product decision into a “performance” PR.
+- If slice 2’s re-measure already shows keys are not the remaining minutes _and_ the Alteos-shaped first import met the story goal, PE records **skip slice 3** at slice-2 end. If keys still dominate but the only remaining win is a cheaper KDF, **skip this slice too** and leave KDF as a follow-on story — do not smuggle a product decision into a “performance” PR.
 - **E2e lock:** key create / replace teardown / export-omits-secrets stay. Do not weaken secret-redaction tests.
 - Tests: unit that a CDM key is stored hashed; mid-batch throw rolls back already-inserted keys in the envelope; replace still hard-deletes CDM keys (batch delete is allowed). Security-full (independent Security) before gate 3.
 - **UX:** no web files.
@@ -135,17 +136,17 @@ Never skip husky (`--no-verify`, `HUSKY=0`). Open PRs as `grantjs-agent` via `GR
 
 These are explicit **non-slices**. Do not add them under a “while we’re here” at slice start.
 
-| Item | Why it stays out |
-| ---- | ---------------- |
+| Item                                                            | Why it stays out                                                                                                                                                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Fargate / `JOBS_SYNC_RUNTIME=container` / `run-sync-job.ts`** | Ops. ADR 0002 hatch already exists so a long job can finish. It does not make sequential apply fast. Enable in deploy if Alteos still exceeds 15 minutes after this story; that is not a Grant code slice. |
-| **Cheaper KDF for BYOK** | Product + security decision (what we store, what `verifySecret` accepts, interactive vs import). First stack may hash outside the TX or batch inserts at bcrypt-10 only. |
-| **`mode.onConflict` / upsert-by-`externalKey`** | Product: merge today always creates new roles/groups/keys. A faster second merge that skip-creates is a different story. |
-| **Raising `CDM_IMPORT_MAX_ENTITIES`** | Would not have blocked Alteos (counts roles/users/resources/permissions/groups/tags, not keys or links). |
-| **RLS off / `DB_POOL_MAX` bump** | Apply holds **one** connection. See `docs/advanced-topics/transactions.md`. |
-| **Rust rewrite** | Preferences / platform rule. |
-| **H1–H4 HTTP path** | Diagnosis: they barely touch the worker apply loop. |
-| **Skipping audit / re-enabling entity webhooks** | Contract. |
-| **Committing partial graphs** | Alejandro: all-or-nothing. Mechanism may change; outcome may not. |
+| **Cheaper KDF for BYOK**                                        | Product + security decision (what we store, what `verifySecret` accepts, interactive vs import). First stack may hash outside the TX or batch inserts at bcrypt-10 only.                                   |
+| **`mode.onConflict` / upsert-by-`externalKey`**                 | Product: merge today always creates new roles/groups/keys. A faster second merge that skip-creates is a different story.                                                                                   |
+| **Raising `CDM_IMPORT_MAX_ENTITIES`**                           | Would not have blocked Alteos (counts roles/users/resources/permissions/groups/tags, not keys or links).                                                                                                   |
+| **RLS off / `DB_POOL_MAX` bump**                                | Apply holds **one** connection. See `docs/advanced-topics/transactions.md`.                                                                                                                                |
+| **Rust rewrite**                                                | Preferences / platform rule.                                                                                                                                                                               |
+| **H1–H4 HTTP path**                                             | Diagnosis: they barely touch the worker apply loop.                                                                                                                                                        |
+| **Skipping audit / re-enabling entity webhooks**                | Contract.                                                                                                                                                                                                  |
+| **Committing partial graphs**                                   | Alejandro: all-or-nothing. Mechanism may change; outcome may not.                                                                                                                                          |
 
 ## Dependencies / notes
 

@@ -41,7 +41,12 @@ import { describe, expect, it } from 'vitest';
 
 import { startProjectSyncRequestSchema } from '@/rest/schemas/projects.schemas';
 
-import { CDM_SCALE_PROFILES, generateCdmAtScale } from '../../../helpers/cdm-scale-fixtures';
+import {
+  ALTEOS_CDM_SHAPE,
+  CDM_SCALE_PROFILES,
+  generateAlteosShapedCdm,
+  generateCdmAtScale,
+} from '../../../helpers/cdm-scale-fixtures';
 
 const SCOPE = {
   id: '123e4567-e89b-12d3-a456-426614174005',
@@ -144,5 +149,81 @@ describe('CDM scale fixtures', () => {
     const secrets = cdm.users.flatMap((u) => (u.apiKeys ?? []).map((k) => k.clientSecret));
     expect(secrets.length).toBeGreaterThan(0);
     expect(new Set(secrets).size).toBe(secrets.length);
+  });
+});
+
+describe('Alteos-shaped CDM fixture', () => {
+  it('is not one of the many-user scale profiles', () => {
+    expect(CDM_SCALE_PROFILES.map((profile) => profile.name)).not.toContain(ALTEOS_CDM_SHAPE.name);
+  });
+
+  it('produces a document startProjectSyncRequestSchema accepts', () => {
+    const result = startProjectSyncRequestSchema.safeParse({
+      scope: SCOPE,
+      ...generateAlteosShapedCdm(),
+    });
+    expect(result.error?.issues[0] ?? null).toBeNull();
+    expect(result.success).toBe(true);
+  });
+
+  it('produces permission conditions the service will also accept', () => {
+    const conditions = (generateAlteosShapedCdm().permissions ?? [])
+      .map((permission) => permission.condition)
+      .filter((condition) => condition != null);
+
+    expect(conditions.length).toBeGreaterThan(0);
+    for (const condition of conditions) {
+      const result = permissionConditionSchema.safeParse(condition);
+      expect(
+        result.error?.issues[0]?.message ?? null,
+        `condition rejected: ${JSON.stringify(condition)}`
+      ).toBeNull();
+    }
+  });
+
+  it('resolves every user by a key that provisions one', () => {
+    const cdm = generateAlteosShapedCdm();
+    expect(cdm.users).toHaveLength(ALTEOS_CDM_SHAPE.users);
+    for (const user of cdm.users) {
+      expect(user.key.findBy, `user ${user.key.value} must not resolve by id`).not.toBe(
+        CdmFindBy.Id
+      );
+    }
+  });
+
+  it('matches the Alteos entity, key, listing, and link counts', () => {
+    const cdm = generateAlteosShapedCdm();
+    const roleListings = cdm.users.flatMap((user) => user.roles ?? []);
+    const apiKeys = cdm.users.flatMap((user) => user.apiKeys ?? []);
+    const groupPermissionLinks = (cdm.groups ?? []).reduce(
+      (total, group) => total + (group.permissions?.length ?? 0),
+      0
+    );
+
+    expect(cdm.users).toHaveLength(ALTEOS_CDM_SHAPE.users);
+    expect(cdm.roles).toHaveLength(ALTEOS_CDM_SHAPE.roles);
+    expect(cdm.groups).toHaveLength(ALTEOS_CDM_SHAPE.groups);
+    expect(cdm.resources).toHaveLength(ALTEOS_CDM_SHAPE.resources);
+    expect(cdm.permissions).toHaveLength(ALTEOS_CDM_SHAPE.permissions);
+    expect(cdm.tags ?? []).toHaveLength(ALTEOS_CDM_SHAPE.tags);
+    expect(apiKeys).toHaveLength(ALTEOS_CDM_SHAPE.apiKeys);
+    expect(roleListings).toHaveLength(ALTEOS_CDM_SHAPE.userRoleListings);
+    expect(groupPermissionLinks).toBe(ALTEOS_CDM_SHAPE.groupPermissionLinks);
+    expect(new Set(roleListings).size).toBe(ALTEOS_CDM_SHAPE.roles);
+    expect(roleListings.length).toBeGreaterThan(cdm.roles.length);
+  });
+
+  it('is deterministic — the same seed produces identical bytes', () => {
+    expect(JSON.stringify(generateAlteosShapedCdm())).toBe(
+      JSON.stringify(generateAlteosShapedCdm())
+    );
+  });
+
+  it('carries distinct API-key secrets and omits clientId so merge-repeat can finish', () => {
+    const keys = generateAlteosShapedCdm().users.flatMap((user) => user.apiKeys ?? []);
+    const secrets = keys.map((key) => key.clientSecret);
+    expect(keys).toHaveLength(ALTEOS_CDM_SHAPE.apiKeys);
+    expect(new Set(secrets).size).toBe(secrets.length);
+    expect(keys.every((key) => key.clientId == null)).toBe(true);
   });
 });

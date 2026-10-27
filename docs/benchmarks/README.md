@@ -2,6 +2,8 @@
 
 Committed summary: **[Benchmark report](./report.md)**.
 
+Alteos-shaped CDM import first + repeat (batch-apply slice 1) is a different recipe: [Alteos-shaped CDM import baseline](./cdm-import-alteos.md). Do not treat this H4 `is-authorized` report as that target.
+
 Measures `POST /api/auth/is-authorized` (cold vs warm cache, allow vs deny, throughput) against a running Grant API:
 
 ```bash

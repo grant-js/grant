@@ -3,6 +3,8 @@
  *
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- department enterprise
+ *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- alteos
+ *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- --repeat alteos
  *
  * **This is the tool whose absence cost an account cycle.** ADR 0002 asks whether a
  * `project-sync` import fits inside Lambda's 15-minute ceiling. Phase C measured one
@@ -44,7 +46,20 @@ import { CacheFactory } from '@/lib/cache';
 import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import { scopeToRlsContext, setRlsContext } from '@/lib/rls';
 
-import { CDM_SCALE_PROFILES, generateCdmAtScale } from '../helpers/cdm-scale-fixtures';
+import {
+  ALTEOS_CDM_SHAPE,
+  CDM_SCALE_PROFILES,
+  generateAlteosShapedCdm,
+  generateCdmAtScale,
+} from '../helpers/cdm-scale-fixtures';
+
+const MEASURE_PROFILES = [
+  ...CDM_SCALE_PROFILES,
+  {
+    name: ALTEOS_CDM_SHAPE.name,
+    shape: ALTEOS_CDM_SHAPE.shape,
+  },
+] as const;
 
 /** Lambda's hard wall. The number every duration here is measured against. */
 const LAMBDA_CEILING_SECONDS = 15 * 60;
@@ -57,6 +72,7 @@ interface PassResult {
   importSeconds: number;
   totalSeconds: number;
   applied: number;
+  counters: Record<string, number>;
 }
 
 function entityCount(cdm: CdmDocumentInput): number {
@@ -86,6 +102,19 @@ function appliedCount(result: SyncProjectResult): number {
         : total,
     0
   );
+}
+
+function numericCounters(result: SyncProjectResult): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(result).filter(([, value]) => typeof value === 'number')
+  ) as Record<string, number>;
+}
+
+function documentFor(profileName: string): CdmDocumentInput {
+  if (profileName === ALTEOS_CDM_SHAPE.name) {
+    return generateAlteosShapedCdm();
+  }
+  return generateCdmAtScale(CDM_SCALE_PROFILES.find((profile) => profile.name === profileName)!);
 }
 
 /**
@@ -157,14 +186,12 @@ function fitPowerLaw(points: ReadonlyArray<{ x: number; y: number }>) {
 async function main(): Promise<void> {
   const requested = process.argv.slice(2).filter((argument) => !argument.startsWith('--'));
   const withRepeat = process.argv.includes('--repeat');
-  const profiles = CDM_SCALE_PROFILES.filter(
+  const profiles = MEASURE_PROFILES.filter(
     (profile) => requested.length === 0 || requested.includes(profile.name)
   );
 
   if (profiles.length === 0) {
-    throw new Error(
-      `No profile matched. Known: ${CDM_SCALE_PROFILES.map((p) => p.name).join(', ')}`
-    );
+    throw new Error(`No profile matched. Known: ${MEASURE_PROFILES.map((p) => p.name).join(', ')}`);
   }
 
   const connectionString = process.env.DB_URL;
@@ -180,7 +207,7 @@ async function main(): Promise<void> {
   const results: PassResult[] = [];
 
   for (const profile of profiles) {
-    const cdm = generateCdmAtScale(profile);
+    const cdm = documentFor(profile.name);
     const entities = entityCount(cdm);
 
     const [account] = await db
@@ -225,6 +252,7 @@ async function main(): Promise<void> {
           importSeconds: (importEnd - snapshotEnd) / 1000,
           totalSeconds: (importEnd - snapshotStart) / 1000,
           applied: appliedCount(importResult),
+          counters: numericCounters(importResult),
         };
       });
 
@@ -273,7 +301,24 @@ function report(results: ReadonlyArray<PassResult>): void {
     );
   }
 
-  const firstPasses = results.filter((row) => row.pass === 'first');
+  const counterKeys = [...new Set(results.flatMap((row) => Object.keys(row.counters)))].sort();
+  if (counterKeys.length > 0) {
+    lines.push('', '## SyncProjectResult counters', '');
+    lines.push(`| Profile | Pass | ${counterKeys.map((key) => `\`${key}\``).join(' | ')} |`);
+    lines.push(`| --- | --- | ${counterKeys.map(() => '---:').join(' | ')} |`);
+    for (const row of results) {
+      lines.push(
+        `| \`${row.profile}\` | ${row.pass} | ` +
+          `${counterKeys.map((key) => (row.counters[key] ?? 0).toLocaleString()).join(' | ')} |`
+      );
+    }
+  }
+
+  // Alteos is a different shape (few entities, huge key + listing fan-out). Mixing
+  // it into the 28,880-entity scale fit would pretend those points share a model.
+  const firstPasses = results.filter(
+    (row) => row.pass === 'first' && row.profile !== ALTEOS_CDM_SHAPE.name
+  );
   if (firstPasses.length >= 2) {
     const model = fit(firstPasses.map((row) => ({ x: row.entities, y: row.totalSeconds })));
     const perThousand = model.slope * 1000;
