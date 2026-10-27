@@ -39,7 +39,7 @@ Slice 3 is **optional**: PE decides at the end of slice 2 from post-commit numbe
 
 | #     | Branch                                        | Base                              | Concern                                         | Owner role | Review bar                                            | PR  |
 | ----- | --------------------------------------------- | --------------------------------- | ----------------------------------------------- | ---------- | ----------------------------------------------------- | --- |
-| 1     | `feat/cdm-replace-unchanged-keys-measure`     | `feat/cdm-replace-unchanged-keys` | Replace + hash-prep baseline (1-CPU / job logs) | Backend    | light                                                 |     |
+| 1     | `feat/cdm-replace-unchanged-keys-measure`     | `feat/cdm-replace-unchanged-keys` | Replace + hash-prep baseline (1-CPU / job logs) | Backend    | light                                                 | [#622](https://github.com/grant-js/grant/pull/622) |
 | 2     | `feat/cdm-replace-unchanged-keys-fingerprint` | prior slice                       | HMAC fingerprint + skip unchanged on replace    | Backend    | security-full                                         |     |
 | 3     | `feat/cdm-replace-unchanged-keys-postcommit`  | prior slice                       | post-commit tail — **optional**                 | Backend    | light (security-full if invalidate isolation changes) |     |
 | final | `feat/cdm-replace-unchanged-keys`             | `main`                            | integration                                     | Principal  | deep + security-full                                  |     |
