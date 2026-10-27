@@ -42,7 +42,7 @@ Slice 3 is **optional** and was **skipped** after #623 (hash-prep win is the sto
 | 1     | `feat/cdm-replace-unchanged-keys-measure`     | `feat/cdm-replace-unchanged-keys` | Replace + hash-prep baseline (1-CPU / job logs) | Backend    | light                                                 | [#622](https://github.com/grant-js/grant/pull/622) |
 | 2     | `feat/cdm-replace-unchanged-keys-fingerprint` | prior slice                       | HMAC fingerprint + skip unchanged on replace    | Backend    | security-full                                         | [#623](https://github.com/grant-js/grant/pull/623) |
 | 3     | `feat/cdm-replace-unchanged-keys-postcommit`  | prior slice                       | post-commit tail — **skipped** (see below)      | Backend    | light (security-full if invalidate isolation changes) | skipped after #623                                 |
-| final | `feat/cdm-replace-unchanged-keys`             | `main`                            | integration                                     | Principal  | deep + security-full                                  |                                                    |
+| final | `feat/cdm-replace-unchanged-keys`             | `main`                            | integration                                     | Principal  | deep + security-full                                  | [#625](https://github.com/grant-js/grant/pull/625) |
 
 Prefer layer order: **db → schema → api → web**. This story has **no db migration** (fingerprint lives on existing pivot `metadata.cdmImport`) and **no web**. Schema codegen for additive `SyncProjectResult` counters **folds into slice 2** (a few GraphQL fields + `pnpm --filter @grantjs/schema generate` + REST zod / OpenAPI). Do not open a standalone schema PR for three integers.
 
@@ -167,7 +167,7 @@ These are explicit **non-slices**. Do not add them under a “while we’re here
 
 - [x] Gate 2: Stack plan approved — 2026-10-27 by Alejandro.
 - [x] Gate 3: Stack PRs merged into trunk — 2026-10-27 by Alejandro (#622 light, #623 security-full; slice 3 skipped).
-- [ ] Gate 4: Story → `main` deep + security-full review complete.
+- [ ] Gate 4: Story → `main` deep + security-full — open [#625](https://github.com/grant-js/grant/pull/625); agents do not merge.
 
 ## Cleanup
 
