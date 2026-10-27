@@ -118,14 +118,14 @@ export const CDM_SCALE_PROFILES: readonly CdmScaleProfile[] = [
 
 /**
  * Inverse of {@link CDM_SCALE_PROFILES}: few users, many BYOK keys, and repeated
- * `users[].roles` listings against a handful of templates. The Alteos production
- * document that motivated `plans/2026-10-27-cdm-import-batch-apply-brief.md`.
+ * `users[].roles` listings against a handful of templates. The key-fanout shape
+ * that motivated `plans/2026-10-27-cdm-import-batch-apply-brief.md`.
  *
  * Do not reuse `enterprise` / `entropy-bound` as this shape — those profiles are
  * many seats, 0–1 key each, and they omit the key + listing fan-out.
  */
-export const ALTEOS_CDM_SHAPE = {
-  name: 'alteos',
+export const KEY_FANOUT_CDM_SHAPE = {
+  name: 'key-fanout',
   shape: 'few users, many BYOK keys, repeated role listings (inverse of CDM_SCALE_PROFILES)',
   users: 11,
   roles: 7,
@@ -479,12 +479,12 @@ function samplePermissions(rand: () => number, pool: string[], min: number, max:
 }
 
 /**
- * Build the Alteos-shaped document. Exact listing / key / link counts, with
+ * Build the key-fanout document. Exact listing / key / link counts, with
  * repeated `users[].roles` keys — not 1,883 distinct roles.
  */
-export function generateAlteosShapedCdm(seed = 0xa17e05): CdmDocumentInput {
+export function generateKeyFanoutCdm(seed = 0x1f4a01): CdmDocumentInput {
   const rand = createRandom(seed);
-  const shape = ALTEOS_CDM_SHAPE;
+  const shape = KEY_FANOUT_CDM_SHAPE;
 
   // 14 resources × 8 actions + 32 × 7 = 336 permissions. ACTIONS has eight names.
   const resources = Array.from({ length: shape.resources }, (_, i) => {

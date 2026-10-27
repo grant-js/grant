@@ -1,11 +1,11 @@
 ---
-title: Alteos-shaped CDM import baseline
-description: First and repeat wall-clock of an Alteos-shaped project-sync import on current main
+title: Key-fanout CDM import baseline
+description: First and repeat wall-clock of a key-fanout project-sync import on current main
 ---
 
-# Alteos-shaped CDM import baseline
+# Key-fanout CDM import baseline
 
-Slice 1 of `plans/2026-10-27-cdm-import-batch-apply-brief.md`. Existing harness only: `pnpm --filter grant-api measure:cdm-import -- --repeat alteos`. **No production apply code changed.** This page does not invent a p50/p95/p99 and does not publish a Lambda-fit SLA.
+Slice 1 of `plans/2026-10-27-cdm-import-batch-apply-brief.md`. Existing harness only: `pnpm --filter grant-api measure:cdm-import -- --repeat key-fanout`. **No production apply code changed.** This page does not invent a p50/p95/p99 and does not publish a Lambda-fit SLA.
 
 The diagnosis (`plans/2026-10-27-cdm-import-performance-diagnosis.md`) remains order-of-magnitude for Lambda→RDS (~11 min first import). The numbers below are this host.
 
@@ -15,8 +15,8 @@ The diagnosis (`plans/2026-10-27-cdm-import-performance-diagnosis.md`) remains o
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Date**      | 2026-10-27                                                                                                                                                                                            |
 | **Apply SHA** | `588183f9` (`origin/main`; this slice does not change apply)                                                                                                                                          |
-| **Fixture**   | `generateAlteosShapedCdm()` / profile `alteos` — not `enterprise` / `entropy-bound`                                                                                                                   |
-| **Command**   | `NODE_ENV=test DB_URL=… pnpm --filter grant-api measure:cdm-import -- --repeat alteos`                                                                                                                |
+| **Fixture**   | `generateKeyFanoutCdm()` / profile `key-fanout` — not `enterprise` / `entropy-bound`                                                                                                                  |
+| **Command**   | `NODE_ENV=test DB_URL=… pnpm --filter grant-api measure:cdm-import -- --repeat key-fanout`                                                                                                            |
 | **Datastore** | Disposable PostgreSQL 16 on localhost:5432, migrated and seeded with the e2e scripts. Docker was not available on this Cloud Agent VM, so `pnpm test:e2e:up` could not start; same migrate/seed path. |
 | **RLS**       | On (`SET LOCAL` inside the measure transaction, matching the worker)                                                                                                                                  |
 | **Hash**      | `TOKEN_BCRYPT_ROUNDS=10`                                                                                                                                                                              |
@@ -27,10 +27,10 @@ The diagnosis (`plans/2026-10-27-cdm-import-performance-diagnosis.md`) remains o
 
 ## Results
 
-| Profile  | Entities | Pass   | Snapshot |  Import |       Total | Applied | ms/entity | vs 15 min |
-| -------- | -------: | ------ | -------: | ------: | ----------: | ------: | --------: | --------: |
-| `alteos` |      457 | first  |   0.02 s | 65.72 s | **65.73 s** |   4,415 |     143.8 |      7.3% |
-| `alteos` |      457 | repeat |   0.04 s | 65.26 s | **65.30 s** |   4,393 |     142.9 |      7.3% |
+| Profile      | Entities | Pass   | Snapshot |  Import |       Total | Applied | ms/entity | vs 15 min |
+| ------------ | -------: | ------ | -------: | ------: | ----------: | ------: | --------: | --------: |
+| `key-fanout` |      457 | first  |   0.02 s | 65.72 s | **65.73 s** |   4,415 |     143.8 |      7.3% |
+| `key-fanout` |      457 | repeat |   0.04 s | 65.26 s | **65.30 s** |   4,393 |     142.9 |      7.3% |
 
 Durations are snapshot + import inside one transaction, matching `project-sync.job.ts`. They exclude queue latency and the job-row writes that bracket them. The existing tool's "vs 15 min" column is the Lambda ceiling the harness already prints — not a new target from this slice.
 
@@ -93,4 +93,4 @@ On this host the **repeat snapshot stayed cheap** (0.04 s). That does **not** ca
 - Not a p95. One first pass, one repeat.
 - Not a new Lambda-fit target. Do not scale 65.73 s by a guessed RDS RTT factor.
 - Not the ADR 0002 28,880-entity / 62.3 min row (inverse shape: many users, few keys).
-- Not a reason to skip slice 2. The sequential service loop and bcrypt-in-TX are still the apply path; this slice only wrote the Alteos-shaped before-picture.
+- Not a reason to skip slice 2. The sequential service loop and bcrypt-in-TX are still the apply path; this slice only wrote the key-fanout before-picture.

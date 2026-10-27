@@ -3,8 +3,8 @@
  *
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import
  *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- department enterprise
- *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- alteos
- *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- --repeat alteos
+ *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- key-fanout
+ *   DB_URL=postgres://… pnpm --filter grant-api measure:cdm-import -- --repeat key-fanout
  *
  * **This is the tool whose absence cost an account cycle.** ADR 0002 asks whether a
  * `project-sync` import fits inside Lambda's 15-minute ceiling. Phase C measured one
@@ -47,17 +47,17 @@ import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
 import { scopeToRlsContext, setRlsContext } from '@/lib/rls';
 
 import {
-  ALTEOS_CDM_SHAPE,
   CDM_SCALE_PROFILES,
-  generateAlteosShapedCdm,
   generateCdmAtScale,
+  generateKeyFanoutCdm,
+  KEY_FANOUT_CDM_SHAPE,
 } from '../helpers/cdm-scale-fixtures';
 
 const MEASURE_PROFILES = [
   ...CDM_SCALE_PROFILES,
   {
-    name: ALTEOS_CDM_SHAPE.name,
-    shape: ALTEOS_CDM_SHAPE.shape,
+    name: KEY_FANOUT_CDM_SHAPE.name,
+    shape: KEY_FANOUT_CDM_SHAPE.shape,
   },
 ] as const;
 
@@ -111,8 +111,8 @@ function numericCounters(result: SyncProjectResult): Record<string, number> {
 }
 
 function documentFor(profileName: string): CdmDocumentInput {
-  if (profileName === ALTEOS_CDM_SHAPE.name) {
-    return generateAlteosShapedCdm();
+  if (profileName === KEY_FANOUT_CDM_SHAPE.name) {
+    return generateKeyFanoutCdm();
   }
   return generateCdmAtScale(CDM_SCALE_PROFILES.find((profile) => profile.name === profileName)!);
 }
@@ -314,10 +314,10 @@ function report(results: ReadonlyArray<PassResult>): void {
     }
   }
 
-  // Alteos is a different shape (few entities, huge key + listing fan-out). Mixing
+  // key-fanout is a different shape (few entities, huge key + listing fan-out). Mixing
   // it into the 28,880-entity scale fit would pretend those points share a model.
   const firstPasses = results.filter(
-    (row) => row.pass === 'first' && row.profile !== ALTEOS_CDM_SHAPE.name
+    (row) => row.pass === 'first' && row.profile !== KEY_FANOUT_CDM_SHAPE.name
   );
   if (firstPasses.length >= 2) {
     const model = fit(firstPasses.map((row) => ({ x: row.entities, y: row.totalSeconds })));
