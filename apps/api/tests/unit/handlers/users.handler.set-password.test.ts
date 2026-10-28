@@ -73,7 +73,8 @@ function createHandler(overrides: { getProjectUsers?: ReturnType<typeof vi.fn> }
     { withTransaction } as never,
     {} as never,
     { assertPasswordMeetsPolicy, setPassword } as never,
-    { revokeAllForUserInProject } as never
+    { revokeAllForUserInProject } as never,
+    {} as never
   );
 
   return {

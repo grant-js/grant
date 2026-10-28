@@ -57,6 +57,17 @@ export interface CredentialWithHash extends CredentialRecord {
   hash: string;
 }
 
+/**
+ * What an export reads: the hash with just enough to describe it. No id, no `lastUsedAt`.
+ * Returned by `findHashesForExport` only, never by a read the verifier or a listing uses.
+ */
+export interface ProjectCredentialExportRow {
+  userId: string;
+  hash: string;
+  source: CredentialSource;
+  updatedAt: Date;
+}
+
 export interface CredentialWriteInput {
   userId: string;
   hash: string;
@@ -113,6 +124,20 @@ export interface IProjectCredentialRepository extends ICredentialRepository<Proj
     userIds: readonly string[],
     transaction?: unknown
   ): Promise<CredentialWithHash[]>;
+
+  /**
+   * The hashes of several users of one project in **one** query, for the audited credential
+   * export and the export-gated fingerprint only (repository-to-service; the service never
+   * returns a hash except in the export response). Users with no live credential are absent.
+   * An empty list is no query. A plain read: no row lock (an export decides nothing from it),
+   * and it runs on the caller's transaction, so the project's RLS applies like `findActive`.
+   * This is the only read added for it: no other read here grows a hash.
+   */
+  findHashesForExport(
+    scope: ProjectCredentialScope,
+    userIds: readonly string[],
+    transaction?: unknown
+  ): Promise<ProjectCredentialExportRow[]>;
 
   /**
    * The import's write: like `upsert`, but a live credential that is not itself an import

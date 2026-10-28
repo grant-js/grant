@@ -7,6 +7,7 @@ import type {
   IProjectGroupService,
   IProjectOAuthGrantService,
   IProjectPermissionService,
+  IProjectUserCredentialExportService,
   IProjectUserGroupService,
   IProjectUserPermissionService,
   IProjectUserService,
@@ -21,11 +22,15 @@ import type {
 import {
   AssignUserPermissionInput,
   ConfirmUserPictureUploadInput,
+  CredentialKind,
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
   MutationSetProjectUserEmailArgs,
   MutationSetProjectUserPasswordArgs,
   MutationUpdateUserArgs,
+  ProjectUserCredentialExport,
+  ProjectUserPasswordCredential,
+  QueryExportProjectUserCredentialsArgs,
   QueryUsersArgs,
   RequestUserPictureUploadUrlInput,
   RevokeUserPermissionInput,
@@ -68,6 +73,8 @@ import { DeleteParams, SelectedFields } from '@/types';
 
 import { CacheHandler, type ScopeServices } from './base/cache-handler';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type UpdateUserHandlerParams = MutationUpdateUserArgs & { actorUserId: string };
 
 export type UploadUserPictureHandlerParams = UploadUserPictureInput & { actorUserId: string };
@@ -100,7 +107,8 @@ export class UserHandler extends CacheHandler {
     private readonly db: ITransactionalConnection<Transaction>,
     private readonly auth: IAuthService,
     private readonly credentials: ICredentialService,
-    private readonly projectOAuthGrants: IProjectOAuthGrantService
+    private readonly projectOAuthGrants: IProjectOAuthGrantService,
+    private readonly credentialExports: IProjectUserCredentialExportService
   ) {
     super(cache, scopeServices);
   }
@@ -497,6 +505,111 @@ export class UserHandler extends CacheHandler {
       }
       return user;
     });
+  }
+
+  /**
+   * Audited export of project password hashes in CDM shape (`ProjectUser:ExportCredentials`,
+   * enforced by the transport; this method does not re-check roles, but it does check that
+   * the scope it acts on is the scope the transport authorized: `authorizedScope` is the
+   * request scope the guard evaluated, and `input.scope` must be the same, or a permission
+   * held in one scope could be used to read another project's hashes). Shape first, before any
+   * read: project scope, `kinds` (default `[PASSWORD]`, never empty), `userIds` non-empty,
+   * UUIDs, at most one page. Then, in one transaction: **every** id must be a member (any
+   * non-member is `NotFoundError` and nothing is read or audited: no partial export), the
+   * hashes are read once, and the one audit row is written. A failed audit write rolls the
+   * export back with it.
+   */
+  public async exportProjectUserCredentials(
+    params: QueryExportProjectUserCredentialsArgs & { authorizedScope: Scope | null }
+  ): Promise<ProjectUserCredentialExport> {
+    const { scope, userIds, kinds } = params.input;
+    this.assertProjectScope(scope, 'Credential export');
+    if (
+      !params.authorizedScope ||
+      params.authorizedScope.tenant !== scope.tenant ||
+      params.authorizedScope.id !== scope.id
+    ) {
+      throw new AuthorizationError('Forbidden');
+    }
+    const exportKinds = this.normalizeExportKinds(kinds);
+    const ids = this.normalizeExportUserIds(userIds);
+    const projectId = this.extractProjectIdFromScope(scope);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const members = await this.projectUsers.getProjectUsers({ projectId, userIds: ids }, tx);
+      const memberIds = new Set(members.map((member) => member.userId));
+      if (ids.some((id) => !memberIds.has(id))) {
+        throw new NotFoundError('User');
+      }
+      return this.credentialExports.exportCredentials(
+        { projectId, userIds: ids, kinds: exportKinds },
+        tx
+      );
+    });
+  }
+
+  private normalizeExportKinds(kinds: CredentialKind[] | null | undefined): CredentialKind[] {
+    if (kinds === undefined || kinds === null) {
+      return [CredentialKind.Password];
+    }
+    if (kinds.length === 0) {
+      throw new ValidationError('kinds must not be empty');
+    }
+    return [...new Set(kinds)];
+  }
+
+  /** Non-empty, within one page, UUIDs (lowercased, as stored), duplicates dropped in order. */
+  private normalizeExportUserIds(userIds: string[]): string[] {
+    const maxUserIds = config.system.maxPageSize;
+    if (userIds.length === 0) {
+      throw new ValidationError('userIds must not be empty');
+    }
+    if (userIds.length > maxUserIds) {
+      throw new ValidationError(`userIds must not contain more than ${maxUserIds} ids`);
+    }
+    if (!userIds.every((id) => UUID_PATTERN.test(id))) {
+      throw new ValidationError('userIds must be UUIDs');
+    }
+    return [...new Set(userIds.map((id) => id.toLowerCase()))];
+  }
+
+  /**
+   * `ProjectUser.passwordCredential`: `null` unless the caller holds
+   * `ProjectUser:ExportCredentials` in the request's scope (a denial is `null`, never an
+   * error, so existing documents keep working), and `null` when the member has no project
+   * credential. Otherwise `{ source, updatedAt, fingerprint }`: the fingerprint is computed
+   * by the service from the stored hash and is never the hash. One read per call (the field
+   * resolver runs per parent); batch it when a root field returns lists of `ProjectUser`.
+   */
+  public async getProjectUserPasswordCredential(params: {
+    projectId: string;
+    userId: string;
+    actorUserId: string | undefined;
+  }): Promise<ProjectUserPasswordCredential | null> {
+    const { projectId, userId, actorUserId } = params;
+    if (!actorUserId) {
+      return null;
+    }
+    const result = await this.auth.isAuthorized(
+      {
+        permission: {
+          resource: ResourceSlug.ProjectUser,
+          action: ResourceAction.ExportCredentials,
+        },
+        context: {},
+      },
+      actorUserId
+    );
+    if (!result.authorized) {
+      return null;
+    }
+
+    const [summary] = await this.db.withTransaction((tx: Transaction) =>
+      this.credentialExports.getPasswordCredentialSummaries({ projectId, userIds: [userId] }, tx)
+    );
+    return summary
+      ? { source: summary.source, updatedAt: summary.updatedAt, fingerprint: summary.fingerprint }
+      : null;
   }
 
   public async updateUser(params: UpdateUserHandlerParams): Promise<User> {

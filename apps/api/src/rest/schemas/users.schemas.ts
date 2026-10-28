@@ -1,5 +1,5 @@
 import { CREDENTIAL_SOURCES } from '@grantjs/core';
-import { SortOrder, UserSortableField } from '@grantjs/schema';
+import { CredentialKind, SortOrder, UserSortableField } from '@grantjs/schema';
 
 import { z } from '@/lib/zod-openapi.lib';
 import {
@@ -217,6 +217,52 @@ export const setProjectUserPasswordRequestSchema = z.object({
 export const setProjectUserPasswordResponseSchema = createSuccessResponseSchema(
   userSchema,
   'Successfully set project user password'
+);
+
+/**
+ * `kinds` is an enum of one member today (`PASSWORD`); a later kind extends it. The handler
+ * applies the page-size cap, membership and project-scope rules.
+ */
+export const exportProjectUserCredentialsRequestSchema = z.object({
+  scope: scopeSchema,
+  userIds: z
+    .array(z.uuid('errors.validation.invalidUserId'))
+    .min(1, 'errors.validation.idRequired')
+    .openapi({
+      description:
+        'Project members to export, in the order the result is returned. Every id must be a member of the project, otherwise the whole call fails with 404 (no partial export). At most one page (the API maximum page size).',
+    }),
+  kinds: z
+    .array(z.nativeEnum(CredentialKind))
+    .min(1)
+    .optional()
+    .openapi({
+      description: 'Credential kinds to export. Defaults to `["PASSWORD"]`.',
+      example: [CredentialKind.Password],
+    }),
+});
+
+export const exportedPasswordCredentialSchema = z.object({
+  algorithm: z.string().openapi({ description: 'Hash algorithm, `bcrypt`.', example: 'bcrypt' }),
+  hash: z.string().openapi({
+    description: 'The stored bcrypt hash. Secret-equivalent: handle like a credential.',
+  }),
+});
+
+export const exportedProjectUserCredentialSchema = z.object({
+  userId: z.string(),
+  password: exportedPasswordCredentialSchema
+    .nullable()
+    .openapi({ description: '`null` when the member has no project password credential.' }),
+});
+
+export const exportProjectUserCredentialsDataSchema = z.object({
+  users: z.array(exportedProjectUserCredentialSchema),
+});
+
+export const exportProjectUserCredentialsResponseSchema = createSuccessResponseSchema(
+  exportProjectUserCredentialsDataSchema,
+  'Credential hashes of the requested project members (the one place a hash leaves Grant; audited)'
 );
 
 export const updateUserResponseSchema = createSuccessResponseSchema(

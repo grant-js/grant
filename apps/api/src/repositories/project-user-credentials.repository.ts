@@ -4,6 +4,7 @@ import type {
   CredentialWithHash,
   CredentialWriteInput,
   IProjectCredentialRepository,
+  ProjectCredentialExportRow,
   ProjectCredentialScope,
 } from '@grantjs/core';
 import type { DbSchema } from '@grantjs/database';
@@ -111,6 +112,41 @@ export class ProjectUserCredentialRepository implements IProjectCredentialReposi
         .for('update');
       for (const row of found) {
         rows.push({ ...toRecord(row), hash: row.hash });
+      }
+    }
+    return rows;
+  }
+
+  async findHashesForExport(
+    scope: ProjectCredentialScope,
+    userIds: readonly string[],
+    transaction?: Transaction
+  ): Promise<ProjectCredentialExportRow[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    const dbInstance = transaction ?? this.db;
+    const rows: ProjectCredentialExportRow[] = [];
+    // Same chunking as `findActiveMany`; the caller caps the list far below it. A plain read:
+    // no `FOR UPDATE`, an export decides nothing from these rows.
+    for (let start = 0; start < userIds.length; start += FIND_MANY_CHUNK) {
+      const found = await dbInstance
+        .select({
+          userId: projectUserCredentials.userId,
+          hash: projectUserCredentials.hash,
+          source: projectUserCredentials.source,
+          updatedAt: projectUserCredentials.updatedAt,
+        })
+        .from(projectUserCredentials)
+        .where(
+          and(
+            eq(projectUserCredentials.projectId, scope.projectId),
+            inArray(projectUserCredentials.userId, userIds.slice(start, start + FIND_MANY_CHUNK)),
+            isNull(projectUserCredentials.deletedAt)
+          )
+        );
+      for (const row of found) {
+        rows.push({ ...row, source: row.source as CredentialSource });
       }
     }
     return rows;

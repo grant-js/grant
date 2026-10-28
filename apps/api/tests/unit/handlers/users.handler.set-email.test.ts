@@ -64,6 +64,7 @@ function createHandler(
     { withTransaction } as never,
     { isAuthorized } as never,
     {} as never,
+    {} as never,
     {} as never
   );
 

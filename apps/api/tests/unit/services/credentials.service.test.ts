@@ -67,6 +67,17 @@ class FakeCredentialRepository implements ICredentialRepository<CredentialScope>
       .map((row) => ({ ...row }));
   }
 
+  async findHashesForExport(scope: CredentialScope, userIds: readonly string[]) {
+    return this.rows
+      .filter((row) => userIds.includes(row.userId) && this.key(scope, row.userId)(row))
+      .map((row) => ({
+        userId: row.userId,
+        hash: row.hash,
+        source: row.source,
+        updatedAt: row.updatedAt,
+      }));
+  }
+
   /** The import's write: never replaces a live credential that is not itself an import. */
   async upsertImported(
     scope: CredentialScope,

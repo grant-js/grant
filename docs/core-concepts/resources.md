@@ -70,7 +70,7 @@ Actions are shared across resources — each resource picks the subset it suppor
 | `Exchange`          | Exchange API key credentials for a JWT                                             |
 | `SetEmail`          | Set a project user's Email authentication method                                   |
 | `SetPassword`       | Set a project user's password (operator-supplied)                                  |
-| `ExportCredentials` | Export project users' password hashes; no default holder, granted per organization |
+| `ExportCredentials` | Export project users' password hashes (audited); no default holder, granted by org |
 
 ## Conditional Permissions
 

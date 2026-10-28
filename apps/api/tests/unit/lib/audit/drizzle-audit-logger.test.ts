@@ -75,3 +75,68 @@ describe('DrizzleAuditLogger', () => {
     });
   });
 });
+
+describe('DrizzleAuditLogger.logExport', () => {
+  const caller = {
+    userId: '40000000-0000-4000-8000-0000000000dd',
+    scope: { tenant: 'organizationProject', id: 'org:project' },
+  };
+
+  function create(insert: ReturnType<typeof vi.fn>) {
+    const db = { insert: vi.fn().mockReturnValue({ values: insert }) };
+    const audit = new DrizzleAuditLogger(
+      { entity: 'table' },
+      'projectUserCredentialId',
+      caller as unknown as GrantAuth,
+      db as never
+    );
+    return { audit, db };
+  }
+
+  it('writes one export row: no entity id, performed by the caller, metadata as given', async () => {
+    const insert = vi.fn().mockResolvedValue(undefined);
+    const { audit } = create(insert);
+
+    await audit.logExport({ userCount: 2, credentialCount: 1, kinds: ['PASSWORD'] });
+
+    expect(insert).toHaveBeenCalledTimes(1);
+    const payload = insert.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      projectUserCredentialId: null,
+      action: 'export',
+      oldValues: null,
+      newValues: null,
+      performedBy: caller.userId,
+      scopeId: 'org:project',
+    });
+    expect(JSON.parse(payload.metadata)).toEqual({
+      userCount: 2,
+      credentialCount: 1,
+      kinds: ['PASSWORD'],
+    });
+  });
+
+  it('uses the caller transaction when given', async () => {
+    const insert = vi.fn().mockResolvedValue(undefined);
+    const { audit, db } = create(insert);
+    const txInsert = vi.fn().mockResolvedValue(undefined);
+    const tx = { insert: vi.fn().mockReturnValue({ values: txInsert }) };
+
+    await audit.logExport({ userCount: 1 }, tx);
+
+    expect(txInsert).toHaveBeenCalledTimes(1);
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it('throws when the insert fails (unlike logAction), so the export fails with it', async () => {
+    const { audit } = create(vi.fn().mockRejectedValue(new Error('insert failed')));
+
+    await expect(audit.logExport({ userCount: 1 })).rejects.toThrow('insert failed');
+  });
+
+  it('logAction still swallows an insert failure', async () => {
+    const { audit } = create(vi.fn().mockRejectedValue(new Error('insert failed')));
+
+    await expect(audit.logAction({ entityId: 'e', action: 'CREATE' })).resolves.toBeUndefined();
+  });
+});

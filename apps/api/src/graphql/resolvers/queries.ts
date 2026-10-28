@@ -1,6 +1,12 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
-import { authenticateGraphQLResolver, authorizeGraphQLResolver } from '@/lib/authorization';
+import {
+  authenticateGraphQLResolver,
+  authorizeGraphQLResolver,
+  type EmailVerificationGraphQLGuardOptions,
+  type MfaGraphQLGuardOptions,
+  requireEmailThenMfaGraphQL,
+} from '@/lib/authorization';
 
 import * as apiKeyQueries from './api-keys/queries';
 import * as authQueries from './auth/queries';
@@ -12,6 +18,7 @@ import * as organizationQueries from './organizations/queries';
 import * as permissionQueries from './permissions/queries';
 import * as projectAppQueries from './project-apps/queries';
 import * as projectOAuthConnectionQueries from './project-oauth-connections/queries';
+import * as projectUserQueries from './project-users/queries';
 import * as projectQueries from './projects/queries';
 import * as resourceQueries from './resources/queries';
 import * as roleQueries from './roles/queries';
@@ -19,6 +26,9 @@ import * as signingKeyQueries from './signing-keys/queries';
 import * as tagQueries from './tags/queries';
 import * as userQueries from './users/queries';
 import * as webhookSubscriptionQueries from './webhook-subscriptions/queries';
+
+const ALLOW_PERSONAL_EMAIL: EmailVerificationGraphQLGuardOptions = { allowPersonalContext: true };
+const ALLOW_PERSONAL_MFA: MfaGraphQLGuardOptions = { allowPersonalContext: true };
 
 function isDetailFetch(args: Record<string, unknown>): boolean {
   const ids = args.ids;
@@ -111,6 +121,15 @@ export const Query = {
   users: authorizeGraphQLResolver(
     { resource: ResourceSlug.User, action: ResourceAction.Query },
     userQueries.getUsers!
+  ),
+  // Project user credential export (audited; hashes leave Grant here)
+  exportProjectUserCredentials: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.ProjectUser, action: ResourceAction.ExportCredentials },
+      projectUserQueries.exportProjectUserCredentials!
+    )
   ),
   // Resources (scoped)
   resources: authorizeGraphQLResolver(
