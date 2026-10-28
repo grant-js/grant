@@ -1,5 +1,11 @@
 # @grantjs/schema
 
+## 1.18.9
+
+### Patch Changes
+
+- ecc6a27: Skip unchanged CDM API keys on replace: HMAC-SHA256 fingerprint, classify before bcrypt, and additive created/unchanged/rotated/deleted counters.
+
 ## 1.18.8
 
 No changes in this release.
