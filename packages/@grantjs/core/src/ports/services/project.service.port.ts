@@ -163,6 +163,15 @@ export interface IProjectUserService {
     transaction?: unknown
   ): Promise<ProjectUser>;
 
+  /**
+   * Publish `project.user_email_changed` for a project member. Ids only in `data.after`.
+   * Throws `NotFoundError` when the user is not a member of the project.
+   */
+  publishProjectUserEmailChanged(
+    params: { projectId: string; userId: string; operation: 'added' | 'changed' },
+    transaction?: unknown
+  ): Promise<void>;
+
   getUserProjectMemberships(
     userId: string,
     transaction?: unknown

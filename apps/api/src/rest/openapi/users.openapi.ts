@@ -10,6 +10,8 @@ import {
   getUsersQuerySchema,
   getUsersResponseSchema,
   notFoundErrorResponseSchema,
+  setProjectUserEmailRequestSchema,
+  setProjectUserEmailResponseSchema,
   updateUserRequestSchema,
   updateUserResponseSchema,
   userParamsSchema,
@@ -141,6 +143,9 @@ You can optionally assign groups directly to the user:
 You can optionally assign tags to the user:
 - \`tagIds\`: Array of tag UUIDs
 - \`primaryTagId\`: UUID of the primary tag (must be included in tagIds)
+
+### Email
+Optional \`email\` creates an unverified Email authentication method. Project-scope only. Requires \`ProjectUser:SetEmail\` in addition to \`User:Create\`.
     `.trim(),
     request: {
       body: {
@@ -173,6 +178,106 @@ You can optionally assign tags to the user:
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - User:Create, and ProjectUser:SetEmail when email is set',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      409: {
+        description: 'This authentication method is already connected to another account',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * PUT /api/users/:id/email
+   */
+  registry.registerPath({
+    method: 'put',
+    path: '/api/users/{id}/email',
+    operationId: 'putApiUsersByIdEmail',
+    tags: ['Users'],
+    summary: 'Set a project user email',
+    description: `
+Add or replace the user's Email authentication method in a project scope.
+
+Requires \`ProjectUser:SetEmail\`. The address is stored unverified. Same normalized address is a no-op. The user must be a project member.
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: setProjectUserEmailRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Email set successfully',
+        content: {
+          'application/json': {
+            schema: setProjectUserEmailResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters or body',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - ProjectUser:SetEmail required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User is not a member of the project',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      409: {
+        description: 'This authentication method is already connected to another account',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },

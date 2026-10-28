@@ -45,6 +45,7 @@ function createHandler() {
         countProjectUserApiKeysByUserIds: vi.fn().mockResolvedValue(new Map()),
       },
     } as never,
+    {} as never,
     {} as never
   );
 

@@ -19,6 +19,12 @@ export const addProjectUserParamsSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
+export const publishProjectUserEmailChangedParamsSchema = z.object({
+  projectId: idSchema,
+  userId: idSchema,
+  operation: z.enum(['added', 'changed']),
+});
+
 export const mergeProjectUserCdmMetadataParamsSchema = z.object({
   projectId: idSchema,
   userId: idSchema,

@@ -65,7 +65,8 @@ function createHandler() {
     fileStorage as never,
     cache as never,
     {} as never,
-    { withTransaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn({}) } as never
+    { withTransaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn({}) } as never,
+    {} as never
   );
   return { handler, fileStorage };
 }

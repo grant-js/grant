@@ -805,6 +805,68 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     }
   }
 
+  public normalizeOperatorEmail(email: string): string {
+    const normalized = email.trim().toLowerCase();
+    validateInput(
+      emailSchema,
+      normalized,
+      'UserAuthenticationMethodService.normalizeOperatorEmail'
+    );
+    return normalized;
+  }
+
+  public async setOrReplaceEmailMethod(
+    params: { userId: string; email: string },
+    transaction?: Transaction
+  ): Promise<{
+    method: UserAuthenticationMethod;
+    operation: 'added' | 'changed' | null;
+  }> {
+    const normalized = this.normalizeOperatorEmail(params.email);
+
+    const existingMethods = await this.getUserAuthenticationMethods(
+      { userId: params.userId },
+      transaction
+    );
+    const existingEmail = existingMethods.find(
+      (method) => method.provider === UserAuthenticationMethodProvider.Email
+    );
+
+    if (existingEmail && existingEmail.providerId === normalized) {
+      return { method: existingEmail, operation: null };
+    }
+
+    const held = await this.findByProviderAndProviderId(
+      UserAuthenticationMethodProvider.Email,
+      normalized,
+      transaction
+    );
+    if (held && held.userId !== params.userId) {
+      throw new ConflictError('This authentication method is already connected to another account');
+    }
+
+    if (existingEmail) {
+      const method = await this.updateUserAuthenticationMethod(
+        existingEmail.id,
+        { providerId: normalized, isVerified: false },
+        transaction
+      );
+      return { method, operation: 'changed' };
+    }
+
+    const method = await this.createUserAuthenticationMethod(
+      {
+        userId: params.userId,
+        provider: UserAuthenticationMethodProvider.Email,
+        providerId: normalized,
+        providerData: {},
+        isVerified: false,
+      },
+      transaction
+    );
+    return { method, operation: 'added' };
+  }
+
   public async ensureVerifiedContactEmail(
     userId: string,
     email: string | null | undefined,
