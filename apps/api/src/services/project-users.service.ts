@@ -37,6 +37,7 @@ import {
   getProjectUsersParamsSchema,
   mergeProjectUserCdmMetadataParamsSchema,
   projectUserSchema,
+  publishProjectUserEmailChangedParamsSchema,
   removeProjectUserParamsSchema,
   updateProjectUserMetadataParamsSchema,
   updateProjectUserProfileParamsSchema,
@@ -190,6 +191,44 @@ export class ProjectUserService implements IProjectUserService {
     );
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
+  }
+
+  public async publishProjectUserEmailChanged(
+    params: { projectId: string; userId: string; operation: 'added' | 'changed' },
+    transaction?: Transaction
+  ): Promise<void> {
+    const context = 'ProjectUserService.publishProjectUserEmailChanged';
+    const { projectId, userId, operation } = validateInput(
+      publishProjectUserEmailChangedParamsSchema,
+      params,
+      context
+    );
+
+    const isMember = await this.projectHasUser(projectId, userId, transaction);
+    if (!isMember) {
+      throw new NotFoundError('User');
+    }
+
+    const members = await this.projectUserRepository.getProjectUsers(
+      { projectId, userId },
+      transaction
+    );
+    const projectUser = members[0];
+    if (!projectUser) {
+      throw new NotFoundError('User');
+    }
+
+    const scope = await this.resolveProjectScope(projectId, transaction);
+    await this.events.publish(
+      {
+        type: 'project.user_email_changed',
+        ...(scope ? { scope } : {}),
+        subjectUserId: userId,
+        aggregate: { kind: 'projectUser', id: projectUser.id },
+        data: { after: { projectId, userId, operation } },
+      },
+      transaction
+    );
   }
 
   public async syncProjectUserSearchDocument(

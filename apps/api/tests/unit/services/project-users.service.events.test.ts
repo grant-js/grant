@@ -10,6 +10,7 @@ import type {
 import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
+import { NotFoundError } from '@/lib/errors';
 import { ProjectUserService } from '@/services/project-users.service';
 
 const projectId = '10000000-0000-4000-8000-000000000050';
@@ -17,7 +18,19 @@ const userId = '10000000-0000-4000-8000-000000000051';
 const projectUserId = '10000000-0000-4000-8000-000000000052';
 const organizationId = '10000000-0000-4000-8000-000000000053';
 
-function buildService() {
+const memberRow = {
+  id: projectUserId,
+  projectId,
+  userId,
+  metadata: {},
+  displayName: null,
+  pictureUrl: null,
+  createdAt: new Date('2026-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+  deletedAt: null,
+};
+
+function buildService(existingMembers: (typeof memberRow)[] = []) {
   const projectRepository = {
     getProjects: vi.fn().mockResolvedValue({
       projects: [{ id: projectId }],
@@ -36,18 +49,8 @@ function buildService() {
   } as unknown as IUserRepository;
 
   const projectUserRepository = {
-    getProjectUsers: vi.fn().mockResolvedValue([]),
-    addProjectUser: vi.fn().mockResolvedValue({
-      id: projectUserId,
-      projectId,
-      userId,
-      metadata: {},
-      displayName: null,
-      pictureUrl: null,
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      deletedAt: null,
-    }),
+    getProjectUsers: vi.fn().mockResolvedValue(existingMembers),
+    addProjectUser: vi.fn().mockResolvedValue(memberRow),
     updateProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
   } as unknown as IProjectUserRepository;
 
@@ -111,5 +114,43 @@ describe('ProjectUserService membership events', () => {
       }),
       undefined
     );
+  });
+
+  it('publishes project.user_email_changed with ids only', async () => {
+    const { service, events } = buildService([memberRow]);
+
+    await service.publishProjectUserEmailChanged({
+      projectId,
+      userId,
+      operation: 'changed',
+    });
+
+    expect(events.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'project.user_email_changed',
+        scope: {
+          tenant: Tenant.OrganizationProject,
+          id: `${organizationId}:${projectId}`,
+        },
+        subjectUserId: userId,
+        aggregate: { kind: 'projectUser', id: projectUserId },
+        data: { after: { projectId, userId, operation: 'changed' } },
+      }),
+      undefined
+    );
+    expect(JSON.stringify(vi.mocked(events.publish).mock.calls)).not.toContain('@');
+  });
+
+  it('rejects email-changed publish when the user is not a member', async () => {
+    const { service, events } = buildService([]);
+
+    await expect(
+      service.publishProjectUserEmailChanged({
+        projectId,
+        userId,
+        operation: 'added',
+      })
+    ).rejects.toBeInstanceOf(NotFoundError);
+    expect(events.publish).not.toHaveBeenCalled();
   });
 });
