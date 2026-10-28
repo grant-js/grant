@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.18.11
+
+### Patch Changes
+
+- 782dcd5: Fix organizationMembers HTTP 500 when listing members with pending invitations: alias every member ∪ invitation union column uniquely so ORDER BY is no longer ambiguous.
+- @grantjs/schema@1.18.11
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.10
 
 ### Patch Changes
