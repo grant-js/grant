@@ -150,7 +150,9 @@ export function createUserRoutes(fallback?: RequestContext) {
   router.put(
     '/:id/email',
     validate({ params: userParamsSchema, body: setProjectUserEmailRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
     authorizeRestRoute({
       resource: ResourceSlug.ProjectUser,
       action: ResourceAction.SetEmail,
