@@ -53,12 +53,12 @@ describe('organizationMembers sort (member ∪ pending invitation)', () => {
   let owner: TestUser;
   let org: { id: string; name: string; slug: string };
   let invitationEmail: string;
+  let memberName: string;
 
   it('setup: one member and one pending invitation with distinct sort keys', async () => {
     const stamp = Date.now();
     owner = await TestUser.create({
       withOrgAccount: true,
-      name: 'zzz-owner',
       email: `zzz-owner-${stamp}@test.grant.dev`,
     });
     org = await owner.createOrganization('Members Sort Org');
@@ -69,6 +69,9 @@ describe('organizationMembers sort (member ∪ pending invitation)', () => {
     invitationEmail = `aaa-invite-${stamp}@test.grant.dev`;
     const invitation = await owner.inviteMember(org.id, invitationEmail, viewerRoleId!);
     expect(invitation.status).toBe('pending');
+
+    // Email registration stores users.name as the email local-part, not the register `name`.
+    memberName = owner.email.split('@')[0] ?? owner.email;
   });
 
   it.each(SORT_FIELDS.flatMap((field) => SORT_ORDERS.map((order) => ({ field, order }))))(
@@ -83,7 +86,7 @@ describe('organizationMembers sort (member ∪ pending invitation)', () => {
         accessToken: owner.accessToken,
       });
 
-      expect(res.status).toBe(200);
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
       expect(res.body.errors).toBeUndefined();
 
       const page = res.body.data?.organizationMembers;
@@ -95,7 +98,7 @@ describe('organizationMembers sort (member ∪ pending invitation)', () => {
       const invitationRow = members.find((row) => row.type === MemberType.Invitation);
       expect(memberRow).toBeDefined();
       expect(invitationRow).toBeDefined();
-      expect(memberRow!.name).toBe('zzz-owner');
+      expect(memberRow!.name).toBe(memberName);
       expect(invitationRow!.email).toBe(invitationEmail);
       expect(invitationRow!.status).toBe('pending');
 

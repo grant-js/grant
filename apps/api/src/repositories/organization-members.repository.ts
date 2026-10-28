@@ -58,10 +58,6 @@ function pageOrderIdent(alias: (typeof PAGE_COLUMN)[keyof typeof PAGE_COLUMN]): 
   return sql.raw(`"${alias}"`);
 }
 
-function pageOrderCoalesce(alias: (typeof PAGE_COLUMN)[keyof typeof PAGE_COLUMN]): SQL {
-  return sql.raw(`coalesce("${alias}", '')`);
-}
-
 export class OrganizationMemberRepository implements IOrganizationMemberRepository {
   private readonly logger = createLogger('OrganizationMemberRepository');
 
@@ -327,11 +323,11 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
     const sortColumn = (() => {
       switch (sortField) {
         case OrganizationMemberSortableField.Email:
-          return pageOrderCoalesce(PAGE_COLUMN.email);
+          return pageOrderIdent(PAGE_COLUMN.email);
         case OrganizationMemberSortableField.CreatedAt:
           return pageOrderIdent(PAGE_COLUMN.createdAt);
         case OrganizationMemberSortableField.Role:
-          return pageOrderCoalesce(PAGE_COLUMN.roleName);
+          return pageOrderIdent(PAGE_COLUMN.roleName);
         case OrganizationMemberSortableField.Name:
         default:
           return pageOrderIdent(PAGE_COLUMN.name);
