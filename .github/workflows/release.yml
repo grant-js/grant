@@ -1,8 +1,9 @@
 # Versions and publishes npm packages when a "Version packages" PR is merged to main.
-# On push to main: prepare → release (changesets) → docker → optional git tag + GH Release.
-#   - Feature merge: build/push :demo, :sha-<commit> (deploy pulls :demo).
-#   - Version PR merge: rebuild all images with bumped package.json, push
-#     :<semver>, :latest, :demo, :sha, then create v* git tag and platform GitHub Release.
+# On push to main: prepare → release (changesets) → docker / git tag only when published.
+#   - Feature merge with changesets: open/update "chore: version packages"; no images.
+#   - Version PR merge: npm publish, then build/push :<semver>, :latest, :demo, :sha,
+#     then create v* git tag and platform GitHub Release.
+#   - rebuild_release_images: rebuild all images with semver+latest+demo (no npm).
 # Deploy is handled by deploy.yml when the Release workflow built new images.
 #
 # npm trusted publishing (OIDC): the four public packages trust this file by name
@@ -190,9 +191,10 @@ jobs:
     needs: prepare
     if: inputs.rebuild_release_images != true
     outputs:
-      # True when npm published this run, or when the current platform
-      # version still has no v* git tag (npm may already have that semver).
+      # True only on a real npm publish, or an untagged platform version
+      # on github.sha when this run did not open a version PR.
       published: ${{ steps.release-gate.outputs.published }}
+      hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
     permissions:
       contents: write
       pull-requests: write
@@ -262,25 +264,35 @@ jobs:
           # No NPM_TOKEN / NODE_AUTH_TOKEN: npm CLI exchanges this job's OIDC
           # token. A classic token (even expired) skips trusted publishing.
 
-      # changesets/action sets published=false when every npm semver already
-      # exists. That happened for 1.10.0: packages were on npm, but
-      # apps/api/package.json was still 1.9.2 so the tag job refreshed v1.9.2.
-      # After the platform version is bumped, we still need v*, GH Release,
-      # and :semver images even if changeset publish is a no-op.
+      # published is true only for a real npm publish, or the 1.10.0-class
+      # recovery (semver already on npm, v* tag still missing) read from
+      # github.sha. Never from the leftover changeset-release/main tree:
+      # after `changeset version`, package.json is already the next semver
+      # and git ls-remote would miss that tag, falsely setting published.
       - name: Tag release when platform version is untagged
         id: release-gate
         env:
           CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
+          CHANGESETS_HAS_CHANGESETS: ${{ steps.changesets.outputs.hasChangesets }}
+          PLATFORM_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
+          if [[ "${CHANGESETS_HAS_CHANGESETS}" == "true" ]]; then
+            echo "Version-PR path (hasChangesets=true); not a publish."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [[ "${CHANGESETS_PUBLISHED}" == "true" ]]; then
+            echo "npm published this run."
             echo "published=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          VERSION="$(node -p "require('./apps/api/package.json').version")"
+          VERSION="$(git show "${PLATFORM_SHA}:apps/api/package.json" | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version")"
+          echo "Platform version on github.sha: ${VERSION}"
           if git ls-remote --tags origin "refs/tags/v${VERSION}" | grep -q .; then
             echo "published=false" >> "$GITHUB_OUTPUT"
           else
+            echo "Untagged platform version on github.sha; treating as published."
             echo "published=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -288,14 +300,16 @@ jobs:
     name: Build and push images
     runs-on: self-hosted
     needs: [prepare, changes, release]
+    # Strict: :demo, :latest, and :semver ship together only on a real
+    # publish (or rebuild_release_images). Feature merges that only open
+    # the version PR must not build images — docker_matrix is ignored.
     if: >-
       always() &&
       needs.prepare.result == 'success' &&
       (needs.release.result == 'success' || needs.release.result == 'skipped') &&
       (
         inputs.rebuild_release_images == true ||
-        needs.release.outputs.published == 'true' ||
-        needs.changes.outputs.docker_matrix != '[]'
+        needs.release.outputs.published == 'true'
       )
     permissions:
       contents: read
@@ -372,7 +386,11 @@ jobs:
       always() &&
       vars.AWS_ECR_REGISTRY != '' &&
       vars.AWS_OIDC_ROLE_ARN != '' &&
-      needs.docker.result == 'success'
+      needs.docker.result == 'success' &&
+      (
+        inputs.rebuild_release_images == true ||
+        needs.release.outputs.published == 'true'
+      )
     permissions:
       contents: read
       # Required for OIDC federation to AWS; no long-lived access key is stored.

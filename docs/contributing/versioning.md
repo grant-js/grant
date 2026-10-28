@@ -16,7 +16,7 @@ This doc explains how we version and publish artifacts. **Platform version** (ro
 | npm (`@grantjs/schema`, `client`, `server`, `cli`) | Same fixed group                            | registry.npmjs.org                                |
 | Docker images                                      | `apps/api/package.json` after version PR    | `:demo`, `:sha-<commit>`, `:<version>`, `:latest` |
 | `example-nextjs` image                             | Same as platform apps (image tags, not npm) | Same GHCR tags as other images                    |
-| Demo environment                                   | `:demo` on main                             | Latest main commit                                |
+| Demo environment                                   | `:demo` after version PR merge              | Same build as `:<semver>` and `:latest`           |
 | Web header / `GET /api/config` `appVersion`        | `apps/api/package.json` at API startup      | No env vars; matches running API image semver     |
 | OpenAPI `info.version`                             | Same as `config.app.version`                | —                                                 |
 
@@ -45,15 +45,15 @@ Internal packages (`@grantjs/core`, `@grantjs/database`, etc.) and examples rema
 
    Choose bump type (patch/minor/major) for any fixed-group member (not the root `grant` package). This creates a file under `.changeset/`.
 
-2. **Open a PR** (or push to an existing PR). The [release workflow](.github/workflows/release.yml) runs on every push to `main`. If there are unversioned changesets, it creates or updates a PR titled **"chore: version packages"** by running `pnpm version` (`changeset version` plus [scripts/update-root-changelog.mjs](https://github.com/grant-js/grant/blob/main/scripts/update-root-changelog.mjs)). That updates package versions, package changelogs, root [CHANGELOG.md](https://github.com/grant-js/grant/blob/main/CHANGELOG.md), and the root `package.json` version. Nothing is published yet.
+2. **Open a PR** (or push to an existing PR). The [release workflow](.github/workflows/release.yml) runs on every push to `main`. If there are unversioned changesets, it creates or updates a PR titled **"chore: version packages"** by running `pnpm version` (`changeset version` plus [scripts/update-root-changelog.mjs](https://github.com/grant-js/grant/blob/main/scripts/update-root-changelog.mjs)). That updates package versions, package changelogs, root [CHANGELOG.md](https://github.com/grant-js/grant/blob/main/CHANGELOG.md), and the root `package.json` version. Nothing is published yet, and GHCR is not updated on this pass (`:demo`, `:latest`, and `:<semver>` stay on the previous release).
 
 3. **Merge the "chore: version packages" PR.** The workflow then:
    - Runs `pnpm release` (builds and publishes to npm)
-   - Tags Docker images with `:<version>` and `:latest`
+   - Builds and pushes Docker images with `:<version>`, `:latest`, `:demo`, and `:sha-<commit>` together
    - Creates git tag `v*` and a **platform** GitHub Release (notes from changeset summaries / root changelog)
    - `.changeset/*` files from that PR are removed in the version commit
 
-4. **Every push to `main`** still builds and pushes app images with `:demo` and `:sha-<commit>` when relevant paths change.
+4. **Feature merges that only open or update the version PR do not build or push images.** Demo stays on the previous `:demo` until the version PR merges. Manual `workflow_dispatch` with `rebuild_release_images` rebuilds `:<semver>`, `:latest`, and `:demo` from `apps/api/package.json` without publishing npm.
 
 ## npm trusted publishing
 
@@ -70,12 +70,12 @@ Each package is configured on npmjs.com → Settings → Trusted publishing: rep
 
 ## Docker image tags
 
-| Tag                   | When                                                                                   | Use                   |
-| --------------------- | -------------------------------------------------------------------------------------- | --------------------- |
-| `:demo`               | Every qualifying push to `main`                                                        | Demo / rolling main   |
-| `:sha-<full-sha>`     | Same build as `:demo`                                                                  | Traceability          |
-| `:1.0.0`, `:1.1.0`, … | After version PR merge (or [release-baseline](.github/workflows/release-baseline.yml)) | Pin production / Helm |
-| `:latest`             | Same as newest semver release                                                          | Local compose default |
+| Tag                   | When                                                                                                      | Use                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `:demo`               | Same build as the newest semver (version PR merge, or `rebuild_release_images`)                           | Demo / rolling release |
+| `:sha-<full-sha>`     | Same build as `:demo`                                                                                     | Traceability           |
+| `:1.0.0`, `:1.1.0`, … | Version PR merge, `rebuild_release_images`, or [release-baseline](.github/workflows/release-baseline.yml) | Pin production / Helm  |
+| `:latest`             | Same as newest semver release                                                                             | Local compose default  |
 
 ### Baseline semver tags (one-time)
 
