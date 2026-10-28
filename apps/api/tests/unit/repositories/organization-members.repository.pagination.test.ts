@@ -258,4 +258,70 @@ describe('OrganizationMemberRepository.getOrganizationMembers SQL page', () => {
       NotFoundError
     );
   });
+
+  it('aliases every union column uniquely so ORDER BY names are unambiguous', async () => {
+    const { db, select } = buildDb({
+      pageRows: [memberPageRow, invitationPageRow],
+      memberCount: 1,
+      invitationCount: 1,
+      users: [userRow],
+      roles: [roleRow],
+      invitations: [
+        {
+          invitation: { id: invitationId, email: 'invited@example.com', status: 'pending' },
+          inviter: userRow,
+        },
+      ],
+    });
+    const repo = new OrganizationMemberRepository(db);
+
+    await repo.getOrganizationMembers({ scope, limit: 10 });
+
+    const pageSelects = select.mock.calls
+      .map((call) => call[0])
+      .filter(
+        (fields): fields is Record<string, unknown> =>
+          !!fields && typeof fields === 'object' && 'memberType' in fields
+      );
+
+    expect(pageSelects).toHaveLength(2);
+
+    const aliasSets = pageSelects.map((fields) => {
+      const aliases = Object.values(fields).map((value) => sqlAlias(value));
+      expect(aliases.every((alias) => typeof alias === 'string' && alias.length > 0)).toBe(true);
+      expect(new Set(aliases).size).toBe(aliases.length);
+      return [...new Set(aliases)].sort();
+    });
+
+    expect(aliasSets[0]).toEqual(aliasSets[1]);
+    expect(aliasSets[0]).toEqual(
+      [
+        'created_at',
+        'email',
+        'id',
+        'invitation_id',
+        'member_type',
+        'name',
+        'role_id',
+        'role_name',
+        'status',
+        'user_id',
+      ].sort()
+    );
+  });
 });
+
+function sqlAlias(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const record = value as { fieldAlias?: unknown; _?: { fieldAlias?: unknown } };
+  if (typeof record.fieldAlias === 'string') {
+    return record.fieldAlias;
+  }
+  if (typeof record._?.fieldAlias === 'string') {
+    return record._.fieldAlias;
+  }
+  return undefined;
+}
