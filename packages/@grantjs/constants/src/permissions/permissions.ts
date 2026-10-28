@@ -1201,6 +1201,22 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       condition: null,
     },
   ],
+
+  [GroupKey.ProjectUserOwner]: [
+    {
+      action: ResourceAction.SetEmail,
+      resource: ResourceSlug.ProjectUser,
+      condition: null,
+    },
+  ],
+
+  [GroupKey.ProjectUserAdmin]: [
+    {
+      action: ResourceAction.SetEmail,
+      resource: ResourceSlug.ProjectUser,
+      condition: null,
+    },
+  ],
 };
 
 export const PERMISSION_MAPPINGS: Record<string, PermissionMapping[]> = Object.keys(
