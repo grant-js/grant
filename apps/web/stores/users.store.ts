@@ -27,6 +27,7 @@ interface UsersState {
   userToDelete: User | null;
   userToEdit: User | null;
   userToSetEmail: User | null;
+  userToSetPassword: User | null;
 
   // Current user (for breadcrumb)
   currentUser: User | null;
@@ -50,6 +51,7 @@ interface UsersState {
   setUserToDelete: (user: User | null) => void;
   setUserToEdit: (user: User | null) => void;
   setUserToSetEmail: (user: User | null) => void;
+  setUserToSetPassword: (user: User | null) => void;
   setCurrentUser: (user: User | null) => void;
 }
 
@@ -80,6 +82,7 @@ export const useUsersStore = create<UsersState>()(
       userToDelete: null,
       userToEdit: null,
       userToSetEmail: null,
+      userToSetPassword: null,
       // Current user
       currentUser: null,
 
@@ -111,6 +114,7 @@ export const useUsersStore = create<UsersState>()(
           userToDelete: null,
           userToEdit: null,
           userToSetEmail: null,
+          userToSetPassword: null,
           currentUser: null,
         }),
       initializeFromUrl: (params) => {
@@ -144,6 +148,7 @@ export const useUsersStore = create<UsersState>()(
       setUserToDelete: (user) => set({ userToDelete: user }),
       setUserToEdit: (user) => set({ userToEdit: user }),
       setUserToSetEmail: (user) => set({ userToSetEmail: user }),
+      setUserToSetPassword: (user) => set({ userToSetPassword: user }),
       setCurrentUser: (user) => set({ currentUser: user }),
     }),
     { name: 'grant-users-store' }

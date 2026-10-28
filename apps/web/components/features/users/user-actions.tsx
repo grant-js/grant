@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { User } from '@grantjs/schema';
-import { Edit, Mail, Trash2 } from 'lucide-react';
+import { Edit, KeyRound, Mail, Trash2 } from 'lucide-react';
 
 import { ActionItem, Actions } from '@/components/common';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
@@ -22,6 +22,7 @@ export function UserActions({ user }: UserActionsProps) {
   const setUserToEdit = useUsersStore((state) => state.setUserToEdit);
   const setUserToDelete = useUsersStore((state) => state.setUserToDelete);
   const setUserToSetEmail = useUsersStore((state) => state.setUserToSetEmail);
+  const setUserToSetPassword = useUsersStore((state) => state.setUserToSetPassword);
 
   const [hasBeenOpened, setHasBeenOpened] = useState(false);
 
@@ -54,6 +55,12 @@ export function UserActions({ user }: UserActionsProps) {
     { scope: scope!, enabled: hasBeenOpened, returnLoading: true }
   ) as UseGrantResult;
 
+  const { isGranted: canSetPassword, isLoading: isSetPasswordLoading } = useGrant(
+    ResourceSlug.ProjectUser,
+    ResourceAction.SetPassword,
+    { scope: scope!, enabled: hasBeenOpened, returnLoading: true }
+  ) as UseGrantResult;
+
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 
   if (!scope || requiresEmailVerification) {
@@ -61,8 +68,12 @@ export function UserActions({ user }: UserActionsProps) {
   }
 
   const permissionsResolved =
-    hasBeenOpened && !isUpdateLoading && !isDeleteLoading && !isSetEmailLoading;
-  if (permissionsResolved && !canUpdate && !canDelete && !canSetEmail) {
+    hasBeenOpened &&
+    !isUpdateLoading &&
+    !isDeleteLoading &&
+    !isSetEmailLoading &&
+    !isSetPasswordLoading;
+  if (permissionsResolved && !canUpdate && !canDelete && !canSetEmail && !canSetPassword) {
     return null;
   }
 
@@ -76,6 +87,10 @@ export function UserActions({ user }: UserActionsProps) {
 
   const handleSetEmailClick = () => {
     setUserToSetEmail(user);
+  };
+
+  const handleSetPasswordClick = () => {
+    setUserToSetPassword(user);
   };
 
   const actions: ActionItem<User>[] = [];
@@ -98,6 +113,15 @@ export function UserActions({ user }: UserActionsProps) {
     });
   }
 
+  if (canSetPassword) {
+    actions.push({
+      key: 'setPassword',
+      label: t('setPassword'),
+      icon: <KeyRound className="mr-2 h-4 w-4" />,
+      onClick: handleSetPasswordClick,
+    });
+  }
+
   if (canDelete) {
     actions.push({
       key: 'delete',
@@ -108,7 +132,9 @@ export function UserActions({ user }: UserActionsProps) {
     });
   }
 
-  const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading || isSetEmailLoading);
+  const isLoading =
+    hasBeenOpened &&
+    (isUpdateLoading || isDeleteLoading || isSetEmailLoading || isSetPasswordLoading);
 
   return (
     <Actions
