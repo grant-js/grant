@@ -1,0 +1,9 @@
+mutation SetProjectUserEmail($input: SetProjectUserEmailInput!) {
+  setProjectUserEmail(input: $input) {
+    id
+    name
+    metadata
+    createdAt
+    updatedAt
+  }
+}

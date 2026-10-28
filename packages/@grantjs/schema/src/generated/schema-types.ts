@@ -757,6 +757,11 @@ export type CreateUserAuthenticationMethodInput = {
 };
 
 export type CreateUserInput = {
+  /**
+   * Optional. Project-scope create only. Stores an unverified Email authentication method.
+   * A provider can only be linked to one user account (no sharing), and a user can only have one method per provider (no duplicates).
+   */
+  email?: InputMaybe<Scalars['String']['input']>;
   groupIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   metadata?: InputMaybe<Scalars['JSON']['input']>;
   name: Scalars['String']['input'];
@@ -1285,6 +1290,11 @@ export type Mutation = {
   setMyNotificationPreference: NotificationPreference;
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
+  /**
+   * Set or replace a project member's Email authentication method as unverified.
+   * `project.user_email_changed` carries ids only, never the address.
+   */
+  setProjectUserEmail: User;
   setupMfa: MfaSetupResponse;
   /**
    * Enqueue an asynchronous CDM **export** job for the given project. The worker
@@ -1645,6 +1655,10 @@ export type MutationSetMyPrimaryAuthenticationMethodArgs = {
 
 export type MutationSetMyPrimaryMfaDeviceArgs = {
   input: SetMyPrimaryMfaDeviceInput;
+};
+
+export type MutationSetProjectUserEmailArgs = {
+  input: SetProjectUserEmailInput;
 };
 
 export type MutationStartProjectExportArgs = {
@@ -3539,6 +3553,16 @@ export type SetMyNotificationPreferenceInput = {
 
 export type SetMyPrimaryMfaDeviceInput = {
   factorId: Scalars['ID']['input'];
+};
+
+export type SetProjectUserEmailInput = {
+  /**
+   * Unverified Email authentication method. Project-scope only.
+   * A provider can only be linked to one user account (no sharing), and a user can only have one method per provider (no duplicates).
+   */
+  email: Scalars['String']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
 };
 
 /**

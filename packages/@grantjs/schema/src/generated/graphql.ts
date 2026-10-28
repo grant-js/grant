@@ -2174,6 +2174,20 @@ export type GetUsersListQuery = {
   };
 };
 
+export type SetProjectUserEmailMutationVariables = Exact<{
+  input: Types.SetProjectUserEmailInput;
+}>;
+
+export type SetProjectUserEmailMutation = {
+  setProjectUserEmail: {
+    id: string;
+    name: string;
+    metadata: Record<string, unknown>;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
 export type UpdateUserMutationVariables = Exact<{
   id: string | number;
   input: Types.UpdateUserInput;
@@ -11155,6 +11169,52 @@ export const GetUsersListDocument = {
     },
   ],
 } as unknown as DocumentNode<GetUsersListQuery, GetUsersListQueryVariables>;
+export const SetProjectUserEmailDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetProjectUserEmail' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'SetProjectUserEmailInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'setProjectUserEmail' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SetProjectUserEmailMutation, SetProjectUserEmailMutationVariables>;
 export const UpdateUserDocument = {
   kind: 'Document',
   definitions: [

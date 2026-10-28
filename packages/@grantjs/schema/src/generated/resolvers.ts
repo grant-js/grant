@@ -501,6 +501,7 @@ export type ResolversTypes = ResolversObject<{
   SessionExportData: ResolverTypeWrapper<Types.SessionExportData>;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SetProjectUserEmailInput: Types.SetProjectUserEmailInput;
   SigningKey: ResolverTypeWrapper<Types.SigningKey>;
   SortOrder: Types.SortOrder;
   StartProjectExportInput: Types.StartProjectExportInput;
@@ -883,6 +884,7 @@ export type ResolversParentTypes = ResolversObject<{
   SessionExportData: Types.SessionExportData;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SetProjectUserEmailInput: Types.SetProjectUserEmailInput;
   SigningKey: Types.SigningKey;
   StartProjectExportInput: Types.StartProjectExportInput;
   String: Types.Scalars['String']['output'];
@@ -1959,6 +1961,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<Types.MutationSetMyPrimaryMfaDeviceArgs, 'input'>
+  >;
+  setProjectUserEmail?: Resolver<
+    ResolversTypes['User'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationSetProjectUserEmailArgs, 'input'>
   >;
   setupMfa?: Resolver<ResolversTypes['MfaSetupResponse'], ParentType, ContextType>;
   startProjectExport?: Resolver<
