@@ -3902,7 +3902,8 @@
           "user_added": "Projektmitglied hinzugefügt",
           "user_removed": "Projektmitglied entfernt",
           "user_profile_updated": "Projektmitgliedsprofil aktualisiert",
-          "user_updated": "Projektmitglied aktualisiert"
+          "user_updated": "Projektmitglied aktualisiert",
+          "user_email_changed": "E-Mail-Adresse des Projektmitglieds geändert"
         },
         "project_sync": {
           "completed": "Projektsynchronisierung abgeschlossen",

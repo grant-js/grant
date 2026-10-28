@@ -4177,7 +4177,8 @@
           "user_added": "Project member added",
           "user_removed": "Project member removed",
           "user_profile_updated": "Project member profile updated",
-          "user_updated": "Project member updated"
+          "user_updated": "Project member updated",
+          "user_email_changed": "Project member email changed"
         },
         "project_sync": {
           "completed": "Project sync completed",
