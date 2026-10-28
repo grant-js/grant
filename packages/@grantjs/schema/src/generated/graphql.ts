@@ -1310,6 +1310,16 @@ export type UpsertProjectOAuthConnectionMutation = {
   };
 };
 
+export type ExportProjectUserCredentialsQueryVariables = Exact<{
+  input: Types.ExportProjectUserCredentialsInput;
+}>;
+
+export type ExportProjectUserCredentialsQuery = {
+  exportProjectUserCredentials: {
+    users: Array<{ userId: string; password: { algorithm: string; hash: string } | null }>;
+  };
+};
+
 export type CancelProjectSyncMutationVariables = Exact<{
   id: string | number;
   scope: Types.Scope;
@@ -2180,6 +2190,20 @@ export type SetProjectUserEmailMutationVariables = Exact<{
 
 export type SetProjectUserEmailMutation = {
   setProjectUserEmail: {
+    id: string;
+    name: string;
+    metadata: Record<string, unknown>;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+};
+
+export type SetProjectUserPasswordMutationVariables = Exact<{
+  input: Types.SetProjectUserPasswordInput;
+}>;
+
+export type SetProjectUserPasswordMutation = {
+  setProjectUserPassword: {
     id: string;
     name: string;
     metadata: Record<string, unknown>;
@@ -7467,6 +7491,74 @@ export const UpsertProjectOAuthConnectionDocument = {
   UpsertProjectOAuthConnectionMutation,
   UpsertProjectOAuthConnectionMutationVariables
 >;
+export const ExportProjectUserCredentialsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'ExportProjectUserCredentials' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'ExportProjectUserCredentialsInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'exportProjectUserCredentials' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'users' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'password' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'algorithm' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'hash' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ExportProjectUserCredentialsQuery,
+  ExportProjectUserCredentialsQueryVariables
+>;
 export const CancelProjectSyncDocument = {
   kind: 'Document',
   definitions: [
@@ -11215,6 +11307,58 @@ export const SetProjectUserEmailDocument = {
     },
   ],
 } as unknown as DocumentNode<SetProjectUserEmailMutation, SetProjectUserEmailMutationVariables>;
+export const SetProjectUserPasswordDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetProjectUserPassword' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'SetProjectUserPasswordInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'setProjectUserPassword' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetProjectUserPasswordMutation,
+  SetProjectUserPasswordMutationVariables
+>;
 export const UpdateUserDocument = {
   kind: 'Document',
   definitions: [

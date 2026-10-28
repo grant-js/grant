@@ -808,6 +808,15 @@ export type CredentialExportData = {
   updatedAt: Scalars['Date']['output'];
 };
 
+/**
+ * A kind of credential that can be exported. Extensible: a later kind is added here,
+ * not as a second export.
+ */
+export enum CredentialKind {
+  /** The project password credential (bcrypt hash). */
+  Password = 'PASSWORD',
+}
+
 export type DeleteApiKeyInput = {
   hardDelete?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
@@ -851,6 +860,31 @@ export type ExchangeApiKeyResult = {
   __typename?: 'ExchangeApiKeyResult';
   accessToken: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
+};
+
+export type ExportProjectUserCredentialsInput = {
+  /** Credential kinds to export. Defaults to `[PASSWORD]`. */
+  kinds?: InputMaybe<Array<CredentialKind>>;
+  /** Project scope the members belong to. */
+  scope: Scope;
+  /** Project members to export. Every id must be a member of the project, otherwise the whole call fails with not found (no partial export). */
+  userIds: Array<Scalars['ID']['input']>;
+};
+
+/** A stored password hash in CDM shape. Secret-equivalent: handle like a credential. */
+export type ExportedPasswordCredential = {
+  __typename?: 'ExportedPasswordCredential';
+  /** Hash algorithm, for example `bcrypt`. */
+  algorithm: Scalars['String']['output'];
+  /** The stored hash string. */
+  hash: Scalars['String']['output'];
+};
+
+export type ExportedProjectUserCredential = {
+  __typename?: 'ExportedProjectUserCredential';
+  /** `null` when the member has no project password credential. */
+  password?: Maybe<ExportedPasswordCredential>;
+  userId: Scalars['ID']['output'];
 };
 
 export type GenerateMyMfaRecoveryCodesInput = {
@@ -1295,6 +1329,14 @@ export type Mutation = {
    * `project.user_email_changed` carries ids only, never the address.
    */
   setProjectUserEmail: User;
+  /**
+   * Set or replace a project member's password. Project scopes only: the operator supplies the
+   * password, and the password policy is enforced server-side. Writes the project credential with
+   * source `admin-set` (a later CDM import never overwrites it) and revokes the user's project-app grants.
+   * The password is never returned, logged or carried by any event; `project.user_password_set`
+   * carries ids and the credential source only.
+   */
+  setProjectUserPassword: User;
   setupMfa: MfaSetupResponse;
   /**
    * Enqueue an asynchronous CDM **export** job for the given project. The worker
@@ -1659,6 +1701,10 @@ export type MutationSetMyPrimaryMfaDeviceArgs = {
 
 export type MutationSetProjectUserEmailArgs = {
   input: SetProjectUserEmailInput;
+};
+
+export type MutationSetProjectUserPasswordArgs = {
+  input: SetProjectUserPasswordInput;
 };
 
 export type MutationStartProjectExportArgs = {
@@ -2508,6 +2554,13 @@ export type ProjectUser = Auditable & {
   displayName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
+  /**
+   * Non-secret facts about the member's project password credential. `null` when the member has no
+   * project credential or the caller lacks `ProjectUser:ExportCredentials` (never an error).
+   * `fingerprint` is the lowercase hex SHA-256 of the stored hash string: a change detector, not a secret.
+   * The password and the hash are never returned here.
+   */
+  passwordCredential?: Maybe<ProjectUserPasswordCredential>;
   pictureUrl?: Maybe<Scalars['String']['output']>;
   project?: Maybe<Project>;
   projectId: Scalars['ID']['output'];
@@ -2534,6 +2587,12 @@ export type ProjectUserApiKey = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
+/** Result of `exportProjectUserCredentials`. This is the one place a credential hash leaves Grant. */
+export type ProjectUserCredentialExport = {
+  __typename?: 'ProjectUserCredentialExport';
+  users: Array<ExportedProjectUserCredential>;
+};
+
 export type ProjectUserGroup = Auditable & {
   __typename?: 'ProjectUserGroup';
   createdAt: Scalars['Date']['output'];
@@ -2543,6 +2602,20 @@ export type ProjectUserGroup = Auditable & {
   projectId: Scalars['ID']['output'];
   updatedAt: Scalars['Date']['output'];
   userId: Scalars['ID']['output'];
+};
+
+/** Non-secret facts about a project member's password credential. Never contains the hash or the password. */
+export type ProjectUserPasswordCredential = {
+  __typename?: 'ProjectUserPasswordCredential';
+  /**
+   * Lowercase hex SHA-256 of the stored hash string. A change detector, not a secret: it lets a
+   * caller see that the password changed without learning anything usable from it.
+   */
+  fingerprint: Scalars['String']['output'];
+  /** How the credential was written (for example `reset`, `cdm-import` or `admin-set`). A plain string: the schema has no credential-source enum. */
+  source: Scalars['String']['output'];
+  /** When the stored credential last changed. */
+  updatedAt: Scalars['Date']['output'];
 };
 
 export type ProjectUserPermission = Auditable & {
@@ -2562,6 +2635,14 @@ export type Query = {
   apiKeys: ApiKeyPage;
   /** Public signup policy. No authentication required. */
   authSignupPolicy: AuthSignupPolicy;
+  /**
+   * Export project members' password hashes in CDM shape, for a downstream identity mirror.
+   * This is the one audited exception to "APIs expose only whether a password exists": it
+   * requires `ProjectUser:ExportCredentials` (held by no standard group), every call is audited,
+   * and it returns hashes. Any non-member in `userIds` fails the whole call; members without a
+   * project credential are listed with `password: null`.
+   */
+  exportProjectUserCredentials: ProjectUserCredentialExport;
   groups: GroupPage;
   invitation?: Maybe<OrganizationInvitation>;
   /** Evaluate authorization for the current session or API key token. */
@@ -2628,6 +2709,10 @@ export type QueryApiKeysArgs = {
   scope: Scope;
   search?: InputMaybe<Scalars['String']['input']>;
   sort?: InputMaybe<ApiKeySortInput>;
+};
+
+export type QueryExportProjectUserCredentialsArgs = {
+  input: ExportProjectUserCredentialsInput;
 };
 
 export type QueryGroupsArgs = {
@@ -3561,6 +3646,16 @@ export type SetProjectUserEmailInput = {
    * A provider can only be linked to one user account (no sharing), and a user can only have one method per provider (no duplicates).
    */
   email: Scalars['String']['input'];
+  scope: Scope;
+  userId: Scalars['ID']['input'];
+};
+
+export type SetProjectUserPasswordInput = {
+  /**
+   * The new password, chosen by the operator. Project-scope only. The password policy is enforced
+   * server-side; the value is never returned, logged or carried by any event.
+   */
+  password: Scalars['String']['input'];
   scope: Scope;
   userId: Scalars['ID']['input'];
 };

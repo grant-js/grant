@@ -52,10 +52,11 @@ describe('operation documents', () => {
   // 136 after closed-install: AuthSignupPolicyDocument (publicSignupEnabled, bootstrapOpen).
   // 137 after CDM imports by reference: RequestProjectSyncUploadUrlDocument.
   // 138 after operator-set-email: SetProjectUserEmailDocument.
+  // 140 after operator-set-password: SetProjectUserPasswordDocument, ExportProjectUserCredentialsDocument.
   // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(138);
+    expect(files).toHaveLength(140);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {
@@ -81,8 +82,12 @@ describe('graph reachability', () => {
    * Was 181 of 388 before pass 5 slice 4 removed six declarations that were
    * unreferenced in SDL and in all TypeScript. The reachable count did not change
    * (207 before and after), which is what makes those six safe to have deleted.
+   *
+   * 176 after operator-set-password: `ProjectUserPasswordCredential` hangs off
+   * `ProjectUser`, which no query or mutation returns (the six other new types are
+   * reachable through the new mutation and query).
    */
-  const UNREACHABLE_FROM_ROOT = 175;
+  const UNREACHABLE_FROM_ROOT = 176;
 
   it('pins the count of types unreachable from Query/Mutation', () => {
     const reachable = reachableTypeNames(schema);

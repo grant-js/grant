@@ -7,6 +7,13 @@ type ProjectUser implements Auditable {
   pictureUrl: String
   project(organizationId: ID!): Project
   user: User
+  """
+  Non-secret facts about the member's project password credential. `null` when the member has no
+  project credential or the caller lacks `ProjectUser:ExportCredentials` (never an error).
+  `fingerprint` is the lowercase hex SHA-256 of the stored hash string: a change detector, not a secret.
+  The password and the hash are never returned here.
+  """
+  passwordCredential: ProjectUserPasswordCredential
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

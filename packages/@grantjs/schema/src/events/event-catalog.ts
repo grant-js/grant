@@ -152,6 +152,7 @@ export const EVENT_TYPES = [
   'user.deleted',
   'project.user_updated',
   'project.user_email_changed',
+  'project.user_password_set',
   'api_key.deleted',
   'tag.created',
   'tag.updated',
@@ -228,6 +229,8 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
   'user.deleted': webhookOnly('membership'),
   'project.user_updated': webhookOnly('membership'),
   'project.user_email_changed': webhookOnly('membership'),
+  // Every project-credential write that changes the stored hash, any source. data.after = { projectId, userId, source }: never a hash or a password.
+  'project.user_password_set': webhookOnly('membership'),
   'api_key.deleted': webhookOnly('security'),
   'tag.created': webhookOnly('iam'),
   'tag.updated': webhookOnly('iam'),
