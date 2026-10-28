@@ -3,6 +3,24 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.19.0
+
+### Platform
+
+**Docker images:** tagged `:1.19.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.19.0** (fixed group with apps).
+
+### Patch Changes
+
+- 334609d: Operator set-email write path: optional email on createUser, setProjectUserEmail, REST PUT /api/users/:id/email, dual permission, unverified Email method, and ids-only project.user_email_changed.
+
+- 334609d: Add `ProjectUser:SetEmail` as an ordinary ResourceAction, granted by default to Project User Owner and Project User Admin (Organization Owner/Admin and account owner roles). Existing deployments receive it through `seedAll` on boot when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001).
+
+### Minor Changes
+
+- 334609d: Add optional `email` on `CreateUserInput`, the `setProjectUserEmail` mutation, and webhook-only `project.user_email_changed` (ids only, never the address).
+
 ## 1.18.11
 
 ### Platform

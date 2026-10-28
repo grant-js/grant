@@ -1,5 +1,11 @@
 # @grantjs/schema
 
+## 1.19.0
+
+### Minor Changes
+
+- 334609d: Add optional `email` on `CreateUserInput`, the `setProjectUserEmail` mutation, and webhook-only `project.user_email_changed` (ids only, never the address).
+
 ## 1.18.11
 
 No changes in this release.
