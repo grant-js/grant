@@ -8,4 +8,9 @@ input CreateUserInput {
   permissionIds: [ID!]
   scope: Scope!
   primaryTagId: ID
+  """
+  Optional. Project-scope create only. Stores an unverified Email authentication method.
+  A provider can only be linked to one user account (no sharing), and a user can only have one method per provider (no duplicates).
+  """
+  email: String
 }

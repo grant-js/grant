@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const createUserSchema = z.object({
   name: z.string().min(3, 'errors.validation.nameMin3'),
+  email: z.union([z.email('errors.validation.invalidEmail'), z.literal('')]).optional(),
   roleIds: z.array(z.string()).optional(),
   groupIds: z.array(z.string()).optional(),
   permissionIds: z.array(z.string()).optional(),

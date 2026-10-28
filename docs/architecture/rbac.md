@@ -49,7 +49,7 @@ Actions that require authorization: **read** (single resource by ID), **query** 
 | ------------------------------ | ------------------------------------------------------- | -------------------------- |
 | **Organization Member**        | `read` `update` `remove` `query`                        | Users in an organization   |
 | **Organization Invitation**    | `create` `read` `query` `revoke` `resend-email` `renew` | Join-org invitations       |
-| **Project User**               | `read` `query`                                          | Users in a project         |
+| **Project User**               | `read` `query` `set-email`                              | Users in a project         |
 | **User Session**               | `read` `query`                                          | Active sessions (own only) |
 | **User Authentication Method** | `read` `query`                                          | Auth methods (own only)    |
 
@@ -246,14 +246,14 @@ Project App (Apps) are OAuth/consent applications scoped to a project. Account o
 
 #### Project User Groups
 
-All roles have only common group permissions for Project User (read, query):
+| Group Name            | Resource     | Permissions                   | Assigned To                                                            | Description                                          |
+| --------------------- | ------------ | ----------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| `Project User Owner`  | Project User | `set-email`                   | Organization Owner, Personal Account Owner, Organization Account Owner | Set a project user's Email authentication method     |
+| `Project User Admin`  | Project User | `set-email`                   | Organization Admin                                                     | Set a project user's Email authentication method     |
+| `Project User Dev`    | Project User | _(no additional permissions)_ | —                                                                      | Dev has same project user access as common groups    |
+| `Project User Viewer` | Project User | _(no additional permissions)_ | —                                                                      | Viewer has same project user access as common groups |
 
-| Group Name            | Resource     | Permissions                   | Assigned To | Description                                          |
-| --------------------- | ------------ | ----------------------------- | ----------- | ---------------------------------------------------- |
-| `Project User Owner`  | Project User | _(no additional permissions)_ | —           | Owner has same project user access as common groups  |
-| `Project User Admin`  | Project User | _(no additional permissions)_ | —           | Admin has same project user access as common groups  |
-| `Project User Dev`    | Project User | _(no additional permissions)_ | —           | Dev has same project user access as common groups    |
-| `Project User Viewer` | Project User | _(no additional permissions)_ | —           | Viewer has same project user access as common groups |
+New standard permissions such as `ProjectUser:SetEmail` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
 
 #### User Session Groups
 
@@ -276,6 +276,8 @@ All roles have only common group permissions for User Authentication Method (rea
 | `User Authentication Method Admin`  | User Authentication Method | _(no additional permissions)_ | —           | Admin has same auth method access as common groups (own methods)  |
 | `User Authentication Method Dev`    | User Authentication Method | _(no additional permissions)_ | —           | Dev has same auth method access as common groups (own methods)    |
 | `User Authentication Method Viewer` | User Authentication Method | _(no additional permissions)_ | —           | Viewer has same auth method access as common groups (own methods) |
+
+The dedicated User Authentication Method resource is own-methods-only. Nested `User.authenticationMethods` on GraphQL `users` and REST `GET /users` is different: those lists authorize **User:Query** only, with no extra `UserAuthenticationMethod:Read` check. This is User:Query, not `ProjectUserCommon`. An OrganizationProject or AccountProject API key whose role includes User:Query (Owner and Viewer both have it via User Common) can therefore request `authenticationMethods { provider providerId isVerified }` for another member and receive the Email mailbox, including an operator-set unverified address. A ProjectUser-tenant key sees that nested field only when the bound user holds User:Query and the list is requested on a users-list tenant (`projectUser` itself is not one).
 
 :::
 
@@ -415,10 +417,11 @@ Organization `read` is enforced by scope (users can only read organizations they
 
 #### Project User Permissions
 
-| Action  | Resource       |                            Organization Owner                            |                            Organization Admin                            |                             Organization Dev                             |                           Organization Viewer                            |
-| ------- | -------------- | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: |
-| `read`  | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
-| `query` | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
+| Action      | Resource       |                            Organization Owner                            |                            Organization Admin                            |                             Organization Dev                             |                           Organization Viewer                            |
+| ----------- | -------------- | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: |
+| `read`      | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
+| `query`     | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
+| `set-email` | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
 
 ### Session & Authentication Permissions (Authorization-Required Only)
 

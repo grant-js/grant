@@ -21,7 +21,11 @@ import { cn } from '@/lib/utils';
 
 import type { UserCreateFormValues } from '../users/user-types';
 
-export function UserCreateGeneralCard() {
+interface UserCreateGeneralCardProps {
+  showEmailField?: boolean;
+}
+
+export function UserCreateGeneralCard({ showEmailField = false }: UserCreateGeneralCardProps) {
   const t = useTranslations('user');
   const tUsers = useTranslations('users');
   const tCommon = useTranslations('common');
@@ -74,6 +78,21 @@ export function UserCreateGeneralCard() {
               </FormItem>
             )}
           />
+          {showEmailField ? (
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{tUsers('form.email')}</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <TranslatedFormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
           <PrimaryTagSelector
             control={form.control}
             name="primaryTagId"

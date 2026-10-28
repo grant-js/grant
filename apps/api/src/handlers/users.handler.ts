@@ -1,4 +1,6 @@
+import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import type {
+  IAuthService,
   IFileStorageServicePort,
   IOrganizationUserService,
   IProjectGroupService,
@@ -19,6 +21,7 @@ import {
   ConfirmUserPictureUploadInput,
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
+  MutationSetProjectUserEmailArgs,
   MutationUpdateUserArgs,
   QueryUsersArgs,
   RequestUserPictureUploadUrlInput,
@@ -47,7 +50,13 @@ import {
   mergeEffectiveUserProfileForProject,
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
-import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import {
+  AuthenticationError,
+  AuthorizationError,
+  BadRequestError,
+  NotFoundError,
+  ValidationError,
+} from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
 import { tryProjectIdFromScope } from '@/lib/scope.lib';
@@ -85,7 +94,8 @@ export class UserHandler extends CacheHandler {
     private readonly fileStorage: IFileStorageServicePort,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
-    private readonly db: ITransactionalConnection<Transaction>
+    private readonly db: ITransactionalConnection<Transaction>,
+    private readonly auth: IAuthService
   ) {
     super(cache, scopeServices);
   }
@@ -247,9 +257,46 @@ export class UserHandler extends CacheHandler {
     return counts;
   }
 
-  public async createUser(params: MutationCreateUserArgs): Promise<User> {
+  private isProjectTenant(tenant: Tenant): boolean {
+    return tenant === Tenant.OrganizationProject || tenant === Tenant.AccountProject;
+  }
+
+  private assertProjectScopeForEmail(scope: Scope): void {
+    if (!this.isProjectTenant(scope.tenant)) {
+      throw new ValidationError('Email can only be set in a project scope');
+    }
+  }
+
+  private async assertSetEmailAuthorized(actorUserId: string | undefined): Promise<void> {
+    if (!actorUserId) {
+      throw new AuthenticationError('Authentication required');
+    }
+    const result = await this.auth.isAuthorized(
+      {
+        permission: { resource: ResourceSlug.ProjectUser, action: ResourceAction.SetEmail },
+        context: {},
+      },
+      actorUserId
+    );
+    if (!result.authorized) {
+      throw new AuthorizationError('Forbidden', result.reason ?? undefined);
+    }
+  }
+
+  public async createUser(
+    params: MutationCreateUserArgs & { actorUserId?: string }
+  ): Promise<User> {
+    const { input, actorUserId } = params;
+    const rawEmail = input.email;
+    const hasEmail = rawEmail !== undefined && rawEmail !== null;
+    let normalizedEmail: string | undefined;
+    if (hasEmail) {
+      this.assertProjectScopeForEmail(input.scope);
+      normalizedEmail = this.userAuthenticationMethods.normalizeOperatorEmail(rawEmail);
+      await this.assertSetEmailAuthorized(actorUserId);
+    }
+
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const { input } = params;
       const {
         name,
         scope,
@@ -309,6 +356,20 @@ export class UserHandler extends CacheHandler {
         }
       }
 
+      if (normalizedEmail) {
+        const projectId = this.extractProjectIdFromScope(scope);
+        const { operation } = await this.userAuthenticationMethods.setOrReplaceEmailMethod(
+          { userId, email: normalizedEmail },
+          tx
+        );
+        if (operation) {
+          await this.projectUsers.publishProjectUserEmailChanged(
+            { projectId, userId, operation },
+            tx
+          );
+        }
+      }
+
       // For non-organization scope, assign roles via user_roles; org role is stored on organization_users.role_id only
       if (roleIds && roleIds.length > 0 && scope.tenant !== Tenant.Organization) {
         await Promise.all(
@@ -345,6 +406,38 @@ export class UserHandler extends CacheHandler {
         await this.invalidateAuthorizationResultsForUser(userId);
       }
 
+      return user;
+    });
+  }
+
+  public async setProjectUserEmail(params: MutationSetProjectUserEmailArgs): Promise<User> {
+    const { userId, email, scope } = params.input;
+    this.assertProjectScopeForEmail(scope);
+    const normalizedEmail = this.userAuthenticationMethods.normalizeOperatorEmail(email);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const projectId = this.extractProjectIdFromScope(scope);
+      const members = await this.projectUsers.getProjectUsers({ projectId, userId }, tx);
+      if (members.length === 0) {
+        throw new NotFoundError('User');
+      }
+
+      const { operation } = await this.userAuthenticationMethods.setOrReplaceEmailMethod(
+        { userId, email: normalizedEmail },
+        tx
+      );
+      if (operation) {
+        await this.projectUsers.publishProjectUserEmailChanged(
+          { projectId, userId, operation },
+          tx
+        );
+      }
+
+      const page = await this.users.getUsers({ ids: [userId], limit: 1 }, tx);
+      const user = page.users[0];
+      if (!user) {
+        throw new NotFoundError('User');
+      }
       return user;
     });
   }

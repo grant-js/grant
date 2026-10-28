@@ -11,6 +11,7 @@ import {
   createUserRequestSchema,
   deleteUserQuerySchema,
   getUsersQuerySchema,
+  setProjectUserEmailRequestSchema,
   updateUserRequestSchema,
   userParamsSchema,
 } from '@/rest/schemas/users.schemas';
@@ -120,7 +121,13 @@ export function createUserRoutes(fallback?: RequestContext) {
       action: ResourceAction.Create,
     }),
     async (req: TypedRequest<{ body: typeof createUserRequestSchema }>, res: Response) => {
-      const { name, scope, roleIds, groupIds, permissionIds, tagIds, primaryTagId } = req.body;
+      const { name, scope, roleIds, groupIds, permissionIds, tagIds, primaryTagId, email } =
+        req.body;
+
+      const actorUserId = requestContext(req, fallback).user?.userId;
+      if (email !== undefined && email !== null && !actorUserId) {
+        throw new AuthenticationError('Authentication required');
+      }
 
       const user = await requestContext(req, fallback).handlers.users.createUser({
         input: {
@@ -131,10 +138,40 @@ export function createUserRoutes(fallback?: RequestContext) {
           permissionIds,
           tagIds,
           primaryTagId,
+          email,
         },
+        actorUserId,
       });
 
       sendSuccessResponse(res, user, 201);
+    }
+  );
+
+  router.put(
+    '/:id/email',
+    validate({ params: userParamsSchema, body: setProjectUserEmailRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectUser,
+      action: ResourceAction.SetEmail,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof userParamsSchema;
+        body: typeof setProjectUserEmailRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { email, scope } = req.body;
+
+      const user = await requestContext(req, fallback).handlers.users.setProjectUserEmail({
+        input: { userId: id, email, scope },
+      });
+
+      sendSuccessResponse(res, user);
     }
   );
 

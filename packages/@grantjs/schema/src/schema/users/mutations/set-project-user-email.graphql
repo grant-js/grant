@@ -1,0 +1,7 @@
+extend type Mutation {
+  """
+  Set or replace a project member's Email authentication method as unverified.
+  `project.user_email_changed` carries ids only, never the address.
+  """
+  setProjectUserEmail(input: SetProjectUserEmailInput!): User!
+}

@@ -74,7 +74,8 @@ function build() {
     {} as never,
     cache as never,
     scopeServices as never,
-    { withTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => fn(tx) } as never
+    { withTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => fn(tx) } as never,
+    {} as never
   );
   return {
     handler,

@@ -148,5 +148,6 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "POST /api/webhook-subscriptions/{id}/rotate-secret",
   "PUT /api/me/notification-preferences",
   "PUT /api/project-oauth-connections",
+  "PUT /api/users/{id}/email",
 ]
 `;

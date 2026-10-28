@@ -119,6 +119,14 @@ export const Mutation = {
       userMutations.createUser!
     )
   ),
+  setProjectUserEmail: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.ProjectUser, action: ResourceAction.SetEmail },
+      userMutations.setProjectUserEmail!
+    )
+  ),
   updateUser: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

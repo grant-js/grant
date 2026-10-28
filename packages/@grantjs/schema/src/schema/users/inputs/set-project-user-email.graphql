@@ -1,0 +1,9 @@
+input SetProjectUserEmailInput {
+  userId: ID!
+  """
+  Unverified Email authentication method. Project-scope only.
+  A provider can only be linked to one user account (no sharing), and a user can only have one method per provider (no duplicates).
+  """
+  email: String!
+  scope: Scope!
+}

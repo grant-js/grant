@@ -372,4 +372,21 @@ export interface IUserAuthenticationMethodService {
     emailVerified: boolean,
     transaction?: unknown
   ): Promise<UserAuthenticationMethod | null>;
+
+  /**
+   * Trim + lowercase, then validate as an email. Empty string is invalid, not absent.
+   */
+  normalizeOperatorEmail(email: string): string;
+
+  /**
+   * Add or replace the user's Email authentication method. Changed addresses are unverified.
+   * Same normalized address is a no-op (`operation` null). Uniqueness: one user per address.
+   */
+  setOrReplaceEmailMethod(
+    params: { userId: string; email: string },
+    transaction?: unknown
+  ): Promise<{
+    method: UserAuthenticationMethod;
+    operation: 'added' | 'changed' | null;
+  }>;
 }

@@ -98,6 +98,7 @@ function createHandler() {
     {} as never,
     {} as never,
     scopeServices as never,
+    {} as never,
     {} as never
   );
 

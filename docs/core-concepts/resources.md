@@ -44,7 +44,7 @@ Grant ships with 16 platform resources. These are seeded automatically and cover
 | **ApiKey**                   | `Create` `Delete` `Query` `Revoke` `Exchange`                          |
 | **OrganizationMember**       | `Read` `Update` `Remove` `Query`                                       |
 | **OrganizationInvitation**   | `Create` `Read` `Query` `Revoke` `ResendEmail` `Renew`                 |
-| **ProjectUser**              | `Read` `Query`                                                         |
+| **ProjectUser**              | `Read` `Query` `SetEmail`                                              |
 | **UserSession**              | `Read` `Query`                                                         |
 | **UserAuthenticationMethod** | `Read` `Query`                                                         |
 
@@ -54,20 +54,21 @@ The canonical source is [`packages/@grantjs/constants/src/permissions/resources.
 
 Actions are shared across resources — each resource picks the subset it supports:
 
-| Action          | Meaning                                       |
-| --------------- | --------------------------------------------- |
-| `Create`        | Create a new instance                         |
-| `Read`          | Read a single instance                        |
-| `Update`        | Modify an existing instance                   |
-| `Delete`        | Soft- or hard-delete                          |
-| `Query`         | List / paginate / search                      |
-| `ExportData`    | Export user data (GDPR)                       |
-| `UploadPicture` | Upload a profile image                        |
-| `Remove`        | Remove a membership (e.g. org member)         |
-| `Revoke`        | Revoke an active entity (API key, invitation) |
-| `ResendEmail`   | Resend an invitation email                    |
-| `Renew`         | Renew an expired invitation token             |
-| `Exchange`      | Exchange API key credentials for a JWT        |
+| Action          | Meaning                                          |
+| --------------- | ------------------------------------------------ |
+| `Create`        | Create a new instance                            |
+| `Read`          | Read a single instance                           |
+| `Update`        | Modify an existing instance                      |
+| `Delete`        | Soft- or hard-delete                             |
+| `Query`         | List / paginate / search                         |
+| `ExportData`    | Export user data (GDPR)                          |
+| `UploadPicture` | Upload a profile image                           |
+| `Remove`        | Remove a membership (e.g. org member)            |
+| `Revoke`        | Revoke an active entity (API key, invitation)    |
+| `ResendEmail`   | Resend an invitation email                       |
+| `Renew`         | Renew an expired invitation token                |
+| `Exchange`      | Exchange API key credentials for a JWT           |
+| `SetEmail`      | Set a project user's Email authentication method |
 
 ## Conditional Permissions
 

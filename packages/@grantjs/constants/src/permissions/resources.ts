@@ -15,6 +15,7 @@ export const ResourceAction = {
   ResendEmail: 'ResendEmail',
   Renew: 'Renew',
   Exchange: 'Exchange',
+  SetEmail: 'SetEmail',
 };
 
 export type ResourceAction = (typeof ResourceAction)[keyof typeof ResourceAction];
@@ -165,7 +166,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
     ],
   },
   [ResourceSlug.ProjectUser]: {
-    actions: [ResourceAction.Read, ResourceAction.Query],
+    actions: [ResourceAction.Read, ResourceAction.Query, ResourceAction.SetEmail],
   },
   [ResourceSlug.UserSession]: {
     actions: [ResourceAction.Read, ResourceAction.Query],

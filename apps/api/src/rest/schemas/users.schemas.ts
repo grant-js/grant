@@ -122,6 +122,11 @@ export const createUserRequestSchema = z.object({
     description: 'Primary tag ID for the user',
     example: '123e4567-e89b-12d3-a456-426614174002',
   }),
+  email: z.string().email('errors.validation.invalidEmail').optional().openapi({
+    description:
+      'Optional unverified Email method. Project-scope create only. Requires ProjectUser:SetEmail in addition to User:Create.',
+    example: 'member@example.com',
+  }),
 });
 
 export const createUserResponseSchema = createSuccessResponseSchema(
@@ -180,6 +185,20 @@ export const userParamsSchema = z.object({
     param: { in: 'path', name: 'id' },
   }),
 });
+
+export const setProjectUserEmailRequestSchema = z.object({
+  scope: scopeSchema,
+  email: z.string().email('errors.validation.invalidEmail').openapi({
+    description:
+      'Unverified Email authentication method. Project-scope only. Requires ProjectUser:SetEmail.',
+    example: 'member@example.com',
+  }),
+});
+
+export const setProjectUserEmailResponseSchema = createSuccessResponseSchema(
+  userSchema,
+  'Successfully set project user email'
+);
 
 export const updateUserResponseSchema = createSuccessResponseSchema(
   userSchema,
