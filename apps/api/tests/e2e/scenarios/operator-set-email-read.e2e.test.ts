@@ -1,10 +1,11 @@
 /**
  * E2E: API-key nested authenticationMethods read lock.
  *
- * OrganizationProject and AccountProject keys with User:Query (Owner and
+ * OrganizationProject and AccountProject keys with User:Query (Admin and
  * Viewer via User Common) can request another member's
  * authenticationMethods { provider providerId isVerified } and receive the
- * Email mailbox. This is User:Query, not ProjectUserCommon or
+ * Email mailbox. Owner-role org-project keys cannot be minted by an Owner
+ * (equal privilege). This is User:Query, not ProjectUserCommon or
  * UserAuthenticationMethod:Read. If keys cannot read nested methods, stop —
  * do not add ProjectUser.email.
  */
@@ -22,9 +23,7 @@ import { closeDbHelper, getOrganizationRoleIdByName } from '../helpers/db-tokens
 import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
 
-const SENTINEL = 'sentinel-set-email@example.test';
-const ACCOUNT_SENTINEL = 'sentinel-set-email-account@example.test';
-const ROLE_OWNER = 'roles.names.organizationOwner';
+const ROLE_ADMIN = 'roles.names.organizationAdmin';
 const ROLE_VIEWER = 'roles.names.organizationViewer';
 
 const USERS_AUTH_METHODS_QUERY = `
@@ -71,7 +70,9 @@ describe('Operator set-email nested read', () => {
   let projectId: string;
   let memberId: string;
   let uniqueStamp: string;
-  let ownerRoleId: string;
+  let orgSentinel: string;
+  let accountSentinel: string;
+  let adminRoleId: string;
   let viewerRoleId: string;
 
   const projectScope = () => ({ tenant: Tenant.OrganizationProject, id: `${org.id}:${projectId}` });
@@ -161,34 +162,36 @@ describe('Operator set-email nested read', () => {
 
   it('Setup: org, project, member with sentinel email', async () => {
     uniqueStamp = `${Date.now()}`;
+    orgSentinel = `sentinel-set-email-read-${uniqueStamp}@example.test`;
+    accountSentinel = `sentinel-set-email-account-${uniqueStamp}@example.test`;
     owner = await TestUser.create({ withOrgAccount: true });
     org = await owner.createOrganization('E2E Set Email Read Org');
     const projectRes = await owner.tryCreateProject(org.id, 'E2E Set Email Read Project');
     expect(projectRes.status).toBe(201);
     projectId = (projectRes.body as IdBody).data!.id;
 
-    const ownerId = await getOrganizationRoleIdByName(org.id, ROLE_OWNER);
+    const adminId = await getOrganizationRoleIdByName(org.id, ROLE_ADMIN);
     const viewerId = await getOrganizationRoleIdByName(org.id, ROLE_VIEWER);
-    expect(ownerId && viewerId).toBeTruthy();
-    ownerRoleId = ownerId!;
+    expect(adminId && viewerId).toBeTruthy();
+    adminRoleId = adminId!;
     viewerRoleId = viewerId!;
 
     memberId = await createProjectUser(
       owner.accessToken,
       'E2E Set Email Read Member',
-      SENTINEL,
+      orgSentinel,
       projectScope()
     );
   });
 
-  it('OrganizationProject Owner API key reads another member mailbox under User:Query', async () => {
+  it('OrganizationProject Admin API key reads another member mailbox under User:Query', async () => {
     const key = await createKey(owner.accessToken, {
-      name: `E2E read owner key ${uniqueStamp}`,
+      name: `E2E read admin key ${uniqueStamp}`,
       scope: projectScope(),
-      roleId: ownerRoleId,
+      roleId: adminRoleId,
     });
     const token = await exchangeKey(key.clientId, key.clientSecret, projectScope());
-    await assertMailboxVisible(token, projectScope(), memberId, SENTINEL);
+    await assertMailboxVisible(token, projectScope(), memberId, orgSentinel);
   });
 
   it('OrganizationProject Viewer API key reads another member mailbox under User:Query', async () => {
@@ -198,7 +201,7 @@ describe('Operator set-email nested read', () => {
       roleId: viewerRoleId,
     });
     const token = await exchangeKey(key.clientId, key.clientSecret, projectScope());
-    await assertMailboxVisible(token, projectScope(), memberId, SENTINEL);
+    await assertMailboxVisible(token, projectScope(), memberId, orgSentinel);
   });
 
   it('AccountProject API key reads another member mailbox under User:Query', async () => {
@@ -220,7 +223,7 @@ describe('Operator set-email nested read', () => {
     const accountMemberId = await createProjectUser(
       personal.accessToken,
       'E2E Set Email Read Account Member',
-      ACCOUNT_SENTINEL,
+      accountSentinel,
       accountScope
     );
     const key = await createKey(personal.accessToken, {
@@ -228,6 +231,6 @@ describe('Operator set-email nested read', () => {
       scope: accountScope,
     });
     const token = await exchangeKey(key.clientId, key.clientSecret, accountScope);
-    await assertMailboxVisible(token, accountScope, accountMemberId, ACCOUNT_SENTINEL);
+    await assertMailboxVisible(token, accountScope, accountMemberId, accountSentinel);
   });
 });
