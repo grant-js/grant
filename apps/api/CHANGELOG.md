@@ -1,5 +1,27 @@
 # grant-api
 
+## 1.19.0
+
+### Patch Changes
+
+- 334609d: Operator set-email write path: optional email on createUser, setProjectUserEmail, REST PUT /api/users/:id/email, dual permission, unverified Email method, and ids-only project.user_email_changed.
+- 334609d: Add `ProjectUser:SetEmail` as an ordinary ResourceAction, granted by default to Project User Owner and Project User Admin (Organization Owner/Admin and account owner roles). Existing deployments receive it through `seedAll` on boot when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001).
+- Updated dependencies [334609d]
+  - @grantjs/schema@1.19.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.18.11
 
 ### Patch Changes
