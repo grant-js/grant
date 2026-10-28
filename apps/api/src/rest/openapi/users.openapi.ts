@@ -12,6 +12,8 @@ import {
   notFoundErrorResponseSchema,
   setProjectUserEmailRequestSchema,
   setProjectUserEmailResponseSchema,
+  setProjectUserPasswordRequestSchema,
+  setProjectUserPasswordResponseSchema,
   updateUserRequestSchema,
   updateUserResponseSchema,
   userParamsSchema,
@@ -278,6 +280,86 @@ Requires \`ProjectUser:SetEmail\`. The address is stored unverified. Same normal
         content: {
           'application/json': {
             schema: errorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * PUT /api/users/:id/password
+   */
+  registry.registerPath({
+    method: 'put',
+    path: '/api/users/{id}/password',
+    operationId: 'putApiUsersByIdPassword',
+    tags: ['Users'],
+    summary: 'Set a project user password',
+    description: `
+Set or replace the user's project password, as written by the operator. Project scope only.
+
+Requires \`ProjectUser:SetPassword\` (default Owner and Admin; extensible through groups). The user must be a project member (no user is created). The password must meet the password policy, which is checked before anything is written. The request body is never logged and the password is never returned, echoed in an error, or placed in an audit row or event. The same password set twice writes a new hash each time.
+
+Revokes the user's project-app OAuth grants and clears the project lockout. Platform sessions are untouched and the Email method is not marked verified. Publishes \`project.user_password_set\` (ids and source only).
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: setProjectUserPasswordRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          'Password set successfully; the response is the user and carries no credential',
+        content: {
+          'application/json': {
+            schema: setProjectUserPasswordResponseSchema,
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid request, a non-project scope, or a password that does not meet the policy (the response names the rules, never the value)',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - ProjectUser:SetPassword required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User is not a member of the project',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
           },
         },
       },

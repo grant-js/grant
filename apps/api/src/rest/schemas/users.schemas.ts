@@ -200,6 +200,25 @@ export const setProjectUserEmailResponseSchema = createSuccessResponseSchema(
   'Successfully set project user email'
 );
 
+/**
+ * The password is shape-checked only (a string). The policy is applied by the handler with
+ * `validateSecretInput`, so a rejection names the rules and never contains the value, and no
+ * issue message produced here embeds the input.
+ */
+export const setProjectUserPasswordRequestSchema = z.object({
+  scope: scopeSchema,
+  password: z.string().min(1, 'errors.validation.passwordRequired').openapi({
+    description:
+      'The new project password, set as written. Must meet the password policy. Never returned, logged or echoed in an error. Requires ProjectUser:SetPassword.',
+    format: 'password',
+  }),
+});
+
+export const setProjectUserPasswordResponseSchema = createSuccessResponseSchema(
+  userSchema,
+  'Successfully set project user password'
+);
+
 export const updateUserResponseSchema = createSuccessResponseSchema(
   userSchema,
   'Successfully updated user'

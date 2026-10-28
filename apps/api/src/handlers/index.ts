@@ -58,7 +58,9 @@ export function createHandlers(
     cache,
     services,
     db,
-    services.auth
+    services.auth,
+    services.credentials,
+    services.projectOAuthGrants
   );
   const authHandler = new AuthHandler(
     services.userAuthenticationMethods,
