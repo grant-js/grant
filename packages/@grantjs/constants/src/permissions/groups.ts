@@ -598,13 +598,17 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
 
   [GroupKey.ProjectUserOwner]: {
     resource: ResourceSlug.ProjectUser,
-    permissions: [],
-    assignedRoles: [],
+    permissions: [ResourceAction.SetEmail],
+    assignedRoles: [
+      RoleKey.OrganizationOwner,
+      RoleKey.PersonalAccountOwner,
+      RoleKey.OrganizationAccountOwner,
+    ],
   },
   [GroupKey.ProjectUserAdmin]: {
     resource: ResourceSlug.ProjectUser,
-    permissions: [],
-    assignedRoles: [],
+    permissions: [ResourceAction.SetEmail],
+    assignedRoles: [RoleKey.OrganizationAdmin],
   },
   [GroupKey.ProjectUserDev]: {
     resource: ResourceSlug.ProjectUser,
