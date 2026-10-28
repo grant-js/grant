@@ -277,6 +277,8 @@ All roles have only common group permissions for User Authentication Method (rea
 | `User Authentication Method Dev`    | User Authentication Method | _(no additional permissions)_ | —           | Dev has same auth method access as common groups (own methods)    |
 | `User Authentication Method Viewer` | User Authentication Method | _(no additional permissions)_ | —           | Viewer has same auth method access as common groups (own methods) |
 
+The dedicated User Authentication Method resource is own-methods-only. Nested `User.authenticationMethods` on GraphQL `users` and REST `GET /users` is different: those lists authorize **User:Query** only, with no extra `UserAuthenticationMethod:Read` check. This is User:Query, not `ProjectUserCommon`. An OrganizationProject or AccountProject API key whose role includes User:Query (Owner and Viewer both have it via User Common) can therefore request `authenticationMethods { provider providerId isVerified }` for another member and receive the Email mailbox, including an operator-set unverified address. A ProjectUser-tenant key sees that nested field only when the bound user holds User:Query and the list is requested on a users-list tenant (`projectUser` itself is not one).
+
 :::
 
 ## Permission Mapping to Roles
