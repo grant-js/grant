@@ -2,7 +2,7 @@
 
 Copy of Grant template `docs/contributing/templates/stack-plan.md`. Principal Engineer owns this artifact. Requires an approved story brief.
 
-Story brief: [2026-10-28-operator-set-password-brief.md](./2026-10-28-operator-set-password-brief.md). Gates 1–2: pending Alejandro.
+Story brief: [2026-10-28-operator-set-password-brief.md](./2026-10-28-operator-set-password-brief.md). Gates 1–2 approved by Alejandro 2026-10-28.
 
 Grounded on `origin/main` `af6c102f` (v1.19.0). Open-source language only — do not name customer tenants.
 
@@ -10,7 +10,7 @@ Grounded on `origin/main` `af6c102f` (v1.19.0). Open-source language only — do
 
 - **Slug**: `operator-set-password`
 - **Story brief**: `plans/2026-10-28-operator-set-password-brief.md`
-- **Status**: draft
+- **Status**: approved
 - **Story trunk**: `feat/operator-set-password` from `main` **at v1.19.0** (`af6c102f`)
 - **worktree_path**: `/workspace/worktrees/grant-platform-feat-operator-set-password` (created; the main checkout stays free for other stories)
 
@@ -53,7 +53,7 @@ Layer order **db → constants → schema → api → web**, as `operator-set-em
 Root the stack on the story trunk — never the default branch, or slices target `main` and skip gate 4:
 
 ```sh
-# Trunk — only after Alejandro Gate 1–2 (branch already exists locally in the worktree; push then)
+# Trunk — pushed 2026-10-28 after Gates 1–2 (branch lives in the worktree)
 cd /workspace/worktrees/grant-platform-feat-operator-set-password
 git push -u origin feat/operator-set-password
 
@@ -187,7 +187,7 @@ Fingerprint: `sha256(hash).hex()` over the stored bcrypt string, lowercase. Even
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approved — no implementation until Alejandro confirms.
+- [x] Gate 2: Stack plan approved — Alejandro 2026-10-28.
 - [ ] Gate 3: Stack PRs merged into trunk (light / security-full as listed).
 - [ ] Gate 4: Story → `main` deep + security-full review complete.
 

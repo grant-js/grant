@@ -11,7 +11,7 @@ Grounded on `origin/main` at `af6c102f` (package version **v1.19.0**; `#637` ope
 - **Slug**: `operator-set-password`
 - **Date**: 2026-10-28
 - **Author** (human / PM agent): PM agent (Claude, for Alejandro)
-- **Status**: draft
+- **Status**: approved
 
 ## Objective
 
@@ -56,7 +56,7 @@ Each slice ships Verifier-clean. Agents do not merge.
 | Event type          | `project.user_password_set` (`webhookOnly` membership; `data.after = { projectId, userId, source }`) |
 | Audit action        | `export` on `project_user_credential_audit_logs`                                                     |
 
-## Decisions taken in this brief (override at Gate 1 if wrong)
+## Decisions taken in this brief (agreed by Alejandro at Gate 1, 2026-10-28)
 
 1. **Operator supplies the password**; no generated one-time password, no mail. Matches the product decision and keeps mail out of scope.
 2. **Revoke project-app grants, leave platform sessions** — identical to `completeReset`. Revoking platform sessions would need a `UserSession` operator action that does not exist (`resources.ts:171-173`, own-sessions-only `UserSessionCommon`) and is a different story.
@@ -99,5 +99,5 @@ Architect: **active for the ADR amendment only** (two ADRs change; no new resour
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until Alejandro confirms before stack planning. (The stack plan is drafted alongside so Gates 1–2 can be approved together, as on `operator-set-email`.)
+- [x] Gate 1: Story brief approved — Alejandro 2026-10-28, with the seven decisions below agreed as written. Gates 1–2 approved together, as on `operator-set-email`.
 - [ ] Gate 4: Story → `main` — not opened; agents do not merge.
