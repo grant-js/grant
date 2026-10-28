@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.18.10
+
+### Platform
+
+**Docker images:** tagged `:1.18.10` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.18.10** (fixed group with apps).
+
+### Patch Changes
+
+- 4378ed0: GHCR `:demo`, `:latest`, and `:<semver>` now ship together only when the version PR merges. Feature merges that only open `chore: version packages` no longer build or push images.
+
 ## 1.18.9
 
 ### Platform
