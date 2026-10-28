@@ -26,6 +26,7 @@ interface UsersState {
   // Dialog state
   userToDelete: User | null;
   userToEdit: User | null;
+  userToSetEmail: User | null;
 
   // Current user (for breadcrumb)
   currentUser: User | null;
@@ -48,6 +49,7 @@ interface UsersState {
   // Dialog actions
   setUserToDelete: (user: User | null) => void;
   setUserToEdit: (user: User | null) => void;
+  setUserToSetEmail: (user: User | null) => void;
   setCurrentUser: (user: User | null) => void;
 }
 
@@ -77,6 +79,7 @@ export const useUsersStore = create<UsersState>()(
       // Dialog state
       userToDelete: null,
       userToEdit: null,
+      userToSetEmail: null,
       // Current user
       currentUser: null,
 
@@ -107,6 +110,7 @@ export const useUsersStore = create<UsersState>()(
           refetch: null,
           userToDelete: null,
           userToEdit: null,
+          userToSetEmail: null,
           currentUser: null,
         }),
       initializeFromUrl: (params) => {
@@ -139,6 +143,7 @@ export const useUsersStore = create<UsersState>()(
       // Dialog actions
       setUserToDelete: (user) => set({ userToDelete: user }),
       setUserToEdit: (user) => set({ userToEdit: user }),
+      setUserToSetEmail: (user) => set({ userToSetEmail: user }),
       setCurrentUser: (user) => set({ currentUser: user }),
     }),
     { name: 'grant-users-store' }

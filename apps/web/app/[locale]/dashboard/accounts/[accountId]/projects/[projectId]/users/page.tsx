@@ -6,6 +6,7 @@ import {
   UserDeleteDialog,
   UserEditDialog,
   UserPagination,
+  UserSetEmailDialog,
   UserToolbar,
   UserViewer,
 } from '@/components/features/users';
@@ -28,6 +29,7 @@ export default function PersonalProjectUsersPage() {
         <UserViewer />
         <UserDeleteDialog />
         <UserEditDialog />
+        <UserSetEmailDialog />
       </>
     </DashboardLayout>
   );

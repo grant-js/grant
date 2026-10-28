@@ -881,6 +881,7 @@
     "actions": {
       "create": "Benutzer erstellen",
       "edit": "Bearbeiten",
+      "setEmail": "E-Mail festlegen",
       "delete": "Löschen",
       "view": "Ansehen",
       "cancel": "Abbrechen",
@@ -945,6 +946,13 @@
       "confirm": "Löschen",
       "deleting": "Wird gelöscht..."
     },
+    "setEmailDialog": {
+      "title": "Benutzer-E-Mail festlegen",
+      "description": "Legen Sie die E-Mail-Adresse dieses Benutzers fest oder ersetzen Sie sie",
+      "confirm": "E-Mail festlegen",
+      "cancel": "Abbrechen",
+      "updating": "Wird gespeichert..."
+    },
     "notifications": {
       "createSuccess": "Benutzer erstellt",
       "createError": "Benutzer konnte nicht erstellt werden",
@@ -952,6 +960,8 @@
       "updateError": "Benutzer konnte nicht aktualisiert werden",
       "deleteSuccess": "Benutzer gelöscht",
       "deleteError": "Benutzer konnte nicht gelöscht werden",
+      "setEmailSuccess": "E-Mail festgelegt",
+      "setEmailError": "E-Mail konnte nicht festgelegt werden",
       "uploadPictureSuccess": "Profilbild hochgeladen",
       "uploadPictureError": "Profilbild konnte nicht hochgeladen werden",
       "changePasswordSuccess": "Passwort erfolgreich geändert",
@@ -2292,7 +2302,8 @@
       },
       "projectUser": {
         "read": "Projektbenutzer lesen",
-        "query": "Projektbenutzer abfragen"
+        "query": "Projektbenutzer abfragen",
+        "setEmail": "Projektbenutzer-E-Mail festlegen"
       },
       "userSession": {
         "read": "Benutzersitzung lesen",
@@ -2406,7 +2417,8 @@
       },
       "projectUser": {
         "read": "Berechtigung zum Lesen von Projektbenutzerinformationen",
-        "query": "Berechtigung zum Abfragen von Projektbenutzern"
+        "query": "Berechtigung zum Abfragen von Projektbenutzern",
+        "setEmail": "Berechtigung zum Festlegen der E-Mail eines Projektbenutzers"
       },
       "userSession": {
         "read": "Berechtigung zum Lesen von Benutzersitzungsinformationen",

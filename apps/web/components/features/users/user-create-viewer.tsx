@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
+import { Tenant } from '@grantjs/schema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
@@ -48,6 +49,15 @@ export function UserCreateViewer({ sidebar }: UserCreateViewerProps) {
     returnLoading: true,
   }) as UseGrantResult;
 
+  const isProjectCreateScope =
+    scope?.tenant === Tenant.OrganizationProject || scope?.tenant === Tenant.AccountProject;
+  const setEmailGrant = useGrant(ResourceSlug.ProjectUser, ResourceAction.SetEmail, {
+    scope,
+    enabled: isProjectCreateScope,
+    returnLoading: true,
+  }) as UseGrantResult;
+  const canSetEmail = Boolean(isProjectCreateScope && setEmailGrant.isGranted);
+
   const isCheckingCreateGrant = createGrant.isLoading;
   const canCreate = createGrant.isGranted;
   const canRenderCreateForm =
@@ -57,6 +67,7 @@ export function UserCreateViewer({ sidebar }: UserCreateViewerProps) {
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       name: '',
+      email: '',
       roleIds: [],
       groupIds: [],
       permissionIds: [],
@@ -82,9 +93,12 @@ export function UserCreateViewer({ sidebar }: UserCreateViewerProps) {
           ? values.metadata
           : undefined;
 
+      const email = canSetEmail && values.email?.trim() ? values.email.trim() : undefined;
+
       const user = await createUser({
         scope,
         name: values.name,
+        ...(email ? { email } : {}),
         roleIds: values.roleIds?.length ? values.roleIds : undefined,
         groupIds: values.groupIds?.length ? values.groupIds : undefined,
         permissionIds: values.permissionIds?.length ? values.permissionIds : undefined,
@@ -130,7 +144,7 @@ export function UserCreateViewer({ sidebar }: UserCreateViewerProps) {
             onSubmit={form.handleSubmit(handleSubmit)}
             className="space-y-6"
           >
-            <UserCreateGeneralCard />
+            <UserCreateGeneralCard showEmailField={canSetEmail} />
             <UserCreateMetadataCard />
             <UserCreateRoles />
             <UserCreateGroups />

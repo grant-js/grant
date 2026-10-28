@@ -883,6 +883,7 @@
     "actions": {
       "create": "Create User",
       "edit": "Edit",
+      "setEmail": "Set email",
       "delete": "Delete",
       "view": "View",
       "cancel": "Cancel",
@@ -960,6 +961,13 @@
       "confirm": "Delete",
       "deleting": "Deleting..."
     },
+    "setEmailDialog": {
+      "title": "Set User Email",
+      "description": "Set or replace the email address for this user",
+      "confirm": "Set Email",
+      "cancel": "Cancel",
+      "updating": "Saving..."
+    },
     "notifications": {
       "createSuccess": "User created",
       "createError": "Failed to create user",
@@ -967,6 +975,8 @@
       "updateError": "Failed to update user",
       "deleteSuccess": "User deleted",
       "deleteError": "Failed to delete user",
+      "setEmailSuccess": "Email set",
+      "setEmailError": "Failed to set email",
       "uploadPictureSuccess": "Profile picture uploaded",
       "uploadPictureError": "Failed to upload profile picture",
       "changePasswordSuccess": "Password changed successfully",
@@ -2566,7 +2576,8 @@
       },
       "projectUser": {
         "read": "Read Project User",
-        "query": "Query Project User"
+        "query": "Query Project User",
+        "setEmail": "Set Email Project User"
       },
       "userSession": {
         "read": "Read User Session",
@@ -2680,7 +2691,8 @@
       },
       "projectUser": {
         "read": "Permission to read project user information",
-        "query": "Permission to query project users"
+        "query": "Permission to query project users",
+        "setEmail": "Permission to set a project user's email"
       },
       "userSession": {
         "read": "Permission to read user session information",
