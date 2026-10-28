@@ -242,21 +242,21 @@ export const exportProjectUserCredentialsRequestSchema = z.object({
     }),
 });
 
-export const exportedPasswordCredentialSchema = z.object({
+const exportedPasswordCredentialSchema = z.object({
   algorithm: z.string().openapi({ description: 'Hash algorithm, `bcrypt`.', example: 'bcrypt' }),
   hash: z.string().openapi({
     description: 'The stored bcrypt hash. Secret-equivalent: handle like a credential.',
   }),
 });
 
-export const exportedProjectUserCredentialSchema = z.object({
+const exportedProjectUserCredentialSchema = z.object({
   userId: z.string(),
   password: exportedPasswordCredentialSchema
     .nullable()
     .openapi({ description: '`null` when the member has no project password credential.' }),
 });
 
-export const exportProjectUserCredentialsDataSchema = z.object({
+const exportProjectUserCredentialsDataSchema = z.object({
   users: z.array(exportedProjectUserCredentialSchema),
 });
 
