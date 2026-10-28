@@ -13,6 +13,7 @@ import {
   PERMISSION_MAPPINGS,
   ROLE_KEYS,
   ROLES,
+  STANDALONE_PERMISSIONS,
 } from '@grantjs/constants';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,11 +24,16 @@ import { seedAll } from './seed-permissions';
 type SeedDb = Parameters<typeof seedAll>[0];
 
 const RESOURCE_COUNT = getResourceSlugs().length;
-const UNIQUE_PERMISSION_KEYS = new Set(
+const MAPPED_PERMISSION_KEYS = new Set(
   Object.values(PERMISSION_MAPPINGS).flatMap((perms) =>
     perms.map((p) => `${p.resource}:${p.action}`)
   )
 );
+const STANDALONE_PERMISSION_KEYS = new Set(
+  STANDALONE_PERMISSIONS.map((p) => `${p.resource}:${p.action}`)
+);
+// One row per group-declared resource:action plus one per standalone entry (no group).
+const UNIQUE_PERMISSION_KEYS = new Set([...MAPPED_PERMISSION_KEYS, ...STANDALONE_PERMISSION_KEYS]);
 const GROUP_COUNT = Object.keys(GROUP_DEFINITIONS).length;
 const ROLE_COUNT = ROLE_KEYS.length;
 const ROLE_GROUP_PAIRS = Object.values(GROUP_DEFINITIONS).reduce(
@@ -209,6 +215,38 @@ describe('seedAll — idempotency (second run against the rows the first run cre
     // The seed inserts a fresh row for the slug it can no longer find.
     expect(second.resources.created).toBeGreaterThan(0);
     expect(db.insertsFor(resources).length).toBeGreaterThan(0);
+  });
+});
+
+describe('seedAll — standalone permissions (row, no group)', () => {
+  it('declares each standalone action on its resource and in no group template', () => {
+    expect(STANDALONE_PERMISSIONS.length).toBeGreaterThan(0);
+    for (const p of STANDALONE_PERMISSIONS) {
+      expect(getResourceDefinition(p.resource).actions).toContain(p.action);
+      expect(MAPPED_PERMISSION_KEYS.has(`${p.resource}:${p.action}`)).toBe(false);
+    }
+  });
+
+  it('creates a permission row per standalone entry and links it to no group', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const resourceRows = db.rows(resources);
+    const permissionRows = db.rows(permissions);
+    expect(permissionRows).toHaveLength(
+      MAPPED_PERMISSION_KEYS.size + STANDALONE_PERMISSIONS.length
+    );
+
+    const linkedPermissionIds = new Set(db.rows(groupPermissions).map((r) => r.permissionId));
+    for (const p of STANDALONE_PERMISSIONS) {
+      const resourceRow = resourceRows.find((r) => r.slug === p.resource);
+      const row = permissionRows.find(
+        (r) => r.action === p.action && r.resourceId === resourceRow?.id
+      );
+      expect(row, `${p.resource}:${p.action}`).toBeDefined();
+      expect(row?.condition ?? null).toEqual(p.condition);
+      expect(linkedPermissionIds.has(row?.id)).toBe(false);
+    }
+    expect(db.insertsFor(groupPermissions)).toHaveLength(GROUP_PERMISSION_PAIRS);
   });
 });
 

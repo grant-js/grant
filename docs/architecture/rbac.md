@@ -255,7 +255,7 @@ Project App (Apps) are OAuth/consent applications scoped to a project. Account o
 
 `ProjectUser:SetPassword` is an ordinary extensible action: it is held by Owner and Admin by default, and an organization can add it to any other role's group exactly like `SetEmail`, with no code change.
 
-`ProjectUser:ExportCredentials` has **no default holder**. It reads project users' password hashes, so it belongs to no standard group and is granted deliberately, per organization, to the group of the role that a mirror's API key carries.
+`ProjectUser:ExportCredentials` has **no default holder**. It reads project users' password hashes, so it belongs to no standard group and is granted deliberately, per organization, to the group of the role that a mirror's API key carries. It is seeded as a standalone permission (a permission row linked to no group), so the groups UI and API can grant it.
 
 New standard permissions such as `ProjectUser:SetEmail` and `ProjectUser:SetPassword` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
 
