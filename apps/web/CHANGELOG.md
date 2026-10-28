@@ -1,5 +1,14 @@
 # grant-web
 
+## 1.18.10
+
+### Patch Changes
+
+- @grantjs/client@1.18.10
+  - @grantjs/schema@1.18.10
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.18.9
 
 ### Patch Changes
