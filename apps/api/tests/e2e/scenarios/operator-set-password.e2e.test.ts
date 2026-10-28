@@ -3,9 +3,10 @@
  *
  * Owner/Admin may set a project user's password. Dev/Viewer may not, until
  * ProjectUser:SetPassword is granted to Dev's group. The write is `admin-set`, so a CDM
- * import never overwrites it. The event is published for every project credential write
- * that changes the stored hash (and only then), carries ids and source only, and neither
+ * import never overwrites it. The event is published for every non-import project credential
+ * write that changes the stored hash (and only then), carries ids and source only, and neither
  * the password nor any hash reaches an event, a webhook payload, a log or an audit row.
+ * A CDM import is silent: it emits no `project.user_password_set`.
  */
 import {
   CdmFindBy,
@@ -475,7 +476,7 @@ describe('Operator set-password', () => {
     expect(grants.find((g) => g.token === grantTokens.other)?.revoked).toBe(false);
   });
 
-  describe('CDM import and the change-only event', () => {
+  describe('CDM import (silent) and the admin-set guard', () => {
     const roleKey = () => `e2e-set-pw-${uniqueStamp}`;
     const hashOne = () => hashSync('Imported-Passw0rd-One-1', 4);
     const hashTwo = () => hashSync('Imported-Passw0rd-Two-2', 4);
@@ -499,36 +500,27 @@ describe('Operator set-password', () => {
       expect(await passwordEventCount(userId)).toBe(eventsBefore);
     });
 
-    it('imports publish one event per changed hash (cdm-import), and none when re-imported unchanged', async () => {
+    it('an import emits no project.user_password_set, whether it writes, replaces or finds the same hash', async () => {
       const email = `e2e-set-pw-import-${uniqueStamp}@test.grant.dev`;
       const first = hashOne();
 
       await importPasswordUser(roleKey(), email, first);
       const userId = await userIdForEmail(email);
       expect((await credentialOf(userId))?.source).toBe('cdm-import');
-      let events = await passwordEvents(userId);
-      expect(events).toHaveLength(1);
-      expect(events[0].payload.data?.after).toEqual({
-        projectId,
-        userId,
-        source: 'cdm-import',
-      });
+      expect(await passwordEventCount(userId)).toBe(0);
 
-      // Same hashes twice: nothing is written, nothing is published.
+      // Same hash again: nothing is written.
       await importPasswordUser(roleKey(), email, first);
-      await importPasswordUser(roleKey(), email, first);
-      expect(await passwordEventCount(userId)).toBe(1);
+      expect(await passwordEventCount(userId)).toBe(0);
 
-      // A different hash is a change.
+      // A different hash replaces the import's own credential, and is still silent.
       const second = hashTwo();
       await importPasswordUser(roleKey(), email, second);
       expect((await credentialOf(userId))?.hash).toBe(second);
-      events = await passwordEvents(userId);
-      expect(events).toHaveLength(2);
-      expect(events[1].payload.data?.after).toMatchObject({ source: 'cdm-import' });
+      expect(await passwordEventCount(userId)).toBe(0);
     });
 
-    it('an operator set after an import replaces it, publishes as admin-set, and is then final', async () => {
+    it('an operator set after an import replaces it, publishes only the admin-set write, and is then final', async () => {
       const email = `e2e-set-pw-after-import-${uniqueStamp}@test.grant.dev`;
       await importPasswordUser(roleKey(), email, hashOne());
       const userId = await userIdForEmail(email);
@@ -542,7 +534,7 @@ describe('Operator set-password', () => {
       expect((await credentialOf(userId))?.hash).toBe(credential?.hash);
 
       const sources = (await passwordEvents(userId)).map((e) => e.payload.data?.after?.source);
-      expect(sources).toEqual(['cdm-import', 'admin-set']);
+      expect(sources).toEqual(['admin-set']);
     });
   });
 
@@ -565,7 +557,8 @@ describe('Operator set-password', () => {
 
     const secrets = [SENTINEL_PASSWORD, sentinelHash, sentinelCredential!.hash];
 
-    const events = [...(await passwordEvents(memberId)), ...(await passwordEvents(importedUserId))];
+    expect(await passwordEventCount(importedUserId)).toBe(0);
+    const events = await passwordEvents(memberId);
     expect(events.length).toBeGreaterThan(0);
     for (const row of events) {
       for (const secret of secrets) {

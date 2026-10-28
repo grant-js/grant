@@ -84,7 +84,8 @@ export interface ICredentialService {
    * Runs in the caller's transaction, under the project's RLS; the caller has already
    * established that every user is a member of the project. The hash is compared inside the
    * service and never returned. Rows are applied in order, so a user named twice ends with
-   * the last hash.
+   * the last hash. Publishes no `project.user_password_set`: an import is silent like every
+   * other import write, and its completion event with counters is the signal.
    */
   importProjectPasswordHashes(
     params: {
@@ -135,7 +136,8 @@ export interface ProjectPasswordSetChange {
 
 /**
  * Publishes `project.user_password_set` (ADR 0011 § 8). `ICredentialService` is the only
- * caller, so the event has one emission point whatever wrote the credential. Ids and
+ * caller, so the event has one emission point for every non-import write (`admin-set`,
+ * `reset`, a future `change`); a CDM import never publishes it. Ids and
  * `source` only in `data.after`: never a password, a hash or a key containing either.
  */
 export interface IProjectUserCredentialEventPublisher {

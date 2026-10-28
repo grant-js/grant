@@ -58,10 +58,10 @@ function auditValues(record: CredentialRecord): Record<string, unknown> {
  * {@link PlatformCredentialConnection}). Project-scope operations use the caller's
  * transaction, where RLS applies. No caller picks a connection.
  *
- * **Event.** `project.user_password_set` is published from here, and only from here: every
- * project-scope write goes through `write` or `importProjectPasswordHashes`, and each
- * publishes (see `publishPasswordSet`) when the stored hash changed. Platform scope
- * publishes nothing new.
+ * **Event.** `project.user_password_set` is published from `write`, and only from there, when
+ * a project credential's stored hash changed (see `publishPasswordSet`). A CDM import publishes
+ * nothing: `importProjectPasswordHashes` is silent like every other import write, and the
+ * import's completion event with counters is the signal. Platform scope publishes nothing new.
  *
  * Neither a password nor a hash is ever passed to a logger, an audit row, an event or an
  * error.
@@ -132,26 +132,27 @@ export class CredentialService implements ICredentialService {
     const record = await repository.upsert(scope, { userId, hash, source }, transaction);
     await this.recordWrite(scope, userId, existing, record, context, transaction);
     if (existing?.hash !== hash) {
-      await this.publishPasswordSet(scope, [{ userId, source: record.source }], transaction);
+      await this.publishPasswordSet(scope, { userId, source: record.source }, transaction);
     }
     return record;
   }
 
   /**
-   * The one emission point of `project.user_password_set`, for every source. Callers apply
-   * the change-only rule (`existing?.hash !== new hash`) and pass only rows that changed;
-   * platform scope never reaches it past this guard (`user.password_changed` is unchanged).
+   * The one emission point of `project.user_password_set`, for every non-import write. The
+   * caller applies the change-only rule (`existing?.hash !== new hash`); platform scope
+   * publishes nothing (`user.password_changed` is unchanged). `importProjectPasswordHashes`
+   * never calls this.
    */
   private async publishPasswordSet(
     scope: CredentialScope,
-    changes: ReadonlyArray<{ userId: string; source: CredentialRecord['source'] }>,
+    change: { userId: string; source: CredentialRecord['source'] },
     transaction: Transaction | undefined
   ): Promise<void> {
-    if (scope.scope !== 'project' || changes.length === 0) {
+    if (scope.scope !== 'project') {
       return;
     }
     await this.projectEvents.publishPasswordSet(
-      changes.map(({ userId, source }) => ({ projectId: scope.projectId, userId, source })),
+      [{ projectId: scope.projectId, ...change }],
       transaction
     );
   }
@@ -317,10 +318,6 @@ export class CredentialService implements ICredentialService {
       ).map((record) => [record.userId, record])
     );
 
-    // Rows whose stored hash really changed: the only ones that publish. Skipped, unchanged
-    // and guard-lost rows are never in it, so re-importing the same hashes emits nothing.
-    const changes: Array<{ userId: string; source: CredentialRecord['source'] }> = [];
-
     for (const [index, row] of params.rows.entries()) {
       const existing = current.get(row.userId) ?? null;
       if (existing && existing.source !== 'cdm-import') {
@@ -345,10 +342,7 @@ export class CredentialService implements ICredentialService {
       await this.recordWrite(projectScope, userIds[index], existing, record, context, transaction);
       current.set(row.userId, { ...record, hash: row.hash });
       counts[existing ? 'updated' : 'imported'] += 1;
-      changes.push({ userId: userIds[index], source: record.source });
     }
-    // One batched publish for the document (one scope lookup, one membership read).
-    await this.publishPasswordSet(projectScope, changes, transaction);
     return counts;
   }
 

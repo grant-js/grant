@@ -1167,18 +1167,18 @@ describe('CredentialService', () => {
       }
     );
 
-    it('publishes for an imported hash written through setPasswordHash (cdm-import)', async () => {
+    it('publishes for a hash written through setPasswordHash (not the CDM import path)', async () => {
       const { service, projectEvents } = build();
 
       await service.setPasswordHash({
         scope: IN_PROJECT,
         userId: USER,
         hash: HASH_ONE,
-        source: 'cdm-import',
+        source: 'migrated-import',
       });
 
       expect(projectEvents.publishPasswordSet).toHaveBeenCalledWith(
-        [{ projectId: PROJECT, userId: USER, source: 'cdm-import' }],
+        [{ projectId: PROJECT, userId: USER, source: 'migrated-import' }],
         undefined
       );
     });
@@ -1251,8 +1251,8 @@ describe('CredentialService', () => {
       expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
     });
 
-    describe('import', () => {
-      it('publishes one batch, source cdm-import, for the rows that really changed', async () => {
+    describe('import (always silent: the import completion event is the signal)', () => {
+      it('publishes nothing for new and replaced rows', async () => {
         const { service, projectEvents } = build();
         await service.setPasswordHash({
           scope: IN_PROJECT,
@@ -1260,46 +1260,27 @@ describe('CredentialService', () => {
           hash: HASH_ONE,
           source: 'cdm-import',
         });
-        await service.setPasswordHash({
-          scope: IN_PROJECT,
-          userId: 'user-3',
-          hash: HASH_ONE,
-          source: 'reset',
-        });
         projectEvents.publishPasswordSet.mockClear();
-        const tx = { tx: true };
 
-        await service.importProjectPasswordHashes(
-          {
-            projectId: PROJECT,
-            rows: [
-              { userId: USER, hash: HASH_ONE }, // new
-              { userId: OTHER_USER, hash: HASH_TWO }, // replaced
-              { userId: 'user-3', hash: HASH_TWO }, // owned by the person: skipped
-            ],
-          },
-          tx as never
-        );
-
-        expect(projectEvents.publishPasswordSet).toHaveBeenCalledTimes(1);
-        expect(projectEvents.publishPasswordSet).toHaveBeenCalledWith(
-          [
-            { projectId: PROJECT, userId: USER, source: 'cdm-import' },
-            { projectId: PROJECT, userId: OTHER_USER, source: 'cdm-import' },
+        const counts = await service.importProjectPasswordHashes({
+          projectId: PROJECT,
+          rows: [
+            { userId: USER, hash: HASH_ONE }, // new
+            { userId: OTHER_USER, hash: HASH_TWO }, // replaced
           ],
-          tx
-        );
+        });
+
+        expect(counts).toMatchObject({ imported: 1, updated: 1 });
+        expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
       });
 
-      it('publishes nothing when the same hashes are imported again (no burst)', async () => {
+      it('publishes nothing when the same hashes are imported again', async () => {
         const { service, projectEvents } = build();
         const rows = [
           { userId: USER, hash: HASH_ONE },
           { userId: OTHER_USER, hash: HASH_TWO },
         ];
         await service.importProjectPasswordHashes({ projectId: PROJECT, rows });
-        expect(projectEvents.publishPasswordSet).toHaveBeenCalledTimes(1);
-        projectEvents.publishPasswordSet.mockClear();
 
         const counts = await service.importProjectPasswordHashes({ projectId: PROJECT, rows });
 

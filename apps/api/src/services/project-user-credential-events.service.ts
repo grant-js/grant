@@ -8,7 +8,6 @@ import type {
 } from '@grantjs/core';
 import type { DomainEventInput } from '@grantjs/schema';
 
-import { runWithEventSuppressionLifted } from '@/lib/events';
 import { resolveProjectScope } from '@/lib/project-scope-resolver.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
@@ -21,10 +20,8 @@ import { Transaction } from '@/lib/transaction-manager.lib';
  * `data.after` is `{ projectId, userId, source }` and nothing else: no password, no hash,
  * no key whose name webhook redaction would blank.
  *
- * A CDM import runs with event publishing suppressed so entity writes do not flood the
- * outbox. This event is the exception (a mirror tells an import's echo from an operator
- * write by `source`), so it is published with suppression lifted. The caller only passes
- * rows whose hash changed, so the exception is bounded by what the import really changed.
+ * Never called for a CDM import: an import stays silent like every other import write
+ * (events are suppressed there), and its completion event with counters is the signal.
  */
 export class ProjectUserCredentialEventPublisher implements IProjectUserCredentialEventPublisher {
   constructor(
@@ -76,6 +73,6 @@ export class ProjectUserCredentialEventPublisher implements IProjectUserCredenti
       }
     }
 
-    await runWithEventSuppressionLifted(() => this.events.publishMany(events, transaction));
+    await this.events.publishMany(events, transaction);
   }
 }

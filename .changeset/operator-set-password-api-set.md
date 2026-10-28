@@ -6,4 +6,4 @@ Operators can set a project user's password. Adds the `setProjectUserPassword` G
 
 Adds the permission `ProjectUser:SetPassword`, granted to the Project User Owner and Admin groups by default and extensible to any other group, and the permission `ProjectUser:ExportCredentials`, seeded as a standalone permission with no group (reserved for the credential export that follows). Both reach existing deployments through the idempotent permission seed.
 
-Publishes the webhook-only `project.user_password_set` event on every project credential write that changes the stored hash, whatever the source (`admin-set`, `reset`, `cdm-import`). Its payload is `{ projectId, userId, source }` and never carries a password or a hash. Re-importing unchanged hashes publishes nothing.
+Publishes the webhook-only `project.user_password_set` event on every non-import project credential write that changes the stored hash (`admin-set`, `reset`, a future `change`). Its payload is `{ projectId, userId, source }` and never carries a password or a hash. A CDM import publishes nothing, like every other import write.

@@ -1,10 +1,6 @@
 import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  isEventPublishingSuppressed,
-  runWithEventSuppression,
-} from '@/lib/events/event-suppression.lib';
 import { ProjectUserCredentialEventPublisher } from '@/services/project-user-credential-events.service';
 
 const projectId = '10000000-0000-4000-8000-000000000050';
@@ -18,12 +14,7 @@ const organizationId = '10000000-0000-4000-8000-000000000053';
 function build(
   options: { orgProject?: boolean; members?: Array<{ id: string; userId: string }> } = {}
 ) {
-  const suppressedAtPublish: boolean[] = [];
-  const events = {
-    publishMany: vi.fn(async () => {
-      suppressedAtPublish.push(isEventPublishingSuppressed());
-    }),
-  };
+  const events = { publishMany: vi.fn().mockResolvedValue(undefined) };
   const getProjectUsers = vi.fn().mockResolvedValue(options.members ?? [{ id: memberId, userId }]);
   const getOrganizationProject = vi
     .fn()
@@ -35,7 +26,7 @@ function build(
     { getFirstByProjectId: getOrganizationProject } as never,
     { getFirstByProjectId: getAccountProject } as never
   );
-  return { publisher, events, getProjectUsers, getOrganizationProject, suppressedAtPublish };
+  return { publisher, events, getProjectUsers, getOrganizationProject };
 }
 
 describe('ProjectUserCredentialEventPublisher', () => {
@@ -73,7 +64,7 @@ describe('ProjectUserCredentialEventPublisher', () => {
     ]);
   });
 
-  it('batches a document: one scope lookup and one membership read per project, one publish', async () => {
+  it('batches several changes: one scope lookup and one membership read per project, one publish', async () => {
     const { publisher, events, getProjectUsers, getOrganizationProject } = build({
       members: [
         { id: memberId, userId },
@@ -82,8 +73,8 @@ describe('ProjectUserCredentialEventPublisher', () => {
     });
 
     await publisher.publishPasswordSet([
-      { projectId, userId, source: 'cdm-import' },
-      { projectId, userId: otherUserId, source: 'cdm-import' },
+      { projectId, userId, source: 'reset' },
+      { projectId, userId: otherUserId, source: 'reset' },
     ]);
 
     expect(getOrganizationProject).toHaveBeenCalledTimes(1);
@@ -132,17 +123,5 @@ describe('ProjectUserCredentialEventPublisher', () => {
 
     expect(events.publishMany).not.toHaveBeenCalled();
     expect(getProjectUsers).not.toHaveBeenCalled();
-  });
-
-  it('publishes inside a suppressed subtree (a CDM import), because a mirror relies on this event', async () => {
-    const { publisher, suppressedAtPublish } = build();
-
-    await runWithEventSuppression(async () => {
-      expect(isEventPublishingSuppressed()).toBe(true);
-      await publisher.publishPasswordSet([{ projectId, userId, source: 'cdm-import' }]);
-      expect(isEventPublishingSuppressed()).toBe(true);
-    });
-
-    expect(suppressedAtPublish).toEqual([false]);
   });
 });
