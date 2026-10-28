@@ -1208,11 +1208,21 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       resource: ResourceSlug.ProjectUser,
       condition: null,
     },
+    {
+      action: ResourceAction.SetPassword,
+      resource: ResourceSlug.ProjectUser,
+      condition: null,
+    },
   ],
 
   [GroupKey.ProjectUserAdmin]: [
     {
       action: ResourceAction.SetEmail,
+      resource: ResourceSlug.ProjectUser,
+      condition: null,
+    },
+    {
+      action: ResourceAction.SetPassword,
       resource: ResourceSlug.ProjectUser,
       condition: null,
     },
