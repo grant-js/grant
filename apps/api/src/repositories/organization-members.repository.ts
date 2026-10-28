@@ -40,6 +40,24 @@ type OrganizationMemberPageRow = {
   status: string | null;
 };
 
+/** Unique union output names. Bare `users.name` / `roles.name` made ORDER BY "name" ambiguous. */
+const PAGE_COLUMN = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  roleName: 'role_name',
+  createdAt: 'created_at',
+  memberType: 'member_type',
+  roleId: 'role_id',
+  userId: 'user_id',
+  invitationId: 'invitation_id',
+  status: 'status',
+} as const;
+
+function pageOrderIdent(alias: (typeof PAGE_COLUMN)[keyof typeof PAGE_COLUMN]): SQL {
+  return sql.raw(`"${alias}"`);
+}
+
 export class OrganizationMemberRepository implements IOrganizationMemberRepository {
   private readonly logger = createLogger('OrganizationMemberRepository');
 
@@ -67,20 +85,20 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
           WHEN ${userAuthenticationMethods.provider} = 'email' THEN ${userAuthenticationMethods.providerId}
           ELSE ${userAuthenticationMethods.providerData}->>'email'
         END
-      `.as('email');
+      `.as(PAGE_COLUMN.email);
 
       const membersSelect = dbInstance
         .select({
-          id: users.id,
-          name: users.name,
+          id: sql<string>`${users.id}`.as(PAGE_COLUMN.id),
+          name: sql<string>`${users.name}`.as(PAGE_COLUMN.name),
           email: emailExpression,
-          roleName: roles.name,
-          createdAt: users.createdAt,
-          memberType: sql<string>`'member'`.as('member_type'),
-          roleId: roles.id,
-          userId: sql<string | null>`${users.id}`.as('user_id'),
-          invitationId: sql<string | null>`null::uuid`.as('invitation_id'),
-          status: sql<string | null>`null::varchar`.as('status'),
+          roleName: sql<string>`${roles.name}`.as(PAGE_COLUMN.roleName),
+          createdAt: sql<Date>`${users.createdAt}`.as(PAGE_COLUMN.createdAt),
+          memberType: sql<string>`'member'`.as(PAGE_COLUMN.memberType),
+          roleId: sql<string | null>`${roles.id}`.as(PAGE_COLUMN.roleId),
+          userId: sql<string | null>`${users.id}`.as(PAGE_COLUMN.userId),
+          invitationId: sql<string | null>`null::uuid`.as(PAGE_COLUMN.invitationId),
+          status: sql<string | null>`null::varchar`.as(PAGE_COLUMN.status),
         })
         .from(organizationUsers)
         .innerJoin(users, eq(organizationUsers.userId, users.id))
@@ -97,16 +115,18 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
 
       const invitationsSelect = dbInstance
         .select({
-          id: organizationInvitations.id,
-          name: organizationInvitations.email,
-          email: sql<string | null>`${organizationInvitations.email}`.as('email'),
-          roleName: roles.name,
-          createdAt: organizationInvitations.createdAt,
-          memberType: sql<string>`'invitation'`.as('member_type'),
-          roleId: roles.id,
-          userId: sql<string | null>`null::uuid`.as('user_id'),
-          invitationId: sql<string | null>`${organizationInvitations.id}`.as('invitation_id'),
-          status: sql<string | null>`${organizationInvitations.status}`.as('status'),
+          id: sql<string>`${organizationInvitations.id}`.as(PAGE_COLUMN.id),
+          name: sql<string>`${organizationInvitations.email}`.as(PAGE_COLUMN.name),
+          email: sql<string | null>`${organizationInvitations.email}`.as(PAGE_COLUMN.email),
+          roleName: sql<string>`${roles.name}`.as(PAGE_COLUMN.roleName),
+          createdAt: sql<Date>`${organizationInvitations.createdAt}`.as(PAGE_COLUMN.createdAt),
+          memberType: sql<string>`'invitation'`.as(PAGE_COLUMN.memberType),
+          roleId: sql<string | null>`${roles.id}`.as(PAGE_COLUMN.roleId),
+          userId: sql<string | null>`null::uuid`.as(PAGE_COLUMN.userId),
+          invitationId: sql<string | null>`${organizationInvitations.id}`.as(
+            PAGE_COLUMN.invitationId
+          ),
+          status: sql<string | null>`${organizationInvitations.status}`.as(PAGE_COLUMN.status),
         })
         .from(organizationInvitations)
         .innerJoin(roles, eq(organizationInvitations.roleId, roles.id))
@@ -303,18 +323,18 @@ export class OrganizationMemberRepository implements IOrganizationMemberReposito
     const sortColumn = (() => {
       switch (sortField) {
         case OrganizationMemberSortableField.Email:
-          return sql`coalesce("email", '')`;
+          return pageOrderIdent(PAGE_COLUMN.email);
         case OrganizationMemberSortableField.CreatedAt:
-          return sql`"createdAt"`;
+          return pageOrderIdent(PAGE_COLUMN.createdAt);
         case OrganizationMemberSortableField.Role:
-          return sql`coalesce("roleName", '')`;
+          return pageOrderIdent(PAGE_COLUMN.roleName);
         case OrganizationMemberSortableField.Name:
         default:
-          return sql`"name"`;
+          return pageOrderIdent(PAGE_COLUMN.name);
       }
     })();
 
-    return [direction(sortColumn), direction(sql`"id"`)];
+    return [direction(sortColumn), direction(pageOrderIdent(PAGE_COLUMN.id))];
   }
 
   private async hydratePage(
