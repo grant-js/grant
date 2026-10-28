@@ -9,6 +9,7 @@ export * from './user-limit';
 export * from './user-navigation-button';
 export * from './user-pagination';
 export * from './user-search';
+export * from './user-set-email-dialog';
 export * from './user-sorter';
 export * from './user-table';
 export * from './user-tag-selector';

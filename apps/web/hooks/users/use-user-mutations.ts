@@ -11,6 +11,8 @@ import {
   RequestUserPictureUploadUrlDocument,
   RequestUserPictureUploadUrlMutation,
   Scope,
+  SetProjectUserEmailDocument,
+  SetProjectUserEmailInput,
   UpdateUserDocument,
   UpdateUserInput,
   UploadUserPictureDocument,
@@ -42,6 +44,13 @@ export function useUserMutations() {
   const [deleteUser] = useMutation<{ deleteUser: User }>(DeleteUserDocument, {
     update,
   });
+
+  const [setProjectUserEmail] = useMutation<{ setProjectUserEmail: User }>(
+    SetProjectUserEmailDocument,
+    {
+      update,
+    }
+  );
 
   const [uploadUserPicture] = useMutation<{ uploadUserPicture: UploadUserPictureResult }>(
     UploadUserPictureDocument,
@@ -117,6 +126,23 @@ export function useUserMutations() {
     }
   };
 
+  const handleSetProjectUserEmail = async (input: SetProjectUserEmailInput) => {
+    try {
+      const result = await setProjectUserEmail({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.setEmailSuccess'));
+      return result.data?.setProjectUserEmail;
+    } catch (error) {
+      console.error('Error setting project user email:', error);
+      toast.error(t('notifications.setEmailError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   const handleUploadUserPicture = async (input: UploadUserPictureInput) => {
     try {
       const result = await uploadUserPicture({
@@ -174,6 +200,7 @@ export function useUserMutations() {
     createUser: handleCreateUser,
     updateUser: handleUpdateUser,
     deleteUser: handleDeleteUser,
+    setProjectUserEmail: handleSetProjectUserEmail,
     uploadUserPicture: handleUploadUserPicture,
     uploadUserPictureDirect: handleUploadUserPictureDirect,
   };
