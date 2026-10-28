@@ -454,15 +454,27 @@ export class UserHandler extends CacheHandler {
   /**
    * Operator-set project password (`ProjectUser:SetPassword`, enforced by the transport).
    * The policy is checked first, before any transaction or write, and a refusal never
-   * contains the value. One transaction: membership (never a create), the credential write
+   * contains the value. The scope it acts on must be the scope the transport authorized
+   * (`authorizedScope`, the request scope the guard evaluated): a permission held in one scope
+   * must not set a password in another project, so the check comes before the policy and any
+   * transaction. One transaction: membership (never a create), the credential write
    * (`admin-set`: audit row, lockout reset and `project.user_password_set` come with it),
    * and revocation of the user's project-app grants as `completeReset` does. The Email
    * method is not marked verified (an operator proves nothing about the mailbox) and
    * platform sessions are not touched.
    */
-  public async setProjectUserPassword(params: MutationSetProjectUserPasswordArgs): Promise<User> {
+  public async setProjectUserPassword(
+    params: MutationSetProjectUserPasswordArgs & { authorizedScope: Scope | null }
+  ): Promise<User> {
     const { userId, password, scope } = params.input;
     this.assertProjectScope(scope, 'Password');
+    if (
+      !params.authorizedScope ||
+      params.authorizedScope.tenant !== scope.tenant ||
+      params.authorizedScope.id !== scope.id
+    ) {
+      throw new AuthorizationError('Forbidden');
+    }
     this.credentials.assertPasswordMeetsPolicy(password);
 
     return await this.db.withTransaction(async (tx: Transaction) => {

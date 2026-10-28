@@ -309,6 +309,44 @@ describe('Operator set-password', () => {
     expect(await passwordEventCount(memberId)).toBe(eventsBefore);
   });
 
+  it('refuses a body scope that differs from the scope the request was authorized for (organization header, project body)', async () => {
+    const before = await credentialOf(memberId);
+    const eventsBefore = await passwordEventCount(memberId);
+
+    // The Owner holds ProjectUser:SetPassword in the organization, and the guard evaluates the
+    // organization scope from the headers; the body names the project. The handler must not
+    // act on a scope other than the one authorized.
+    const res = await apiClient()
+      .post('/graphql')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', owner.authHeader)
+      .set('x-scope-tenant', Tenant.Organization)
+      .set('x-scope-id', org.id)
+      .send({
+        query: print(SetProjectUserPasswordDocument),
+        variables: {
+          input: { userId: memberId, password: STRONG_PASSWORD, scope: projectScope() },
+        },
+      });
+
+    expect(isForbidden({ body: res.body })).toBe(true);
+    expect(JSON.stringify(res.body)).not.toContain(STRONG_PASSWORD);
+    expect((await credentialOf(memberId))?.hash).toBe(before?.hash);
+    expect(await passwordEventCount(memberId)).toBe(eventsBefore);
+
+    const rest = await apiClient()
+      .put(`/api/users/${memberId}/password`)
+      .set('Authorization', owner.authHeader)
+      .set('x-scope-tenant', Tenant.Organization)
+      .set('x-scope-id', org.id)
+      .send({ password: STRONG_PASSWORD, scope: projectScope() });
+
+    expect(rest.status).toBe(403);
+    expect(JSON.stringify(rest.body)).not.toContain(STRONG_PASSWORD);
+    expect((await credentialOf(memberId))?.hash).toBe(before?.hash);
+    expect(await passwordEventCount(memberId)).toBe(eventsBefore);
+  });
+
   it('Dev can set a password after ProjectUser:SetPassword is granted to that role group', async () => {
     const permissionRows = await query<{ id: string }>`
       SELECT p.id

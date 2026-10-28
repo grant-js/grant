@@ -196,8 +196,11 @@ export function createUserRoutes(fallback?: RequestContext) {
       const { id } = req.params;
       const { password, scope } = req.body;
 
-      const user = await requestContext(req, fallback).handlers.users.setProjectUserPassword({
+      const context = requestContext(req, fallback);
+
+      const user = await context.handlers.users.setProjectUserPassword({
         input: { userId: id, password, scope },
+        authorizedScope: context.user?.scope ?? null,
       });
 
       sendSuccessResponse(res, user);
