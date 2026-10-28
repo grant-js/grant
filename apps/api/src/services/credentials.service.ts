@@ -7,6 +7,7 @@ import type {
   ICredentialRepository,
   ICredentialService,
   IProjectCredentialRepository,
+  IProjectUserCredentialEventPublisher,
   PlatformCredentialScope,
   ProjectPasswordImportCounts,
 } from '@grantjs/core';
@@ -57,14 +58,21 @@ function auditValues(record: CredentialRecord): Record<string, unknown> {
  * {@link PlatformCredentialConnection}). Project-scope operations use the caller's
  * transaction, where RLS applies. No caller picks a connection.
  *
- * Neither a password nor a hash is ever passed to a logger, an audit row or an error.
+ * **Event.** `project.user_password_set` is published from here, and only from here: every
+ * project-scope write goes through `write` or `importProjectPasswordHashes`, and each
+ * publishes (see `publishPasswordSet`) when the stored hash changed. Platform scope
+ * publishes nothing new.
+ *
+ * Neither a password nor a hash is ever passed to a logger, an audit row, an event or an
+ * error.
  */
 export class CredentialService implements ICredentialService {
   constructor(
     private readonly repositories: CredentialRepositories,
     private readonly audit: CredentialAuditLoggers,
     private readonly lockouts: ICredentialLockoutService,
-    private readonly platformConnection: PlatformCredentialConnection
+    private readonly platformConnection: PlatformCredentialConnection,
+    private readonly projectEvents: IProjectUserCredentialEventPublisher
   ) {}
 
   /** Runs `work` on the connection the scope's tables are reachable from. */
@@ -108,7 +116,8 @@ export class CredentialService implements ICredentialService {
   }
 
   /**
-   * The write itself, on the connection `run` chose: upsert, audit, lockout reset.
+   * The write itself, on the connection `run` chose: upsert, audit, lockout reset, and the
+   * event when the project credential's hash changed.
    */
   private async write(
     scope: CredentialScope,
@@ -122,7 +131,29 @@ export class CredentialService implements ICredentialService {
     const existing = await repository.findActive(scope, userId, transaction);
     const record = await repository.upsert(scope, { userId, hash, source }, transaction);
     await this.recordWrite(scope, userId, existing, record, context, transaction);
+    if (existing?.hash !== hash) {
+      await this.publishPasswordSet(scope, [{ userId, source: record.source }], transaction);
+    }
     return record;
+  }
+
+  /**
+   * The one emission point of `project.user_password_set`, for every source. Callers apply
+   * the change-only rule (`existing?.hash !== new hash`) and pass only rows that changed;
+   * platform scope never reaches it past this guard (`user.password_changed` is unchanged).
+   */
+  private async publishPasswordSet(
+    scope: CredentialScope,
+    changes: ReadonlyArray<{ userId: string; source: CredentialRecord['source'] }>,
+    transaction: Transaction | undefined
+  ): Promise<void> {
+    if (scope.scope !== 'project' || changes.length === 0) {
+      return;
+    }
+    await this.projectEvents.publishPasswordSet(
+      changes.map(({ userId, source }) => ({ projectId: scope.projectId, userId, source })),
+      transaction
+    );
   }
 
   /** What every credential write leaves behind: its audit row and the lockout reset. */
@@ -156,6 +187,18 @@ export class CredentialService implements ICredentialService {
     await this.lockouts.reset(scope, userId, transaction);
   }
 
+  /**
+   * The Grant-set rule (min 8, max 128, complexity). Checked with `validateSecretInput`:
+   * `validateInput` would put the rejected password into the error.
+   */
+  private validatePassword(password: string, context: string): string {
+    return validateSecretInput(passwordPolicySchema, password, context);
+  }
+
+  assertPasswordMeetsPolicy(password: string): void {
+    this.validatePassword(password, 'CredentialService.assertPasswordMeetsPolicy');
+  }
+
   async setPassword(
     params: {
       scope: CredentialScope;
@@ -165,15 +208,9 @@ export class CredentialService implements ICredentialService {
     },
     transaction?: Transaction
   ): Promise<CredentialRecord> {
-    // The policy is the Grant-set rule (min 8, max 128, complexity). It is checked with
-    // `validateSecretInput`: `validateInput` would put the rejected password into the error.
     // `MAX_PASSWORD_LENGTH` (1024) stays the verifier's compare-cost bound and the limit of
     // imported hashes; it is not the policy.
-    const password = validateSecretInput(
-      passwordPolicySchema,
-      params.password,
-      'CredentialService.setPassword'
-    );
+    const password = this.validatePassword(params.password, 'CredentialService.setPassword');
     return this.store(
       {
         scope: params.scope,
@@ -280,6 +317,10 @@ export class CredentialService implements ICredentialService {
       ).map((record) => [record.userId, record])
     );
 
+    // Rows whose stored hash really changed: the only ones that publish. Skipped, unchanged
+    // and guard-lost rows are never in it, so re-importing the same hashes emits nothing.
+    const changes: Array<{ userId: string; source: CredentialRecord['source'] }> = [];
+
     for (const [index, row] of params.rows.entries()) {
       const existing = current.get(row.userId) ?? null;
       if (existing && existing.source !== 'cdm-import') {
@@ -304,7 +345,10 @@ export class CredentialService implements ICredentialService {
       await this.recordWrite(projectScope, userIds[index], existing, record, context, transaction);
       current.set(row.userId, { ...record, hash: row.hash });
       counts[existing ? 'updated' : 'imported'] += 1;
+      changes.push({ userId: userIds[index], source: record.source });
     }
+    // One batched publish for the document (one scope lookup, one membership read).
+    await this.publishPasswordSet(projectScope, changes, transaction);
     return counts;
   }
 

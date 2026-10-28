@@ -16,7 +16,6 @@ import {
   type ProjectUser,
   RemoveProjectUserInput,
   type Scope,
-  Tenant,
 } from '@grantjs/schema';
 
 import { mergeCdmImporterMetadata } from '@/constants/cdm-import.constants';
@@ -27,6 +26,7 @@ import {
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { buildDelta } from '@/lib/events';
 import { hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
+import { resolveProjectScope } from '@/lib/project-scope-resolver.lib';
 import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { DeleteParams } from '@/types';
@@ -57,33 +57,18 @@ export class ProjectUserService implements IProjectUserService {
     private readonly userAuthenticationMethods?: IUserAuthenticationMethodRepository
   ) {}
 
-  private async resolveProjectScope(
+  private resolveProjectScope(
     projectId: string,
     transaction?: Transaction
   ): Promise<Scope | undefined> {
-    const orgProject = await this.organizationProjectRepository.getFirstByProjectId(
+    return resolveProjectScope(
+      {
+        organizationProjects: this.organizationProjectRepository,
+        accountProjects: this.accountProjectRepository,
+      },
       projectId,
       transaction
     );
-    if (orgProject) {
-      return {
-        tenant: Tenant.OrganizationProject,
-        id: `${orgProject.organizationId}:${projectId}`,
-      };
-    }
-
-    const accountProject = await this.accountProjectRepository.getFirstByProjectId(
-      projectId,
-      transaction
-    );
-    if (accountProject) {
-      return {
-        tenant: Tenant.AccountProject,
-        id: `${accountProject.accountId}:${projectId}`,
-      };
-    }
-
-    return undefined;
   }
 
   private async projectExists(projectId: string, transaction?: Transaction): Promise<void> {

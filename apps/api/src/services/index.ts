@@ -129,6 +129,7 @@ import { ProjectRoleService } from './project-roles.service';
 import { ProjectSyncJobService } from './project-sync-job.service';
 import { ProjectTagService } from './project-tags.service';
 import { ProjectUserApiKeyService } from './project-user-api-keys.service';
+import { ProjectUserCredentialEventPublisher } from './project-user-credential-events.service';
 import { ProjectUserGroupService } from './project-user-groups.service';
 import { ProjectUserPermissionService } from './project-user-permissions.service';
 import { ProjectUserService } from './project-users.service';
@@ -265,7 +266,13 @@ export function createServices(
       project: audit(projectUserCredentialAuditLogs, 'projectUserCredentialId', user, db),
     },
     credentialLockouts,
-    platformCredentialConnection
+    platformCredentialConnection,
+    new ProjectUserCredentialEventPublisher(
+      events,
+      repositories.projectUserRepository,
+      repositories.organizationProjectRepository,
+      repositories.accountProjectRepository
+    )
   );
   const servicesBase = {
     credentials,

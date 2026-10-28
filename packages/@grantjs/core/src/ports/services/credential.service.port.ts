@@ -35,6 +35,13 @@ export interface ProjectPasswordImportCounts {
  */
 export interface ICredentialService {
   /**
+   * Throws `ValidationError` when `password` does not meet the Grant password policy. The
+   * refusal names the rules and never contains the value. Lets a caller refuse before it
+   * opens a transaction or touches anything else; `setPassword` applies the same check.
+   */
+  assertPasswordMeetsPolicy(password: string): void;
+
+  /**
    * Hash a plaintext password (bcrypt, configured cost) and store it as the live credential.
    * A Grant-set password must meet the password policy; the refusal never contains it.
    * A successful write resets the lockout of that `(scope, user)`.
@@ -117,6 +124,25 @@ export interface ICredentialService {
 
   /** Retention: hard-delete soft-deleted credentials in both scopes. */
   purgeSoftDeleted(transaction?: unknown): Promise<{ platform: number; project: number }>;
+}
+
+/** One project credential whose stored hash changed. Ids and source only, never a hash. */
+export interface ProjectPasswordSetChange {
+  projectId: string;
+  userId: string;
+  source: CredentialSource;
+}
+
+/**
+ * Publishes `project.user_password_set` (ADR 0011 § 8). `ICredentialService` is the only
+ * caller, so the event has one emission point whatever wrote the credential. Ids and
+ * `source` only in `data.after`: never a password, a hash or a key containing either.
+ */
+export interface IProjectUserCredentialEventPublisher {
+  publishPasswordSet(
+    changes: ReadonlyArray<ProjectPasswordSetChange>,
+    transaction?: unknown
+  ): Promise<void>;
 }
 
 export interface CredentialLockoutStatus extends CredentialLockoutState {

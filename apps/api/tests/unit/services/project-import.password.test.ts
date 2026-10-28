@@ -355,7 +355,8 @@ class World {
     },
     { platform: forbidden('platform credential audit'), project: this.audit as never },
     this.lockouts as never,
-    forbidden('platform credential connection')
+    forbidden('platform credential connection'),
+    { publishPasswordSet: vi.fn().mockResolvedValue(undefined) } as never
   );
 
   readonly authService = new UserAuthenticationMethodService(
