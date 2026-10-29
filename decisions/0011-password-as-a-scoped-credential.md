@@ -305,9 +305,11 @@ signs in by email), resolved at step 1 of § 1. Other identifiers are a follow-u
   the sign-in slice and guards **only the project credential**. The only live limiter is per
   client address (`rate-limit.middleware.ts:98-104`, key `auth:${ip}`);
   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES` are defined at
-  `env.config.ts:149,152` and nothing reads them. A tenant can lock only its own project's
-  credential, never platform login (§ 8). The store is built once for both scopes (slice 1);
-  the platform scope turns it on later, as its own step (§ Slicing, slice 7).
+  `env.config.ts:149,152` and nothing reads them. _Stale since slices 4 and 7: both are read now
+  (`env.config.ts:155,158`), by platform login at `auth.handler.ts:704` and by project password
+  sign-in at `project-oauth.handler.ts:956`; see § Amendment 2026-10-29, 8._ A tenant can lock only
+  its own project's credential, never platform login (§ 8). The store is built once for both scopes
+  (slice 1); the platform scope turns it on later, as its own step (§ Slicing, slice 7).
 - Generic failures and a **dummy compare** so timing does not reveal whether a credential exists.
 - **MFA at the ceremony** when the platform requires it: `computeRequiresMfaStepUp` steps up only
   when `config.auth.minAalAtLogin === 'aal2'` and the user has an active enrolment
@@ -472,9 +474,9 @@ Two rows that resolve to one person are applied in order, so the last hash wins.
   import. The full rule is in § Amendment 2026-10-29, 6. The audit-log table also gains an
   `export` action, § Amendment 2026-10-29, 4._
 - **GDPR.** The data export lists, per scope and project, that a credential exists with its
-  `source` and dates, **never the hash** (`me.handler.ts:386-402` exports methods without
-  `providerData` for the same reason). Erasure: a hard-deleted user cascades; a soft-deleted
-  user's credentials are soft-deleted in the same transaction. Removing a project member
+  `source` and dates, **never the hash** (`me.handler.ts:440-447` builds that list from
+  `listForUser`; `:413-436` exports methods without `providerData` for the same reason). Erasure: a
+  hard-deleted user cascades; a soft-deleted user's credentials are soft-deleted in the same transaction. Removing a project member
   (`project-users.service.ts:408`) soft-deletes their project credential **in the same
   transaction**, so re-adding them never revives an old password. Slice 1 **extends**
   `data-retention-cleanup.job.ts` to purge soft-deleted credentials on its next run: today it
@@ -518,9 +520,9 @@ Two rows that resolve to one person are applied in order, so the last hash wins.
    "Send me a magic link" link with i18n. **Prerequisites:** the upstream closed-install fix
    (`fix/closed-install-platform-access`, § 3), and it **must land before slice 7**. It adds
    routes and a link, no change to the existing form.
-7. **Enable the platform lockout** (own step, using the unread `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`
-   and `AUTH_LOCKOUT_DURATION_MINUTES`): only once platform password reset **and** the console
-   magic link are confirmed working on the new credential store, because they are the way back
+7. **Enable the platform lockout** (own step, using the then-unread
+   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES`; both are read now, § 5):
+   only once platform password reset **and** the console magic link are confirmed working on the new credential store, because they are the way back
    from a locked password. The store itself is built in slice 1.
 
 ### Release
@@ -759,13 +761,18 @@ write; a generic transport-level check of the same kind is a separate story.
   above, corrected in place).
 - **§ 8, Audit** named the event `project_user.password_set` with a `reason` of `import`, `reset`
   or `change`; corrected in place.
+- **§ 8, GDPR** cited `me.handler.ts:386-402` for the export; that range is session revocation and
+  `myUserDataExport` starts at `:400`. The credential list is at `:440-447` and the methods
+  without `providerData` at `:413-436` (corrected in place).
+- **§ 5, lockout** said nothing reads `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`; platform login
+  (`auth.handler.ts:704`) and project sign-in (`project-oauth.handler.ts:956`) do (marked in place
+  in § 5 and in slice 7 of the slicing plan).
 - **Checked and still true:** nothing writes `change` in the project scope (the Follow-ups),
   because self-service change of a project password is not built.
 - **Left in the code, not touched by this amendment:** the doc comment on `ICredentialLockoutService`
-  in `packages/@grantjs/core/src/ports/services/credential.service.port.ts` still says it is "not
-  called by any sign-in path until ADR 0011 slice 4". Project password sign-in and platform login
-  both call it now, so the comment, and § 5's remark that nothing reads
-  `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`, describe the state when they were written.
+  in `packages/@grantjs/core/src/ports/services/credential.service.port.ts:154` still says it is
+  "not called by any sign-in path until ADR 0011 slice 4". Project password sign-in and platform
+  login both call it now, so the comment describes the state when it was written.
 
 ## References
 
