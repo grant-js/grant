@@ -1,6 +1,7 @@
 # Rolling update: runs when Release workflow completes after new images were built.
 # Pulls already-published images and recreates services via Docker Compose.
-# The stack must already be running on the self-hosted runner host.
+# Pinned to the `demo` runner label (logusgraphics-server) — that host runs the
+# demo Compose stack. Overflow CI runners must not pick this up.
 name: Deploy
 
 on:
@@ -53,7 +54,7 @@ jobs:
 
   deploy:
     name: Rolling update (demo)
-    runs-on: self-hosted
+    runs-on: [self-hosted, demo]
     needs: check
     if: needs.check.outputs.should_deploy == 'true'
     permissions:

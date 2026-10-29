@@ -139,7 +139,9 @@ jobs:
 
   prepare:
     name: Build, test, upload artifact
-    runs-on: self-hosted
+    # Always-on `demo` host (logusgraphics-server). Not the overflow `ci` pool —
+    # release builds must not land on a laptop/ubuntu runner that may go offline.
+    runs-on: [self-hosted, demo]
     needs: changes
     if: >-
       needs.changes.outputs.code == 'true'
@@ -298,7 +300,8 @@ jobs:
 
   docker:
     name: Build and push images
-    runs-on: self-hosted
+    # Same always-on `demo` host as prepare (disk, BuildKit cache, reliability).
+    runs-on: [self-hosted, demo]
     needs: [prepare, changes, release]
     # Strict: :demo, :latest, and :semver ship together only on a real
     # publish (or rebuild_release_images). Feature merges that only open
@@ -377,7 +380,8 @@ jobs:
 
   docker-lambda:
     name: Build and push Lambda image to ECR
-    runs-on: self-hosted
+    # Same always-on `demo` host as docker (QEMU arm64 build stays on server).
+    runs-on: [self-hosted, demo]
     needs: [prepare, changes, release, docker]
     # Inert until the AWS side exists. `vars.AWS_ECR_REGISTRY` and
     # `vars.AWS_OIDC_ROLE_ARN` are created by the CDK work in phase C; until both

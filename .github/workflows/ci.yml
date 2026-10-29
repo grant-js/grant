@@ -15,10 +15,10 @@ concurrency:
 jobs:
   changes:
     name: Detect relevant changes
-    # Self-hosted, matching build-test below. This gate is checkout + paths-filter, but
-    # every downstream job `needs` it — on a hosted runner it becomes a single point of
-    # failure that strands the whole pipeline while the self-hosted runner sits idle.
-    runs-on: self-hosted
+    # `ci` label: always-on logusgraphics-server plus optional overflow runners
+    # (laptop/ubuntu). Matching build-test below. Hosting this gate on ubuntu-latest
+    # would strand the pipeline while a `ci` runner sits idle.
+    runs-on: [self-hosted, ci]
     permissions:
       contents: read
       pull-requests: read
@@ -63,7 +63,9 @@ jobs:
 
   build-test:
     name: Lint, build, test
-    runs-on: self-hosted
+    # Same `ci` pool as changes — spreads across online overflow runners; falls
+    # back to logusgraphics-server when they are offline.
+    runs-on: [self-hosted, ci]
     needs: changes
     if: needs.changes.outputs.code == 'true'
     permissions:
