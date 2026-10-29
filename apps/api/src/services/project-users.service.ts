@@ -13,6 +13,7 @@ import type {
 } from '@grantjs/core';
 import {
   AddProjectUserInput,
+  type EventExternalKey,
   type ProjectUser,
   RemoveProjectUserInput,
   type Scope,
@@ -24,7 +25,7 @@ import {
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
 import { ConflictError, NotFoundError } from '@/lib/errors';
-import { buildDelta } from '@/lib/events';
+import { buildDelta, resolveExternalKeys } from '@/lib/events';
 import { hydratePictureUrls, picturePathWhenSettingUrl } from '@/lib/picture-url.lib';
 import { resolveProjectScope } from '@/lib/project-scope-resolver.lib';
 import { syncProjectUserSearchDocument } from '@/lib/sync-project-user-search-document.lib';
@@ -502,18 +503,37 @@ export class ProjectUserService implements IProjectUserService {
     }
 
     const scope = await this.resolveProjectScope(projectUser.projectId, transaction);
+    const externalKeys = await this.externalKeysOf(projectUser, transaction);
     await this.events.publish(
       {
         type: 'project.user_removed',
         ...(scope ? { scope } : {}),
         subjectUserId: projectUser.userId,
         aggregate: { kind: 'projectUser', id: projectUser.id },
-        data: { before: oldValues },
+        data: { before: { ...oldValues, externalKeys } },
       },
       transaction
     );
 
     return validateOutput(createDynamicSingleSchema(projectUserSchema), projectUser, context);
+  }
+
+  /**
+   * The removed member's import key for the removed project only: the membership row the
+   * delete returned (its marker is gone from the table, not from this object) plus the global
+   * user, which a membership removal leaves in place.
+   */
+  private async externalKeysOf(
+    projectUser: ProjectUser,
+    transaction?: Transaction
+  ): Promise<EventExternalKey[]> {
+    const { users } = await this.userRepository.getUsers(
+      { ids: [projectUser.userId], limit: 1 },
+      transaction
+    );
+    return resolveExternalKeys(users[0]?.metadata, [
+      { projectId: projectUser.projectId, metadata: projectUser.metadata },
+    ]);
   }
 
   public async getUserProjectMemberships(

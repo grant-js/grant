@@ -2,7 +2,10 @@ import {
   type DomainEvent,
   EVENT_IDENTITY_KEYS,
   type EventData,
+  type EventExternalKey,
   type EventIdentity,
+  EXTERNAL_KEY_EVENT_TYPES,
+  type ExternalEventBefore,
   type ExternalEventData,
 } from '@grantjs/schema';
 
@@ -108,21 +111,71 @@ export function projectIdentity(
   return Object.keys(identity).length > 0 ? identity : undefined;
 }
 
+/** The project a delivery is for: the subscription's own `projectId`. */
+export interface WebhookDeliveryTarget {
+  projectId?: string | null;
+}
+
+function carriesExternalKeys(type: string): boolean {
+  return (EXTERNAL_KEY_EVENT_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * The tenancy control for `externalKeys`. One stored `user.deleted` reaches the
+ * subscriptions of every project the user belonged to, and its snapshot holds one entry
+ * per project, so each delivery keeps only the entries of the receiving subscription's
+ * project and fails closed to `[]` without one. Entries are rebuilt from `projectId` and
+ * `externalKey` alone, so nothing else a snapshot might hold can leave. A snapshot with no
+ * list (an event recorded before v1.20.2) yields no field: "no key" is not "unknown".
+ */
+function projectExternalKeys(
+  stored: unknown,
+  target: WebhookDeliveryTarget
+): EventExternalKey[] | undefined {
+  if (!Array.isArray(stored)) {
+    return undefined;
+  }
+  const { projectId } = target;
+  if (typeof projectId !== 'string' || projectId === '') {
+    return [];
+  }
+  const entries: EventExternalKey[] = [];
+  for (const entry of stored) {
+    if (
+      isPlainObject(entry) &&
+      entry.projectId === projectId &&
+      typeof entry.externalKey === 'string'
+    ) {
+      entries.push({ projectId, externalKey: entry.externalKey });
+    }
+  }
+  return entries;
+}
+
 /**
  * Project internal event data to the external (webhook) shape: `before` becomes an
- * identity-only projection (without `name` for events about a user), and the
+ * identity-only projection (without `name` for events about a user), plus the
+ * delivery's own `externalKeys` on the types in `EXTERNAL_KEY_EVENT_TYPES`, and the
  * redaction allowlist applies to `after` and `delta`. `event` supplies the type and
- * aggregate the projection depends on.
+ * aggregate the projection depends on; `target` the project the delivery is for.
  */
 export function redactEventData(
   data: EventData,
-  event: Pick<DomainEvent, 'type' | 'aggregate'>
+  event: Pick<DomainEvent, 'type' | 'aggregate'>,
+  target: WebhookDeliveryTarget = {}
 ): ExternalEventData {
   const result: ExternalEventData = {};
 
   if (data.before) {
-    const before = projectIdentity(data.before, { dropName: isUserEvent(event) });
-    if (before) {
+    const identity = projectIdentity(data.before, { dropName: isUserEvent(event) });
+    const externalKeys = carriesExternalKeys(event.type)
+      ? projectExternalKeys(data.before.externalKeys, target)
+      : undefined;
+    if (identity || externalKeys) {
+      const before: ExternalEventBefore = { ...identity };
+      if (externalKeys) {
+        before.externalKeys = externalKeys;
+      }
       result.before = before;
     }
   }

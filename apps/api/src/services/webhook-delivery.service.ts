@@ -112,7 +112,11 @@ export class WebhookDeliveryService implements IWebhookDeliveryService {
       return;
     }
 
-    const envelope = buildCloudEventEnvelope(mapEventLogToDomainEvent(event), this.source);
+    // The subscription's own project: one stored event reaches every project it concerns, and
+    // `data.before.externalKeys` must carry only this project's entries.
+    const envelope = buildCloudEventEnvelope(mapEventLogToDomainEvent(event), this.source, {
+      projectId: subscription.projectId,
+    });
     const body = JSON.stringify(envelope);
     const timestamp = Math.floor(Date.now() / MS_PER_SECOND);
     const headers = this.signer.buildHeaders({

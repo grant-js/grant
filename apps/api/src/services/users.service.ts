@@ -21,6 +21,7 @@ import {
 import { config } from '@/config';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { buildDelta } from '@/lib/events/event-delta.lib';
+import { resolveExternalKeys } from '@/lib/events/event-external-keys.lib';
 import {
   hydratePictureUrl,
   hydratePictureUrls,
@@ -273,14 +274,27 @@ export class UserService implements IUserService {
       [{ kind: 'user', id: oldUser.id }],
       transaction
     );
+    // The user's import keys, read in the same place and for the same reason: the memberships
+    // that carry the per-project keys are gone after the delete. Every project's entry is
+    // stored; the webhook projection keeps only the receiving subscription's own.
+    const externalKeys = resolveExternalKeys(
+      oldUser.metadata,
+      await this.userRepository.getUserMembershipMetadata(oldUser.id, transaction)
+    );
     await this.events.publish(
       {
         type: 'user.deleted',
         subjectUserId: oldUser.id,
         aggregate: { kind: 'user', id: oldUser.id },
         data: {
-          // No name: the outbox row outlives a hard delete, which is an erasure.
-          before: { id: oldUser.id, createdAt: oldUser.createdAt, updatedAt: oldUser.updatedAt },
+          // No name: the outbox row outlives a hard delete, which is an erasure. `externalKeys`
+          // is a pseudonymous source-system id and is kept on a hard delete too.
+          before: {
+            id: oldUser.id,
+            createdAt: oldUser.createdAt,
+            updatedAt: oldUser.updatedAt,
+            externalKeys,
+          },
           after: { id: oldUser.id, hardDelete: isHardDelete },
         },
         projectIds,
