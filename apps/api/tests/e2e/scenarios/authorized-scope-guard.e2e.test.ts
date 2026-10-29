@@ -21,11 +21,14 @@ import {
   SetProjectUserEmailDocument,
   SetProjectUserPasswordDocument,
   Tenant,
+  TokenType,
   UpdateUserDocument,
 } from '@grantjs/schema';
 import { print } from 'graphql';
 import { afterAll, describe, expect, it } from 'vitest';
 
+import { mapEventLogToDomainEvent } from '../../../src/lib/events/event-log-mapper.lib';
+import { buildCloudEventEnvelope } from '../../../src/lib/webhooks/webhook-envelope.lib';
 import { apiClient } from '../helpers/api-client';
 import { closeDbHelper, getOrganizationRoleIdByName, query } from '../helpers/db-tokens';
 import { graphqlRequest } from '../helpers/graphql';
@@ -33,6 +36,9 @@ import { TestUser } from '../helpers/test-user';
 
 const ROLE_ADMIN = 'roles.names.organizationAdmin';
 const ROLE_DEV = 'roles.names.organizationDev';
+
+// The seeded system user (SYSTEM_USER_ID default); API-key actors are attributed to it.
+const SYSTEM_USER_ID = process.env.SYSTEM_USER_ID ?? '00000000-0000-0000-0000-000000000000';
 
 const PASSWORD = 'Guard-Fixture-Passw0rd-7!';
 const OTHER_PASSWORD = 'Guard-Fixture-Other-Passw0rd-9!';
@@ -52,6 +58,25 @@ interface GqlResult {
     data?: Record<string, unknown> | null;
     errors?: Array<{ message: string; extensions?: Record<string, unknown> }>;
   };
+}
+
+interface EventRow extends Record<string, unknown> {
+  id: string;
+  sequence: number | string;
+  type: string;
+  category: string;
+  delivery_class: 'transactional' | 'notification';
+  scope_tenant: string;
+  scope_id: string;
+  actor_user_id: string | null;
+  subject_user_id: string | null;
+  payload: {
+    aggregate?: { kind: string; id: string };
+    data?: Record<string, unknown>;
+    projectIds?: string[];
+    actor?: { tokenId: string; tokenType: string };
+  };
+  occurred_at: Date;
 }
 
 const isForbidden = (res: GqlResult): boolean =>
@@ -99,6 +124,8 @@ describe('Authorized scope guard', () => {
   /** A project-managed user of project A: no authentication method, so operators may rename it. */
   let managedA: string;
   let keyToken: string;
+  /** The id of the Admin key: the `sub` and `jti` of `keyToken`, recorded on the events it causes. */
+  let keyId: string;
   let exportKeyToken: string;
   /** The permissions of the Dev group before the setup granted ExportCredentials to it. */
   let devGroup: { id: string; permissionIds: string[] } | undefined;
@@ -403,7 +430,10 @@ describe('Authorized scope guard', () => {
 
     // API keys scoped to project A: one with the Admin role, one with the Dev role (which now holds
     // ExportCredentials, as in the export scenario).
-    const mintKey = async (roleName: string, label: string): Promise<string> => {
+    const mintKey = async (
+      roleName: string,
+      label: string
+    ): Promise<{ accessToken: string; id: string }> => {
       const created = await gql(ownerA.accessToken, CreateApiKeyDocument, {
         input: {
           name: `E2E guard ${label} key ${uniqueStamp}`,
@@ -412,17 +442,23 @@ describe('Authorized scope guard', () => {
         },
       });
       expect(created.body.errors, JSON.stringify(created.body.errors)).toBeUndefined();
-      const key = created.body.data!.createApiKey as { clientId: string; clientSecret: string };
+      const key = created.body.data!.createApiKey as {
+        id: string;
+        clientId: string;
+        clientSecret: string;
+      };
       const exchange = await apiClient()
         .post('/api/auth/token')
         .send({ clientId: key.clientId, clientSecret: key.clientSecret, scope: projectAScope() });
       expect(exchange.status, JSON.stringify(exchange.body)).toBe(200);
       const accessToken = (exchange.body as { data: { accessToken: string } }).data.accessToken;
       expect(accessToken).toBeTruthy();
-      return accessToken;
+      return { accessToken, id: key.id };
     };
-    keyToken = await mintKey(ROLE_ADMIN, 'admin');
-    exportKeyToken = await mintKey(ROLE_DEV, 'export');
+    const adminKey = await mintKey(ROLE_ADMIN, 'admin');
+    keyToken = adminKey.accessToken;
+    keyId = adminKey.id;
+    exportKeyToken = (await mintKey(ROLE_DEV, 'export')).accessToken;
   });
 
   // ---- a request naming another organization's project is refused and writes nothing ----------
@@ -537,11 +573,7 @@ describe('Authorized scope guard', () => {
   // ---- API key requests are authorized in the key's own scope ----------------------------------
 
   describe('an API key request', () => {
-    it('keeps working with its own scope', async () => {
-      // No event-publishing call here: under an API key the event publisher writes the key id as
-      // event_log.actor_user_id, which violates the foreign key (DrizzleEventPublisher
-      // .resolveActorId, a known gap outside this story), and setProjectUserEmail and updateUser
-      // both publish an event. The operator export publishes none, in both transports.
+    it('keeps working with its own scope (operator export, both transports)', async () => {
       const exported = await gql(exportKeyToken, ExportProjectUserCredentialsDocument, {
         input: { scope: projectAScope(), userIds: [memberA] },
       });
@@ -553,6 +585,97 @@ describe('Authorized scope guard', () => {
         .set('Authorization', `Bearer ${exportKeyToken}`)
         .send({ scope: projectAScope(), userIds: [memberA] });
       expect(rest.status, JSON.stringify(rest.body)).toBe(200);
+    });
+
+    it("sets a project user's e-mail and password, and its events name the system user and carry the key id", async () => {
+      // The event publisher once wrote the key id as event_log.actor_user_id, which is not a users
+      // row: every event-publishing call under a project-level key failed on the foreign key.
+      const subscription = await apiClient()
+        .post('/api/webhook-subscriptions')
+        .set('Authorization', ownerA.authHeader)
+        .send({
+          scope: projectAScope(),
+          url: 'https://example.com/grant-e2e-guard-key-events',
+          eventTypes: ['project.user_email_changed', 'project.user_password_set'],
+          description: 'E2E authorized scope guard, API-key events',
+          active: true,
+        });
+      expect(subscription.status, JSON.stringify(subscription.body)).toBe(201);
+      const subscriptionId = (subscription.body as IdBody).data!.id;
+
+      const created = await gql(ownerA.accessToken, CreateUserDocument, {
+        input: { name: `Guard Key Target ${uniqueStamp}`, scope: projectAScope() },
+      });
+      expect(created.body.errors, JSON.stringify(created.body.errors)).toBeUndefined();
+      const targetId = (created.body.data?.createUser as { id: string }).id;
+
+      const email = await gql(keyToken, SetProjectUserEmailDocument, {
+        input: {
+          userId: targetId,
+          email: `guard-key-target-${uniqueStamp}@test.grant.dev`,
+          scope: projectAScope(),
+        },
+      });
+      expect(email.body.errors, JSON.stringify(email.body.errors)).toBeUndefined();
+      expect((email.body.data?.setProjectUserEmail as { id: string }).id).toBe(targetId);
+
+      const password = await gql(keyToken, SetProjectUserPasswordDocument, {
+        input: { userId: targetId, password: OTHER_PASSWORD, scope: projectAScope() },
+      });
+      expect(password.body.errors, JSON.stringify(password.body.errors)).toBeUndefined();
+      expect(JSON.stringify(password.body)).not.toContain(OTHER_PASSWORD);
+
+      const eventsOf = async (type: string) =>
+        query<EventRow>`
+          SELECT e.id, e.sequence, e.type, e.category, e.delivery_class, e.scope_tenant, e.scope_id,
+                 e.actor_user_id, e.subject_user_id, e.payload, e.occurred_at
+          FROM event_log e
+          WHERE e.type = ${type} AND e.subject_user_id = ${targetId}::uuid
+        `;
+      const emailEvents = await eventsOf('project.user_email_changed');
+      const passwordEvents = await eventsOf('project.user_password_set');
+      expect(emailEvents).toHaveLength(1);
+      expect(passwordEvents).toHaveLength(1);
+      for (const row of [...emailEvents, ...passwordEvents]) {
+        expect(row.actor_user_id).toBe(SYSTEM_USER_ID);
+        expect(row.payload.actor).toEqual({ tokenId: keyId, tokenType: TokenType.ApiKey });
+        expect(JSON.stringify(row.payload.data)).not.toContain(keyId);
+      }
+
+      // The relay fans each event out to the subscription; the delivery body is built from the
+      // stored row the way the delivery job builds it, and names no key.
+      const eventIds = [emailEvents[0]!.id, passwordEvents[0]!.id];
+      const deadline = Date.now() + 25_000;
+      let delivered: string[] = [];
+      while (Date.now() < deadline) {
+        const rows = await query<{ event_id: string }>`
+          SELECT DISTINCT d.event_id FROM webhook_delivery_attempts d
+          WHERE d.subscription_id = ${subscriptionId}::uuid
+            AND d.event_id = ANY(${eventIds}::uuid[])
+        `;
+        delivered = rows.map((row) => row.event_id);
+        if (delivered.length === eventIds.length) break;
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+      expect([...delivered].sort()).toEqual([...eventIds].sort());
+
+      for (const row of [...emailEvents, ...passwordEvents]) {
+        const envelope = buildCloudEventEnvelope(
+          mapEventLogToDomainEvent({
+            ...row,
+            sequence: Number(row.sequence),
+            deliveryClass: row.delivery_class,
+            scopeTenant: row.scope_tenant,
+            scopeId: row.scope_id,
+            actorUserId: row.actor_user_id,
+            subjectUserId: row.subject_user_id,
+            occurredAt: row.occurred_at,
+          } as never),
+          'https://grant.e2e.invalid'
+        );
+        expect(envelope.grantactor).toEqual({ userId: SYSTEM_USER_ID });
+        expect(JSON.stringify(envelope)).not.toContain(keyId);
+      }
     });
 
     it("is refused when the input names another scope than the key's, and writes nothing", async () => {
