@@ -462,27 +462,17 @@ export class UserHandler extends CacheHandler {
   /**
    * Operator-set project password (`ProjectUser:SetPassword`, enforced by the transport).
    * The policy is checked first, before any transaction or write, and a refusal never
-   * contains the value. The scope it acts on must be the scope the transport authorized
-   * (`authorizedScope`, the request scope the guard evaluated): a permission held in one scope
-   * must not set a password in another project, so the check comes before the policy and any
-   * transaction. One transaction: membership (never a create), the credential write
+   * contains the value. The transport guard refuses an input scope that differs from the
+   * authorized one (`lib/authorization/operation-scope.ts`).
+   * One transaction: membership (never a create), the credential write
    * (`admin-set`: audit row, lockout reset and `project.user_password_set` come with it),
    * and revocation of the user's project-app grants as `completeReset` does. The Email
    * method is not marked verified (an operator proves nothing about the mailbox) and
    * platform sessions are not touched.
    */
-  public async setProjectUserPassword(
-    params: MutationSetProjectUserPasswordArgs & { authorizedScope: Scope | null }
-  ): Promise<User> {
+  public async setProjectUserPassword(params: MutationSetProjectUserPasswordArgs): Promise<User> {
     const { userId, password, scope } = params.input;
     this.assertProjectScope(scope, 'Password');
-    if (
-      !params.authorizedScope ||
-      params.authorizedScope.tenant !== scope.tenant ||
-      params.authorizedScope.id !== scope.id
-    ) {
-      throw new AuthorizationError('Forbidden');
-    }
     this.credentials.assertPasswordMeetsPolicy(password);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
@@ -509,10 +499,8 @@ export class UserHandler extends CacheHandler {
 
   /**
    * Audited export of project password hashes in CDM shape (`ProjectUser:ExportCredentials`,
-   * enforced by the transport; this method does not re-check roles, but it does check that
-   * the scope it acts on is the scope the transport authorized: `authorizedScope` is the
-   * request scope the guard evaluated, and `input.scope` must be the same, or a permission
-   * held in one scope could be used to read another project's hashes). Shape first, before any
+   * enforced by the transport, which also refuses an input scope that differs from the
+   * authorized one, see `lib/authorization/operation-scope.ts`). Shape first, before any
    * read: project scope, `kinds` (default `[PASSWORD]`, never empty), `userIds` non-empty,
    * UUIDs, at most one page. Then, in one transaction: **every** id must be a member (any
    * non-member is `NotFoundError` and nothing is read or audited: no partial export), the
@@ -520,17 +508,10 @@ export class UserHandler extends CacheHandler {
    * export back with it.
    */
   public async exportProjectUserCredentials(
-    params: QueryExportProjectUserCredentialsArgs & { authorizedScope: Scope | null }
+    params: QueryExportProjectUserCredentialsArgs
   ): Promise<ProjectUserCredentialExport> {
     const { scope, userIds, kinds } = params.input;
     this.assertProjectScope(scope, 'Credential export');
-    if (
-      !params.authorizedScope ||
-      params.authorizedScope.tenant !== scope.tenant ||
-      params.authorizedScope.id !== scope.id
-    ) {
-      throw new AuthorizationError('Forbidden');
-    }
     const exportKinds = this.normalizeExportKinds(kinds);
     const ids = this.normalizeExportUserIds(userIds);
     const projectId = this.extractProjectIdFromScope(scope);

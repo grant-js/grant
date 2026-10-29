@@ -2,7 +2,7 @@ import { Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { UserHandler } from '@/handlers/users.handler';
-import { AuthorizationError, NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 import { CredentialService } from '@/services/credentials.service';
 
 const userId = '30000000-0000-4000-8000-0000000000bb';
@@ -98,7 +98,6 @@ describe('UserHandler operator set-password', () => {
     const failure = await handler
       .setProjectUserPassword({
         input: { userId, password: WEAK_PASSWORD, scope: projectScope },
-        authorizedScope: projectScope,
       })
       .catch((error: Error) => error);
 
@@ -121,7 +120,6 @@ describe('UserHandler operator set-password', () => {
     await expect(
       handler.setProjectUserPassword({
         input: { userId, password: PASSWORD, scope },
-        authorizedScope: scope,
       })
     ).rejects.toBeInstanceOf(ValidationError);
 
@@ -138,7 +136,6 @@ describe('UserHandler operator set-password', () => {
     await expect(
       handler.setProjectUserPassword({
         input: { userId, password: PASSWORD, scope: projectScope },
-        authorizedScope: projectScope,
       })
     ).rejects.toBeInstanceOf(NotFoundError);
 
@@ -165,7 +162,6 @@ describe('UserHandler operator set-password', () => {
 
       const user = await handler.setProjectUserPassword({
         input: { userId, password: PASSWORD, scope },
-        authorizedScope: scope,
       });
 
       expect(user).toEqual({ id: userId, name: 'Member' });
@@ -190,65 +186,8 @@ describe('UserHandler operator set-password', () => {
 
     const user = await handler.setProjectUserPassword({
       input: { userId, password: PASSWORD, scope: projectScope },
-      authorizedScope: projectScope,
     });
 
     expect(JSON.stringify(user)).not.toContain(PASSWORD);
-  });
-
-  describe('authorized-scope guard', () => {
-    const otherProjectScope = {
-      tenant: Tenant.OrganizationProject,
-      id: `${organizationId}:20000000-0000-4000-8000-000000000099`,
-    };
-
-    it.each([
-      ['another project in the same organization', otherProjectScope],
-      ['an organization scope (header) against a project scope (body)', orgScope],
-      ['no authorized scope', null],
-    ])(
-      'refuses when the authorized scope is %s: no policy, transaction or write',
-      async (_label, authorizedScope) => {
-        const {
-          handler,
-          withTransaction,
-          assertPasswordMeetsPolicy,
-          getProjectUsers,
-          setPassword,
-          revokeAllForUserInProject,
-        } = createHandler();
-
-        const failure = await handler
-          .setProjectUserPassword({
-            input: { userId, password: PASSWORD, scope: projectScope },
-            authorizedScope,
-          })
-          .catch((error: Error) => error);
-
-        expect(failure).toBeInstanceOf(AuthorizationError);
-        expect(JSON.stringify({ message: (failure as Error).message, failure })).not.toContain(
-          PASSWORD
-        );
-        expect(assertPasswordMeetsPolicy).not.toHaveBeenCalled();
-        expect(withTransaction).not.toHaveBeenCalled();
-        expect(getProjectUsers).not.toHaveBeenCalled();
-        expect(setPassword).not.toHaveBeenCalled();
-        expect(revokeAllForUserInProject).not.toHaveBeenCalled();
-      }
-    );
-
-    it('refuses an account-project body scope under an organization-project authorization', async () => {
-      const { handler, withTransaction, setPassword } = createHandler();
-
-      await expect(
-        handler.setProjectUserPassword({
-          input: { userId, password: PASSWORD, scope: accountProjectScope },
-          authorizedScope: projectScope,
-        })
-      ).rejects.toBeInstanceOf(AuthorizationError);
-
-      expect(withTransaction).not.toHaveBeenCalled();
-      expect(setPassword).not.toHaveBeenCalled();
-    });
   });
 });
