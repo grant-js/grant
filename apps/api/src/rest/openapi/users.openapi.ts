@@ -7,11 +7,15 @@ import {
   deleteUserQuerySchema,
   deleteUserResponseSchema,
   errorResponseSchema,
+  exportProjectUserCredentialsRequestSchema,
+  exportProjectUserCredentialsResponseSchema,
   getUsersQuerySchema,
   getUsersResponseSchema,
   notFoundErrorResponseSchema,
   setProjectUserEmailRequestSchema,
   setProjectUserEmailResponseSchema,
+  setProjectUserPasswordRequestSchema,
+  setProjectUserPasswordResponseSchema,
   updateUserRequestSchema,
   updateUserResponseSchema,
   userParamsSchema,
@@ -278,6 +282,167 @@ Requires \`ProjectUser:SetEmail\`. The address is stored unverified. Same normal
         content: {
           'application/json': {
             schema: errorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * PUT /api/users/:id/password
+   */
+  registry.registerPath({
+    method: 'put',
+    path: '/api/users/{id}/password',
+    operationId: 'putApiUsersByIdPassword',
+    tags: ['Users'],
+    summary: 'Set a project user password',
+    description: `
+Set or replace the user's project password, as written by the operator. Project scope only.
+
+Requires \`ProjectUser:SetPassword\` (default Owner and Admin; extensible through groups). The user must be a project member (no user is created). The password must meet the password policy, which is checked before anything is written. The request body is never logged and the password is never returned, echoed in an error, or placed in an audit row or event. The same password set twice writes a new hash each time.
+
+Revokes the user's project-app OAuth grants and clears the project lockout. Platform sessions are untouched and the Email method is not marked verified. Publishes \`project.user_password_set\` (ids and source only).
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: setProjectUserPasswordRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          'Password set successfully; the response is the user and carries no credential',
+        content: {
+          'application/json': {
+            schema: setProjectUserPasswordResponseSchema,
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid request, a non-project scope, or a password that does not meet the policy (the response names the rules, never the value)',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - ProjectUser:SetPassword required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User is not a member of the project',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/users/credentials/export
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/users/credentials/export',
+    operationId: 'postApiUsersCredentialsExport',
+    tags: ['Users'],
+    summary: 'Export project user credential hashes (audited)',
+    description: `
+**The response contains credential hashes.** This is the one place a project password hash leaves Grant (everything else exposes at most whether a password exists), for a downstream identity mirror. Project scope only. POST because it is an audited action with a body, not a cacheable read; the response is sent \`Cache-Control: no-store\`.
+
+Requires \`ProjectUser:ExportCredentials\`, which no standard group holds: grant it to a role's group per organization. An unauthorized call is refused before anything runs and writes no audit row.
+
+Every user in \`userIds\` must be a member of the project, otherwise the whole call fails with 404 and nothing is exported or audited (no partial export). \`userIds\` is capped at one page (the API maximum page size). Members without a project credential are listed with \`password: null\`. The result follows the order of \`userIds\`.
+
+**Every successful call writes one audit row** on the project credential audit log (\`action = 'export'\`, performed by the caller, with the number of users, the number of credentials and the kinds; never a hash). The read and the audit row share one transaction, so a failed audit write fails the call. Treat the response like a credential: do not log it.
+    `.trim(),
+    request: {
+      body: {
+        content: {
+          'application/json': {
+            schema: exportProjectUserCredentialsRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description:
+          'Hashes of the requested members, in request order. Contains credential hashes.',
+        content: {
+          'application/json': {
+            schema: exportProjectUserCredentialsResponseSchema,
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid request: a non-project scope, an empty or over-cap `userIds`, or empty `kinds`',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - ProjectUser:ExportCredentials required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'At least one user is not a member of the project; nothing was exported',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
           },
         },
       },

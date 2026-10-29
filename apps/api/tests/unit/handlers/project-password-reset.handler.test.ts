@@ -146,7 +146,8 @@ function createHandler() {
     { platform: platformCredentials, project: projectCredentials },
     { platform: auditLogger(), project: auditLogger() },
     lockoutService,
-    passThroughPlatformConnection as never
+    passThroughPlatformConnection as never,
+    { publishPasswordSet: vi.fn().mockResolvedValue(undefined) } as never
   );
   resetService = new ProjectPasswordResetService(
     resetRepo,

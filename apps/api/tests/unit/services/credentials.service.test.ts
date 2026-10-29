@@ -67,6 +67,17 @@ class FakeCredentialRepository implements ICredentialRepository<CredentialScope>
       .map((row) => ({ ...row }));
   }
 
+  async findHashesForExport(scope: CredentialScope, userIds: readonly string[]) {
+    return this.rows
+      .filter((row) => userIds.includes(row.userId) && this.key(scope, row.userId)(row))
+      .map((row) => ({
+        userId: row.userId,
+        hash: row.hash,
+        source: row.source,
+        updatedAt: row.updatedAt,
+      }));
+  }
+
   /** The import's write: never replaces a live credential that is not itself an import. */
   async upsertImported(
     scope: CredentialScope,
@@ -171,13 +182,24 @@ function build() {
   const platformConnection = {
     transaction: vi.fn((caller: never, work: (tx: never) => Promise<unknown>) => work(caller)),
   };
+  const projectEvents = { publishPasswordSet: vi.fn().mockResolvedValue(undefined) };
   const service = new CredentialService(
     { platform, project },
     { platform: platformAudit, project: projectAudit },
     lockouts,
-    platformConnection as never
+    platformConnection as never,
+    projectEvents
   );
-  return { service, platform, project, platformAudit, projectAudit, lockouts, platformConnection };
+  return {
+    service,
+    platform,
+    project,
+    platformAudit,
+    projectAudit,
+    lockouts,
+    platformConnection,
+    projectEvents,
+  };
 }
 
 const PASSWORD = 'Correct-Horse-7-Staple!';
@@ -916,7 +938,7 @@ describe('CredentialService', () => {
     const seed = async (
       service: ReturnType<typeof build>['service'],
       userId: string,
-      source: 'cdm-import' | 'reset' | 'change' | 'register' | 'migrated-import',
+      source: 'cdm-import' | 'reset' | 'change' | 'register' | 'migrated-import' | 'admin-set',
       hash = HASH_ONE
     ) => service.setPasswordHash({ scope: IN_PROJECT, userId, hash, source });
 
@@ -955,7 +977,7 @@ describe('CredentialService', () => {
       expect(project.rows.find((r) => r.userId === OTHER_USER)).toEqual(unchangedBefore);
     });
 
-    it.each(['reset', 'change', 'register', 'migrated-import'] as const)(
+    it.each(['reset', 'change', 'register', 'migrated-import', 'admin-set'] as const)(
       'never touches a credential the person owns (source %s)',
       async (source) => {
         const { service, project, projectAudit } = build();
@@ -1127,6 +1149,194 @@ describe('CredentialService', () => {
       expect(String((failure as Error).message)).not.toContain(bad);
       expect(project.reads).toEqual({ findActive: 0, findActiveMany: 0 });
       expect(project.rows).toHaveLength(0);
+    });
+  });
+
+  describe('project.user_password_set (ADR 0011 section 8)', () => {
+    const HASH_ONE = hashSecret('Imported-Passw0rd-1', 4);
+    const HASH_TWO = hashSecret('Imported-Passw0rd-2', 4);
+
+    it.each(['admin-set', 'reset'] as const)(
+      'publishes once, with ids and source only, when %s writes a new project credential',
+      async (source) => {
+        const { service, projectEvents } = build();
+        const tx = { tx: true };
+
+        await service.setPassword(
+          { scope: IN_PROJECT, userId: USER, password: PASSWORD, source },
+          tx as never
+        );
+
+        expect(projectEvents.publishPasswordSet).toHaveBeenCalledTimes(1);
+        expect(projectEvents.publishPasswordSet).toHaveBeenCalledWith(
+          [{ projectId: PROJECT, userId: USER, source }],
+          tx
+        );
+        const payload = JSON.stringify(projectEvents.publishPasswordSet.mock.calls);
+        expect(payload).not.toContain(PASSWORD);
+        expect(payload).not.toMatch(/\$2[aby]\$/);
+      }
+    );
+
+    it('publishes for a hash written through setPasswordHash (not the CDM import path)', async () => {
+      const { service, projectEvents } = build();
+
+      await service.setPasswordHash({
+        scope: IN_PROJECT,
+        userId: USER,
+        hash: HASH_ONE,
+        source: 'migrated-import',
+      });
+
+      expect(projectEvents.publishPasswordSet).toHaveBeenCalledWith(
+        [{ projectId: PROJECT, userId: USER, source: 'migrated-import' }],
+        undefined
+      );
+    });
+
+    it('publishes again when the same password is set twice (a new bcrypt hash is a change)', async () => {
+      const { service, projectEvents } = build();
+
+      for (let i = 0; i < 2; i += 1) {
+        await service.setPassword({
+          scope: IN_PROJECT,
+          userId: USER,
+          password: PASSWORD,
+          source: 'admin-set',
+        });
+      }
+
+      expect(projectEvents.publishPasswordSet).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not publish when the new hash equals the stored one', async () => {
+      const { service, projectEvents } = build();
+      await service.setPasswordHash({
+        scope: IN_PROJECT,
+        userId: USER,
+        hash: HASH_ONE,
+        source: 'migrated-import',
+      });
+      projectEvents.publishPasswordSet.mockClear();
+
+      await service.setPasswordHash({
+        scope: IN_PROJECT,
+        userId: USER,
+        hash: HASH_ONE,
+        source: 'migrated-import',
+      });
+
+      expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+    });
+
+    it('does not publish for platform scope, whatever the source', async () => {
+      const { service, projectEvents } = build();
+
+      await service.setPassword({
+        scope: PLATFORM,
+        userId: USER,
+        password: PASSWORD,
+        source: 'register',
+      });
+      await service.changePlatformPassword({
+        userId: USER,
+        currentPassword: PASSWORD,
+        newPassword: 'Another-Passw0rd-9!',
+      });
+
+      expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+    });
+
+    it('publishes nothing when the write is refused (policy)', async () => {
+      const { service, projectEvents } = build();
+
+      await expect(
+        service.setPassword({
+          scope: IN_PROJECT,
+          userId: USER,
+          password: 'weak',
+          source: 'admin-set',
+        })
+      ).rejects.toBeDefined();
+
+      expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+    });
+
+    describe('import (always silent: the import completion event is the signal)', () => {
+      it('publishes nothing for new and replaced rows', async () => {
+        const { service, projectEvents } = build();
+        await service.setPasswordHash({
+          scope: IN_PROJECT,
+          userId: OTHER_USER,
+          hash: HASH_ONE,
+          source: 'cdm-import',
+        });
+        projectEvents.publishPasswordSet.mockClear();
+
+        const counts = await service.importProjectPasswordHashes({
+          projectId: PROJECT,
+          rows: [
+            { userId: USER, hash: HASH_ONE }, // new
+            { userId: OTHER_USER, hash: HASH_TWO }, // replaced
+          ],
+        });
+
+        expect(counts).toMatchObject({ imported: 1, updated: 1 });
+        expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+      });
+
+      it('publishes nothing when the same hashes are imported again', async () => {
+        const { service, projectEvents } = build();
+        const rows = [
+          { userId: USER, hash: HASH_ONE },
+          { userId: OTHER_USER, hash: HASH_TWO },
+        ];
+        await service.importProjectPasswordHashes({ projectId: PROJECT, rows });
+
+        const counts = await service.importProjectPasswordHashes({ projectId: PROJECT, rows });
+
+        expect(counts).toEqual({ imported: 0, updated: 0, unchanged: 2, skippedExisting: 0 });
+        expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+      });
+
+      it('publishes nothing when the import guard wins (upsertImported returns null)', async () => {
+        const { service, project, projectEvents } = build();
+        await service.setPassword({
+          scope: IN_PROJECT,
+          userId: USER,
+          password: PASSWORD,
+          source: 'admin-set',
+        });
+        projectEvents.publishPasswordSet.mockClear();
+        // The read ran before the operator write: it saw no credential for this person.
+        project.findActiveMany = async () => [];
+
+        const counts = await service.importProjectPasswordHashes({
+          projectId: PROJECT,
+          rows: [{ userId: USER, hash: HASH_ONE }],
+        });
+
+        expect(counts.skippedExisting).toBe(1);
+        expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+      });
+
+      it('publishes nothing for an operator-set credential the import skips', async () => {
+        const { service, projectEvents } = build();
+        await service.setPassword({
+          scope: IN_PROJECT,
+          userId: USER,
+          password: PASSWORD,
+          source: 'admin-set',
+        });
+        projectEvents.publishPasswordSet.mockClear();
+
+        await service.importProjectPasswordHashes({
+          projectId: PROJECT,
+          rows: [{ userId: USER, hash: HASH_ONE }],
+        });
+
+        expect(projectEvents.publishPasswordSet).not.toHaveBeenCalled();
+      });
     });
   });
 });

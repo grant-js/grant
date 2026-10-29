@@ -14,6 +14,13 @@ type User implements Auditable {
   tagCount: Int!
   authenticationMethods: [UserAuthenticationMethod!]
   accounts: [Account!]
+  """
+  Non-secret facts about the user's password credential in the request's project scope. `null` outside a
+  project scope, when the user has no project credential there, or when the caller lacks
+  `ProjectUser:ExportCredentials` (never an error). `fingerprint` is the lowercase hex SHA-256 of the
+  stored hash string: a change detector, not a secret. The password and the hash are never returned here.
+  """
+  passwordCredential: ProjectUserPasswordCredential
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

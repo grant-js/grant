@@ -1,10 +1,13 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import type {
   IAuthService,
+  ICredentialService,
   IFileStorageServicePort,
   IOrganizationUserService,
   IProjectGroupService,
+  IProjectOAuthGrantService,
   IProjectPermissionService,
+  IProjectUserCredentialExportService,
   IProjectUserGroupService,
   IProjectUserPermissionService,
   IProjectUserService,
@@ -19,10 +22,15 @@ import type {
 import {
   AssignUserPermissionInput,
   ConfirmUserPictureUploadInput,
+  CredentialKind,
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
   MutationSetProjectUserEmailArgs,
+  MutationSetProjectUserPasswordArgs,
   MutationUpdateUserArgs,
+  ProjectUserCredentialExport,
+  ProjectUserPasswordCredential,
+  QueryExportProjectUserCredentialsArgs,
   QueryUsersArgs,
   RequestUserPictureUploadUrlInput,
   RevokeUserPermissionInput,
@@ -65,6 +73,8 @@ import { DeleteParams, SelectedFields } from '@/types';
 
 import { CacheHandler, type ScopeServices } from './base/cache-handler';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export type UpdateUserHandlerParams = MutationUpdateUserArgs & { actorUserId: string };
 
 export type UploadUserPictureHandlerParams = UploadUserPictureInput & { actorUserId: string };
@@ -95,7 +105,10 @@ export class UserHandler extends CacheHandler {
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
-    private readonly auth: IAuthService
+    private readonly auth: IAuthService,
+    private readonly credentials: ICredentialService,
+    private readonly projectOAuthGrants: IProjectOAuthGrantService,
+    private readonly credentialExports: IProjectUserCredentialExportService
   ) {
     super(cache, scopeServices);
   }
@@ -261,10 +274,14 @@ export class UserHandler extends CacheHandler {
     return tenant === Tenant.OrganizationProject || tenant === Tenant.AccountProject;
   }
 
-  private assertProjectScopeForEmail(scope: Scope): void {
+  private assertProjectScope(scope: Scope, subject: string): void {
     if (!this.isProjectTenant(scope.tenant)) {
-      throw new ValidationError('Email can only be set in a project scope');
+      throw new ValidationError(`${subject} can only be set in a project scope`);
     }
+  }
+
+  private assertProjectScopeForEmail(scope: Scope): void {
+    this.assertProjectScope(scope, 'Email');
   }
 
   private async assertSetEmailAuthorized(actorUserId: string | undefined): Promise<void> {
@@ -440,6 +457,170 @@ export class UserHandler extends CacheHandler {
       }
       return user;
     });
+  }
+
+  /**
+   * Operator-set project password (`ProjectUser:SetPassword`, enforced by the transport).
+   * The policy is checked first, before any transaction or write, and a refusal never
+   * contains the value. The scope it acts on must be the scope the transport authorized
+   * (`authorizedScope`, the request scope the guard evaluated): a permission held in one scope
+   * must not set a password in another project, so the check comes before the policy and any
+   * transaction. One transaction: membership (never a create), the credential write
+   * (`admin-set`: audit row, lockout reset and `project.user_password_set` come with it),
+   * and revocation of the user's project-app grants as `completeReset` does. The Email
+   * method is not marked verified (an operator proves nothing about the mailbox) and
+   * platform sessions are not touched.
+   */
+  public async setProjectUserPassword(
+    params: MutationSetProjectUserPasswordArgs & { authorizedScope: Scope | null }
+  ): Promise<User> {
+    const { userId, password, scope } = params.input;
+    this.assertProjectScope(scope, 'Password');
+    if (
+      !params.authorizedScope ||
+      params.authorizedScope.tenant !== scope.tenant ||
+      params.authorizedScope.id !== scope.id
+    ) {
+      throw new AuthorizationError('Forbidden');
+    }
+    this.credentials.assertPasswordMeetsPolicy(password);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const projectId = this.extractProjectIdFromScope(scope);
+      const members = await this.projectUsers.getProjectUsers({ projectId, userId }, tx);
+      if (members.length === 0) {
+        throw new NotFoundError('User');
+      }
+
+      await this.credentials.setPassword(
+        { scope: { scope: 'project', projectId }, userId, password, source: 'admin-set' },
+        tx
+      );
+      await this.projectOAuthGrants.revokeAllForUserInProject(projectId, userId, tx);
+
+      const page = await this.users.getUsers({ ids: [userId], limit: 1 }, tx);
+      const user = page.users[0];
+      if (!user) {
+        throw new NotFoundError('User');
+      }
+      return user;
+    });
+  }
+
+  /**
+   * Audited export of project password hashes in CDM shape (`ProjectUser:ExportCredentials`,
+   * enforced by the transport; this method does not re-check roles, but it does check that
+   * the scope it acts on is the scope the transport authorized: `authorizedScope` is the
+   * request scope the guard evaluated, and `input.scope` must be the same, or a permission
+   * held in one scope could be used to read another project's hashes). Shape first, before any
+   * read: project scope, `kinds` (default `[PASSWORD]`, never empty), `userIds` non-empty,
+   * UUIDs, at most one page. Then, in one transaction: **every** id must be a member (any
+   * non-member is `NotFoundError` and nothing is read or audited: no partial export), the
+   * hashes are read once, and the one audit row is written. A failed audit write rolls the
+   * export back with it.
+   */
+  public async exportProjectUserCredentials(
+    params: QueryExportProjectUserCredentialsArgs & { authorizedScope: Scope | null }
+  ): Promise<ProjectUserCredentialExport> {
+    const { scope, userIds, kinds } = params.input;
+    this.assertProjectScope(scope, 'Credential export');
+    if (
+      !params.authorizedScope ||
+      params.authorizedScope.tenant !== scope.tenant ||
+      params.authorizedScope.id !== scope.id
+    ) {
+      throw new AuthorizationError('Forbidden');
+    }
+    const exportKinds = this.normalizeExportKinds(kinds);
+    const ids = this.normalizeExportUserIds(userIds);
+    const projectId = this.extractProjectIdFromScope(scope);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const members = await this.projectUsers.getProjectUsers({ projectId, userIds: ids }, tx);
+      const memberIds = new Set(members.map((member) => member.userId));
+      if (ids.some((id) => !memberIds.has(id))) {
+        throw new NotFoundError('User');
+      }
+      return this.credentialExports.exportCredentials(
+        { projectId, userIds: ids, kinds: exportKinds },
+        tx
+      );
+    });
+  }
+
+  private normalizeExportKinds(kinds: CredentialKind[] | null | undefined): CredentialKind[] {
+    if (kinds === undefined || kinds === null) {
+      return [CredentialKind.Password];
+    }
+    if (kinds.length === 0) {
+      throw new ValidationError('kinds must not be empty');
+    }
+    return [...new Set(kinds)];
+  }
+
+  /** Non-empty, within one page, UUIDs (lowercased, as stored), duplicates dropped in order. */
+  private normalizeExportUserIds(userIds: string[]): string[] {
+    const maxUserIds = config.system.maxPageSize;
+    if (userIds.length === 0) {
+      throw new ValidationError('userIds must not be empty');
+    }
+    if (userIds.length > maxUserIds) {
+      throw new ValidationError(`userIds must not contain more than ${maxUserIds} ids`);
+    }
+    if (!userIds.every((id) => UUID_PATTERN.test(id))) {
+      throw new ValidationError('userIds must be UUIDs');
+    }
+    return [...new Set(userIds.map((id) => id.toLowerCase()))];
+  }
+
+  /**
+   * `User.passwordCredential`, resolved in the request's project scope: `null` for any
+   * scope other than `OrganizationProject` / `AccountProject` (the leaf `*ProjectUser` tenants
+   * included), `null` unless the caller holds `ProjectUser:ExportCredentials` in the request's
+   * scope (a denial is `null`, never an error, so existing documents keep working),
+   * and `null` when the member has no project credential. Otherwise
+   * `{ source, updatedAt, fingerprint }`: the fingerprint is computed by the service from the
+   * stored hash and is never the hash. One read per call (the field resolver runs per parent);
+   * batch it when a root field returns lists of `User`.
+   */
+  public async getProjectUserPasswordCredential(params: {
+    userId: string;
+    scope: Scope;
+    actorUserId: string | undefined;
+  }): Promise<ProjectUserPasswordCredential | null> {
+    const { userId, scope, actorUserId } = params;
+    // The same predicate as `assertProjectScope`: the leaf tenants (`OrganizationProjectUser`,
+    // `AccountProjectUser`) also embed a project id but are not project scopes here.
+    if (!this.isProjectTenant(scope.tenant)) {
+      return null;
+    }
+    const projectId = tryProjectIdFromScope(scope);
+    if (!projectId) {
+      return null;
+    }
+    if (!actorUserId) {
+      return null;
+    }
+    const result = await this.auth.isAuthorized(
+      {
+        permission: {
+          resource: ResourceSlug.ProjectUser,
+          action: ResourceAction.ExportCredentials,
+        },
+        context: {},
+      },
+      actorUserId
+    );
+    if (!result.authorized) {
+      return null;
+    }
+
+    const [summary] = await this.db.withTransaction((tx: Transaction) =>
+      this.credentialExports.getPasswordCredentialSummaries({ projectId, userIds: [userId] }, tx)
+    );
+    return summary
+      ? { source: summary.source, updatedAt: summary.updatedAt, fingerprint: summary.fingerprint }
+      : null;
   }
 
   public async updateUser(params: UpdateUserHandlerParams): Promise<User> {

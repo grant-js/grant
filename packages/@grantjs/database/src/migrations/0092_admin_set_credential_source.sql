@@ -1,0 +1,4 @@
+ALTER TABLE "project_user_credentials" DROP CONSTRAINT "project_user_credentials_source_check";--> statement-breakpoint
+ALTER TABLE "user_credentials" DROP CONSTRAINT "user_credentials_source_check";--> statement-breakpoint
+ALTER TABLE "project_user_credentials" ADD CONSTRAINT "project_user_credentials_source_check" CHECK (("source" IN ('register', 'cdm-import', 'reset', 'change', 'migrated', 'migrated-import', 'admin-set')));--> statement-breakpoint
+ALTER TABLE "user_credentials" ADD CONSTRAINT "user_credentials_source_check" CHECK (("source" IN ('register', 'cdm-import', 'reset', 'change', 'migrated', 'migrated-import', 'admin-set')));

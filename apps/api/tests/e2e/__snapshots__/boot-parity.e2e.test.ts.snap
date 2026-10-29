@@ -143,11 +143,13 @@ exports[`boot parity oracle > route table > exposes exactly the documented REST 
   "POST /api/signing-keys/rotate",
   "POST /api/tags",
   "POST /api/users",
+  "POST /api/users/credentials/export",
   "POST /api/webhook-subscriptions",
   "POST /api/webhook-subscriptions/deliveries/{deliveryId}/replay",
   "POST /api/webhook-subscriptions/{id}/rotate-secret",
   "PUT /api/me/notification-preferences",
   "PUT /api/project-oauth-connections",
   "PUT /api/users/{id}/email",
+  "PUT /api/users/{id}/password",
 ]
 `;

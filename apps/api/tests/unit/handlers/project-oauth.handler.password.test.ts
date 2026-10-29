@@ -171,7 +171,8 @@ function createHandler() {
       passThroughPlatformConnection as never,
       () => clock
     ),
-    passThroughPlatformConnection as never
+    passThroughPlatformConnection as never,
+    { publishPasswordSet: vi.fn().mockResolvedValue(undefined) } as never
   );
   const signInLockouts = new CredentialLockoutService(
     { platform: lockoutRepo as never, project: lockoutRepo },

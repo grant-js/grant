@@ -52,10 +52,11 @@ describe('operation documents', () => {
   // 136 after closed-install: AuthSignupPolicyDocument (publicSignupEnabled, bootstrapOpen).
   // 137 after CDM imports by reference: RequestProjectSyncUploadUrlDocument.
   // 138 after operator-set-email: SetProjectUserEmailDocument.
+  // 140 after operator-set-password: SetProjectUserPasswordDocument, ExportProjectUserCredentialsDocument.
   // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(138);
+    expect(files).toHaveLength(140);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {
@@ -68,7 +69,7 @@ describe('graph reachability', () => {
   const schema = buildMergedSchema();
 
   /**
-   * 175 of 382 declared types cannot be reached from Query or Mutation. They are
+   * 175 of 389 declared types cannot be reached from Query or Mutation. They are
    * not dead: most are consumed as generated TypeScript by apps/api, and the
    * *SearchableField enums are runtime search configuration. But every one of them
    * ships in the schema `makeExecutableSchema` serves.
@@ -81,6 +82,12 @@ describe('graph reachability', () => {
    * Was 181 of 388 before pass 5 slice 4 removed six declarations that were
    * unreferenced in SDL and in all TypeScript. The reachable count did not change
    * (207 before and after), which is what makes those six safe to have deleted.
+   *
+   * operator-set-password declared seven types (382 -> 389 declared). While
+   * `passwordCredential` sat on `ProjectUser`, which no query or mutation returns,
+   * `ProjectUserPasswordCredential` was unreachable and the pin was 176. It now sits on
+   * `User`, so the type is reachable and the pin is back to 175; the other six new
+   * types are reachable through the new mutation and query.
    */
   const UNREACHABLE_FROM_ROOT = 175;
 

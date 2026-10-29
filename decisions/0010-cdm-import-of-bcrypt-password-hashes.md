@@ -5,7 +5,9 @@
   global email authentication method: they become a credential with a scope, `platform` or one
   `project`, and an imported password is a project credential that only that project's apps
   verify. Rules 3 to 6 and 8 of (a), Security notes 1 and all of (b) below
-  describe what v1.16.0 shipped; where 0011 is accepted it governs. This record is left as written.
+  describe what v1.16.0 shipped; where 0011 is accepted it governs. This record is left as written,
+  except for the dated amendment at the end (2026-10-29), which adds one audited exception to
+  rule 7's "where the hash may exist".
 - **Date**: 2026-10-15
 - **Context**: an adopter migrating users from a legacy system, who wants them to sign in to
   project apps with their existing password instead of being moved onto magic link
@@ -259,6 +261,33 @@ Not built here; this is the shape the slice is held to.
    user's apply step.
 8. **Weak legacy hashes.** Cost 4 is accepted: it is the adopter's existing credential, and
    refusing it would block the migration. Rehash-on-login (b) is what upgrades it.
+
+## Amendment 2026-10-29: the credential export, and `admin-set`
+
+Added with the operator set-password story; the full account, checked against the code, is in
+[0011](./0011-password-as-a-scoped-credential.md) § Amendment 2026-10-29. Three things in this
+record change:
+
+- **Rule 7 ("where the hash may exist") and Security note 4 gain one exception.** The project
+  credential store holds the hash and an authorized caller can now take it out: the GraphQL query
+  `exportProjectUserCredentials` and `POST /api/users/credentials/export` return
+  `{ algorithm: 'bcrypt', hash }`, the shape rule 1 accepts, for project members, to a caller
+  holding `ProjectUser:ExportCredentials`, a permission in no standard group. Membership is checked
+  for every id first, the hash is read by a dedicated repository method, each successful call
+  writes one `export` audit row (caller, counts, kinds; never a hash), and the REST response is
+  `Cache-Control: no-store`. The hash is still absent from metadata, search, events, webhook
+  payloads, other audit values and logs. The "an export" in note 4 means the project CDM exporter,
+  which still emits no `password`; the credential export is a separate, gated API. The intended
+  holder is a downstream identity mirror.
+- **Ownership gains an operator.** Rule 4 says there is no administrator path; that describes the
+  v1.16.0 global slot. An operator can now set a project credential (`source: 'admin-set'`). The
+  import's rule is unchanged, only `cdm-import` is replaceable, so an operator-set password is
+  final with respect to a later import (`passwordsSkippedExisting`).
+- **The import stays silent.** Rule 7 notes that entity events are suppressed during an import
+  and the completion event carries counters only. That holds for the new
+  `project.user_password_set` event too: an import publishes none, and a mirror learns import-side
+  changes from the completion counters and from the export-gated credential fingerprint
+  (`User.passwordCredential`).
 
 ## References
 

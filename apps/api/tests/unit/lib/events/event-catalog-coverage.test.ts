@@ -49,6 +49,7 @@ describe('event catalog coverage', () => {
       'user.deleted',
       'project.user_updated',
       'project.user_email_changed',
+      'project.user_password_set',
       'api_key.deleted',
       'tag.created',
       'tag.updated',

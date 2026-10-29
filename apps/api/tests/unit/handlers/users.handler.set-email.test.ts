@@ -62,7 +62,10 @@ function createHandler(
     { users: { has: vi.fn().mockResolvedValue(false) } } as never,
     {} as never,
     { withTransaction } as never,
-    { isAuthorized } as never
+    { isAuthorized } as never,
+    {} as never,
+    {} as never,
+    {} as never
   );
 
   return {

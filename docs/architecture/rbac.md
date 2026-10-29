@@ -45,13 +45,13 @@ Actions that require authorization: **read** (single resource by ID), **query** 
 
 ### Relationship & Session Resources
 
-| Resource                       | Actions                                                 | Description                |
-| ------------------------------ | ------------------------------------------------------- | -------------------------- |
-| **Organization Member**        | `read` `update` `remove` `query`                        | Users in an organization   |
-| **Organization Invitation**    | `create` `read` `query` `revoke` `resend-email` `renew` | Join-org invitations       |
-| **Project User**               | `read` `query` `set-email`                              | Users in a project         |
-| **User Session**               | `read` `query`                                          | Active sessions (own only) |
-| **User Authentication Method** | `read` `query`                                          | Auth methods (own only)    |
+| Resource                       | Actions                                                        | Description                |
+| ------------------------------ | -------------------------------------------------------------- | -------------------------- |
+| **Organization Member**        | `read` `update` `remove` `query`                               | Users in an organization   |
+| **Organization Invitation**    | `create` `read` `query` `revoke` `resend-email` `renew`        | Join-org invitations       |
+| **Project User**               | `read` `query` `set-email` `set-password` `export-credentials` | Users in a project         |
+| **User Session**               | `read` `query`                                                 | Active sessions (own only) |
+| **User Authentication Method** | `read` `query`                                                 | Auth methods (own only)    |
 
 ## Roles
 
@@ -246,14 +246,20 @@ Project App (Apps) are OAuth/consent applications scoped to a project. Account o
 
 #### Project User Groups
 
-| Group Name            | Resource     | Permissions                   | Assigned To                                                            | Description                                          |
-| --------------------- | ------------ | ----------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
-| `Project User Owner`  | Project User | `set-email`                   | Organization Owner, Personal Account Owner, Organization Account Owner | Set a project user's Email authentication method     |
-| `Project User Admin`  | Project User | `set-email`                   | Organization Admin                                                     | Set a project user's Email authentication method     |
-| `Project User Dev`    | Project User | _(no additional permissions)_ | —                                                                      | Dev has same project user access as common groups    |
-| `Project User Viewer` | Project User | _(no additional permissions)_ | —                                                                      | Viewer has same project user access as common groups |
+| Group Name            | Resource     | Permissions                   | Assigned To                                                            | Description                                                   |
+| --------------------- | ------------ | ----------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `Project User Owner`  | Project User | `set-email` `set-password`    | Organization Owner, Personal Account Owner, Organization Account Owner | Set a project user's Email authentication method and password |
+| `Project User Admin`  | Project User | `set-email` `set-password`    | Organization Admin                                                     | Set a project user's Email authentication method and password |
+| `Project User Dev`    | Project User | _(no additional permissions)_ | —                                                                      | Dev has same project user access as common groups             |
+| `Project User Viewer` | Project User | _(no additional permissions)_ | —                                                                      | Viewer has same project user access as common groups          |
 
-New standard permissions such as `ProjectUser:SetEmail` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
+`ProjectUser:SetPassword` is an ordinary extensible action: it is held by Owner and Admin by default, and an organization can add it to any other role's group exactly like `SetEmail`, with no code change.
+
+`ProjectUser:ExportCredentials` has **no default holder**. It reads project users' password hashes, so it belongs to no standard group and is granted deliberately, per organization, to the group of the role that a mirror's API key carries. It is seeded as a standalone permission (a permission row linked to no group), so the groups UI and API can grant it.
+
+It gates two things. The `exportProjectUserCredentials` GraphQL query and `POST /api/users/credentials/export` return `{ algorithm: 'bcrypt', hash }` for the requested project members; this is the one place a project password hash leaves Grant. Every successful call writes one `export` row on the project credential audit log (the caller, the number of users and credentials, the kinds; never a hash), and a request naming a user who is not a member of the project fails as a whole. The `User.passwordCredential` field, resolved in the request's project scope (`source`, `updatedAt` and a SHA-256 `fingerprint` of the stored hash, a change detector rather than a secret), resolves to `null`, not an error, for any caller without the permission.
+
+New standard permissions such as `ProjectUser:SetEmail` and `ProjectUser:SetPassword` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
 
 #### User Session Groups
 
@@ -417,11 +423,15 @@ Organization `read` is enforced by scope (users can only read organizations they
 
 #### Project User Permissions
 
-| Action      | Resource       |                            Organization Owner                            |                            Organization Admin                            |                             Organization Dev                             |                           Organization Viewer                            |
-| ----------- | -------------- | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: |
-| `read`      | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
-| `query`     | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
-| `set-email` | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
+| Action               | Resource       |                            Organization Owner                            |                            Organization Admin                            |                             Organization Dev                             |                           Organization Viewer                            |
+| -------------------- | -------------- | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: | :----------------------------------------------------------------------: |
+| `read`               | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
+| `query`              | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
+| `set-email`          | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
+| `set-password`       | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
+| `export-credentials` | `project-user` |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
+
+`export-credentials` is denied to every standard role by default; an organization grants it explicitly (see Project User Groups above).
 
 ### Session & Authentication Permissions (Authorization-Required Only)
 
