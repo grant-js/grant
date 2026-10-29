@@ -6,4 +6,4 @@ Adds the audited credential export for a downstream identity mirror: the `export
 
 Every successful export writes exactly one `export` row on the project credential audit log in the same transaction as the read (the caller, the number of users and credentials, the kinds; never a hash), so a failed audit write fails the export. A refused call writes none.
 
-Adds `ProjectUser.passwordCredential { source, updatedAt, fingerprint }`, where `fingerprint` is the lowercase hex SHA-256 of the stored hash: a change detector, not a secret. It resolves to `null`, never an error, for any caller without `ProjectUser:ExportCredentials`, so existing documents keep working. No root field returns `ProjectUser` today, so the field is reachable only once one does.
+Adds `User.passwordCredential { source, updatedAt, fingerprint }`, where `fingerprint` is the lowercase hex SHA-256 of the stored hash: a change detector, not a secret. It resolves to `null`, never an error, for any caller without `ProjectUser:ExportCredentials`, so existing documents keep working. It resolves in the request's project scope and is `null` for any other scope.

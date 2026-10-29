@@ -574,19 +574,24 @@ export class UserHandler extends CacheHandler {
   }
 
   /**
-   * `ProjectUser.passwordCredential`: `null` unless the caller holds
-   * `ProjectUser:ExportCredentials` in the request's scope (a denial is `null`, never an
-   * error, so existing documents keep working), and `null` when the member has no project
-   * credential. Otherwise `{ source, updatedAt, fingerprint }`: the fingerprint is computed
-   * by the service from the stored hash and is never the hash. One read per call (the field
-   * resolver runs per parent); batch it when a root field returns lists of `ProjectUser`.
+   * `User.passwordCredential`, resolved in the request's project scope: `null` for any
+   * non-project scope, `null` unless the caller holds `ProjectUser:ExportCredentials` in the
+   * request's scope (a denial is `null`, never an error, so existing documents keep working),
+   * and `null` when the member has no project credential. Otherwise
+   * `{ source, updatedAt, fingerprint }`: the fingerprint is computed by the service from the
+   * stored hash and is never the hash. One read per call (the field resolver runs per parent);
+   * batch it when a root field returns lists of `User`.
    */
   public async getProjectUserPasswordCredential(params: {
-    projectId: string;
     userId: string;
+    scope: Scope;
     actorUserId: string | undefined;
   }): Promise<ProjectUserPasswordCredential | null> {
-    const { projectId, userId, actorUserId } = params;
+    const { userId, scope, actorUserId } = params;
+    const projectId = tryProjectIdFromScope(scope);
+    if (!projectId) {
+      return null;
+    }
     if (!actorUserId) {
       return null;
     }

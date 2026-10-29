@@ -12,7 +12,6 @@ import { ConfigurationError } from '@/lib/errors';
 import { groupResolver as Group } from './groups/fields';
 import { permissionResolver as Permission } from './permissions/fields';
 import { projectAppResolver as ProjectApp } from './project-apps/fields';
-import { projectUserResolver as ProjectUser } from './project-users/fields';
 import { resourceResolver as Resource } from './resources/fields';
 import { rolePermissionResolver as RolePermission } from './role-permissions/fields';
 import { roleResolver as Role } from './roles/fields';
@@ -54,7 +53,6 @@ export const schema = makeExecutableSchema({
     UserPermission,
     Permission,
     ProjectApp,
-    ProjectUser,
     Resource,
   },
 });

@@ -201,7 +201,7 @@ describe('UserHandler exportProjectUserCredentials', () => {
   });
 });
 
-describe('UserHandler getProjectUserPasswordCredential (ProjectUser.passwordCredential)', () => {
+describe('UserHandler getProjectUserPasswordCredential (User.passwordCredential)', () => {
   const summary = {
     userId: memberA,
     source: 'admin-set',
@@ -216,8 +216,28 @@ describe('UserHandler getProjectUserPasswordCredential (ProjectUser.passwordCred
     });
 
     await expect(
-      handler.getProjectUserPasswordCredential({ projectId, userId: memberA, actorUserId })
+      handler.getProjectUserPasswordCredential({
+        userId: memberA,
+        scope: projectScope,
+        actorUserId,
+      })
     ).resolves.toBeNull();
+    expect(getPasswordCredentialSummaries).not.toHaveBeenCalled();
+  });
+
+  it('is null for a non-project scope, with no permission check and no read', async () => {
+    const { handler, isAuthorized, getPasswordCredentialSummaries } = createHandler({
+      summaries: [summary],
+    });
+
+    await expect(
+      handler.getProjectUserPasswordCredential({
+        userId: memberA,
+        scope: orgScope,
+        actorUserId,
+      })
+    ).resolves.toBeNull();
+    expect(isAuthorized).not.toHaveBeenCalled();
     expect(getPasswordCredentialSummaries).not.toHaveBeenCalled();
   });
 
@@ -226,8 +246,8 @@ describe('UserHandler getProjectUserPasswordCredential (ProjectUser.passwordCred
 
     await expect(
       handler.getProjectUserPasswordCredential({
-        projectId,
         userId: memberA,
+        scope: projectScope,
         actorUserId: undefined,
       })
     ).resolves.toBeNull();
@@ -240,8 +260,8 @@ describe('UserHandler getProjectUserPasswordCredential (ProjectUser.passwordCred
     });
 
     const value = await handler.getProjectUserPasswordCredential({
-      projectId,
       userId: memberA,
+      scope: projectScope,
       actorUserId,
     });
 
@@ -270,7 +290,11 @@ describe('UserHandler getProjectUserPasswordCredential (ProjectUser.passwordCred
     const { handler } = createHandler({ summaries: [] });
 
     await expect(
-      handler.getProjectUserPasswordCredential({ projectId, userId: memberA, actorUserId })
+      handler.getProjectUserPasswordCredential({
+        userId: memberA,
+        scope: projectScope,
+        actorUserId,
+      })
     ).resolves.toBeNull();
   });
 });

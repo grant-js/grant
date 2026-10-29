@@ -1,5 +1,5 @@
 /**
- * E2E: audited project credential export and the `ProjectUser.passwordCredential` fingerprint.
+ * E2E: audited project credential export and the `User.passwordCredential` fingerprint.
  *
  * `ProjectUser:ExportCredentials` is held by no standard group: Owner and Admin are denied.
  * A role whose group is granted it (as Dev's is here) exports `{ algorithm: 'bcrypt', hash }`
@@ -7,8 +7,8 @@
  * fails the whole call; every successful call writes exactly one `export` audit row (counts and
  * kinds, never a hash); an unauthorized or failed call writes none.
  *
- * `ProjectUser` is not returned by any root field, so `passwordCredential` cannot be queried
- * end to end; its gating and value are covered at handler level
+ * `User.passwordCredential` resolves in the request's project scope; this suite does not query
+ * it end to end, its gating and value are covered at handler level
  * (tests/unit/handlers/users.handler.export-credentials.test.ts).
  */
 import { createHash } from 'node:crypto';
