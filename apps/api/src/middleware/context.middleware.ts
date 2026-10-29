@@ -95,6 +95,8 @@ export function contextMiddleware(db: DbSchema, cache: IEntityCacheAdapter) {
 
     // --- Context phase: apply RLS for scoped requests ---
     const scope = user?.scope ?? null;
+    // A request can no longer name `system` (authorized-scope-guard, slice 1): this branch is
+    // reachable only from a token-derived scope, which bearer verification does not accept today.
     const rlsCtx = scope && scope.tenant !== Tenant.System ? scopeToRlsContext(scope) : null;
     const useRls = config.security.enableRls && rlsCtx && hasRlsKeys(rlsCtx);
 
