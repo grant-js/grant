@@ -40,7 +40,7 @@ A scoped operation acts only in the scope the request was authorized in. Today a
 
 - Changing the precedence in `scope-extractor` (headers → query → body → variables) or dropping any of the sources; clients rely on each
 - Row-level-security changes (stated as a follow-up, see the criterion above)
-- The per-handler guards that `feat/operator-set-password` adds to `setProjectUserPassword` and `exportProjectUserCredentials`; once this story is on `main` they are redundant and the Principal decides at that story's Gate 4 whether to keep them as defence in depth
+- The per-handler guards that `feat/operator-set-password` adds to `setProjectUserPassword` and `exportProjectUserCredentials`; once this story is on `main` they are a second path for the same rule and are **removed** in that story's Gate 4 integration (Alejandro, 2026-10-29: no duplicate paths for one behaviour), with the generic guard's tests covering both operations
 - `apps/web` product work beyond fixing a header/input disagreement the audit finds
 - A `jti` denylist, session revocation or any auth-flow change; set-email does not revoke sessions or grants (the password did not change; seat reassignment is a different operation)
 - Backfilling audit rows or events for past requests
