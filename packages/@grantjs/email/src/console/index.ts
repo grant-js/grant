@@ -5,6 +5,7 @@ import type {
   SendNotificationEmailParams,
   SendOtpParams,
   SendPasswordResetParams,
+  SendProjectEmailChangedParams,
   SendProjectOAuthMagicLinkParams,
   SendProjectPasswordResetParams,
 } from '@grantjs/core';
@@ -85,6 +86,20 @@ export class ConsoleEmailAdapter implements IEmailService {
     this.logger.info({
       msg: '📧 PROJECT PASSWORD RESET (Console Adapter - Development Mode)',
       emailType: 'project-password-reset',
+      from: this.from,
+      to: params.to,
+      subject,
+      text,
+    });
+  }
+
+  async sendProjectEmailChanged(params: SendProjectEmailChangedParams): Promise<void> {
+    const subject = this.templates.getProjectEmailChangedEmailSubject(params);
+    const text = this.templates.getProjectEmailChangedEmailText(params);
+
+    this.logger.info({
+      msg: '📧 PROJECT EMAIL CHANGED (Console Adapter - Development Mode)',
+      emailType: 'project-email-changed',
       from: this.from,
       to: params.to,
       subject,

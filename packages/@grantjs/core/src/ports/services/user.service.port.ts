@@ -43,6 +43,9 @@ import type { DeleteParams, OptionalListScope, SelectedFields } from '../reposit
 // IUserService
 // ---------------------------------------------------------------------------
 
+/** Which operator operation wrote an Email authentication method; recorded as `metadata.operation` on its audit row. */
+export type OperatorEmailOperation = 'operator-set-email' | 'operator-create-user';
+
 export interface IUserService {
   getUsers(
     params: Omit<QueryUsersArgs, 'scope'> & OptionalListScope & SelectedFields<User>,
@@ -381,12 +384,17 @@ export interface IUserAuthenticationMethodService {
   /**
    * Add or replace the user's Email authentication method. Changed addresses are unverified.
    * Same normalized address is a no-op (`operation` null). Uniqueness: one user per address.
+   * `params.operation` names the caller on the authentication-method audit row
+   * (`metadata.operation`), which is how an operator-set address is told apart from one
+   * the user connected. `previousEmail` is set only when `operation` is `changed`: the
+   * address the account used before, for the notice that goes to it.
    */
   setOrReplaceEmailMethod(
-    params: { userId: string; email: string },
+    params: { userId: string; email: string; operation: OperatorEmailOperation },
     transaction?: unknown
   ): Promise<{
     method: UserAuthenticationMethod;
     operation: 'added' | 'changed' | null;
+    previousEmail?: string;
   }>;
 }

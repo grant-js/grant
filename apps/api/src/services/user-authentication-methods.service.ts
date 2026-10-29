@@ -5,6 +5,7 @@ import type {
   IUserAuthenticationMethodRepository,
   IUserAuthenticationMethodService,
   IUserSessionRepository,
+  OperatorEmailOperation,
 } from '@grantjs/core';
 import {
   CreateUserAuthenticationMethodInput,
@@ -156,7 +157,8 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     params: Omit<CreateUserAuthenticationMethodInput, 'providerData'> & {
       providerData?: Record<string, unknown>;
     },
-    transaction?: Transaction
+    transaction?: Transaction,
+    auditOperation?: OperatorEmailOperation
   ): Promise<UserAuthenticationMethod> {
     const context = 'UserAuthenticationMethodService.createUserAuthenticationMethod';
 
@@ -207,6 +209,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     const metadata = {
       context,
+      ...(auditOperation ? { operation: auditOperation } : {}),
     };
 
     await this.audit.logCreate(userAuthenticationMethod.id, newValues, metadata, transaction);
@@ -221,7 +224,8 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
   public async updateUserAuthenticationMethod(
     id: string,
     input: UpdateUserAuthenticationMethodInput & { providerData?: Record<string, unknown> },
-    transaction?: Transaction
+    transaction?: Transaction,
+    auditOperation?: OperatorEmailOperation
   ): Promise<UserAuthenticationMethod> {
     const context = 'UserAuthenticationMethodService.updateUserAuthenticationMethod';
 
@@ -260,6 +264,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
 
     const metadata = {
       context,
+      ...(auditOperation ? { operation: auditOperation } : {}),
     };
 
     await this.audit.logUpdate(
@@ -816,11 +821,12 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
   }
 
   public async setOrReplaceEmailMethod(
-    params: { userId: string; email: string },
+    params: { userId: string; email: string; operation: OperatorEmailOperation },
     transaction?: Transaction
   ): Promise<{
     method: UserAuthenticationMethod;
     operation: 'added' | 'changed' | null;
+    previousEmail?: string;
   }> {
     const normalized = this.normalizeOperatorEmail(params.email);
 
@@ -849,9 +855,10 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       const method = await this.updateUserAuthenticationMethod(
         existingEmail.id,
         { providerId: normalized, isVerified: false },
-        transaction
+        transaction,
+        params.operation
       );
-      return { method, operation: 'changed' };
+      return { method, operation: 'changed', previousEmail: existingEmail.providerId };
     }
 
     const method = await this.createUserAuthenticationMethod(
@@ -862,7 +869,8 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
         providerData: {},
         isVerified: false,
       },
-      transaction
+      transaction,
+      params.operation
     );
     return { method, operation: 'added' };
   }

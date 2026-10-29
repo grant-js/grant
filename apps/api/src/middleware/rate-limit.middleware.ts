@@ -4,11 +4,15 @@ import { config } from '@/config';
 import { t } from '@/i18n';
 import { ICacheAdapter } from '@/lib/cache';
 import {
+  countSetEmailGraphqlOperations,
   isAuthSensitiveGraphqlRequest,
   isGraphqlHttpPath,
 } from '@/lib/graphql-auth-rate-limit.lib';
 import { getClientIp } from '@/lib/headers.lib';
+import { createLogger } from '@/lib/logger';
 import { ContextRequest } from '@/types';
+
+const logger = createLogger('RateLimit');
 
 const SKIP_PATHS = new Set(['/health']);
 
@@ -38,6 +42,10 @@ export const AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS = [
 ] as const;
 
 const AUTH_RATE_LIMIT_PATHS = new Set<string>(AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS);
+
+/** `PUT /api/users/:id/email`. Express matches case-insensitively and ignores a trailing slash. */
+const SET_EMAIL_REST_PATH = /^\/api\/users\/[^/]+\/email$/;
+const CREATE_USER_REST_PATH = '/api/users';
 
 interface WindowState {
   count: number;
@@ -76,6 +84,25 @@ async function checkLimit(
     return { allowed: false, retryAfterSeconds: (state.resetAt - now) / 1000 };
   }
   return { allowed: true, retryAfterSeconds: 0 };
+}
+
+/**
+ * How many set-email operations a request runs: `PUT /api/users/:id/email`,
+ * `POST /api/users` with an `email`, and the GraphQL `setProjectUserEmail` and
+ * `createUser` (with an `email`) mutations. The conflict error of these operations
+ * says whether an address is held by any account in the instance, so they are bounded
+ * per scope (`tenantRateLimitMiddleware`).
+ */
+function countSetEmailOperations(req: Request): number {
+  const path = req.path.toLowerCase().replace(/\/+$/, '');
+  if (req.method === 'PUT' && SET_EMAIL_REST_PATH.test(path)) {
+    return 1;
+  }
+  if (req.method === 'POST' && path === CREATE_USER_REST_PATH) {
+    const email = (req.body as { email?: unknown } | undefined)?.email;
+    return email !== undefined && email !== null ? 1 : 0;
+  }
+  return countSetEmailGraphqlOperations(req);
 }
 
 function shouldBypassRateLimit(req: Request): boolean {
@@ -150,9 +177,19 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
 }
 
 /**
- * Optional `tenant:` bucket. Keys on `context.user.scope` after authenticate, so it
- * must stay after `contextMiddleware`. A tenant 429 may have paid JWT + one graph;
- * an IP 429 must not.
+ * `tenant:` buckets. Keys on `context.user.scope` after authenticate, so it must stay
+ * after `contextMiddleware`. A tenant 429 may have paid JWT + one graph; an IP 429
+ * must not.
+ *
+ * - `tenant:<tenant>:<id>` — optional (`SECURITY_RATE_LIMIT_PER_TENANT_*`), every request.
+ * - `tenant:<tenant>:<id>:set-email:<actor>` — on by default (`SECURITY_RATE_LIMIT_SET_EMAIL_*`),
+ *   only the operations `countSetEmailOperations` names. Independent of the per-tenant
+ *   flag, because the per-tenant bucket is off by default and these operations are what
+ *   let a scoped operator test addresses held by accounts in other organizations.
+ *   One budget per actor (`context.user.userId`: the user, or the key / app id of a token)
+ *   and scope, so a member without the permission cannot use up an Owner's. Attempts count
+ *   whether or not they succeed, before authorization. Both honour
+ *   `SECURITY_ENABLE_RATE_LIMIT`.
  */
 export function tenantRateLimitMiddleware(store: ICacheAdapter) {
   return async function rateLimitTenant(
@@ -160,7 +197,9 @@ export function tenantRateLimitMiddleware(store: ICacheAdapter) {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    if (shouldBypassRateLimit(req) || !config.security.rateLimitPerTenantEnabled) {
+    const perTenantEnabled = config.security.rateLimitPerTenantEnabled;
+    const setEmailEnabled = config.security.rateLimitSetEmailEnabled;
+    if (shouldBypassRateLimit(req) || (!perTenantEnabled && !setEmailEnabled)) {
       next();
       return;
     }
@@ -170,19 +209,51 @@ export function tenantRateLimitMiddleware(store: ICacheAdapter) {
     try {
       const contextReq = req as ContextRequest;
       const scope = contextReq.context?.user?.scope ?? null;
+      // A request with a scope but no subject shares one bucket: fail closed.
+      const actorId = String(contextReq.context?.user?.userId ?? 'unknown');
       if (scope && typeof scope.tenant === 'string' && typeof scope.id === 'string') {
         const tenantKey = `tenant:${scope.tenant}:${scope.id}`;
-        const tenantWindowMs = config.security.rateLimitPerTenantWindowMinutes * 60 * 1000;
-        const { allowed: tenantAllowed, retryAfterSeconds: tenantRetry } = await checkLimit(
-          store,
-          tenantKey,
-          tenantWindowMs,
-          config.security.rateLimitPerTenantMax,
-          now
-        );
-        if (!tenantAllowed) {
-          sendTooManyRequests(req, res, tenantRetry);
-          return;
+
+        if (perTenantEnabled) {
+          const tenantWindowMs = config.security.rateLimitPerTenantWindowMinutes * 60 * 1000;
+          const { allowed: tenantAllowed, retryAfterSeconds: tenantRetry } = await checkLimit(
+            store,
+            tenantKey,
+            tenantWindowMs,
+            config.security.rateLimitPerTenantMax,
+            now
+          );
+          if (!tenantAllowed) {
+            sendTooManyRequests(req, res, tenantRetry);
+            return;
+          }
+        }
+
+        if (setEmailEnabled) {
+          const setEmailWindowMs = config.security.rateLimitSetEmailWindowMinutes * 60 * 1000;
+          for (let i = countSetEmailOperations(req); i > 0; i--) {
+            const { allowed, retryAfterSeconds } = await checkLimit(
+              store,
+              `${tenantKey}:set-email:${actorId}`,
+              setEmailWindowMs,
+              config.security.rateLimitSetEmailMax,
+              now
+            );
+            if (!allowed) {
+              // Probing signal: scope and actor, never the address or the target user.
+              logger.warn(
+                {
+                  tenant: scope.tenant,
+                  scopeId: scope.id,
+                  actorId,
+                  max: config.security.rateLimitSetEmailMax,
+                },
+                'Set-email rate limit exceeded for actor in scope'
+              );
+              sendTooManyRequests(req, res, retryAfterSeconds);
+              return;
+            }
+          }
         }
       }
 

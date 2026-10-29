@@ -55,6 +55,12 @@ vi.mock('@/config', () => ({
   },
 }));
 
+// The middleware logs a set-email 429; the logger builds itself from the real config at
+// import time, which the mock above does not satisfy.
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+}));
+
 vi.mock('@/lib/headers.lib', () => ({
   getClientIp: vi.fn(() => '127.0.0.1'),
 }));

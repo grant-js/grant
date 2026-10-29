@@ -1,6 +1,7 @@
 import type {
   SendInvitationParams,
   SendPasswordResetParams,
+  SendProjectEmailChangedParams,
   SendProjectOAuthMagicLinkParams,
   SendProjectPasswordResetParams,
 } from '@grantjs/core';
@@ -28,4 +29,7 @@ export const emailTestTemplates: EmailTemplates = {
   getProjectPasswordResetEmailSubject: (_: SendProjectPasswordResetParams) => stub(),
   getProjectPasswordResetEmailHtml: (_: SendProjectPasswordResetParams) => stubHtml(),
   getProjectPasswordResetEmailText: (_: SendProjectPasswordResetParams) => stub(),
+  getProjectEmailChangedEmailSubject: (_: SendProjectEmailChangedParams) => stub(),
+  getProjectEmailChangedEmailHtml: (_: SendProjectEmailChangedParams) => stubHtml(),
+  getProjectEmailChangedEmailText: (_: SendProjectEmailChangedParams) => stub(),
 };

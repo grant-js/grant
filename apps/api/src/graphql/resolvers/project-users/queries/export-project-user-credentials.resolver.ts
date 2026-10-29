@@ -6,6 +6,5 @@ export const exportProjectUserCredentialsResolver: QueryResolvers<GraphqlContext
   async (_parent, { input }, context) => {
     return context.handlers.users.exportProjectUserCredentials({
       input,
-      authorizedScope: context.user?.scope ?? null,
     });
   };

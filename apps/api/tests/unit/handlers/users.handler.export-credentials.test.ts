@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { config } from '@/config';
 import { UserHandler } from '@/handlers/users.handler';
-import { AuthorizationError, NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
 const organizationId = '10000000-0000-4000-8000-000000000001';
 const projectId = '20000000-0000-4000-8000-000000000042';
@@ -57,7 +57,9 @@ function createHandler(
     { isAuthorized } as never,
     {} as never,
     {} as never,
-    { exportCredentials, getPasswordCredentialSummaries } as never
+    { exportCredentials, getPasswordCredentialSummaries } as never,
+    {} as never,
+    {} as never
   );
   return {
     handler,
@@ -72,7 +74,6 @@ function createHandler(
 
 const exportArgs = (userIds: string[], overrides: Record<string, unknown> = {}) => ({
   input: { scope: projectScope, userIds, ...overrides },
-  authorizedScope: projectScope,
 });
 
 describe('UserHandler exportProjectUserCredentials', () => {
@@ -82,29 +83,8 @@ describe('UserHandler exportProjectUserCredentials', () => {
     await expect(
       handler.exportProjectUserCredentials({
         input: { scope: orgScope, userIds: [memberA] },
-        authorizedScope: orgScope,
       })
     ).rejects.toBeInstanceOf(ValidationError);
-
-    expect(withTransaction).not.toHaveBeenCalled();
-    expect(exportCredentials).not.toHaveBeenCalled();
-  });
-
-  it('refuses when the scope acted on is not the scope the transport authorized', async () => {
-    const { handler, withTransaction, exportCredentials } = createHandler();
-
-    await expect(
-      handler.exportProjectUserCredentials({
-        input: { scope: projectScope, userIds: [memberA] },
-        authorizedScope: orgScope,
-      })
-    ).rejects.toBeInstanceOf(AuthorizationError);
-    await expect(
-      handler.exportProjectUserCredentials({
-        input: { scope: projectScope, userIds: [memberA] },
-        authorizedScope: null,
-      })
-    ).rejects.toBeInstanceOf(AuthorizationError);
 
     expect(withTransaction).not.toHaveBeenCalled();
     expect(exportCredentials).not.toHaveBeenCalled();

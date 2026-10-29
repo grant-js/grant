@@ -17,6 +17,10 @@ import { isEventPublishingSuppressed } from '@/lib/events/event-suppression.lib'
 import { chunkArray } from '@/lib/iam-cascade.lib';
 import { getJobAdapter } from '@/lib/jobs/initialize';
 import { createLogger } from '@/lib/logger';
+import {
+  isApiKeyIdActor,
+  resolveSyncJobEnqueuedById,
+} from '@/lib/resolve-sync-job-enqueued-by.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 import {
   isProjectLinkedKind,
@@ -80,8 +84,29 @@ export class DrizzleEventPublisher implements IEventPublisher {
     return [...new Set([...(event.projectIds ?? []), ...resolved])];
   }
 
+  /**
+   * `actor_user_id` references `users`, so a project-level API key (whose `userId` is the key id)
+   * is attributed to the system user, the same mapping the audit logger uses; `resolveActorToken`
+   * keeps the key identifiable.
+   */
   private resolveActorId(event: DomainEventInput): string | null {
-    return event.actor?.userId ?? this.user?.userId ?? config.system.systemUserId ?? null;
+    return (
+      event.actor?.userId ??
+      resolveSyncJobEnqueuedById(this.user) ??
+      config.system.systemUserId ??
+      null
+    );
+  }
+
+  /**
+   * Which token acted, when the actor id alone cannot say (the key-id actor). Stored in the
+   * internal payload only: `mapEventLogToDomainEvent` does not read it, so it never reaches a
+   * webhook delivery or a notification. No secrets.
+   */
+  private resolveActorToken(): { tokenId: string; tokenType: string } | null {
+    return this.user !== null && isApiKeyIdActor(this.user)
+      ? { tokenId: this.user.tokenId, tokenType: this.user.type }
+      : null;
   }
 
   private resolveScope(event: DomainEventInput): Scope {
@@ -148,6 +173,7 @@ export class DrizzleEventPublisher implements IEventPublisher {
     const scope = this.resolveScope(event);
     const entry = getEventCatalogEntry(event.type);
     const projectIds = await this.resolveProjectIds(event, transaction);
+    const actorToken = this.resolveActorToken();
 
     return {
       type: event.type,
@@ -161,6 +187,7 @@ export class DrizzleEventPublisher implements IEventPublisher {
         aggregate: event.aggregate ?? null,
         data: event.data,
         ...(projectIds.length > 0 ? { projectIds } : {}),
+        ...(actorToken ? { actor: actorToken } : {}),
       },
       occurredAt: event.occurredAt ?? new Date(),
       relayStatus: 'pending',

@@ -2,11 +2,13 @@ import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import type {
   IAuthService,
   ICredentialService,
+  IEmailService,
   IFileStorageServicePort,
   IOrganizationUserService,
   IProjectGroupService,
   IProjectOAuthGrantService,
   IProjectPermissionService,
+  IProjectService,
   IProjectUserCredentialExportService,
   IProjectUserGroupService,
   IProjectUserPermissionService,
@@ -49,6 +51,7 @@ import {
 
 import { config } from '@/config';
 import { type UserListHydrationContext, userListHydrators } from '@/hydrators/users.hydrators';
+import type { ScheduleAfterCommit } from '@/lib/after-commit.lib';
 import { IEntityCacheAdapter } from '@/lib/cache';
 import {
   isParentProjectScopeForPivotWrites,
@@ -66,6 +69,7 @@ import {
   ValidationError,
 } from '@/lib/errors';
 import { hydrateList, stripHydratedFields } from '@/lib/list-hydration/list-hydration.lib';
+import { createLogger } from '@/lib/logger';
 import { assertProjectPivotMetadataMutationAllowed } from '@/lib/project-pivot-metadata-auth.lib';
 import { tryProjectIdFromScope } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -88,6 +92,8 @@ export type ConfirmUserPictureUploadHandlerParams = ConfirmUserPictureUploadInpu
 };
 
 export class UserHandler extends CacheHandler {
+  private readonly logger = createLogger('UserHandler');
+
   constructor(
     private readonly userTags: IUserTagService,
     private readonly users: IUserService,
@@ -108,9 +114,69 @@ export class UserHandler extends CacheHandler {
     private readonly auth: IAuthService,
     private readonly credentials: ICredentialService,
     private readonly projectOAuthGrants: IProjectOAuthGrantService,
-    private readonly credentialExports: IProjectUserCredentialExportService
+    private readonly credentialExports: IProjectUserCredentialExportService,
+    private readonly email: IEmailService,
+    private readonly projects: IProjectService,
+    private readonly scheduleAfterCommit?: ScheduleAfterCommit
   ) {
     super(cache, scopeServices);
+  }
+
+  /**
+   * Tell the previous address that an operator changed the login e-mail. The notification
+   * system cannot: it resolves recipients by user id, and the id now points at the new
+   * address. Queued until the transaction commits, so a rolled-back change sends nothing,
+   * and best-effort: a failure is logged (ids and error class only, the address can be in
+   * a mailer's message) and never reaches the mutation, whose write is already done.
+   *
+   * The app name is read here, not in the queued callback: in a scoped request the services
+   * run on the request transaction, which is gone once the callback runs.
+   */
+  private async sendPreviousEmailNotice(params: {
+    previousEmail: string;
+    projectId: string;
+    userId: string;
+  }): Promise<void> {
+    const { previousEmail, projectId, userId } = params;
+    const logFailure = (error: unknown, what: string): void => {
+      this.logger.warn(
+        {
+          projectId,
+          userId,
+          errorName: error instanceof Error ? error.name : typeof error,
+          errorCode: (error as { code?: unknown } | null)?.code,
+        },
+        what
+      );
+    };
+
+    const appName = await this.projects
+      .getProjects({ ids: [projectId], limit: 1 })
+      .then((page) => page.projects[0]?.name || undefined)
+      .catch((error: unknown) => {
+        logFailure(error, 'Could not read the project name for the previous-address notice');
+        return undefined;
+      });
+
+    const send = async (): Promise<void> => {
+      try {
+        await this.email.sendProjectEmailChanged({
+          to: previousEmail,
+          ...(appName ? { appName } : {}),
+        });
+      } catch (error) {
+        logFailure(
+          error,
+          'Failed to send the previous-address notice after an operator e-mail change'
+        );
+      }
+    };
+
+    if (this.scheduleAfterCommit) {
+      this.scheduleAfterCommit(send, 'project-email-changed-notice');
+    } else {
+      await send();
+    }
   }
 
   /**
@@ -376,7 +442,7 @@ export class UserHandler extends CacheHandler {
       if (normalizedEmail) {
         const projectId = this.extractProjectIdFromScope(scope);
         const { operation } = await this.userAuthenticationMethods.setOrReplaceEmailMethod(
-          { userId, email: normalizedEmail },
+          { userId, email: normalizedEmail, operation: 'operator-create-user' },
           tx
         );
         if (operation) {
@@ -431,18 +497,19 @@ export class UserHandler extends CacheHandler {
     const { userId, email, scope } = params.input;
     this.assertProjectScopeForEmail(scope);
     const normalizedEmail = this.userAuthenticationMethods.normalizeOperatorEmail(email);
+    const projectId = this.extractProjectIdFromScope(scope);
 
-    return await this.db.withTransaction(async (tx: Transaction) => {
-      const projectId = this.extractProjectIdFromScope(scope);
+    const { user, previousEmail } = await this.db.withTransaction(async (tx: Transaction) => {
       const members = await this.projectUsers.getProjectUsers({ projectId, userId }, tx);
       if (members.length === 0) {
         throw new NotFoundError('User');
       }
 
-      const { operation } = await this.userAuthenticationMethods.setOrReplaceEmailMethod(
-        { userId, email: normalizedEmail },
-        tx
-      );
+      const { operation, previousEmail } =
+        await this.userAuthenticationMethods.setOrReplaceEmailMethod(
+          { userId, email: normalizedEmail, operation: 'operator-set-email' },
+          tx
+        );
       if (operation) {
         await this.projectUsers.publishProjectUserEmailChanged(
           { projectId, userId, operation },
@@ -455,34 +522,30 @@ export class UserHandler extends CacheHandler {
       if (!user) {
         throw new NotFoundError('User');
       }
-      return user;
+      return { user, previousEmail: operation === 'changed' ? previousEmail : undefined };
     });
+
+    // After the transaction: a call that failed above never reaches this line.
+    if (previousEmail) {
+      await this.sendPreviousEmailNotice({ previousEmail, projectId, userId });
+    }
+    return user;
   }
 
   /**
    * Operator-set project password (`ProjectUser:SetPassword`, enforced by the transport).
    * The policy is checked first, before any transaction or write, and a refusal never
-   * contains the value. The scope it acts on must be the scope the transport authorized
-   * (`authorizedScope`, the request scope the guard evaluated): a permission held in one scope
-   * must not set a password in another project, so the check comes before the policy and any
-   * transaction. One transaction: membership (never a create), the credential write
+   * contains the value. The transport guard refuses an input scope that differs from the
+   * authorized one (`lib/authorization/operation-scope.ts`).
+   * One transaction: membership (never a create), the credential write
    * (`admin-set`: audit row, lockout reset and `project.user_password_set` come with it),
    * and revocation of the user's project-app grants as `completeReset` does. The Email
    * method is not marked verified (an operator proves nothing about the mailbox) and
    * platform sessions are not touched.
    */
-  public async setProjectUserPassword(
-    params: MutationSetProjectUserPasswordArgs & { authorizedScope: Scope | null }
-  ): Promise<User> {
+  public async setProjectUserPassword(params: MutationSetProjectUserPasswordArgs): Promise<User> {
     const { userId, password, scope } = params.input;
     this.assertProjectScope(scope, 'Password');
-    if (
-      !params.authorizedScope ||
-      params.authorizedScope.tenant !== scope.tenant ||
-      params.authorizedScope.id !== scope.id
-    ) {
-      throw new AuthorizationError('Forbidden');
-    }
     this.credentials.assertPasswordMeetsPolicy(password);
 
     return await this.db.withTransaction(async (tx: Transaction) => {
@@ -509,10 +572,8 @@ export class UserHandler extends CacheHandler {
 
   /**
    * Audited export of project password hashes in CDM shape (`ProjectUser:ExportCredentials`,
-   * enforced by the transport; this method does not re-check roles, but it does check that
-   * the scope it acts on is the scope the transport authorized: `authorizedScope` is the
-   * request scope the guard evaluated, and `input.scope` must be the same, or a permission
-   * held in one scope could be used to read another project's hashes). Shape first, before any
+   * enforced by the transport, which also refuses an input scope that differs from the
+   * authorized one, see `lib/authorization/operation-scope.ts`). Shape first, before any
    * read: project scope, `kinds` (default `[PASSWORD]`, never empty), `userIds` non-empty,
    * UUIDs, at most one page. Then, in one transaction: **every** id must be a member (any
    * non-member is `NotFoundError` and nothing is read or audited: no partial export), the
@@ -520,17 +581,10 @@ export class UserHandler extends CacheHandler {
    * export back with it.
    */
   public async exportProjectUserCredentials(
-    params: QueryExportProjectUserCredentialsArgs & { authorizedScope: Scope | null }
+    params: QueryExportProjectUserCredentialsArgs
   ): Promise<ProjectUserCredentialExport> {
     const { scope, userIds, kinds } = params.input;
     this.assertProjectScope(scope, 'Credential export');
-    if (
-      !params.authorizedScope ||
-      params.authorizedScope.tenant !== scope.tenant ||
-      params.authorizedScope.id !== scope.id
-    ) {
-      throw new AuthorizationError('Forbidden');
-    }
     const exportKinds = this.normalizeExportKinds(kinds);
     const ids = this.normalizeExportUserIds(userIds);
     const projectId = this.extractProjectIdFromScope(scope);

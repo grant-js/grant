@@ -6,6 +6,7 @@ import { ResourceResolversMap } from '@/resource-resolvers';
 import { ContextRequest } from '@/types';
 
 import { isAuthenticatedRest } from './auth-guard';
+import { namesOnlyTheAuthorizedScope, restNamedScopes } from './operation-scope';
 import { extractScopeFromRequest } from './scope-extractor';
 import { ResourceResolver } from './types';
 
@@ -16,8 +17,11 @@ export interface RestGuardOptions {
   resourceResolver?: ResourceResolver | keyof ResourceResolversMap;
 }
 
+/** Set on every middleware `authorizeRestRoute` returns, so a test can find the guarded routes. */
+export const AUTHORIZED_REST_ROUTE = Symbol('grant.authorizedRestRoute');
+
 export function authorizeRestRoute(options: RestGuardOptions) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  const guard = async (req: Request, res: Response, next: NextFunction) => {
     const contextReq = req as ContextRequest;
 
     if (!isAuthenticatedRest(req)) {
@@ -46,6 +50,13 @@ export function authorizeRestRoute(options: RestGuardOptions) {
         message:
           options.scopeRequiredMessage ||
           'Scope must be provided via X-Scope-Tenant and X-Scope-Id headers, or scopeId and tenant query params',
+      });
+    }
+
+    if (!namesOnlyTheAuthorizedScope(scope, restNamedScopes(req))) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
       });
     }
 
@@ -100,4 +111,6 @@ export function authorizeRestRoute(options: RestGuardOptions) {
 
     next();
   };
+
+  return Object.assign(guard, { [AUTHORIZED_REST_ROUTE]: true as const });
 }
