@@ -13,6 +13,8 @@ import {
   Scope,
   SetProjectUserEmailDocument,
   SetProjectUserEmailInput,
+  SetProjectUserPasswordDocument,
+  SetProjectUserPasswordInput,
   UpdateUserDocument,
   UpdateUserInput,
   UploadUserPictureDocument,
@@ -47,6 +49,13 @@ export function useUserMutations() {
 
   const [setProjectUserEmail] = useMutation<{ setProjectUserEmail: User }>(
     SetProjectUserEmailDocument,
+    {
+      update,
+    }
+  );
+
+  const [setProjectUserPassword] = useMutation<{ setProjectUserPassword: User }>(
+    SetProjectUserPasswordDocument,
     {
       update,
     }
@@ -143,6 +152,27 @@ export function useUserMutations() {
     }
   };
 
+  // The input carries the password, so nothing here logs it or echoes it: the success
+  // toast is a fixed string, and the failure path logs only the error message (the API
+  // never puts the value in a refusal).
+  const handleSetProjectUserPassword = async (input: SetProjectUserPasswordInput) => {
+    try {
+      const result = await setProjectUserPassword({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.setPasswordSuccess'));
+      return result.data?.setProjectUserPassword;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error setting project user password:', message);
+      toast.error(t('notifications.setPasswordError'), {
+        description: message,
+      });
+      throw error;
+    }
+  };
+
   const handleUploadUserPicture = async (input: UploadUserPictureInput) => {
     try {
       const result = await uploadUserPicture({
@@ -201,6 +231,7 @@ export function useUserMutations() {
     updateUser: handleUpdateUser,
     deleteUser: handleDeleteUser,
     setProjectUserEmail: handleSetProjectUserEmail,
+    setProjectUserPassword: handleSetProjectUserPassword,
     uploadUserPicture: handleUploadUserPicture,
     uploadUserPictureDirect: handleUploadUserPictureDirect,
   };

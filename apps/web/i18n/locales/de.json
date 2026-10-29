@@ -882,6 +882,7 @@
       "create": "Benutzer erstellen",
       "edit": "Bearbeiten",
       "setEmail": "E-Mail festlegen",
+      "setPassword": "Passwort festlegen",
       "delete": "Löschen",
       "view": "Ansehen",
       "cancel": "Abbrechen",
@@ -953,6 +954,15 @@
       "cancel": "Abbrechen",
       "updating": "Wird gespeichert..."
     },
+    "setPasswordDialog": {
+      "title": "Benutzerpasswort festlegen",
+      "description": "Wählen Sie ein neues Passwort für diesen Benutzer. Es ersetzt das bisherige Passwort und meldet den Benutzer in den Apps dieses Projekts ab. Teilen Sie es ihm über einen sicheren Kanal mit.",
+      "password": "Neues Passwort",
+      "confirmPassword": "Passwort bestätigen",
+      "confirm": "Passwort festlegen",
+      "cancel": "Abbrechen",
+      "updating": "Wird gespeichert..."
+    },
     "notifications": {
       "createSuccess": "Benutzer erstellt",
       "createError": "Benutzer konnte nicht erstellt werden",
@@ -962,6 +972,8 @@
       "deleteError": "Benutzer konnte nicht gelöscht werden",
       "setEmailSuccess": "E-Mail festgelegt",
       "setEmailError": "E-Mail konnte nicht festgelegt werden",
+      "setPasswordSuccess": "Passwort festgelegt",
+      "setPasswordError": "Passwort konnte nicht festgelegt werden",
       "uploadPictureSuccess": "Profilbild hochgeladen",
       "uploadPictureError": "Profilbild konnte nicht hochgeladen werden",
       "changePasswordSuccess": "Passwort erfolgreich geändert",
@@ -2303,7 +2315,9 @@
       "projectUser": {
         "read": "Projektbenutzer lesen",
         "query": "Projektbenutzer abfragen",
-        "setEmail": "Projektbenutzer-E-Mail festlegen"
+        "setEmail": "Projektbenutzer-E-Mail festlegen",
+        "setPassword": "Projektbenutzer-Passwort festlegen",
+        "exportCredentials": "Projektbenutzer-Zugangsdaten exportieren"
       },
       "userSession": {
         "read": "Benutzersitzung lesen",
@@ -2418,7 +2432,9 @@
       "projectUser": {
         "read": "Berechtigung zum Lesen von Projektbenutzerinformationen",
         "query": "Berechtigung zum Abfragen von Projektbenutzern",
-        "setEmail": "Berechtigung zum Festlegen der E-Mail eines Projektbenutzers"
+        "setEmail": "Berechtigung zum Festlegen der E-Mail eines Projektbenutzers",
+        "setPassword": "Berechtigung zum Festlegen des Passworts eines Projektbenutzers",
+        "exportCredentials": "Berechtigung zum Exportieren des Passwort-Hashs eines Projektbenutzers zur Migration in ein anderes System"
       },
       "userSession": {
         "read": "Berechtigung zum Lesen von Benutzersitzungsinformationen",
@@ -3900,9 +3916,11 @@
         },
         "project": {
           "user_added": "Projektmitglied hinzugefügt",
+          "user_password_set": "Passwort des Projektmitglieds gesetzt",
           "user_removed": "Projektmitglied entfernt",
           "user_profile_updated": "Projektmitgliedsprofil aktualisiert",
-          "user_updated": "Projektmitglied aktualisiert"
+          "user_updated": "Projektmitglied aktualisiert",
+          "user_email_changed": "E-Mail-Adresse des Projektmitglieds geändert"
         },
         "project_sync": {
           "completed": "Projektsynchronisierung abgeschlossen",

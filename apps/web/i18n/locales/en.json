@@ -884,6 +884,7 @@
       "create": "Create User",
       "edit": "Edit",
       "setEmail": "Set email",
+      "setPassword": "Set password",
       "delete": "Delete",
       "view": "View",
       "cancel": "Cancel",
@@ -968,6 +969,15 @@
       "cancel": "Cancel",
       "updating": "Saving..."
     },
+    "setPasswordDialog": {
+      "title": "Set User Password",
+      "description": "Choose a new password for this user. It replaces their current password and signs them out of this project's apps. Share it with them through a secure channel.",
+      "password": "New password",
+      "confirmPassword": "Confirm password",
+      "confirm": "Set Password",
+      "cancel": "Cancel",
+      "updating": "Saving..."
+    },
     "notifications": {
       "createSuccess": "User created",
       "createError": "Failed to create user",
@@ -977,6 +987,8 @@
       "deleteError": "Failed to delete user",
       "setEmailSuccess": "Email set",
       "setEmailError": "Failed to set email",
+      "setPasswordSuccess": "Password set",
+      "setPasswordError": "Failed to set password",
       "uploadPictureSuccess": "Profile picture uploaded",
       "uploadPictureError": "Failed to upload profile picture",
       "changePasswordSuccess": "Password changed successfully",
@@ -2577,7 +2589,9 @@
       "projectUser": {
         "read": "Read Project User",
         "query": "Query Project User",
-        "setEmail": "Set Email Project User"
+        "setEmail": "Set Email Project User",
+        "setPassword": "Set Password Project User",
+        "exportCredentials": "Export Credentials Project User"
       },
       "userSession": {
         "read": "Read User Session",
@@ -2692,7 +2706,9 @@
       "projectUser": {
         "read": "Permission to read project user information",
         "query": "Permission to query project users",
-        "setEmail": "Permission to set a project user's email"
+        "setEmail": "Permission to set a project user's email",
+        "setPassword": "Permission to set a project user's password",
+        "exportCredentials": "Permission to export a project user's password hash for migration to another system"
       },
       "userSession": {
         "read": "Permission to read user session information",
@@ -4175,9 +4191,11 @@
         },
         "project": {
           "user_added": "Project member added",
+          "user_password_set": "Project member password set",
           "user_removed": "Project member removed",
           "user_profile_updated": "Project member profile updated",
-          "user_updated": "Project member updated"
+          "user_updated": "Project member updated",
+          "user_email_changed": "Project member email changed"
         },
         "project_sync": {
           "completed": "Project sync completed",
