@@ -11,7 +11,7 @@ Grounded on `origin/main` at `4f9446f4` (**v1.20.1**). Story shape: **API change
 - **Slug**: `webhook-envelope-before-ids`
 - **Date**: 2026-10-29
 - **Author** (human / PM agent): PM agent (Claude, for Alejandro)
-- **Status**: draft (Gate 1 pending)
+- **Status**: approved (Gates 1–2, Alejandro 2026-10-29)
 
 ## Objective
 
@@ -105,5 +105,5 @@ Senior Backend, Senior QA, Senior Security (blocking on the slice if Gate 1 acce
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until Alejandro confirms (answers to the five questions above).
+- [x] Gate 1: Story brief approved — stop here until Alejandro confirms (answers to the five questions above). **Approved by Alejandro on 2026-10-29: decisions (1) B — marker, then `cdmSource.legacy.id`, both behind an e-mail guard, nothing else read from `cdmSource`; (2) security-full on the slice; (3) `externalKeys` included on hard delete, documented as a pseudonymous source-system id; (4) rows imported before #568 accepted, the key comes from the row's `cdmSource.legacy.id`; (5) one slice.**
 - [ ] Gate 4: Story → `main` — not opened; agents do not merge.

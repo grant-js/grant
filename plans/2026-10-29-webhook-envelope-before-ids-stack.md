@@ -10,7 +10,7 @@ Grounded on `origin/main` `4f9446f4` (v1.20.1, tag commit after #661/#662). Open
 
 - **Slug**: `webhook-envelope-before-ids`
 - **Story brief**: `plans/2026-10-29-webhook-envelope-before-ids-brief.md`
-- **Status**: draft (Gates 1–2 pending)
+- **Status**: approved (Gates 1–2, Alejandro 2026-10-29)
 - **Story trunk**: `feat/webhook-envelope-before-ids` from `main` at `4f9446f4` (exists, holds the two plan files; pushed). The `feat/` prefix is deliberate: `ci.yml` runs only for pull requests whose base is `main` or `feat/**`, so the slice PR (base: the trunk) gets CI.
 - **worktree_path**: `/Users/aleheredia/workspace/worktrees/grant-platform-feat-webhook-envelope-before-ids` (holds the trunk; the slice branch is created from it after Gate 2, in its own worktree or by `gh stack add` from here once the trunk worktree is free)
 - **Release**: patch, **v1.20.2** (`grant-api`, plus `@grantjs/schema` if its exported event types change)
@@ -118,8 +118,8 @@ Hooks: `git -c core.hooksPath=.husky commit` on every commit (prettier runs), `s
 
 ## Human gates
 
-- [ ] Gate 1: Story brief approved — Alejandro (five questions in the brief).
-- [ ] Gate 2: Stack plan approved — Alejandro (one slice, bar, named contracts).
+- [x] Gate 1: Story brief approved — Alejandro (five questions in the brief). **Approved by Alejandro on 2026-10-29: decisions (1) B — marker, then `cdmSource.legacy.id`, both behind an e-mail guard, nothing else read from `cdmSource`; (2) security-full on the slice; (3) `externalKeys` included on hard delete, documented as a pseudonymous source-system id; (4) rows imported before #568 accepted, the key comes from the row's `cdmSource.legacy.id`; (5) one slice.**
+- [x] Gate 2: Stack plan approved — Alejandro (one slice, bar, named contracts). **Approved by Alejandro on 2026-10-29, as written (one slice, security-full).**
 - [ ] Gate 3: Stack PR merged into trunk (security-full if accepted, otherwise light).
 - [ ] Gate 4: Story → `main` deep review complete.
 
