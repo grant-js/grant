@@ -16,6 +16,8 @@ export const ResourceAction = {
   Renew: 'Renew',
   Exchange: 'Exchange',
   SetEmail: 'SetEmail',
+  SetPassword: 'SetPassword',
+  ExportCredentials: 'ExportCredentials',
 };
 
 export type ResourceAction = (typeof ResourceAction)[keyof typeof ResourceAction];
@@ -166,7 +168,13 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
     ],
   },
   [ResourceSlug.ProjectUser]: {
-    actions: [ResourceAction.Read, ResourceAction.Query, ResourceAction.SetEmail],
+    actions: [
+      ResourceAction.Read,
+      ResourceAction.Query,
+      ResourceAction.SetEmail,
+      ResourceAction.SetPassword,
+      ResourceAction.ExportCredentials,
+    ],
   },
   [ResourceSlug.UserSession]: {
     actions: [ResourceAction.Read, ResourceAction.Query],

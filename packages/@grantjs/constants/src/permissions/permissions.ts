@@ -1208,6 +1208,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       resource: ResourceSlug.ProjectUser,
       condition: null,
     },
+    {
+      action: ResourceAction.SetPassword,
+      resource: ResourceSlug.ProjectUser,
+      condition: null,
+    },
   ],
 
   [GroupKey.ProjectUserAdmin]: [
@@ -1216,8 +1221,33 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       resource: ResourceSlug.ProjectUser,
       condition: null,
     },
+    {
+      action: ResourceAction.SetPassword,
+      resource: ResourceSlug.ProjectUser,
+      condition: null,
+    },
   ],
 };
+
+/**
+ * Permissions that exist as database rows but belong to no standard group, so an
+ * organization grants them deliberately (e.g. through the groups UI/API).
+ *
+ * The seed creates `permissions` rows only from `PERMISSION_MAPPING_TEMPLATES`
+ * (every template also links its permission to its group). An action listed here is
+ * seeded as a row with no `group_permissions` link. Do not list an action both here
+ * and in a template: a template for the same resource:action would reuse the row.
+ */
+export type StandalonePermission = PermissionMappingTemplate;
+
+export const STANDALONE_PERMISSIONS: readonly StandalonePermission[] = [
+  {
+    // Reads project users' credential hashes: no default holder.
+    action: ResourceAction.ExportCredentials,
+    resource: ResourceSlug.ProjectUser,
+    condition: null,
+  },
+];
 
 export const PERMISSION_MAPPINGS: Record<string, PermissionMapping[]> = Object.keys(
   GroupKey

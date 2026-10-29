@@ -9,6 +9,8 @@ import {
   ROLE_KEYS,
   type RoleKey,
   ROLES,
+  STANDALONE_PERMISSIONS,
+  type StandalonePermission,
 } from '@grantjs/constants';
 import { getEnv, resolveDatabaseUrl } from '@grantjs/env';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -255,7 +257,7 @@ async function seedPermissionsData(
   // Collect all unique permissions from all groups. One row per resource:action,
   // shared by every group that declares it — `group_permissions` has no `condition`
   // column, so a per-group condition cannot be represented.
-  const allPermissions = new Map<string, (typeof PERMISSION_MAPPINGS)[string][number]>();
+  const allPermissions = new Map<string, StandalonePermission>();
   const winningGroup = new Map<string, string>();
   const droppedConditions = new Map<string, string[]>();
 
@@ -280,6 +282,14 @@ async function seedPermissionsData(
         else droppedConditions.set(key, [groupName]);
       }
     }
+  }
+
+  // Standalone permissions: rows with no group. A resource:action already declared
+  // by a group template keeps that row (no duplicate); `seedGroupPermissions` reads
+  // PERMISSION_MAPPINGS only, so a standalone entry never gets a group link.
+  for (const standalone of STANDALONE_PERMISSIONS) {
+    const key = `${standalone.resource}:${standalone.action}`;
+    if (!allPermissions.has(key)) allPermissions.set(key, standalone);
   }
 
   for (const [key, losers] of droppedConditions) {
