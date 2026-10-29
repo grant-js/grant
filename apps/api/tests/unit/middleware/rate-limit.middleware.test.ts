@@ -63,7 +63,7 @@ vi.mock('@/i18n', () => ({
 }));
 
 type RequestWithContext = Request & {
-  context?: { user?: { scope?: { tenant: string; id: string } } };
+  context?: { user?: { scope?: { tenant: string; id: string }; userId?: string } };
 };
 
 function createMockReq(overrides: Partial<RequestWithContext> = {}): RequestWithContext {
@@ -451,13 +451,14 @@ describe('rateLimitMiddleware', () => {
 
     function scopedReq(
       scope: { tenant: string; id: string },
-      overrides: Partial<RequestWithContext> = {}
+      overrides: Partial<RequestWithContext> = {},
+      userId = 'actor-1'
     ): RequestWithContext {
       return createMockReq({
         method: 'PUT',
         path: '/api/users/user-1/email',
         body: { email: 'a@b.c' },
-        context: { user: { scope } as unknown as import('@grantjs/core').GrantAuth },
+        context: { user: { scope, userId } as unknown as import('@grantjs/core').GrantAuth },
         ...overrides,
       });
     }
@@ -491,9 +492,10 @@ describe('rateLimitMiddleware', () => {
           translationKey: 'errors.common.tooManyRequests',
         },
       });
-      // Logged for the operator as a probing signal: the scope, never the address.
+      // Logged as a probing signal: the scope and the actor, never the address.
       expect(warnLog).toHaveBeenCalledTimes(1);
       expect(JSON.stringify(warnLog.mock.calls)).toContain('org-a');
+      expect(JSON.stringify(warnLog.mock.calls)).toContain('actor-1');
       expect(JSON.stringify(warnLog.mock.calls)).not.toContain('a@b.c');
     });
 
@@ -506,6 +508,40 @@ describe('rateLimitMiddleware', () => {
 
       expect(next).toHaveBeenCalledTimes(2);
       expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it("keeps one budget per actor: a member cannot use up another member's", async () => {
+      mockSecurity.rateLimitSetEmailMax = 2;
+      const res = createMockRes();
+
+      await callTimes(scopedReq(orgA, {}, 'viewer'), res, 3);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).toHaveBeenCalledWith(429);
+
+      next.mockClear();
+      (res.status as ReturnType<typeof vi.fn>).mockClear();
+
+      await callTimes(scopedReq(orgA, {}, 'owner'), res, 2);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).not.toHaveBeenCalled();
+
+      await callTimes(scopedReq(orgA, {}, 'owner'), res, 1);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('keeps one budget per scope for the same actor', async () => {
+      mockSecurity.rateLimitSetEmailMax = 2;
+      const res = createMockRes();
+
+      await callTimes(scopedReq(orgA, {}, 'owner'), res, 3);
+      expect(res.status).toHaveBeenCalledWith(429);
+
+      next.mockClear();
+      (res.status as ReturnType<typeof vi.fn>).mockClear();
+
+      await callTimes(scopedReq(orgB, {}, 'owner'), res, 2);
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     it('keeps one bucket per scope', async () => {

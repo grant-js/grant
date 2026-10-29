@@ -182,11 +182,14 @@ export function rateLimitMiddleware(store: ICacheAdapter) {
  * must not.
  *
  * - `tenant:<tenant>:<id>` — optional (`SECURITY_RATE_LIMIT_PER_TENANT_*`), every request.
- * - `tenant:<tenant>:<id>:set-email` — on by default (`SECURITY_RATE_LIMIT_SET_EMAIL_*`),
+ * - `tenant:<tenant>:<id>:set-email:<actor>` — on by default (`SECURITY_RATE_LIMIT_SET_EMAIL_*`),
  *   only the operations `countSetEmailOperations` names. Independent of the per-tenant
  *   flag, because the per-tenant bucket is off by default and these operations are what
  *   let a scoped operator test addresses held by accounts in other organizations.
- *   Attempts count whether or not they succeed. Both honour `SECURITY_ENABLE_RATE_LIMIT`.
+ *   One budget per actor (`context.user.userId`: the user, or the key / app id of a token)
+ *   and scope, so a member without the permission cannot use up an Owner's. Attempts count
+ *   whether or not they succeed, before authorization. Both honour
+ *   `SECURITY_ENABLE_RATE_LIMIT`.
  */
 export function tenantRateLimitMiddleware(store: ICacheAdapter) {
   return async function rateLimitTenant(
@@ -206,6 +209,8 @@ export function tenantRateLimitMiddleware(store: ICacheAdapter) {
     try {
       const contextReq = req as ContextRequest;
       const scope = contextReq.context?.user?.scope ?? null;
+      // A request with a scope but no subject shares one bucket: fail closed.
+      const actorId = String(contextReq.context?.user?.userId ?? 'unknown');
       if (scope && typeof scope.tenant === 'string' && typeof scope.id === 'string') {
         const tenantKey = `tenant:${scope.tenant}:${scope.id}`;
 
@@ -229,20 +234,21 @@ export function tenantRateLimitMiddleware(store: ICacheAdapter) {
           for (let i = countSetEmailOperations(req); i > 0; i--) {
             const { allowed, retryAfterSeconds } = await checkLimit(
               store,
-              `${tenantKey}:set-email`,
+              `${tenantKey}:set-email:${actorId}`,
               setEmailWindowMs,
               config.security.rateLimitSetEmailMax,
               now
             );
             if (!allowed) {
-              // Probing signal: scope only, never the address or the target user.
+              // Probing signal: scope and actor, never the address or the target user.
               logger.warn(
                 {
                   tenant: scope.tenant,
                   scopeId: scope.id,
+                  actorId,
                   max: config.security.rateLimitSetEmailMax,
                 },
-                'Set-email rate limit exceeded for scope'
+                'Set-email rate limit exceeded for actor in scope'
               );
               sendTooManyRequests(req, res, retryAfterSeconds);
               return;

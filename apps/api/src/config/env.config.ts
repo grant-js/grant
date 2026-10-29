@@ -486,7 +486,7 @@ const SECURITY_CONFIG = {
   /** Per-scope limit on operator set-email (REST PUT /users/:id/email, setProjectUserEmail, createUser with an email). On by default, independent of the per-tenant limit. */
   rateLimitSetEmailEnabled: env.SECURITY_RATE_LIMIT_SET_EMAIL_ENABLED,
 
-  /** Set-email limit: maximum operations per window per scope (scope.tenant + scope.id) */
+  /** Set-email limit: maximum operations per window per actor (user, or key / app id) and scope (scope.tenant + scope.id) */
   rateLimitSetEmailMax: env.SECURITY_RATE_LIMIT_SET_EMAIL_MAX,
 
   /** Set-email limit: time window in minutes */

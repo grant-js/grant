@@ -923,7 +923,7 @@ const META: EnvVarMeta[] = [
     category: 'security',
     label: 'Set-email rate limiting',
     description:
-      'Limit operator set-email per scope (PUT /api/users/:id/email, setProjectUserEmail, createUser with an email). Independent of per-tenant limiting. Default: true.',
+      'Limit operator set-email per operator and scope (PUT /api/users/:id/email, setProjectUserEmail, createUser with an email). Independent of per-tenant limiting. Default: true.',
     envFiles: ['.env'],
     options: ['true', 'false'],
     section: 'Rate limiting',
@@ -932,7 +932,7 @@ const META: EnvVarMeta[] = [
     key: 'SECURITY_RATE_LIMIT_SET_EMAIL_MAX',
     category: 'security',
     label: 'Set-email rate limit max',
-    description: 'Max set-email operations per window per scope (default: 20).',
+    description: 'Max set-email operations per window per operator and scope (default: 20).',
     envFiles: ['.env'],
     digitsOnly: true,
     section: 'Rate limiting',
