@@ -83,6 +83,8 @@ export function createMyResourceRoutes(context: RequestContext) {
 }
 ```
 
+A route whose body or query names a `scope` must be mounted behind `authorizeRestRoute()`: the guard refuses a request whose scope differs from the one it was authorized in. `apps/api/tests/unit/lib/authorization/authorized-scope-coverage.test.ts` fails for a scoped route that is not guarded; a route that must take a scope without one is added to the allowlist in that test, with its reason.
+
 Register in `src/rest/index.ts`:
 
 ```typescript

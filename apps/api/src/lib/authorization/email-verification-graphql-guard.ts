@@ -5,6 +5,7 @@ import { GraphqlContext } from '@/graphql/types';
 import { AuthenticationError, AuthorizationError } from '@/lib/errors/error-classes';
 
 import { isAuthenticatedGraphQL } from './auth-guard';
+import { inheritAuthorizationMark } from './graphql-guard';
 
 export interface EmailVerificationGraphQLGuardOptions {
   allowPersonalContext?: boolean;
@@ -54,6 +55,8 @@ export function requireEmailVerificationGraphQL<
 
     throw new AuthorizationError('Email verification required', 'EMAIL_VERIFICATION_REQUIRED');
   };
+
+  inheritAuthorizationMark(resolver, guardedResolver);
 
   return (
     typeof resolver === 'function' ? guardedResolver : { resolve: guardedResolver }
