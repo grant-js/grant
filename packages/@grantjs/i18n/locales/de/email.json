@@ -51,6 +51,12 @@
     "expiresIn": "Dieser Link läuft in {{minutes}} Minuten ab und kann nur einmal verwendet werden.",
     "warning": "Wenn Sie dies nicht angefordert haben, können Sie diese E-Mail ignorieren. Ihr Passwort bleibt unverändert."
   },
+  "projectEmailChanged": {
+    "subject": "Die Anmelde-E-Mail für {{appName}} wurde geändert",
+    "defaultAppName": "die App",
+    "message": "Ein Administrator hat die E-Mail-Adresse geändert, mit der Sie sich bei {{appName}} anmelden. Diese Adresse ist nicht mehr die Anmelde-E-Mail für dieses Konto.",
+    "warning": "Wenn Sie diese Änderung nicht erwartet haben, wenden Sie sich an den Administrator von {{appName}}."
+  },
   "notification": {
     "common": {
       "greeting": "Hallo,",

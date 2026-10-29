@@ -5,6 +5,7 @@ import type {
   SendNotificationEmailParams,
   SendOtpParams,
   SendPasswordResetParams,
+  SendProjectEmailChangedParams,
   SendProjectOAuthMagicLinkParams,
   SendProjectPasswordResetParams,
 } from '@grantjs/core';
@@ -207,6 +208,39 @@ export class MailjetEmailAdapter implements IEmailService {
     } catch (error) {
       throw new GrantException(
         `Failed to send project password reset email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'EMAIL_SEND_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async sendProjectEmailChanged(params: SendProjectEmailChangedParams): Promise<void> {
+    const subject = this.templates.getProjectEmailChangedEmailSubject(params);
+    const html = await this.templates.getProjectEmailChangedEmailHtml(params);
+    const text = this.templates.getProjectEmailChangedEmailText(params);
+
+    try {
+      await this.client.post('send', { version: 'v3.1' }).request({
+        Messages: [
+          {
+            From: {
+              Email: this.from,
+              Name: this.fromName,
+            },
+            To: [
+              {
+                Email: params.to,
+              },
+            ],
+            Subject: subject,
+            TextPart: text,
+            HTMLPart: html,
+          },
+        ],
+      });
+    } catch (error) {
+      throw new GrantException(
+        `Failed to send project email changed notice: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'EMAIL_SEND_ERROR',
         error instanceof Error ? error : undefined
       );

@@ -57,7 +57,9 @@ function createHandler(
     { isAuthorized } as never,
     {} as never,
     {} as never,
-    { exportCredentials, getPasswordCredentialSummaries } as never
+    { exportCredentials, getPasswordCredentialSummaries } as never,
+    {} as never,
+    {} as never
   );
   return {
     handler,

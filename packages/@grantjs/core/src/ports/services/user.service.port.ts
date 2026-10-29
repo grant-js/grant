@@ -386,7 +386,8 @@ export interface IUserAuthenticationMethodService {
    * Same normalized address is a no-op (`operation` null). Uniqueness: one user per address.
    * `params.operation` names the caller on the authentication-method audit row
    * (`metadata.operation`), which is how an operator-set address is told apart from one
-   * the user connected.
+   * the user connected. `previousEmail` is set only when `operation` is `changed`: the
+   * address the account used before, for the notice that goes to it.
    */
   setOrReplaceEmailMethod(
     params: { userId: string; email: string; operation: OperatorEmailOperation },
@@ -394,5 +395,6 @@ export interface IUserAuthenticationMethodService {
   ): Promise<{
     method: UserAuthenticationMethod;
     operation: 'added' | 'changed' | null;
+    previousEmail?: string;
   }>;
 }

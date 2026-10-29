@@ -39,6 +39,18 @@ export interface SendProjectPasswordResetParams {
   locale?: string;
 }
 
+/**
+ * Notice that an administrator changed the sign-in e-mail of a project-app account.
+ * Goes to the address the account used before the change. It carries no link and never
+ * the new address: the person reading it is not proven to own the new one.
+ */
+export interface SendProjectEmailChangedParams {
+  /** The previous address, the only recipient. */
+  to: string;
+  appName?: string;
+  locale?: string;
+}
+
 export interface SendNotificationEmailParams {
   to: string;
   subject: string;
@@ -73,6 +85,12 @@ export interface IEmailService {
    * Send a project-app password reset link (ADR 0011 § 6), branded with the app's name
    */
   sendProjectPasswordReset(params: SendProjectPasswordResetParams): Promise<void>;
+
+  /**
+   * Send the notice to the previous address after an operator changed a project user's
+   * login e-mail. No link and not the new address, branded with the app's name.
+   */
+  sendProjectEmailChanged(params: SendProjectEmailChangedParams): Promise<void>;
 
   /**
    * Send a generic notification email (subject + text/html body). Used by the
