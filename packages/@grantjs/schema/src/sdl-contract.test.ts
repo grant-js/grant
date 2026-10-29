@@ -69,7 +69,7 @@ describe('graph reachability', () => {
   const schema = buildMergedSchema();
 
   /**
-   * 175 of 382 declared types cannot be reached from Query or Mutation. They are
+   * 175 of 389 declared types cannot be reached from Query or Mutation. They are
    * not dead: most are consumed as generated TypeScript by apps/api, and the
    * *SearchableField enums are runtime search configuration. But every one of them
    * ships in the schema `makeExecutableSchema` serves.
@@ -83,11 +83,13 @@ describe('graph reachability', () => {
    * unreferenced in SDL and in all TypeScript. The reachable count did not change
    * (207 before and after), which is what makes those six safe to have deleted.
    *
-   * 176 after operator-set-password: `ProjectUserPasswordCredential` hangs off
-   * `ProjectUser`, which no query or mutation returns (the six other new types are
-   * reachable through the new mutation and query).
+   * operator-set-password declared seven types (382 -> 389 declared). While
+   * `passwordCredential` sat on `ProjectUser`, which no query or mutation returns,
+   * `ProjectUserPasswordCredential` was unreachable and the pin was 176. It now sits on
+   * `User`, so the type is reachable and the pin is back to 175; the other six new
+   * types are reachable through the new mutation and query.
    */
-  const UNREACHABLE_FROM_ROOT = 176;
+  const UNREACHABLE_FROM_ROOT = 175;
 
   it('pins the count of types unreachable from Query/Mutation', () => {
     const reachable = reachableTypeNames(schema);

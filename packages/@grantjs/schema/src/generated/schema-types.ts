@@ -2554,13 +2554,6 @@ export type ProjectUser = Auditable & {
   displayName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
-  /**
-   * Non-secret facts about the member's project password credential. `null` when the member has no
-   * project credential or the caller lacks `ProjectUser:ExportCredentials` (never an error).
-   * `fingerprint` is the lowercase hex SHA-256 of the stored hash string: a change detector, not a secret.
-   * The password and the hash are never returned here.
-   */
-  passwordCredential?: Maybe<ProjectUserPasswordCredential>;
   pictureUrl?: Maybe<Scalars['String']['output']>;
   project?: Maybe<Project>;
   projectId: Scalars['ID']['output'];
@@ -2604,7 +2597,7 @@ export type ProjectUserGroup = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
-/** Non-secret facts about a project member's password credential. Never contains the hash or the password. */
+/** Non-secret facts about a user's project password credential. Never contains the hash or the password. */
 export type ProjectUserPasswordCredential = {
   __typename?: 'ProjectUserPasswordCredential';
   /**
@@ -4230,6 +4223,13 @@ export type User = Auditable & {
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
+  /**
+   * Non-secret facts about the user's password credential in the request's project scope. `null` outside a
+   * project scope, when the user has no project credential there, or when the caller lacks
+   * `ProjectUser:ExportCredentials` (never an error). `fingerprint` is the lowercase hex SHA-256 of the
+   * stored hash string: a change detector, not a secret. The password and the hash are never returned here.
+   */
+  passwordCredential?: Maybe<ProjectUserPasswordCredential>;
   permissionCount: Scalars['Int']['output'];
   pictureUrl?: Maybe<Scalars['String']['output']>;
   primaryTag?: Maybe<Tag>;

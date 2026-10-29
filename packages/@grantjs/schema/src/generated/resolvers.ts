@@ -2855,11 +2855,6 @@ export type ProjectUserResolvers<
   displayName?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
-  passwordCredential?: Resolver<
-    Types.Maybe<ResolversTypes['ProjectUserPasswordCredential']>,
-    ParentType,
-    ContextType
-  >;
   pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   project?: Resolver<
     Types.Maybe<ResolversTypes['Project']>,
@@ -3515,6 +3510,11 @@ export type UserResolvers<
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  passwordCredential?: Resolver<
+    Types.Maybe<ResolversTypes['ProjectUserPasswordCredential']>,
+    ParentType,
+    ContextType
+  >;
   permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
