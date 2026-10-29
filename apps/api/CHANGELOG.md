@@ -1,5 +1,36 @@
 # grant-api
 
+## 1.20.1
+
+### Patch Changes
+
+- 2944db5: Scoped operations now require the scope in the request input to match the scope the request was authorized in; `system` is no longer accepted as a request-supplied tenant.
+
+  A session request is authorized in the scope it carries (the `X-Scope-Tenant` and `X-Scope-Id` headers, else the scope in the query or body); an API key or project-app request is authorized in the scope of its token, so an input that names another scope than the key's is refused. When an operation names a scope in its input (`scope`, `input.scope`, or `scopeId` with `tenant` in a REST query), `tenant` and `id` must equal the authorized scope: otherwise GraphQL answers `Forbidden` and REST answers `403` with code `FORBIDDEN`, before any lookup or permission check. Operations that name no scope are unaffected. A scoped operation that is not mounted behind the authorization guard now fails the API's unit tests.
+
+- 2944db5: When an operator changes a project user's login e-mail, the previous address receives a notice (no link, no new address).
+- 2944db5: Events published by a project-level API key are attributed to the system user (the key id is recorded alongside) instead of failing on the actor foreign key, so API-key callers can set a project user's e-mail or password.
+- 2944db5: Operator set-email and create-user now record the operation on their authentication-method audit row, are rate-limited per operator and scope, and the unverified state of an operator-set address is documented.
+
+  - **Audit.** `setProjectUserEmail`, `PUT /api/users/:id/email` and `createUser` with an e-mail write their authentication-method audit row with `metadata.operation` set to `operator-set-email` (the first two) or `operator-create-user`, next to the actor in `performed_by` and the previous and new address in `old_values` and `new_values`. A refused call (non-member target, address held by another account, scope mismatch) writes no row.
+  - **Rate limit.** These operations (`PUT /api/users/:id/email`, `POST /api/users` with an `email`, and the GraphQL `setProjectUserEmail` and `createUser` with an `email`) share one bucket per operator and request scope, on by default and independent of the optional per-tenant limit: 20 operations per 15 minutes, then `429`. The conflict error says whether an address is held by any account in the instance, so without a bound a scoped operator could test addresses across organizations. Set `SECURITY_RATE_LIMIT_SET_EMAIL_MAX` and `SECURITY_RATE_LIMIT_SET_EMAIL_WINDOW_MINUTES` to change it, or `SECURITY_RATE_LIMIT_SET_EMAIL_ENABLED=false` to turn it off. It follows `SECURITY_ENABLE_RATE_LIMIT` like the other buckets.
+  - **Docs.** An operator-set address is stored unverified; the RBAC reference now says where that matters and how the user clears it.
+
+- @grantjs/schema@1.20.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.20.0
 
 ### Patch Changes
