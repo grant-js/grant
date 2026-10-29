@@ -38,6 +38,7 @@ describe('UserService.deleteUser last human', () => {
     getUsers: vi.fn(),
     updateUser: vi.fn(),
     countHumanUsers: vi.fn(),
+    getUserMembershipMetadata: vi.fn().mockResolvedValue([]),
     softDeleteUser: vi.fn(),
     hardDeleteUser: vi.fn(),
   };
@@ -116,6 +117,7 @@ describe('UserService.deleteOwnUser last human', () => {
     getUsers: vi.fn(),
     updateUser: vi.fn(),
     countHumanUsers: vi.fn(),
+    getUserMembershipMetadata: vi.fn().mockResolvedValue([]),
     softDeleteUser: vi.fn(),
     hardDeleteUser: vi.fn(),
   };

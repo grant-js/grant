@@ -49,13 +49,37 @@ export type EventIdentityKey = (typeof EVENT_IDENTITY_KEYS)[number];
 export type EventIdentity = Partial<Record<EventIdentityKey, string | number | boolean | null>>;
 
 /**
+ * The source-system key a CDM import attached to a user in one project, as carried in
+ * `data.before.externalKeys`. A pseudonymous identifier: it means something only next to
+ * the importing system's own data. Never an e-mail address, a name or a hash.
+ */
+export interface EventExternalKey {
+  projectId: string;
+  externalKey: string;
+}
+
+/**
+ * The event types whose external `data.before` carries `externalKeys`. The projection
+ * copies the list for these types only, and only the entries of the receiving
+ * subscription's project.
+ */
+export const EXTERNAL_KEY_EVENT_TYPES = ['user.deleted', 'project.user_removed'] as const;
+
+/**
+ * An external `data.before`: the identity keys, plus `externalKeys` on the types in
+ * `EXTERNAL_KEY_EVENT_TYPES` (`[]` when the user has no key in the receiving project;
+ * absent on Grant older than v1.20.2).
+ */
+export type ExternalEventBefore = EventIdentity & { externalKeys?: EventExternalKey[] };
+
+/**
  * `data` as delivered to webhook consumers: `after` and `delta` redacted, `before`
  * reduced to the identity of the entity or pivot the event is about. Absent when
  * the internal snapshot has no identity field.
  */
 export interface ExternalEventData {
   after?: Record<string, unknown> | null;
-  before?: EventIdentity | null;
+  before?: ExternalEventBefore | null;
   delta?: Record<string, { from: unknown; to: unknown }> | null;
 }
 

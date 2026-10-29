@@ -80,6 +80,16 @@ export interface IUserRepository extends IEntityExistence {
    * Non-deleted users excluding the seeded system user (not an operator).
    */
   countHumanUsers(systemUserId: string, transaction?: unknown): Promise<number>;
+
+  /**
+   * The user's live project memberships (`project_users`, not soft-deleted): the project
+   * and the membership row's metadata. Read by the user delete, before the memberships go,
+   * to name the user's import keys on the `user.deleted` event.
+   */
+  getUserMembershipMetadata(
+    userId: string,
+    transaction?: unknown
+  ): Promise<Array<{ projectId: string; metadata: unknown }>>;
 }
 
 export interface IUserRoleRepository {

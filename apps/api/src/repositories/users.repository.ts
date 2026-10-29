@@ -1,6 +1,7 @@
 import type { IUserRepository, OptionalListScope } from '@grantjs/core';
 import {
   accounts,
+  projectUsers,
   roles,
   tags,
   userAuthenticationMethods,
@@ -21,7 +22,7 @@ import {
   UserSearchableField,
   UserTag,
 } from '@grantjs/schema';
-import { and, count, isNull, ne, sql } from 'drizzle-orm';
+import { and, count, eq, isNull, ne, sql } from 'drizzle-orm';
 
 import { isProjectScopedUserMetadataTenant } from '@/lib/effective-project-user-metadata.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -167,5 +168,16 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
       .from(users)
       .where(and(isNull(users.deletedAt), ne(users.id, systemUserId)));
     return Number(row?.value ?? 0);
+  }
+
+  public async getUserMembershipMetadata(
+    userId: string,
+    transaction?: Transaction
+  ): Promise<Array<{ projectId: string; metadata: unknown }>> {
+    const dbInstance = transaction ?? this.db;
+    return dbInstance
+      .select({ projectId: projectUsers.projectId, metadata: projectUsers.metadata })
+      .from(projectUsers)
+      .where(and(eq(projectUsers.userId, userId), isNull(projectUsers.deletedAt)));
   }
 }
