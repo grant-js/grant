@@ -2,6 +2,9 @@
 
 - **Status**: Proposed
 - **Date**: 2026-10-15
+- **Amended**: 2026-10-29, for operator set-password, one audited exception to "the hash is never
+  returned", and the `project.user_password_set` event this record described but never built
+  (§ Amendment 2026-10-29). Sentences that stopped being true are corrected in place and marked.
 - **Context**: [#544](https://github.com/grant-js/grant/pull/544), an attempt to make ADR 0010's
   import reach the identities migrated users really have, which showed the storage is wrong, not
   the eligibility rule; and the realisation that "Email" already means two different things
@@ -115,10 +118,12 @@ deleted_at IS NULL`. Like `users` and `user_authentication_methods` it is a core
 
 `hash` is `varchar(255)`, a bcrypt hash (the `$2a$`/`$2b$`/`$2y$` prefix names the algorithm; no
 `algorithm` column until a second one exists). `source` is one enum: `register`, `cdm-import`,
-`reset`, `change`, `migrated`, `migrated-import`. `change` is in the enum from the start but, for
+`reset`, `change`, `migrated`, `migrated-import` and, since 2026-10-29, `admin-set` (an operator
+wrote it; § Amendment 2026-10-29). `change` is in the enum from the start but, for
 the **project** scope, nothing writes it until the self-service follow-up lands. The scope is the
 table, so there is no `project-reset`: a reset is `reset` in either. The hash never appears in
-`providerData`, `metadata`, search, audit values, events or logs.
+`providerData`, `metadata`, search, audit values, events or logs, and no API returns it except the
+one audited export of § Amendment 2026-10-29.
 
 **Why two tables, not one with a nullable `project_id`.** The deciding point is RLS. The project
 policy is `current_project_id IS NULL OR project_id = current_project_id`: an **unscoped** request
@@ -250,7 +255,8 @@ field and go away. Forward-only provenance moves to the project:
 - no row: create (`passwordsImported`);
 - `source: cdm-import` and a different hash: replace (`passwordsUpdated`); identical:
   `passwordsUnchanged`;
-- any other `source` (the person reset or changed it): never touched, `passwordsSkippedExisting`;
+- any other `source` (the person reset or changed it, or an operator set it): never touched,
+  `passwordsSkippedExisting`;
 - an absent `password` never deletes anything; `replace` keeps credentials, as 0010 rule 6.
 
 **Counters.** `passwordsImported`, `passwordsUpdated`, `passwordsUnchanged` keep their meaning.
@@ -299,9 +305,11 @@ signs in by email), resolved at step 1 of § 1. Other identifiers are a follow-u
   the sign-in slice and guards **only the project credential**. The only live limiter is per
   client address (`rate-limit.middleware.ts:98-104`, key `auth:${ip}`);
   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES` are defined at
-  `env.config.ts:149,152` and nothing reads them. A tenant can lock only its own project's
-  credential, never platform login (§ 8). The store is built once for both scopes (slice 1);
-  the platform scope turns it on later, as its own step (§ Slicing, slice 7).
+  `env.config.ts:149,152` and nothing reads them. _Stale since slices 4 and 7: both are read now
+  (`env.config.ts:155,158`), by platform login at `auth.handler.ts:704` and by project password
+  sign-in at `project-oauth.handler.ts:956`; see § Amendment 2026-10-29, 8._ A tenant can lock only
+  its own project's credential, never platform login (§ 8). The store is built once for both scopes
+  (slice 1); the platform scope turns it on later, as its own step (§ Slicing, slice 7).
 - Generic failures and a **dummy compare** so timing does not reveal whether a credential exists.
 - **MFA at the ceremony** when the platform requires it: `computeRequiresMfaStepUp` steps up only
   when `config.auth.minAalAtLogin === 'aal2'` and the user has an active enrolment
@@ -347,7 +355,9 @@ _Alternatives considered:_
   exists yet: the primitive is `revokeGrant` at `project-oauth-grants.service.ts:118`, called one
   grant at a time at `project-oauth.handler.ts:1134,1166`).
 - Neither reads or clears the other scope's credential, and a platform reset revokes platform
-  sessions only (`user-authentication-methods.service.ts:735`).
+  sessions only (`auth.handler.ts:909`, which calls `invalidateAllUserSessions`). _Corrected
+  2026-10-29: this cited `user-authentication-methods.service.ts:735`; the revocation lives in the
+  handler, and that line is now the reset-token check._
 - A later import never overwrites a project credential whose `source` is not `cdm-import` (§ 4).
 
 _Implementation note (slice 5):_ **bulk revoke** (Open question 4) is a repository method on
@@ -367,8 +377,9 @@ nothing. The console magic link of slice 6 is a different surface and may share 
 table. Completion runs in one transaction: it consumes the token (row-locked), re-checks
 membership, writes the credential (`source: reset`), clears the `(project, user)` lockout, marks
 the Email method verified and revokes the grants. The reset link carries the token in the URL
-fragment. `project_user.password_set` (§ 8) is not emitted by this slice: the credential's audit
-row records the write, and the event is left to the slice that adds it for every reason.
+fragment. This slice did not emit the password event: the credential's audit row recorded the
+write. The event is implemented as `project.user_password_set` (§ 8), and the completion above
+now publishes it as a `reset` write when the stored hash changes (_amended 2026-10-29_).
 
 ### 7. Platform cut-over migration (not a wipe)
 
@@ -456,13 +467,16 @@ Two rows that resolve to one person are applied in order, so the last hash wins.
   the identity); the person recovers by a project reset or magic link.
 - **Audit.** Each credential table has an audit-log table recording create, replace, reset,
   change and delete with `source`, scope and user, **never the hash**. Events:
-  `user.password_changed` as today for the platform scope, and a `project_user.password_set`
-  (reason `import`, `reset` or `change`) for the project scope; counters only on the import
-  completion event.
+  `user.password_changed` as today for the platform scope, and a `project.user_password_set`
+  for the project scope; counters only on the import completion event. _Amended 2026-10-29: the
+  project event is named `project.user_password_set`, carries `source` instead of a `reason`, is
+  published for every non-import write whose stored hash changes, and is **not** published by an
+  import. The full rule is in § Amendment 2026-10-29, 6. The audit-log table also gains an
+  `export` action, § Amendment 2026-10-29, 4._
 - **GDPR.** The data export lists, per scope and project, that a credential exists with its
-  `source` and dates, **never the hash** (`me.handler.ts:386-402` exports methods without
-  `providerData` for the same reason). Erasure: a hard-deleted user cascades; a soft-deleted
-  user's credentials are soft-deleted in the same transaction. Removing a project member
+  `source` and dates, **never the hash** (`me.handler.ts:440-447` builds that list from
+  `listForUser`; `:413-436` exports methods without `providerData` for the same reason). Erasure: a
+  hard-deleted user cascades; a soft-deleted user's credentials are soft-deleted in the same transaction. Removing a project member
   (`project-users.service.ts:408`) soft-deletes their project credential **in the same
   transaction**, so re-adding them never revives an old password. Slice 1 **extends**
   `data-retention-cleanup.job.ts` to purge soft-deleted credentials on its next run: today it
@@ -506,9 +520,9 @@ Two rows that resolve to one person are applied in order, so the last hash wins.
    "Send me a magic link" link with i18n. **Prerequisites:** the upstream closed-install fix
    (`fix/closed-install-platform-access`, § 3), and it **must land before slice 7**. It adds
    routes and a link, no change to the existing form.
-7. **Enable the platform lockout** (own step, using the unread `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`
-   and `AUTH_LOCKOUT_DURATION_MINUTES`): only once platform password reset **and** the console
-   magic link are confirmed working on the new credential store, because they are the way back
+7. **Enable the platform lockout** (own step, using the then-unread
+   `AUTH_MAX_FAILED_LOGIN_ATTEMPTS` and `AUTH_LOCKOUT_DURATION_MINUTES`; both are read now, § 5):
+   only once platform password reset **and** the console magic link are confirmed working on the new credential store, because they are the way back
    from a locked password. The store itself is built in slice 1.
 
 ### Release
@@ -582,6 +596,184 @@ the console magic link, by the closed-install fix of § 3). Still open, for **gr
    import entity and an e2e helper. Anything in the published SDKs or the web app that reads the
    field directly, or a user with two Email methods, would need handling in slice 2.
 
+## Amendment 2026-10-29: operator set-password, the export exception and `project.user_password_set`
+
+Status stays Proposed. This section records what the `operator-set-password` story built, checked
+against the code on its stack rather than against its plan; where it differs from the text above,
+it governs. The need: an operator must be able to give a project user a password without a reset
+mail, and a downstream identity mirror (a legacy identity system kept in step with Grant) must be
+told when a project password changed and be able to read the hash to carry it across.
+
+### 1. Source `admin-set`
+
+- The seventh value of `CREDENTIAL_SOURCES`. Both `CHECK` constraints on `source`
+  (`project_user_credentials_source_check`, `user_credentials_source_check`) are widened by
+  migration `0092_admin_set_credential_source.sql`: drop and re-add, no data change. The list is
+  one enum for both scopes (§ 2), so both tables take it; only the project scope ever receives it.
+- _Why a value of its own rather than `reset` or `change`:_ an audit row and the event's `source`
+  then say what happened, and no reader has to infer "an operator" from a reset with no mail.
+- **Final with respect to the import.** The import's rule is unchanged (§ 4): only `cdm-import`
+  is replaceable, so an `admin-set` credential is skipped and counted in
+  `passwordsSkippedExisting` (`importProjectPasswordHashes`, and the conditional
+  `upsertImported`). It needed no change to the guard.
+
+### 2. Operator set-password
+
+GraphQL `setProjectUserPassword(input: { userId, password, scope }): User!` and REST
+`PUT /api/users/:id/password` (body `{ scope, password }`, answers `200` with the `User`). The
+transport enforces `ProjectUser:SetPassword` (§ 3); the handler tests no role. Order of events:
+
+1. The scope must be a project scope (`OrganizationProject` or `AccountProject`), else
+   `ValidationError`, and must be the scope the transport authorized (§ 7).
+2. The password is checked against the Grant policy with `assertPasswordMeetsPolicy`, **before**
+   any transaction or write. A refusal never contains the value.
+3. One transaction: the target must already be a member of the project, else `NotFoundError`
+   (never a create); the credential is written through `CredentialService.setPassword` with
+   `source: 'admin-set'`, which leaves the audit row (`performedBy` is the operator), resets the
+   `(project, user)` lockout and publishes the event (§ 6); then the user's project-app OAuth
+   grants are revoked, as the project reset does (§ 6, slice 5 note).
+4. **Not done, on purpose.** Platform sessions are untouched: a project user authenticates to
+   project apps, and a project reset does not touch them either. The Email method is **not** marked
+   verified: that is what a reset proves by reaching the mailbox, and an operator set proves
+   nothing about it.
+
+The same password set twice is not a no-op: bcrypt salts, so the stored hash is replaced and the
+event fires. Detecting "same password" would mean verifying the new value
+against the stored hash on an operator path, a comparison oracle for no benefit.
+
+### 3. Permissions
+
+- **`ProjectUser:SetPassword`** is an ordinary, extensible action, declared and checked like
+  `ProjectUser:SetEmail`. It belongs to the `ProjectUserOwner` group (Organization Owner, Personal
+  Account Owner, Organization Account Owner) and the `ProjectUserAdmin` group (Organization
+  Admin), and to no Developer, Viewer or common group. An organization that adds it to another
+  role's group gets it with no code change.
+- **`ProjectUser:ExportCredentials`** is declared on `ProjectUser` and placed in **no standard
+  group**: it reads hashes, so nobody holds it by default, Owner and Admin included. An organization
+  grants it deliberately to the group of the role a mirror's API key carries. The seed created
+  `permissions` rows only from group templates, so an action with no group would have had no row to
+  grant; `STANDALONE_PERMISSIONS` in `@grantjs/constants` lists such actions and
+  `seed-permissions.ts` seeds each as a row with no `group_permissions` link.
+- Both reach organizations bootstrapped earlier the way every standard permission does: `seedAll`
+  is instance-wide and idempotent (ADR 0001). There is no per-organization backfill.
+
+### 4. The export exception
+
+This record, and 0010 rule 7, say a hash exists in the credential store and nowhere else, and that
+no API returns it. There is now **one** exception, and it is deliberate, gated and audited:
+
+- **Surfaces.** GraphQL `exportProjectUserCredentials(input: { scope, userIds, kinds })` and REST
+  `POST /api/users/credentials/export` (body `{ scope, userIds, kinds }`; POST because it is an
+  audited action with a body, not a cacheable read). Both are gated at the transport by
+  `ProjectUser:ExportCredentials`. The REST response carries `Cache-Control: no-store`.
+- **Shape.** `{ users: [{ userId, password: { algorithm: 'bcrypt', hash } | null }] }`: the CDM
+  `users[].password` shape of 0010 rule 1, so a mirror can feed it to an import. A member with no
+  project credential is listed with `password: null`. `kinds` is an enum, `CredentialKind`, with
+  one member (`PASSWORD`, the default; an empty list is refused), so a later credential type is a
+  new kind and not a second export.
+- **No partial export.** `userIds` must be non-empty UUIDs and at most one page
+  (`config.system.maxPageSize`); the whole project is many calls. **Every** id is checked for
+  membership first: a single non-member fails the call with `NotFoundError`, and nothing is read
+  or audited.
+- **A dedicated read.** Hashes are read by `findHashesForExport`, a repository method that names
+  its columns (`userId`, `hash`, `source`, `updatedAt`) and runs in the request's project scope
+  under RLS. No existing read grew a hash. Its only caller is `ProjectUserCredentialExportService`,
+  which serves the export and the fingerprint of § 5, both behind the same permission.
+- **Audit.** Each successful call writes exactly one `export` row on
+  `project_user_credential_audit_logs`, in the same transaction as the read: `performedBy` is the
+  caller, there is no entity id and no old or new values, and the metadata is
+  `{ projectId, userCount, credentialCount, kinds }`, never a hash. The audit write is not
+  best-effort here: if it fails the export fails with it. A call refused at the gate, or by the
+  membership check, writes no row.
+- **Intended holder** is a downstream identity mirror, a machine. There is no export in the web
+  UI. _What it does not change:_ a hash is still absent from `providerData`, `metadata`, search,
+  other audit values, events, webhook payloads and logs, and from the data export of § 8 (GDPR);
+  `hasPassword` keeps its platform-scope, own-account meaning; the project CDM exporter still
+  emits no `password`.
+- _Residual, accepted:_ a holder can take the bcrypt hash of every member it names out of Grant and
+  attack it offline. That is the trade the permission names, and the reason it has no default
+  holder, is checked at the transport, needs the same email and MFA steps as other operator
+  actions, and leaves one audit row per call.
+
+### 5. The fingerprint: `User.passwordCredential`
+
+`User.passwordCredential { source, updatedAt, fingerprint }` (type `ProjectUserPasswordCredential`)
+tells a mirror **when** to call the export without reading a hash.
+
+- `fingerprint` is the lowercase hex SHA-256 of the stored bcrypt hash string. It is computed on
+  read, never stored, and never derived from the password. bcrypt output is not recoverable from
+  its digest, so the value is a change detector, not a secret: it changes when the hash changes
+  and says nothing about the password.
+- It is still gated, because it tells a caller that a credential exists, where it came from and
+  when it changed. It is readable only by a caller holding `ProjectUser:ExportCredentials`,
+  **not** by `ProjectUser:Read`, so a Viewer learns nothing new about credentials. For anyone else
+  the field resolves to `null`, not an error, so existing `User` documents keep working.
+- It is resolved in the **request's** project scope (`context.user.scope`) and is `null` in any
+  other scope, and `null` when the member has no project credential there.
+- _Why on `User`, not `ProjectUser`:_ the first plan put it on `ProjectUser`, but no query or
+  mutation returns `ProjectUser` (the users list under a project returns `User`), so the field
+  would have been unreachable. `User` is global, so the field means something only in a project
+  scope, which is why it is scope-resolved. It is one read per `User` returned, not batched.
+- It also covers what the event does not: an import changes a credential silently (§ 6), and the
+  fingerprint is how a mirror sees that.
+
+### 6. The event: `project.user_password_set`
+
+This is § 8's `project_user.password_set`, built under the catalog's name. The catalog and webhook
+redaction both key on the `project.user_*` prefix (`event-catalog.ts`, `isUserEvent` in
+`webhook-redaction.lib.ts`), so the draft name would have been the odd one out.
+
+- **Delivery.** `webhookOnly('membership')`: webhook consumers only, an empty audience (no inbox
+  row, no email). It is a project event delivered whatever the request scope (ADR 0012), with an
+  explicit project scope, `subjectUserId` the project member and the member's `projectUser` row as the
+  aggregate.
+- **Payload.** `data.after = { projectId, userId, source }`, ids and source only, with `source`
+  one of `CREDENTIAL_SOURCES` (so never `cdm-import`: imports are silent, below). Never a
+  password or a hash, and no key whose name contains `password`, `hash` or `secret`: redaction
+  would blank such a key, and omission, not redaction, is the control.
+- **One emission point, change-only.** `CredentialService.write()` publishes it, for project-scope
+  writes only, and only when the stored hash differs from the one it replaces
+  (`existing?.hash !== hash`). So it fires for every non-import project write (`admin-set`,
+  `reset`, and `change` once something writes it) and never for platform scope, whose
+  `user.password_changed` is unchanged. Writing the same password twice fires twice (§ 2).
+- **A standalone publisher.** The event goes out through `ProjectUserCredentialEventPublisher`,
+  behind the port `IProjectUserCredentialEventPublisher` in `@grantjs/core`, a required
+  constructor argument of `CredentialService`. It is not a `ProjectUserService` method because
+  `ProjectUserService` already depends on `CredentialService`: the other way round is a
+  construction cycle. The project scope lookup moved with it to `lib/project-scope-resolver.lib.ts`.
+- **CDM imports are silent.** `importProjectPasswordHashes` never publishes, and a project import
+  runs under `runWithEventSuppression` like every other import write; an event per row would have
+  needed a bypass of that suppression. The mirror learns import-side changes from the import's
+  completion event, whose counters (0010 rule 8, § 4) already carry them, and from the
+  fingerprint of § 5. An operator-set credential is not replaceable by an import at all (§ 1).
+
+### 7. Authorized-scope guard
+
+`setProjectUserPassword` and `exportProjectUserCredentials` refuse an input scope that differs from
+the scope the transport authorized, with `AuthorizationError('Forbidden')` before any read or
+write; a generic transport-level check of the same kind is a separate story.
+
+### 8. Corrections made, and one left in the code
+
+- **§ 6, platform reset** cited `user-authentication-methods.service.ts:735` for the session
+  revocation; it is `auth.handler.ts:909` (corrected in place).
+- **§ 6, slice 5 note** said the password event was left to a later slice; it is now built (§ 6
+  above, corrected in place).
+- **§ 8, Audit** named the event `project_user.password_set` with a `reason` of `import`, `reset`
+  or `change`; corrected in place.
+- **§ 8, GDPR** cited `me.handler.ts:386-402` for the export; that range is session revocation and
+  `myUserDataExport` starts at `:400`. The credential list is at `:440-447` and the methods
+  without `providerData` at `:413-436` (corrected in place).
+- **§ 5, lockout** said nothing reads `AUTH_MAX_FAILED_LOGIN_ATTEMPTS`; platform login
+  (`auth.handler.ts:704`) and project sign-in (`project-oauth.handler.ts:956`) do (marked in place
+  in § 5 and in slice 7 of the slicing plan).
+- **Checked and still true:** nothing writes `change` in the project scope (the Follow-ups),
+  because self-service change of a project password is not built.
+- **Left in the code, not touched by this amendment:** the doc comment on `ICredentialLockoutService`
+  in `packages/@grantjs/core/src/ports/services/credential.service.port.ts:154` still says it is
+  "not called by any sign-in path until ADR 0011 slice 4". Project password sign-in and platform
+  login both call it now, so the comment describes the state when it was written.
+
 ## References
 
 - Platform password today: `apps/api/src/handlers/auth.handler.ts:66-77,228-335,421-430,460-467`,
@@ -598,3 +790,14 @@ the console magic link, by the closed-install fix of § 3). Still open, for **gr
   `project-oauth-connections.schema.ts`, `project-user-api-keys.schema.ts`, `project-users.schema.ts`,
   `project-oauth-grants.schema.ts`, `user-authentication-methods.schema.ts`
 - Rejected alternative: [#544](https://github.com/grant-js/grant/pull/544)
+- Operator set-password, export and event (amendment): `apps/api/src/handlers/users.handler.ts`
+  (`setProjectUserPassword`, `exportProjectUserCredentials`, `getProjectUserPasswordCredential`),
+  `apps/api/src/services/credentials.service.ts`,
+  `apps/api/src/services/project-user-credential-events.service.ts`,
+  `apps/api/src/services/project-user-credential-exports.service.ts`,
+  `apps/api/src/lib/credential-fingerprint.lib.ts`,
+  `packages/@grantjs/schema/src/events/event-catalog.ts`,
+  `packages/@grantjs/constants/src/permissions/permissions.ts` (`STANDALONE_PERMISSIONS`),
+  `packages/@grantjs/database/src/scripts/seed-permissions.ts`,
+  `packages/@grantjs/database/src/migrations/0092_admin_set_credential_source.sql`;
+  operator docs: `docs/core-concepts/events-webhooks-notifications.md`, `docs/architecture/rbac.md`
