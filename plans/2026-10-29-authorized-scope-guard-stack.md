@@ -10,7 +10,7 @@ Grounded on `origin/main` `03103793` (after v1.20.0, tag commit `8e9047b1`). Ope
 
 - **Slug**: `authorized-scope-guard`
 - **Story brief**: `plans/2026-10-29-authorized-scope-guard-brief.md`
-- **Status**: draft (Gate 2 pending)
+- **Status**: approved (Gate 2, Alejandro 2026-10-29); in-progress from slice 1
 - **Story trunk**: `fix/authorized-scope-guard` from `main` at `03103793`
 - **worktree_path**: `/workspace/worktrees/grant-platform-fix-authorized-scope-guard` (exists; holds the trunk)
 - **Release**: patch, **v1.20.1** (`grant-api` changesets only unless slice 2's client audit finds a web mismatch)
@@ -163,7 +163,7 @@ Hooks: `git -c core.hooksPath=.husky commit` on every commit, `sh .husky/pre-pus
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approved — no implementation until Alejandro confirms.
+- [x] Gate 2: Stack plan approved — Alejandro, 2026-10-29, as written.
 - [ ] Gate 3: Stack PRs merged into trunk (security-full on 1–3, light on 4–5).
 - [ ] Gate 4: Story → `main` deep + security-full review complete.
 
