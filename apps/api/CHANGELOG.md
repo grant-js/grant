@@ -1,5 +1,37 @@
 # grant-api
 
+## 1.20.0
+
+### Patch Changes
+
+- e2a8527: Adds the audited credential export for a downstream identity mirror: the `exportProjectUserCredentials` GraphQL query and `POST /api/users/credentials/export` (body `{ scope, userIds, kinds }`; project scope only). It returns `{ algorithm: 'bcrypt', hash }` for each requested project member who has a project credential and `password: null` for one who has none, in request order, and is the only place a project password hash leaves Grant. It requires `ProjectUser:ExportCredentials`, which no standard group holds, so an organization grants it deliberately to the role a mirror's API key carries; Owner and Admin are denied. `userIds` is capped at one page, and any id that is not a member of the project fails the whole call as not found (no partial export). The REST response is sent `Cache-Control: no-store`.
+
+  Every successful export writes exactly one `export` row on the project credential audit log in the same transaction as the read (the caller, the number of users and credentials, the kinds; never a hash), so a failed audit write fails the export. A refused call writes none.
+
+  Adds `User.passwordCredential { source, updatedAt, fingerprint }`, where `fingerprint` is the lowercase hex SHA-256 of the stored hash: a change detector, not a secret. It resolves to `null`, never an error, for any caller without `ProjectUser:ExportCredentials`, so existing documents keep working. It resolves in the request's project scope and is `null` for any other scope.
+
+- e2a8527: Operators can set a project user's password. Adds the `setProjectUserPassword` GraphQL mutation and `PUT /api/users/:id/password` (project scope only; the user must already be a member; the password policy is checked before anything is written and a refusal never contains the value; the scope in the body must equal the scope the request was authorized for, otherwise the call is refused as `Forbidden` before anything is read or written). The write uses the new `admin-set` credential source, resets the project lockout, revokes the user's project-app OAuth grants and leaves platform sessions and the Email method's verification alone. An operator-set password is final with respect to the CDM import.
+
+  Adds the permission `ProjectUser:SetPassword`, granted to the Project User Owner and Admin groups by default and extensible to any other group, and the permission `ProjectUser:ExportCredentials`, seeded as a standalone permission with no group (reserved for the credential export that follows). Both reach existing deployments through the idempotent permission seed.
+
+  Publishes the webhook-only `project.user_password_set` event on every non-import project credential write that changes the stored hash (`admin-set`, `reset`, a future `change`). Its payload is `{ projectId, userId, source }` and never carries a password or a hash. A CDM import publishes nothing, like every other import write.
+
+- Updated dependencies [e2a8527]
+  - @grantjs/schema@1.20.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.19.0
 
 ### Patch Changes
