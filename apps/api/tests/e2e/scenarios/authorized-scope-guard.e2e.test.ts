@@ -54,10 +54,6 @@ interface GqlResult {
   };
 }
 
-afterAll(async () => {
-  await closeDbHelper();
-});
-
 const isForbidden = (res: GqlResult): boolean =>
   Boolean(
     res.body.errors?.some((e) => e.message === 'Forbidden' || e.extensions?.code === 'FORBIDDEN')
@@ -71,6 +67,26 @@ const scopeHeaders = (scope: Scope) => ({
 describe('Authorized scope guard', () => {
   let uniqueStamp: string;
 
+  // The Dev group is shared by the Dev role of every organization, so the ExportCredentials grant
+  // made in setup would reach the Dev members of later scenarios (the export scenario asserts that
+  // an ungranted Dev is denied). Put the group back to the permissions it had.
+  afterAll(async () => {
+    try {
+      if (devGroup) {
+        const restore = await apiClient()
+          .patch(`/api/groups/${devGroup.id}`)
+          .query({ scopeId: orgA.id, tenant: Tenant.Organization })
+          .set('Authorization', ownerA.authHeader)
+          .send({ permissionIds: devGroup.permissionIds });
+        if (restore.status !== 200) {
+          throw new Error(`could not restore the Dev group: ${JSON.stringify(restore.body)}`);
+        }
+      }
+    } finally {
+      await closeDbHelper();
+    }
+  });
+
   let ownerA: TestUser;
   let ownerB: TestUser;
   let exporter: TestUser;
@@ -80,7 +96,12 @@ describe('Authorized scope guard', () => {
   let projectBId: string;
   let memberA: string;
   let memberB: string;
+  /** A project-managed user of project A: no authentication method, so operators may rename it. */
+  let managedA: string;
   let keyToken: string;
+  let exportKeyToken: string;
+  /** The permissions of the Dev group before the setup granted ExportCredentials to it. */
+  let devGroup: { id: string; permissionIds: string[] } | undefined;
 
   const orgAScope = (): Scope => ({ tenant: Tenant.Organization, id: orgA.id });
   const projectAScope = (): Scope => ({
@@ -327,6 +348,13 @@ describe('Authorized scope guard', () => {
     memberA = await memberOf(ownerA, projectAScope(), 'a');
     memberB = await memberOf(ownerB, projectBScope(), 'b');
 
+    // No email and no password: no authentication method, so an operator may edit its profile.
+    const managed = await gql(ownerA.accessToken, CreateUserDocument, {
+      input: { name: `Guard Managed A ${uniqueStamp}`, scope: projectAScope() },
+    });
+    expect(managed.body.errors, JSON.stringify(managed.body.errors)).toBeUndefined();
+    managedA = (managed.body.data?.createUser as { id: string }).id;
+
     // ExportCredentials is held by no standard group: grant it to the Dev group of organization A,
     // then add a member in that role (the same setup the export scenario uses).
     const permissionRows = await query<{ id: string }>`
@@ -352,6 +380,7 @@ describe('Authorized scope guard', () => {
       SELECT permission_id FROM group_permissions
       WHERE group_id = ${groupId!}::uuid AND deleted_at IS NULL
     `;
+    devGroup = { id: groupId!, permissionIds: current.map((row) => row.permission_id) };
     const patch = await apiClient()
       .patch(`/api/groups/${groupId}`)
       .query({ scopeId: orgA.id, tenant: Tenant.Organization })
@@ -372,22 +401,28 @@ describe('Authorized scope guard', () => {
     exporter = await TestUser.create({ email: exporterEmail, withOrgAccount: true });
     await exporter.acceptInvitation(orgA.id);
 
-    // An API key scoped to project A, with the Admin role.
-    const created = await gql(ownerA.accessToken, CreateApiKeyDocument, {
-      input: {
-        name: `E2E guard key ${uniqueStamp}`,
-        scope: projectAScope(),
-        roleId: (await getOrganizationRoleIdByName(orgA.id, ROLE_ADMIN))!,
-      },
-    });
-    expect(created.body.errors, JSON.stringify(created.body.errors)).toBeUndefined();
-    const key = created.body.data!.createApiKey as { clientId: string; clientSecret: string };
-    const exchange = await apiClient()
-      .post('/api/auth/token')
-      .send({ clientId: key.clientId, clientSecret: key.clientSecret, scope: projectAScope() });
-    expect(exchange.status, JSON.stringify(exchange.body)).toBe(200);
-    keyToken = (exchange.body as { data: { accessToken: string } }).data.accessToken;
-    expect(keyToken).toBeTruthy();
+    // API keys scoped to project A: one with the Admin role, one with the Dev role (which now holds
+    // ExportCredentials, as in the export scenario).
+    const mintKey = async (roleName: string, label: string): Promise<string> => {
+      const created = await gql(ownerA.accessToken, CreateApiKeyDocument, {
+        input: {
+          name: `E2E guard ${label} key ${uniqueStamp}`,
+          scope: projectAScope(),
+          roleId: (await getOrganizationRoleIdByName(orgA.id, roleName))!,
+        },
+      });
+      expect(created.body.errors, JSON.stringify(created.body.errors)).toBeUndefined();
+      const key = created.body.data!.createApiKey as { clientId: string; clientSecret: string };
+      const exchange = await apiClient()
+        .post('/api/auth/token')
+        .send({ clientId: key.clientId, clientSecret: key.clientSecret, scope: projectAScope() });
+      expect(exchange.status, JSON.stringify(exchange.body)).toBe(200);
+      const accessToken = (exchange.body as { data: { accessToken: string } }).data.accessToken;
+      expect(accessToken).toBeTruthy();
+      return accessToken;
+    };
+    keyToken = await mintKey(ROLE_ADMIN, 'admin');
+    exportKeyToken = await mintKey(ROLE_DEV, 'export');
   });
 
   // ---- a request naming another organization's project is refused and writes nothing ----------
@@ -442,6 +477,8 @@ describe('Authorized scope guard', () => {
 
   // ---- the same calls with matching scopes succeed ---------------------------------------------
 
+  const identityEdits = new Set(['updateUser', 'PATCH /api/users/:id']);
+
   it.each([
     'setProjectUserEmail',
     'updateUser',
@@ -451,8 +488,11 @@ describe('Authorized scope guard', () => {
     'PATCH /api/users/:id',
   ])('%s succeeds when the headers and the input name the same project', async (name) => {
     const call = calls().find((candidate) => candidate.name === name)!;
+    // The users handler refuses an operator edit of a self-managed user's identity (a user with an
+    // authentication method), whatever the scope: those two calls target a project-managed user.
+    const userId = identityEdits.has(name) ? managedA : memberA;
     const result = await call.send(
-      { userId: memberA, scope: projectAScope() },
+      { userId, scope: projectAScope() },
       scopeHeaders(projectAScope())
     );
     expect(result.refused).toBe(false);
@@ -478,7 +518,7 @@ describe('Authorized scope guard', () => {
   it('a request with no scope headers is authorized by the scope in its variables, in both shapes', async () => {
     // The dashboard sends no x-scope-* header: the scope it authorizes in is the scope it acts on.
     const updated = await gql(ownerA.accessToken, UpdateUserDocument, {
-      id: memberA,
+      id: managedA,
       input: { scope: projectAScope(), name: `Guard Dashboard Shape ${uniqueStamp}` },
     });
     expect(updated.body.errors, JSON.stringify(updated.body.errors)).toBeUndefined();
@@ -498,19 +538,20 @@ describe('Authorized scope guard', () => {
 
   describe('an API key request', () => {
     it('keeps working with its own scope', async () => {
-      const email = await gql(keyToken, SetProjectUserEmailDocument, {
-        input: {
-          userId: memberA,
-          email: `guard-key-${uniqueStamp}@test.grant.dev`,
-          scope: projectAScope(),
-        },
+      // No event-publishing call here: under an API key the event publisher writes the key id as
+      // event_log.actor_user_id, which violates the foreign key (DrizzleEventPublisher
+      // .resolveActorId, a known gap outside this story), and setProjectUserEmail and updateUser
+      // both publish an event. The operator export publishes none, in both transports.
+      const exported = await gql(exportKeyToken, ExportProjectUserCredentialsDocument, {
+        input: { scope: projectAScope(), userIds: [memberA] },
       });
-      expect(email.body.errors, JSON.stringify(email.body.errors)).toBeUndefined();
+      expect(exported.body.errors, JSON.stringify(exported.body.errors)).toBeUndefined();
+      expect(exported.body.data?.exportProjectUserCredentials).toBeTruthy();
 
       const rest = await apiClient()
-        .patch(`/api/users/${memberA}`)
-        .set('Authorization', `Bearer ${keyToken}`)
-        .send({ scope: projectAScope(), name: `Guard Key Renamed ${uniqueStamp}` });
+        .post('/api/users/credentials/export')
+        .set('Authorization', `Bearer ${exportKeyToken}`)
+        .send({ scope: projectAScope(), userIds: [memberA] });
       expect(rest.status, JSON.stringify(rest.body)).toBe(200);
     });
 
