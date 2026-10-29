@@ -14,10 +14,12 @@
 import { createHash } from 'node:crypto';
 
 import {
+  CreateApiKeyDocument,
   CreateUserDocument,
   ExportProjectUserCredentialsDocument,
   SetProjectUserPasswordDocument,
   Tenant,
+  TokenType,
 } from '@grantjs/schema';
 import { print } from 'graphql';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -64,6 +66,9 @@ function isForbidden(res: {
     res.body.errors?.some((e) => e.message === 'Forbidden' || e.extensions?.code === 'FORBIDDEN')
   );
 }
+
+// The seeded system user (SYSTEM_USER_ID default); API-key actors are attributed to it.
+const SYSTEM_USER_ID = process.env.SYSTEM_USER_ID ?? '00000000-0000-0000-0000-000000000000';
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
@@ -266,6 +271,55 @@ describe('Operator credential export', () => {
     });
     for (const value of Object.values(row)) {
       expect(JSON.stringify(value)).not.toContain(hash);
+    }
+  });
+
+  it('an OrganizationProject API key holding ExportCredentials exports (200) and is audited as the system user, with the key id in metadata', async () => {
+    const hash = await storedHash(withPasswordId);
+    const devRoleId = (await getOrganizationRoleIdByName(org.id, ROLE_DEV))!;
+
+    // The Dev group was granted ExportCredentials above, so a key minted with the Dev role holds it.
+    const created = await gql<{
+      createApiKey?: { id: string; clientId: string; clientSecret: string };
+    }>(owner.accessToken, CreateApiKeyDocument, {
+      input: { name: `E2E export key ${uniqueStamp}`, scope: projectScope(), roleId: devRoleId },
+    });
+    expect(created.body.errors, JSON.stringify(created.body.errors)).toBeUndefined();
+    const key = created.body.data!.createApiKey!;
+    expect(key.id && key.clientId && key.clientSecret).toBeTruthy();
+
+    const exchange = await apiClient()
+      .post('/api/auth/token')
+      .send({ clientId: key.clientId, clientSecret: key.clientSecret, scope: projectScope() });
+    expect(exchange.status, JSON.stringify(exchange.body)).toBe(200);
+    const keyToken = (exchange.body as { data?: { accessToken?: string } }).data?.accessToken;
+    expect(keyToken).toBeTruthy();
+
+    const before = (await exportAuditRows()).length;
+    const res = await exportRest(`Bearer ${keyToken}`, [withPasswordId, withoutPasswordId]);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect((res.body as { data: unknown }).data).toEqual({
+      users: [
+        { userId: withPasswordId, password: { algorithm: 'bcrypt', hash } },
+        { userId: withoutPasswordId, password: null },
+      ],
+    });
+
+    const rows = await exportAuditRows();
+    expect(rows).toHaveLength(before + 1);
+    const row = rows[rows.length - 1]!;
+    expect(row.action).toBe('export');
+    expect(row.performed_by).toBe(SYSTEM_USER_ID);
+    expect(JSON.parse(row.metadata!)).toMatchObject({
+      userCount: 2,
+      credentialCount: 1,
+      kinds: ['PASSWORD'],
+      actorTokenId: key.id,
+      actorTokenType: TokenType.ApiKey,
+    });
+    for (const value of Object.values(row)) {
+      expect(JSON.stringify(value)).not.toContain(hash);
+      expect(JSON.stringify(value)).not.toContain(key.clientSecret);
     }
   });
 

@@ -4,6 +4,10 @@ import type { Scope } from '@grantjs/schema';
 
 import { config } from '@/config';
 import { createLogger } from '@/lib/logger';
+import {
+  isApiKeyIdActor,
+  resolveSyncJobEnqueuedById,
+} from '@/lib/resolve-sync-job-enqueued-by.lib';
 import type { Transaction } from '@/lib/transaction-manager.lib';
 
 import { serializeAuditPayload } from './serialize-audit-payload.lib';
@@ -22,8 +26,21 @@ export class DrizzleAuditLogger implements IAuditLogger, IExportAuditLogger {
     private readonly db: DbSchema
   ) {}
 
+  /**
+   * The one place the audit actor is resolved (every write goes through `insertRow`). A
+   * project-level API key carries its key id as `userId`, which is not a `users` row and would
+   * violate the `performed_by` foreign key: it is attributed to the system user, and
+   * `getActorTokenMetadata` keeps the key identifiable.
+   */
   private getPerformedBy(): string {
-    return this.user !== null ? this.user.userId : config.system.systemUserId;
+    return resolveSyncJobEnqueuedById(this.user) ?? config.system.systemUserId;
+  }
+
+  /** Which token acted, when the user id alone cannot say (the key-id actor). No secrets. */
+  private getActorTokenMetadata(): Record<string, unknown> {
+    return this.user !== null && isApiKeyIdActor(this.user)
+      ? { actorTokenId: this.user.tokenId, actorTokenType: this.user.type }
+      : {};
   }
 
   private getScope(): Scope | null {
@@ -54,12 +71,15 @@ export class DrizzleAuditLogger implements IAuditLogger, IExportAuditLogger {
       },
       'AuditLogger.logAction: resolved scope for audit log'
     );
+    const actorToken = this.getActorTokenMetadata();
+    const metadata =
+      Object.keys(actorToken).length > 0 ? { ...params.metadata, ...actorToken } : params.metadata;
     const insertData: any = {
       [this.entityIdField]: params.entityId,
       action: params.action,
       oldValues: serializeAuditPayload(params.oldValues),
       newValues: serializeAuditPayload(params.newValues),
-      metadata: serializeAuditPayload(params.metadata),
+      metadata: serializeAuditPayload(metadata),
       performedBy: this.getPerformedBy(),
       createdAt: new Date(),
       ...(scope && {

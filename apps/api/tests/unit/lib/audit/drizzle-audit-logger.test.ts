@@ -1,6 +1,8 @@
 import type { GrantAuth } from '@grantjs/core';
+import { TokenType } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
+import { config } from '@/config';
 import { DrizzleAuditLogger } from '@/lib/audit/drizzle-audit-logger';
 import { AUDIT_VALUE_MAX_LENGTH } from '@/lib/audit/serialize-audit-payload.lib';
 
@@ -138,5 +140,108 @@ describe('DrizzleAuditLogger.logExport', () => {
     const { audit } = create(vi.fn().mockRejectedValue(new Error('insert failed')));
 
     await expect(audit.logAction({ entityId: 'e', action: 'CREATE' })).resolves.toBeUndefined();
+  });
+});
+
+describe('DrizzleAuditLogger audit actor', () => {
+  const apiKeyId = 'd1bfe5e5-a05d-4e74-8e5e-5c1a64de802b';
+  const memberId = '30000000-0000-4000-8000-000000000099';
+  const scope = { tenant: 'organizationProject', id: 'org:project' };
+
+  function rowFor(auth: Partial<GrantAuth> | null) {
+    const insert = vi.fn().mockResolvedValue(undefined);
+    const db = { insert: vi.fn().mockReturnValue({ values: insert }) };
+    const audit = new DrizzleAuditLogger(
+      { entity: 'table' },
+      'projectUserCredentialId',
+      auth as unknown as GrantAuth | null,
+      db as never
+    );
+    return { audit, insert };
+  }
+
+  it('attributes a project-level API key (sub equals jti) to the system user and names the key', async () => {
+    const { audit, insert } = rowFor({
+      userId: apiKeyId,
+      tokenId: apiKeyId,
+      type: TokenType.ApiKey,
+      scope,
+    } as Partial<GrantAuth>);
+
+    await audit.logExport({ userCount: 1 });
+
+    const payload = insert.mock.calls[0][0];
+    expect(payload.performedBy).toBe(config.system.systemUserId);
+    expect(JSON.parse(payload.metadata)).toEqual({
+      userCount: 1,
+      actorTokenId: apiKeyId,
+      actorTokenType: TokenType.ApiKey,
+    });
+  });
+
+  it('applies to every audit write, not only exports', async () => {
+    const { audit, insert } = rowFor({
+      userId: apiKeyId,
+      tokenId: apiKeyId,
+      type: TokenType.ApiKey,
+      scope,
+    } as Partial<GrantAuth>);
+
+    await audit.logCreate('e', { a: 1 });
+
+    const payload = insert.mock.calls[0][0];
+    expect(payload.performedBy).toBe(config.system.systemUserId);
+    expect(JSON.parse(payload.metadata)).toMatchObject({ actorTokenId: apiKeyId });
+  });
+
+  it('keeps the real user for a user-scoped API key (sub differs from jti), with no token metadata', async () => {
+    const { audit, insert } = rowFor({
+      userId: memberId,
+      tokenId: apiKeyId,
+      type: TokenType.ApiKey,
+      scope,
+    } as Partial<GrantAuth>);
+
+    await audit.logExport({ userCount: 1 });
+
+    const payload = insert.mock.calls[0][0];
+    expect(payload.performedBy).toBe(memberId);
+    expect(JSON.parse(payload.metadata)).toEqual({ userCount: 1 });
+  });
+
+  it('leaves session auth unchanged: the user id, caller metadata only', async () => {
+    const { audit, insert } = rowFor({
+      userId: memberId,
+      tokenId: 'session-1',
+      type: TokenType.Session,
+      scope,
+    } as Partial<GrantAuth>);
+
+    await audit.logExport({ userCount: 1 });
+
+    const payload = insert.mock.calls[0][0];
+    expect(payload.performedBy).toBe(memberId);
+    expect(JSON.parse(payload.metadata)).toEqual({ userCount: 1 });
+  });
+
+  it('uses the system user when there is no auth', async () => {
+    const { audit, insert } = rowFor(null);
+
+    await audit.logExport({ userCount: 1 });
+
+    expect(insert.mock.calls[0][0].performedBy).toBe(config.system.systemUserId);
+  });
+
+  it('a caller cannot overwrite the actor token fields', async () => {
+    const { audit, insert } = rowFor({
+      userId: apiKeyId,
+      tokenId: apiKeyId,
+      type: TokenType.ApiKey,
+      scope,
+    } as Partial<GrantAuth>);
+
+    await audit.logExport({ actorTokenId: 'spoofed' });
+
+    expect(JSON.parse(insert.mock.calls[0][0].metadata).actorTokenId).toBe(apiKeyId);
   });
 });

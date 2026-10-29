@@ -4,7 +4,17 @@ import { TokenType } from '@grantjs/schema';
 import { config } from '@/config';
 
 /**
- * Resolves who enqueued a sync/export job for persistence (`enqueued_by_id` FK → users).
+ * True when the token is a project-level API key whose JWT `sub` is the key id (a sentinel,
+ * not a `users` row): `sub` equals `jti`.
+ */
+export function isApiKeyIdActor(auth: GrantAuth | null | undefined): boolean {
+  return Boolean(auth?.userId) && auth?.type === TokenType.ApiKey && auth.userId === auth.tokenId;
+}
+
+/**
+ * Resolves the acting user for anything persisted behind a `users` foreign key: sync/export
+ * job `enqueued_by_id`, and every audit row's `performed_by` (`DrizzleAuditLogger`). The one
+ * place this mapping lives; do not repeat it.
  *
  * Project-level API keys (organization/account project scope) use the API key id as JWT
  * `sub` — a sentinel value, not a row in `users`. Map that auth to the system user so
@@ -17,7 +27,7 @@ export function resolveSyncJobEnqueuedById(auth: GrantAuth | null | undefined): 
     return null;
   }
 
-  if (auth.type === TokenType.ApiKey && auth.userId === auth.tokenId) {
+  if (isApiKeyIdActor(auth)) {
     return config.system.systemUserId;
   }
 
