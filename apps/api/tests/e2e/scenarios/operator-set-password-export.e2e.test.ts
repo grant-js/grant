@@ -7,9 +7,11 @@
  * fails the whole call; every successful call writes exactly one `export` audit row (counts and
  * kinds, never a hash); an unauthorized or failed call writes none.
  *
- * `User.passwordCredential` resolves in the request's project scope; this suite does not query
- * it end to end, its gating and value are covered at handler level
- * (tests/unit/handlers/users.handler.export-credentials.test.ts).
+ * `User.passwordCredential` is selected end to end through `users(scope:)` in the project
+ * scope: `null` for a caller without the permission (the Owner), `{ source, updatedAt,
+ * fingerprint }` for a holder, with the fingerprint equal to the lowercase hex SHA-256 of the
+ * hash the export returns. An API key holding `ExportCredentials` exports too, and its audit
+ * row is attributed to the system user with the key id in metadata.
  */
 import { createHash } from 'node:crypto';
 
@@ -42,6 +44,30 @@ interface IdBody {
 interface ExportResult {
   exportProjectUserCredentials?: {
     users: Array<{ userId: string; password: { algorithm: string; hash: string } | null }>;
+  };
+}
+
+const USERS_PASSWORD_CREDENTIAL_QUERY = `
+  query UsersPasswordCredential($scope: Scope!, $ids: [ID!]) {
+    users(scope: $scope, ids: $ids) {
+      users {
+        id
+        passwordCredential {
+          source
+          updatedAt
+          fingerprint
+        }
+      }
+    }
+  }
+`;
+
+interface UsersPasswordCredentialData {
+  users?: {
+    users?: Array<{
+      id: string;
+      passwordCredential: { source: string; updatedAt: string; fingerprint: string } | null;
+    }>;
   };
 }
 
@@ -102,6 +128,23 @@ describe('Operator credential export', () => {
       .post('/api/users/credentials/export')
       .set('Authorization', authHeader)
       .send({ scope: projectScope(), userIds, ...extra });
+
+  /** `User.passwordCredential` of each id, in the request's project scope, for this token. */
+  async function passwordCredentials(token: string, ids: string[]) {
+    const res = await graphqlRequest<UsersPasswordCredentialData>({
+      query: USERS_PASSWORD_CREDENTIAL_QUERY,
+      accessToken: token,
+      variables: { scope: projectScope(), ids },
+    });
+    expect(res.body.errors, JSON.stringify(res.body.errors)).toBeUndefined();
+    const byId = new Map(
+      (res.body.data?.users?.users ?? []).map((user) => [user.id, user.passwordCredential])
+    );
+    for (const id of ids) {
+      expect(byId.has(id), `member ${id} must be listed`).toBe(true);
+    }
+    return byId;
+  }
 
   async function exportAuditRows(): Promise<AuditRow[]> {
     return query<AuditRow>`
@@ -378,9 +421,35 @@ describe('Operator credential export', () => {
     expect((await exportAuditRows()).length).toBe(before + 1);
   });
 
+  it('User.passwordCredential is null for the Owner and { source, updatedAt, fingerprint } for a holder', async () => {
+    const hash = await storedHash(withPasswordId);
+    const ids = [withPasswordId, withoutPasswordId];
+
+    const asOwner = await passwordCredentials(owner.accessToken, ids);
+    expect(asOwner.get(withPasswordId)).toBeNull();
+    expect(asOwner.get(withoutPasswordId)).toBeNull();
+
+    const asHolder = await passwordCredentials(exporter.accessToken, ids);
+    const credential = asHolder.get(withPasswordId);
+    expect(credential).toMatchObject({ source: 'admin-set', fingerprint: sha256(hash) });
+    expect(credential!.fingerprint).toMatch(/^[0-9a-f]{64}$/);
+    expect(Number.isNaN(Date.parse(credential!.updatedAt))).toBe(false);
+    expect(JSON.stringify(credential)).not.toContain(hash);
+    // A member without a project credential is null even for a holder.
+    expect(asHolder.get(withoutPasswordId)).toBeNull();
+
+    // The export of the same user returns the hash the fingerprint was computed from.
+    const exported = await exportGql(exporter.accessToken, [withPasswordId]);
+    expect(exported.body.data!.exportProjectUserCredentials!.users[0]!.password!.hash).toBe(hash);
+  });
+
   it('the fingerprint changes after a set and equals sha256 of the exported hash', async () => {
     const first = await exportGql(exporter.accessToken, [withPasswordId]);
     const firstHash = first.body.data!.exportProjectUserCredentials!.users[0]!.password!.hash;
+    const firstFingerprint = (
+      await passwordCredentials(exporter.accessToken, [withPasswordId])
+    ).get(withPasswordId)!.fingerprint;
+    expect(firstFingerprint).toBe(sha256(firstHash));
 
     const set = await setPassword(owner.accessToken, withPasswordId, OTHER_PASSWORD);
     expect(set.body.errors, JSON.stringify(set.body.errors)).toBeUndefined();
@@ -391,6 +460,10 @@ describe('Operator credential export', () => {
     expect(secondHash).not.toBe(firstHash);
     expect(sha256(secondHash)).not.toBe(sha256(firstHash));
     expect(secondHash).toBe(await storedHash(withPasswordId));
-    expect(sha256(secondHash)).toMatch(/^[0-9a-f]{64}$/);
+    const secondFingerprint = (
+      await passwordCredentials(exporter.accessToken, [withPasswordId])
+    ).get(withPasswordId)!.fingerprint;
+    expect(secondFingerprint).toBe(sha256(secondHash));
+    expect(secondFingerprint).not.toBe(firstFingerprint);
   });
 });

@@ -241,6 +241,41 @@ describe('UserHandler getProjectUserPasswordCredential (User.passwordCredential)
     expect(getPasswordCredentialSummaries).not.toHaveBeenCalled();
   });
 
+  it.each([Tenant.OrganizationProjectUser, Tenant.AccountProjectUser])(
+    'is null for the leaf %s scope (it embeds a project id but is not a project scope), with no permission check',
+    async (tenant) => {
+      const { handler, isAuthorized, getPasswordCredentialSummaries } = createHandler({
+        summaries: [summary],
+      });
+
+      await expect(
+        handler.getProjectUserPasswordCredential({
+          userId: memberA,
+          scope: { tenant, id: `${organizationId}:${projectId}:${memberA}` },
+          actorUserId,
+        })
+      ).resolves.toBeNull();
+      expect(isAuthorized).not.toHaveBeenCalled();
+      expect(getPasswordCredentialSummaries).not.toHaveBeenCalled();
+    }
+  );
+
+  it('is { source, updatedAt, fingerprint } in an AccountProject scope too', async () => {
+    const { handler, getPasswordCredentialSummaries } = createHandler({ summaries: [summary] });
+
+    await expect(
+      handler.getProjectUserPasswordCredential({
+        userId: memberA,
+        scope: { tenant: Tenant.AccountProject, id: `${organizationId}:${projectId}` },
+        actorUserId,
+      })
+    ).resolves.toMatchObject({ source: 'admin-set' });
+    expect(getPasswordCredentialSummaries).toHaveBeenCalledWith(
+      { projectId, userIds: [memberA] },
+      expect.anything()
+    );
+  });
+
   it('is null for an unauthenticated caller', async () => {
     const { handler, isAuthorized } = createHandler({ summaries: [summary] });
 

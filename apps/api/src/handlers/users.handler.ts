@@ -575,8 +575,9 @@ export class UserHandler extends CacheHandler {
 
   /**
    * `User.passwordCredential`, resolved in the request's project scope: `null` for any
-   * non-project scope, `null` unless the caller holds `ProjectUser:ExportCredentials` in the
-   * request's scope (a denial is `null`, never an error, so existing documents keep working),
+   * scope other than `OrganizationProject` / `AccountProject` (the leaf `*ProjectUser` tenants
+   * included), `null` unless the caller holds `ProjectUser:ExportCredentials` in the request's
+   * scope (a denial is `null`, never an error, so existing documents keep working),
    * and `null` when the member has no project credential. Otherwise
    * `{ source, updatedAt, fingerprint }`: the fingerprint is computed by the service from the
    * stored hash and is never the hash. One read per call (the field resolver runs per parent);
@@ -588,6 +589,11 @@ export class UserHandler extends CacheHandler {
     actorUserId: string | undefined;
   }): Promise<ProjectUserPasswordCredential | null> {
     const { userId, scope, actorUserId } = params;
+    // The same predicate as `assertProjectScope`: the leaf tenants (`OrganizationProjectUser`,
+    // `AccountProjectUser`) also embed a project id but are not project scopes here.
+    if (!this.isProjectTenant(scope.tenant)) {
+      return null;
+    }
     const projectId = tryProjectIdFromScope(scope);
     if (!projectId) {
       return null;
