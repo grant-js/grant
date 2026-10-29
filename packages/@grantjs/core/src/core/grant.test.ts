@@ -180,6 +180,42 @@ describe('Grant', () => {
       expect(grant.auth?.scope).toEqual(scope);
     });
 
+    // The system scope has no bearer-token path: `TokenManager.validate` accepts only
+    // session, API key and project-app tokens. It is built in code (`SYSTEM_USER`), and a
+    // request can no longer name it (the API's scope extractor treats `system` as absent).
+    it('does not authenticate a system-typed bearer token, whatever scope the request names', async () => {
+      const mockService = createMockGrantService();
+      const grant = new Grant(mockService, jwtTokenProvider);
+
+      const token = createValidToken(TokenType.System, { tenant: Tenant.System, id: 'sys-1' });
+      await grant.authenticate(`Bearer ${token}`, { tenant: Tenant.Organization, id: 'org-1' });
+
+      expect(grant.isAuthenticated()).toBe(false);
+      expect(grant.auth).toBeNull();
+    });
+
+    it('keeps the token scope for an API key and ignores the request scope', async () => {
+      const mockService = createMockGrantService();
+      const grant = new Grant(mockService, jwtTokenProvider);
+
+      const tokenScope = { tenant: Tenant.OrganizationProject, id: 'org-1:project-1' };
+      const token = createValidToken(TokenType.ApiKey, tokenScope);
+      await grant.authenticate(`Bearer ${token}`, { tenant: Tenant.Organization, id: 'org-2' });
+
+      expect(grant.auth?.scope).toEqual(tokenScope);
+    });
+
+    it('uses the request scope for a session token', async () => {
+      const mockService = createMockGrantService();
+      const grant = new Grant(mockService, jwtTokenProvider);
+
+      const requestScope = { tenant: Tenant.Organization, id: 'org-1' };
+      const token = createValidToken(TokenType.Session, { tenant: Tenant.Account, id: 'acc-1' });
+      await grant.authenticate(`Bearer ${token}`, requestScope);
+
+      expect(grant.auth?.scope).toEqual(requestScope);
+    });
+
     it('should not authenticate when token has no kid', async () => {
       const mockService = createMockGrantService();
       const grant = new Grant(mockService, jwtTokenProvider);
