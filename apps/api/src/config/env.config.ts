@@ -483,6 +483,15 @@ const SECURITY_CONFIG = {
   /** Per-tenant rate limit: time window in minutes */
   rateLimitPerTenantWindowMinutes: env.SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES,
 
+  /** Per-scope limit on operator set-email (REST PUT /users/:id/email, setProjectUserEmail, createUser with an email). On by default, independent of the per-tenant limit. */
+  rateLimitSetEmailEnabled: env.SECURITY_RATE_LIMIT_SET_EMAIL_ENABLED,
+
+  /** Set-email limit: maximum operations per window per scope (scope.tenant + scope.id) */
+  rateLimitSetEmailMax: env.SECURITY_RATE_LIMIT_SET_EMAIL_MAX,
+
+  /** Set-email limit: time window in minutes */
+  rateLimitSetEmailWindowMinutes: env.SECURITY_RATE_LIMIT_SET_EMAIL_WINDOW_MINUTES,
+
   /** Enable database Row-Level Security enforcement for scoped requests */
   enableRls: env.SECURITY_ENABLE_RLS,
 

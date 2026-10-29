@@ -376,7 +376,7 @@ export class UserHandler extends CacheHandler {
       if (normalizedEmail) {
         const projectId = this.extractProjectIdFromScope(scope);
         const { operation } = await this.userAuthenticationMethods.setOrReplaceEmailMethod(
-          { userId, email: normalizedEmail },
+          { userId, email: normalizedEmail, operation: 'operator-create-user' },
           tx
         );
         if (operation) {
@@ -440,7 +440,7 @@ export class UserHandler extends CacheHandler {
       }
 
       const { operation } = await this.userAuthenticationMethods.setOrReplaceEmailMethod(
-        { userId, email: normalizedEmail },
+        { userId, email: normalizedEmail, operation: 'operator-set-email' },
         tx
       );
       if (operation) {
