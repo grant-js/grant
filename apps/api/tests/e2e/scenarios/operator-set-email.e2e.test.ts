@@ -660,4 +660,45 @@ describe('Operator set-email', () => {
       expect(readContainerLogs()).not.toContain(SENTINEL);
     }
   });
+
+  it('tells the previous address when the e-mail changes, and no one on an added or unchanged address', async () => {
+    const previous = `notice-previous-${uniqueStamp}@test.grant.dev`;
+    const next = `notice-next-${uniqueStamp}@test.grant.dev`;
+    // The e2e stack runs the console e-mail adapter, which logs one line per message and has
+    // no sink to read back, so the notice is found in the API log by its type and recipient.
+    const noticesTo = (address: string): string[] =>
+      readContainerLogs()
+        .split('\n')
+        .filter((line) => line.includes('project-email-changed') && line.includes(address));
+
+    const created = await createProjectUser(owner.accessToken, 'E2E Notice Member', previous);
+    expect(created.errors, JSON.stringify(created.errors)).toBeUndefined();
+    const noticeMemberId = created.id!;
+
+    const setEmail = (email: string) =>
+      gql<{ setProjectUserEmail?: { id: string } }>(
+        admin.accessToken,
+        SetProjectUserEmailDocument,
+        {
+          input: { userId: noticeMemberId, email, scope: projectScope() },
+        }
+      );
+
+    const changed = await setEmail(next);
+    expect(changed.body.errors, JSON.stringify(changed.body.errors)).toBeUndefined();
+    expect(changed.body.data?.setProjectUserEmail?.id).toBe(noticeMemberId);
+    expect(await currentEmailAddress(noticeMemberId)).toBe(next);
+
+    // The same address again changes nothing and tells no one.
+    const unchanged = await setEmail(next);
+    expect(unchanged.body.errors, JSON.stringify(unchanged.body.errors)).toBeUndefined();
+
+    if (!containerLogsAvailable()) {
+      return;
+    }
+    // One notice, to the address the account used before; none to the new one, and creating the
+    // user with `previous` (an added address) sent none either.
+    expect(noticesTo(previous)).toHaveLength(1);
+    expect(noticesTo(next)).toHaveLength(0);
+  });
 });

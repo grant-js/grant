@@ -826,6 +826,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
   ): Promise<{
     method: UserAuthenticationMethod;
     operation: 'added' | 'changed' | null;
+    previousEmail?: string;
   }> {
     const normalized = this.normalizeOperatorEmail(params.email);
 
@@ -857,7 +858,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
         transaction,
         params.operation
       );
-      return { method, operation: 'changed' };
+      return { method, operation: 'changed', previousEmail: existingEmail.providerId };
     }
 
     const method = await this.createUserAuthenticationMethod(

@@ -51,6 +51,12 @@
     "expiresIn": "This link will expire in {{minutes}} minutes and can be used once.",
     "warning": "If you didn't request this, you can safely ignore this email. Your password will remain unchanged."
   },
+  "projectEmailChanged": {
+    "subject": "The sign-in email for {{appName}} was changed",
+    "defaultAppName": "the app",
+    "message": "An administrator changed the email address used to sign in to {{appName}}. This address is no longer the sign-in email for that account.",
+    "warning": "If you did not expect this change, contact the administrator of {{appName}}."
+  },
   "notification": {
     "common": {
       "greeting": "Hi there,",

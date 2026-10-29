@@ -2,6 +2,7 @@ import type {
   IEmailService,
   SendInvitationParams,
   SendNotificationEmailParams,
+  SendProjectEmailChangedParams,
   SendProjectOAuthMagicLinkParams,
   SendProjectPasswordResetParams,
 } from '@grantjs/core';
@@ -19,6 +20,9 @@ import {
   getPasswordResetEmailHtml,
   getPasswordResetEmailSubject,
   getPasswordResetEmailText,
+  getProjectEmailChangedEmailHtml,
+  getProjectEmailChangedEmailSubject,
+  getProjectEmailChangedEmailText,
   getProjectOAuthMagicLinkEmailHtml,
   getProjectOAuthMagicLinkEmailSubject,
   getProjectOAuthMagicLinkEmailText,
@@ -45,6 +49,9 @@ const templates: EmailTemplates = {
   getProjectPasswordResetEmailSubject,
   getProjectPasswordResetEmailHtml,
   getProjectPasswordResetEmailText,
+  getProjectEmailChangedEmailSubject,
+  getProjectEmailChangedEmailHtml,
+  getProjectEmailChangedEmailText,
 };
 
 /**
@@ -152,6 +159,13 @@ export class EmailService implements IEmailService {
    */
   public async sendProjectPasswordReset(params: SendProjectPasswordResetParams): Promise<void> {
     return this.emailAdapter.sendProjectPasswordReset(params);
+  }
+
+  /**
+   * Send the previous address a notice that an operator changed the login e-mail
+   */
+  public async sendProjectEmailChanged(params: SendProjectEmailChangedParams): Promise<void> {
+    return this.emailAdapter.sendProjectEmailChanged(params);
   }
 
   /**

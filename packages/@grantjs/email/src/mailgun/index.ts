@@ -5,6 +5,7 @@ import type {
   SendNotificationEmailParams,
   SendOtpParams,
   SendPasswordResetParams,
+  SendProjectEmailChangedParams,
   SendProjectOAuthMagicLinkParams,
   SendProjectPasswordResetParams,
 } from '@grantjs/core';
@@ -156,6 +157,28 @@ export class MailgunEmailAdapter implements IEmailService {
     } catch (error) {
       throw new GrantException(
         `Failed to send project password reset email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'EMAIL_SEND_ERROR',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
+
+  async sendProjectEmailChanged(params: SendProjectEmailChangedParams): Promise<void> {
+    const subject = this.templates.getProjectEmailChangedEmailSubject(params);
+    const html = await this.templates.getProjectEmailChangedEmailHtml(params);
+    const text = this.templates.getProjectEmailChangedEmailText(params);
+
+    try {
+      await this.client.messages.create(this.config.domain, {
+        from: this.from,
+        to: [params.to],
+        subject,
+        text,
+        html,
+      });
+    } catch (error) {
+      throw new GrantException(
+        `Failed to send project email changed notice: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'EMAIL_SEND_ERROR',
         error instanceof Error ? error : undefined
       );

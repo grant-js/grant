@@ -102,6 +102,7 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     );
     expect(result.operation).toBe('added');
     expect(result.method.isVerified).toBe(false);
+    expect(result.previousEmail).toBeUndefined();
   });
 
   it('is a no-op when the stored normalized address is unchanged', async () => {
@@ -117,6 +118,7 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     });
 
     expect(result.operation).toBeNull();
+    expect(result.previousEmail).toBeUndefined();
     expect(result.method).toEqual(expect.objectContaining({ id: methodId, isVerified: true }));
     expect(repository.createUserAuthenticationMethod).not.toHaveBeenCalled();
     expect(repository.updateUserAuthenticationMethod).not.toHaveBeenCalled();
@@ -146,6 +148,7 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
       undefined
     );
     expect(result.operation).toBe('changed');
+    expect(result.previousEmail).toBe(existing.providerId);
     expect(result.method.isVerified).toBe(false);
     expect(result.method.providerId).toBe('new@example.com');
   });
