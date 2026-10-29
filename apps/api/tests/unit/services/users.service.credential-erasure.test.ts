@@ -20,6 +20,7 @@ function build() {
   const userRepository = {
     getUsers: vi.fn().mockResolvedValue({ users: [user()], totalCount: 1, hasNextPage: false }),
     countHumanUsers: vi.fn().mockResolvedValue(2),
+    getUserMembershipMetadata: vi.fn().mockResolvedValue([]),
     softDeleteUser: vi.fn().mockResolvedValue({ ...user(), deletedAt: new Date() }),
     hardDeleteUser: vi.fn().mockResolvedValue(user()),
   };

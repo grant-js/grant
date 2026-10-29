@@ -397,6 +397,8 @@ CDM-managed rows carry:
 
 For a `findBy: email` or `findBy: key` user the import also writes this project's `metadata.cdmImport` (`kind: 'user'`, the user's external key) on the **project membership row**, whether it created the identity or reused an existing one. The project-scoped `users` read merges the global user's metadata with the membership row's (the row wins), so a project that imported a user always sees its own marker, even when the identity pre-existed and its global metadata carries none or another project's. The global metadata of a reused identity is never changed.
 
+**`user.deleted` and `project.user_removed` webhook events** name the user's import key for the receiving project in `data.before.externalKeys`. The key is the membership row's marker `externalKey`, or, when that is an e-mail address (an identity keyed by `findBy: email` always is), the importer-declared `metadata.legacy.id` of the user (stored under `cdmSource.legacy.id`): an importer that wants a deleted or removed user to be nameable from the event declares its own id there. Nothing else under `cdmSource` is read, and a value that looks like an e-mail address is never emitted. See [External keys of a removed user](./events-webhooks-notifications.md#external-keys-of-a-removed-user).
+
 Contributor details: [CDM README](https://github.com/logusgraphics/grant-platform/blob/main/apps/api/src/lib/cdm/README.md) in the API tree.
 
 ## Future: portable catalog {#future-portable-catalog}

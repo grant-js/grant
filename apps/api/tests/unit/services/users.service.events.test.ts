@@ -20,10 +20,22 @@ function user(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function build(linkedProjectIds: string[] = [PROJECT_A, PROJECT_B]) {
+function build(
+  linkedProjectIds: string[] = [PROJECT_A, PROJECT_B],
+  memberships: Array<{ projectId: string; metadata: unknown }> = [],
+  userMetadata: Record<string, unknown> = {}
+) {
   const order: string[] = [];
   const userRepository = {
-    getUsers: vi.fn().mockResolvedValue({ users: [user()], totalCount: 1, hasNextPage: false }),
+    getUsers: vi.fn().mockResolvedValue({
+      users: [user({ metadata: userMetadata })],
+      totalCount: 1,
+      hasNextPage: false,
+    }),
+    getUserMembershipMetadata: vi.fn().mockImplementation(async () => {
+      order.push('memberships');
+      return memberships;
+    }),
     createUser: vi.fn().mockResolvedValue(user()),
     updateUser: vi.fn().mockImplementation(async (_id, input) => user(input)),
     countHumanUsers: vi.fn().mockResolvedValue(2),
@@ -131,14 +143,19 @@ describe('UserService lifecycle events', () => {
         subjectUserId: USER_ID,
         aggregate: { kind: 'user', id: USER_ID },
         data: {
-          before: { id: USER_ID, createdAt: expect.any(Date), updatedAt: expect.any(Date) },
+          before: {
+            id: USER_ID,
+            createdAt: expect.any(Date),
+            updatedAt: expect.any(Date),
+            externalKeys: [],
+          },
           after: { id: USER_ID, hardDelete: false },
         },
         projectIds: [PROJECT_A, PROJECT_B],
       },
       tx
     );
-    expect(order).toEqual(['resolve', 'publish', 'delete']);
+    expect(order).toEqual(['resolve', 'memberships', 'publish', 'delete']);
   });
 
   it('publishes user.deleted BEFORE a hard delete: the event row references the user it would otherwise lose', async () => {
@@ -146,7 +163,7 @@ describe('UserService lifecycle events', () => {
 
     await service.deleteUser({ id: USER_ID, hardDelete: true }, tx as never);
 
-    expect(order).toEqual(['resolve', 'publish', 'delete']);
+    expect(order).toEqual(['resolve', 'memberships', 'publish', 'delete']);
     expect(events.publish.mock.calls[0][0]).toMatchObject({
       type: 'user.deleted',
       data: { after: { id: USER_ID, hardDelete: true } },
@@ -170,5 +187,69 @@ describe('UserService lifecycle events', () => {
       expect.objectContaining({ type: 'user.deleted', subjectUserId: USER_ID }),
       tx
     );
+  });
+
+  describe('externalKeys on user.deleted', () => {
+    const marker = (projectId: string, externalKey: string) => ({
+      cdmImport: { projectId, kind: 'user', externalKey },
+    });
+
+    it('stores the keys of every project, read before the event is published and the user deleted', async () => {
+      const { service, events, order, userRepository } = build(
+        [PROJECT_A, PROJECT_B],
+        [
+          { projectId: PROJECT_A, metadata: marker(PROJECT_A, 'key-a') },
+          { projectId: PROJECT_B, metadata: { cdmSource: { legacy: { id: 'legacy-b' } } } },
+        ],
+        {}
+      );
+
+      await service.deleteUser({ id: USER_ID }, tx as never);
+
+      expect(userRepository.getUserMembershipMetadata).toHaveBeenCalledWith(USER_ID, tx);
+      expect(order).toEqual(['resolve', 'memberships', 'publish', 'delete']);
+      expect(events.publish.mock.calls[0][0].data.before.externalKeys).toEqual([
+        { projectId: PROJECT_A, externalKey: 'key-a' },
+        { projectId: PROJECT_B, externalKey: 'legacy-b' },
+      ]);
+    });
+
+    it("reads the global user's marker for a project whose row carries none", async () => {
+      const { service, events } = build(
+        [PROJECT_A],
+        [{ projectId: PROJECT_A, metadata: {} }],
+        marker(PROJECT_A, 'global-key')
+      );
+
+      await service.deleteUser({ id: USER_ID }, tx as never);
+
+      expect(events.publish.mock.calls[0][0].data.before.externalKeys).toEqual([
+        { projectId: PROJECT_A, externalKey: 'global-key' },
+      ]);
+    });
+
+    it('keeps the keys on a hard delete, and never an address or the name', async () => {
+      const { service, events } = build(
+        [PROJECT_A],
+        [
+          {
+            projectId: PROJECT_A,
+            metadata: {
+              ...marker(PROJECT_A, 'someone@example.test'),
+              cdmSource: { legacy: { id: 'legacy-a', email: 'someone@example.test' } },
+            },
+          },
+        ]
+      );
+
+      await service.deleteUser({ id: USER_ID, hardDelete: true }, tx as never);
+
+      const event = events.publish.mock.calls[0][0];
+      expect(event.data.before.externalKeys).toEqual([
+        { projectId: PROJECT_A, externalKey: 'legacy-a' },
+      ]);
+      expect(JSON.stringify(event)).not.toContain('example.test');
+      expect(JSON.stringify(event)).not.toContain('Jane');
+    });
   });
 });
