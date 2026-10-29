@@ -104,6 +104,7 @@ describe('credential table columns (ADR 0011 § 2)', () => {
       'change',
       'migrated',
       'migrated-import',
+      'admin-set',
     ]);
     expect(checkSql(userCredentials, 'user_credentials_source_check')).toBe(expected);
     expect(checkSql(projectUserCredentials, 'project_user_credentials_source_check')).toBe(

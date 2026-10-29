@@ -10,7 +10,12 @@
  * service reads to verify and never returns.
  */
 
-/** Where a stored credential came from (ADR 0011 § 2). One enum for both scopes. */
+/**
+ * Where a stored credential came from (ADR 0011 § 2). One enum for both scopes.
+ *
+ * `admin-set`: an operator wrote the credential on a project user's behalf. Like every
+ * source other than `cdm-import`, it is never overwritten by a CDM import.
+ */
 export const CREDENTIAL_SOURCES = [
   'register',
   'cdm-import',
@@ -18,6 +23,7 @@ export const CREDENTIAL_SOURCES = [
   'change',
   'migrated',
   'migrated-import',
+  'admin-set',
 ] as const;
 
 export type CredentialSource = (typeof CREDENTIAL_SOURCES)[number];
