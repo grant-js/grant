@@ -168,7 +168,6 @@ export function createUserRoutes(fallback?: RequestContext) {
 
       const result = await context.handlers.users.exportProjectUserCredentials({
         input: { scope, userIds, kinds },
-        authorizedScope: context.user?.scope ?? null,
       });
 
       // The body carries hashes: never cached by an intermediary or the browser.
@@ -229,7 +228,6 @@ export function createUserRoutes(fallback?: RequestContext) {
 
       const user = await context.handlers.users.setProjectUserPassword({
         input: { userId: id, password, scope },
-        authorizedScope: context.user?.scope ?? null,
       });
 
       sendSuccessResponse(res, user);

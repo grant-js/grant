@@ -6,6 +6,5 @@ export const setProjectUserPasswordResolver: MutationResolvers<GraphqlContext>['
   async (_parent, { input }, context) => {
     return context.handlers.users.setProjectUserPassword({
       input,
-      authorizedScope: context.user?.scope ?? null,
     });
   };
