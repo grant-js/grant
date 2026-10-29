@@ -60,7 +60,8 @@ export function createHandlers(
     db,
     services.auth,
     services.credentials,
-    services.projectOAuthGrants
+    services.projectOAuthGrants,
+    services.projectUserCredentialExports
   );
   const authHandler = new AuthHandler(
     services.userAuthenticationMethods,

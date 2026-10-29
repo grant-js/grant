@@ -57,6 +57,17 @@ export class FakeCredentialRepository implements ICredentialRepository<Credentia
       .map((row) => ({ ...row }));
   }
 
+  async findHashesForExport(scope: ProjectCredentialScope, userIds: readonly string[]) {
+    return this.rows
+      .filter((row) => userIds.includes(row.userId) && this.match(scope, row.userId)(row))
+      .map((row) => ({
+        userId: row.userId,
+        hash: row.hash,
+        source: row.source,
+        updatedAt: row.updatedAt,
+      }));
+  }
+
   async upsertImported(
     scope: ProjectCredentialScope,
     input: { userId: string; hash: string; source: never }

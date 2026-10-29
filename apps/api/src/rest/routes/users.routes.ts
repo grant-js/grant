@@ -10,6 +10,7 @@ import { requestContext } from '@/rest/request-context';
 import {
   createUserRequestSchema,
   deleteUserQuerySchema,
+  exportProjectUserCredentialsRequestSchema,
   getUsersQuerySchema,
   setProjectUserEmailRequestSchema,
   setProjectUserPasswordRequestSchema,
@@ -145,6 +146,34 @@ export function createUserRoutes(fallback?: RequestContext) {
       });
 
       sendSuccessResponse(res, user, 201);
+    }
+  );
+
+  router.post(
+    '/credentials/export',
+    validate({ body: exportProjectUserCredentialsRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectUser,
+      action: ResourceAction.ExportCredentials,
+    }),
+    async (
+      req: TypedRequest<{ body: typeof exportProjectUserCredentialsRequestSchema }>,
+      res: Response
+    ) => {
+      const { scope, userIds, kinds } = req.body;
+      const context = requestContext(req, fallback);
+
+      const result = await context.handlers.users.exportProjectUserCredentials({
+        input: { scope, userIds, kinds },
+        authorizedScope: context.user?.scope ?? null,
+      });
+
+      // The body carries hashes: never cached by an intermediary or the browser.
+      res.setHeader('Cache-Control', 'no-store');
+      sendSuccessResponse(res, result);
     }
   );
 
