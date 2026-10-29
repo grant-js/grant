@@ -146,6 +146,8 @@ The `tenant` field indicates the level of the hierarchy. The `id` field is eithe
 | `accountProject`      | `<accountId>:<projectId>` | Personal project       |
 | `organizationProject` | `<orgId>:<projectId>`     | Org project            |
 
+A request is authorized in exactly one scope. For a session token that is the scope the request carries: the `X-Scope-Tenant` and `X-Scope-Id` headers when present, otherwise the scope in the query or body. For an API key or a project-app token it is the scope of the token itself. A scoped operation acts only in the scope it was authorized in: when its query or body names a scope (`scope`, `scope` inside `input`, or `scopeId` with `tenant`), `tenant` and `id` must equal the authorized scope, and the request is refused with `403 FORBIDDEN` otherwise, before any lookup or permission check, so the response does not reveal whether the target exists. An operation that names no scope is unaffected. `system` is never accepted as a scope named in a request. The same rule applies to the `scope` argument and the `scope` field of the `input` argument in GraphQL, where the refusal is a `Forbidden` error.
+
 ::: tip
 See [Multi-Tenancy](/architecture/multi-tenancy) for details on tenant isolation and the hierarchy model.
 :::
