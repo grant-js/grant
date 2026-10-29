@@ -11,7 +11,7 @@ Grounded on `origin/main` `03103793` (after v1.20.0, tag commit `8e9047b1`). Ope
 - **Slug**: `authorized-scope-guard`
 - **Story brief**: `plans/2026-10-29-authorized-scope-guard-brief.md`
 - **Status**: approved (Gate 2, Alejandro 2026-10-29); in-progress from slice 1
-- **Story trunk**: `fix/authorized-scope-guard` from `main` at `03103793`
+- **Story trunk**: `feat/authorized-scope-guard` from `main` at `03103793`
 - **worktree_path**: `/workspace/worktrees/grant-platform-fix-authorized-scope-guard` (exists; holds the trunk)
 - **Release**: patch, **v1.20.1** (`grant-api` changesets only unless slice 2's client audit finds a web mismatch)
 
@@ -34,14 +34,14 @@ Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that 
 
 Order: the smallest change to the trust boundary first (`system` tenant), then the guard that every scoped operation inherits, then the removal of the specific guards it replaces, then the set-email hardening in two PRs (the audit and limit, which touch existing paths; the new notice e-mail, which adds a port method and a template). No standalone tests or docs slice: tests and docs ship with the slice that introduces the behaviour.
 
-| #     | Branch                              | Base                         | Concern                                                                                                                   | Owner role | Review bar           | PR  |
-| ----- | ----------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------- | --- |
-| 1     | `fix/authorized-scope-guard-system` | `fix/authorized-scope-guard` | `system` is never a request-supplied tenant (`scope-extractor.validated()`), tests, who sent it today                     | Backend    | security-full        |     |
-| 2     | `fix/authorized-scope-guard-guard`  | prior slice                  | the generic comparison in both transport guards, coverage tests with allowlist, e2e matrix, client audit, docs, changeset | Backend    | security-full        |     |
-| 3     | `fix/authorized-scope-guard-remove` | prior slice                  | remove D21's `authorizedScope` parameters and per-handler checks; their tests move to the generic guard's                 | Backend    | security-full        |     |
-| 4     | `fix/authorized-scope-guard-audit`  | prior slice                  | set-email audit row named and asserted, tenant rate limit on set-email and create-user, rbac.md paragraph for option (a)  | Backend    | light                |     |
-| 5     | `fix/authorized-scope-guard-notice` | prior slice                  | `IEmailService.sendProjectEmailChanged`, template en/de, after-commit best-effort send on `changed`, tests                | Backend    | light                |     |
-| final | `fix/authorized-scope-guard`        | `main`                       | integration                                                                                                               | Principal  | deep + security-full |     |
+| #     | Branch                               | Base                          | Concern                                                                                                                   | Owner role | Review bar           | PR  |
+| ----- | ------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------- | --- |
+| 1     | `feat/authorized-scope-guard-system` | `feat/authorized-scope-guard` | `system` is never a request-supplied tenant (`scope-extractor.validated()`), tests, who sent it today                     | Backend    | security-full        |     |
+| 2     | `feat/authorized-scope-guard-guard`  | prior slice                   | the generic comparison in both transport guards, coverage tests with allowlist, e2e matrix, client audit, docs, changeset | Backend    | security-full        |     |
+| 3     | `feat/authorized-scope-guard-remove` | prior slice                   | remove D21's `authorizedScope` parameters and per-handler checks; their tests move to the generic guard's                 | Backend    | security-full        |     |
+| 4     | `feat/authorized-scope-guard-audit`  | prior slice                   | set-email audit row named and asserted, tenant rate limit on set-email and create-user, rbac.md paragraph for option (a)  | Backend    | light                |     |
+| 5     | `feat/authorized-scope-guard-notice` | prior slice                   | `IEmailService.sendProjectEmailChanged`, template en/de, after-commit best-effort send on `changed`, tests                | Backend    | light                |     |
+| final | `feat/authorized-scope-guard`        | `main`                        | integration                                                                                                               | Principal  | deep + security-full |     |
 
 **Collapse rules:** Do not fold 1 into 2 — the `system` change touches the RLS-bypass path in `context.middleware.ts` and must be read on its own. **Do not fold 3 into 2**: a reviewer must see the generic guard complete and tested before reading a removal, and the removal diff must be nothing but removal. 4 and 5 may be folded into one PR if the same Backend writes both in one sitting; keep the template and the port method in their own commit either way. Do not add a sixth tests/docs PR.
 
@@ -54,21 +54,21 @@ Root the stack on the story trunk — never the default branch, or slices target
 ```sh
 # Trunk — lives in the worktree; pushed at the start of slice 1 (after Gate 2)
 cd /workspace/worktrees/grant-platform-fix-authorized-scope-guard
-git push -u origin fix/authorized-scope-guard
+git push -u origin feat/authorized-scope-guard
 
 # Init with the FIRST slice branch only — never the whole list.
-gh stack init --base fix/authorized-scope-guard fix/authorized-scope-guard-system
+gh stack init --base feat/authorized-scope-guard feat/authorized-scope-guard-system
 
 # After each slice: commit, then BOTH of these, every time.
 gh stack submit --auto
-gh stack link --base fix/authorized-scope-guard <pr> <pr>   # bottom to top
+gh stack link --base feat/authorized-scope-guard <pr> <pr>   # bottom to top
 
 # Before the NEXT slice — creates the branch on the current tip and pushes nothing:
-gh stack add fix/authorized-scope-guard-guard
+gh stack add feat/authorized-scope-guard-guard
 # later, one at a time:
-gh stack add fix/authorized-scope-guard-remove
-gh stack add fix/authorized-scope-guard-audit
-gh stack add fix/authorized-scope-guard-notice
+gh stack add feat/authorized-scope-guard-remove
+gh stack add feat/authorized-scope-guard-audit
+gh stack add feat/authorized-scope-guard-notice
 
 # After any merge, rebase or amend below a branch:
 gh stack sync
@@ -112,7 +112,7 @@ Hooks: `git -c core.hooksPath=.husky commit` on every commit, `sh .husky/pre-pus
 - Coverage tests (QA shapes, Backend writes): (i) walk the executable schema (`makeExecutableSchema` as `packages/@grantjs/schema` `sdl-contract.test.ts` does) and, for every `Mutation` and `Query` field whose arguments carry a `scope` directly or inside its input type, assert the registered resolver is wrapped by the guard (wrapper marks itself, e.g. a symbol on the returned function); (ii) walk `apps/api/src/rest/schemas/*.ts` for zod schemas with a `scope` field and assert each route using one is mounted behind `authorizeRestRoute` (the route table is introspectable from the Express app the boot-parity test already builds). Operations that take a scope without an authorized one go in the **allowlist constant** with a one-line reason each (candidates: `exchangeApiKey`, `createOrganization` under a personal account, the auth mutations); the PR body repeats the list. A new scoped operation that is not wrapped fails the test.
 - Unit tests per transport: match → resolver/route runs; mismatch in `id` → refused, resource resolver and `isAuthorized` not called; mismatch in `tenant` → refused; no scope in the input → unchanged; GraphQL inline-literal `input.scope` that differs from the headers → refused; API-key request whose input names another scope than the key's → refused; same scope → allowed.
 - E2E (`apps/api/tests/e2e/scenarios/authorized-scope-guard.e2e.test.ts`, Docker: host or desktop lane, state in the PR body whether it ran): a session user who is Owner of organization A sends organization-A scope headers and an input naming a project of organization B, for `setProjectUserEmail`, `updateUser`, `deleteUser`, `createUser`, `setProjectUserPassword`, `exportProjectUserCredentials` and one REST route (`PATCH /api/users/:id`): refused, nothing written, no audit row, no event in the outbox; the same calls with matching scopes succeed; an API-key request keeps working with its own scope and is refused with another. The two D21 operations are in this matrix **before** slice 3 removes their own checks.
-- Client audit (brief criterion 5), stated in the PR body: `apps/web` sets no `x-scope-*` header (pre-audit found none); confirm the extractor's `variables` fallback is what authorizes a dashboard request and that it reads the same field the handler acts on for both `variables.scope` and `variables.input.scope`; confirm `@grantjs/client` sends one scope per call. If either finding is wrong, stop and `gh stack add fix/authorized-scope-guard-web` after this slice (Frontend; `grant-web` patch changeset).
+- Client audit (brief criterion 5), stated in the PR body: `apps/web` sets no `x-scope-*` header (pre-audit found none); confirm the extractor's `variables` fallback is what authorizes a dashboard request and that it reads the same field the handler acts on for both `variables.scope` and `variables.input.scope`; confirm `@grantjs/client` sends one scope per call. If either finding is wrong, stop and `gh stack add feat/authorized-scope-guard-web` after this slice (Frontend; `grant-web` patch changeset).
 - Docs: one paragraph on the rule where `x-scope-tenant` / `x-scope-id` are documented (`grep -rn x-scope-tenant docs/`; else `docs/contributing/rest-api.md` under request scope). Changeset: `grant-api` patch in the hardening voice from the brief. `boot-parity` snapshot unchanged.
 - **Out of this slice:** removing D21's checks (slice 3), RLS policies (stated as a follow-up in the PR body).
 - **Fan-out:** Security + Verifier after the author stops; Security reads the allowlist line by line. Security-full **before** gate 3.
