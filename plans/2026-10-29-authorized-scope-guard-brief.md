@@ -2,7 +2,7 @@
 
 Copy of Grant template `docs/contributing/templates/story-brief.md`. Project Manager owns this artifact.
 
-Grounded on `origin/main` at `af6c102f` (package version **v1.19.0**). Story shape: **pure API bug** (activation matrix in `docs/contributing/agentic-sdlc.md`): Backend + QA + Security + Verifier, one slice unless the client audit (criterion 5) forces a second. This file states the fix and its tests; per `SECURITY.md` the full analysis stays out of the public repository until the release, and the release notes or a security advisory disclose it afterwards.
+Grounded on `origin/main` at `af6c102f` (package version **v1.19.0**). Story shape: **API bug plus a small hardening of the operator set-email path** (activation matrix in `docs/contributing/agentic-sdlc.md`): Backend + QA + Security + Verifier; two slices (the guard; the set-email guardrails) unless the client audit (criterion 5) forces a third. This file states the fix and its tests; per `SECURITY.md` the full analysis stays out of the public repository until the release, and the release notes or a security advisory disclose it afterwards.
 
 ## Metadata
 
@@ -27,14 +27,25 @@ A scoped operation acts only in the scope the request was authorized in. Today a
 - [ ] **RLS stays as it is in this story.** The PR states that it does not change any row-level-security policy and names the follow-up if the Security reviewer wants one (for example `project_users` under an organization scope, or policies on `users`, `user_authentication_methods`, `projects`). The guard is sufficient on its own for the acceptance here.
 - [ ] **Hooks ran.** `git -c core.hooksPath=.husky` on every commit, `sh .husky/pre-push` and `pnpm release:check` by hand before every push; the PR body lists the checks that ran and those that did not.
 
+### Set-email guardrails (added 2026-10-29 after a review of the released path with Alejandro)
+
+`setProjectUserEmail` / `PUT /api/users/:id/email` (and `createUser` with an email) replace the user's one, instance-wide login email from a project context (`UserAuthenticationMethodService.setOrReplaceEmailMethod`: same address is a no-op, an address held by another user is a `ConflictError`, an existing method is updated in place with `isVerified: false`).
+
+- [ ] **Audit row asserted and named.** The change is already audited: `updateUserAuthenticationMethod` writes one row to `user_authentication_method_audit_logs` (`logUpdate`, old and new `providerId`, `performedBy` from the request's auth, so the operator). Two things are missing: no test asserts it (the set-email e2e checks events and logs only), and the row's `metadata.context` names the service method, not the operation. This story adds `metadata.operation: 'operator-set-email'` (and `'operator-create-user'` for the create path) and e2e assertions: exactly one audit row per successful call, `performed_by` = the operator, old and new address in `old_values` / `new_values`, no row on a refused call (non-member, conflict, scope mismatch).
+- [ ] **Notice to the previous address.** When `operation === 'changed'` (not `added`), the previous address receives one transactional email after commit, through a new `IEmailService.sendProjectEmailChanged` (`packages/@grantjs/core/src/ports/email.port.ts`) and template `apps/api/src/lib/email/templates/project-email-changed.template.ts`, branded and localised like `project-password-reset.template.ts` (i18n keys `email.projectEmailChanged.*`, en and de). The body says the sign-in email for the app was changed by an administrator and whom to contact; it carries **no link and not the new address**. Sent best-effort via the after-commit queue: a send failure is logged and never fails the mutation. The notification system cannot do this: it resolves recipients by user id, which now points at the new address, and `project.user_email_changed` stays `webhookOnly`. Tests: unit (sent once on `changed`, not on `added` or no-op, to the old address, body free of the new address); e2e asserts the mail sink.
+- [ ] **Verification semantics stated, not changed.** Project sign-in (`project-oauth.handler.ts` and its services) never reads `isVerified`; the project password-reset flow marks the method verified on completion; only the platform/dashboard login enforces verification. So an operator-set address being `isVerified: false` affects a user only where they also sign in to the dashboard. Decision for Alejandro at Gate 1: **(a) keep `false` and document it** (the operator did not prove the mailbox; the dashboard already offers "resend verification") — proposed; or (b) send the verification mail from this path; or (c) a trusted-operator flag to mark it verified. The chosen option goes into `docs/architecture/rbac.md` next to `ProjectUser:SetEmail` and into the ADR 0011 amendment if it changes semantics.
+- [ ] **Address probing bounded.** The conflict error fires for an address held by any account in the instance, so a scoped operator can test addresses across organizations. The message is shared with the self-service connect flow and stays as it is; the set-email and create-user operations are added to the tenant rate-limit bucket (`tenantRateLimitMiddleware`, keyed on `context.user.scope`), with the limit stated in the PR and a test that the 429 arrives.
+
 ## Non-goals
 
 - Changing the precedence in `scope-extractor` (headers → query → body → variables) or dropping any of the sources; clients rely on each
 - Row-level-security changes (stated as a follow-up, see the criterion above)
 - The per-handler guards that `feat/operator-set-password` adds to `setProjectUserPassword` and `exportProjectUserCredentials`; once this story is on `main` they are redundant and the Principal decides at that story's Gate 4 whether to keep them as defence in depth
 - `apps/web` product work beyond fixing a header/input disagreement the audit finds
-- A `jti` denylist, session revocation or any auth-flow change
+- A `jti` denylist, session revocation or any auth-flow change; set-email does not revoke sessions or grants (the password did not change; seat reassignment is a different operation)
 - Backfilling audit rows or events for past requests
+- A user-facing confirmation step or cooldown for operator set-email
+- Changing the instance-wide uniqueness of login emails
 
 ## Risk flags
 
