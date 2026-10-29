@@ -13,8 +13,9 @@ export function isApiKeyIdActor(auth: GrantAuth | null | undefined): boolean {
 
 /**
  * Resolves the acting user for anything persisted behind a `users` foreign key: sync/export
- * job `enqueued_by_id`, and every audit row's `performed_by` (`DrizzleAuditLogger`). The one
- * place this mapping lives; do not repeat it.
+ * job `enqueued_by_id`, every audit row's `performed_by` (`DrizzleAuditLogger`), and every
+ * `event_log.actor_user_id` (`DrizzleEventPublisher`). The one place this mapping lives; do not
+ * repeat it.
  *
  * Project-level API keys (organization/account project scope) use the API key id as JWT
  * `sub` — a sentinel value, not a row in `users`. Map that auth to the system user so

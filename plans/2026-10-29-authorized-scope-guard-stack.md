@@ -34,14 +34,15 @@ Init `gh stack` with **slice 1 only**. `gh stack add` the next branch when that 
 
 Order: the smallest change to the trust boundary first (`system` tenant), then the guard that every scoped operation inherits, then the removal of the specific guards it replaces, then the set-email hardening in two PRs (the audit and limit, which touch existing paths; the new notice e-mail, which adds a port method and a template). No standalone tests or docs slice: tests and docs ship with the slice that introduces the behaviour.
 
-| #     | Branch                               | Base                          | Concern                                                                                                                   | Owner role | Review bar           | PR  |
-| ----- | ------------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------- | --- |
-| 1     | `feat/authorized-scope-guard-system` | `feat/authorized-scope-guard` | `system` is never a request-supplied tenant (`scope-extractor.validated()`), tests, who sent it today                     | Backend    | security-full        |     |
-| 2     | `feat/authorized-scope-guard-guard`  | prior slice                   | the generic comparison in both transport guards, coverage tests with allowlist, e2e matrix, client audit, docs, changeset | Backend    | security-full        |     |
-| 3     | `feat/authorized-scope-guard-remove` | prior slice                   | remove D21's `authorizedScope` parameters and per-handler checks; their tests move to the generic guard's                 | Backend    | security-full        |     |
-| 4     | `feat/authorized-scope-guard-audit`  | prior slice                   | set-email audit row named and asserted, tenant rate limit on set-email and create-user, rbac.md paragraph for option (a)  | Backend    | light                |     |
-| 5     | `feat/authorized-scope-guard-notice` | prior slice                   | `IEmailService.sendProjectEmailChanged`, template en/de, after-commit best-effort send on `changed`, tests                | Backend    | light                |     |
-| final | `feat/authorized-scope-guard`        | `main`                        | integration                                                                                                               | Principal  | deep + security-full |     |
+| #     | Branch                                    | Base                          | Concern                                                                                                                   | Owner role | Review bar           | PR  |
+| ----- | ----------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------- | --- |
+| 1     | `feat/authorized-scope-guard-system`      | `feat/authorized-scope-guard` | `system` is never a request-supplied tenant (`scope-extractor.validated()`), tests, who sent it today                     | Backend    | security-full        |     |
+| 2     | `feat/authorized-scope-guard-guard`       | prior slice                   | the generic comparison in both transport guards, coverage tests with allowlist, e2e matrix, client audit, docs, changeset | Backend    | security-full        |     |
+| 3     | `feat/authorized-scope-guard-remove`      | prior slice                   | remove D21's `authorizedScope` parameters and per-handler checks; their tests move to the generic guard's                 | Backend    | security-full        |     |
+| 4     | `feat/authorized-scope-guard-audit`       | prior slice                   | set-email audit row named and asserted, tenant rate limit on set-email and create-user, rbac.md paragraph for option (a)  | Backend    | light                |     |
+| 5     | `feat/authorized-scope-guard-notice`      | prior slice                   | `IEmailService.sendProjectEmailChanged`, template en/de, after-commit best-effort send on `changed`, tests                | Backend    | light                |     |
+| 6     | `feat/authorized-scope-guard-event-actor` | after the Gate 3 merge of 1–5 | event actor under project-level API keys: system user, key id in the stored payload, API-key e2e restored                 | Backend    | light                |
+| final | `feat/authorized-scope-guard`             | `main`                        | integration                                                                                                               | Principal  | deep + security-full |     |
 
 **Collapse rules:** Do not fold 1 into 2 — the `system` change touches the RLS-bypass path in `context.middleware.ts` and must be read on its own. **Do not fold 3 into 2**: a reviewer must see the generic guard complete and tested before reading a removal, and the removal diff must be nothing but removal. 4 and 5 may be folded into one PR if the same Backend writes both in one sitting; keep the template and the port method in their own commit either way. Do not add a sixth tests/docs PR.
 
@@ -86,16 +87,17 @@ Hooks: `git -c core.hooksPath=.husky commit` on every commit, `sh .husky/pre-pus
 
 ## Named contracts (do not rename in a slice)
 
-| Kind               | Name                                                                                                                              |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| Guard error        | `AuthorizationError('Forbidden')` — REST 403, code `FORBIDDEN`, the body shape the guards use today                               |
-| Guard inputs       | GraphQL: `args.input.scope` or `args.scope`; REST: `req.body.scope`, `req.body.input.scope`, query `scope` / `scopeId` + `tenant` |
-| Authorized scope   | `context.user.scope` (session: request scope; API key / project app / system: token scope, `grant.ts:78`)                         |
-| Allowlist          | one exported constant in the coverage test, each entry `{ operation, reason }`; the PR body repeats it                            |
-| Audit metadata     | `metadata.operation: 'operator-set-email'` and `'operator-create-user'` on `user_authentication_method_audit_logs` rows           |
-| E-mail port method | `IEmailService.sendProjectEmailChanged({ to: previousAddress, projectName, locale })` — no link, no new address                   |
-| Template           | `apps/api/src/lib/email/templates/project-email-changed.template.ts`; i18n keys `email.projectEmailChanged.*` (en, de)            |
-| Rate-limit bucket  | the existing `tenantRateLimitMiddleware` bucket keyed on `context.user.scope`; limit stated in slice 4's PR body                  |
+| Kind               | Name                                                                                                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guard error        | `AuthorizationError('Forbidden')` — REST 403, code `FORBIDDEN`, the body shape the guards use today                                                              |
+| Guard inputs       | GraphQL: `args.input.scope` or `args.scope`; REST: `req.body.scope`, `req.body.input.scope`, query `scope` / `scopeId` + `tenant`                                |
+| Authorized scope   | `context.user.scope` (session: request scope; API key / project app / system: token scope, `grant.ts:78`)                                                        |
+| Allowlist          | one exported constant in the coverage test, each entry `{ operation, reason }`; the PR body repeats it                                                           |
+| Audit metadata     | `metadata.operation: 'operator-set-email'` and `'operator-create-user'` on `user_authentication_method_audit_logs` rows                                          |
+| E-mail port method | `IEmailService.sendProjectEmailChanged({ to, appName?, locale? })`, `to` the previous address; no link, no new address                                           |
+| Template           | `apps/api/src/lib/email/templates/project-email-changed.template.ts`; i18n keys `email.projectEmailChanged.*` (en, de)                                           |
+| Rate-limit bucket  | the existing `tenantRateLimitMiddleware` bucket keyed on `context.user.scope`; limit stated in slice 4's PR body                                                 |
+| Event actor        | `event_log.actor_user_id` is the system user under a project-level key; the key id is `event_log.payload.actor: { tokenId, tokenType }`, never in a webhook body |
 
 ## Slice notes
 
@@ -139,14 +141,15 @@ Hooks: `git -c core.hooksPath=.husky commit` on every commit, `sh .husky/pre-pus
 
 ## Out of this stack
 
-| Item                                                                                                   | Why it stays out                                                                                                                              |
-| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RLS policy changes** (`project_users` under organization scope…)                                     | Brief non-goal; stated as a follow-up in slice 2's PR body for the Security reviewer                                                          |
-| **Event-actor FK** (`DrizzleEventPublisher.resolveActorId`, `event_log.actor_user_id`, migration 0075) | Known pre-existing gap from D21's review; not in this brief. Candidate for its own small fix after v1.20.1 unless Alejandro adds it at Gate 2 |
-| **Session revocation / `jti` denylist on set-email**                                                   | Brief non-goal                                                                                                                                |
-| **Verification mail or trusted-operator flag (options b, c)**                                          | Option (a) chosen                                                                                                                             |
-| **Changing scope-extractor precedence**                                                                | Brief non-goal; clients rely on each source                                                                                                   |
-| **A `-web` slice**                                                                                     | Only if slice 2's audit contradicts the pre-audit                                                                                             |
+| Item                                                               | Why it stays out                                                                     |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| **RLS policy changes** (`project_users` under organization scope…) | Brief non-goal; stated as a follow-up in slice 2's PR body for the Security reviewer |
+| **Session revocation / `jti` denylist on set-email**               | Brief non-goal                                                                       |
+| **Verification mail or trusted-operator flag (options b, c)**      | Option (a) chosen                                                                    |
+| **Changing scope-extractor precedence**                            | Brief non-goal; clients rely on each source                                          |
+| **A `-web` slice**                                                 | Only if slice 2's audit contradicts the pre-audit                                    |
+
+**Added on 2026-10-29 (Alejandro), after slices 1–5 merged into the trunk:** the event-actor foreign key (`DrizzleEventPublisher.resolveActorId` against `event_log.actor_user_id`, migration 0075), a pre-existing gap from D21's review that slice 2's API-key e2e had to work around. It was listed under "Out of this stack" as a candidate for a fix after v1.20.1; it is slice 6, so API-key callers can set a project user's e-mail or password in the same patch. Light review, one `grant-api` patch changeset, no migration.
 
 ## Dependencies / notes
 

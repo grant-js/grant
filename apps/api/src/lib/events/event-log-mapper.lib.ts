@@ -12,6 +12,11 @@ interface StoredPayload {
   aggregate?: EventAggregateRef | null;
   data?: EventData;
   projectIds?: string[];
+  /**
+   * Which API key acted (`DrizzleEventPublisher.resolveActorToken`). Internal attribution only:
+   * deliberately not mapped to {@link DomainEvent}, so it never reaches a webhook or a notification.
+   */
+  actor?: { tokenId: string; tokenType: string };
 }
 
 /** Map a persisted `event_log` row to the internal {@link DomainEvent} shape. */
