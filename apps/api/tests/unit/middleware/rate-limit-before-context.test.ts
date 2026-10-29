@@ -56,6 +56,9 @@ const db = {
 };
 
 vi.mock('@/config', () => ({ config: mockConfig }));
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+}));
 vi.mock('@/i18n', () => ({
   getLocale: () => 'en',
   t: (_req: unknown, key: string) =>

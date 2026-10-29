@@ -149,7 +149,7 @@ describe('UserHandler operator set-email', () => {
       expect.anything()
     );
     expect(setOrReplaceEmailMethod).toHaveBeenCalledWith(
-      { userId, email: 'ada@example.com' },
+      { userId, email: 'ada@example.com', operation: 'operator-create-user' },
       expect.anything()
     );
     expect(publishProjectUserEmailChanged).toHaveBeenCalledWith(
@@ -186,6 +186,19 @@ describe('UserHandler operator set-email', () => {
 
     expect(getProjectUsers).toHaveBeenCalledWith({ projectId, userId }, expect.anything());
     expect(setOrReplaceEmailMethod).not.toHaveBeenCalled();
+  });
+
+  it('names the operation on setProjectUserEmail so the audit row says who wrote the address', async () => {
+    const { handler, setOrReplaceEmailMethod } = createHandler();
+
+    await handler.setProjectUserEmail({
+      input: { userId, email: ' Ada@Example.com', scope: projectScope },
+    });
+
+    expect(setOrReplaceEmailMethod).toHaveBeenCalledWith(
+      { userId, email: 'ada@example.com', operation: 'operator-set-email' },
+      expect.anything()
+    );
   });
 
   it('does not publish when set-email is a no-op', async () => {

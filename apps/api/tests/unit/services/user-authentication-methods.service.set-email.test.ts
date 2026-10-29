@@ -33,6 +33,7 @@ function emailMethod(overrides: Record<string, unknown> = {}) {
 }
 
 function buildService(repo: Partial<IUserAuthenticationMethodRepository> = {}) {
+  const audit = { logCreate: vi.fn(), logUpdate: vi.fn() };
   const repository = {
     getUserAuthenticationMethods: vi.fn().mockResolvedValue([]),
     findByProviderAndProviderId: vi.fn().mockResolvedValue(null),
@@ -45,7 +46,7 @@ function buildService(repo: Partial<IUserAuthenticationMethodRepository> = {}) {
   const service = new UserAuthenticationMethodService(
     repository as IUserAuthenticationMethodRepository,
     {} as IUserSessionRepository,
-    { logCreate: vi.fn(), logUpdate: vi.fn() } as unknown as IAuditLogger,
+    audit as unknown as IAuditLogger,
     {
       publish: vi.fn(),
       publishMany: vi.fn(),
@@ -54,7 +55,7 @@ function buildService(repo: Partial<IUserAuthenticationMethodRepository> = {}) {
     {} as ICredentialService
   );
 
-  return { service, repository };
+  return { service, repository, audit };
 }
 
 describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
@@ -86,6 +87,7 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     const result = await service.setOrReplaceEmailMethod({
       userId,
       email: '  Ada@Example.COM ',
+      operation: 'operator-set-email',
     });
 
     expect(repository.createUserAuthenticationMethod).toHaveBeenCalledWith(
@@ -111,6 +113,7 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     const result = await service.setOrReplaceEmailMethod({
       userId,
       email: 'ADA@example.com',
+      operation: 'operator-set-email',
     });
 
     expect(result.operation).toBeNull();
@@ -134,6 +137,7 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     const result = await service.setOrReplaceEmailMethod({
       userId,
       email: 'new@example.com',
+      operation: 'operator-set-email',
     });
 
     expect(repository.updateUserAuthenticationMethod).toHaveBeenCalledWith(
@@ -146,6 +150,83 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     expect(result.method.providerId).toBe('new@example.com');
   });
 
+  it('names the operation on the audit row of a replaced address, with the old and new address', async () => {
+    const existing = emailMethod();
+    const updated = emailMethod({ providerId: 'new@example.com', isVerified: false });
+    const { service, audit } = buildService({
+      getUserAuthenticationMethods: vi.fn().mockResolvedValue([existing]),
+      getUserAuthenticationMethod: vi.fn().mockResolvedValue(existing),
+      updateUserAuthenticationMethod: vi.fn().mockResolvedValue(updated),
+    });
+
+    await service.setOrReplaceEmailMethod({
+      userId,
+      email: 'new@example.com',
+      operation: 'operator-set-email',
+    });
+
+    expect(audit.logUpdate).toHaveBeenCalledTimes(1);
+    expect(audit.logCreate).not.toHaveBeenCalled();
+    expect(audit.logUpdate).toHaveBeenCalledWith(
+      methodId,
+      expect.objectContaining({ providerId: 'ada@example.com' }),
+      expect.objectContaining({ providerId: 'new@example.com', isVerified: false }),
+      {
+        context: 'UserAuthenticationMethodService.updateUserAuthenticationMethod',
+        operation: 'operator-set-email',
+      },
+      undefined
+    );
+  });
+
+  it('names the operation on the audit row of an added address', async () => {
+    const { service, audit } = buildService();
+
+    await service.setOrReplaceEmailMethod({
+      userId,
+      email: 'ada@example.com',
+      operation: 'operator-create-user',
+    });
+
+    expect(audit.logCreate).toHaveBeenCalledTimes(1);
+    expect(audit.logUpdate).not.toHaveBeenCalled();
+    expect(audit.logCreate).toHaveBeenCalledWith(
+      methodId,
+      expect.objectContaining({ provider: UserAuthenticationMethodProvider.Email }),
+      {
+        context: 'UserAuthenticationMethodService.createUserAuthenticationMethod',
+        operation: 'operator-create-user',
+      },
+      undefined
+    );
+  });
+
+  it('writes no audit row when the address is unchanged or held by another account', async () => {
+    const same = buildService({
+      getUserAuthenticationMethods: vi.fn().mockResolvedValue([emailMethod()]),
+    });
+    await same.service.setOrReplaceEmailMethod({
+      userId,
+      email: 'ada@example.com',
+      operation: 'operator-set-email',
+    });
+    expect(same.audit.logUpdate).not.toHaveBeenCalled();
+    expect(same.audit.logCreate).not.toHaveBeenCalled();
+
+    const held = buildService({
+      findByProviderAndProviderId: vi.fn().mockResolvedValue(emailMethod({ userId: otherUserId })),
+    });
+    await expect(
+      held.service.setOrReplaceEmailMethod({
+        userId,
+        email: 'ada@example.com',
+        operation: 'operator-set-email',
+      })
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(held.audit.logUpdate).not.toHaveBeenCalled();
+    expect(held.audit.logCreate).not.toHaveBeenCalled();
+  });
+
   it('throws ConflictError when another account already holds the address', async () => {
     const { service, repository } = buildService({
       findByProviderAndProviderId: vi
@@ -154,7 +235,11 @@ describe('UserAuthenticationMethodService.setOrReplaceEmailMethod', () => {
     });
 
     await expect(
-      service.setOrReplaceEmailMethod({ userId, email: 'ada@example.com' })
+      service.setOrReplaceEmailMethod({
+        userId,
+        email: 'ada@example.com',
+        operation: 'operator-set-email',
+      })
     ).rejects.toMatchObject({
       constructor: ConflictError,
       message: 'This authentication method is already connected to another account',

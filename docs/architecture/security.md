@@ -510,6 +510,8 @@ Rate limiting protects against brute force, abuse, and noisy-neighbor scenarios 
 
 IP `auth:` / `global:` buckets run **before** request context, so a 429 does not pay JWT authenticate or the handler toolbox. The optional per-tenant bucket stays **after** authenticate because it keys on `context.user.scope`. Origin verification stays first. `jsonBodyParser` stays before GraphQL auth-sensitive detection.
 
+Operator set-email (`PUT /api/users/:id/email`, `POST /api/users` with an `email`, and the GraphQL `setProjectUserEmail` and `createUser` with an `email`) has its own `tenant:<tenant>:<id>:set-email:<actor>` bucket, keyed on the request scope and on the caller (the user, or the key or app id of a token), **on by default** and independent of the per-tenant flag: the conflict error of these operations reveals whether an address is held by any account in the instance, so a scoped operator could otherwise test addresses across organizations. Every attempt counts, successful or not, before authorization, so a member who lacks the permission cannot use up another member's budget; the 21st within the window (defaults below) answers `429`. Like the other buckets it is off when `SECURITY_ENABLE_RATE_LIMIT` is `false`.
+
 Three layers are available:
 
 | Layer                     | Scope                                                                                             | Default                                |
@@ -551,6 +553,9 @@ When the trusted header is unset, the API falls back to the first `X-Forwarded-F
 | `SECURITY_RATE_LIMIT_PER_TENANT_ENABLED`        | `false`       | Enable per-tenant limiting                                                                                               |
 | `SECURITY_RATE_LIMIT_PER_TENANT_MAX`            | `200`         | Per-tenant requests per window                                                                                           |
 | `SECURITY_RATE_LIMIT_PER_TENANT_WINDOW_MINUTES` | `15`          | Per-tenant window                                                                                                        |
+| `SECURITY_RATE_LIMIT_SET_EMAIL_ENABLED`         | `true`        | Enable the per-actor, per-scope set-email limit (independent of per-tenant limiting)                                     |
+| `SECURITY_RATE_LIMIT_SET_EMAIL_MAX`             | `20`          | Set-email operations per window per actor and scope                                                                      |
+| `SECURITY_RATE_LIMIT_SET_EMAIL_WINDOW_MINUTES`  | `15`          | Set-email window                                                                                                         |
 
 ## Row-Level Security (RLS)
 
