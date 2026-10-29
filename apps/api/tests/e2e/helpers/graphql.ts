@@ -20,11 +20,13 @@ export interface GraphqlResponse<T = unknown> {
  * @param options.query - GraphQL document string
  * @param options.variables - Optional variables
  * @param options.accessToken - Optional Bearer token (required for protected operations)
+ * @param options.headers - Optional extra request headers (for example `x-scope-tenant` / `x-scope-id`)
  */
 export async function graphqlRequest<T = unknown>(options: {
   query: string;
   variables?: Record<string, unknown>;
   accessToken?: string;
+  headers?: Record<string, string>;
 }): Promise<GraphqlResponse<T>> {
   const req = apiClient()
     .post('/graphql')
@@ -33,6 +35,9 @@ export async function graphqlRequest<T = unknown>(options: {
 
   if (options.accessToken) {
     req.set('Authorization', `Bearer ${options.accessToken}`);
+  }
+  for (const [name, value] of Object.entries(options.headers ?? {})) {
+    req.set(name, value);
   }
 
   const res = await req;

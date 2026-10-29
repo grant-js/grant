@@ -12,7 +12,37 @@ import {
 import { ResourceResolversMap } from '@/resource-resolvers';
 
 import { isAuthenticatedGraphQL } from './auth-guard';
+import { graphqlNamedScopes, namesOnlyTheAuthorizedScope } from './operation-scope';
 import { ResourceResolver } from './types';
+
+/**
+ * Set on every function `authorizeGraphQLResolver` returns, and carried outwards by the gates that
+ * wrap it (`inheritAuthorizationMark`), so a test can tell a resolver that is authorized from one
+ * that is not without calling it.
+ */
+const AUTHORIZED_GRAPHQL_RESOLVER = Symbol('grant.authorizedGraphQLResolver');
+
+type MarkedFunction = ((...args: never[]) => unknown) & { [AUTHORIZED_GRAPHQL_RESOLVER]?: true };
+
+function resolverFunction(resolver: unknown): MarkedFunction | undefined {
+  const candidate =
+    typeof resolver === 'function' ? resolver : (resolver as { resolve?: unknown })?.resolve;
+  return typeof candidate === 'function' ? (candidate as MarkedFunction) : undefined;
+}
+
+export function isAuthorizedGraphQLResolver(resolver: unknown): boolean {
+  return resolverFunction(resolver)?.[AUTHORIZED_GRAPHQL_RESOLVER] === true;
+}
+
+/** Carries the authorization mark from a wrapped resolver to the function that wraps it. */
+export function inheritAuthorizationMark(
+  inner: unknown,
+  outer: (...args: never[]) => unknown
+): void {
+  if (isAuthorizedGraphQLResolver(inner)) {
+    (outer as MarkedFunction)[AUTHORIZED_GRAPHQL_RESOLVER] = true;
+  }
+}
 
 export interface GraphQLGuardOptions {
   resource: ResourceSlug;
@@ -64,6 +94,10 @@ export function authorizeGraphQLResolver<
 
     if (!scope) {
       throw new BadRequestError('Scope is required');
+    }
+
+    if (!namesOnlyTheAuthorizedScope(scope, graphqlNamedScopes(args))) {
+      throw new AuthorizationError('Forbidden');
     }
 
     let resolvedResource: Record<string, unknown> | null = null;
@@ -118,6 +152,8 @@ export function authorizeGraphQLResolver<
 
     throw new AuthorizationError('Forbidden', lastReason);
   };
+
+  (guardedResolver as MarkedFunction)[AUTHORIZED_GRAPHQL_RESOLVER] = true;
 
   return (
     typeof resolver === 'function' ? guardedResolver : { resolve: guardedResolver }

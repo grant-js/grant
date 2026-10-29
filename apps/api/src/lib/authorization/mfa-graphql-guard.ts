@@ -5,6 +5,7 @@ import { GraphqlContext } from '@/graphql/types';
 import { AuthenticationError, AuthorizationError } from '@/lib/errors/error-classes';
 
 import { isAuthenticatedGraphQL } from './auth-guard';
+import { inheritAuthorizationMark } from './graphql-guard';
 import { resolveOrgRequiresMfaForSensitiveActions } from './mfa-org-requirement';
 
 export interface MfaGraphQLGuardOptions {
@@ -66,6 +67,8 @@ export function requireMfaGraphQL<
       hasActiveEnrollment: userRequiresMfa,
     });
   };
+
+  inheritAuthorizationMark(resolver, guardedResolver);
 
   return (
     typeof resolver === 'function' ? guardedResolver : { resolve: guardedResolver }

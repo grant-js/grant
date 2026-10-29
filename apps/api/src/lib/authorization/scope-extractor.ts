@@ -31,7 +31,7 @@ const REQUEST_TENANTS: ReadonlySet<string> = new Set(
  * would hand the caller the scope for which the request context applies no
  * row-level-security context.
  */
-function validated(scope: Scope | null): Scope | null {
+export function validateRequestScope(scope: Scope | null): Scope | null {
   if (!scope || typeof scope.tenant !== 'string' || !REQUEST_TENANTS.has(scope.tenant)) {
     return null;
   }
@@ -39,7 +39,7 @@ function validated(scope: Scope | null): Scope | null {
 }
 
 export function extractScopeFromRequest(req: Request): Scope | null {
-  return validated(readScopeFromRequest(req));
+  return validateRequestScope(readScopeFromRequest(req));
 }
 
 function readScopeFromRequest(req: Request): Scope | null {
@@ -128,7 +128,7 @@ export function extractScopeFromResolverRequest(
     typeof (fromScope as { tenant?: string }).tenant === 'string'
   ) {
     const scope = fromScope as { id: string; tenant: string };
-    return validated({ id: scope.id, tenant: scope.tenant as Tenant });
+    return validateRequestScope({ id: scope.id, tenant: scope.tenant as Tenant });
   }
   const fromInput =
     r?.input && typeof r.input === 'object'
@@ -140,7 +140,7 @@ export function extractScopeFromResolverRequest(
     typeof fromInput.id === 'string' &&
     typeof fromInput.tenant === 'string'
   ) {
-    return validated({ id: fromInput.id, tenant: fromInput.tenant as Tenant });
+    return validateRequestScope({ id: fromInput.id, tenant: fromInput.tenant as Tenant });
   }
   const scopeId =
     r?.query && typeof r.query === 'object'
@@ -149,7 +149,7 @@ export function extractScopeFromResolverRequest(
   const tenant =
     r?.query && typeof r.query === 'object' ? (r.query as { tenant?: string }).tenant : undefined;
   if (typeof scopeId === 'string' && typeof tenant === 'string') {
-    return validated({ id: scopeId, tenant: tenant as Tenant });
+    return validateRequestScope({ id: scopeId, tenant: tenant as Tenant });
   }
   return null;
 }
