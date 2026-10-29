@@ -1,5 +1,16 @@
 # grant-web
 
+## 1.20.0
+
+### Patch Changes
+
+- e2a8527: Operators with the `ProjectUser:SetPassword` permission get a "Set password" action on project users, with a confirmed-password dialog that applies the same password policy as the settings form and never keeps or repeats the value. The permission picker now shows the names and descriptions of `ProjectUser:SetPassword` and `ProjectUser:ExportCredentials`, and the webhook event list labels `project.user_password_set` (English and German). Also adds the missing translation for `project.user_email_changed` from #637.
+- Updated dependencies [e2a8527]
+  - @grantjs/schema@1.20.0
+  - @grantjs/client@1.20.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.19.0
 
 ### Patch Changes

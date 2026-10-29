@@ -3,6 +3,34 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.20.0
+
+### Platform
+
+**Docker images:** tagged `:1.20.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.20.0** (fixed group with apps).
+
+### Patch Changes
+
+- e2a8527: Adds the audited credential export for a downstream identity mirror: the `exportProjectUserCredentials` GraphQL query and `POST /api/users/credentials/export` (body `{ scope, userIds, kinds }`; project scope only). It returns `{ algorithm: 'bcrypt', hash }` for each requested project member who has a project credential and `password: null` for one who has none, in request order, and is the only place a project password hash leaves Grant. It requires `ProjectUser:ExportCredentials`, which no standard group holds, so an organization grants it deliberately to the role a mirror's API key carries; Owner and Admin are denied. `userIds` is capped at one page, and any id that is not a member of the project fails the whole call as not found (no partial export). The REST response is sent `Cache-Control: no-store`.
+
+  Every successful export writes exactly one `export` row on the project credential audit log in the same transaction as the read (the caller, the number of users and credentials, the kinds; never a hash), so a failed audit write fails the export. A refused call writes none.
+
+  Adds `User.passwordCredential { source, updatedAt, fingerprint }`, where `fingerprint` is the lowercase hex SHA-256 of the stored hash: a change detector, not a secret. It resolves to `null`, never an error, for any caller without `ProjectUser:ExportCredentials`, so existing documents keep working. It resolves in the request's project scope and is `null` for any other scope.
+
+- e2a8527: Operators can set a project user's password. Adds the `setProjectUserPassword` GraphQL mutation and `PUT /api/users/:id/password` (project scope only; the user must already be a member; the password policy is checked before anything is written and a refusal never contains the value; the scope in the body must equal the scope the request was authorized for, otherwise the call is refused as `Forbidden` before anything is read or written). The write uses the new `admin-set` credential source, resets the project lockout, revokes the user's project-app OAuth grants and leaves platform sessions and the Email method's verification alone. An operator-set password is final with respect to the CDM import.
+
+  Adds the permission `ProjectUser:SetPassword`, granted to the Project User Owner and Admin groups by default and extensible to any other group, and the permission `ProjectUser:ExportCredentials`, seeded as a standalone permission with no group (reserved for the credential export that follows). Both reach existing deployments through the idempotent permission seed.
+
+  Publishes the webhook-only `project.user_password_set` event on every non-import project credential write that changes the stored hash (`admin-set`, `reset`, a future `change`). Its payload is `{ projectId, userId, source }` and never carries a password or a hash. A CDM import publishes nothing, like every other import write.
+
+- e2a8527: Operators with the `ProjectUser:SetPassword` permission get a "Set password" action on project users, with a confirmed-password dialog that applies the same password policy as the settings form and never keeps or repeats the value. The permission picker now shows the names and descriptions of `ProjectUser:SetPassword` and `ProjectUser:ExportCredentials`, and the webhook event list labels `project.user_password_set` (English and German). Also adds the missing translation for `project.user_email_changed` from #637.
+
+### Minor Changes
+
+- e2a8527: Add the `setProjectUserPassword` mutation, the `exportProjectUserCredentials` query with the `CredentialKind` enum and its input and result types, the export-gated `User.passwordCredential` field (resolved in the request's project scope), and the webhook-only `project.user_password_set` event (ids and credential source only, never a hash or a password).
+
 ## 1.19.0
 
 ### Platform
