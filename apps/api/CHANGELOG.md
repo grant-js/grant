@@ -1,5 +1,26 @@
 # grant-api
 
+## 1.20.2
+
+### Patch Changes
+
+- 0f2a493: `user.deleted` and `project.user_removed` webhook payloads carry the removed user's import keys under `data.before.externalKeys`, filtered per subscription, so receivers can name the user after Grant has forgotten them. Each entry is `{ projectId, externalKey }`: the source-system key your CDM import attached to the user in that project (the user's `cdmImport.externalKey` marker, or the importer-declared `metadata.legacy.id` when the marker is an e-mail address). It is a pseudonymous source-system identifier, never an e-mail address, name or hash, and a delivery carries only the entry of the receiving subscription's own project. The list is always present on these two events and is `[]` for a user no import marked; the field is absent on Grant older than this version. `user.deleted` carries it on a hard delete too. Additive: existing receivers are unaffected, no route changes.
+- Updated dependencies [0f2a493]
+  - @grantjs/schema@1.20.2
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.20.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @grantjs/server
 
+## 1.20.2
+
+### Patch Changes
+
+- Updated dependencies [0f2a493]
+  - @grantjs/schema@1.20.2
+
 ## 1.20.1
 
 ### Patch Changes
