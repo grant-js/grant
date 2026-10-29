@@ -120,7 +120,8 @@ function build(cache: ReturnType<typeof CacheFactory.createEntityCache>) {
     { platform: new FakeCredentialRepository(), project: projectCredentials },
     { platform: noopAudit(), project: noopAudit() },
     lockouts,
-    passThroughPlatformConnection as never
+    passThroughPlatformConnection as never,
+    { publishPasswordSet: vi.fn().mockResolvedValue(undefined) }
   );
   const userMfa = {
     hasActiveMfaEnrollment: vi.fn().mockResolvedValue(false),

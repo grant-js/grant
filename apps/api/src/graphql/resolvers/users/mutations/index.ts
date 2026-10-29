@@ -5,5 +5,6 @@ export { deleteUserResolver as deleteUser } from './delete-user.resolver';
 export { requestUserPictureUploadUrlResolver as requestUserPictureUploadUrl } from './request-user-picture-upload-url.resolver';
 export { revokeUserPermissionResolver as revokeUserPermission } from './revoke-user-permission.resolver';
 export { setProjectUserEmailResolver as setProjectUserEmail } from './set-project-user-email.resolver';
+export { setProjectUserPasswordResolver as setProjectUserPassword } from './set-project-user-password.resolver';
 export { updateUserResolver as updateUser } from './update-user.resolver';
 export { uploadUserPictureResolver as uploadUserPicture } from './upload-user-picture.resolver';

@@ -1,9 +1,11 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import type {
   IAuthService,
+  ICredentialService,
   IFileStorageServicePort,
   IOrganizationUserService,
   IProjectGroupService,
+  IProjectOAuthGrantService,
   IProjectPermissionService,
   IProjectUserGroupService,
   IProjectUserPermissionService,
@@ -22,6 +24,7 @@ import {
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
   MutationSetProjectUserEmailArgs,
+  MutationSetProjectUserPasswordArgs,
   MutationUpdateUserArgs,
   QueryUsersArgs,
   RequestUserPictureUploadUrlInput,
@@ -95,7 +98,9 @@ export class UserHandler extends CacheHandler {
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
     private readonly db: ITransactionalConnection<Transaction>,
-    private readonly auth: IAuthService
+    private readonly auth: IAuthService,
+    private readonly credentials: ICredentialService,
+    private readonly projectOAuthGrants: IProjectOAuthGrantService
   ) {
     super(cache, scopeServices);
   }
@@ -261,10 +266,14 @@ export class UserHandler extends CacheHandler {
     return tenant === Tenant.OrganizationProject || tenant === Tenant.AccountProject;
   }
 
-  private assertProjectScopeForEmail(scope: Scope): void {
+  private assertProjectScope(scope: Scope, subject: string): void {
     if (!this.isProjectTenant(scope.tenant)) {
-      throw new ValidationError('Email can only be set in a project scope');
+      throw new ValidationError(`${subject} can only be set in a project scope`);
     }
+  }
+
+  private assertProjectScopeForEmail(scope: Scope): void {
+    this.assertProjectScope(scope, 'Email');
   }
 
   private async assertSetEmailAuthorized(actorUserId: string | undefined): Promise<void> {
@@ -432,6 +441,54 @@ export class UserHandler extends CacheHandler {
           tx
         );
       }
+
+      const page = await this.users.getUsers({ ids: [userId], limit: 1 }, tx);
+      const user = page.users[0];
+      if (!user) {
+        throw new NotFoundError('User');
+      }
+      return user;
+    });
+  }
+
+  /**
+   * Operator-set project password (`ProjectUser:SetPassword`, enforced by the transport).
+   * The policy is checked first, before any transaction or write, and a refusal never
+   * contains the value. The scope it acts on must be the scope the transport authorized
+   * (`authorizedScope`, the request scope the guard evaluated): a permission held in one scope
+   * must not set a password in another project, so the check comes before the policy and any
+   * transaction. One transaction: membership (never a create), the credential write
+   * (`admin-set`: audit row, lockout reset and `project.user_password_set` come with it),
+   * and revocation of the user's project-app grants as `completeReset` does. The Email
+   * method is not marked verified (an operator proves nothing about the mailbox) and
+   * platform sessions are not touched.
+   */
+  public async setProjectUserPassword(
+    params: MutationSetProjectUserPasswordArgs & { authorizedScope: Scope | null }
+  ): Promise<User> {
+    const { userId, password, scope } = params.input;
+    this.assertProjectScope(scope, 'Password');
+    if (
+      !params.authorizedScope ||
+      params.authorizedScope.tenant !== scope.tenant ||
+      params.authorizedScope.id !== scope.id
+    ) {
+      throw new AuthorizationError('Forbidden');
+    }
+    this.credentials.assertPasswordMeetsPolicy(password);
+
+    return await this.db.withTransaction(async (tx: Transaction) => {
+      const projectId = this.extractProjectIdFromScope(scope);
+      const members = await this.projectUsers.getProjectUsers({ projectId, userId }, tx);
+      if (members.length === 0) {
+        throw new NotFoundError('User');
+      }
+
+      await this.credentials.setPassword(
+        { scope: { scope: 'project', projectId }, userId, password, source: 'admin-set' },
+        tx
+      );
+      await this.projectOAuthGrants.revokeAllForUserInProject(projectId, userId, tx);
 
       const page = await this.users.getUsers({ ids: [userId], limit: 1 }, tx);
       const user = page.users[0];

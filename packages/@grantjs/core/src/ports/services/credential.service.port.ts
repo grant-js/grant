@@ -35,6 +35,13 @@ export interface ProjectPasswordImportCounts {
  */
 export interface ICredentialService {
   /**
+   * Throws `ValidationError` when `password` does not meet the Grant password policy. The
+   * refusal names the rules and never contains the value. Lets a caller refuse before it
+   * opens a transaction or touches anything else; `setPassword` applies the same check.
+   */
+  assertPasswordMeetsPolicy(password: string): void;
+
+  /**
    * Hash a plaintext password (bcrypt, configured cost) and store it as the live credential.
    * A Grant-set password must meet the password policy; the refusal never contains it.
    * A successful write resets the lockout of that `(scope, user)`.
@@ -77,7 +84,8 @@ export interface ICredentialService {
    * Runs in the caller's transaction, under the project's RLS; the caller has already
    * established that every user is a member of the project. The hash is compared inside the
    * service and never returned. Rows are applied in order, so a user named twice ends with
-   * the last hash.
+   * the last hash. Publishes no `project.user_password_set`: an import is silent like every
+   * other import write, and its completion event with counters is the signal.
    */
   importProjectPasswordHashes(
     params: {
@@ -117,6 +125,26 @@ export interface ICredentialService {
 
   /** Retention: hard-delete soft-deleted credentials in both scopes. */
   purgeSoftDeleted(transaction?: unknown): Promise<{ platform: number; project: number }>;
+}
+
+/** One project credential whose stored hash changed. Ids and source only, never a hash. */
+export interface ProjectPasswordSetChange {
+  projectId: string;
+  userId: string;
+  source: CredentialSource;
+}
+
+/**
+ * Publishes `project.user_password_set` (ADR 0011 § 8). `ICredentialService` is the only
+ * caller, so the event has one emission point for every non-import write (`admin-set`,
+ * `reset`, a future `change`); a CDM import never publishes it. Ids and
+ * `source` only in `data.after`: never a password, a hash or a key containing either.
+ */
+export interface IProjectUserCredentialEventPublisher {
+  publishPasswordSet(
+    changes: ReadonlyArray<ProjectPasswordSetChange>,
+    transaction?: unknown
+  ): Promise<void>;
 }
 
 export interface CredentialLockoutStatus extends CredentialLockoutState {

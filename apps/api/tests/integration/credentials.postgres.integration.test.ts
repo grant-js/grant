@@ -531,7 +531,9 @@ describe.skipIf(!url)('scoped credentials on PostgreSQL', () => {
           POLICY,
           connection
         ),
-        connection
+        connection,
+        // The event is not under test here (see credentials.service.test.ts).
+        { publishPasswordSet: async () => undefined }
       );
     }
 
