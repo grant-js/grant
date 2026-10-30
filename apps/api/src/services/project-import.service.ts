@@ -4,6 +4,7 @@ import type {
   CdmProducedRefs,
   IApiKeyService,
   ICdmEntityHandler,
+  ICdmImportTombstoneRepository,
   ICredentialService,
   IGroupPermissionService,
   IGroupService,
@@ -109,6 +110,7 @@ export class ProjectImportService implements IProjectImportService {
     resourceTags: IResourceTagService,
     permissionTags: IPermissionTagService,
     credentials: ICredentialService,
+    cdmImportTombstones: ICdmImportTombstoneRepository,
     /**
      * Read-side repo used by handlers' `export(...)` to enumerate prior
      * project state. Optional because the sync flow itself only needs the
@@ -168,6 +170,7 @@ export class ProjectImportService implements IProjectImportService {
         userAuthenticationMethods,
         userRepository,
         credentials,
+        cdmImportTombstones,
       });
       this.handlers = registry.handlers;
       this.entityBuilder = registry.builder;
@@ -351,6 +354,7 @@ export class ProjectImportService implements IProjectImportService {
       passwordsUpdated: 0,
       passwordsUnchanged: 0,
       passwordsSkippedExisting: 0,
+      usersSkippedTombstoned: 0,
       tagsCreated: 0,
       projectTagsLinked: 0,
       roleTagsLinked: 0,
@@ -404,6 +408,7 @@ export class ProjectImportService implements IProjectImportService {
       produced,
       documentGroupsByKey,
       assignmentUserIds,
+      skippedUserKeys: new Set<string>(),
       modeStrategy: expanded.mode?.strategy ?? CdmModeStrategy.Merge,
     };
 

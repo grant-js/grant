@@ -6,6 +6,7 @@ export * from './account-roles.schema';
 export * from './account-tags.schema';
 export * from './accounts.schema';
 export * from './api-keys.schema';
+export * from './cdm-import-tombstones.schema';
 export * from './event-log.schema';
 export * from './group-permissions.schema';
 export * from './group-tags.schema';

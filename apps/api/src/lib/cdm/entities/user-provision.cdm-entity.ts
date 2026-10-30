@@ -4,6 +4,7 @@ import type {
   CdmPermissionRefSpec,
   CdmTeardownContext,
   ICdmEntityHandler,
+  ICdmImportTombstoneRepository,
   ICredentialService,
   IProjectUserService,
   IUserAuthenticationMethodService,
@@ -12,6 +13,7 @@ import type {
 } from '@grantjs/core';
 import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
+import { config } from '@/config';
 import {
   buildCdmImportMetadata,
   CDM_IMPORT_METADATA_KEY,
@@ -22,6 +24,11 @@ import { ValidationError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { ProjectExportRepository } from '@/repositories/project-export.repository';
 
+import {
+  CDM_TOMBSTONE_KIND_USER,
+  decideUserCreation,
+  fingerprintDocumentKeys,
+} from '../cdm-import-tombstone.lib';
 import type { CdmUserProvisionInternal } from '../cdm-internal.types';
 import { cdmPasswordProblem } from '../cdm-password.lib';
 import { decideGrantUserMatch, grantUserMatchRefusalMessage } from '../grant-user-match.lib';
@@ -31,6 +38,16 @@ const INPUT_KEY = 'provisionedUsers' as const;
 
 /** Positions named in a refusal; the rest are counted. Keeps a large document's error short. */
 const MAX_POSITIONS_IN_MESSAGE = 10;
+
+/**
+ * What a document's keys look like to the deletion tombstones, computed once per import:
+ * each key's fingerprint and the subset of them a tombstone covers for this project. Both
+ * are empty when the fingerprint secret is not configured (nothing can be matched).
+ */
+interface TombstoneIndex {
+  fingerprints: ReadonlyMap<string, string>;
+  tombstoned: ReadonlySet<string>;
+}
 
 /** Names positions only: never an address, never a hash. */
 function passwordWithoutMembershipMessage(positions: readonly number[]): string {
@@ -57,7 +74,8 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     private readonly userAuthenticationMethods: IUserAuthenticationMethodService,
     private readonly userRepository: IUserRepository,
     private readonly projectUsers: IProjectUserService,
-    private readonly credentials: ICredentialService
+    private readonly credentials: ICredentialService,
+    private readonly cdmImportTombstones: ICdmImportTombstoneRepository
   ) {}
 
   public validateInput(input: readonly CdmUserProvisionInternal[]): void {
@@ -113,13 +131,64 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     input: readonly CdmUserProvisionInternal[]
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
+    const tombstones = await this.readTombstones(ctx, input, tx);
     for (const [index, row] of input.entries()) {
       if (row.findBy === 'email') {
-        await this.applyEmailIdentity(ctx, row, tx);
+        await this.applyEmailIdentity(ctx, row, row.documentIndex ?? index, tombstones, tx);
         continue;
       }
-      await this.applyKeyIdentity(ctx, row, row.documentIndex ?? index, tx);
+      await this.applyKeyIdentity(ctx, row, row.documentIndex ?? index, tombstones, tx);
     }
+  }
+
+  /**
+   * One read per import: the document's keys are fingerprinted once, here, and one query asks
+   * which of them a deletion tombstone covers for this project. Without the fingerprint secret
+   * no key has a fingerprint, so nothing is read and nothing can be skipped (the secret is a
+   * requirement of tombstones, which could not have been written without it either).
+   */
+  private async readTombstones(
+    ctx: CdmApplyContext,
+    input: readonly CdmUserProvisionInternal[],
+    tx: Transaction
+  ): Promise<TombstoneIndex> {
+    const fingerprints = fingerprintDocumentKeys(
+      input.map((row) => row.externalKey),
+      config.cdm.apiKeyFingerprintHmacSecret
+    );
+    const tombstoned =
+      fingerprints.size === 0
+        ? new Set<string>()
+        : await this.cdmImportTombstones.filterTombstoned(
+            {
+              projectId: ctx.projectId,
+              kind: CDM_TOMBSTONE_KIND_USER,
+              fingerprints: [...fingerprints.values()],
+            },
+            tx
+          );
+    return { fingerprints, tombstoned };
+  }
+
+  /**
+   * The skip rule, asked at the two places an identity is about to be **created** and nowhere
+   * else: when a tombstone covers the key the row is not created, not recorded as produced and
+   * its key goes on `ctx.skippedUserKeys`, so the assignment, API-key and password steps drop
+   * it; the result only counts it. Returns whether the row was skipped.
+   */
+  private skipIfTombstoned(
+    ctx: CdmApplyContext,
+    externalKey: string,
+    tombstones: TombstoneIndex
+  ): boolean {
+    const decision = decideUserCreation({
+      fingerprint: tombstones.fingerprints.get(externalKey),
+      tombstoned: tombstones.tombstoned,
+    });
+    if (decision === 'create') return false;
+    ctx.skippedUserKeys.add(externalKey);
+    ctx.result.usersSkippedTombstoned += 1;
+    return true;
   }
 
   /**
@@ -133,6 +202,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     ctx: CdmApplyContext,
     row: CdmUserProvisionInternal,
     position: number,
+    tombstones: TombstoneIndex,
     tx: Transaction
   ): Promise<void> {
     const userIdFoundByKey = await this.userRepository.findUserIdByCdmImport(
@@ -173,6 +243,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         this.recordProducedUser(ctx, row.externalKey, decision.userId);
         return;
       case 'create': {
+        if (this.skipIfTombstoned(ctx, row.externalKey, tombstones)) return;
         const metadata = mergeCdmImporterMetadata(
           buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
           row.metadata
@@ -202,7 +273,8 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     const tx = ctx.tx as Transaction;
     const rows: Array<{ position: number; userId: string | undefined; hash: string }> = [];
     for (const [index, row] of input.entries()) {
-      if (row.password == null) continue;
+      // A skipped user has no identity and no membership: their password is dropped, not an error.
+      if (row.password == null || ctx.skippedUserKeys.has(row.externalKey)) continue;
       rows.push({
         position: row.documentIndex ?? index,
         userId: ctx.produced.userIds.get(row.externalKey),
@@ -241,10 +313,24 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
   private async applyEmailIdentity(
     ctx: CdmApplyContext,
     row: CdmUserProvisionInternal,
+    position: number,
+    tombstones: TombstoneIndex,
     tx: Transaction
   ): Promise<void> {
-    const existingAuthMethod =
-      await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(row.externalKey, tx);
+    const emailMethod = await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
+      row.externalKey,
+      tx
+    );
+    // Liveness: a soft delete leaves the user's e-mail method in place, and the method lookup
+    // does not look at the user, so a method of a deleted user must not count as a live
+    // identity here. The one liveness read is the one the `grantUserId` match already uses.
+    const methodOwnerIsLive =
+      emailMethod == null ||
+      (await this.userRepository.findLiveUserCdmMarkers(
+        { userId: emailMethod.userId, projectId: ctx.projectId },
+        tx
+      )) !== null;
+    const existingAuthMethod = methodOwnerIsLive ? emailMethod : null;
     if (existingAuthMethod) {
       if (existingAuthMethod.provider === UserAuthenticationMethodProvider.Github) {
         await this.userAuthenticationMethods.createUserAuthenticationMethod(
@@ -259,6 +345,13 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         );
       }
       this.recordProducedUser(ctx, row.externalKey, existingAuthMethod.userId);
+      return;
+    }
+
+    // An Email method of a deleted user keeps the address taken (one live method per address),
+    // so no new method can be added for it below.
+    if (emailMethod?.provider === UserAuthenticationMethodProvider.Email && !methodOwnerIsLive) {
+      await this.applyEmailHeldByDeletedUser(ctx, row, position, tombstones, tx);
       return;
     }
 
@@ -285,6 +378,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       return;
     }
 
+    if (this.skipIfTombstoned(ctx, row.externalKey, tombstones)) return;
     const metadata = mergeCdmImporterMetadata(
       buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
       row.metadata
@@ -302,6 +396,35 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     );
     this.recordProducedUser(ctx, row.externalKey, user.id);
     ctx.result.usersCreated += 1;
+  }
+
+  /**
+   * The address's e-mail method belongs to a soft-deleted user, so it is not a live identity.
+   * The address stays taken (the method is unique per address), so no new method can be added
+   * for it. A live user that carries the key is still the document's user and is never
+   * blocked; otherwise a tombstone covering the key skips the row, and anything else is
+   * refused, naming the position only: the previous behaviour attached the deleted user to
+   * the project.
+   */
+  private async applyEmailHeldByDeletedUser(
+    ctx: CdmApplyContext,
+    row: CdmUserProvisionInternal,
+    position: number,
+    tombstones: TombstoneIndex,
+    tx: Transaction
+  ): Promise<void> {
+    const liveUserIdByKey = await this.userRepository.findUserIdByCdmImport(
+      { projectId: ctx.projectId, kind: 'user', externalKey: row.externalKey },
+      tx
+    );
+    if (liveUserIdByKey) {
+      this.recordProducedUser(ctx, row.externalKey, liveUserIdByKey);
+      return;
+    }
+    if (this.skipIfTombstoned(ctx, row.externalKey, tombstones)) return;
+    throw new ValidationError(
+      `users[${position}]: the e-mail identity belongs to a deleted account`
+    );
   }
 
   private recordProducedUser(ctx: CdmApplyContext, externalKey: string, userId: string): void {

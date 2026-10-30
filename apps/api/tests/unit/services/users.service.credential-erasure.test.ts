@@ -37,7 +37,8 @@ function build() {
     } as never,
     { getUrl: vi.fn() } as never,
     credentials as never,
-    events as never
+    events as never,
+    { insertIgnoringDuplicates: vi.fn() } as never
   );
   return { service, userRepository, credentials };
 }

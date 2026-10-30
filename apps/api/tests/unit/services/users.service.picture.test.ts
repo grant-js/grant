@@ -44,7 +44,8 @@ describe('UserService picturePath', () => {
       audit as never,
       fileStorage as never,
       credentials as never,
-      events as never
+      events as never,
+      { insertIgnoringDuplicates: vi.fn() } as never
     );
   }
 

@@ -293,6 +293,8 @@ class World {
   };
 
   readonly userRepository = {
+    // Every owner of an existing e-mail method is live in these documents.
+    findLiveUserCdmMarkers: vi.fn(async () => ({ globalMarker: null, membershipMarker: null })),
     findUserIdByCdmImport: vi.fn(
       async (p: { projectId: string; kind: string; externalKey: string }) => {
         for (const u of this.users.values()) {
@@ -414,7 +416,8 @@ class World {
       this.userRepository as never,
       l(), // resourceTags
       l(), // permissionTags
-      this.credentials
+      this.credentials,
+      loose<never>({ filterTombstoned: new Set() }) // cdmImportTombstones
     );
   }
 

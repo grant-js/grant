@@ -210,6 +210,9 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
   ): PreparedApiKey[] {
     const prepared: PreparedApiKey[] = [];
     for (const [documentIndex, row] of input.entries()) {
+      // The provision step skipped this user (a deletion tombstone covers the key): no
+      // identity exists to own a key, so the key is dropped, silently and uncounted.
+      if (row.userKey != null && ctx.skippedUserKeys.has(row.userKey)) continue;
       const effectiveUserId = resolveApiKeyUserId(row, ctx);
       if (!ctx.assignmentUserIds.has(effectiveUserId)) {
         throw new ValidationError(

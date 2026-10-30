@@ -327,6 +327,15 @@ A \`password\` on any other user, or an invalid hash, is a validation error that
 hash. The hash is never kept in metadata, search tokens, audit values or events, is removed
 from the stored job payload when the job ends, and is replaced by \`[redacted]\` in the payload download.
 
+### Deletion tombstones
+
+When a person deletes an identity that a CDM import created or marked, Grant records a tombstone
+for the project: the key's fingerprint, never the key (it can be an address) and no personal data.
+A later import of the project does not create that identity again, and writes no membership,
+credential or API key for it; \`usersSkippedTombstoned\` counts these users. A document user that
+resolves to a live identity is never blocked. Tombstones need \`CDM_API_KEY_FINGERPRINT_HMAC_SECRET\`
+and are never removed by Grant.
+
 ### Project user API keys (\`projectUserApiKeys\`)
 
 Optional array of per-member API keys. **Import:** each object must include a plaintext

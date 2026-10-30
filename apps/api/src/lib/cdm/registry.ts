@@ -1,6 +1,7 @@
 import type {
   IApiKeyService,
   ICdmEntityHandler,
+  ICdmImportTombstoneRepository,
   ICredentialService,
   IGroupPermissionService,
   IGroupService,
@@ -75,6 +76,7 @@ export interface CdmEntityRegistryDeps {
   userAuthenticationMethods: IUserAuthenticationMethodService;
   userRepository: IUserRepository;
   credentials: ICredentialService;
+  cdmImportTombstones: ICdmImportTombstoneRepository;
 }
 
 interface CdmEntityRegistry {
@@ -125,7 +127,8 @@ export function createDefaultCdmRegistry(deps: CdmEntityRegistryDeps): CdmEntity
       deps.userAuthenticationMethods,
       deps.userRepository,
       deps.projectUsers,
-      deps.credentials
+      deps.credentials,
+      deps.cdmImportTombstones
     ),
     new UserAssignmentCdmEntity(
       deps.exportRepo,

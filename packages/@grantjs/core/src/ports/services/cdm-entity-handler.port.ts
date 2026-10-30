@@ -96,6 +96,14 @@ export interface CdmApplyContext {
    */
   assignmentUserIds: Set<string>;
   /**
+   * Import keys of `users[]` entries the provision step skipped because the person deleted
+   * that imported identity (a deletion tombstone covers the key). A skipped key has no entry
+   * in `produced.userIds`; the steps that read it (assignment, API keys, password) drop the
+   * entry silently instead of treating it as unresolved. Holds keys, so never logged or
+   * copied into the result.
+   */
+  skippedUserKeys: Set<string>;
+  /**
    * Import strategy. Key apply classifies keep/rotate/delete only on `replace`.
    * Omitted or `merge` keeps today's create-all path.
    */

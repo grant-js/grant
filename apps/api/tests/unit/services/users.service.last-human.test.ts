@@ -11,7 +11,11 @@ const HUMAN_ID = '30000000-0000-4000-8000-000000000001';
 const now = new Date('2026-10-07T12:00:00.000Z');
 
 vi.mock('@/config', () => ({
-  config: { system: { systemUserId: SYSTEM_USER_ID } },
+  config: { system: { systemUserId: SYSTEM_USER_ID }, cdm: { apiKeyFingerprintHmacSecret: '' } },
+}));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 
 function user(id: string) {
@@ -53,7 +57,8 @@ describe('UserService.deleteUser last human', () => {
       audit as never,
       fileStorage as never,
       credentials as never,
-      events as never
+      events as never,
+      { insertIgnoringDuplicates: vi.fn() } as never
     );
   }
 
@@ -132,7 +137,8 @@ describe('UserService.deleteOwnUser last human', () => {
       audit as never,
       fileStorage as never,
       credentials as never,
-      events as never
+      events as never,
+      { insertIgnoringDuplicates: vi.fn() } as never
     );
   }
 
