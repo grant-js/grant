@@ -117,14 +117,26 @@ export class DrizzleAuditLogger implements IAuditLogger, IExportAuditLogger {
   }
 
   /**
-   * One row for an export: `action = 'export'`, no entity id (the table's id column must be
-   * nullable, as `project_user_credential_audit_logs.project_user_credential_id` is),
-   * `performedBy` the caller. Unlike `logAction`, a failed insert throws so the export that
-   * wrote it fails with it. `metadata` is the caller's: counts and kinds, never a secret.
+   * One row for an export: `action = 'export'`, `performedBy` the caller. Without `entityId`
+   * the row names no entity (the table's id column must be nullable, as
+   * `project_user_credential_audit_logs.project_user_credential_id` is); with it, the row is
+   * about that entity (`api_key_audit_logs.api_key_id`, not nullable, for an exported API-key
+   * secret). Unlike `logAction`, a failed insert throws so the export that wrote it fails with
+   * it. `metadata` is the caller's: counts, kinds and ids, never a secret.
    */
-  async logExport(metadata: Record<string, unknown>, transaction?: unknown): Promise<void> {
+  async logExport(
+    metadata: Record<string, unknown>,
+    transaction?: unknown,
+    entityId?: string
+  ): Promise<void> {
     await this.insertRow(
-      { entityId: null, action: 'export', oldValues: null, newValues: null, metadata },
+      {
+        entityId: entityId ?? null,
+        action: 'export',
+        oldValues: null,
+        newValues: null,
+        metadata,
+      },
       transaction as Transaction
     );
   }

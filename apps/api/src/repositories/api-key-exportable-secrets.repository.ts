@@ -1,4 +1,5 @@
 import type {
+  ExportableApiKeyRow,
   IApiKeyExportableSecretRepository,
   ProjectUserApiKeySummaryRow,
   SealedApiKeySecret,
@@ -14,8 +15,9 @@ import { Transaction } from '@/lib/transaction-manager.lib';
  * (`api_key_exportable_secrets`; the table carries the project RLS policy of its sibling
  * pivots, and every statement here also names the project or the keys).
  *
- * No method reads a column of the copy: the ciphertext goes in through `upsertForKey` and
- * leaves only through a later, dedicated export read.
+ * The ciphertext goes in through `upsertForKey` and leaves through exactly one read,
+ * `findSealedForExport`, whose only caller is the credential export. No other method reads a
+ * column of the copy, and no read of this class returns the bcrypt hash.
  */
 export class ApiKeyExportableSecretRepository implements IApiKeyExportableSecretRepository {
   constructor(private readonly db: DbSchema) {}
@@ -105,5 +107,72 @@ export class ApiKeyExportableSecretRepository implements IApiKeyExportableSecret
       updatedAt: row.updatedAt,
       hasCopy: row.hasCopy === true,
     }));
+  }
+
+  public async findSealedForExport(
+    params: { projectId: string; userIds: readonly string[] },
+    transaction?: Transaction
+  ): Promise<ExportableApiKeyRow[]> {
+    const { projectId, userIds } = params;
+    if (userIds.length === 0) {
+      return [];
+    }
+    const dbInstance = transaction ?? this.db;
+    // Every statement names the project (the pivot, and the copy's own project column in the
+    // join), on top of the project RLS: a key of another project is never listed or opened.
+    const rows = await dbInstance
+      .select({
+        userId: projectUserApiKeys.userId,
+        apiKeyId: apiKeys.id,
+        clientId: apiKeys.clientId,
+        clientSecretFingerprint: apiKeys.clientSecretFingerprint,
+        encryptedSecret: apiKeyExportableSecrets.encryptedSecret,
+        secretIv: apiKeyExportableSecrets.secretIv,
+        secretTag: apiKeyExportableSecrets.secretTag,
+      })
+      .from(projectUserApiKeys)
+      .innerJoin(apiKeys, eq(apiKeys.id, projectUserApiKeys.apiKeyId))
+      .leftJoin(
+        apiKeyExportableSecrets,
+        and(
+          eq(apiKeyExportableSecrets.apiKeyId, apiKeys.id),
+          eq(apiKeyExportableSecrets.projectId, projectId)
+        )
+      )
+      .where(
+        and(
+          eq(projectUserApiKeys.projectId, projectId),
+          inArray(projectUserApiKeys.userId, [...userIds]),
+          isNull(projectUserApiKeys.deletedAt),
+          isNull(apiKeys.deletedAt),
+          eq(apiKeys.isRevoked, false)
+        )
+      )
+      .orderBy(asc(apiKeys.createdAt), asc(apiKeys.id));
+
+    return rows.map(
+      (row: {
+        userId: string;
+        apiKeyId: string;
+        clientId: string;
+        clientSecretFingerprint: string | null;
+        encryptedSecret: string | null;
+        secretIv: string | null;
+        secretTag: string | null;
+      }) => ({
+        userId: row.userId,
+        apiKeyId: row.apiKeyId,
+        clientId: row.clientId,
+        clientSecretFingerprint: row.clientSecretFingerprint ?? null,
+        sealed:
+          row.encryptedSecret !== null && row.secretIv !== null && row.secretTag !== null
+            ? {
+                encryptedSecret: row.encryptedSecret,
+                secretIv: row.secretIv,
+                secretTag: row.secretTag,
+              }
+            : null,
+      })
+    );
   }
 }

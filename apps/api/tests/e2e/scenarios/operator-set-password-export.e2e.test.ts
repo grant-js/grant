@@ -43,7 +43,11 @@ interface IdBody {
 
 interface ExportResult {
   exportProjectUserCredentials?: {
-    users: Array<{ userId: string; password: { algorithm: string; hash: string } | null }>;
+    users: Array<{
+      userId: string;
+      password: { algorithm: string; hash: string } | null;
+      apiKeySecrets: unknown[] | null;
+    }>;
   };
 }
 
@@ -287,8 +291,8 @@ describe('Operator credential export', () => {
     const res = await exportGql(exporter.accessToken, [withoutPasswordId, withPasswordId]);
     expect(res.body.errors, JSON.stringify(res.body.errors)).toBeUndefined();
     expect(res.body.data?.exportProjectUserCredentials?.users).toEqual([
-      { userId: withoutPasswordId, password: null },
-      { userId: withPasswordId, password: { algorithm: 'bcrypt', hash } },
+      { userId: withoutPasswordId, password: null, apiKeySecrets: null },
+      { userId: withPasswordId, password: { algorithm: 'bcrypt', hash }, apiKeySecrets: null },
     ]);
   });
 
@@ -343,8 +347,8 @@ describe('Operator credential export', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect((res.body as { data: unknown }).data).toEqual({
       users: [
-        { userId: withPasswordId, password: { algorithm: 'bcrypt', hash } },
-        { userId: withoutPasswordId, password: null },
+        { userId: withPasswordId, password: { algorithm: 'bcrypt', hash }, apiKeySecrets: null },
+        { userId: withoutPasswordId, password: null, apiKeySecrets: null },
       ],
     });
 
@@ -414,8 +418,8 @@ describe('Operator credential export', () => {
     expect(res.headers['cache-control']).toContain('no-store');
     expect((res.body as { data: unknown }).data).toEqual({
       users: [
-        { userId: withPasswordId, password: { algorithm: 'bcrypt', hash } },
-        { userId: withoutPasswordId, password: null },
+        { userId: withPasswordId, password: { algorithm: 'bcrypt', hash }, apiKeySecrets: null },
+        { userId: withoutPasswordId, password: null, apiKeySecrets: null },
       ],
     });
     expect((await exportAuditRows()).length).toBe(before + 1);

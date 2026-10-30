@@ -144,6 +144,7 @@ function build(
     }),
     deleteForProject: vi.fn(async () => 0),
     listCredentialSummaries: vi.fn(async () => []),
+    findSealedForExport: vi.fn().mockResolvedValue([]),
   } satisfies IApiKeyExportableSecretRepository;
 
   const projects = {

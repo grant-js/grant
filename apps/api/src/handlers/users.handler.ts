@@ -572,14 +572,16 @@ export class UserHandler extends CacheHandler {
   }
 
   /**
-   * Audited export of project password hashes in CDM shape (`ProjectUser:ExportCredentials`,
-   * enforced by the transport, which also refuses an input scope that differs from the
-   * authorized one, see `lib/authorization/operation-scope.ts`). Shape first, before any
-   * read: project scope, `kinds` (default `[PASSWORD]`, never empty), `userIds` non-empty,
-   * UUIDs, at most one page. Then, in one transaction: **every** id must be a member (any
-   * non-member is `NotFoundError` and nothing is read or audited: no partial export), the
-   * hashes are read once, and the one audit row is written. A failed audit write rolls the
-   * export back with it.
+   * Audited export of project credentials: password hashes in CDM shape (`PASSWORD`) and the
+   * plaintext secrets of API keys with an exportable copy (`API_KEY_SECRET`, ADR 0013), the
+   * same permission for both (`ProjectUser:ExportCredentials`, enforced by the transport, which
+   * also refuses an input scope that differs from the authorized one, see
+   * `lib/authorization/operation-scope.ts`). Shape first, before any read: project scope,
+   * `kinds` (default `[PASSWORD]`, never empty), `userIds` non-empty, UUIDs, at most one page.
+   * Then, in one transaction: **every** id must be a member (any non-member is `NotFoundError`
+   * and nothing is read or audited: no partial export), the credentials are read once, and
+   * the audit rows are written (one summary row, one row per exported secret). A failed audit
+   * write rolls the export back with it.
    */
   public async exportProjectUserCredentials(
     params: QueryExportProjectUserCredentialsArgs

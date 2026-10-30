@@ -290,7 +290,11 @@ export function createServices(
     projectUserCredentialExports: new ProjectUserCredentialExportService(
       repositories.projectUserCredentialRepository,
       audit(projectUserCredentialAuditLogs, 'projectUserCredentialId', user, db),
-      repositories.apiKeyExportableSecretRepository
+      repositories.apiKeyExportableSecretRepository,
+      // The one decrypt path of an exportable copy, and the API-key audit log that gets one row
+      // per exported secret (its `logExport` throws, like the summary row's).
+      apiKeyExportableSecrets,
+      audit(apiKeyAuditLogs, 'apiKeyId', user, db)
     ),
     credentialLockouts,
     credentialSignInLockouts,

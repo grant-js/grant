@@ -86,6 +86,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     storeForKey: vi.fn(),
     removeForKeys: vi.fn().mockResolvedValue(0),
     removeForProject: vi.fn().mockResolvedValue(0),
+    readForExport: vi.fn().mockResolvedValue([]),
   } satisfies IApiKeyExportableSecretService;
 
   const service = new ApiKeyService(
