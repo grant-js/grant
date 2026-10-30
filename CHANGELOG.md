@@ -3,6 +3,22 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.22.0
+
+### Platform
+
+**Docker images:** tagged `:1.22.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.22.0** (fixed group with apps).
+
+### Minor Changes
+
+- 3ffba94: In a project that opted in to exportable API-key secrets, Grant keeps an encrypted copy of a project-user API key's secret at create and rotate (AES-256-GCM under the dedicated `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY`) and issues such secrets as 88-character standard base64 of 64 random bytes (bcrypt verifies the first 72 bytes only); the copy is removed on revoke, delete, CDM replace delete or rotate, and opt-out. Every project-user key created, rotated or imported from this release on also stores a fingerprint, the SHA-256 of the secret string as issued (`null` for a key created earlier and not rotated since), which holders of `ProjectUser:ExportCredentials` read through the new `User.apiKeyCredentials` (`ProjectUserApiKeyCredential`: `fingerprint`, and whether a copy exists). New table `api_key_exportable_secrets` and column `api_keys.client_secret_fingerprint` (migration 0095); no route changes. Nothing decrypts a copy yet. API-key reads (`GET /api/api-keys`, and the key returned by revoke and delete) no longer return `clientSecretHash` or `clientSecretFingerprint`: the REST list in a project-user scope returned the whole key row, so anyone holding `ApiKey:Read` there read the secret's bcrypt hash and, from this release, its fingerprint without `ProjectUser:ExportCredentials`. The fingerprint is readable only through `User.apiKeyCredentials`.
+
+- 3ffba94: `exportProjectUserCredentials` / `POST /api/users/credentials/export` accept `kinds: [API_KEY_SECRET]` (a new `CredentialKind`) and return, per member, `apiKeySecrets`: their live project-user API keys of the project with the key id, `clientId`, the fingerprint (SHA-256 of the secret as issued, `null` for a key created before it existed) and the plaintext `secret` (88-character standard base64) for keys the project keeps an exportable copy of, `null` otherwise. `apiKeySecrets` is `null` when the kind was not requested. The permission is unchanged (`ProjectUser:ExportCredentials`), the call is still one transaction, and every exported secret is audited with one row on the API-key audit log (the key id, never the secret) in addition to the export's summary row. The decision is recorded in ADR 0013. Additive; no route changes.
+
+- 3ffba94: Projects can opt in to exportable API-key secrets (`Project.exportableApiKeySecrets`, off by default) through `setProjectExportableApiKeySecrets` / `PUT /api/projects/{id}/exportable-api-key-secrets`, gated by the new `Project:SetExportableApiKeySecrets` held by Owner and Admin; audited; migration 0094; one new route. Enabling needs `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY`. The flag changes nothing yet: it is read by later releases of the feature.
+
 ## 1.21.0
 
 ### Platform
