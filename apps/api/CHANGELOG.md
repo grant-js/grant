@@ -1,5 +1,32 @@
 # grant-api
 
+## 1.21.0
+
+### Minor Changes
+
+- d19df19: When a person deletes an identity a CDM import created or marked, Grant records a tombstone (project, kind, a fingerprint of the import key; no personal data), and later imports of that project do not recreate the identity, its membership, credential or API keys. `SyncProjectResult.usersSkippedTombstoned` counts the users skipped. A tombstone blocks only the creation of an identity: a document user that resolves to a live identity (a matched `grantUserId`, a live e-mail identity or key) is imported as usual, and it is written only for a self-deletion, never when an operator deletes someone else or removes a member. The e-mail identity lookup of an import no longer treats the e-mail method of a deleted account as a live identity. Requires `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`. Adds the table `cdm_import_tombstones` (migration 0093); no route changes.
+- d19df19: A CDM `users[]` entry keyed by `findBy: key` may name an existing Grant user with `key.grantUserId`; the import marks that user with the key for the importing project instead of creating a new one, and later imports resolve the key to the same user. The key lookup now also reads the project membership row's marker. The named user must exist and be live, and must not already be imported into the project under another key; a refusal fails the import and names the position in `users[]`, never the key or the id. Membership still comes from the document's assignment (`roles`, `groups` or `permissions`), as for `findBy: id`. Additive: the field is optional, existing documents behave as before, no route changes.
+
+### Patch Changes
+
+- d19df19: `api_key.created`, `api_key.rotated` and `api_key.revoked` now name the key's owning project user as `grantsubjectuser`, as `api_key.deleted` already did, and reach the owning project's subscriptions; additive, no route changes.
+- Updated dependencies [d19df19]
+- Updated dependencies [d19df19]
+  - @grantjs/schema@1.21.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.20.2
 
 ### Patch Changes
