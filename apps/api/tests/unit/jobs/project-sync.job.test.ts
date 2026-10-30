@@ -380,6 +380,39 @@ describe('ProjectSyncJob worker', () => {
     expect(mocks.markFailed).not.toHaveBeenCalled();
   });
 
+  it('invalidates the auth cache of a user matched by key.grantUserId, like a findBy id user', async () => {
+    const matchedUserId = '30000000-0000-4000-8000-000000000001';
+    const user = (key: { value: string; findBy: CdmFindBy; grantUserId?: string | null }) => ({
+      key,
+      name: 'User',
+      roles: [],
+      groups: [],
+      permissions: [],
+      tags: [],
+      primaryTag: null,
+      apiKeys: [],
+      metadata: null,
+    });
+    mocks.loadForExecution.mockResolvedValue({
+      ...buildExecData(),
+      payload: emptyCanonicalPayload({
+        users: [
+          user({ value: userId, findBy: CdmFindBy.Id }),
+          user({ value: 'legacy-17', findBy: CdmFindBy.Key, grantUserId: matchedUserId }),
+          user({ value: 'legacy-18', findBy: CdmFindBy.Key, grantUserId: null }),
+        ],
+      }),
+    });
+    mocks.importProjectCdm.mockResolvedValue(buildSyncResult());
+
+    await buildJobInstance(mocks).apply(enqueueScope, jobRecordId);
+
+    expect(mocks.invalidateCachesForImportResult).toHaveBeenCalledWith({
+      scope: enqueueScope,
+      userIds: [userId, matchedUserId],
+    });
+  });
+
   it('logs hash-prep duration and secret count, never the secret', async () => {
     const clientSecret = 'm'.repeat(32);
     mocks.loadForExecution.mockResolvedValue({

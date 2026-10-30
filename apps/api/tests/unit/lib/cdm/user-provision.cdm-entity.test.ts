@@ -20,6 +20,7 @@ const userAuthenticationMethods = {
 };
 const userRepository = {
   findUserIdByCdmImport: vi.fn(),
+  findLiveUserCdmMarkers: vi.fn(),
 };
 const projectUsers = {
   filterMemberUserIds: vi.fn(),
@@ -434,5 +435,210 @@ describe('UserProvisionCdmEntity postApply (project credentials, ADR 0011 slice 
     expect(message).toContain('users[9]');
     expect(message).not.toContain('users[10]');
     expect(message).toContain('and 4 more');
+  });
+});
+
+describe('UserProvisionCdmEntity key.grantUserId match', () => {
+  const externalKey = 'legacy-user-17';
+  const grantUserId = '30000000-0000-4000-8000-000000000001';
+  const otherUserId = '30000000-0000-4000-8000-000000000002';
+  const otherProjectId = '10000000-0000-4000-8000-000000000012';
+  const row = {
+    externalKey,
+    findBy: 'key' as const,
+    name: 'Matched User',
+    metadata: null,
+    grantUserId,
+  };
+  const marker = (overrides: Record<string, unknown> = {}) => ({
+    projectId,
+    kind: 'user',
+    externalKey,
+    ...overrides,
+  });
+
+  async function refusal(
+    markers: { globalMarker: unknown; membershipMarker: unknown } | null,
+    foundByKey: string | null = null,
+    position = 0
+  ): Promise<string> {
+    userRepository.findUserIdByCdmImport.mockResolvedValue(foundByKey);
+    userRepository.findLiveUserCdmMarkers.mockResolvedValue(markers);
+    try {
+      await createEntity().apply(createCtx(), [{ ...row, documentIndex: position }]);
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError);
+      return (error as Error).message;
+    }
+    throw new Error('expected the import to be refused');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    userRepository.findUserIdByCdmImport.mockResolvedValue(null);
+    userRepository.findLiveUserCdmMarkers.mockResolvedValue({
+      globalMarker: null,
+      membershipMarker: null,
+    });
+    users.createUser.mockResolvedValue({ id: 'new-user-id' });
+  });
+
+  it('records the hinted user as the key without creating one or touching global metadata', async () => {
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [row]);
+
+    expect(users.createUser).not.toHaveBeenCalled();
+    expect(userRepository.findLiveUserCdmMarkers).toHaveBeenCalledWith(
+      { userId: grantUserId, projectId },
+      tx
+    );
+    expect(ctx.produced.userIds.get(externalKey)).toBe(grantUserId);
+    expect(ctx.assignmentUserIds.has(grantUserId)).toBe(true);
+    expect(ctx.result.usersCreated).toBe(0);
+  });
+
+  it('matches again on a repeat import before the assignment marked the user (idempotent)', async () => {
+    const first = createCtx();
+    const second = createCtx();
+
+    await createEntity().apply(first, [row]);
+    await createEntity().apply(second, [row]);
+
+    expect(users.createUser).not.toHaveBeenCalled();
+    expect(second.produced.userIds.get(externalKey)).toBe(grantUserId);
+  });
+
+  it('reuses the keyed user without reading the hinted one when the hint agrees', async () => {
+    userRepository.findUserIdByCdmImport.mockResolvedValue(grantUserId);
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [row]);
+
+    expect(userRepository.findLiveUserCdmMarkers).not.toHaveBeenCalled();
+    expect(users.createUser).not.toHaveBeenCalled();
+    expect(ctx.produced.userIds.get(externalKey)).toBe(grantUserId);
+  });
+
+  it('reuses the keyed user when no hint is given, as before', async () => {
+    userRepository.findUserIdByCdmImport.mockResolvedValue(otherUserId);
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [{ ...row, grantUserId: null }]);
+
+    expect(userRepository.findLiveUserCdmMarkers).not.toHaveBeenCalled();
+    expect(ctx.produced.userIds.get(externalKey)).toBe(otherUserId);
+  });
+
+  it('creates a user as before when there is no hint and nothing carries the key', async () => {
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [{ ...row, grantUserId: null }]);
+
+    expect(userRepository.findLiveUserCdmMarkers).not.toHaveBeenCalled();
+    expect(users.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Matched User',
+        metadata: { cdmImport: { projectId, kind: 'user', externalKey } },
+      }),
+      tx
+    );
+    expect(ctx.result.usersCreated).toBe(1);
+  });
+
+  describe('refusals (each fails the import, names the position, never the key or an id)', () => {
+    it('refuses a hint that differs from the user already imported under this key', async () => {
+      const message = await refusal(null, otherUserId, 3);
+      expect(message).toBe(
+        'users[3]: grantUserId names another user than the one already imported under this key'
+      );
+      expect(users.createUser).not.toHaveBeenCalled();
+    });
+
+    it('refuses a hint that names no user', async () => {
+      const message = await refusal(null, null, 2);
+      expect(message).toBe('users[2]: grantUserId does not name an existing user');
+      expect(users.createUser).not.toHaveBeenCalled();
+    });
+
+    it('refuses a soft-deleted user (the read returns none for it) and never falls back to creating one', async () => {
+      userRepository.findUserIdByCdmImport.mockResolvedValue(null);
+      userRepository.findLiveUserCdmMarkers.mockResolvedValue(null);
+
+      await expect(createEntity().apply(createCtx(), [row])).rejects.toThrow(
+        /grantUserId does not name an existing user/
+      );
+      expect(users.createUser).not.toHaveBeenCalled();
+    });
+
+    it('refuses a user whose membership row carries a marker with another key', async () => {
+      const message = await refusal({
+        globalMarker: null,
+        membershipMarker: marker({ externalKey: 'someone-elses-key' }),
+      });
+      expect(message).toBe('users[0]: grantUserId is already imported under another key');
+    });
+
+    it('refuses a user whose global marker names this project with another key', async () => {
+      const message = await refusal({
+        globalMarker: marker({ externalKey: 'someone-elses-key' }),
+        membershipMarker: null,
+      });
+      expect(message).toBe('users[0]: grantUserId is already imported under another key');
+    });
+
+    it("does not refuse a user whose marker is another project's", async () => {
+      const ctx = createCtx();
+      userRepository.findLiveUserCdmMarkers.mockResolvedValue({
+        globalMarker: marker({ projectId: otherProjectId, externalKey: 'other-projects-key' }),
+        membershipMarker: null,
+      });
+
+      await createEntity().apply(ctx, [row]);
+
+      expect(ctx.produced.userIds.get(externalKey)).toBe(grantUserId);
+    });
+
+    it.each([
+      ['other-user-under-key', null, otherUserId],
+      ['user-not-found', null, null],
+      ['other-key', { globalMarker: marker({ externalKey: 'x' }), membershipMarker: null }, null],
+    ] as const)(
+      '%s: the message carries neither the key nor an id',
+      async (_label, markers, found) => {
+        const message = await refusal(
+          markers as { globalMarker: unknown; membershipMarker: unknown } | null,
+          found
+        );
+        for (const secret of [externalKey, grantUserId, otherUserId, projectId, 'someone']) {
+          expect(message).not.toContain(secret);
+        }
+      }
+    );
+
+    it('names the position in the document, not in the provisioned list', async () => {
+      const message = await refusal(null, null, 7);
+      expect(message).toMatch(/^users\[7\]:/);
+    });
+  });
+
+  it('refuses two entries of one document that name the same user under different keys', async () => {
+    const ctx = createCtx();
+
+    await expect(
+      createEntity().apply(ctx, [
+        { ...row, documentIndex: 0 },
+        { ...row, externalKey: 'second-key', documentIndex: 1 },
+      ])
+    ).rejects.toThrow('users[1]: grantUserId is already imported under another key');
+    expect(users.createUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects the hint on an email identity at validateInput as well', () => {
+    expect(() =>
+      createEntity().validateInput([
+        { externalKey: 'a@example.com', findBy: 'email', name: 'A', grantUserId },
+      ])
+    ).toThrow(/grantUserId is only allowed with key.findBy 'key'/);
   });
 });

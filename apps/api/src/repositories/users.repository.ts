@@ -118,19 +118,62 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
     transaction?: Transaction
   ): Promise<string | null> {
     const dbInstance = transaction ?? this.db;
-    const rows = await dbInstance
-      .select({ id: users.id })
+    const marker = JSON.stringify({
+      cdmImport: {
+        projectId: params.projectId,
+        kind: params.kind,
+        externalKey: params.externalKey,
+      },
+    });
+    // Two index-friendly arms (containment is what `users_metadata_idx` and
+    // `project_users_metadata_idx` serve), the global marker ranked before the membership row's.
+    // Both arms require a live user; the row arm also requires a live row of this project.
+    const globalMarker = dbInstance
+      .select({ id: sql<string>`${users.id}`.as('id'), rank: sql<number>`0`.as('rank') })
       .from(users)
+      .where(and(isNull(users.deletedAt), sql`${users.metadata} @> ${marker}::jsonb`));
+    const membershipMarker = dbInstance
+      .select({ id: sql<string>`${projectUsers.userId}`.as('id'), rank: sql<number>`1`.as('rank') })
+      .from(projectUsers)
+      .innerJoin(users, eq(users.id, projectUsers.userId))
       .where(
         and(
+          eq(projectUsers.projectId, params.projectId),
+          isNull(projectUsers.deletedAt),
           isNull(users.deletedAt),
-          sql`${users.metadata}->'cdmImport'->>'projectId' = ${params.projectId}`,
-          sql`${users.metadata}->'cdmImport'->>'kind' = ${params.kind}`,
-          sql`${users.metadata}->'cdmImport'->>'externalKey' = ${params.externalKey}`
+          sql`${projectUsers.metadata} @> ${marker}::jsonb`
+        )
+      );
+    const rows = (await globalMarker
+      .unionAll(membershipMarker)
+      .orderBy(sql`rank`)
+      .limit(1)) as Array<{ id: string }>;
+    return rows[0]?.id ?? null;
+  }
+
+  public async findLiveUserCdmMarkers(
+    params: { userId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<{ globalMarker: unknown; membershipMarker: unknown } | null> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({
+        globalMarker: sql<unknown>`${users.metadata}->'cdmImport'`,
+        membershipMarker: sql<unknown>`${projectUsers.metadata}->'cdmImport'`,
+      })
+      .from(users)
+      .leftJoin(
+        projectUsers,
+        and(
+          eq(projectUsers.userId, users.id),
+          eq(projectUsers.projectId, params.projectId),
+          isNull(projectUsers.deletedAt)
         )
       )
+      .where(and(eq(users.id, params.userId), isNull(users.deletedAt)))
       .limit(1);
-    return rows[0]?.id ?? null;
+    const row = rows[0];
+    return row ? { globalMarker: row.globalMarker, membershipMarker: row.membershipMarker } : null;
   }
 
   public async updateUser(

@@ -187,8 +187,31 @@ User keys support two important modes:
 | Resolver            | Behavior                                                                                                                                                                                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `findBy: id`        | `key.value` is an existing Grant user id. Import skips global user provisioning and uses that user directly.                                                                                                                                                                                                                                     |
-| `findBy: key`/empty | `key.value` is a CDM-local external key. Grant creates or reuses a user with `metadata.cdmImport` for this project.                                                                                                                                                                                                                              |
+| `findBy: key`/empty | `key.value` is a CDM-local external key. Grant creates or reuses a user with `metadata.cdmImport` for this project; with [`grantUserId`](#grant-user-id) it reuses a named existing Grant user instead of creating one.                                                                                                                          |
 | `findBy: email`     | `key.value` is normalized to lowercase and resolved against the global authentication catalog. If no identity exists, Grant creates a global user plus an email authentication method with `isVerified: false`. The identity has no platform password; a [`password`](#password-credentials) becomes a credential of the importing project only. |
+
+### Matching an existing Grant user: `key.grantUserId` {#grant-user-id}
+
+A `findBy: key` user may also carry `key.grantUserId`, the id of an existing Grant user that this key _is_. Use it when a person was created in Grant first and your own system later learns of them: the import reuses that user instead of creating a second one, and your document keeps the same key on every import.
+
+```json
+{
+  "key": {
+    "value": "legacy-user-17",
+    "findBy": "key",
+    "grantUserId": "0b6f3b0e-8f55-4d37-9d1f-3a1e5c2a7d10"
+  },
+  "name": "Ada Lovelace",
+  "roles": ["editor"]
+}
+```
+
+- **The rule, in order.** (1) If a live user of this project already carries the key, that user is used; a `grantUserId` naming a different user is refused. (2) Otherwise the named user must exist and be live (not deleted), and must not already be imported into this project under another key (neither the membership row's marker nor the global user's marker may name this project with a different key), and no other entry of the same document may already resolve to that user, since a membership row holds one key; that user is then the one. (3) With no `grantUserId` and nothing under the key, a user is created, as before.
+- **Refusals** fail and roll back the whole import, like the other document rules. The message names the position in `users[]` and never the key or an id: `grantUserId does not name an existing user`, `grantUserId is already imported under another key`, `grantUserId names another user than the one already imported under this key`. A `grantUserId` is also refused (naming the position) when it is not a UUID or when the user is not identified by `findBy: key`: with `findBy: id` the value already is the id, and with `findBy: email` the person is resolved by address.
+- **Membership comes from the assignment.** Users are global in Grant, and there is no tenant a user belongs to, so the match does not require the person to be a member already; as for `findBy: id`, the document's assignment (`roles`, `groups` or `permissions`) is what adds them to the importing project. A user the document names but does not assign gets no membership and no marker yet; the next import with the hint matches again.
+- **The key sticks.** For a user the document assigns, the import writes this project's `metadata.cdmImport` marker on the **project membership row** (the global user is not changed), so the next import resolves the same key to the same user without the hint. The key lookup reads the membership row's marker as well as the global one (see [Row metadata](#row-metadata)).
+- **No events, no removals.** Imports publish no domain events, so a match publishes none. A `replace` import removes no membership and no user, so a matched user keeps their membership and marker.
+- **Not exported as keyed.** The export lists users by the global marker, so a user matched this way is exported as a `findBy: id` reference, not as a keyed `users[]` entry.
 
 For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
 
@@ -395,7 +418,7 @@ CDM-managed rows carry:
 | `metadata.cdmImport` | `projectId`, `kind`, `externalKey`, and for API keys `secretFingerprint` (HMAC only; never exported) |
 | `metadata.cdmSource` | Trace ids (`grantRoleId`, `grantUserId`, …) and importer-owned JSON                                  |
 
-For a `findBy: email` or `findBy: key` user the import also writes this project's `metadata.cdmImport` (`kind: 'user'`, the user's external key) on the **project membership row**, whether it created the identity or reused an existing one. The project-scoped `users` read merges the global user's metadata with the membership row's (the row wins), so a project that imported a user always sees its own marker, even when the identity pre-existed and its global metadata carries none or another project's. The global metadata of a reused identity is never changed.
+For a `findBy: email` or `findBy: key` user the import also writes this project's `metadata.cdmImport` (`kind: 'user'`, the user's external key) on the **project membership row**, whether it created the identity or reused an existing one. The project-scoped `users` read merges the global user's metadata with the membership row's (the row wins), so a project that imported a user always sees its own marker, even when the identity pre-existed and its global metadata carries none or another project's. The global metadata of a reused identity is never changed. The `findBy: key` and `findBy: email` lookups of an earlier import's user (`findUserIdByCdmImport`) read both places: the global user's marker first, then the live membership row's of this project, for a live user only. A marker on another project's row never matches.
 
 **`user.deleted` and `project.user_removed` webhook events** name the user's import key for the receiving project in `data.before.externalKeys`. The key is the membership row's marker `externalKey`, or, when that is an e-mail address (an identity keyed by `findBy: email` always is), the importer-declared `metadata.legacy.id` of the user (stored under `cdmSource.legacy.id`): an importer that wants a deleted or removed user to be nameable from the event declares its own id there. Nothing else under `cdmSource` is read, and a value that looks like an e-mail address is never emitted. See [External keys of a removed user](./events-webhooks-notifications.md#external-keys-of-a-removed-user).
 

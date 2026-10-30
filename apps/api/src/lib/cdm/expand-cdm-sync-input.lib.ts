@@ -138,6 +138,7 @@ export function expandCdmSyncInput(input: CdmDocumentInput): ExpandedCdmSyncPayl
         findBy: isEmail ? 'email' : 'key',
         name: u.name,
         documentIndex,
+        grantUserId: !isEmail ? (resolver.grantUserId ?? null) : null,
         metadata: u.metadata ?? null,
         searchable: readCdmInputSearchable(u.searchable),
         password: u.password ? { algorithm: u.password.algorithm, hash: u.password.hash } : null,

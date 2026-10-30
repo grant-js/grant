@@ -96,6 +96,11 @@ export interface CdmUserProvisionInternal {
   /** Position of this user in the document's `users[]`, so an apply-time error can name it. */
   documentIndex?: number;
   /**
+   * `findBy: 'key'` only: an existing Grant user this key is. Used when no user of the project
+   * carries the key yet (see `decideGrantUserMatch`); never exported.
+   */
+  grantUserId?: string | null;
+  /**
    * Import-only, `findBy: 'email'` only: a bcrypt hash for the importing project's password
    * credential (ADR 0011 § 4). A credential: it goes to the credential store and nowhere
    * else, so it is never copied into `metadata`, `searchable`, a log line or an error message.
