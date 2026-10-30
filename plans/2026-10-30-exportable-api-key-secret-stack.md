@@ -10,7 +10,7 @@ Grounded on `origin/main` `42afcf0b` (v1.21.0, the version commit after #670/#67
 
 - **Slug**: `exportable-api-key-secret`
 - **Story brief**: `plans/2026-10-30-exportable-api-key-secret-brief.md`
-- **Status**: approved (Gates 1–2, Alejandro 2026-10-30, three slices, security-full on each, minor v1.22.0; question 4 → plaintext fingerprint, new column `api_keys.client_secret_fingerprint`)
+- **Status**: in review (Gates 1–3 done, Alejandro 2026-10-30; Gate 4 on story PR #676; three slices, security-full on each, minor v1.22.0; question 4 → plaintext fingerprint, column `api_keys.client_secret_fingerprint`)
 - **Story trunk**: `feat/exportable-api-key-secret` from `main` at `42afcf0b` (exists locally, holds the two plan files; **not pushed until Gate 1 is answered**). The `feat/` prefix is deliberate: `ci.yml` runs only for pull requests whose base is `main` or `feat/**` (`.github/workflows/ci.yml:8`), and every slice branch below also starts with `feat/`, so every slice PR gets CI, including the e2e suite.
 - **worktree_path**: `/Users/aleheredia/workspace/worktrees/grant-platform-feat-exportable-api-key-secret` (holds the trunk; slice branches are created from it after Gate 2 by `gh stack init` / `gh stack add`, which check the slice out in this worktree, or in a second worktree when two slices run at once). `pnpm install --frozen-lockfile --ignore-scripts` has been run in it (2026-10-30); native modules (bcrypt) built fine from the store, so unit tests run here.
 - **Release**: **minor, v1.22.0** (`grant-api`, `@grantjs/schema`; `grant-web` moves with the fixed group). Justification: two migrations (a column and a table), a new permission action with group placement, a new REST route, a new `CredentialKind` member, new GraphQL fields, a new environment variable: features, all additive (no caller breaks, the default is off), so minor rather than major or patch. Each slice carries its own `minor` changeset; the version PR takes the highest bump.
@@ -156,8 +156,8 @@ gh pr view <bottom-pr> --json baseRefName   # must be feat/exportable-api-key-se
 
 - [x] Gate 1: Story brief approved — Alejandro, 2026-10-30 (as recommended, except question 4: plaintext fingerprint).
 - [x] Gate 2: Stack plan approved — Alejandro, 2026-10-30: order 1→2→3, three slices, security-full on each, named contracts (S2 fingerprint: SHA-256 of the issued secret string, nullable, column `api_keys.client_secret_fingerprint`), minor v1.22.0.
-- [ ] Gate 3: Stack PRs merged into trunk (security-full on each, independent Security review before each).
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 3: Stack PRs merged into trunk — Alejandro, 2026-10-30: #672 → `bb697a07`, #673 → `7208a857` (incl. the key-read strip `5dc1073f`), #675 → `79fbc27f` (incl. the ADR trim `9fb6be64`).
+- [ ] Gate 4: Story → `main` deep review complete — story PR [#676](https://github.com/grant-js/grant/pull/676) open 2026-10-30, minor v1.22.0.
 
 ## Cleanup
 
