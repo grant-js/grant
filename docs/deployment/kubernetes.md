@@ -143,7 +143,7 @@ and set **`ingress.tls`** to the Secret name your issuer creates. The exact anno
 
 Prefer **`api.existingSecretEnv`**: a Kubernetes `Secret` in the release namespace whose keys use **canonical env names** (`DB_URL`, `REDIS_PASSWORD`, `AUTH_MFA_SECRET_ENCRYPTION_KEY`, …). When set, the chart does not generate the default `*-runtime` Secret. Alternatively, enable **`externalSecret`** (External Secrets Operator) to populate the same secret name when `api.existingSecretEnv` is unset—see `values.yaml`.
 
-**`AUTH_MFA_SECRET_ENCRYPTION_KEY`** must be **identical across all API replicas**; never use a random per-pod value.
+**`AUTH_MFA_SECRET_ENCRYPTION_KEY`** must be **identical across all API replicas**; never use a random per-pod value. The same holds for **`PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`** and **`API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY`**: a replica with a different value cannot read the secrets another replica encrypted.
 
 ## Storage and replicas
 

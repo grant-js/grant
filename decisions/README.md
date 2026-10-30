@@ -21,17 +21,18 @@ record _why_ it became that way.
 
 ## Index
 
-| ADR                                                               | Status   | Decision                                                                                                 |
-| ----------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
-| [0001](./0001-configuration-gated-database-bootstrap.md)          | Accepted | Boot-time migrate/seed becomes configuration-gated                                                       |
-| [0002](./0002-long-running-cdm-sync-beyond-lambda.md)             | Accepted | CDM sync jobs exceeding 15 minutes run off-Lambda                                                        |
-| [0003](./0003-lambda-web-adapter-over-a-handler-entrypoint.md)    | Accepted | Lambda runs `server.js` behind the Web Adapter, no handler                                               |
-| [0004](./0004-secret-resolution-through-a-port.md)                | Accepted | Secrets resolve through `ISecretResolver` at point of use, not a boot preload                            |
-| [0005](./0005-aws-target-as-a-construct-library.md)               | Accepted | AWS target ships as a construct library; adopters replace `bin/`, not fork                               |
-| [0006](./0006-typescript-7-dual-install.md)                       | Accepted | `tsc` is TypeScript 7; `import 'typescript'` stays the 6.x API until 7.1                                 |
-| [0007](./0007-presigned-uploads-as-a-required-port-capability.md) | Accepted | Direct upload is required of every `IFileStorageService`, local adapter included                         |
-| [0008](./0008-per-project-oauth-connections.md)                   | Accepted | Per-project BYO OAuth connections for project-app social sign-in                                         |
-| [0009](./0009-cdm-import-by-reference.md)                         | Proposed | CDM import payloads may travel by reference through the presigned-upload port                            |
-| [0010](./0010-cdm-import-of-bcrypt-password-hashes.md)            | Proposed | CDM imports carry bcrypt password hashes into the credential store; project apps may sign in with them   |
-| [0011](./0011-password-as-a-scoped-credential.md)                 | Proposed | Password is a credential with a scope, platform or project, not a field of the email method; amends 0010 |
-| [0012](./0012-webhook-delivery-whatever-the-request-scope.md)     | Accepted | Webhook events reach a project whatever scope the request ran in: linked projects recorded at publish    |
+| ADR                                                               | Status   | Decision                                                                                                         |
+| ----------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| [0001](./0001-configuration-gated-database-bootstrap.md)          | Accepted | Boot-time migrate/seed becomes configuration-gated                                                               |
+| [0002](./0002-long-running-cdm-sync-beyond-lambda.md)             | Accepted | CDM sync jobs exceeding 15 minutes run off-Lambda                                                                |
+| [0003](./0003-lambda-web-adapter-over-a-handler-entrypoint.md)    | Accepted | Lambda runs `server.js` behind the Web Adapter, no handler                                                       |
+| [0004](./0004-secret-resolution-through-a-port.md)                | Accepted | Secrets resolve through `ISecretResolver` at point of use, not a boot preload                                    |
+| [0005](./0005-aws-target-as-a-construct-library.md)               | Accepted | AWS target ships as a construct library; adopters replace `bin/`, not fork                                       |
+| [0006](./0006-typescript-7-dual-install.md)                       | Accepted | `tsc` is TypeScript 7; `import 'typescript'` stays the 6.x API until 7.1                                         |
+| [0007](./0007-presigned-uploads-as-a-required-port-capability.md) | Accepted | Direct upload is required of every `IFileStorageService`, local adapter included                                 |
+| [0008](./0008-per-project-oauth-connections.md)                   | Accepted | Per-project BYO OAuth connections for project-app social sign-in                                                 |
+| [0009](./0009-cdm-import-by-reference.md)                         | Proposed | CDM import payloads may travel by reference through the presigned-upload port                                    |
+| [0010](./0010-cdm-import-of-bcrypt-password-hashes.md)            | Proposed | CDM imports carry bcrypt password hashes into the credential store; project apps may sign in with them           |
+| [0011](./0011-password-as-a-scoped-credential.md)                 | Proposed | Password is a credential with a scope, platform or project, not a field of the email method; amends 0010         |
+| [0012](./0012-webhook-delivery-whatever-the-request-scope.md)     | Accepted | Webhook events reach a project whatever scope the request ran in: linked projects recorded at publish            |
+| [0013](./0013-exportable-api-key-secrets.md)                      | Proposed | Project-user API-key secrets may be kept encrypted behind a per-project opt-in and exported as a credential kind |

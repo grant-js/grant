@@ -220,8 +220,8 @@ export const setProjectUserPasswordResponseSchema = createSuccessResponseSchema(
 );
 
 /**
- * `kinds` is an enum of one member today (`PASSWORD`); a later kind extends it. The handler
- * applies the page-size cap, membership and project-scope rules.
+ * `kinds` is the `CredentialKind` enum (`PASSWORD`, `API_KEY_SECRET`); a later kind extends it.
+ * The handler applies the page-size cap, membership and project-scope rules.
  */
 export const exportProjectUserCredentialsRequestSchema = z.object({
   scope: scopeSchema,
@@ -237,8 +237,9 @@ export const exportProjectUserCredentialsRequestSchema = z.object({
     .min(1)
     .optional()
     .openapi({
-      description: 'Credential kinds to export. Defaults to `["PASSWORD"]`.',
-      example: [CredentialKind.Password],
+      description:
+        'Credential kinds to export: `PASSWORD` (bcrypt hashes) and `API_KEY_SECRET` (the plaintext secrets of the members\' API keys that the project keeps an exportable copy of). Defaults to `["PASSWORD"]`.',
+      example: [CredentialKind.Password, CredentialKind.ApiKeySecret],
     }),
 });
 
@@ -249,11 +250,29 @@ const exportedPasswordCredentialSchema = z.object({
   }),
 });
 
+const exportedApiKeySecretSchema = z.object({
+  apiKeyId: z.string(),
+  clientId: z.string().openapi({ description: "The key's public client id." }),
+  fingerprint: z.string().nullable().openapi({
+    description:
+      'Lowercase hex SHA-256 of the secret string as issued: compare it with `sha256(secret)` of the value held elsewhere. `null` for a key created before the fingerprint existed and not rotated since.',
+  }),
+  secret: z.string().nullable().openapi({
+    description:
+      'The plaintext secret, 88 characters of standard base64 (64 random bytes). Secret-equivalent: handle like a credential. `null` for a key the project holds no copy of (created before the project opted in, created by a CDM import, or rotated by a CDM replace).',
+  }),
+});
+
 const exportedProjectUserCredentialSchema = z.object({
   userId: z.string(),
-  password: exportedPasswordCredentialSchema
-    .nullable()
-    .openapi({ description: '`null` when the member has no project password credential.' }),
+  password: exportedPasswordCredentialSchema.nullable().openapi({
+    description:
+      '`null` when the member has no project password credential, and when the `PASSWORD` kind was not requested.',
+  }),
+  apiKeySecrets: z.array(exportedApiKeySecretSchema).nullable().openapi({
+    description:
+      "The member's live (not revoked, not deleted) project-user API keys, oldest first; `[]` for a member with no key. `null` when the `API_KEY_SECRET` kind was not requested.",
+  }),
 });
 
 const exportProjectUserCredentialsDataSchema = z.object({
@@ -262,7 +281,7 @@ const exportProjectUserCredentialsDataSchema = z.object({
 
 export const exportProjectUserCredentialsResponseSchema = createSuccessResponseSchema(
   exportProjectUserCredentialsDataSchema,
-  'Credential hashes of the requested project members (the one place a hash leaves Grant; audited)'
+  'Credentials of the requested project members: password hashes and API-key secrets (the one place either leaves Grant; audited)'
 );
 
 export const updateUserResponseSchema = createSuccessResponseSchema(

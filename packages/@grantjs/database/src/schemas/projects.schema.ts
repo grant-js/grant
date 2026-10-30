@@ -12,6 +12,7 @@ export const projects = pgTable(
     picturePath: varchar('picture_path', { length: 1024 }),
     primaryColor: varchar('primary_color', { length: 7 }),
     showHelpPanel: boolean('show_help_panel'),
+    exportableApiKeySecrets: boolean('exportable_api_key_secrets').notNull().default(false),
     deletedAt: timestamp('deleted_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

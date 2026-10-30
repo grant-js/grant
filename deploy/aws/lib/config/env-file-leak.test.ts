@@ -71,6 +71,7 @@ describe('the env file cannot leak a secret into the template', () => {
         `GOOGLE_CLIENT_SECRET=${SECRET_SENTINEL}`,
         `AUTH_MFA_SECRET_ENCRYPTION_KEY=${SECRET_SENTINEL}`,
         `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY=${SECRET_SENTINEL}`,
+        `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY=${SECRET_SENTINEL}`,
       ].join('\n')
     );
 

@@ -1,8 +1,10 @@
 import type {
+  IApiKeyExportableSecretService,
   IAuditLogger,
   IFileStorageService,
   IProjectRepository,
   IProjectService,
+  ISecretResolver,
   OptionalListScope,
 } from '@grantjs/core';
 import {
@@ -14,7 +16,7 @@ import {
   QueryProjectsArgs,
 } from '@grantjs/schema';
 
-import { NotFoundError } from '@/lib/errors';
+import { ConfigurationError, NotFoundError } from '@/lib/errors';
 import {
   hydratePictureUrl,
   hydratePictureUrls,
@@ -35,15 +37,21 @@ import {
   deleteProjectParamsSchema,
   getProjectsParamsSchema,
   projectSchema,
+  setExportableApiKeySecretsParamsSchema,
   setProjectPictureParamsSchema,
   updateProjectParamsSchema,
 } from './projects.schemas';
+
+/** The `project_audit_logs.action` of one change of the exportable-secrets opt-in. */
+const SET_EXPORTABLE_API_KEY_SECRETS_AUDIT_ACTION = 'SET_EXPORTABLE_API_KEY_SECRETS';
 
 export class ProjectService implements IProjectService {
   constructor(
     private readonly projectRepository: IProjectRepository,
     private readonly audit: IAuditLogger,
-    private readonly fileStorage: IFileStorageService
+    private readonly fileStorage: IFileStorageService,
+    private readonly secrets: ISecretResolver,
+    private readonly exportableSecrets: IApiKeyExportableSecretService
   ) {}
 
   private async getProject(projectId: string): Promise<Project> {
@@ -189,6 +197,62 @@ export class ProjectService implements IProjectService {
 
     await hydratePictureUrl(this.fileStorage, updatedProject);
     return validateOutput(createDynamicSingleSchema(projectSchema), updatedProject, context);
+  }
+
+  public async setExportableApiKeySecrets(
+    params: { projectId: string; enabled: boolean },
+    transaction?: Transaction
+  ): Promise<Project> {
+    const context = 'ProjectService.setExportableApiKeySecrets';
+    const { projectId, enabled } = validateInput(
+      setExportableApiKeySecretsParamsSchema,
+      params,
+      context
+    );
+
+    if (enabled) {
+      await this.requireExportableSecretEncryptionKey();
+    }
+
+    const changed = await this.projectRepository.setExportableApiKeySecrets(
+      { projectId, enabled },
+      transaction
+    );
+    if (!changed) {
+      return validateOutput(
+        createDynamicSingleSchema(projectSchema),
+        await this.getProject(projectId),
+        context
+      );
+    }
+
+    // Opting out ends the promise that Grant keeps a recoverable secret: every copy of the
+    // project goes in the same transaction as the flag. Opting in writes none (nothing is
+    // back-filled; the plaintext of an existing key is gone).
+    const copiesDeleted = enabled
+      ? 0
+      : await this.exportableSecrets.removeForProject(projectId, transaction);
+
+    await this.audit.logAction(
+      {
+        entityId: projectId,
+        action: SET_EXPORTABLE_API_KEY_SECRETS_AUDIT_ACTION,
+        oldValues: { exportableApiKeySecrets: !enabled },
+        newValues: { exportableApiKeySecrets: enabled },
+        metadata: { context, copiesDeleted },
+      },
+      transaction
+    );
+
+    await hydratePictureUrl(this.fileStorage, changed);
+    return validateOutput(createDynamicSingleSchema(projectSchema), changed, context);
+  }
+
+  private async requireExportableSecretEncryptionKey(): Promise<void> {
+    const key = await this.secrets.resolve('API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY');
+    if (!key) {
+      throw new ConfigurationError('API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY must be configured');
+    }
   }
 
   public async deleteProject(

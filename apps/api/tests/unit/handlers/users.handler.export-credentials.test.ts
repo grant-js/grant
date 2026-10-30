@@ -23,6 +23,7 @@ function createHandler(
     members?: string[];
     isAuthorized?: ReturnType<typeof vi.fn>;
     summaries?: unknown[];
+    apiKeySummaries?: unknown[];
   } = {}
 ) {
   const tx = { tx: true };
@@ -35,6 +36,7 @@ function createHandler(
     users: params.userIds.map((userId) => ({ userId, password: null })),
   }));
   const getPasswordCredentialSummaries = vi.fn().mockResolvedValue(overrides.summaries ?? []);
+  const getApiKeyCredentialSummaries = vi.fn().mockResolvedValue(overrides.apiKeySummaries ?? []);
   const isAuthorized = overrides.isAuthorized ?? vi.fn().mockResolvedValue({ authorized: true });
 
   const handler = new UserHandler(
@@ -57,7 +59,7 @@ function createHandler(
     { isAuthorized } as never,
     {} as never,
     {} as never,
-    { exportCredentials, getPasswordCredentialSummaries } as never,
+    { exportCredentials, getPasswordCredentialSummaries, getApiKeyCredentialSummaries } as never,
     {} as never,
     {} as never
   );
@@ -68,6 +70,7 @@ function createHandler(
     getProjectUsers,
     exportCredentials,
     getPasswordCredentialSummaries,
+    getApiKeyCredentialSummaries,
     isAuthorized,
   };
 }
@@ -170,6 +173,38 @@ describe('UserHandler exportProjectUserCredentials', () => {
       expect.objectContaining({ userIds: [memberB, memberA] }),
       expect.anything()
     );
+  });
+
+  it('passes the API_KEY_SECRET kind through, deduplicated, in the project scope the transport authorized', async () => {
+    const { handler, tx, exportCredentials } = createHandler();
+
+    await handler.exportProjectUserCredentials(
+      exportArgs([memberA], {
+        kinds: [CredentialKind.ApiKeySecret, CredentialKind.Password, CredentialKind.ApiKeySecret],
+      })
+    );
+
+    expect(exportCredentials).toHaveBeenCalledWith(
+      {
+        projectId,
+        userIds: [memberA],
+        kinds: [CredentialKind.ApiKeySecret, CredentialKind.Password],
+      },
+      tx
+    );
+  });
+
+  it('refuses the API_KEY_SECRET kind in a non-project scope before any read', async () => {
+    const { handler, withTransaction, exportCredentials } = createHandler();
+
+    await expect(
+      handler.exportProjectUserCredentials({
+        input: { scope: orgScope, userIds: [memberA], kinds: [CredentialKind.ApiKeySecret] },
+      })
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    expect(withTransaction).not.toHaveBeenCalled();
+    expect(exportCredentials).not.toHaveBeenCalled();
   });
 
   it('does not re-check roles in the handler (the transport owns authorization)', async () => {
@@ -311,5 +346,119 @@ describe('UserHandler getProjectUserPasswordCredential (User.passwordCredential)
         actorUserId,
       })
     ).resolves.toBeNull();
+  });
+});
+
+describe('UserHandler getProjectUserApiKeyCredentials (User.apiKeyCredentials)', () => {
+  const entry = {
+    apiKeyId: '50000000-0000-4000-8000-000000000001',
+    clientId: '50000000-0000-4000-8000-000000000002',
+    fingerprint: 'b'.repeat(64),
+    exportable: true,
+    updatedAt: new Date('2026-10-30T10:00:00Z'),
+  };
+  const legacy = { ...entry, apiKeyId: '50000000-0000-4000-8000-000000000003', fingerprint: null };
+
+  it('is null without ProjectUser:ExportCredentials, and reads nothing', async () => {
+    const { handler, getApiKeyCredentialSummaries } = createHandler({
+      isAuthorized: vi.fn().mockResolvedValue({ authorized: false, reason: 'no permission' }),
+      apiKeySummaries: [entry],
+    });
+
+    await expect(
+      handler.getProjectUserApiKeyCredentials({ userId: memberA, scope: projectScope, actorUserId })
+    ).resolves.toBeNull();
+    expect(getApiKeyCredentialSummaries).not.toHaveBeenCalled();
+  });
+
+  it('is null for a non-project scope, with no permission check and no read', async () => {
+    const { handler, isAuthorized, getApiKeyCredentialSummaries } = createHandler({
+      apiKeySummaries: [entry],
+    });
+
+    await expect(
+      handler.getProjectUserApiKeyCredentials({ userId: memberA, scope: orgScope, actorUserId })
+    ).resolves.toBeNull();
+    expect(isAuthorized).not.toHaveBeenCalled();
+    expect(getApiKeyCredentialSummaries).not.toHaveBeenCalled();
+  });
+
+  it.each([Tenant.OrganizationProjectUser, Tenant.AccountProjectUser])(
+    'is null for the leaf %s scope, with no permission check',
+    async (tenant) => {
+      const { handler, isAuthorized, getApiKeyCredentialSummaries } = createHandler({
+        apiKeySummaries: [entry],
+      });
+
+      await expect(
+        handler.getProjectUserApiKeyCredentials({
+          userId: memberA,
+          scope: { tenant, id: `${organizationId}:${projectId}:${memberA}` },
+          actorUserId,
+        })
+      ).resolves.toBeNull();
+      expect(isAuthorized).not.toHaveBeenCalled();
+      expect(getApiKeyCredentialSummaries).not.toHaveBeenCalled();
+    }
+  );
+
+  it('is null for an unauthenticated caller', async () => {
+    const { handler, isAuthorized } = createHandler({ apiKeySummaries: [entry] });
+
+    await expect(
+      handler.getProjectUserApiKeyCredentials({
+        userId: memberA,
+        scope: projectScope,
+        actorUserId: undefined,
+      })
+    ).resolves.toBeNull();
+    expect(isAuthorized).not.toHaveBeenCalled();
+  });
+
+  it('for a holder: one entry per key, a null fingerprint for a legacy key, and checks the export permission', async () => {
+    const { handler, isAuthorized, getApiKeyCredentialSummaries, tx } = createHandler({
+      apiKeySummaries: [entry, legacy],
+    });
+
+    const value = await handler.getProjectUserApiKeyCredentials({
+      userId: memberA,
+      scope: projectScope,
+      actorUserId,
+    });
+
+    expect(value).toEqual([entry, legacy]);
+    expect(isAuthorized).toHaveBeenCalledWith(
+      {
+        permission: {
+          resource: ResourceSlug.ProjectUser,
+          action: ResourceAction.ExportCredentials,
+        },
+        context: {},
+      },
+      actorUserId
+    );
+    expect(getApiKeyCredentialSummaries).toHaveBeenCalledWith({ projectId, userId: memberA }, tx);
+  });
+
+  it('is an empty list for a holder when the member has no key', async () => {
+    const { handler } = createHandler({ apiKeySummaries: [] });
+
+    await expect(
+      handler.getProjectUserApiKeyCredentials({ userId: memberA, scope: projectScope, actorUserId })
+    ).resolves.toEqual([]);
+  });
+
+  it('works in an AccountProject scope too', async () => {
+    const { handler, getApiKeyCredentialSummaries } = createHandler({ apiKeySummaries: [entry] });
+
+    await handler.getProjectUserApiKeyCredentials({
+      userId: memberA,
+      scope: { tenant: Tenant.AccountProject, id: `${organizationId}:${projectId}` },
+      actorUserId,
+    });
+    expect(getApiKeyCredentialSummaries).toHaveBeenCalledWith(
+      { projectId, userId: memberA },
+      expect.anything()
+    );
   });
 });

@@ -384,15 +384,17 @@ Revokes the user's project-app OAuth grants and clears the project lockout. Plat
     path: '/api/users/credentials/export',
     operationId: 'postApiUsersCredentialsExport',
     tags: ['Users'],
-    summary: 'Export project user credential hashes (audited)',
+    summary: 'Export project user credentials (audited)',
     description: `
-**The response contains credential hashes.** This is the one place a project password hash leaves Grant (everything else exposes at most whether a password exists), for a downstream identity mirror. Project scope only. POST because it is an audited action with a body, not a cacheable read; the response is sent \`Cache-Control: no-store\`.
+**The response contains credentials.** This is the one place a project password hash leaves Grant (everything else exposes at most whether a password exists), and the one place the plaintext secret of an API key can be read back (everywhere else it is shown once, at create and rotate), for a downstream identity mirror. Project scope only. POST because it is an audited action with a body, not a cacheable read; the response is sent \`Cache-Control: no-store\`.
+
+Two kinds, chosen with \`kinds\` (default \`["PASSWORD"]\`, never empty): \`PASSWORD\` returns \`password: { algorithm: "bcrypt", hash }\`; \`API_KEY_SECRET\` returns \`apiKeySecrets\`, the member's live project-user API keys (oldest first), each with its \`clientId\`, its \`fingerprint\` (the SHA-256 of the secret as issued, for the receiver to verify the pair) and the plaintext \`secret\`. Every exported secret is 88 characters of standard base64 (64 random bytes). A key has a \`secret\` only when its project opted in to exportable API-key secrets before the key was created or last rotated; any other key is listed with \`secret: null\`. A kind that was not requested is \`null\` in the result.
 
 Requires \`ProjectUser:ExportCredentials\`, which no standard group holds: grant it to a role's group per organization. An unauthorized call is refused before anything runs and writes no audit row.
 
 Every user in \`userIds\` must be a member of the project, otherwise the whole call fails with 404 and nothing is exported or audited (no partial export). \`userIds\` is capped at one page (the API maximum page size). Members without a project credential are listed with \`password: null\`. The result follows the order of \`userIds\`.
 
-**Every successful call writes one audit row** on the project credential audit log (\`action = 'export'\`, performed by the caller, with the number of users, the number of credentials and the kinds; never a hash). The read and the audit row share one transaction, so a failed audit write fails the call. Treat the response like a credential: do not log it.
+**Every successful call writes one audit row** on the project credential audit log (\`action = 'export'\`, performed by the caller, with the number of users, the number of credentials and secrets, and the kinds; never a hash or a secret), **and one row per exported API-key secret** on the API-key audit log (\`action = 'export'\`, the key id, the member and the kind; never the secret). The reads and the audit rows share one transaction, so a failed audit write fails the call. Treat the response like a credential: do not log it.
     `.trim(),
     request: {
       body: {
@@ -406,7 +408,7 @@ Every user in \`userIds\` must be a member of the project, otherwise the whole c
     responses: {
       200: {
         description:
-          'Hashes of the requested members, in request order. Contains credential hashes.',
+          'Credentials of the requested members, in request order. Contains password hashes and API-key secrets.',
         content: {
           'application/json': {
             schema: exportProjectUserCredentialsResponseSchema,

@@ -29,6 +29,7 @@ import {
   QueryProjectsArgs,
   Tenant,
 } from '@grantjs/schema';
+import { and, eq, isNull, ne } from 'drizzle-orm';
 
 import { BadRequestError } from '@/lib/errors';
 import { slugifySafe } from '@/lib/slugify.lib';
@@ -176,6 +177,41 @@ export class ProjectRepository
       input,
     };
     return this.update(baseParams, transaction);
+  }
+
+  public async setExportableApiKeySecrets(
+    params: { projectId: string; enabled: boolean },
+    transaction?: Transaction
+  ): Promise<Project | null> {
+    const dbInstance = transaction ?? this.db;
+
+    const rows = await dbInstance
+      .update(this.table)
+      .set({ exportableApiKeySecrets: params.enabled, updatedAt: new Date() })
+      .where(
+        and(
+          eq(this.table.id, params.projectId),
+          isNull(this.table.deletedAt),
+          ne(this.table.exportableApiKeySecrets, params.enabled)
+        )
+      )
+      .returning();
+
+    return (rows[0] as Project | undefined) ?? null;
+  }
+
+  public async isExportableApiKeySecretsEnabled(
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ enabled: this.table.exportableApiKeySecrets })
+      .from(this.table)
+      .where(and(eq(this.table.id, projectId), isNull(this.table.deletedAt)))
+      .limit(1)
+      .for('share');
+    return rows[0]?.enabled === true;
   }
 
   public async softDeleteProject(

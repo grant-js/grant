@@ -1,6 +1,7 @@
 import { MILLISECONDS_PER_MINUTE } from '@grantjs/constants';
 import type {
   IAccountProjectRepository,
+  IApiKeyExportableSecretService,
   IApiKeyRepository,
   IApiKeyService,
   IAuditLogger,
@@ -22,6 +23,7 @@ import {
 import { sql } from 'drizzle-orm';
 
 import { config } from '@/config';
+import { credentialFingerprint } from '@/lib/credential-fingerprint.lib';
 import {
   AuthenticationError,
   BadRequestError,
@@ -55,6 +57,7 @@ import {
   revokeApiKeyParamsSchema,
   rotateApiKeyParamsSchema,
   rotateApiKeysForCdmImportParamsSchema,
+  setMissingClientSecretFingerprintsForCdmImportParamsSchema,
 } from './api-keys.schemas';
 
 interface ExchangeTokenResult {
@@ -67,6 +70,15 @@ interface SignTokenParams {
   scope: Scope;
   userId: string;
 }
+
+/**
+ * How a client secret is issued. `base64url-32` is Grant's own form, 32 random bytes as
+ * unpadded base64url (43 characters). `base64-64` is 64 random bytes as padded standard
+ * base64 (88 characters), issued to the project-user keys of a project that opted in so one
+ * string can be carried into a system that decodes standard base64. bcrypt verifies only the
+ * first 72 bytes of either form.
+ */
+type ApiKeySecretForm = 'base64url-32' | 'base64-64';
 
 interface ScopedApiKeyResolution {
   apiKeys: ApiKey[];
@@ -81,7 +93,8 @@ export class ApiKeyService implements IApiKeyService {
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
     private readonly grant: Grant,
-    private readonly events: IEventPublisher
+    private readonly events: IEventPublisher,
+    private readonly exportableSecrets: IApiKeyExportableSecretService
   ) {}
 
   private getPerformedBy(): string {
@@ -211,11 +224,14 @@ export class ApiKeyService implements IApiKeyService {
     return { subjectUserId: owningUserIds.length === 1 ? owningUserIds[0] : null, projectIds };
   }
 
-  private generateApiKey(): { clientId: string; clientSecret: string } {
-    const clientId = generateUUID();
-    const secretBytes = generateRandomBytes(32);
-    const clientSecret = secretBytes.toString('base64url');
-    return { clientId, clientSecret };
+  private generateApiKeySecret(form: ApiKeySecretForm): string {
+    return form === 'base64-64'
+      ? generateRandomBytes(64).toString('base64')
+      : generateRandomBytes(32).toString('base64url');
+  }
+
+  private generateApiKey(form: ApiKeySecretForm): { clientId: string; clientSecret: string } {
+    return { clientId: generateUUID(), clientSecret: this.generateApiKeySecret(form) };
   }
 
   private parseScopeId(scope: Scope, expectedParts: number, label: string): string[] {
@@ -304,7 +320,16 @@ export class ApiKeyService implements IApiKeyService {
     const context = 'ApiKeyService.createApiKey';
     const validatedParams = validateInput(createApiKeyRequestSchema, params, context);
 
-    const { clientId, clientSecret } = this.generateApiKey();
+    // Only a project-user key (given an `owner`) can have an exportable copy, and only when its
+    // project opted in; that decides the form of the secret before it is generated.
+    const owner = validatedParams.owner;
+    const exportable = owner
+      ? await this.exportableSecrets.isEnabled(owner.projectId, transaction)
+      : false;
+
+    const { clientId, clientSecret } = this.generateApiKey(
+      exportable ? 'base64-64' : 'base64url-32'
+    );
     const clientSecretHash = hashSecret(clientSecret);
     const createdBy = this.getPerformedBy();
 
@@ -312,6 +337,7 @@ export class ApiKeyService implements IApiKeyService {
       {
         clientId,
         clientSecretHash,
+        clientSecretFingerprint: owner ? credentialFingerprint(clientSecret) : null,
         name: validatedParams.name || null,
         description: validatedParams.description || null,
         expiresAt: validatedParams.expiresAt || null,
@@ -319,6 +345,15 @@ export class ApiKeyService implements IApiKeyService {
       },
       transaction
     );
+
+    // Before the audit row and the event: a missing encryption key fails the call, and no key
+    // is issued (the project opted in).
+    if (owner && exportable) {
+      await this.exportableSecrets.storeForKey(
+        { apiKeyId: apiKey.id, projectId: owner.projectId, clientSecret },
+        transaction
+      );
+    }
 
     const newValues = {
       id: apiKey.id,
@@ -392,6 +427,7 @@ export class ApiKeyService implements IApiKeyService {
       {
         clientId,
         clientSecretHash,
+        clientSecretFingerprint: credentialFingerprint(validatedParams.clientSecret),
         name: validatedParams.name ?? null,
         description: validatedParams.description ?? null,
         expiresAt: validatedParams.expiresAt ?? null,
@@ -428,6 +464,7 @@ export class ApiKeyService implements IApiKeyService {
     params: {
       keys: readonly {
         clientSecretHash: string;
+        clientSecretFingerprint?: string | null;
         clientId?: string | null;
         scope?: Scope | null;
         name?: string | null;
@@ -467,6 +504,7 @@ export class ApiKeyService implements IApiKeyService {
       rows.push({
         clientId,
         clientSecretHash: key.clientSecretHash,
+        clientSecretFingerprint: key.clientSecretFingerprint ?? null,
         name: key.name ?? null,
         description: key.description ?? null,
         expiresAt: key.expiresAt ?? null,
@@ -527,6 +565,7 @@ export class ApiKeyService implements IApiKeyService {
         transaction
       );
     }
+    await this.exportableSecrets.removeForKeys(ids, transaction);
     await this.apiKeyRepository.hardDeleteApiKeys(ids, transaction);
   }
 
@@ -535,6 +574,7 @@ export class ApiKeyService implements IApiKeyService {
       keys: readonly {
         id: string;
         clientSecretHash: string;
+        clientSecretFingerprint?: string | null;
       }[];
     },
     transaction?: Transaction
@@ -560,6 +600,7 @@ export class ApiKeyService implements IApiKeyService {
       const rotated = await this.apiKeyRepository.updateClientSecretHash(
         key.id,
         key.clientSecretHash,
+        key.clientSecretFingerprint ?? null,
         transaction
       );
       await this.audit.logUpdate(
@@ -576,6 +617,32 @@ export class ApiKeyService implements IApiKeyService {
         transaction
       );
     }
+
+    // The importing system holds the plaintext, Grant does not: a copy of the previous secret
+    // must not outlive the hash it matched, and no copy of the new one is written.
+    await this.exportableSecrets.removeForKeys(
+      validatedParams.keys.map((key) => key.id),
+      transaction
+    );
+  }
+
+  public async setMissingClientSecretFingerprintsForCdmImport(
+    params: { keys: readonly { id: string; clientSecretFingerprint: string }[] },
+    transaction?: Transaction
+  ): Promise<void> {
+    const context = 'ApiKeyService.setMissingClientSecretFingerprintsForCdmImport';
+    const validatedParams = validateInput(
+      setMissingClientSecretFingerprintsForCdmImportParamsSchema,
+      params,
+      context
+    );
+    if (validatedParams.keys.length === 0) {
+      return;
+    }
+    await this.apiKeyRepository.setMissingClientSecretFingerprints(
+      validatedParams.keys,
+      transaction
+    );
   }
 
   public async getApiKeys(
@@ -683,6 +750,7 @@ export class ApiKeyService implements IApiKeyService {
     };
 
     const revokedKey = await this.apiKeyRepository.revokeApiKey(id, revokedBy, transaction);
+    await this.exportableSecrets.removeForKeys([id], transaction);
 
     const newValues = {
       id: revokedKey.id,
@@ -727,7 +795,15 @@ export class ApiKeyService implements IApiKeyService {
     }
 
     const { subjectUserId, projectIds } = await this.resolveOwnerSubject(id, transaction);
-    const clientSecret = generateRandomBytes(32).toString('base64url');
+    // Resolved before the secret is generated: the flag decides its form. A project-user key
+    // has exactly one owner and one project.
+    const isProjectUserKey = subjectUserId !== null;
+    const exportableProjectId = isProjectUserKey && projectIds.length === 1 ? projectIds[0] : null;
+    const exportable =
+      exportableProjectId !== null
+        ? await this.exportableSecrets.isEnabled(exportableProjectId, transaction)
+        : false;
+    const clientSecret = this.generateApiKeySecret(exportable ? 'base64-64' : 'base64url-32');
     const clientSecretHash = hashSecret(clientSecret);
 
     const before = {
@@ -741,8 +817,22 @@ export class ApiKeyService implements IApiKeyService {
     const rotatedKey = await this.apiKeyRepository.updateClientSecretHash(
       id,
       clientSecretHash,
+      isProjectUserKey ? credentialFingerprint(clientSecret) : null,
       transaction
     );
+
+    // In place, before the audit row and the event: a missing encryption key fails the rotation
+    // and the previous secret stays valid.
+    if (exportable && exportableProjectId !== null) {
+      await this.exportableSecrets.storeForKey(
+        { apiKeyId: id, projectId: exportableProjectId, clientSecret },
+        transaction
+      );
+    } else {
+      // The hash just changed and no new copy is written: any copy of the previous secret goes,
+      // whatever made this key not exportable now (the copy never outlives its hash).
+      await this.exportableSecrets.removeForKeys([id], transaction);
+    }
 
     const after = {
       id: rotatedKey.id,
@@ -801,6 +891,9 @@ export class ApiKeyService implements IApiKeyService {
     };
 
     const { subjectUserId, projectIds } = await this.resolveOwnerSubject(id, transaction);
+
+    // Soft delete keeps the row, so the copy is removed here; a hard delete would also cascade it.
+    await this.exportableSecrets.removeForKeys([id], transaction);
 
     let deletedKey: ApiKey;
     if (hardDelete) {

@@ -1,4 +1,9 @@
-import type { IApiKeyRepository, IAuditLogger, IEventPublisher } from '@grantjs/core';
+import type {
+  IApiKeyExportableSecretService,
+  IApiKeyRepository,
+  IAuditLogger,
+  IEventPublisher,
+} from '@grantjs/core';
 import { type ApiKey, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -55,6 +60,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     ),
     updateLastUsedAt: vi.fn(),
     updateClientSecretHash: vi.fn(),
+    setMissingClientSecretFingerprints: vi.fn(),
     getApiKeys: vi.fn().mockResolvedValue({ apiKeys: [] }),
     getApiKey: vi.fn(),
     revokeApiKey: vi.fn(),
@@ -71,6 +77,14 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     logHardDelete: vi.fn(),
   };
 
+  const exportableSecrets = {
+    isEnabled: vi.fn().mockResolvedValue(false),
+    storeForKey: vi.fn(),
+    removeForKeys: vi.fn().mockResolvedValue(0),
+    removeForProject: vi.fn().mockResolvedValue(0),
+    readForExport: vi.fn().mockResolvedValue([]),
+  } satisfies IApiKeyExportableSecretService;
+
   const service = new ApiKeyService(
     {
       getFirstByProjectId: vi.fn().mockResolvedValue({ accountId, projectId }),
@@ -82,10 +96,11 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     null,
     audit as unknown as IAuditLogger,
     { signApiKeyToken: vi.fn() } as never,
-    { publish: vi.fn(), resolveLinkedProjectIds: vi.fn() } as unknown as IEventPublisher
+    { publish: vi.fn(), resolveLinkedProjectIds: vi.fn() } as unknown as IEventPublisher,
+    exportableSecrets
   );
 
-  return { service, apiKeyRepository, audit };
+  return { service, apiKeyRepository, audit, exportableSecrets };
 }
 
 describe('ApiKeyService.createApiKeysForCdmImport', () => {
@@ -199,6 +214,7 @@ describe('ApiKeyService.rotateApiKeysForCdmImport', () => {
     expect(apiKeyRepository.updateClientSecretHash).toHaveBeenCalledWith(
       apiKeyId,
       clientSecretHash,
+      null,
       tx
     );
     const updateAudit = audit.logUpdate.mock.calls[0];

@@ -294,6 +294,7 @@ export class ProjectImportRepository {
         apiKeyId: projectUserApiKeys.apiKeyId,
         userId: projectUserApiKeys.userId,
         clientId: apiKeys.clientId,
+        clientSecretFingerprint: apiKeys.clientSecretFingerprint,
         metadata: projectUserApiKeys.metadata,
       })
       .from(projectUserApiKeys)
@@ -311,6 +312,7 @@ export class ProjectImportRepository {
       apiKeyId: row.apiKeyId,
       userId: row.userId,
       clientId: row.clientId,
+      clientSecretFingerprint: row.clientSecretFingerprint ?? null,
       metadata: row.metadata ?? null,
       externalKey: readCdmApiKeyExternalKey(row.metadata),
       secretFingerprint: readCdmApiKeySecretFingerprint(row.metadata),

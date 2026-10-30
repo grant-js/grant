@@ -14,6 +14,20 @@ export interface ProjectPasswordCredentialSummary {
 }
 
 /**
+ * Non-secret facts about one live project-user API key. `fingerprint` is the lowercase hex
+ * SHA-256 of the secret string as issued, stored at create, rotate and import; `null` for a key
+ * created before it existed and not rotated since. `exportable`: an encrypted copy exists.
+ * Never the secret, the hash or the ciphertext.
+ */
+export interface ProjectUserApiKeyCredentialSummary {
+  apiKeyId: string;
+  clientId: string;
+  fingerprint: string | null;
+  exportable: boolean;
+  updatedAt: Date;
+}
+
+/**
  * The one place a project credential hash leaves Grant (ADR 0011, export amendment), and the
  * fingerprint that lets a caller with the same permission see a hash change without the hash.
  * Both read through the one named repository method `findHashesForExport`.
@@ -24,10 +38,15 @@ export interface ProjectPasswordCredentialSummary {
  */
 export interface IProjectUserCredentialExportService {
   /**
-   * Export in CDM shape, in the order of `userIds`: `password: { algorithm: 'bcrypt', hash }`
-   * for a member with a live project credential, `null` for one without. Writes exactly one
-   * audit row (`action = 'export'`, counts and kinds only) in the same transaction, so a
-   * failed audit write fails the export.
+   * Export in CDM shape, in the order of `userIds`. For `PASSWORD`: `password: { algorithm:
+   * 'bcrypt', hash }` for a member with a live project credential, `null` for one without (and
+   * when the kind was not requested). For `API_KEY_SECRET`: `apiKeySecrets`, the member's live
+   * project-user keys with the plaintext `secret` of each key that has an exportable copy and
+   * `null` for one that has none (`null` when the kind was not requested, `[]` for no keys).
+   *
+   * Writes, in the same transaction, one summary audit row (`action = 'export'`, counts and
+   * kinds only) and one `api_key_audit_logs` row per exported secret (the key id, never the
+   * secret), so a failed audit write fails the export.
    */
   exportCredentials(
     params: { projectId: string; userIds: readonly string[]; kinds: readonly CredentialKind[] },
@@ -42,4 +61,14 @@ export interface IProjectUserCredentialExportService {
     params: { projectId: string; userIds: readonly string[] },
     transaction?: unknown
   ): Promise<ProjectPasswordCredentialSummary[]>;
+
+  /**
+   * The member's live project-user API keys with their stored fingerprint and whether a copy
+   * exists, oldest first (`[]` for none). Not audited: nothing secret leaves, and no secret,
+   * hash or ciphertext is read.
+   */
+  getApiKeyCredentialSummaries(
+    params: { projectId: string; userId: string },
+    transaction?: unknown
+  ): Promise<ProjectUserApiKeyCredentialSummary[]>;
 }

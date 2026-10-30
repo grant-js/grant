@@ -34,7 +34,7 @@ Grant ships with 16 platform resources. These are seeded automatically and cover
 | **User**                     | `Create` `Read` `Update` `Delete` `Query` `ExportData` `UploadPicture` |
 | **Account**                  | `Read` `Delete` `Query`                                                |
 | **Organization**             | `Create` `Read` `Update` `Delete` `Query`                              |
-| **Project**                  | `Create` `Update` `Delete` `Query`                                     |
+| **Project**                  | `Create` `Update` `Delete` `Query` `SetExportableApiKeySecrets`        |
 | **ProjectApp**               | `Create` `Update` `Delete` `Query`                                     |
 | **Resource**                 | `Create` `Update` `Delete` `Query`                                     |
 | **Role**                     | `Create` `Update` `Delete` `Query`                                     |
@@ -54,23 +54,23 @@ The canonical source is [`packages/@grantjs/constants/src/permissions/resources.
 
 Actions are shared across resources — each resource picks the subset it supports:
 
-| Action              | Meaning                                                                            |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| `Create`            | Create a new instance                                                              |
-| `Read`              | Read a single instance                                                             |
-| `Update`            | Modify an existing instance                                                        |
-| `Delete`            | Soft- or hard-delete                                                               |
-| `Query`             | List / paginate / search                                                           |
-| `ExportData`        | Export user data (GDPR)                                                            |
-| `UploadPicture`     | Upload a profile image                                                             |
-| `Remove`            | Remove a membership (e.g. org member)                                              |
-| `Revoke`            | Revoke an active entity (API key, invitation)                                      |
-| `ResendEmail`       | Resend an invitation email                                                         |
-| `Renew`             | Renew an expired invitation token                                                  |
-| `Exchange`          | Exchange API key credentials for a JWT                                             |
-| `SetEmail`          | Set a project user's Email authentication method                                   |
-| `SetPassword`       | Set a project user's password (operator-supplied)                                  |
-| `ExportCredentials` | Export project users' password hashes (audited); no default holder, granted by org |
+| Action              | Meaning                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `Create`            | Create a new instance                                                                                  |
+| `Read`              | Read a single instance                                                                                 |
+| `Update`            | Modify an existing instance                                                                            |
+| `Delete`            | Soft- or hard-delete                                                                                   |
+| `Query`             | List / paginate / search                                                                               |
+| `ExportData`        | Export user data (GDPR)                                                                                |
+| `UploadPicture`     | Upload a profile image                                                                                 |
+| `Remove`            | Remove a membership (e.g. org member)                                                                  |
+| `Revoke`            | Revoke an active entity (API key, invitation)                                                          |
+| `ResendEmail`       | Resend an invitation email                                                                             |
+| `Renew`             | Renew an expired invitation token                                                                      |
+| `Exchange`          | Exchange API key credentials for a JWT                                                                 |
+| `SetEmail`          | Set a project user's Email authentication method                                                       |
+| `SetPassword`       | Set a project user's password (operator-supplied)                                                      |
+| `ExportCredentials` | Export project users' password hashes and API-key secrets (audited); no default holder, granted by org |
 
 ## Conditional Permissions
 

@@ -283,6 +283,7 @@ export type ResolversTypes = ResolversObject<{
   ExchangeApiKeyInput: Types.ExchangeApiKeyInput;
   ExchangeApiKeyResult: ResolverTypeWrapper<Types.ExchangeApiKeyResult>;
   ExportProjectUserCredentialsInput: Types.ExportProjectUserCredentialsInput;
+  ExportedApiKeySecret: ResolverTypeWrapper<Types.ExportedApiKeySecret>;
   ExportedPasswordCredential: ResolverTypeWrapper<Types.ExportedPasswordCredential>;
   ExportedProjectUserCredential: ResolverTypeWrapper<Types.ExportedProjectUserCredential>;
   GenerateMyMfaRecoveryCodesInput: Types.GenerateMyMfaRecoveryCodesInput;
@@ -389,6 +390,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectTag: ResolverTypeWrapper<Types.ProjectTag>;
   ProjectUser: ResolverTypeWrapper<Types.ProjectUser>;
   ProjectUserApiKey: ResolverTypeWrapper<Types.ProjectUserApiKey>;
+  ProjectUserApiKeyCredential: ResolverTypeWrapper<Types.ProjectUserApiKeyCredential>;
   ProjectUserCredentialExport: ResolverTypeWrapper<Types.ProjectUserCredentialExport>;
   ProjectUserGroup: ResolverTypeWrapper<Types.ProjectUserGroup>;
   ProjectUserPasswordCredential: ResolverTypeWrapper<Types.ProjectUserPasswordCredential>;
@@ -507,6 +509,7 @@ export type ResolversTypes = ResolversObject<{
   SessionExportData: ResolverTypeWrapper<Types.SessionExportData>;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SetProjectExportableApiKeySecretsInput: Types.SetProjectExportableApiKeySecretsInput;
   SetProjectUserEmailInput: Types.SetProjectUserEmailInput;
   SetProjectUserPasswordInput: Types.SetProjectUserPasswordInput;
   SigningKey: ResolverTypeWrapper<Types.SigningKey>;
@@ -700,6 +703,7 @@ export type ResolversParentTypes = ResolversObject<{
   ExchangeApiKeyInput: Types.ExchangeApiKeyInput;
   ExchangeApiKeyResult: Types.ExchangeApiKeyResult;
   ExportProjectUserCredentialsInput: Types.ExportProjectUserCredentialsInput;
+  ExportedApiKeySecret: Types.ExportedApiKeySecret;
   ExportedPasswordCredential: Types.ExportedPasswordCredential;
   ExportedProjectUserCredential: Types.ExportedProjectUserCredential;
   GenerateMyMfaRecoveryCodesInput: Types.GenerateMyMfaRecoveryCodesInput;
@@ -782,6 +786,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectTag: Types.ProjectTag;
   ProjectUser: Types.ProjectUser;
   ProjectUserApiKey: Types.ProjectUserApiKey;
+  ProjectUserApiKeyCredential: Types.ProjectUserApiKeyCredential;
   ProjectUserCredentialExport: Types.ProjectUserCredentialExport;
   ProjectUserGroup: Types.ProjectUserGroup;
   ProjectUserPasswordCredential: Types.ProjectUserPasswordCredential;
@@ -896,6 +901,7 @@ export type ResolversParentTypes = ResolversObject<{
   SessionExportData: Types.SessionExportData;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SetProjectExportableApiKeySecretsInput: Types.SetProjectExportableApiKeySecretsInput;
   SetProjectUserEmailInput: Types.SetProjectUserEmailInput;
   SetProjectUserPasswordInput: Types.SetProjectUserPasswordInput;
   SigningKey: Types.SigningKey;
@@ -1338,6 +1344,17 @@ export type ExchangeApiKeyResultResolvers<
   expiresIn?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type ExportedApiKeySecretResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ExportedApiKeySecret'] =
+    ResolversParentTypes['ExportedApiKeySecret'],
+> = ResolversObject<{
+  apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  fingerprint?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  secret?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
 export type ExportedPasswordCredentialResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['ExportedPasswordCredential'] =
@@ -1352,6 +1369,11 @@ export type ExportedProjectUserCredentialResolvers<
   ParentType extends ResolversParentTypes['ExportedProjectUserCredential'] =
     ResolversParentTypes['ExportedProjectUserCredential'],
 > = ResolversObject<{
+  apiKeySecrets?: Resolver<
+    Types.Maybe<Array<ResolversTypes['ExportedApiKeySecret']>>,
+    ParentType,
+    ContextType
+  >;
   password?: Resolver<
     Types.Maybe<ResolversTypes['ExportedPasswordCredential']>,
     ParentType,
@@ -1997,6 +2019,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationSetMyPrimaryMfaDeviceArgs, 'input'>
   >;
+  setProjectExportableApiKeySecrets?: Resolver<
+    ResolversTypes['Project'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationSetProjectExportableApiKeySecretsArgs, 'input'>
+  >;
   setProjectUserEmail?: Resolver<
     ResolversTypes['User'],
     ParentType,
@@ -2577,6 +2605,7 @@ export type ProjectResolvers<
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  exportableApiKeySecrets?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   groups?: Resolver<Types.Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2885,6 +2914,18 @@ export type ProjectUserApiKeyResolvers<
   user?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   userId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ProjectUserApiKeyCredentialResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectUserApiKeyCredential'] =
+    ResolversParentTypes['ProjectUserApiKeyCredential'],
+> = ResolversObject<{
+  apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  exportable?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  fingerprint?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
 }>;
 
 export type ProjectUserCredentialExportResolvers<
@@ -3501,6 +3542,11 @@ export type UserResolvers<
   ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User'],
 > = ResolversObject<{
   accounts?: Resolver<Types.Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
+  apiKeyCredentials?: Resolver<
+    Types.Maybe<Array<ResolversTypes['ProjectUserApiKeyCredential']>>,
+    ParentType,
+    ContextType
+  >;
   authenticationMethods?: Resolver<
     Types.Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>,
     ParentType,
@@ -3837,6 +3883,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   CredentialExportData?: CredentialExportDataResolvers<ContextType>;
   Date?: GraphQLScalarType;
   ExchangeApiKeyResult?: ExchangeApiKeyResultResolvers<ContextType>;
+  ExportedApiKeySecret?: ExportedApiKeySecretResolvers<ContextType>;
   ExportedPasswordCredential?: ExportedPasswordCredentialResolvers<ContextType>;
   ExportedProjectUserCredential?: ExportedProjectUserCredentialResolvers<ContextType>;
   Group?: GroupResolvers<ContextType>;
@@ -3897,6 +3944,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   ProjectTag?: ProjectTagResolvers<ContextType>;
   ProjectUser?: ProjectUserResolvers<ContextType>;
   ProjectUserApiKey?: ProjectUserApiKeyResolvers<ContextType>;
+  ProjectUserApiKeyCredential?: ProjectUserApiKeyCredentialResolvers<ContextType>;
   ProjectUserCredentialExport?: ProjectUserCredentialExportResolvers<ContextType>;
   ProjectUserGroup?: ProjectUserGroupResolvers<ContextType>;
   ProjectUserPasswordCredential?: ProjectUserPasswordCredentialResolvers<ContextType>;

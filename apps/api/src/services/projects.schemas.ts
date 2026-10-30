@@ -66,6 +66,11 @@ export const setProjectPictureParamsSchema = z
     'At least one of pictureUrl or picturePath must be provided'
   );
 
+export const setExportableApiKeySecretsParamsSchema = z.object({
+  projectId: z.uuid(),
+  enabled: z.boolean(),
+});
+
 export const deleteProjectParamsSchema = deleteSchema.extend({
   id: idSchema,
 });
@@ -77,5 +82,6 @@ export const projectSchema = baseEntitySchema.extend({
   pictureUrl: z.string().nullable().optional(),
   primaryColor: z.string().nullable().optional(),
   showHelpPanel: z.boolean().nullable().optional(),
+  exportableApiKeySecrets: z.boolean(),
   tags: z.array(z.any()).nullable().optional(),
 });

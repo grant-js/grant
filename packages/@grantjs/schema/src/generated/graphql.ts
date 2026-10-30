@@ -1316,7 +1316,16 @@ export type ExportProjectUserCredentialsQueryVariables = Exact<{
 
 export type ExportProjectUserCredentialsQuery = {
   exportProjectUserCredentials: {
-    users: Array<{ userId: string; password: { algorithm: string; hash: string } | null }>;
+    users: Array<{
+      userId: string;
+      password: { algorithm: string; hash: string } | null;
+      apiKeySecrets: Array<{
+        apiKeyId: string;
+        clientId: string;
+        fingerprint: string | null;
+        secret: string | null;
+      }> | null;
+    }>;
   };
 };
 
@@ -1545,6 +1554,18 @@ export type RequestProjectSyncUploadUrlMutation = {
     method: string;
     expiresAt: Date;
     headers: Array<{ name: string; value: string }>;
+  };
+};
+
+export type SetProjectExportableApiKeySecretsMutationVariables = Exact<{
+  input: Types.SetProjectExportableApiKeySecretsInput;
+}>;
+
+export type SetProjectExportableApiKeySecretsMutation = {
+  setProjectExportableApiKeySecrets: {
+    id: string;
+    exportableApiKeySecrets: boolean;
+    updatedAt: Date;
   };
 };
 
@@ -7546,6 +7567,19 @@ export const ExportProjectUserCredentialsDocument = {
                           ],
                         },
                       },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'apiKeySecrets' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'apiKeyId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'fingerprint' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'secret' } },
+                          ],
+                        },
+                      },
                     ],
                   },
                 },
@@ -8406,6 +8440,56 @@ export const RequestProjectSyncUploadUrlDocument = {
 } as unknown as DocumentNode<
   RequestProjectSyncUploadUrlMutation,
   RequestProjectSyncUploadUrlMutationVariables
+>;
+export const SetProjectExportableApiKeySecretsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetProjectExportableApiKeySecrets' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'SetProjectExportableApiKeySecretsInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'setProjectExportableApiKeySecrets' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'exportableApiKeySecrets' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetProjectExportableApiKeySecretsMutation,
+  SetProjectExportableApiKeySecretsMutationVariables
 >;
 export const StartProjectExportDocument = {
   kind: 'Document',

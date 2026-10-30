@@ -170,7 +170,7 @@ export function createUserRoutes(fallback?: RequestContext) {
         input: { scope, userIds, kinds },
       });
 
-      // The body carries hashes: never cached by an intermediary or the browser.
+      // The body carries password hashes and API-key secrets: never cached by an intermediary or the browser.
       res.setHeader('Cache-Control', 'no-store');
       sendSuccessResponse(res, result);
     }

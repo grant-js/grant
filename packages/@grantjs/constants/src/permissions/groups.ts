@@ -132,7 +132,12 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
   },
   [GroupKey.AccountProjectOwner]: {
     resource: ResourceSlug.Project,
-    permissions: [ResourceAction.Create, ResourceAction.Update, ResourceAction.Delete],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.SetExportableApiKeySecrets,
+    ],
     assignedRoles: [RoleKey.PersonalAccountOwner, RoleKey.OrganizationAccountOwner],
   },
   [GroupKey.AccountProjectUserOwner]: {
@@ -357,12 +362,22 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
 
   [GroupKey.ProjectOwner]: {
     resource: ResourceSlug.Project,
-    permissions: [ResourceAction.Create, ResourceAction.Update, ResourceAction.Delete],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.SetExportableApiKeySecrets,
+    ],
     assignedRoles: [RoleKey.OrganizationOwner],
   },
   [GroupKey.ProjectAdmin]: {
     resource: ResourceSlug.Project,
-    permissions: [ResourceAction.Create, ResourceAction.Update, ResourceAction.Delete],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.SetExportableApiKeySecrets,
+    ],
     assignedRoles: [RoleKey.OrganizationAdmin],
   },
   [GroupKey.ProjectDev]: {

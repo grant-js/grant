@@ -11,6 +11,8 @@ export type CdmExistingApiKeyFingerprint = {
   clientId: string;
   externalKey: string | null;
   secretFingerprint: string | null;
+  /** `api_keys.client_secret_fingerprint`: SHA-256 of the secret as issued; `null` until set. */
+  clientSecretFingerprint: string | null;
   metadata: Record<string, unknown> | null;
 };
 

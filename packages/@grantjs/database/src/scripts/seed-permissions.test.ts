@@ -250,6 +250,56 @@ describe('seedAll — standalone permissions (row, no group)', () => {
   });
 });
 
+describe('seedAll — Project:SetExportableApiKeySecrets placement', () => {
+  const ACTION = 'SetExportableApiKeySecrets';
+  // Owner, Admin and the account owners hold it; Dev, Viewer and the common group do not.
+  const HOLDERS = ['AccountProjectOwner', 'ProjectAdmin', 'ProjectOwner'];
+
+  it('is mapped to exactly the Owner, Admin and account-owner project groups, each with the scoped condition', () => {
+    const declaring = Object.entries(PERMISSION_MAPPINGS)
+      .filter(([, perms]) => perms.some((p) => p.resource === 'Project' && p.action === ACTION))
+      .map(([group]) => group)
+      .sort();
+
+    expect(declaring).toEqual(HOLDERS);
+    for (const group of HOLDERS) {
+      const declared = PERMISSION_MAPPINGS[group].find(
+        (p) => p.resource === 'Project' && p.action === ACTION
+      );
+      expect(declared?.condition).toEqual({ In: { 'resource.id': '{{resource.scope.projects}}' } });
+      expect(GROUP_DEFINITIONS[group].permissions).toContain(ACTION);
+    }
+    for (const group of ['ProjectDev', 'ProjectViewer', 'ProjectCommon']) {
+      expect(GROUP_DEFINITIONS[group].permissions).not.toContain(ACTION);
+    }
+  });
+
+  it('seeds one permission row, linked to those three groups and no other', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const projectResource = db.rows(resources).find((r) => r.slug === 'Project') as Record<
+      string,
+      unknown
+    >;
+    const row = db
+      .rows(permissions)
+      .filter((r) => r.action === ACTION && r.resourceId === projectResource.id);
+    expect(row).toHaveLength(1);
+    expect(row[0].condition).toEqual({ In: { 'resource.id': '{{resource.scope.projects}}' } });
+
+    const linkedGroupNames = db
+      .rows(groupPermissions)
+      .filter((link) => link.permissionId === row[0].id)
+      .map((link) => db.rows(groups).find((g) => g.id === link.groupId)?.name)
+      .sort();
+    expect(linkedGroupNames).toEqual(HOLDERS.map((g) => GROUP_DEFINITIONS[g].name).sort());
+  });
+
+  it('is not a standalone permission (a group holds it, so an upgrade links it by seed)', () => {
+    expect(STANDALONE_PERMISSION_KEYS.has(`Project:${ACTION}`)).toBe(false);
+  });
+});
+
 describe('seedAll — permission de-duplication across groups', () => {
   it('collapses each resource:action to a single permission row shared by every group that declares it', async () => {
     await seedAll(db as unknown as SeedDb);

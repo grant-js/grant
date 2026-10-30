@@ -80,6 +80,17 @@ export interface IProjectService {
     transaction?: unknown
   ): Promise<Project>;
 
+  /**
+   * The per-project opt-in for exportable API-key secrets. Enabling needs
+   * `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` (`ConfigurationError` otherwise); the same value
+   * writes and audits nothing. Authorization is the transport's
+   * (`Project:SetExportableApiKeySecrets`).
+   */
+  setExportableApiKeySecrets(
+    params: { projectId: string; enabled: boolean },
+    transaction?: unknown
+  ): Promise<Project>;
+
   deleteProject(
     params: Omit<MutationDeleteProjectArgs, 'scope'> & DeleteParams,
     transaction?: unknown

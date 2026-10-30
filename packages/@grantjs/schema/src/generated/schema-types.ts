@@ -818,6 +818,11 @@ export type CredentialExportData = {
  * not as a second export.
  */
 export enum CredentialKind {
+  /**
+   * The API keys of the project user, with the plaintext secret of each key the project keeps an
+   * exportable copy of (a project that opted in to exportable API-key secrets).
+   */
+  ApiKeySecret = 'API_KEY_SECRET',
   /** The project password credential (bcrypt hash). */
   Password = 'PASSWORD',
 }
@@ -876,6 +881,26 @@ export type ExportProjectUserCredentialsInput = {
   userIds: Array<Scalars['ID']['input']>;
 };
 
+/** One API key of a project user in an export. `secret` is a credential: handle it like one. */
+export type ExportedApiKeySecret = {
+  __typename?: 'ExportedApiKeySecret';
+  apiKeyId: Scalars['ID']['output'];
+  /** The key's public client id. */
+  clientId: Scalars['String']['output'];
+  /**
+   * Lowercase hex SHA-256 of the secret string as issued, to compare with `sha256(secret)` of the
+   * value a receiver holds. `null` for a key created before the fingerprint existed and not rotated
+   * since.
+   */
+  fingerprint?: Maybe<Scalars['String']['output']>;
+  /**
+   * The plaintext secret: 88 characters, standard base64 of 64 random bytes. `null` for a key the
+   * project holds no copy of (created before the project opted in, created by a CDM import, or
+   * rotated by a CDM replace): Grant cannot recover it.
+   */
+  secret?: Maybe<Scalars['String']['output']>;
+};
+
 /** A stored password hash in CDM shape. Secret-equivalent: handle like a credential. */
 export type ExportedPasswordCredential = {
   __typename?: 'ExportedPasswordCredential';
@@ -887,7 +912,12 @@ export type ExportedPasswordCredential = {
 
 export type ExportedProjectUserCredential = {
   __typename?: 'ExportedProjectUserCredential';
-  /** `null` when the member has no project password credential. */
+  /**
+   * The member's live (not revoked, not deleted) project-user API keys, oldest first. `null` when the
+   * `API_KEY_SECRET` kind was not requested; `[]` for a member with no key.
+   */
+  apiKeySecrets?: Maybe<Array<ExportedApiKeySecret>>;
+  /** `null` when the member has no project password credential, and when the `PASSWORD` kind was not requested. */
   password?: Maybe<ExportedPasswordCredential>;
   userId: Scalars['ID']['output'];
 };
@@ -1330,6 +1360,15 @@ export type Mutation = {
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
   /**
+   * Opt a project in or out of keeping an exportable, encrypted copy of a project user's API-key
+   * secret. Project scopes only. Requires `Project:SetExportableApiKeySecrets`, held by the Owner and
+   * Admin roles and not by Dev. Enabling fails with a configuration error while
+   * `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` is not set; disabling never needs it. Each change is
+   * audited on the project with the old and new value; the same value is a no-op. Nothing is
+   * back-filled: keys that exist before the opt-in keep only their hash.
+   */
+  setProjectExportableApiKeySecrets: Project;
+  /**
    * Set or replace a project member's Email authentication method as unverified.
    * `project.user_email_changed` carries ids only, never the address.
    */
@@ -1702,6 +1741,10 @@ export type MutationSetMyPrimaryAuthenticationMethodArgs = {
 
 export type MutationSetMyPrimaryMfaDeviceArgs = {
   input: SetMyPrimaryMfaDeviceInput;
+};
+
+export type MutationSetProjectExportableApiKeySecretsArgs = {
+  input: SetProjectExportableApiKeySecretsInput;
 };
 
 export type MutationSetProjectUserEmailArgs = {
@@ -2241,6 +2284,13 @@ export type Project = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  /**
+   * Whether this project keeps an exportable, encrypted copy of a project user's API-key secret at
+   * create and rotate. Off by default; set with `setProjectExportableApiKeySecrets`. A plain
+   * configuration flag: it says nothing about any key, and nothing is back-filled for keys that
+   * already exist.
+   */
+  exportableApiKeySecrets: Scalars['Boolean']['output'];
   groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
@@ -2585,7 +2635,33 @@ export type ProjectUserApiKey = Auditable & {
   userId: Scalars['ID']['output'];
 };
 
-/** Result of `exportProjectUserCredentials`. This is the one place a credential hash leaves Grant. */
+/**
+ * Non-secret facts about one of a project user's API keys. Never contains the secret, the hash or the
+ * encrypted copy.
+ */
+export type ProjectUserApiKeyCredential = {
+  __typename?: 'ProjectUserApiKeyCredential';
+  apiKeyId: Scalars['ID']['output'];
+  /** The key's public client id. */
+  clientId: Scalars['String']['output'];
+  /** An encrypted copy of the key's current secret exists (only in a project that opted in). */
+  exportable: Scalars['Boolean']['output'];
+  /**
+   * Lowercase hex SHA-256 of the secret string as issued (the text the client received, never the
+   * stored hash): a change detector a holder of the secret can compare against. `null` for a key
+   * created before this field existed and not rotated since. Grant issues secrets of 32 or 64 random
+   * bytes, so the digest cannot be guessed offline; a secret chosen by an importer is only as strong
+   * as the importer made it.
+   */
+  fingerprint?: Maybe<Scalars['String']['output']>;
+  /** When the key last changed (created, rotated or edited). */
+  updatedAt: Scalars['Date']['output'];
+};
+
+/**
+ * Result of `exportProjectUserCredentials`. This is the one place a credential hash, and the plaintext
+ * secret of an exportable API key, leaves Grant.
+ */
 export type ProjectUserCredentialExport = {
   __typename?: 'ProjectUserCredentialExport';
   users: Array<ExportedProjectUserCredential>;
@@ -2634,11 +2710,14 @@ export type Query = {
   /** Public signup policy. No authentication required. */
   authSignupPolicy: AuthSignupPolicy;
   /**
-   * Export project members' password hashes in CDM shape, for a downstream identity mirror.
-   * This is the one audited exception to "APIs expose only whether a password exists": it
-   * requires `ProjectUser:ExportCredentials` (held by no standard group), every call is audited,
-   * and it returns hashes. Any non-member in `userIds` fails the whole call; members without a
-   * project credential are listed with `password: null`.
+   * Export project members' credentials for a downstream identity mirror: password hashes in CDM
+   * shape (`PASSWORD`) and the plaintext secrets of their API keys (`API_KEY_SECRET`, only for keys
+   * of a project that opted in to exportable API-key secrets). This is the one audited exception to
+   * "APIs expose only whether a password exists" and to "an API-key secret is shown once": it
+   * requires `ProjectUser:ExportCredentials` (held by no standard group), every call is audited
+   * (one summary row, plus one row per exported API-key secret), and it returns credentials. Any
+   * non-member in `userIds` fails the whole call; members without a project credential are listed
+   * with `password: null`, and a key without a copy with `secret: null`.
    */
   exportProjectUserCredentials: ProjectUserCredentialExport;
   groups: GroupPage;
@@ -3638,6 +3717,19 @@ export type SetMyPrimaryMfaDeviceInput = {
   factorId: Scalars['ID']['input'];
 };
 
+export type SetProjectExportableApiKeySecretsInput = {
+  /**
+   * `true` opts the project in; `false` opts it out and deletes every exportable copy the project
+   * holds. Setting the value the project already has changes nothing and is not audited.
+   */
+  enabled: Scalars['Boolean']['input'];
+  /**
+   * The project to change, as the scope the request is authorized in: `accountProject` or
+   * `organizationProject` only.
+   */
+  scope: Scope;
+};
+
 export type SetProjectUserEmailInput = {
   /**
    * Unverified Email authentication method. Project-scope only.
@@ -4227,6 +4319,13 @@ export type UpsertProjectOAuthConnectionInput = {
 export type User = Auditable & {
   __typename?: 'User';
   accounts?: Maybe<Array<Account>>;
+  /**
+   * Non-secret facts about the user's live (not revoked, not deleted) project-user API keys in the
+   * request's project scope, oldest first. `null` outside a project scope or when the caller lacks
+   * `ProjectUser:ExportCredentials` (never an error); `[]` for a member with no key. The secret, the
+   * hash and the encrypted copy are never returned here.
+   */
+  apiKeyCredentials?: Maybe<Array<ProjectUserApiKeyCredential>>;
   authenticationMethods?: Maybe<Array<UserAuthenticationMethod>>;
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
