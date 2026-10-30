@@ -4,14 +4,14 @@ Copy of Grant template `docs/contributing/templates/story-brief.md`. Project Man
 
 Grounded on `origin/main` at `42afcf0b` (**v1.21.0**). Story shape: **reversible storage of one credential, behind a per-project opt-in, read through the export that already exists** for a receiver that mirrors Grant into another system (activation matrix in `docs/contributing/agentic-sdlc.md`): Backend + QA + Security + Verifier; slices in [the stack plan](./2026-10-30-exportable-api-key-secret-stack.md). Open-source language only: no customer or tenant names; the other system is "the receiver's system". Release proposed as **v1.22.0** (minor; the stack plan justifies it).
 
-**Gates 1 and 2 pending Alejandro.** Section "Decisions for Gate 1" lists each question with a recommended answer; the criteria are written for the recommended option and say where another option would change them. Section "Findings that shape the criteria" lists what the code changed about the request.
+**Gates 1 and 2 approved by Alejandro on 2026-10-30: every recommended answer, except question 4, decided as the orchestrator recommended (fingerprint of the plaintext secret; see the decision note under question 4).** Section "Decisions for Gate 1" lists each question with a recommended answer; the criteria are written for the recommended option and say where another option would change them. Section "Findings that shape the criteria" lists what the code changed about the request.
 
 ## Metadata
 
 - **Slug**: `exportable-api-key-secret`
 - **Date**: 2026-10-30
 - **Author** (human / PM agent): PM agent (Claude, for Alejandro)
-- **Status**: draft (Gates 1–2 pending Alejandro)
+- **Status**: approved (Gates 1–2, Alejandro 2026-10-30; question 4 decided for the plaintext fingerprint)
 
 ## Objective
 
@@ -149,6 +149,9 @@ Each question has a recommended answer; the criteria above are written for it.
 2. **Where the opt-in lives and who flips it.** A `projects` column, a dedicated mutation and REST route, gated by a new `Project:SetExportableApiKeySecrets` in the Owner and Admin project groups and the account-project owner group, not Dev (the `SetPassword` precedent). **Recommended.** Alternatives: a field on `UpdateProjectInput` under `Project:Update` (no new route or permission, but Dev may flip it and the copy deletion becomes a side effect of a generic update); a per-key flag (rejected by the request's own decision).
 3. **Previous secret after a rotation.** Not kept; one copy per key, replaced in place (finding 8). **Recommended.** Alternative: keep one superseded copy and return it as `previousSecret` (a second row or triple per key; more reversible material; the receiver does not need it).
 4. **Fingerprint derivation and surface.** `credentialFingerprint(client_secret_hash)` (SHA-256 of the stored bcrypt hash; never of the plaintext), on **`User.apiKeyCredentials`** in the request's project scope, gated like `passwordCredential` (findings 3 and 4). **Recommended.** Alternatives: SHA-256 of the plaintext stored at copy time (lets a receiver verify the secret it holds, but is a guessing oracle for weak imported secrets and exists only for opted-in keys); a field on `ApiKey` (unreachable for the receiver's key under the authorized-scope guard).
+
+   **Decided at Gate 1 (Alejandro, 2026-10-30), differently from the recommendation above:** the fingerprint is the lowercase hex **SHA-256 of the secret string as issued** (the 43- or 88-character text the client receives), never of the bcrypt hash. Reason: a receiver that stores the plaintext secret compares its own `sha256(stored secret)` with Grant's fingerprint to detect a create or rotate and to verify an export; a hash-of-hash cannot be compared or verified without the bcrypt hash. Consequences for S2: Grant computes the fingerprint at create and rotate for **every** project-user key from this release on (opted in or not; the plaintext is in hand only then), stores it in a new nullable column `api_keys.client_secret_fingerprint` (the stack plan names it), and `ProjectUserApiKeyCredential.fingerprint` becomes `String` (nullable): `null` for a key created before this release and not rotated since. The export (S3) returns the same fingerprint beside the secret so the receiver can verify the pair. A 32- or 64-byte random secret makes the unsalted hash safe against guessing; the ADR states this.
+
 5. **Permission for exporting a key secret.** The same `ProjectUser:ExportCredentials`: ADR 0011 built `kinds` so a later credential type is a new kind, not a second export, and the holder is the same machine. **Recommended.** Alternative: a distinct standalone `ApiKey:ExportSecret` (finer, two standalone grants for one mirror, two gates on one route).
 6. **Encryption key.** A dedicated `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` with its own purpose salt, through the generalised lib (finding 2), following ADR 0008's blast-radius reasoning. **Recommended.** Alternative: reuse `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY` with a distinct purpose salt (one variable fewer across 20 files; rotating it then re-wraps two kinds of secret).
 7. **A key without a copy in the export.** Listed with `secret: null` beside its id, `clientId` and fingerprint (finding 6). **Recommended.** Alternative: the whole call fails with `NotFoundError` ("refused", as the request words it), which makes the receiver filter by `exportable` first.
@@ -160,4 +163,4 @@ Each question has a recommended answer; the criteria above are written for it.
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until Alejandro confirms before stack planning (answers to questions 1–12, or "as recommended").
+- [x] Gate 1: Story brief approved — Alejandro, 2026-10-30: questions 1–3 and 5–12 as recommended; question 4 decided for the plaintext fingerprint (decision note under question 4).
