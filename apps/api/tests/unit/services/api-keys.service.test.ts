@@ -315,3 +315,142 @@ describe('ApiKeyService.deleteApiKey', () => {
     expect(events.publish).not.toHaveBeenCalled();
   });
 });
+
+describe('API-key event owner (subjectUserId and projectIds)', () => {
+  const projectIdB = '10000000-0000-4000-8000-000000000007';
+  const otherUserId = '10000000-0000-4000-8000-000000000008';
+
+  const ownerCases: Array<[string, string[], string | null]> = [
+    ['exactly one owning user', [userId], userId],
+    ['an account or organization project key (no owning user)', [], null],
+    ['a key with two owning users', [userId, otherUserId], null],
+  ];
+
+  describe('api_key.revoked', () => {
+    function buildRevoke(owningUserIds: string[]) {
+      const existing = apiKey({ name: 'Prod key' });
+      const built = buildService({
+        getApiKey: vi.fn().mockResolvedValue(existing),
+        getOwningUserIds: vi.fn().mockResolvedValue(owningUserIds),
+        revokeApiKey: vi.fn().mockResolvedValue({
+          ...existing,
+          isRevoked: true,
+          revokedAt: new Date('2026-01-02T00:00:00.000Z'),
+          revokedBy: createdBy,
+        }),
+      });
+      vi.mocked(built.events.resolveLinkedProjectIds).mockResolvedValue([projectId, projectIdB]);
+      return built;
+    }
+
+    it.each(ownerCases)('names the subject user for %s', async (_label, owners, subject) => {
+      const { service, events } = buildRevoke(owners);
+
+      await service.revokeApiKey({ id: apiKeyId });
+
+      expect(events.resolveLinkedProjectIds).toHaveBeenCalledWith(
+        [{ kind: 'apiKey', id: apiKeyId }],
+        undefined
+      );
+      expect(events.publish).toHaveBeenCalledWith(
+        {
+          type: 'api_key.revoked',
+          aggregate: { kind: 'apiKey', id: apiKeyId },
+          subjectUserId: subject,
+          data: {
+            before: expect.objectContaining({ id: apiKeyId, isRevoked: false }),
+            after: expect.objectContaining({ id: apiKeyId, isRevoked: true }),
+          },
+          projectIds: [projectId, projectIdB],
+        },
+        undefined
+      );
+    });
+  });
+
+  describe('api_key.rotated', () => {
+    it.each(ownerCases)('names the subject user for %s', async (_label, owners, subject) => {
+      const existing = apiKey({ name: 'Prod key' });
+      const { service, events } = buildService({
+        getApiKey: vi.fn().mockResolvedValue(existing),
+        getOwningUserIds: vi.fn().mockResolvedValue(owners),
+        updateClientSecretHash: vi.fn().mockResolvedValue(existing),
+      });
+      vi.mocked(events.resolveLinkedProjectIds).mockResolvedValue([projectId, projectIdB]);
+
+      await service.rotateApiKey({ id: apiKeyId });
+
+      expect(events.publish).toHaveBeenCalledWith(
+        {
+          type: 'api_key.rotated',
+          aggregate: { kind: 'apiKey', id: apiKeyId },
+          subjectUserId: subject,
+          data: {
+            before: expect.objectContaining({ id: apiKeyId, clientId }),
+            after: expect.objectContaining({ id: apiKeyId, clientId }),
+          },
+          projectIds: [projectId, projectIdB],
+        },
+        undefined
+      );
+    });
+
+    it('publishes nothing for a revoked key, and reads no owner', async () => {
+      const { service, apiKeyRepository, events } = buildService({
+        getApiKey: vi.fn().mockResolvedValue(apiKey({ isRevoked: true })),
+      });
+
+      await expect(service.rotateApiKey({ id: apiKeyId })).rejects.toThrow();
+
+      expect(apiKeyRepository.getOwningUserIds).not.toHaveBeenCalled();
+      expect(events.publish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('api_key.created', () => {
+    it('names the owning user and project when the caller passes an owner', async () => {
+      const { service, apiKeyRepository, events } = buildService();
+      const tx = { __tx: true };
+
+      await service.createApiKey({ name: 'Prod key', owner: { projectId, userId } }, tx as never);
+
+      expect(events.publish).toHaveBeenCalledWith(
+        {
+          type: 'api_key.created',
+          aggregate: { kind: 'apiKey', id: expect.any(String) },
+          subjectUserId: userId,
+          data: { after: expect.objectContaining({ clientId: expect.any(String) }) },
+          projectIds: [projectId],
+        },
+        tx
+      );
+      // `owner` decides the event only: the key row is created from the other fields.
+      expect(apiKeyRepository.createApiKey).toHaveBeenCalledWith(
+        expect.not.objectContaining({ owner: expect.anything() }),
+        tx
+      );
+    });
+
+    it('publishes neither field without an owner (account and organization-project keys)', async () => {
+      const { service, events } = buildService();
+
+      await service.createApiKey({ name: 'Prod key' });
+
+      const [event] = vi.mocked(events.publish).mock.calls[0];
+      expect(event).toMatchObject({ type: 'api_key.created' });
+      expect(event).not.toHaveProperty('subjectUserId');
+      expect(event).not.toHaveProperty('projectIds');
+    });
+
+    it('rejects an owner that is not a pair of ids, before anything is written', async () => {
+      const { service, apiKeyRepository, events } = buildService();
+
+      await expect(
+        service.createApiKey({ owner: { projectId, userId: 'not-an-id' } } as never)
+      ).rejects.toThrow();
+
+      expect(apiKeyRepository.createApiKey).not.toHaveBeenCalled();
+      expect(events.publish).not.toHaveBeenCalled();
+    });
+  });
+});

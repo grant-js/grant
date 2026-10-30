@@ -6,7 +6,7 @@
  *  - deleting a GROUP revokes every membership, one `user.group_revoked` per member;
  *  - removing a PROJECT USER revokes the roles and groups the project gave them;
  *  - tags: create / update / link / unlink / delete;
- *  - deleting an API key (the owning user is the subject only for a user-owned key);
+ *  - revoking and deleting an API key (the owning user is the subject only for a user-owned key);
  *  - a user deleting their own account reaches the projects they belong to;
  *  - a user renaming themselves in an account scope (which names no project) reaches the
  *    projects they belong to with one `user.updated`.
@@ -29,6 +29,7 @@ import {
   DeleteGroupDocument,
   DeleteTagDocument,
   DeleteUserDocument,
+  RevokeApiKeyDocument,
   Tenant,
   UpdateRoleDocument,
   UpdateTagDocument,
@@ -84,6 +85,7 @@ const EVENT_TYPES = [
   'tag.linked',
   'tag.unlinked',
   'tag.deleted',
+  'api_key.revoked',
   'api_key.deleted',
 ] as const;
 
@@ -377,7 +379,7 @@ describe('Webhook cascades and lifecycle events', () => {
     }
   });
 
-  it('an API key owned by a project user: deleting it names that user; an organization-project key names none', async () => {
+  it('an API key owned by a project user: revoking and deleting it name that user; an organization-project key names none', async () => {
     // A project role that lets the owner create and delete API keys as a project user.
     const keyRole = await apiClient()
       .post('/api/roles')
@@ -389,6 +391,7 @@ describe('Webhook cascades and lifecycle events', () => {
         permissionIds: [
           await permissionId('permissions.names.ApiKey.Create'),
           await permissionId('permissions.names.ApiKey.Delete'),
+          await permissionId('permissions.names.ApiKey.Revoke'),
         ],
       });
     expect(keyRole.status).toBe(201);
@@ -412,6 +415,9 @@ describe('Webhook cascades and lifecycle events', () => {
     expect(orgKey.body.errors, JSON.stringify(orgKey.body.errors)).toBeUndefined();
     const orgKeyId = orgKey.body.data!.createApiKey!.id;
 
+    const revUser = await gql(RevokeApiKeyDocument, { input: { id: userKeyId, scope: userScope } });
+    expect(revUser.body.errors, JSON.stringify(revUser.body.errors)).toBeUndefined();
+
     const delUser = await gql(DeleteApiKeyDocument, { input: { id: userKeyId, scope: userScope } });
     expect(delUser.body.errors, JSON.stringify(delUser.body.errors)).toBeUndefined();
     const delOrg = await gql(DeleteApiKeyDocument, {
@@ -429,6 +435,12 @@ describe('Webhook cascades and lifecycle events', () => {
 
     expect(envelopeOf(eventFor(userKeyId)).grantsubjectuser).toEqual({ userId: ownerUserId });
     expect(envelopeOf(eventFor(orgKeyId)).grantsubjectuser).toBeNull();
+
+    const revoked = ofType(rows, 'api_key.revoked').find(
+      (row) => row.payload.aggregate?.id === userKeyId
+    );
+    expect(revoked, 'api_key.revoked delivered for the user-owned key').toBeDefined();
+    expect(envelopeOf(revoked!).grantsubjectuser).toEqual({ userId: ownerUserId });
   });
 
   it('a user deleting their own account delivers user.deleted to the project they belong to', async () => {
