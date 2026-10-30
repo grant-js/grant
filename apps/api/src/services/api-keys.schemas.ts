@@ -94,11 +94,15 @@ export const createApiKeyForCdmImportParamsSchema = cdmImportApiKeyFieldsSchema.
   })
 );
 
+/** Lowercase hex SHA-256 of a secret string (see `credentialFingerprint`). */
+const clientSecretFingerprintSchema = z.string().regex(/^[0-9a-f]{64}$/);
+
 export const createApiKeysForCdmImportParamsSchema = z.object({
   keys: z.array(
     cdmImportApiKeyFieldsSchema.and(
       z.object({
         clientSecretHash: z.string().min(1),
+        clientSecretFingerprint: clientSecretFingerprintSchema.nullable().optional(),
       })
     )
   ),
@@ -113,6 +117,16 @@ export const rotateApiKeysForCdmImportParamsSchema = z.object({
     z.object({
       id: idSchema,
       clientSecretHash: z.string().min(1),
+      clientSecretFingerprint: clientSecretFingerprintSchema.nullable().optional(),
+    })
+  ),
+});
+
+export const setMissingClientSecretFingerprintsForCdmImportParamsSchema = z.object({
+  keys: z.array(
+    z.object({
+      id: idSchema,
+      clientSecretFingerprint: clientSecretFingerprintSchema,
     })
   ),
 });

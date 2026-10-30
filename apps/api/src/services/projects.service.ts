@@ -1,4 +1,5 @@
 import type {
+  IApiKeyExportableSecretService,
   IAuditLogger,
   IFileStorageService,
   IProjectRepository,
@@ -49,7 +50,8 @@ export class ProjectService implements IProjectService {
     private readonly projectRepository: IProjectRepository,
     private readonly audit: IAuditLogger,
     private readonly fileStorage: IFileStorageService,
-    private readonly secrets: ISecretResolver
+    private readonly secrets: ISecretResolver,
+    private readonly exportableSecrets: IApiKeyExportableSecretService
   ) {}
 
   private async getProject(projectId: string): Promise<Project> {
@@ -224,14 +226,20 @@ export class ProjectService implements IProjectService {
       );
     }
 
+    // Opting out ends the promise that Grant keeps a recoverable secret: every copy of the
+    // project goes in the same transaction as the flag. Opting in writes none (nothing is
+    // back-filled; the plaintext of an existing key is gone).
+    const copiesDeleted = enabled
+      ? 0
+      : await this.exportableSecrets.removeForProject(projectId, transaction);
+
     await this.audit.logAction(
       {
         entityId: projectId,
         action: SET_EXPORTABLE_API_KEY_SECRETS_AUDIT_ACTION,
         oldValues: { exportableApiKeySecrets: !enabled },
         newValues: { exportableApiKeySecrets: enabled },
-        // The copies are deleted from the opt-out path once they exist (the copy slice).
-        metadata: { context, copiesDeleted: 0 },
+        metadata: { context, copiesDeleted },
       },
       transaction
     );

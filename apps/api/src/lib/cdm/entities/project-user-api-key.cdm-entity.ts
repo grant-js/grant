@@ -27,6 +27,7 @@ import {
   peekPreparedCdmApiKeyHashByClassifyKey,
   peekPreparedCdmApiKeyHashes,
 } from '@/lib/cdm/hash-cdm-api-key-secrets.lib';
+import { credentialFingerprint } from '@/lib/credential-fingerprint.lib';
 import { ValidationError } from '@/lib/errors';
 import { hashSecretAsync } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -277,6 +278,7 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
           keys: rotateItems.map((row, index) => ({
             id: row.existing.apiKeyId,
             clientSecretHash: rotateHashes[index]!,
+            clientSecretFingerprint: fingerprintOfHashedSecret(row.item),
           })),
         },
         tx
@@ -289,6 +291,21 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
     }
     ctx.result.projectUserApiKeysRotated += classified.rotate.length;
 
+    // A kept key holds the secret the document supplies (the HMAC matched), so a key that has
+    // no plaintext fingerprint yet gets it now instead of waiting for its next rotation. The
+    // secret, the hash and the copy table are not touched.
+    const keepFingerprints = classified.keep
+      .filter((row) => !row.existing.clientSecretFingerprint)
+      .map((row) => ({
+        id: row.existing.apiKeyId,
+        clientSecretFingerprint: credentialFingerprint(row.document.secret),
+      }));
+    if (keepFingerprints.length > 0) {
+      await this.apiKeys.setMissingClientSecretFingerprintsForCdmImport(
+        { keys: keepFingerprints },
+        tx
+      );
+    }
     ctx.result.projectUserApiKeysUnchanged += classified.keep.length;
 
     const createItems = classified.create.map((row) => {
@@ -314,6 +331,7 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
       {
         keys: prepared.map((item, index) => ({
           clientSecretHash: hashes[index]!,
+          clientSecretFingerprint: fingerprintOfHashedSecret(item),
           clientId: item.row.clientId ?? undefined,
           scope: { tenant: Tenant.ProjectUser, id: `${ctx.projectId}:${item.userId}` },
           name: item.row.name ?? undefined,
@@ -389,6 +407,17 @@ async function resolveCdmApiKeyHashes(prepared: readonly PreparedApiKey[]): Prom
       return hashSecretAsync(item.secret);
     })
   );
+}
+
+/**
+ * SHA-256 of the plaintext the stored hash is made from, `null` when the importer supplied only
+ * a hash (the plaintext is then unknown, so no fingerprint is claimed).
+ */
+function fingerprintOfHashedSecret(item: PreparedApiKey): string | null {
+  if (item.row.clientSecretHash?.trim() || !item.secret) {
+    return null;
+  }
+  return credentialFingerprint(item.secret);
 }
 
 function fingerprintForSecret(

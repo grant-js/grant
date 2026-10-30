@@ -85,6 +85,7 @@ import { AccountProjectService } from './account-projects.service';
 import { AccountRoleService } from './account-roles.service';
 import { AccountTagsService } from './account-tags.service';
 import { AccountService } from './accounts.service';
+import { ApiKeyExportableSecretService } from './api-key-exportable-secrets.service';
 import { ApiKeyService } from './api-keys.service';
 import { AuthService } from './auth.service';
 import { CredentialLockoutService } from './credential-lockouts.service';
@@ -275,13 +276,21 @@ export function createServices(
       repositories.accountProjectRepository
     )
   );
+  // One instance shared by the API-key lifecycle and the opt-out, so the copy is sealed and
+  // deleted by the same code.
+  const apiKeyExportableSecrets = new ApiKeyExportableSecretService(
+    repositories.apiKeyExportableSecretRepository,
+    repositories.projectRepository,
+    secrets
+  );
   const servicesBase = {
     credentials,
     // The export and the fingerprint read hashes through one named repository method, apart
     // from CredentialService (different threat model); the audit logger throws on failure.
     projectUserCredentialExports: new ProjectUserCredentialExportService(
       repositories.projectUserCredentialRepository,
-      audit(projectUserCredentialAuditLogs, 'projectUserCredentialId', user, db)
+      audit(projectUserCredentialAuditLogs, 'projectUserCredentialId', user, db),
+      repositories.apiKeyExportableSecretRepository
     ),
     credentialLockouts,
     credentialSignInLockouts,
@@ -461,7 +470,8 @@ export function createServices(
       repositories.projectRepository,
       audit(projectAuditLogs, 'projectId', user, db),
       fileStorage,
-      secrets
+      secrets,
+      apiKeyExportableSecrets
     ),
     projectApps: new ProjectAppService(
       repositories.projectAppRepository,
@@ -540,7 +550,8 @@ export function createServices(
       user,
       audit(apiKeyAuditLogs, 'apiKeyId', user, db),
       grant,
-      events
+      events,
+      apiKeyExportableSecrets
     ),
     projectUserApiKeys: new ProjectUserApiKeyService(
       repositories.projectRepository,

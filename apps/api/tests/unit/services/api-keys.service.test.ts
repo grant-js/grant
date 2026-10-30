@@ -1,4 +1,9 @@
-import type { IApiKeyRepository, IAuditLogger, IEventPublisher } from '@grantjs/core';
+import type {
+  IApiKeyExportableSecretService,
+  IApiKeyRepository,
+  IAuditLogger,
+  IEventPublisher,
+} from '@grantjs/core';
 import { type ApiKey, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -51,6 +56,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     hardDeleteApiKeys: vi.fn(),
     updateLastUsedAt: vi.fn().mockImplementation(async (id) => apiKey({ id })),
     updateClientSecretHash: vi.fn().mockImplementation(async (id) => apiKey({ id })),
+    setMissingClientSecretFingerprints: vi.fn(),
     getApiKeys: vi.fn(),
     getApiKey: vi.fn(),
     revokeApiKey: vi.fn(),
@@ -75,6 +81,13 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     resolveLinkedProjectIds: vi.fn().mockResolvedValue([]),
   } as unknown as IEventPublisher;
 
+  const exportableSecrets = {
+    isEnabled: vi.fn().mockResolvedValue(false),
+    storeForKey: vi.fn(),
+    removeForKeys: vi.fn().mockResolvedValue(0),
+    removeForProject: vi.fn().mockResolvedValue(0),
+  } satisfies IApiKeyExportableSecretService;
+
   const service = new ApiKeyService(
     {
       getFirstByProjectId: vi.fn().mockResolvedValue({ accountId, projectId }),
@@ -86,10 +99,11 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     null,
     audit,
     grant as never,
-    events
+    events,
+    exportableSecrets
   );
 
-  return { service, apiKeyRepository, grant, events };
+  return { service, apiKeyRepository, grant, events, exportableSecrets };
 }
 
 describe('ApiKeyService scoped client ids', () => {
@@ -198,6 +212,7 @@ describe('ApiKeyService.rotateApiKey', () => {
     expect(apiKeyRepository.updateClientSecretHash).toHaveBeenCalledWith(
       apiKeyId,
       expect.any(String),
+      null,
       undefined
     );
     expect(events.publish).toHaveBeenCalledWith(

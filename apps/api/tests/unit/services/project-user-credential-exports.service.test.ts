@@ -18,10 +18,13 @@ const HASH_C = '$2b$10$SentinelHashCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 function createService(rows: unknown[]) {
   const findHashesForExport = vi.fn().mockResolvedValue(rows);
   const logExport = vi.fn().mockResolvedValue(undefined);
-  const service = new ProjectUserCredentialExportService({ findHashesForExport } as never, {
-    logExport,
-  });
-  return { service, findHashesForExport, logExport };
+  const listCredentialSummaries = vi.fn().mockResolvedValue([]);
+  const service = new ProjectUserCredentialExportService(
+    { findHashesForExport } as never,
+    { logExport },
+    { listCredentialSummaries } as never
+  );
+  return { service, findHashesForExport, logExport, listCredentialSummaries };
 }
 
 const row = (userId: string, hash: string, source = 'admin-set') => ({
@@ -29,6 +32,23 @@ const row = (userId: string, hash: string, source = 'admin-set') => ({
   hash,
   source,
   updatedAt: new Date('2026-10-28T10:00:00Z'),
+});
+
+describe('credentialFingerprint of an API-key secret', () => {
+  it('is the lowercase hex sha256 of the secret string as issued, for both issued forms', () => {
+    const base64Url43 = Buffer.alloc(32, 9).toString('base64url');
+    const base64Padded88 = Buffer.alloc(64, 9).toString('base64');
+
+    expect(base64Url43).toHaveLength(43);
+    expect(base64Padded88).toHaveLength(88);
+    for (const secret of [base64Url43, base64Padded88]) {
+      expect(credentialFingerprint(secret)).toBe(
+        createHash('sha256').update(secret, 'utf8').digest('hex')
+      );
+      expect(credentialFingerprint(secret)).toMatch(/^[0-9a-f]{64}$/);
+    }
+    expect(credentialFingerprint(base64Url43)).not.toBe(credentialFingerprint(base64Padded88));
+  });
 });
 
 describe('credentialFingerprint', () => {
@@ -124,5 +144,66 @@ describe('ProjectUserCredentialExportService.getPasswordCredentialSummaries', ()
     ]);
     expect(JSON.stringify(summaries)).not.toContain(HASH_A);
     expect(logExport).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectUserCredentialExportService.getApiKeyCredentialSummaries', () => {
+  const stored = {
+    apiKeyId: '50000000-0000-4000-8000-000000000001',
+    clientId: '50000000-0000-4000-8000-000000000002',
+    clientSecretFingerprint: 'c'.repeat(64),
+    hasCopy: true,
+    updatedAt: new Date('2026-10-30T10:00:00Z'),
+  };
+
+  it('maps the stored fingerprint and copy flag, one entry per key, and nothing else', async () => {
+    const { service, listCredentialSummaries } = createService([]);
+    listCredentialSummaries.mockResolvedValue([
+      stored,
+      { ...stored, apiKeyId: '50000000-0000-4000-8000-000000000003', hasCopy: false },
+    ]);
+
+    const result = await service.getApiKeyCredentialSummaries({
+      projectId,
+      userId: withCredential,
+    });
+
+    expect(listCredentialSummaries).toHaveBeenCalledWith(
+      { projectId, userId: withCredential },
+      undefined
+    );
+    expect(result).toEqual([
+      {
+        apiKeyId: stored.apiKeyId,
+        clientId: stored.clientId,
+        fingerprint: stored.clientSecretFingerprint,
+        exportable: true,
+        updatedAt: stored.updatedAt,
+      },
+      expect.objectContaining({ exportable: false }),
+    ]);
+    expect(result.every((entry) => Object.keys(entry).length === 5)).toBe(true);
+  });
+
+  it('a legacy key (created before the fingerprint existed, not rotated since) has a null fingerprint', async () => {
+    const { service, listCredentialSummaries } = createService([]);
+    listCredentialSummaries.mockResolvedValue([{ ...stored, clientSecretFingerprint: null }]);
+
+    const [entry] = await service.getApiKeyCredentialSummaries({
+      projectId,
+      userId: withCredential,
+    });
+
+    expect(entry.fingerprint).toBeNull();
+  });
+
+  it('is empty for a member with no key, writes no audit row and reads no password hash', async () => {
+    const { service, logExport, findHashesForExport } = createService([]);
+
+    await expect(
+      service.getApiKeyCredentialSummaries({ projectId, userId: withCredential })
+    ).resolves.toEqual([]);
+    expect(logExport).not.toHaveBeenCalled();
+    expect(findHashesForExport).not.toHaveBeenCalled();
   });
 });

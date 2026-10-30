@@ -42,6 +42,7 @@ function existingKey(
     clientId: overrides.clientId ?? 'cid-1',
     metadata: overrides.metadata ?? null,
     secretFingerprint: overrides.secretFingerprint ?? null,
+    clientSecretFingerprint: overrides.clientSecretFingerprint ?? null,
     externalKey: overrides.externalKey,
   };
 }

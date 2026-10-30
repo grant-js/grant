@@ -38,6 +38,7 @@ function buildService(
     key?: string | undefined;
     setExportableApiKeySecrets?: ReturnType<typeof vi.fn>;
     getProjects?: ReturnType<typeof vi.fn>;
+    copiesDeleted?: number;
   } = {}
 ) {
   const hasKey = 'key' in options ? options.key : SENTINEL_KEY_MATERIAL;
@@ -57,15 +58,22 @@ function buildService(
     logHardDelete: vi.fn(),
   };
   const resolve = vi.fn().mockResolvedValue(hasKey);
+  const exportableSecrets = {
+    isEnabled: vi.fn(),
+    storeForKey: vi.fn(),
+    removeForKeys: vi.fn(),
+    removeForProject: vi.fn().mockResolvedValue(options.copiesDeleted ?? 0),
+  };
   const service = new ProjectService(
     repository as unknown as IProjectRepository,
     audit as unknown as IAuditLogger,
     {
       getUrl: vi.fn(),
     } as unknown as IFileStorageService,
-    { resolve }
+    { resolve },
+    exportableSecrets
   );
-  return { service, repository, audit, resolve };
+  return { service, repository, audit, resolve, exportableSecrets };
 }
 
 describe('ProjectService.setExportableApiKeySecrets', () => {
@@ -120,6 +128,35 @@ describe('ProjectService.setExportableApiKeySecrets', () => {
       }),
       tx
     );
+  });
+
+  it('opting out deletes every copy of the project in the same transaction and audits how many', async () => {
+    const { service, audit, exportableSecrets } = buildService({
+      copiesDeleted: 3,
+      setExportableApiKeySecrets: vi
+        .fn()
+        .mockResolvedValue(projectRow({ exportableApiKeySecrets: false })),
+    });
+
+    await service.setExportableApiKeySecrets({ projectId, enabled: false }, tx);
+
+    expect(exportableSecrets.removeForProject).toHaveBeenCalledWith(projectId, tx);
+    expect(audit.logAction).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ copiesDeleted: 3 }) }),
+      tx
+    );
+  });
+
+  it('opting in deletes no copy and a same-value call neither deletes nor audits', async () => {
+    const enabling = buildService();
+    await enabling.service.setExportableApiKeySecrets({ projectId, enabled: true }, tx);
+    expect(enabling.exportableSecrets.removeForProject).not.toHaveBeenCalled();
+
+    const unchanged = buildService({
+      setExportableApiKeySecrets: vi.fn().mockResolvedValue(null),
+    });
+    await unchanged.service.setExportableApiKeySecrets({ projectId, enabled: false }, tx);
+    expect(unchanged.exportableSecrets.removeForProject).not.toHaveBeenCalled();
   });
 
   it.each([true, false])(

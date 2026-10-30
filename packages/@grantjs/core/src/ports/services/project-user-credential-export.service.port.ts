@@ -14,6 +14,20 @@ export interface ProjectPasswordCredentialSummary {
 }
 
 /**
+ * Non-secret facts about one live project-user API key. `fingerprint` is the lowercase hex
+ * SHA-256 of the secret string as issued, stored at create, rotate and import; `null` for a key
+ * created before it existed and not rotated since. `exportable`: an encrypted copy exists.
+ * Never the secret, the hash or the ciphertext.
+ */
+export interface ProjectUserApiKeyCredentialSummary {
+  apiKeyId: string;
+  clientId: string;
+  fingerprint: string | null;
+  exportable: boolean;
+  updatedAt: Date;
+}
+
+/**
  * The one place a project credential hash leaves Grant (ADR 0011, export amendment), and the
  * fingerprint that lets a caller with the same permission see a hash change without the hash.
  * Both read through the one named repository method `findHashesForExport`.
@@ -42,4 +56,14 @@ export interface IProjectUserCredentialExportService {
     params: { projectId: string; userIds: readonly string[] },
     transaction?: unknown
   ): Promise<ProjectPasswordCredentialSummary[]>;
+
+  /**
+   * The member's live project-user API keys with their stored fingerprint and whether a copy
+   * exists, oldest first (`[]` for none). Not audited: nothing secret leaves, and no secret,
+   * hash or ciphertext is read.
+   */
+  getApiKeyCredentialSummaries(
+    params: { projectId: string; userId: string },
+    transaction?: unknown
+  ): Promise<ProjectUserApiKeyCredentialSummary[]>;
 }

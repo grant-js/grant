@@ -51,6 +51,8 @@ export interface IApiKeyRepository {
     params: Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;
       clientSecretHash: string;
+      /** SHA-256 of the secret as issued; `null` or absent when no plaintext was in hand. */
+      clientSecretFingerprint?: string | null;
       createdBy: string;
     },
     transaction?: unknown
@@ -60,6 +62,7 @@ export interface IApiKeyRepository {
     params: readonly (Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;
       clientSecretHash: string;
+      clientSecretFingerprint?: string | null;
       createdBy: string;
     })[],
     transaction?: unknown
@@ -67,11 +70,26 @@ export interface IApiKeyRepository {
 
   hardDeleteApiKeys(ids: readonly string[], transaction?: unknown): Promise<void>;
 
+  /**
+   * Write a new hash and the fingerprint of the secret it was made from in one statement, so
+   * the two cannot disagree. `null` when the caller holds no plaintext (a CDM rotate that
+   * supplied only a hash): the previous fingerprint must not outlive the hash it described.
+   */
   updateClientSecretHash(
     id: string,
     clientSecretHash: string,
+    clientSecretFingerprint: string | null,
     transaction?: unknown
   ): Promise<ApiKey>;
+
+  /**
+   * Fill `client_secret_fingerprint` for keys that have none; a key that already has one is
+   * left as it is, and `updated_at` does not move (the secret did not change).
+   */
+  setMissingClientSecretFingerprints(
+    entries: readonly { id: string; clientSecretFingerprint: string }[],
+    transaction?: unknown
+  ): Promise<void>;
 
   updateLastUsedAt(id: string, lastUsedAt: Date, transaction?: unknown): Promise<ApiKey>;
 

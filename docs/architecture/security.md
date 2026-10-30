@@ -485,6 +485,8 @@ Values below match **`apps/api`** defaults in **`.env.example`**. See [Authentic
 | **`AUTH_MFA_VERIFY_WINDOW_MINUTES`**   | `15`      | Rolling window for those verify attempts.                                                                                       |
 | **`AUTH_MFA_SESSION_TTL_MINUTES`**     | `1440`    | How long MFA verification stays valid for sensitive actions (minutes; see Config app / `env.config`).                           |
 
+Two sibling keys encrypt other secrets at rest and are independent of the MFA key (different key-derivation purposes, separate rotation): **`PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`** for per-project BYO OAuth client secrets, and **`API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY`** for the encrypted copy of a project user's API-key secret in a project that opted in ([API keys](/core-concepts/api-keys#exportable-secrets-opt-in)). The latter is required only to enable that opt-in; set it to a long random value, keep it identical across replicas and never commit it.
+
 ::: warning Secret encryption key
 Without **`AUTH_MFA_SECRET_ENCRYPTION_KEY`**, MFA enrollment cannot be persisted securely — the API will fail configuration checks for TOTP setup.
 :::

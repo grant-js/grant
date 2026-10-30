@@ -15,6 +15,10 @@ import {
 import { accountTags, accountTagsRelations } from './account-tags.schema';
 import { accounts, accountsRelations } from './accounts.schema';
 import {
+  apiKeyExportableSecrets,
+  apiKeyExportableSecretsRelations,
+} from './api-key-exportable-secrets.schema';
+import {
   apiKeyAuditLogs,
   apiKeyAuditLogsRelations,
   apiKeys,
@@ -200,6 +204,7 @@ export const schema = {
   accountTags,
   accounts,
   apiKeys,
+  apiKeyExportableSecrets,
   apiKeyAuditLogs,
   eventLog,
   groupPermissions,
@@ -332,6 +337,7 @@ export const schema = {
   cdmImportTombstonesRelations,
   projectUsersRelations,
   apiKeysRelations,
+  apiKeyExportableSecretsRelations,
   apiKeyAuditLogsRelations,
   eventLogRelations,
   notificationPreferencesRelations,

@@ -200,6 +200,20 @@ export class ProjectRepository
     return (rows[0] as Project | undefined) ?? null;
   }
 
+  public async isExportableApiKeySecretsEnabled(
+    projectId: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    const dbInstance = transaction ?? this.db;
+    const rows = await dbInstance
+      .select({ enabled: this.table.exportableApiKeySecrets })
+      .from(this.table)
+      .where(and(eq(this.table.id, projectId), isNull(this.table.deletedAt)))
+      .limit(1)
+      .for('share');
+    return rows[0]?.enabled === true;
+  }
+
   public async softDeleteProject(
     params: Omit<MutationDeleteProjectArgs, 'scope'>,
     transaction?: Transaction
