@@ -28,6 +28,11 @@ const projectUsers = {
 const credentials = {
   importProjectPasswordHashes: vi.fn(),
 };
+const tombstones = {
+  // Nothing is tombstoned here, whether or not the environment configures the secret.
+  filterTombstoned: vi.fn().mockResolvedValue(new Set<string>()),
+  insertIgnoringDuplicates: vi.fn(),
+};
 
 function createEntity(): UserProvisionCdmEntity {
   return new UserProvisionCdmEntity(
@@ -36,7 +41,8 @@ function createEntity(): UserProvisionCdmEntity {
     userAuthenticationMethods as never,
     userRepository as never,
     projectUsers as never,
-    credentials as never
+    credentials as never,
+    tombstones as never
   );
 }
 
@@ -63,6 +69,7 @@ function createCtx(): CdmApplyContext {
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
     passwordsSkippedExisting: 0,
+    usersSkippedTombstoned: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -89,6 +96,7 @@ function createCtx(): CdmApplyContext {
     },
     documentGroupsByKey: new Map(),
     assignmentUserIds: new Set(),
+    skippedUserKeys: new Set<string>(),
   } as CdmApplyContext;
 }
 

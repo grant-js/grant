@@ -43,6 +43,31 @@ function readImporterLegacyId(metadata: Record<string, unknown>): string | null 
 }
 
 /**
+ * The user import marker (`metadata.cdmImport`) of `projectId`, or `null` when the metadata
+ * carries none or it names another project or another kind. The one reader of the marker's
+ * project and kind, shared by the event projection (`readKey`) and the deletion tombstone
+ * (`readMarkerExternalKey`).
+ */
+function readProjectMarker(metadata: unknown, projectId: string): Record<string, unknown> | null {
+  const record = asRecord(metadata);
+  const marker = record ? asRecord(record[CDM_IMPORT_METADATA_KEY]) : null;
+  return marker !== null && marker.projectId === projectId && marker.kind === 'user'
+    ? marker
+    : null;
+}
+
+/**
+ * The marker's key exactly as the import stored it: a non-empty string, **not** filtered for
+ * e-mail shape and not trimmed, because for a `findBy: email` identity it is the address the
+ * deletion tombstone hashes. Never an event field, never logged: events go through
+ * `resolveExternalKeys`, which keeps only keys that are not e-mail shaped.
+ */
+export function readMarkerExternalKey(metadata: unknown, projectId: string): string | null {
+  const key = readProjectMarker(metadata, projectId)?.externalKey;
+  return typeof key === 'string' && key !== '' ? key : null;
+}
+
+/**
  * The key the metadata carries for `projectId`: the Grant-internal marker
  * (`metadata.cdmImport.externalKey`) when it is not e-mail shaped, else the importer's
  * `cdmSource.legacy.id`. A marker that names another project, or another kind, is ignored.
@@ -56,9 +81,9 @@ function readKey(
   const record = asRecord(metadata);
   if (!record) return null;
 
-  const marker = asRecord(record[CDM_IMPORT_METADATA_KEY]);
-  const markerNamesProject = marker?.projectId === projectId && marker.kind === 'user';
-  const fromMarker = markerNamesProject ? toKey(marker?.externalKey) : null;
+  const marker = readProjectMarker(record, projectId);
+  const markerNamesProject = marker !== null;
+  const fromMarker = marker ? toKey(marker.externalKey) : null;
   if (fromMarker) return fromMarker;
 
   if (!trustImporterWithoutMarker && !markerNamesProject) return null;

@@ -7,6 +7,7 @@ import { AccountRoleRepository } from './account-roles.repository';
 import { AccountTagsRepository } from './account-tags.repository';
 import { AccountRepository } from './accounts.repository';
 import { ApiKeyRepository } from './api-keys.repository';
+import { CdmImportTombstoneRepository } from './cdm-import-tombstones.repository';
 import { ProjectUserCredentialLockoutRepository } from './credential-lockouts.repository';
 import { EventLogRepository } from './event-log.repository';
 import { GroupPermissionRepository } from './group-permissions.repository';
@@ -105,6 +106,7 @@ export function createRepositories(db: DbSchema) {
     projectOAuthConnectionRepository: new ProjectOAuthConnectionRepository(db),
     projectOAuthGrantRepository: new ProjectOAuthGrantRepository(db),
     projectGroupRepository: new ProjectGroupRepository(db),
+    cdmImportTombstoneRepository: new CdmImportTombstoneRepository(db),
     projectPasswordResetRepository: new ProjectPasswordResetRepository(db),
     projectPermissionRepository: new ProjectPermissionRepository(db),
     projectResourceRepository: new ProjectResourceRepository(db),

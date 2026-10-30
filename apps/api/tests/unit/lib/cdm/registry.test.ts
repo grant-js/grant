@@ -53,6 +53,7 @@ function buildDeps(): CdmEntityRegistryDeps {
     userAuthenticationMethods: stub as never,
     userRepository: stub as never,
     credentials: stub as never,
+    cdmImportTombstones: stub as never,
   };
 }
 

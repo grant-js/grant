@@ -1,6 +1,7 @@
 import {
   GrantAuth,
   type IAuditLogger,
+  type ICdmImportTombstoneRepository,
   type ICredentialService,
   type IEventPublisher,
   type IFileStorageService,
@@ -19,9 +20,11 @@ import {
 } from '@grantjs/schema';
 
 import { config } from '@/config';
+import { decideTombstoneWrite, resolveTombstoneKeys } from '@/lib/cdm/cdm-import-tombstone.lib';
 import { AuthenticationError, NotFoundError } from '@/lib/errors';
 import { buildDelta } from '@/lib/events/event-delta.lib';
 import { resolveExternalKeys } from '@/lib/events/event-external-keys.lib';
+import { createLogger } from '@/lib/logger';
 import {
   hydratePictureUrl,
   hydratePictureUrls,
@@ -54,8 +57,11 @@ export class UserService implements IUserService {
     private readonly audit: IAuditLogger,
     private readonly fileStorage: IFileStorageService,
     private readonly credentials: ICredentialService,
-    private readonly events: IEventPublisher
+    private readonly events: IEventPublisher,
+    private readonly cdmImportTombstones: ICdmImportTombstoneRepository
   ) {}
+
+  private readonly logger = createLogger('UserService');
 
   private async getUser(userId: string): Promise<User> {
     const existingUsers = await this.userRepository.getUsers({
@@ -277,10 +283,12 @@ export class UserService implements IUserService {
     // The user's import keys, read in the same place and for the same reason: the memberships
     // that carry the per-project keys are gone after the delete. Every project's entry is
     // stored; the webhook projection keeps only the receiving subscription's own.
-    const externalKeys = resolveExternalKeys(
-      oldUser.metadata,
-      await this.userRepository.getUserMembershipMetadata(oldUser.id, transaction)
+    const memberships = await this.userRepository.getUserMembershipMetadata(
+      oldUser.id,
+      transaction
     );
+    const externalKeys = resolveExternalKeys(oldUser.metadata, memberships);
+    await this.recordImportTombstones(oldUser, memberships, transaction);
     await this.events.publish(
       {
         type: 'user.deleted',
@@ -318,6 +326,41 @@ export class UserService implements IUserService {
     }
 
     return validateOutput(createDynamicSingleSchema(userSchema), deletedUser, context);
+  }
+
+  /**
+   * A person who deletes an identity a CDM import created or marked stays deleted: record one
+   * tombstone per project whose marker names them (the fingerprint of the import key, never the
+   * key), in the deletion's transaction, so the next import does not create the identity again.
+   * Written only for a self-deletion (the actor is the subject); an operator deleting someone
+   * else stays recoverable by the next import. The decision is `decideTombstoneWrite`; this
+   * reads its facts, acts on it and logs counts only, never a key.
+   */
+  private async recordImportTombstones(
+    user: User,
+    memberships: Parameters<typeof resolveTombstoneKeys>[1],
+    transaction?: Transaction
+  ): Promise<void> {
+    const decision = decideTombstoneWrite({
+      actorUserId: this.user?.userId,
+      subjectUserId: user.id,
+      keys: resolveTombstoneKeys(user.metadata, memberships),
+      fingerprintSecret: config.cdm.apiKeyFingerprintHmacSecret,
+    });
+    if (decision.outcome === 'skip') {
+      if (decision.reason === 'no-fingerprint-secret') {
+        this.logger.warn(
+          { userId: user.id },
+          'Import deletion tombstone not written: CDM_API_KEY_FINGERPRINT_HMAC_SECRET is not configured'
+        );
+      }
+      return;
+    }
+    await this.cdmImportTombstones.insertIgnoringDuplicates(decision.rows, transaction);
+    this.logger.info(
+      { userId: user.id, tombstones: decision.rows.length },
+      'Import deletion tombstones recorded for a self-deleted identity'
+    );
   }
 
   public async deleteOwnUser(params: DeleteParams, transaction?: Transaction): Promise<User> {

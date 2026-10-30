@@ -55,6 +55,7 @@ function baseResult(): SyncProjectResult {
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
     passwordsSkippedExisting: 0,
+    usersSkippedTombstoned: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -195,6 +196,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
       },
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set<string>(),
     };
 
     await expect(
@@ -205,6 +207,68 @@ describe('ProjectUserApiKeyCdmEntity', () => {
         },
       ])
     ).rejects.toThrow(/not part of this import's user assignments/);
+  });
+
+  it('apply drops the keys of a user the provision step skipped (deletion tombstone), silently', async () => {
+    const createApiKeysForCdmImport = vi.fn().mockResolvedValue([]);
+    const { handler } = buildHandler({
+      apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport: vi.fn() },
+    });
+    const result = baseResult();
+    const ctx: CdmApplyContext = {
+      projectId,
+      scope,
+      tx: {},
+      lookupResolvedRef: () => ({}),
+      result,
+      produced: {
+        roleIdsByKey: new Map(),
+        tagIds: new Map(),
+        resourceIds: new Map(),
+        permissionIds: new Map(),
+        userIds: new Map(),
+        groupIdsByKey: new Map(),
+      },
+      documentGroupsByKey: new Map(),
+      assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set(['skipped-user-key']),
+    };
+
+    await expect(
+      handler.apply(ctx, [
+        { userKey: 'skipped-user-key', externalKey: 'ext-1', clientSecret: BYOK_SECRET },
+      ])
+    ).resolves.toBeUndefined();
+
+    expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(result.projectUserApiKeysCreated).toBe(0);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('apply still refuses a key whose user is neither produced nor skipped', async () => {
+    const { handler } = buildHandler();
+    const ctx: CdmApplyContext = {
+      projectId,
+      scope,
+      tx: {},
+      lookupResolvedRef: () => ({}),
+      result: baseResult(),
+      produced: {
+        roleIdsByKey: new Map(),
+        tagIds: new Map(),
+        resourceIds: new Map(),
+        permissionIds: new Map(),
+        userIds: new Map(),
+        groupIdsByKey: new Map(),
+      },
+      documentGroupsByKey: new Map(),
+      assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set(['another-key']),
+    };
+
+    await expect(
+      handler.apply(ctx, [{ userKey: 'never-provisioned', clientSecret: BYOK_SECRET }])
+    ).rejects.toThrow(/unresolved userKey/);
   });
 
   it('apply creates api key, pivot with CDM metadata, and increments counter', async () => {
@@ -236,6 +300,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
       },
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
+      skippedUserKeys: new Set<string>(),
     };
 
     await handler.apply(ctx, [
@@ -315,6 +380,7 @@ describe('ProjectUserApiKeyCdmEntity', () => {
       },
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
+      skippedUserKeys: new Set<string>(),
     };
 
     await expect(handler.apply(ctx, [{ userId, clientSecret: BYOK_SECRET }])).rejects.toThrow(
@@ -618,6 +684,7 @@ function applyCtx(result: SyncProjectResult, modeStrategy?: CdmModeStrategy): Cd
     },
     documentGroupsByKey: new Map(),
     assignmentUserIds: new Set([userId]),
+    skippedUserKeys: new Set<string>(),
     modeStrategy,
   };
 }

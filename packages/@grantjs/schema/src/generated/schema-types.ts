@@ -3802,6 +3802,11 @@ export type SyncProjectResult = {
   userRolesAssigned: Scalars['Int']['output'];
   userTagsLinked: Scalars['Int']['output'];
   usersCreated: Scalars['Int']['output'];
+  /**
+   * Document users not created because the person deleted this imported identity; their
+   * membership, credential and API keys were not written either.
+   */
+  usersSkippedTombstoned: Scalars['Int']['output'];
   warnings: Array<Scalars['String']['output']>;
 };
 

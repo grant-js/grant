@@ -215,6 +215,18 @@ A `findBy: key` user may also carry `key.grantUserId`, the id of an existing Gra
 
 For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
 
+### Deletion tombstones {#deletion-tombstones}
+
+A person who deletes an identity that an import created or marked stays deleted: the next import of the project does not create it again. (This is not the soft-delete a `replace` import applies to CDM-managed rows; see the contributor README for the two meanings of the word.)
+
+- **When one is written.** When a person deletes **themselves** (the user deletion where the actor is the deleted user, `DELETE /api/me/accounts` or the `deleteMyAccounts` mutation), and the identity carries an import key for a project: the key on the project membership row, else the key on the global user when it names that project. One tombstone per such project, written in the deletion's own transaction, for a soft or a hard delete. A Grant-native user (no import key anywhere) leaves none. An operator deleting someone else, or removing a member from a project, writes none: the next import brings that identity back.
+- **What it stores.** The project, the kind (`user`) and an HMAC-SHA256 fingerprint of the key. **No address, no name, no user id, no copy of the record**: for a `findBy: email` identity the key is the address, so it is only ever stored as a digest, and the table cannot be read back to a key. The import fingerprints the keys of its own document and checks those.
+- **The rule, in one sentence.** A tombstone blocks the **creation** of an identity for its key in its project; it never blocks a document user that resolves to a live identity. So a person who comes back, an identity matched with [`grantUserId`](#grant-user-id), a live e-mail identity and a user a live marker resolves to are all imported as usual.
+- **What a skipped user gets.** Nothing: no user, no membership, no role, group, permission or tag, no project credential from `password`, no API key. The entry is dropped silently, so a document that still lists the person does not fail. A deleted account's e-mail method is not treated as a live identity: an address held only by a deleted account, with no tombstone, is refused naming the position in `users[]` (and never the address).
+- **The counter.** The import result reports `usersSkippedTombstoned`, a number only: the document users not created because of a tombstone. Keys are never listed, in the result, the warnings, the logs or error messages.
+- **Requires the fingerprint secret.** Tombstones use `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`, the secret that already fingerprints API-key secrets. Without it no tombstone is written on a deletion (Grant logs a warning, without the key) and none can be checked on an import. Changing the secret orphans the existing tombstones: they no longer match any key.
+- **Lifetime.** Grant never removes a tombstone and none expires. A person who recreates an identity in Grant is not blocked, because the rule blocks only creation by an import. An operator who must lift one deletes the row from `cdm_import_tombstones` by a database operation until a later release adds a mutation. There is no API to list or read tombstones; the `user.deleted` event already names the deleted user's import keys and the actor.
+
 ### Password credentials {#password-credentials}
 
 A user with `key.findBy: email` can carry the password hash your legacy system already holds, so existing credentials survive a migration:

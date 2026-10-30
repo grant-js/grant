@@ -472,6 +472,7 @@ describe('CDM round-trip integration', () => {
       produced,
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set<string>(),
     };
 
     const ordered: ICdmEntityHandler[] = [

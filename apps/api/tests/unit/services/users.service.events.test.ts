@@ -68,7 +68,8 @@ function build(
     } as never,
     { getUrl: vi.fn() } as never,
     { removeAllForUser: vi.fn() } as never,
-    events as never
+    events as never,
+    { insertIgnoringDuplicates: vi.fn() } as never
   );
   return { service, userRepository, events, order };
 }

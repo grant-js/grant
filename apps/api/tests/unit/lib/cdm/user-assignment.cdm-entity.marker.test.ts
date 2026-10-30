@@ -52,6 +52,7 @@ function build() {
     },
     documentGroupsByKey: new Map(),
     assignmentUserIds: new Set([userId]),
+    skippedUserKeys: new Set<string>(),
   } as unknown as CdmApplyContext;
   return { handler, projectUsers, ctx };
 }
@@ -87,5 +88,51 @@ describe('UserAssignmentCdmEntity apply: membership marker', () => {
     (ctx.produced.userIds as Map<string, string>).clear();
     await handler.apply(ctx, [{ userId, roleTemplateKeys: ['viewer'] }]);
     expect(projectUsers.mergeProjectUserCdmMetadata).not.toHaveBeenCalled();
+  });
+});
+
+describe('UserAssignmentCdmEntity apply: a user the provision step skipped (deletion tombstone)', () => {
+  const skippedKey = 'sentinel.person@example.com';
+  const assignment = (userKey: string) => ({
+    userKey,
+    roleTemplateKeys: ['viewer'],
+    tagKeys: ['t'],
+    directGroups: [{ groupKey: 'g', permissionRefs: [] }],
+    directPermissionRefs: [{ permissionKey: 'p' }],
+  });
+
+  it('drops the entry silently: no membership, role, group, permission or tag, and no error', async () => {
+    const { handler, projectUsers, ctx } = build();
+    (ctx.skippedUserKeys as Set<string>).add(skippedKey);
+
+    await expect(handler.apply(ctx, [assignment(skippedKey)])).resolves.toBeUndefined();
+
+    expect(projectUsers.addProjectUser).not.toHaveBeenCalled();
+    expect(projectUsers.mergeProjectUserCdmMetadata).not.toHaveBeenCalled();
+    expect(projectUsers.syncProjectUserSearchDocument).not.toHaveBeenCalled();
+    expect(ctx.result.userRolesAssigned).toBe(0);
+    expect(ctx.result.projectUsersEnsured).toBe(0);
+    expect(ctx.result.warnings).toEqual([]);
+  });
+
+  it('still assigns the other users of the same document', async () => {
+    const { handler, projectUsers, ctx } = build();
+    (ctx.skippedUserKeys as Set<string>).add(skippedKey);
+
+    await handler.apply(ctx, [
+      { userKey: skippedKey, roleTemplateKeys: ['viewer'] },
+      { userKey: key, roleTemplateKeys: ['viewer'] },
+    ]);
+
+    expect(projectUsers.addProjectUser).toHaveBeenCalledTimes(1);
+    expect(projectUsers.addProjectUser).toHaveBeenCalledWith({ projectId, userId }, ctx.tx);
+  });
+
+  it('is not the "unresolved userKey" failure an unresolved, not skipped, key still is', async () => {
+    const { handler, ctx } = build();
+
+    await expect(
+      handler.apply(ctx, [{ userKey: 'never-provisioned', roleTemplateKeys: ['viewer'] }])
+    ).rejects.toThrow(/unresolved userKey/);
   });
 });

@@ -128,7 +128,12 @@ describe('ProjectImportService CDM metadata', () => {
     getUserAuthenticationMethodByEmail: vi.fn().mockResolvedValue(null),
     createUserAuthenticationMethod: vi.fn(),
   };
-  const userRepository = { findUserIdByCdmImport: vi.fn().mockResolvedValue(null) };
+  const userRepository = {
+    findUserIdByCdmImport: vi.fn().mockResolvedValue(null),
+    findLiveUserCdmMarkers: vi
+      .fn()
+      .mockResolvedValue({ globalMarker: null, membershipMarker: null }),
+  };
   const resourceTags = { addResourceTag: vi.fn() };
   const permissionTags = { addPermissionTag: vi.fn() };
 
@@ -166,7 +171,11 @@ describe('ProjectImportService CDM metadata', () => {
       userRepository as never,
       resourceTags as never,
       permissionTags as never,
-      {} as never // credentials: these documents carry no password
+      {} as never, // credentials: these documents carry no password
+      {
+        filterTombstoned: vi.fn().mockResolvedValue(new Set()),
+        insertIgnoringDuplicates: vi.fn(),
+      } as never
     );
   }
 

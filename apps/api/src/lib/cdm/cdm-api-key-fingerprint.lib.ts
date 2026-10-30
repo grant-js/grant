@@ -46,6 +46,22 @@ export function fingerprintCdmApiKeySecret(secret: string, hmacSecret: string): 
   return hmacSha256Hex(hmacSecret, secret);
 }
 
+/**
+ * Fingerprint of an import key for a deletion tombstone: HMAC-SHA256 of the marker `kind` and
+ * the key, under the same server secret as the API-key fingerprints. The key can be an
+ * address, so only this digest is ever stored. The two parts are joined with the ASCII unit
+ * separator, which neither a kind nor a key contains in practice, so `('a', 'bc')` and
+ * `('ab', 'c')` differ. The project is not an input: it is the column next to it. An empty
+ * secret yields `''` (see `hmacSha256Hex`): the caller writes and matches nothing.
+ */
+export function fingerprintCdmExternalKey(
+  kind: string,
+  externalKey: string,
+  hmacSecret: string
+): string {
+  return hmacSha256Hex(hmacSecret, `${kind}\u001f${externalKey}`);
+}
+
 export function cdmApiKeyFingerprintsEqual(
   stored: string | null | undefined,
   computed: string

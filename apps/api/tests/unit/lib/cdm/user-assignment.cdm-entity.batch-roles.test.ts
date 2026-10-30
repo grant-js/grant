@@ -78,6 +78,7 @@ function build() {
       ['ops', { name: 'Ops', description: null, metadata: null, searchable: null }],
     ]),
     assignmentUserIds: new Set([userId, otherUserId]),
+    skippedUserKeys: new Set<string>(),
   } as unknown as CdmApplyContext;
   return { handler, userRoles, builder, ctx, result };
 }
