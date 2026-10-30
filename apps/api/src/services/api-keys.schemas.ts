@@ -122,6 +122,7 @@ export const createApiKeyRequestSchema = z
     name: nameSchema.nullable().optional(),
     description: descriptionSchema.nullable().optional(),
     expiresAt: z.date().nullable().optional(),
+    owner: z.object({ projectId: z.uuid(), userId: z.uuid() }).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.expiresAt == null) {

@@ -34,8 +34,12 @@ interface ExchangeTokenResult {
 // ---------------------------------------------------------------------------
 
 export interface IApiKeyService {
+  /**
+   * `owner` names the project user the key is about to be linked to; it only decides which
+   * user and project the `api_key.created` event names (no API field, never stored here).
+   */
   createApiKey(
-    params: Omit<CreateApiKeyInput, 'scope'>,
+    params: Omit<CreateApiKeyInput, 'scope'> & { owner?: { projectId: string; userId: string } },
     transaction?: unknown
   ): Promise<CreateApiKeyResult>;
 

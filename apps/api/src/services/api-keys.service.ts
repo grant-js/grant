@@ -193,6 +193,24 @@ export class ApiKeyService implements IApiKeyService {
     }
   }
 
+  /**
+   * The project user an API key belongs to, and the projects it is linked to. The user is the
+   * subject only when the key has exactly one owner in `project_user_api_keys`. Account and
+   * organization-project keys have none, and the scoped `userId` of the token exchange falls
+   * back to the key's own id for them, so it is never used here. Read before a delete: a hard
+   * delete cascades the owner and project pivots.
+   */
+  private async resolveOwnerSubject(
+    id: string,
+    transaction?: Transaction
+  ): Promise<{ subjectUserId: string | null; projectIds: string[] }> {
+    const [projectIds, owningUserIds] = await Promise.all([
+      this.events.resolveLinkedProjectIds([{ kind: 'apiKey', id }], transaction),
+      this.apiKeyRepository.getOwningUserIds(id, transaction),
+    ]);
+    return { subjectUserId: owningUserIds.length === 1 ? owningUserIds[0] : null, projectIds };
+  }
+
   private generateApiKey(): { clientId: string; clientSecret: string } {
     const clientId = generateUUID();
     const secretBytes = generateRandomBytes(32);
@@ -280,7 +298,7 @@ export class ApiKeyService implements IApiKeyService {
   }
 
   public async createApiKey(
-    params: Omit<CreateApiKeyInput, 'scope'>,
+    params: Omit<CreateApiKeyInput, 'scope'> & { owner?: { projectId: string; userId: string } },
     transaction?: Transaction
   ): Promise<CreateApiKeyResult> {
     const context = 'ApiKeyService.createApiKey';
@@ -318,6 +336,10 @@ export class ApiKeyService implements IApiKeyService {
         type: 'api_key.created',
         aggregate: { kind: 'apiKey', id: apiKey.id },
         data: { after: newValues },
+        ...(validatedParams.owner && {
+          subjectUserId: validatedParams.owner.userId,
+          projectIds: [validatedParams.owner.projectId],
+        }),
       },
       transaction
     );
@@ -650,6 +672,7 @@ export class ApiKeyService implements IApiKeyService {
       throw new BadRequestError('API key is already revoked');
     }
 
+    const { subjectUserId, projectIds } = await this.resolveOwnerSubject(id, transaction);
     const revokedBy = this.getPerformedBy();
 
     const oldValues = {
@@ -674,7 +697,9 @@ export class ApiKeyService implements IApiKeyService {
       {
         type: 'api_key.revoked',
         aggregate: { kind: 'apiKey', id: revokedKey.id },
+        subjectUserId,
         data: { before: oldValues, after: newValues },
+        projectIds,
       },
       transaction
     );
@@ -701,6 +726,7 @@ export class ApiKeyService implements IApiKeyService {
       throw new BadRequestError('Cannot rotate a revoked API key');
     }
 
+    const { subjectUserId, projectIds } = await this.resolveOwnerSubject(id, transaction);
     const clientSecret = generateRandomBytes(32).toString('base64url');
     const clientSecretHash = hashSecret(clientSecret);
 
@@ -732,7 +758,9 @@ export class ApiKeyService implements IApiKeyService {
       {
         type: 'api_key.rotated',
         aggregate: { kind: 'apiKey', id: rotatedKey.id },
+        subjectUserId,
         data: { before, after },
+        projectIds,
       },
       transaction
     );
@@ -772,16 +800,7 @@ export class ApiKeyService implements IApiKeyService {
       deletedAt: apiKey.deletedAt,
     };
 
-    // Read what a delete destroys before it runs: a hard delete cascades the owner and
-    // project pivots. The user is the subject only when the key has exactly one owner
-    // in `project_user_api_keys`. Account and organization-project keys have none, and
-    // the scoped `userId` of the token exchange falls back to the key's own id for
-    // them, so it is never used here.
-    const [projectIds, owningUserIds] = await Promise.all([
-      this.events.resolveLinkedProjectIds([{ kind: 'apiKey', id }], transaction),
-      this.apiKeyRepository.getOwningUserIds(id, transaction),
-    ]);
-    const subjectUserId = owningUserIds.length === 1 ? owningUserIds[0] : null;
+    const { subjectUserId, projectIds } = await this.resolveOwnerSubject(id, transaction);
 
     let deletedKey: ApiKey;
     if (hardDelete) {
