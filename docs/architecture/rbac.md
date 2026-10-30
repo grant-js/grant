@@ -95,24 +95,24 @@ For CDM import/export field mapping, see [CDM Import & Export → Permission ass
 
 ### Common Groups (all roles)
 
-| Group Name                          | Resource                   | Permissions                | Description                                                                   |
-| ----------------------------------- | -------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
-| `Account Common`                    | Account                    | `read` `query`             | Basic account access for all authenticated users                              |
-| `User Common`                       | User                       | `read` `query`             | Basic user viewing for all authenticated users                                |
-| `Organization Common`               | Organization               | `create` `query`           | Basic organization access (can create and query organizations)                |
-| `Project Common`                    | Project                    | `query`                    | Basic project viewing for all authenticated users                             |
-| `Account Project Owner`             | Project                    | `create` `update` `delete` | Project management for account owners                                         |
-| `Resource Common`                   | Resource                   | `query`                    | Basic resource viewing for all authenticated users                            |
-| `Role Common`                       | Role                       | `query`                    | Basic role viewing for all authenticated users                                |
-| `Group Common`                      | Group                      | `query`                    | Basic group viewing for all authenticated users                               |
-| `Permission Common`                 | Permission                 | `query`                    | Basic permission viewing for all authenticated users                          |
-| `Tag Common`                        | Tag                        | `query`                    | Basic tag viewing for all authenticated users                                 |
-| `API Key Common`                    | API Key                    | `query` `exchange`         | Basic API key access for all authenticated users                              |
-| `Organization Member Common`        | Organization Member        | `read` `query`             | Basic organization member viewing for all authenticated users                 |
-| `Organization Invitation Common`    | Organization Invitation    | `query`                    | Basic organization invitation access for all authenticated users              |
-| `Project User Common`               | Project User               | `read` `query`             | Basic project user viewing for all authenticated users                        |
-| `User Session Common`               | User Session               | `read` `query`             | Basic user session viewing (own sessions only, enforced by condition)         |
-| `User Authentication Method Common` | User Authentication Method | `read` `query`             | Basic authentication method viewing (own methods only, enforced by condition) |
+| Group Name                          | Resource                   | Permissions                                                 | Description                                                                   |
+| ----------------------------------- | -------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `Account Common`                    | Account                    | `read` `query`                                              | Basic account access for all authenticated users                              |
+| `User Common`                       | User                       | `read` `query`                                              | Basic user viewing for all authenticated users                                |
+| `Organization Common`               | Organization               | `create` `query`                                            | Basic organization access (can create and query organizations)                |
+| `Project Common`                    | Project                    | `query`                                                     | Basic project viewing for all authenticated users                             |
+| `Account Project Owner`             | Project                    | `create` `update` `delete` `set-exportable-api-key-secrets` | Project management for account owners                                         |
+| `Resource Common`                   | Resource                   | `query`                                                     | Basic resource viewing for all authenticated users                            |
+| `Role Common`                       | Role                       | `query`                                                     | Basic role viewing for all authenticated users                                |
+| `Group Common`                      | Group                      | `query`                                                     | Basic group viewing for all authenticated users                               |
+| `Permission Common`                 | Permission                 | `query`                                                     | Basic permission viewing for all authenticated users                          |
+| `Tag Common`                        | Tag                        | `query`                                                     | Basic tag viewing for all authenticated users                                 |
+| `API Key Common`                    | API Key                    | `query` `exchange`                                          | Basic API key access for all authenticated users                              |
+| `Organization Member Common`        | Organization Member        | `read` `query`                                              | Basic organization member viewing for all authenticated users                 |
+| `Organization Invitation Common`    | Organization Invitation    | `query`                                                     | Basic organization invitation access for all authenticated users              |
+| `Project User Common`               | Project User               | `read` `query`                                              | Basic project user viewing for all authenticated users                        |
+| `User Session Common`               | User Session               | `read` `query`                                              | Basic user session viewing (own sessions only, enforced by condition)         |
+| `User Authentication Method Common` | User Authentication Method | `read` `query`                                              | Basic authentication method viewing (own methods only, enforced by condition) |
 
 ### Role-Specific Groups
 
@@ -147,12 +147,12 @@ These groups contain permissions specific to certain roles:
 
 These groups control what organization-level roles can do **with** the Project resource (create, update, delete projects). They are not project-scope groups — see [Project-Level: Two Kinds of Users](#project-level-two-kinds-of-users).
 
-| Group Name       | Resource | Permissions                   | Assigned To        | Description                                     |
-| ---------------- | -------- | ----------------------------- | ------------------ | ----------------------------------------------- |
-| `Project Owner`  | Project  | `create` `update` `delete`    | Organization Owner | Full project management                         |
-| `Project Admin`  | Project  | `create` `update` `delete`    | Organization Admin | Full project management                         |
-| `Project Dev`    | Project  | `create` `update` `delete`    | Organization Dev   | Full project management                         |
-| `Project Viewer` | Project  | _(no additional permissions)_ | —                  | Viewer has same project access as common groups |
+| Group Name       | Resource | Permissions                                                 | Assigned To        | Description                                     |
+| ---------------- | -------- | ----------------------------------------------------------- | ------------------ | ----------------------------------------------- |
+| `Project Owner`  | Project  | `create` `update` `delete` `set-exportable-api-key-secrets` | Organization Owner | Full project management                         |
+| `Project Admin`  | Project  | `create` `update` `delete` `set-exportable-api-key-secrets` | Organization Admin | Full project management                         |
+| `Project Dev`    | Project  | `create` `update` `delete`                                  | Organization Dev   | Full project management                         |
+| `Project Viewer` | Project  | _(no additional permissions)_                               | —                  | Viewer has same project access as common groups |
 
 #### Resource Groups
 
@@ -257,11 +257,13 @@ Project App (Apps) are OAuth/consent applications scoped to a project. Account o
 
 `ProjectUser:SetPassword` is an ordinary extensible action: it is held by Owner and Admin by default, and an organization can add it to any other role's group exactly like `SetEmail`, with no code change.
 
+`Project:SetExportableApiKeySecrets` follows the same precedent. It is the per-project opt-in for [exportable API-key secrets](/core-concepts/api-keys#exportable-secrets-opt-in) (`setProjectExportableApiKeySecrets`, `PUT /api/projects/{id}/exportable-api-key-secrets`), and it is held by Owner and Admin only: the Project Owner and Project Admin groups (Organization Owner, Organization Admin) and the Account Project Owner group (Personal Account Owner, Organization Account Owner). The Project Dev group does not hold it, although it holds `Project:Update`, because the flag decides whether Grant keeps a credential in a reversible form. Like `Project:Update`, it applies to the project in the authorized project scope. An organization can add it to any other role's group, with no code change.
+
 `ProjectUser:ExportCredentials` has **no default holder**. It reads project users' password hashes, so it belongs to no standard group and is granted deliberately, per organization, to the group of the role that a mirror's API key carries. It is seeded as a standalone permission (a permission row linked to no group), so the groups UI and API can grant it.
 
 It gates two things. The `exportProjectUserCredentials` GraphQL query and `POST /api/users/credentials/export` return `{ algorithm: 'bcrypt', hash }` for the requested project members; this is the one place a project password hash leaves Grant. Every successful call writes one `export` row on the project credential audit log (the caller, the number of users and credentials, the kinds; never a hash), and a request naming a user who is not a member of the project fails as a whole. The `User.passwordCredential` field, resolved in the request's project scope (`source`, `updatedAt` and a SHA-256 `fingerprint` of the stored hash, a change detector rather than a secret), resolves to `null`, not an error, for any caller without the permission.
 
-New standard permissions such as `ProjectUser:SetEmail` and `ProjectUser:SetPassword` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
+New standard permissions such as `ProjectUser:SetEmail`, `ProjectUser:SetPassword` and `Project:SetExportableApiKeySecrets` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
 
 #### User Session Groups
 

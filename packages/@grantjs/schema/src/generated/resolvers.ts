@@ -507,6 +507,7 @@ export type ResolversTypes = ResolversObject<{
   SessionExportData: ResolverTypeWrapper<Types.SessionExportData>;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SetProjectExportableApiKeySecretsInput: Types.SetProjectExportableApiKeySecretsInput;
   SetProjectUserEmailInput: Types.SetProjectUserEmailInput;
   SetProjectUserPasswordInput: Types.SetProjectUserPasswordInput;
   SigningKey: ResolverTypeWrapper<Types.SigningKey>;
@@ -896,6 +897,7 @@ export type ResolversParentTypes = ResolversObject<{
   SessionExportData: Types.SessionExportData;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
+  SetProjectExportableApiKeySecretsInput: Types.SetProjectExportableApiKeySecretsInput;
   SetProjectUserEmailInput: Types.SetProjectUserEmailInput;
   SetProjectUserPasswordInput: Types.SetProjectUserPasswordInput;
   SigningKey: Types.SigningKey;
@@ -1997,6 +1999,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationSetMyPrimaryMfaDeviceArgs, 'input'>
   >;
+  setProjectExportableApiKeySecrets?: Resolver<
+    ResolversTypes['Project'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationSetProjectExportableApiKeySecretsArgs, 'input'>
+  >;
   setProjectUserEmail?: Resolver<
     ResolversTypes['User'],
     ParentType,
@@ -2577,6 +2585,7 @@ export type ProjectResolvers<
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   description?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  exportableApiKeySecrets?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   groups?: Resolver<Types.Maybe<Array<ResolversTypes['Group']>>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;

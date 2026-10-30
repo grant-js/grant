@@ -410,6 +410,17 @@ const META: EnvVarMeta[] = [
     critical: true,
   },
   {
+    key: 'API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY',
+    category: 'auth',
+    label: 'Exportable API-key secret encryption key',
+    description:
+      'Encrypts the exportable copy of a project user API-key secret at rest, for projects that opt in. Distinct from the MFA and Project OAuth keys.',
+    envFiles: ['.env'],
+    isPassword: true,
+    section: 'API keys',
+    critical: true,
+  },
+  {
     key: 'PROJECT_OAUTH_REQUIRE_BYO_SOCIAL',
     category: 'auth',
     label: 'Require BYO social OAuth',

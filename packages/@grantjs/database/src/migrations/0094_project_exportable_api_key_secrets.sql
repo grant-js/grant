@@ -1,0 +1,1 @@
+ALTER TABLE "projects" ADD COLUMN "exportable_api_key_secrets" boolean DEFAULT false NOT NULL;

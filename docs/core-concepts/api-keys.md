@@ -94,6 +94,17 @@ External services can verify these tokens using the JWKS endpoint published at t
 
 The exchange endpoint (`/auth/token`) is not permission-guarded — it authenticates via the client credentials themselves.
 
+## Exportable secrets (opt-in)
+
+By default Grant keeps only a bcrypt hash of a key's `clientSecret`, so a secret can never be read back. A project can opt in to a different trade-off for the API keys of its project users: Grant then keeps an encrypted, exportable copy of the secret, so a receiver that mirrors Grant into another system can carry the key across. This section covers the opt-in itself. It changes nothing about how any key is created, hashed or exchanged yet: the flag is read by later parts of the feature.
+
+- **The flag.** `Project.exportableApiKeySecrets` is a plain boolean on the project, `false` by default, readable by anyone who can read the project. It says nothing about any individual key.
+- **Who flips it.** `setProjectExportableApiKeySecrets` (GraphQL) and `PUT /api/projects/{id}/exportable-api-key-secrets` (body `{ scope, enabled }`) require `Project:SetExportableApiKeySecrets`, held by Owner and Admin by default and not by Dev (see [RBAC](/architecture/rbac)). The scope must be the project scope the request is authorized in (`accountProject` or `organizationProject`), and for REST its project must be the one in the path.
+- **Needs a key to turn on.** Enabling fails with a configuration error naming `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` while that variable is not set, so a project never opts in on an installation that cannot encrypt the copy. Disabling never needs it. See [Configuration](/getting-started/configuration).
+- **Audited.** Each change writes one row on the project audit log, `SET_EXPORTABLE_API_KEY_SECRETS`, with the old and new value and the acting user. Setting the value the project already has changes nothing and writes no row.
+- **Nothing is back-filled.** Opting in does not recover the secret of a key that already exists: Grant never had it. Only keys created or rotated after the opt-in can have a copy.
+- **Opting out deletes the copies.** Disabling the flag removes every exportable copy the project holds, in the same transaction, and the audit row records how many (`metadata.copiesDeleted`). No copy exists yet in this release, so the count is `0`; the deletion is added together with the copy.
+
 ## Security
 
 - **Secret shown once** — the `clientSecret` is returned only at creation time. It is hashed with bcrypt before storage and cannot be retrieved again.

@@ -12,6 +12,13 @@ type Project implements Auditable {
   Whether the OAuth help panel is shown. Null uses Grant's default (shown).
   """
   showHelpPanel: Boolean
+  """
+  Whether this project keeps an exportable, encrypted copy of a project user's API-key secret at
+  create and rotate. Off by default; set with `setProjectExportableApiKeySecrets`. A plain
+  configuration flag: it says nothing about any key, and nothing is back-filled for keys that
+  already exist.
+  """
+  exportableApiKeySecrets: Boolean!
   roles: [Role!]
   groups: [Group!]
   permissions: [Permission!]

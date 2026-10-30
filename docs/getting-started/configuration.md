@@ -84,6 +84,14 @@ Leave client ID and secret empty to hide that provider on **platform** login and
 
 Callback URLs default from `APP_URL`. Register platform IdP callbacks as described in [Sign-in providers](/core-concepts/sign-in-providers) and [Security](/architecture/security#configuring-platform-github-oauth). Customer BYO apps register Grant’s project broker callback only — see [Configuring social OAuth for project apps](/architecture/security#configuring-social-oauth-for-project-apps).
 
+### Exportable API-key secrets (optional)
+
+| Variable                                   | Purpose                                                                                                                                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` | Key material for the encrypted copy of a project user's API-key secret, for projects that opt in. Required to enable the opt-in; keep it identical across API replicas and distinct from the other encryption keys. |
+
+A project turns the feature on with `setProjectExportableApiKeySecrets`; enabling fails with a configuration error while this variable is empty. See [API keys](/core-concepts/api-keys#exportable-secrets-opt-in).
+
 ### Authentication assurance (AAL)
 
 | Variable                           | Default | Purpose                                                                                                                                                                                           |

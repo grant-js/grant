@@ -55,6 +55,10 @@ export const projectSchema = z.object({
   pictureUrl: z.string().nullable().optional(),
   primaryColor: z.string().nullable().optional(),
   showHelpPanel: z.boolean().nullable().optional(),
+  exportableApiKeySecrets: z.boolean().openapi({
+    description:
+      'Whether the project keeps an exportable, encrypted copy of a project user API-key secret at create and rotate. Off by default; set with PUT /api/projects/{id}/exportable-api-key-secrets.',
+  }),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
@@ -623,3 +627,17 @@ export const confirmProjectPictureUploadRequestSchema = z.object({
 export const clearProjectPictureRequestSchema = z.object({
   scope: scopeSchema,
 });
+
+export const setProjectExportableApiKeySecretsRequestSchema = z.object({
+  scope: scopeSchema.openapi({
+    description:
+      'The authorized project scope: accountProject or organizationProject, whose id names the same project as the path.',
+  }),
+  enabled: z.boolean().openapi({
+    description:
+      'true opts the project in; false opts it out and deletes every exportable copy the project holds. The value the project already has changes nothing and is not audited.',
+  }),
+});
+
+export const setProjectExportableApiKeySecretsResponseSchema =
+  createSuccessResponseSchema(projectSchema);

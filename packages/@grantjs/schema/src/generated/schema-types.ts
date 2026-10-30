@@ -1330,6 +1330,15 @@ export type Mutation = {
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
   /**
+   * Opt a project in or out of keeping an exportable, encrypted copy of a project user's API-key
+   * secret. Project scopes only. Requires `Project:SetExportableApiKeySecrets`, held by the Owner and
+   * Admin roles and not by Dev. Enabling fails with a configuration error while
+   * `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` is not set; disabling never needs it. Each change is
+   * audited on the project with the old and new value; the same value is a no-op. Nothing is
+   * back-filled: keys that exist before the opt-in keep only their hash.
+   */
+  setProjectExportableApiKeySecrets: Project;
+  /**
    * Set or replace a project member's Email authentication method as unverified.
    * `project.user_email_changed` carries ids only, never the address.
    */
@@ -1702,6 +1711,10 @@ export type MutationSetMyPrimaryAuthenticationMethodArgs = {
 
 export type MutationSetMyPrimaryMfaDeviceArgs = {
   input: SetMyPrimaryMfaDeviceInput;
+};
+
+export type MutationSetProjectExportableApiKeySecretsArgs = {
+  input: SetProjectExportableApiKeySecretsInput;
 };
 
 export type MutationSetProjectUserEmailArgs = {
@@ -2241,6 +2254,13 @@ export type Project = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  /**
+   * Whether this project keeps an exportable, encrypted copy of a project user's API-key secret at
+   * create and rotate. Off by default; set with `setProjectExportableApiKeySecrets`. A plain
+   * configuration flag: it says nothing about any key, and nothing is back-filled for keys that
+   * already exist.
+   */
+  exportableApiKeySecrets: Scalars['Boolean']['output'];
   groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
@@ -3636,6 +3656,19 @@ export type SetMyNotificationPreferenceInput = {
 
 export type SetMyPrimaryMfaDeviceInput = {
   factorId: Scalars['ID']['input'];
+};
+
+export type SetProjectExportableApiKeySecretsInput = {
+  /**
+   * `true` opts the project in; `false` opts it out and deletes every exportable copy the project
+   * holds. Setting the value the project already has changes nothing and is not audited.
+   */
+  enabled: Scalars['Boolean']['input'];
+  /**
+   * The project to change, as the scope the request is authorized in: `accountProject` or
+   * `organizationProject` only.
+   */
+  scope: Scope;
 };
 
 export type SetProjectUserEmailInput = {

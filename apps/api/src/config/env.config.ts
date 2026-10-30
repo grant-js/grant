@@ -216,6 +216,18 @@ const TOKEN_CONFIG = {
 } as const;
 
 // ============================================================================
+// API Key Configuration
+// ============================================================================
+
+const API_KEY_CONFIG = {
+  /**
+   * Symmetric key used to encrypt the exportable copy of a project user's API-key secret.
+   * Resolved at use time through ISecretResolver; this snapshot is for boot visibility.
+   */
+  exportableSecretEncryptionKey: env.API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY || undefined,
+} as const;
+
+// ============================================================================
 // GitHub OAuth Configuration
 // ============================================================================
 
@@ -1377,6 +1389,7 @@ export const config = {
   jwt: JWT_CONFIG,
   auth: AUTH_CONFIG,
   token: TOKEN_CONFIG,
+  apiKeys: API_KEY_CONFIG,
   githubOAuth: GITHUB_OAUTH_CONFIG,
   googleOAuth: GOOGLE_OAUTH_CONFIG,
   projectOAuth: PROJECT_OAUTH_CONFIG,

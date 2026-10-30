@@ -142,6 +142,9 @@ services:
       # Per-project OAuth BYO (required for connection upsert in E2E)
       PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: e2e-grant-project-oauth-conn-key-min-32-chars
 
+      # Exportable API-key secrets (required to enable the per-project opt-in in E2E; test-only key)
+      API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY: e2e-grant-api-key-exportable-secret-key-min-32
+
       # HMAC-SHA256 key for CDM API-key secret fingerprints (replace classify; test-only)
       CDM_API_KEY_FINGERPRINT_HMAC_SECRET: e2e-grant-cdm-api-key-fingerprint-hmac
 

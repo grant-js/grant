@@ -28,6 +28,8 @@ import {
   requestProjectPictureUploadUrlResponseSchema,
   requestProjectSyncUploadUrlRequestSchema,
   requestProjectSyncUploadUrlResponseSchema,
+  setProjectExportableApiKeySecretsRequestSchema,
+  setProjectExportableApiKeySecretsResponseSchema,
   startProjectExportJobRequestSchema,
   startProjectSyncRequestSchema,
   updateProjectRequestSchema,
@@ -67,6 +69,10 @@ export function registerProjectsOpenApi(registry: OpenAPIRegistry) {
     requestProjectPictureUploadUrlResponseSchema
   );
   registry.register('ConfirmProjectPictureUploadRequest', confirmProjectPictureUploadRequestSchema);
+  registry.register(
+    'SetProjectExportableApiKeySecretsRequest',
+    setProjectExportableApiKeySecretsRequestSchema
+  );
   registry.register('RequestProjectSyncUploadUrlRequest', requestProjectSyncUploadUrlRequestSchema);
   registry.register(
     'RequestProjectSyncUploadUrlResponse',
@@ -1244,6 +1250,67 @@ returned \`headers\` verbatim with the \`PUT\`.
       },
       500: {
         description: 'Internal server error',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+    },
+  });
+
+  /**
+   * PUT /api/projects/:id/exportable-api-key-secrets
+   */
+  registry.registerPath({
+    method: 'put',
+    path: '/api/projects/{id}/exportable-api-key-secrets',
+    operationId: 'putApiProjectsByIdExportableApiKeySecrets',
+    tags: ['Projects'],
+    summary: 'Opt a project in or out of exportable API-key secrets',
+    description: `
+Turn the per-project opt-in for exportable API-key secrets on or off. Project scope only
+(\`accountProject\` or \`organizationProject\`), and the project in the scope must be the one in the path.
+
+Requires \`Project:SetExportableApiKeySecrets\`, held by the Owner and Admin roles and not by Dev
+(extensible through groups), plus a verified email and the same MFA policy as other project writes.
+Enabling fails with a configuration error while \`API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY\` is not
+set; disabling never needs it. Each change writes one audit row on the project with the old and new
+value. Setting the value the project already has changes nothing and writes no audit row. Nothing is
+back-filled: keys that exist before the opt-in keep only their hash.
+    `.trim(),
+    request: {
+      params: projectParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: setProjectExportableApiKeySecretsRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'The project with its current value',
+        content: {
+          'application/json': { schema: setProjectExportableApiKeySecretsResponseSchema },
+        },
+      },
+      400: {
+        description: 'Invalid request, or a scope that is not a project scope for this project',
+        content: { 'application/json': { schema: validationErrorResponseSchema } },
+      },
+      401: {
+        description: 'Authentication required',
+        content: { 'application/json': { schema: authenticationErrorResponseSchema } },
+      },
+      403: {
+        description: 'Forbidden - Project:SetExportableApiKeySecrets required',
+        content: { 'application/json': { schema: errorResponseSchema } },
+      },
+      404: {
+        description: 'Project not found',
+        content: { 'application/json': { schema: notFoundErrorResponseSchema } },
+      },
+      500: {
+        description:
+          'Internal server error, including a missing API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY when enabling',
         content: { 'application/json': { schema: errorResponseSchema } },
       },
     },
