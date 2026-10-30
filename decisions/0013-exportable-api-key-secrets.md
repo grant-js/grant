@@ -54,7 +54,7 @@ For every project-user key created, rotated or imported from this release on (op
 
 It is a change detector and a verifier. A receiver that stores the plaintext compares `sha256(stored secret)` with the fingerprint to see that a key was created or rotated, and to check the secret it was handed. That comparison is the reason for deriving it from the secret as issued rather than from the bcrypt hash (see Alternatives).
 
-A 32- or 64-byte random secret makes the unsalted digest safe against guessing. A secret chosen by an importer is only as strong as the importer made it, and the same digest is stored for imported keys; that is accepted here because the importing system already holds those plaintexts, so the digest tells it nothing new. The intended surfaces for the digest are `User.apiKeyCredentials` and the export, both gated by `ProjectUser:ExportCredentials`. **It is not yet the only one:** the REST key list (`GET /api/api-keys`) returns the whole key model, so a holder of `ApiKey:Read` in a project user's scope also sees `clientSecretFingerprint` there (as it has always seen `clientSecretHash`). Trimming that response is open (see Consequences); it does not expose a secret.
+A 32- or 64-byte random secret makes the unsalted digest safe against guessing. A secret chosen by an importer is only as strong as the importer made it, and the same digest is stored for imported keys; that is accepted here because the importing system already holds those plaintexts, so the digest tells it nothing new. The digest is readable only through `User.apiKeyCredentials` and the export, both gated by `ProjectUser:ExportCredentials`: `ApiKeyRepository` strips `clientSecretHash` and `clientSecretFingerprint` from every key read (one `withoutSecretColumns` helper), so no REST or GraphQL key read returns either. The hash is read only by the token exchange.
 
 ### 6. The export as a second kind
 
@@ -100,7 +100,7 @@ The key ids do not fit the summary row (its `metadata` column is `varchar(1000)`
 - **An opt-in project's keys differ in form** (88 characters, standard base64) from every other key; a client that assumed 43 characters would be wrong already for BYOK secrets.
 - **bcrypt covers 54 of the 64 bytes** of an opted-in secret; the last 16 characters are not verified by Grant.
 - **The receiver's procedure** (watch `api_key.created` / `api_key.rotated`, read `apiKeyCredentials`, export, write into the other system, keep its previous value in that system's grace slot) and the signing proof against the other system are outside Grant. What Grant guarantees, and tests, is that the exported string is the one its own `POST /auth/token` accepts.
-- **Open:** trimming the REST key list so that it no longer returns `clientSecretFingerprint` (and `clientSecretHash`) to holders of `ApiKey:Read`; re-wrapping copies on key change; a web UI for the flag and the fingerprints; a key-id filter on the export.
+- **Open:** re-wrapping copies on key change; a web UI for the flag and the fingerprints; a key-id filter on the export.
 
 ## References
 
