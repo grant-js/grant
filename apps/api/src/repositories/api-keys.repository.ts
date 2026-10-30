@@ -26,12 +26,35 @@ import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
 import {
+  BaseCreateArgs,
+  BaseDeleteArgs,
   BaseUpdateArgs,
   EntityRepository,
   FilterCondition,
   RelationsConfig,
 } from './common/EntityRepository';
 import { requireAccessibleIdSource } from './common/scoped-id-source';
+
+/**
+ * Columns of `api_keys` that no caller of this repository gets back on a key. A key read carries
+ * what the key is (id, client id, name, expiry, revocation), never the bcrypt hash of its secret
+ * or the fingerprint of the issued string. The fingerprint is read only by
+ * `ApiKeyExportableSecretRepository.listCredentialSummaries`, which selects it by name for the
+ * holders of `ProjectUser:ExportCredentials`; the hash only by `getClientSecretHash`.
+ */
+const SECRET_COLUMNS = ['clientSecretHash', 'clientSecretFingerprint'] as const;
+
+/** A key row without `SECRET_COLUMNS`; the one place a row becomes an `ApiKey`. */
+export function withoutSecretColumns<T extends object>(row: T): T {
+  if (!row) {
+    return row;
+  }
+  const rest = { ...row } as Record<string, unknown>;
+  for (const column of SECRET_COLUMNS) {
+    delete rest[column];
+  }
+  return rest as T;
+}
 
 export class ApiKeyRepository
   extends EntityRepository<ApiKeyModel, ApiKey>
@@ -61,7 +84,33 @@ export class ApiKeyRepository
   }
 
   private toApiKey(key: ApiKeyModel): ApiKey {
-    return key as ApiKey;
+    return withoutSecretColumns(key) as unknown as ApiKey;
+  }
+
+  // Every row this repository hands out passes through one of the five overrides below, so a
+  // method added later cannot return the secret columns by forgetting to strip them.
+  protected override async query(
+    params: Parameters<EntityRepository<ApiKeyModel, ApiKey>['query']>[0],
+    transaction?: Transaction
+  ) {
+    const result = await super.query(params, transaction);
+    return { ...result, items: result.items.map((item) => withoutSecretColumns(item)) };
+  }
+
+  protected override async create(data: BaseCreateArgs, transaction?: Transaction) {
+    return withoutSecretColumns(await super.create(data, transaction));
+  }
+
+  protected override async update(params: BaseUpdateArgs, transaction?: Transaction) {
+    return withoutSecretColumns(await super.update(params, transaction));
+  }
+
+  protected override async softDelete(params: BaseDeleteArgs, transaction?: Transaction) {
+    return withoutSecretColumns(await super.softDelete(params, transaction));
+  }
+
+  protected override async hardDelete(params: BaseDeleteArgs, transaction?: Transaction) {
+    return withoutSecretColumns(await super.hardDelete(params, transaction));
   }
 
   public async getApiKeys(
@@ -312,7 +361,9 @@ export class ApiKeyRepository
         }))
       )
       .returning();
-    return (Array.isArray(result) ? result : [result]) as ApiKey[];
+    return (Array.isArray(result) ? result : [result]).map((row) =>
+      withoutSecretColumns(row)
+    ) as ApiKey[];
   }
 
   public async hardDeleteApiKeys(ids: readonly string[], transaction?: Transaction): Promise<void> {

@@ -492,6 +492,24 @@ describe('Exportable API-key secret copy', () => {
       .query({ scopeId: `${org.id}:${projectId}`, tenant: Tenant.OrganizationProject })
       .set('Authorization', owner.authHeader);
     expect(keysRest.status).toBe(200);
+    // The scope that holds the user keys; the project scope above holds none, which is why an
+    // earlier version of this sweep missed the key model's secret columns.
+    const keysRestUserScope = await apiClient()
+      .get('/api/api-keys')
+      .query({
+        scopeId: `${org.id}:${projectId}:${memberId}`,
+        tenant: Tenant.OrganizationProjectUser,
+      })
+      .set('Authorization', owner.authHeader);
+    expect(keysRestUserScope.status, JSON.stringify(keysRestUserScope.body)).toBe(200);
+    const userScopeKeys = (keysRestUserScope.body as { data?: { apiKeys?: object[] } }).data
+      ?.apiKeys;
+    expect(userScopeKeys?.length, 'the user scope must list the keys it holds').toBeGreaterThan(0);
+    for (const key of userScopeKeys!) {
+      expect(key).not.toHaveProperty('clientSecretHash');
+      expect(key).not.toHaveProperty('clientSecretFingerprint');
+    }
+    expect(JSON.stringify(keysRestUserScope.body)).not.toMatch(/clientSecret|\$2[aby]\$/);
     const keysGraphql = await graphqlRequest({
       query: `query ($scope: Scope!) { apiKeys(scope: $scope) { apiKeys { id clientId name } } }`,
       accessToken: owner.accessToken,
@@ -516,6 +534,7 @@ describe('Exportable API-key secret copy', () => {
         await query`SELECT * FROM project_audit_logs WHERE project_id = ${projectId}::uuid`,
       'credential audit rows': await query`SELECT * FROM project_user_credential_audit_logs`,
       'REST key list': keysRest.body,
+      'REST key list in the project user scope': keysRestUserScope.body,
       'GraphQL key list': keysGraphql.body,
       'GraphQL error': rotatedBad.body,
       'fingerprint read in a non-project scope': fingerprintErrorCase.body,
