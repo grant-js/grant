@@ -5,6 +5,7 @@ export { createProjectResolver as createProject } from './create-project.resolve
 export { deleteProjectResolver as deleteProject } from './delete-project.resolver';
 export { requestProjectPictureUploadUrlResolver as requestProjectPictureUploadUrl } from './request-project-picture-upload-url.resolver';
 export { requestProjectSyncUploadUrlResolver as requestProjectSyncUploadUrl } from './request-project-sync-upload-url.resolver';
+export { setProjectExportableApiKeySecretsResolver as setProjectExportableApiKeySecrets } from './set-project-exportable-api-key-secrets.resolver';
 export { startProjectExportResolver as startProjectExport } from './start-project-export.resolver';
 export { startProjectSyncResolver as startProjectSync } from './start-project-sync.resolver';
 export { updateProjectResolver as updateProject } from './update-project.resolver';

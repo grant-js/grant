@@ -109,6 +109,15 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       },
     },
     {
+      action: ResourceAction.SetExportableApiKeySecrets,
+      resource: ResourceSlug.Project,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
+    },
+    {
       action: ResourceAction.Update,
       resource: ResourceSlug.Tag,
       condition: {
@@ -620,6 +629,15 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
         },
       },
     },
+    {
+      action: ResourceAction.SetExportableApiKeySecrets,
+      resource: ResourceSlug.Project,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
+    },
   ],
 
   [GroupKey.ProjectAdmin]: [
@@ -639,6 +657,15 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
     },
     {
       action: ResourceAction.Delete,
+      resource: ResourceSlug.Project,
+      condition: {
+        [ComparisonOperator.In]: {
+          'resource.id': '{{resource.scope.projects}}',
+        },
+      },
+    },
+    {
+      action: ResourceAction.SetExportableApiKeySecrets,
       resource: ResourceSlug.Project,
       condition: {
         [ComparisonOperator.In]: {

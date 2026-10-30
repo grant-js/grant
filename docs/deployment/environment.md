@@ -103,6 +103,9 @@ PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY=...
 # Optional: require BYO for project social sign-in (no platform env fallback)
 PROJECT_OAUTH_REQUIRE_BYO_SOCIAL=false
 
+# Exportable API-key secrets: required to enable the per-project opt-in (identical across replicas)
+API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY=...
+
 EMAIL_PROVIDER=ses
 EMAIL_FROM=noreply@yourdomain.com
 # ... EMAIL_SES_* or other provider vars

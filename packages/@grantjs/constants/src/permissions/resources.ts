@@ -18,6 +18,7 @@ export const ResourceAction = {
   SetEmail: 'SetEmail',
   SetPassword: 'SetPassword',
   ExportCredentials: 'ExportCredentials',
+  SetExportableApiKeySecrets: 'SetExportableApiKeySecrets',
 };
 
 export type ResourceAction = (typeof ResourceAction)[keyof typeof ResourceAction];
@@ -84,6 +85,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
+      ResourceAction.SetExportableApiKeySecrets,
     ],
   },
   [ResourceSlug.ProjectApp]: {

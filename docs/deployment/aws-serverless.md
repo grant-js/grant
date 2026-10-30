@@ -89,7 +89,7 @@ Two kinds of value are handled differently, and the difference is deliberate:
 list becomes a Lambda environment variable, and those are plaintext in the
 CloudFormation template, in the function configuration and in `cdk.out` on disk —
 Lambda has no equivalent of the ECS task's `Secrets`/`ValueFrom`, where the template
-carries only an ARN. So the sixteen keys below are routed instead: put them in `.env`,
+carries only an ARN. So the keys below are routed instead: put them in `.env`,
 run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
 
 | Provider                          | Keys                                                                           |
@@ -97,6 +97,7 @@ run `put-secrets`, and the API reads them through `ISecretResolver` at boot.
 | GitHub OAuth                      | `GITHUB_CLIENT_SECRET`                                                         |
 | Google OAuth                      | `GOOGLE_CLIENT_SECRET`                                                         |
 | Project OAuth connections         | `PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY`                                      |
+| Exportable API-key secrets        | `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY`                                     |
 | MFA                               | `AUTH_MFA_SECRET_ENCRYPTION_KEY`                                               |
 | Mailgun                           | `MAILGUN_API_KEY`                                                              |
 | Mailjet                           | `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`                                        |

@@ -29,6 +29,7 @@ import {
   projectSyncJobScopeQuerySchema,
   requestProjectPictureUploadUrlRequestSchema,
   requestProjectSyncUploadUrlRequestSchema,
+  setProjectExportableApiKeySecretsRequestSchema,
   startProjectExportJobRequestSchema,
   startProjectSyncRequestSchema,
   updateProjectRequestSchema,
@@ -522,6 +523,40 @@ export function createProjectsRouter(fallback?: RequestContext): Router {
         scope,
       });
       sendSuccessResponse(res, result, 201);
+    }
+  );
+
+  router.put(
+    '/:id/exportable-api-key-secrets',
+    validate({
+      params: projectParamsSchema,
+      body: setProjectExportableApiKeySecretsRequestSchema,
+    }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.Project,
+      action: ResourceAction.SetExportableApiKeySecrets,
+      resourceResolver: 'project',
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof projectParamsSchema;
+        body: typeof setProjectExportableApiKeySecretsRequestSchema;
+      }>,
+      res
+    ) => {
+      const { id } = req.params;
+      const { scope, enabled } = req.body;
+      const project = await requestContext(
+        req,
+        fallback
+      ).handlers.projects.setProjectExportableApiKeySecrets({
+        input: { scope, enabled },
+        pathProjectId: id,
+      });
+      sendSuccessResponse(res, project);
     }
   );
 

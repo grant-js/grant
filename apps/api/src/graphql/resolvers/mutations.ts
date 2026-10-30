@@ -369,6 +369,18 @@ export const Mutation = {
       projectMutations.updateProject!
     )
   ),
+  setProjectExportableApiKeySecrets: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      {
+        resource: ResourceSlug.Project,
+        action: ResourceAction.SetExportableApiKeySecrets,
+        resourceResolver: 'projectApp',
+      },
+      projectMutations.setProjectExportableApiKeySecrets!
+    )
+  ),
   upsertProjectOAuthConnection: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

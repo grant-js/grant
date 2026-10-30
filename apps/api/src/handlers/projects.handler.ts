@@ -27,6 +27,7 @@ import {
   MutationCreateProjectArgs,
   MutationDeleteProjectArgs,
   MutationRequestProjectSyncUploadUrlArgs,
+  MutationSetProjectExportableApiKeySecretsArgs,
   MutationStartProjectExportArgs,
   MutationStartProjectSyncArgs,
   MutationUpdateProjectArgs,
@@ -563,11 +564,12 @@ export class ProjectHandler extends CacheHandler {
     return result;
   }
 
-  private assertProjectScope(scope: { tenant: Tenant; id: string }): void {
+  private assertProjectScope(
+    scope: { tenant: Tenant; id: string },
+    subject = 'project sync jobs'
+  ): void {
     if (scope.tenant !== Tenant.AccountProject && scope.tenant !== Tenant.OrganizationProject) {
-      throw new ValidationError(
-        'project sync jobs require accountProject or organizationProject scope'
-      );
+      throw new ValidationError(`${subject} require accountProject or organizationProject scope`);
     }
   }
 
@@ -932,6 +934,29 @@ export class ProjectHandler extends CacheHandler {
       await this.projects.setProjectPicture(projectId, { picturePath: result.path }, tx);
       return { url: result.url, path: result.path };
     });
+  }
+
+  /**
+   * The per-project opt-in for exportable API-key secrets (`Project:SetExportableApiKeySecrets`,
+   * enforced by the transport). The project is the one in the authorized project scope; a REST
+   * path id that names another project is refused here, because the transport authorized the
+   * path's project and this writes the scope's.
+   */
+  public async setProjectExportableApiKeySecrets(
+    params: MutationSetProjectExportableApiKeySecretsArgs & { pathProjectId?: string }
+  ): Promise<Project> {
+    const { scope, enabled } = params.input;
+    this.assertProjectScope(scope, 'the exportable API-key secrets opt-in');
+    const projectId = this.extractProjectIdFromScope(scope);
+    if (params.pathProjectId !== undefined && params.pathProjectId !== projectId) {
+      throw new ValidationError(
+        'scope id must contain the same projectId as the projectId argument'
+      );
+    }
+
+    return await this.db.withTransaction(async (tx: Transaction) =>
+      this.projects.setExportableApiKeySecrets({ projectId, enabled }, tx)
+    );
   }
 
   public async clearProjectPicture(params: ClearProjectPictureInput): Promise<Project> {

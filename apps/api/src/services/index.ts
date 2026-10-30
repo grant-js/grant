@@ -460,7 +460,8 @@ export function createServices(
     projects: new ProjectService(
       repositories.projectRepository,
       audit(projectAuditLogs, 'projectId', user, db),
-      fileStorage
+      fileStorage,
+      secrets
     ),
     projectApps: new ProjectAppService(
       repositories.projectAppRepository,

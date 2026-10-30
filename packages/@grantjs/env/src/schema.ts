@@ -168,6 +168,13 @@ export const envSchema = z.object({
    * Distinct from AUTH_MFA_SECRET_ENCRYPTION_KEY (different KDF salt).
    */
   PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY: optionalString(''),
+  /**
+   * AES-256-GCM key material for exportable API-key secrets (a project that opts in keeps an
+   * encrypted copy of a project user's API-key secret). Dedicated: distinct from
+   * AUTH_MFA_SECRET_ENCRYPTION_KEY and PROJECT_OAUTH_CONNECTION_ENCRYPTION_KEY (different KDF
+   * salt, separate rotation). Empty refuses to enable the opt-in.
+   */
+  API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY: optionalString(''),
   /** When true, project social OAuth requires a BYO connection (no platform fallback). */
   PROJECT_OAUTH_REQUIRE_BYO_SOCIAL: optionalBoolean(false),
   /** Lifetime of a project-app password reset link, in seconds (default: 30 minutes). */

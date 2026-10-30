@@ -90,6 +90,16 @@ export interface IProjectRepository extends IEntityExistence {
     transaction?: unknown
   ): Promise<Project>;
 
+  /**
+   * Set `exportable_api_key_secrets` in one conditional statement: the row is written only when
+   * the stored value differs, so two concurrent calls cannot both report a change. Resolves the
+   * updated project, or `null` when nothing changed (same value, or no live project).
+   */
+  setExportableApiKeySecrets(
+    params: { projectId: string; enabled: boolean },
+    transaction?: unknown
+  ): Promise<Project | null>;
+
   softDeleteProject(
     params: Omit<MutationDeleteProjectArgs, 'scope'>,
     transaction?: unknown
