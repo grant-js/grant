@@ -9,6 +9,12 @@ export const apiKeys = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     clientId: varchar('client_id', { length: 255 }).notNull(),
     clientSecretHash: varchar('client_secret_hash', { length: 255 }).notNull(),
+    /**
+     * Lowercase hex SHA-256 of the secret string as issued (never of the bcrypt hash). Set at
+     * create, rotate and CDM import; `null` for a key created before it existed and not rotated
+     * since. Only ever returned to a caller holding `ProjectUser:ExportCredentials`.
+     */
+    clientSecretFingerprint: varchar('client_secret_fingerprint', { length: 64 }),
     name: varchar('name', { length: 255 }),
     description: varchar('description', { length: 1000 }),
     expiresAt: timestamp('expires_at'),

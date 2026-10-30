@@ -389,6 +389,7 @@ export type ResolversTypes = ResolversObject<{
   ProjectTag: ResolverTypeWrapper<Types.ProjectTag>;
   ProjectUser: ResolverTypeWrapper<Types.ProjectUser>;
   ProjectUserApiKey: ResolverTypeWrapper<Types.ProjectUserApiKey>;
+  ProjectUserApiKeyCredential: ResolverTypeWrapper<Types.ProjectUserApiKeyCredential>;
   ProjectUserCredentialExport: ResolverTypeWrapper<Types.ProjectUserCredentialExport>;
   ProjectUserGroup: ResolverTypeWrapper<Types.ProjectUserGroup>;
   ProjectUserPasswordCredential: ResolverTypeWrapper<Types.ProjectUserPasswordCredential>;
@@ -783,6 +784,7 @@ export type ResolversParentTypes = ResolversObject<{
   ProjectTag: Types.ProjectTag;
   ProjectUser: Types.ProjectUser;
   ProjectUserApiKey: Types.ProjectUserApiKey;
+  ProjectUserApiKeyCredential: Types.ProjectUserApiKeyCredential;
   ProjectUserCredentialExport: Types.ProjectUserCredentialExport;
   ProjectUserGroup: Types.ProjectUserGroup;
   ProjectUserPasswordCredential: Types.ProjectUserPasswordCredential;
@@ -2896,6 +2898,18 @@ export type ProjectUserApiKeyResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type ProjectUserApiKeyCredentialResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ProjectUserApiKeyCredential'] =
+    ResolversParentTypes['ProjectUserApiKeyCredential'],
+> = ResolversObject<{
+  apiKeyId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  clientId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  exportable?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  fingerprint?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+}>;
+
 export type ProjectUserCredentialExportResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['ProjectUserCredentialExport'] =
@@ -3510,6 +3524,11 @@ export type UserResolvers<
   ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User'],
 > = ResolversObject<{
   accounts?: Resolver<Types.Maybe<Array<ResolversTypes['Account']>>, ParentType, ContextType>;
+  apiKeyCredentials?: Resolver<
+    Types.Maybe<Array<ResolversTypes['ProjectUserApiKeyCredential']>>,
+    ParentType,
+    ContextType
+  >;
   authenticationMethods?: Resolver<
     Types.Maybe<Array<ResolversTypes['UserAuthenticationMethod']>>,
     ParentType,
@@ -3906,6 +3925,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   ProjectTag?: ProjectTagResolvers<ContextType>;
   ProjectUser?: ProjectUserResolvers<ContextType>;
   ProjectUserApiKey?: ProjectUserApiKeyResolvers<ContextType>;
+  ProjectUserApiKeyCredential?: ProjectUserApiKeyCredentialResolvers<ContextType>;
   ProjectUserCredentialExport?: ProjectUserCredentialExportResolvers<ContextType>;
   ProjectUserGroup?: ProjectUserGroupResolvers<ContextType>;
   ProjectUserPasswordCredential?: ProjectUserPasswordCredentialResolvers<ContextType>;

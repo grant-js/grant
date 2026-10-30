@@ -1,3 +1,4 @@
+import { userApiKeyCredentialsResolver as apiKeyCredentials } from './api-key-credentials.resolver';
 import { userGroupsResolver as userGroups } from './groups.resolver';
 import { userPasswordCredentialResolver as passwordCredential } from './password-credential.resolver';
 import { userPermissionsResolver as userPermissions } from './permissions.resolver';
@@ -22,4 +23,5 @@ export const userResolver = {
   projectUserApiKeyCount,
   tagCount,
   passwordCredential,
+  apiKeyCredentials,
 };

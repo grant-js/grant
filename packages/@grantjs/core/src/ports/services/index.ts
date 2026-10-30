@@ -1,5 +1,6 @@
 export * from './account.service.port';
 export * from './api-key.service.port';
+export * from './api-key-exportable-secret.service.port';
 export * from './auth.service.port';
 export * from './cdm-entity-handler.port';
 export * from './credential.service.port';

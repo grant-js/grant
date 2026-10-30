@@ -30,6 +30,7 @@ import {
   MutationSetProjectUserEmailArgs,
   MutationSetProjectUserPasswordArgs,
   MutationUpdateUserArgs,
+  ProjectUserApiKeyCredential,
   ProjectUserCredentialExport,
   ProjectUserPasswordCredential,
   QueryExportProjectUserCredentialsArgs,
@@ -643,16 +644,57 @@ export class UserHandler extends CacheHandler {
     actorUserId: string | undefined;
   }): Promise<ProjectUserPasswordCredential | null> {
     const { userId, scope, actorUserId } = params;
-    // The same predicate as `assertProjectScope`: the leaf tenants (`OrganizationProjectUser`,
-    // `AccountProjectUser`) also embed a project id but are not project scopes here.
+    const projectId = await this.resolveExportCredentialsProjectId(scope, actorUserId);
+    if (!projectId) {
+      return null;
+    }
+
+    const [summary] = await this.db.withTransaction((tx: Transaction) =>
+      this.credentialExports.getPasswordCredentialSummaries({ projectId, userIds: [userId] }, tx)
+    );
+    return summary
+      ? { source: summary.source, updatedAt: summary.updatedAt, fingerprint: summary.fingerprint }
+      : null;
+  }
+
+  /**
+   * `User.apiKeyCredentials`, gated and scoped exactly like `getProjectUserPasswordCredential`
+   * (the same `resolveExportCredentialsProjectId`): `null` outside a project scope and unless
+   * the caller holds `ProjectUser:ExportCredentials`, never an error. Otherwise one entry per
+   * live project-user key of the member (`[]` for none). The fingerprint is the one stored at
+   * create, rotate or import: no hash and no secret is read here. One read per call.
+   */
+  public async getProjectUserApiKeyCredentials(params: {
+    userId: string;
+    scope: Scope;
+    actorUserId: string | undefined;
+  }): Promise<ProjectUserApiKeyCredential[] | null> {
+    const { userId, scope, actorUserId } = params;
+    const projectId = await this.resolveExportCredentialsProjectId(scope, actorUserId);
+    if (!projectId) {
+      return null;
+    }
+
+    return await this.db.withTransaction((tx: Transaction) =>
+      this.credentialExports.getApiKeyCredentialSummaries({ projectId, userId }, tx)
+    );
+  }
+
+  /**
+   * The project id of the request's scope when the caller may read export-gated credential
+   * facts there, else `null`. The same predicate as `assertProjectScope`: the leaf tenants
+   * (`OrganizationProjectUser`, `AccountProjectUser`) also embed a project id but are not
+   * project scopes here. A denial is `null`, never an error, so existing documents keep working.
+   */
+  private async resolveExportCredentialsProjectId(
+    scope: Scope,
+    actorUserId: string | undefined
+  ): Promise<string | null> {
     if (!this.isProjectTenant(scope.tenant)) {
       return null;
     }
     const projectId = tryProjectIdFromScope(scope);
-    if (!projectId) {
-      return null;
-    }
-    if (!actorUserId) {
+    if (!projectId || !actorUserId) {
       return null;
     }
     const result = await this.auth.isAuthorized(
@@ -665,16 +707,7 @@ export class UserHandler extends CacheHandler {
       },
       actorUserId
     );
-    if (!result.authorized) {
-      return null;
-    }
-
-    const [summary] = await this.db.withTransaction((tx: Transaction) =>
-      this.credentialExports.getPasswordCredentialSummaries({ projectId, userIds: [userId] }, tx)
-    );
-    return summary
-      ? { source: summary.source, updatedAt: summary.updatedAt, fingerprint: summary.fingerprint }
-      : null;
+    return result.authorized ? projectId : null;
   }
 
   public async updateUser(params: UpdateUserHandlerParams): Promise<User> {

@@ -62,11 +62,14 @@ export interface IApiKeyService {
   /**
    * Import-only: insert already-hashed BYOK secrets in one write.
    * HTTP `createApiKey` stays sequential and still hashes inside its own path.
+   * `clientSecretFingerprint` is the SHA-256 of the plaintext the importer supplied, `null`
+   * (or absent) when it supplied only a hash. No encrypted copy is ever written here.
    */
   createApiKeysForCdmImport(
     params: {
       keys: readonly {
         clientSecretHash: string;
+        clientSecretFingerprint?: string | null;
         clientId?: string | null;
         scope?: Scope | null;
         name?: string | null;
@@ -88,15 +91,28 @@ export interface IApiKeyService {
   /**
    * Import-only replace rotate: write an already-hashed BYOK secret onto existing
    * keys (preserves `api_keys.id` / `clientId`). HTTP `rotateApiKey` still mints
-   * a new secret.
+   * a new secret. The new hash replaces the fingerprint (`null` when the importer supplied
+   * only a hash) and any encrypted copy is deleted: the importing system holds the plaintext,
+   * Grant does not, so a copy of the previous secret must not outlive its hash.
    */
   rotateApiKeysForCdmImport(
     params: {
       keys: readonly {
         id: string;
         clientSecretHash: string;
+        clientSecretFingerprint?: string | null;
       }[];
     },
+    transaction?: unknown
+  ): Promise<void>;
+
+  /**
+   * Import-only replace keep: fill the fingerprint of keys the import leaves unchanged and
+   * that have none yet (the import holds the plaintext, and the key's secret is the one the
+   * document supplies). A key that already has a fingerprint is not touched.
+   */
+  setMissingClientSecretFingerprintsForCdmImport(
+    params: { keys: readonly { id: string; clientSecretFingerprint: string }[] },
     transaction?: unknown
   ): Promise<void>;
 

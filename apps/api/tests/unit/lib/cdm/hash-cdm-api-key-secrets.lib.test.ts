@@ -94,6 +94,7 @@ describe('hash-cdm-api-key-secrets', () => {
             clientId: 'c1',
             externalKey: 'k-a',
             secretFingerprint: fingerprintCdmApiKeySecret(secretA, hmac),
+            clientSecretFingerprint: null,
             metadata: {},
           },
           {
@@ -102,6 +103,7 @@ describe('hash-cdm-api-key-secrets', () => {
             clientId: 'c2',
             externalKey: 'k-b',
             secretFingerprint: fingerprintCdmApiKeySecret(secretB, hmac),
+            clientSecretFingerprint: null,
             metadata: {},
           },
         ],
@@ -134,6 +136,7 @@ describe('hash-cdm-api-key-secrets', () => {
             clientId: 'c1',
             externalKey: 'k-a',
             secretFingerprint: fingerprintCdmApiKeySecret(secretA, hmac),
+            clientSecretFingerprint: null,
             metadata: {},
           },
           {
@@ -142,6 +145,7 @@ describe('hash-cdm-api-key-secrets', () => {
             clientId: 'c2',
             externalKey: 'k-b',
             secretFingerprint: fingerprintCdmApiKeySecret(secretA, hmac),
+            clientSecretFingerprint: null,
             metadata: {},
           },
         ],

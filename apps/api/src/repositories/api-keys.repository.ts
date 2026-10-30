@@ -279,6 +279,7 @@ export class ApiKeyRepository
     params: Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;
       clientSecretHash: string;
+      clientSecretFingerprint?: string | null;
       createdBy: string;
     },
     transaction?: Transaction
@@ -290,6 +291,7 @@ export class ApiKeyRepository
     params: readonly (Omit<CreateApiKeyInput, 'scope'> & {
       clientId: string;
       clientSecretHash: string;
+      clientSecretFingerprint?: string | null;
       createdBy: string;
     })[],
     transaction?: Transaction
@@ -324,16 +326,31 @@ export class ApiKeyRepository
   public async updateClientSecretHash(
     id: string,
     clientSecretHash: string,
+    clientSecretFingerprint: string | null,
     transaction?: Transaction
   ): Promise<ApiKey> {
     const baseUpdateArgs: BaseUpdateArgs = {
       id,
       input: {
         clientSecretHash,
+        clientSecretFingerprint,
       },
     };
 
     return this.update(baseUpdateArgs, transaction);
+  }
+
+  public async setMissingClientSecretFingerprints(
+    entries: readonly { id: string; clientSecretFingerprint: string }[],
+    transaction?: Transaction
+  ): Promise<void> {
+    const dbInstance = transaction ?? this.db;
+    for (const entry of entries) {
+      await dbInstance
+        .update(this.table)
+        .set({ clientSecretFingerprint: entry.clientSecretFingerprint })
+        .where(and(eq(this.table.id, entry.id), isNull(this.table.clientSecretFingerprint)));
+    }
   }
 
   public async updateLastUsedAt(

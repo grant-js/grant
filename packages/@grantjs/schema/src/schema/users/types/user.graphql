@@ -21,6 +21,13 @@ type User implements Auditable {
   stored hash string: a change detector, not a secret. The password and the hash are never returned here.
   """
   passwordCredential: ProjectUserPasswordCredential
+  """
+  Non-secret facts about the user's live (not revoked, not deleted) project-user API keys in the
+  request's project scope, oldest first. `null` outside a project scope or when the caller lacks
+  `ProjectUser:ExportCredentials` (never an error); `[]` for a member with no key. The secret, the
+  hash and the encrypted copy are never returned here.
+  """
+  apiKeyCredentials: [ProjectUserApiKeyCredential!]
   createdAt: Date!
   updatedAt: Date!
   deletedAt: Date

@@ -1,8 +1,10 @@
 import type {
+  IApiKeyExportableSecretRepository,
   IExportAuditLogger,
   IProjectCredentialRepository,
   IProjectUserCredentialExportService,
   ProjectPasswordCredentialSummary,
+  ProjectUserApiKeyCredentialSummary,
 } from '@grantjs/core';
 import { CredentialKind, type ProjectUserCredentialExport } from '@grantjs/schema';
 
@@ -23,7 +25,8 @@ const EXPORT_ALGORITHM = 'bcrypt';
 export class ProjectUserCredentialExportService implements IProjectUserCredentialExportService {
   constructor(
     private readonly credentials: IProjectCredentialRepository,
-    private readonly audit: IExportAuditLogger
+    private readonly audit: IExportAuditLogger,
+    private readonly apiKeyCopies: IApiKeyExportableSecretRepository
   ) {}
 
   async exportCredentials(
@@ -73,6 +76,20 @@ export class ProjectUserCredentialExportService implements IProjectUserCredentia
       source: row.source,
       updatedAt: row.updatedAt,
       fingerprint: credentialFingerprint(row.hash),
+    }));
+  }
+
+  async getApiKeyCredentialSummaries(
+    params: { projectId: string; userId: string },
+    transaction?: Transaction
+  ): Promise<ProjectUserApiKeyCredentialSummary[]> {
+    const rows = await this.apiKeyCopies.listCredentialSummaries(params, transaction);
+    return rows.map((row) => ({
+      apiKeyId: row.apiKeyId,
+      clientId: row.clientId,
+      fingerprint: row.clientSecretFingerprint,
+      exportable: row.hasCopy,
+      updatedAt: row.updatedAt,
     }));
   }
 }

@@ -2,6 +2,8 @@
  * E2E: CDM replace keeps unchanged BYOK keys (HMAC fingerprint) and rotates
  * one changed secret in place. Does not weaken export-omits-secrets or merge-creates.
  */
+import { createHash } from 'node:crypto';
+
 import { CdmFindBy, CdmModeStrategy } from '@grantjs/schema';
 import { afterAll, describe, expect, it } from 'vitest';
 
@@ -28,11 +30,16 @@ interface CreateProjectResponseBody {
   data?: { id: string };
 }
 
+const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
+
 type CdmKeyRow = {
   api_key_id: string;
   client_id: string;
   external_key: string | null;
   fingerprint: string | null;
+  /** `api_keys.client_secret_fingerprint`: SHA-256 of the secret string as supplied. */
+  plaintext_fingerprint: string | null;
+  client_secret_hash: string;
 };
 
 function cdmWithUserKeys(
@@ -90,7 +97,9 @@ async function listCdmKeys(projectId: string): Promise<CdmKeyRow[]> {
       p.api_key_id::text AS api_key_id,
       k.client_id::text AS client_id,
       p.metadata->'cdmImport'->>'externalKey' AS external_key,
-      p.metadata->'cdmImport'->>'secretFingerprint' AS fingerprint
+      p.metadata->'cdmImport'->>'secretFingerprint' AS fingerprint,
+      k.client_secret_fingerprint AS plaintext_fingerprint,
+      k.client_secret_hash AS client_secret_hash
     FROM project_user_api_keys p
     JOIN api_keys k ON k.id = p.api_key_id
     WHERE p.project_id = ${projectId}::uuid
@@ -132,6 +141,10 @@ describe('Project sync – replace unchanged API keys', () => {
     expect(afterCreate).toHaveLength(2);
     expect(afterCreate.every((row) => row.fingerprint && row.fingerprint.length === 64)).toBe(true);
     const idsAfterCreate = afterCreate.map((row) => row.api_key_id);
+    // The import holds the plaintext: a created key carries the SHA-256 of the secret as supplied.
+    expect(
+      Object.fromEntries(afterCreate.map((row) => [row.external_key, row.plaintext_fingerprint]))
+    ).toEqual({ 'bot-a': sha256(SECRET_A), 'bot-b': sha256(SECRET_B) });
 
     const unchangedReplace = await postImport(
       owner.authHeader,
@@ -176,6 +189,10 @@ describe('Project sync – replace unchanged API keys', () => {
 
     const afterRotate = await listCdmKeys(projectId);
     expect(afterRotate.map((row) => row.api_key_id)).toEqual(idsAfterCreate);
+    // A rotate replaces the fingerprint with the new secret's; the kept key's is untouched.
+    expect(
+      Object.fromEntries(afterRotate.map((row) => [row.external_key, row.plaintext_fingerprint]))
+    ).toEqual({ 'bot-a': sha256(SECRET_A), 'bot-b': sha256(SECRET_B2) });
 
     const exported = await postExport(owner.authHeader, projectId, scope, {
       version: 1,
@@ -187,6 +204,9 @@ describe('Project sync – replace unchanged API keys', () => {
     const snapshot = await downloadSnapshot(owner.authHeader, projectId, exportJob.id, scope);
     expect(snapshot.status).toBe(200);
     expect(JSON.stringify(snapshot.snapshot)).not.toMatch(/secretFingerprint|clientSecret":"[^n]/);
+    for (const secret of [SECRET_A, SECRET_B, SECRET_B2]) {
+      expect(JSON.stringify(snapshot.snapshot)).not.toContain(sha256(secret));
+    }
 
     const payload = await downloadPayload(owner.authHeader, projectId, unchangedJob.id, scope);
     expect(payload.status).toBe(200);
@@ -202,5 +222,55 @@ describe('Project sync – replace unchanged API keys', () => {
     const mergeJob = await resolveJob(owner.authHeader, projectId, scope, mergeAgain.job);
     expect(mergeJob.result?.projectUserApiKeysCreated).toBe(2);
     expect(await listCdmKeys(projectId)).toHaveLength(4);
+  });
+
+  it('a replace that keeps a key with no plaintext fingerprint fills it, without rotating or re-hashing', async () => {
+    const owner = await TestUser.create();
+    const userId = owner.userId!;
+    const projectId = await createAccountProject(owner, 'E2E CDM keep backfill');
+    const scope = scopeForAccountProject(owner.accountId, projectId);
+    const roleKey = `key-role-backfill-${Date.now()}`;
+    const keys = [{ key: 'bot-kept', clientSecret: SECRET_A }];
+
+    const first = await postImport(
+      owner.authHeader,
+      projectId,
+      scope,
+      cdmWithUserKeys(roleKey, userId, keys, CdmModeStrategy.Merge)
+    );
+    expect(first.status).toBe(202);
+    await resolveJob(owner.authHeader, projectId, scope, first.job);
+
+    // A key imported before the column existed has none.
+    await query`
+      UPDATE api_keys SET client_secret_fingerprint = NULL
+      WHERE id IN (
+        SELECT api_key_id FROM project_user_api_keys WHERE project_id = ${projectId}::uuid
+      )
+    `;
+    const before = await listCdmKeys(projectId);
+    expect(before).toHaveLength(1);
+    expect(before[0]!.plaintext_fingerprint).toBeNull();
+
+    const replace = await postImport(
+      owner.authHeader,
+      projectId,
+      scope,
+      cdmWithUserKeys(roleKey, userId, keys, CdmModeStrategy.Replace)
+    );
+    expect(replace.status).toBe(202);
+    const job = await resolveJob(owner.authHeader, projectId, scope, replace.job);
+    expect(job.result).toMatchObject({
+      projectUserApiKeysCreated: 0,
+      projectUserApiKeysUnchanged: 1,
+      projectUserApiKeysRotated: 0,
+      projectUserApiKeysDeleted: 0,
+    });
+
+    const after = await listCdmKeys(projectId);
+    expect(after).toHaveLength(1);
+    expect(after[0]!.api_key_id).toBe(before[0]!.api_key_id);
+    expect(after[0]!.client_secret_hash).toBe(before[0]!.client_secret_hash);
+    expect(after[0]!.plaintext_fingerprint).toBe(sha256(SECRET_A));
   });
 });

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type { CdmApplyContext, CdmExportContext, CdmTeardownContext } from '@grantjs/core';
 import { CdmModeStrategy, Scope, SyncProjectResult, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
@@ -31,6 +33,7 @@ const apiKeyId = '40000000-0000-4000-8000-000000000001';
 const scope: Scope = { tenant: Tenant.AccountProject, id: `${accountId}:${projectId}` };
 
 const BYOK_SECRET = 'x'.repeat(32);
+const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
 function baseResult(): SyncProjectResult {
   return {
@@ -82,6 +85,7 @@ function buildHandler(deps?: {
     createApiKeysForCdmImport: ReturnType<typeof vi.fn>;
     deleteApiKeysForCdmImport: ReturnType<typeof vi.fn>;
     rotateApiKeysForCdmImport?: ReturnType<typeof vi.fn>;
+    setMissingClientSecretFingerprintsForCdmImport?: ReturnType<typeof vi.fn>;
   };
   projectUserApiKeys?: { addProjectUserApiKeysForCdmImport: ReturnType<typeof vi.fn> };
 }) {
@@ -100,6 +104,7 @@ function buildHandler(deps?: {
     createApiKeysForCdmImport: vi.fn(),
     deleteApiKeysForCdmImport: vi.fn(),
     rotateApiKeysForCdmImport: vi.fn().mockResolvedValue(undefined),
+    setMissingClientSecretFingerprintsForCdmImport: vi.fn().mockResolvedValue(undefined),
     ...deps?.apiKeys,
   };
   const projectUserApiKeys = deps?.projectUserApiKeys ?? {
@@ -587,7 +592,15 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     expect(result.projectUserApiKeysCreated).toBe(0);
     expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
     expect(rotateApiKeysForCdmImport).toHaveBeenCalledWith(
-      { keys: [{ id: apiKeyId, clientSecretHash: expect.stringMatching(/^\$2[aby]\$/) }] },
+      {
+        keys: [
+          {
+            id: apiKeyId,
+            clientSecretHash: expect.stringMatching(/^\$2[aby]\$/),
+            clientSecretFingerprint: sha256(BYOK_SECRET),
+          },
+        ],
+      },
       ctx.tx
     );
     expect(hashSpy).toHaveBeenCalledTimes(1);
@@ -664,6 +677,157 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     expect(createApiKeysForCdmImport).toHaveBeenCalledTimes(1);
     expect(result.projectUserApiKeysCreated).toBe(1);
     expect(result.projectUserApiKeysUnchanged).toBe(0);
+  });
+});
+
+describe('ProjectUserApiKeyCdmEntity: plaintext fingerprint on the import paths', () => {
+  const createdKey = { id: '50000000-0000-4000-8000-000000000077', clientId: 'cid-1' };
+
+  it.each([
+    ['merge', CdmModeStrategy.Merge],
+    ['replace (a key the replace creates)', CdmModeStrategy.Replace],
+  ])(
+    'create (%s) stores the SHA-256 of the supplied secret and writes no copy',
+    async (_label, strategy) => {
+      const createApiKeysForCdmImport = vi.fn().mockResolvedValue([createdKey]);
+      const { handler } = buildHandler({
+        apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport: vi.fn() },
+        projectUserApiKeys: { addProjectUserApiKeysForCdmImport: vi.fn() },
+      });
+
+      await handler.apply(applyCtx(baseResult(), strategy), [
+        { userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET },
+      ]);
+
+      expect(createApiKeysForCdmImport.mock.calls[0][0].keys[0]).toMatchObject({
+        clientSecretFingerprint: sha256(BYOK_SECRET),
+      });
+    }
+  );
+
+  it('fingerprints the trimmed secret, the string the stored hash is made from', async () => {
+    const createApiKeysForCdmImport = vi.fn().mockResolvedValue([createdKey]);
+    const { handler } = buildHandler({
+      apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport: vi.fn() },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport: vi.fn() },
+    });
+
+    await handler.apply(applyCtx(baseResult(), CdmModeStrategy.Merge), [
+      { userId, clientSecret: `  ${BYOK_SECRET}\n` },
+    ]);
+
+    expect(createApiKeysForCdmImport.mock.calls[0][0].keys[0].clientSecretFingerprint).toBe(
+      sha256(BYOK_SECRET)
+    );
+  });
+
+  it('a key supplied only as a hash gets no fingerprint (the plaintext is unknown)', async () => {
+    const createApiKeysForCdmImport = vi.fn().mockResolvedValue([createdKey]);
+    const { handler } = buildHandler({
+      apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport: vi.fn() },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport: vi.fn() },
+    });
+    const hash = await tokenLib.hashSecretAsync(BYOK_SECRET);
+
+    await handler.apply(applyCtx(baseResult(), CdmModeStrategy.Merge), [
+      { userId, clientSecret: '', clientSecretHash: hash },
+    ]);
+
+    expect(createApiKeysForCdmImport.mock.calls[0][0].keys[0].clientSecretFingerprint).toBeNull();
+  });
+
+  it('rotate stores the fingerprint of the new secret and still writes no copy', async () => {
+    const rotateApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
+    const { handler } = buildHandler({
+      importRepo: {
+        listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([
+          {
+            apiKeyId,
+            userId,
+            clientId: 'cid-1',
+            externalKey: 'ext-1',
+            secretFingerprint: fingerprintCdmApiKeySecret('y'.repeat(32), HMAC),
+            clientSecretFingerprint: sha256('y'.repeat(32)),
+            metadata: {},
+          },
+        ]),
+      },
+      apiKeys: {
+        createApiKeysForCdmImport: vi.fn(),
+        deleteApiKeysForCdmImport: vi.fn(),
+        rotateApiKeysForCdmImport,
+      },
+    });
+
+    await handler.apply(applyCtx(baseResult(), CdmModeStrategy.Replace), [
+      { userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET },
+    ]);
+
+    expect(rotateApiKeysForCdmImport.mock.calls[0][0].keys).toEqual([
+      expect.objectContaining({ id: apiKeyId, clientSecretFingerprint: sha256(BYOK_SECRET) }),
+    ]);
+  });
+
+  const keptRow = (clientSecretFingerprint: string | null) => ({
+    apiKeyId,
+    userId,
+    clientId: 'cid-1',
+    externalKey: 'ext-1',
+    secretFingerprint: fingerprintCdmApiKeySecret(BYOK_SECRET, HMAC),
+    clientSecretFingerprint,
+    metadata: {},
+  });
+
+  it('a kept key that has no fingerprint yet gets it, with no rotation and no hashing', async () => {
+    const hashSpy = vi.spyOn(tokenLib, 'hashSecretAsync');
+    const setMissing = vi.fn().mockResolvedValue(undefined);
+    const rotateApiKeysForCdmImport = vi.fn();
+    const { handler } = buildHandler({
+      importRepo: {
+        listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([keptRow(null)]),
+      },
+      apiKeys: {
+        createApiKeysForCdmImport: vi.fn(),
+        deleteApiKeysForCdmImport: vi.fn(),
+        rotateApiKeysForCdmImport,
+        setMissingClientSecretFingerprintsForCdmImport: setMissing,
+      },
+    });
+    const result = baseResult();
+    const ctx = applyCtx(result, CdmModeStrategy.Replace);
+
+    await handler.apply(ctx, [{ userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET }]);
+
+    expect(result.projectUserApiKeysUnchanged).toBe(1);
+    expect(rotateApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(hashSpy).not.toHaveBeenCalled();
+    expect(setMissing).toHaveBeenCalledWith(
+      { keys: [{ id: apiKeyId, clientSecretFingerprint: sha256(BYOK_SECRET) }] },
+      ctx.tx
+    );
+    hashSpy.mockRestore();
+  });
+
+  it('a kept key that already has a fingerprint is left alone', async () => {
+    const setMissing = vi.fn();
+    const { handler } = buildHandler({
+      importRepo: {
+        listCdmProjectUserApiKeysForReplace: vi
+          .fn()
+          .mockResolvedValue([keptRow(sha256(BYOK_SECRET))]),
+      },
+      apiKeys: {
+        createApiKeysForCdmImport: vi.fn(),
+        deleteApiKeysForCdmImport: vi.fn(),
+        setMissingClientSecretFingerprintsForCdmImport: setMissing,
+      },
+    });
+
+    await handler.apply(applyCtx(baseResult(), CdmModeStrategy.Replace), [
+      { userId, externalKey: 'ext-1', clientSecret: BYOK_SECRET },
+    ]);
+
+    expect(setMissing).not.toHaveBeenCalled();
   });
 });
 
