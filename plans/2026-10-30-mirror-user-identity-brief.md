@@ -4,14 +4,14 @@ Copy of Grant template `docs/contributing/templates/story-brief.md`. Project Man
 
 Grounded on `origin/main` at `815495ea` (**v1.20.2**). Story shape: **three additive API changes on the import and event paths** for a receiver that mirrors Grant into another system (activation matrix in `docs/contributing/agentic-sdlc.md`): Backend + QA + Security + Verifier; slices in [the stack plan](./2026-10-30-mirror-user-identity-stack.md). Open-source language only: no customer or tenant names. Release proposed as **v1.21.0** (minor; the stack plan justifies it).
 
-**Gates 1 and 2 are pending Alejandro.** Section "Decisions for Gate 1" lists what the code changed about the request; the criteria are written for the recommended option and say where another option would change them.
+**Gates 1 and 2 approved by Alejandro on 2026-10-30, as written (every recommended answer; no slice 4).** Section "Decisions for Gate 1" lists what the code changed about the request; the criteria are written for the recommended option and say where another option would change them.
 
 ## Metadata
 
 - **Slug**: `mirror-user-identity`
 - **Date**: 2026-10-30
 - **Author** (human / PM agent): PM agent (Claude, for Alejandro)
-- **Status**: draft (Gates 1–2 pending Alejandro)
+- **Status**: approved (Gates 1–2, Alejandro 2026-10-30, all recommended answers)
 
 ## Objective
 
@@ -168,5 +168,5 @@ Each question has a recommended answer; the criteria above are written for it.
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until Alejandro confirms (answers to the ten questions above).
+- [x] Gate 1: Story brief approved — Alejandro, 2026-10-30, every recommended answer as written (1 yes; 2 `key.grantUserId` hint; 3 A; 4 self-deletion only; 5 HMAC fingerprint; 6 forever; 7 never blocks a live identity; 8 defer the read API; 9 light / security-full / security-full; 10 minor v1.21.0).
 - [ ] Gate 4: Story → `main` — not opened; agents do not merge.

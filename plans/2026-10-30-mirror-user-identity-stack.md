@@ -2,7 +2,7 @@
 
 Copy of Grant template `docs/contributing/templates/stack-plan.md`. Principal Engineer owns this artifact. Requires an approved story brief.
 
-Story brief: [2026-10-30-mirror-user-identity-brief.md](./2026-10-30-mirror-user-identity-brief.md). **Gates 1 and 2 are pending Alejandro**; no implementation, no slice branch and no `gh stack` until both are answered.
+Story brief: [2026-10-30-mirror-user-identity-brief.md](./2026-10-30-mirror-user-identity-brief.md). **Gates 1 and 2 approved by Alejandro on 2026-10-30 as written.** Until then there was no implementation, no slice branch and no `gh stack` until both are answered.
 
 Grounded on `origin/main` `815495ea` (v1.20.2, tag commit after #664/#665). Open-source language only: do not name customer tenants.
 
@@ -10,8 +10,8 @@ Grounded on `origin/main` `815495ea` (v1.20.2, tag commit after #664/#665). Open
 
 - **Slug**: `mirror-user-identity`
 - **Story brief**: `plans/2026-10-30-mirror-user-identity-brief.md`
-- **Status**: draft (Gates 1–2 pending Alejandro)
-- **Story trunk**: `feat/mirror-user-identity` from `main` at `815495ea` (exists locally, holds the two plan files; **not pushed yet**: pushing is Alejandro's call once Gate 1 is answered). The `feat/` prefix is deliberate: `ci.yml` runs only for pull requests whose base is `main` or `feat/**` (`.github/workflows/ci.yml:8`), and every slice branch below also starts with `feat/`, so every slice PR gets CI, including `pnpm test:e2e` (`:196`).
+- **Status**: approved (Gates 1–2, Alejandro 2026-10-30, as written: three slices, no slice 4, bars light / security-full / security-full, minor v1.21.0)
+- **Story trunk**: `feat/mirror-user-identity` from `main` at `815495ea` (exists, holds the two plan files; **pushed 2026-10-30** after the by-hand pre-push chain passed; was: not pushed until Gate 1 is answered). The `feat/` prefix is deliberate: `ci.yml` runs only for pull requests whose base is `main` or `feat/**` (`.github/workflows/ci.yml:8`), and every slice branch below also starts with `feat/`, so every slice PR gets CI, including `pnpm test:e2e` (`:196`).
 - **worktree_path**: `/Users/aleheredia/workspace/worktrees/grant-platform-feat-mirror-user-identity` (holds the trunk; slice branches are created from it after Gate 2 by `gh stack init` / `gh stack add`, which check the slice out in this worktree, or in a second worktree when two slices run at once)
 - **Release**: **minor, v1.21.0** (`grant-api`, `@grantjs/schema`; `grant-web` only if it renders the new counter). Justification: the three changes are additive (a new optional import field, a new result counter, a new envelope attribute on three event types, a new table nobody reads but Grant) and break no caller, which is why not major; but one of them is a database migration and two add to a documented contract (the CDM document and `SyncProjectResult`), which is a feature, not a fix. The patch precedent, v1.20.2, was one additive envelope field without a migration. Each slice carries its own changeset (slice 1 patch, slices 2 and 3 minor); the version PR takes the highest bump. If Gate 1 question 10 says patch, slices 2 and 3 write `patch` and the result is v1.20.3.
 
@@ -148,8 +148,8 @@ gh pr view <bottom-pr> --json baseRefName   # must be feat/mirror-user-identity,
 
 ## Human gates
 
-- [ ] Gate 1: Story brief approved — Alejandro (ten questions in the brief).
-- [ ] Gate 2: Stack plan approved — Alejandro (order, bars, named contracts, release type, slice 4 yes/no).
+- [x] Gate 1: Story brief approved — Alejandro, 2026-10-30, every recommended answer (see the brief).
+- [x] Gate 2: Stack plan approved — Alejandro, 2026-10-30, as written (order 1→2→3, bars, named contracts, minor v1.21.0, no slice 4).
 - [ ] Gate 3: Stack PRs merged into trunk (slice 1 light unless raised; slices 2–3 security-full).
 - [ ] Gate 4: Story → `main` deep review complete.
 
