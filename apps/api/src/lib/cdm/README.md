@@ -105,6 +105,18 @@ stays sequential. Key teardown is a no-op; apply owns the set-diff inside the
 same import transaction. The HMAC key is resolver-backed
 (`CDM_API_KEY_FINGERPRINT_HMAC_SECRET`); empty stays rotate-all.
 
+## User identity paths
+
+`UserProvisionCdmEntity.apply` resolves each `users[]` entry through one of three paths:
+
+| `findBy`        | Resolution                                                                                                                                                                             |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | No provisioning entry: the value is an existing user id; the assignment step attaches it (no marker).                                                                                  |
+| `email`         | Email authentication method first, then the key lookup, else create.                                                                                                                   |
+| `key` (default) | `findUserIdByCdmImport` (global marker, then the live membership row's), else the optional `key.grantUserId` match, else create. The match rule is the pure `grant-user-match.lib.ts`. |
+
+The `key.grantUserId` match records the named user as the key's user without creating one and without touching the global user's metadata; the assignment step writes the marker on the membership row. Every refusal is a `ValidationError` naming the document position only (a key can be an address). `findLiveUserCdmMarkers` is the one read behind the rule and returns nothing for a missing or soft-deleted user.
+
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.
 

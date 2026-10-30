@@ -401,6 +401,48 @@ describe('expandCdmSyncInput catalog permission strings', () => {
     );
   });
 
+  it('carries key.grantUserId on a findBy=key user, and only there', () => {
+    const grantUserId = '30000000-0000-4000-8000-000000000001';
+    const user = (value: string, findBy: CdmFindBy, hint: string | null) => ({
+      key: { value, findBy, grantUserId: hint },
+      name: 'U',
+      roles: [],
+      groups: [],
+      permissions: [],
+      tags: [],
+      primaryTag: null,
+      apiKeys: [],
+      metadata: null,
+    });
+    const input: CdmDocumentInput = {
+      version: 1,
+      id: null,
+      mode,
+      roles: [],
+      users: [
+        user('hinted-key', CdmFindBy.Key, grantUserId),
+        user('plain-key', CdmFindBy.Key, null),
+        user('someone@example.com', CdmFindBy.Email, null),
+      ],
+      resources: [],
+      permissions: [],
+      groups: [],
+      tags: [],
+    };
+
+    const { provisionedUsers, userAssignments } = expandCdmSyncInput(input);
+
+    expect(provisionedUsers.map((u) => [u.externalKey, u.grantUserId ?? null])).toEqual([
+      ['hinted-key', grantUserId],
+      ['plain-key', null],
+      ['someone@example.com', null],
+    ]);
+    // The assignment keys the user by the document key, so the marker is written under it.
+    expect(userAssignments[0]).toEqual(
+      expect.objectContaining({ userKey: 'hinted-key', userId: null })
+    );
+  });
+
   it('rejects invalid findBy=email values', () => {
     const input: CdmDocumentInput = {
       version: 1,

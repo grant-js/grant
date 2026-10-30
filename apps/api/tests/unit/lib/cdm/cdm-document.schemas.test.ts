@@ -126,6 +126,87 @@ describe('validateSyncInput', () => {
   });
 });
 
+describe('key.grantUserId', () => {
+  const base = { version: 1, mode: merge, roles: [] };
+  const GRANT_USER_ID = '30000000-0000-4000-8000-000000000001';
+  const user = (
+    findBy: string | undefined,
+    grantUserId: string | null | undefined,
+    value = 'jane.doe@example.com'
+  ) => ({
+    key: { value, findBy, grantUserId },
+  });
+
+  it('is accepted with findBy key, or with no findBy', () => {
+    expect(() =>
+      validateSyncInput({
+        ...base,
+        users: [user(CdmFindBy.Key, GRANT_USER_ID, 'u1'), user(undefined, GRANT_USER_ID, 'u2')],
+      })
+    ).not.toThrow();
+  });
+
+  it('is ignored when absent or null', () => {
+    expect(() =>
+      validateSyncInput({
+        ...base,
+        users: [user(CdmFindBy.Email, null, 'a@example.com'), user(CdmFindBy.Id, undefined, 'u2')],
+      })
+    ).not.toThrow();
+  });
+
+  it.each([CdmFindBy.Email, CdmFindBy.Id, CdmFindBy.Name, CdmFindBy.Slug])(
+    'is refused with findBy %s, naming the position and neither the key nor the id',
+    (findBy) => {
+      let message = '';
+      try {
+        validateSyncInput({
+          ...base,
+          users: [
+            user(CdmFindBy.Key, null, 'u0'),
+            user(findBy, GRANT_USER_ID, 'jane.doe@example.com'),
+          ],
+        });
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toBe("users[1]: grantUserId is only allowed with key.findBy 'key'");
+      expect(message).not.toContain('jane.doe');
+      expect(message).not.toContain(GRANT_USER_ID);
+    }
+  );
+
+  it('is refused when it is not a UUID (GraphQL types it as ID), without echoing it', () => {
+    let message = '';
+    try {
+      validateSyncInput({ ...base, users: [user(CdmFindBy.Key, 'not-a-uuid-secret', 'u1')] });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toBe('users[0]: grantUserId must be a UUID');
+  });
+
+  it('survives the shared schema and the REST body schema', () => {
+    const doc = document({
+      users: [
+        { key: { value: 'u1', findBy: CdmFindBy.Key, grantUserId: GRANT_USER_ID }, name: 'A' },
+      ],
+    });
+    expect(parseCdmDocument(doc).users[0]?.key.grantUserId).toBe(GRANT_USER_ID);
+    expect(startProjectSyncRequestSchema.parse({ scope, ...doc }).users?.[0]?.key.grantUserId).toBe(
+      GRANT_USER_ID
+    );
+  });
+
+  it('is refused by the shared schema when it is not a UUID', () => {
+    const doc = document({
+      users: [{ key: { value: 'u1', findBy: CdmFindBy.Key, grantUserId: 'nope' }, name: 'A' }],
+    });
+    expect(() => parseCdmDocument(doc)).toThrow(ValidationError);
+    expect(startProjectSyncRequestSchema.safeParse({ scope, ...doc }).success).toBe(false);
+  });
+});
+
 describe('countCdmEntities', () => {
   it('counts roles, users, resources, permissions, groups and tags', () => {
     expect(

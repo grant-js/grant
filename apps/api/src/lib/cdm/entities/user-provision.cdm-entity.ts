@@ -24,6 +24,7 @@ import type { ProjectExportRepository } from '@/repositories/project-export.repo
 
 import type { CdmUserProvisionInternal } from '../cdm-internal.types';
 import { cdmPasswordProblem } from '../cdm-password.lib';
+import { decideGrantUserMatch, grantUserMatchRefusalMessage } from '../grant-user-match.lib';
 import { buildExternalKey } from '../identity.lib';
 
 const INPUT_KEY = 'provisionedUsers' as const;
@@ -72,6 +73,11 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         throw new ValidationError(`Duplicate users externalKey: ${row.externalKey}`);
       }
       keys.add(row.externalKey);
+      if (row.grantUserId != null && row.findBy !== 'key') {
+        throw new ValidationError(
+          `provisioned users[${index}]: grantUserId is only allowed with key.findBy 'key'`
+        );
+      }
       if (typeof row.name !== 'string' || row.name.trim() === '') {
         throw new ValidationError(`users[${row.externalKey}]: name is required`);
       }
@@ -107,33 +113,75 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     input: readonly CdmUserProvisionInternal[]
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
-    for (const row of input) {
+    for (const [index, row] of input.entries()) {
       if (row.findBy === 'email') {
         await this.applyEmailIdentity(ctx, row, tx);
         continue;
       }
+      await this.applyKeyIdentity(ctx, row, row.documentIndex ?? index, tx);
+    }
+  }
 
-      const existingId = await this.userRepository.findUserIdByCdmImport(
-        {
-          projectId: ctx.projectId,
-          kind: 'user',
-          externalKey: row.externalKey,
-        },
-        tx
-      );
-      if (existingId) {
-        ctx.produced.userIds.set(row.externalKey, existingId);
-        ctx.assignmentUserIds.add(existingId);
-        continue;
+  /**
+   * The `findBy: key` path: reuse the user an earlier import keyed, else the existing Grant
+   * user the document names with `grantUserId`, else create one. The decision itself is
+   * `decideGrantUserMatch`; this reads its facts and acts on it. A matched user is not
+   * created and its global metadata is not touched: the assignment step writes the marker on
+   * the membership row, as it does for every provisioned user.
+   */
+  private async applyKeyIdentity(
+    ctx: CdmApplyContext,
+    row: CdmUserProvisionInternal,
+    position: number,
+    tx: Transaction
+  ): Promise<void> {
+    const userIdFoundByKey = await this.userRepository.findUserIdByCdmImport(
+      {
+        projectId: ctx.projectId,
+        kind: 'user',
+        externalKey: row.externalKey,
+      },
+      tx
+    );
+    const grantUserId = row.grantUserId ?? null;
+    const candidate =
+      userIdFoundByKey == null && grantUserId != null
+        ? await this.userRepository.findLiveUserCdmMarkers(
+            { userId: grantUserId, projectId: ctx.projectId },
+            tx
+          )
+        : null;
+
+    const decision = decideGrantUserMatch({
+      projectId: ctx.projectId,
+      externalKey: row.externalKey,
+      grantUserId,
+      userIdFoundByKey,
+      candidate,
+      userIdsProducedUnderOtherKeys: new Set(
+        [...ctx.produced.userIds].flatMap(([key, id]) =>
+          key === row.externalKey ? [] : [id.toLowerCase()]
+        )
+      ),
+    });
+
+    switch (decision.outcome) {
+      case 'refused':
+        throw new ValidationError(grantUserMatchRefusalMessage(position, decision.refusal));
+      case 'reuse-keyed':
+      case 'matched':
+        this.recordProducedUser(ctx, row.externalKey, decision.userId);
+        return;
+      case 'create': {
+        const metadata = mergeCdmImporterMetadata(
+          buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
+          row.metadata
+        );
+        const user = await this.users.createUser({ name: row.name.trim(), metadata }, tx);
+        this.recordProducedUser(ctx, row.externalKey, user.id);
+        ctx.result.usersCreated += 1;
+        return;
       }
-      const metadata = mergeCdmImporterMetadata(
-        buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
-        row.metadata
-      );
-      const user = await this.users.createUser({ name: row.name.trim(), metadata }, tx);
-      ctx.produced.userIds.set(row.externalKey, user.id);
-      ctx.assignmentUserIds.add(user.id);
-      ctx.result.usersCreated += 1;
     }
   }
 
