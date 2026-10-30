@@ -63,6 +63,7 @@ function buildService(
     storeForKey: vi.fn(),
     removeForKeys: vi.fn(),
     removeForProject: vi.fn().mockResolvedValue(options.copiesDeleted ?? 0),
+    readForExport: vi.fn(),
   };
   const service = new ProjectService(
     repository as unknown as IProjectRepository,

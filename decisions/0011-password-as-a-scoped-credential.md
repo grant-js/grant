@@ -670,7 +670,9 @@ no API returns it. There is now **one** exception, and it is deliberate, gated a
   `users[].password` shape of 0010 rule 1, so a mirror can feed it to an import. A member with no
   project credential is listed with `password: null`. `kinds` is an enum, `CredentialKind`, with
   one member (`PASSWORD`, the default; an empty list is refused), so a later credential type is a
-  new kind and not a second export.
+  new kind and not a second export. The first such kind, `API_KEY_SECRET` (the plaintext secret of a
+  project user's API key, only where the project opted in), is recorded in
+  [0013](./0013-exportable-api-key-secrets.md).
 - **No partial export.** `userIds` must be non-empty UUIDs and at most one page
   (`config.system.maxPageSize`); the whole project is many calls. **Every** id is checked for
   membership first: a single non-member fails the call with `NotFoundError`, and nothing is read

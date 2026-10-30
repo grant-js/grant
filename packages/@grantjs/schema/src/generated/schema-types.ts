@@ -818,6 +818,11 @@ export type CredentialExportData = {
  * not as a second export.
  */
 export enum CredentialKind {
+  /**
+   * The API keys of the project user, with the plaintext secret of each key the project keeps an
+   * exportable copy of (a project that opted in to exportable API-key secrets).
+   */
+  ApiKeySecret = 'API_KEY_SECRET',
   /** The project password credential (bcrypt hash). */
   Password = 'PASSWORD',
 }
@@ -876,6 +881,26 @@ export type ExportProjectUserCredentialsInput = {
   userIds: Array<Scalars['ID']['input']>;
 };
 
+/** One API key of a project user in an export. `secret` is a credential: handle it like one. */
+export type ExportedApiKeySecret = {
+  __typename?: 'ExportedApiKeySecret';
+  apiKeyId: Scalars['ID']['output'];
+  /** The key's public client id. */
+  clientId: Scalars['String']['output'];
+  /**
+   * Lowercase hex SHA-256 of the secret string as issued, to compare with `sha256(secret)` of the
+   * value a receiver holds. `null` for a key created before the fingerprint existed and not rotated
+   * since.
+   */
+  fingerprint?: Maybe<Scalars['String']['output']>;
+  /**
+   * The plaintext secret: 88 characters, standard base64 of 64 random bytes. `null` for a key the
+   * project holds no copy of (created before the project opted in, created by a CDM import, or
+   * rotated by a CDM replace): Grant cannot recover it.
+   */
+  secret?: Maybe<Scalars['String']['output']>;
+};
+
 /** A stored password hash in CDM shape. Secret-equivalent: handle like a credential. */
 export type ExportedPasswordCredential = {
   __typename?: 'ExportedPasswordCredential';
@@ -887,7 +912,12 @@ export type ExportedPasswordCredential = {
 
 export type ExportedProjectUserCredential = {
   __typename?: 'ExportedProjectUserCredential';
-  /** `null` when the member has no project password credential. */
+  /**
+   * The member's live (not revoked, not deleted) project-user API keys, oldest first. `null` when the
+   * `API_KEY_SECRET` kind was not requested; `[]` for a member with no key.
+   */
+  apiKeySecrets?: Maybe<Array<ExportedApiKeySecret>>;
+  /** `null` when the member has no project password credential, and when the `PASSWORD` kind was not requested. */
   password?: Maybe<ExportedPasswordCredential>;
   userId: Scalars['ID']['output'];
 };
@@ -2628,7 +2658,10 @@ export type ProjectUserApiKeyCredential = {
   updatedAt: Scalars['Date']['output'];
 };
 
-/** Result of `exportProjectUserCredentials`. This is the one place a credential hash leaves Grant. */
+/**
+ * Result of `exportProjectUserCredentials`. This is the one place a credential hash, and the plaintext
+ * secret of an exportable API key, leaves Grant.
+ */
 export type ProjectUserCredentialExport = {
   __typename?: 'ProjectUserCredentialExport';
   users: Array<ExportedProjectUserCredential>;
@@ -2677,11 +2710,14 @@ export type Query = {
   /** Public signup policy. No authentication required. */
   authSignupPolicy: AuthSignupPolicy;
   /**
-   * Export project members' password hashes in CDM shape, for a downstream identity mirror.
-   * This is the one audited exception to "APIs expose only whether a password exists": it
-   * requires `ProjectUser:ExportCredentials` (held by no standard group), every call is audited,
-   * and it returns hashes. Any non-member in `userIds` fails the whole call; members without a
-   * project credential are listed with `password: null`.
+   * Export project members' credentials for a downstream identity mirror: password hashes in CDM
+   * shape (`PASSWORD`) and the plaintext secrets of their API keys (`API_KEY_SECRET`, only for keys
+   * of a project that opted in to exportable API-key secrets). This is the one audited exception to
+   * "APIs expose only whether a password exists" and to "an API-key secret is shown once": it
+   * requires `ProjectUser:ExportCredentials` (held by no standard group), every call is audited
+   * (one summary row, plus one row per exported API-key secret), and it returns credentials. Any
+   * non-member in `userIds` fails the whole call; members without a project credential are listed
+   * with `password: null`, and a key without a copy with `secret: null`.
    */
   exportProjectUserCredentials: ProjectUserCredentialExport;
   groups: GroupPage;

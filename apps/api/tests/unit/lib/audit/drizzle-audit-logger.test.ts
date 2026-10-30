@@ -118,6 +118,38 @@ describe('DrizzleAuditLogger.logExport', () => {
     });
   });
 
+  it('with an entity id writes the row of that entity (an exported API-key secret), still performed by the caller', async () => {
+    const insert = vi.fn().mockResolvedValue(undefined);
+    const db = { insert: vi.fn().mockReturnValue({ values: insert }) };
+    const audit = new DrizzleAuditLogger(
+      { entity: 'table' },
+      'apiKeyId',
+      caller as unknown as GrantAuth,
+      db as never
+    );
+    const apiKeyId = '50000000-0000-4000-8000-000000000001';
+
+    await audit.logExport(
+      { projectId: 'p', userId: 'u', kind: 'API_KEY_SECRET' },
+      undefined,
+      apiKeyId
+    );
+
+    const payload = insert.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      apiKeyId,
+      action: 'export',
+      oldValues: null,
+      newValues: null,
+      performedBy: caller.userId,
+    });
+    expect(JSON.parse(payload.metadata)).toEqual({
+      projectId: 'p',
+      userId: 'u',
+      kind: 'API_KEY_SECRET',
+    });
+  });
+
   it('uses the caller transaction when given', async () => {
     const insert = vi.fn().mockResolvedValue(undefined);
     const { audit, db } = create(insert);

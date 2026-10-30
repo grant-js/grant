@@ -38,10 +38,15 @@ export interface ProjectUserApiKeyCredentialSummary {
  */
 export interface IProjectUserCredentialExportService {
   /**
-   * Export in CDM shape, in the order of `userIds`: `password: { algorithm: 'bcrypt', hash }`
-   * for a member with a live project credential, `null` for one without. Writes exactly one
-   * audit row (`action = 'export'`, counts and kinds only) in the same transaction, so a
-   * failed audit write fails the export.
+   * Export in CDM shape, in the order of `userIds`. For `PASSWORD`: `password: { algorithm:
+   * 'bcrypt', hash }` for a member with a live project credential, `null` for one without (and
+   * when the kind was not requested). For `API_KEY_SECRET`: `apiKeySecrets`, the member's live
+   * project-user keys with the plaintext `secret` of each key that has an exportable copy and
+   * `null` for one that has none (`null` when the kind was not requested, `[]` for no keys).
+   *
+   * Writes, in the same transaction, one summary audit row (`action = 'export'`, counts and
+   * kinds only) and one `api_key_audit_logs` row per exported secret (the key id, never the
+   * secret), so a failed audit write fails the export.
    */
   exportCredentials(
     params: { projectId: string; userIds: readonly string[]; kinds: readonly CredentialKind[] },

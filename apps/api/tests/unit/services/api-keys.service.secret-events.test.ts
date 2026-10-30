@@ -106,6 +106,7 @@ function build(options: { exportable?: { keyMaterial: string } } = {}) {
     deleteForKeys: vi.fn().mockResolvedValue(0),
     deleteForProject: vi.fn().mockResolvedValue(0),
     listCredentialSummaries: vi.fn().mockResolvedValue([]),
+    findSealedForExport: vi.fn().mockResolvedValue([]),
   } satisfies IApiKeyExportableSecretRepository;
   const projects = {
     isExportableApiKeySecretsEnabled: vi.fn().mockResolvedValue(Boolean(options.exportable)),

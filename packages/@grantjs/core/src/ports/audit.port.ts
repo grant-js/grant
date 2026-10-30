@@ -46,15 +46,22 @@ export interface IAuditLogger {
 }
 
 /**
- * An audit row that is not about one entity: a credential export names no credential row,
- * it reads many. Separate from `IAuditLogger` so the ports every other service mocks stay
- * unchanged. Unlike `logAction`, a failed write **throws**: the export that triggered it
- * must fail with it rather than run unaudited.
+ * An audit row for an export: a credential export names no single credential row, it reads
+ * many, so its summary row has no entity id; an exported API-key secret has one, the key.
+ * Separate from `IAuditLogger` so the ports every other service mocks stay unchanged. Unlike
+ * `logAction`, a failed write **throws**: the export that triggered it must fail with it
+ * rather than run unaudited.
  */
 export interface IExportAuditLogger {
   /**
-   * Record one export (`action = 'export'`, no entity id, `performedBy` the caller).
-   * `metadata` is counts and kinds only: never a hash, a password or an id of either.
+   * Record one export (`action = 'export'`, `performedBy` the caller). Without `entityId` it
+   * is the summary row, whose `metadata` is counts and kinds only. With `entityId` (an API
+   * key's id, on the API-key audit log) it is the row of one exported secret. `metadata` is
+   * never a hash, a password, a secret or a ciphertext.
    */
-  logExport(metadata: Record<string, unknown>, transaction?: unknown): Promise<void>;
+  logExport(
+    metadata: Record<string, unknown>,
+    transaction?: unknown,
+    entityId?: string
+  ): Promise<void>;
 }

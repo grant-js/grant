@@ -96,7 +96,7 @@ The exchange endpoint (`/auth/token`) is not permission-guarded — it authentic
 
 ## Exportable secrets (opt-in)
 
-By default Grant keeps only a bcrypt hash of a key's `clientSecret`, so a secret can never be read back. A project can opt in to a different trade-off for the API keys of its project users: Grant then keeps an encrypted copy of the secret, so a receiver that mirrors Grant into another system can carry the key across. This section covers the opt-in, the copy and the fingerprint. The copy is not readable through any API yet: nothing decrypts it in this release.
+By default Grant keeps only a bcrypt hash of a key's `clientSecret`, so a secret can never be read back. A project can opt in to a different trade-off for the API keys of its project users: Grant then keeps an encrypted copy of the secret, so a receiver that mirrors Grant into another system can carry the key across. This section covers the opt-in, the copy, the fingerprint and the one call that reads the copy back, the [credential export](#exporting-the-secret). The decision and its trade-off are recorded in ADR 0013 (`decisions/0013-exportable-api-key-secrets.md`).
 
 - **The flag.** `Project.exportableApiKeySecrets` is a plain boolean on the project, `false` by default, readable by anyone who can read the project. It says nothing about any individual key.
 - **Who flips it.** `setProjectExportableApiKeySecrets` (GraphQL) and `PUT /api/projects/{id}/exportable-api-key-secrets` (body `{ scope, enabled }`) require `Project:SetExportableApiKeySecrets`, held by Owner and Admin by default and not by Dev (see [RBAC](/architecture/rbac)). The scope must be the project scope the request is authorized in (`accountProject` or `organizationProject`), and for REST its project must be the one in the path.
@@ -145,9 +145,40 @@ query {
 
 It lists the member's live (not revoked, not deleted) project-user keys, oldest first, `[]` for a member with none. `exportable` says that an encrypted copy of the key's current secret exists. The field is `null`, never an error, outside an `OrganizationProject` / `AccountProject` scope and for a caller without `ProjectUser:ExportCredentials`, exactly like `User.passwordCredential`. It never returns a secret, a hash or a ciphertext.
 
+### Exporting the secret
+
+The copy is read back by one call, the credential export that already returns project password hashes, with a second kind: `exportProjectUserCredentials` (GraphQL) and `POST /api/users/credentials/export` (REST, `Cache-Control: no-store`). It requires `ProjectUser:ExportCredentials`, the same permission as for hashes, which no standard group holds: grant it to the role a receiver's API key carries. The scope is a project scope (`accountProject` or `organizationProject`) that the request is authorized in, every id in `userIds` must be a member of the project (a non-member fails the whole call), and a call is capped at one page of users.
+
+```graphql
+query {
+  exportProjectUserCredentials(
+    input: {
+      scope: { tenant: OrganizationProject, id: "<organizationId>:<projectId>" }
+      userIds: ["<userId>"]
+      kinds: [API_KEY_SECRET]
+    }
+  ) {
+    users {
+      userId
+      apiKeySecrets {
+        apiKeyId
+        clientId
+        fingerprint
+        secret
+      }
+    }
+  }
+}
+```
+
+- **Shape.** `apiKeySecrets` is `null` when the `API_KEY_SECRET` kind was not requested, `[]` for a member with no key, otherwise one entry per live (not revoked, not deleted) project-user key **of that project**, oldest first. `secret` is the plaintext, 88 characters of standard base64, for a key that has a copy; it is **`null` for a key without one** (created before the project opted in, created by a CDM import, or rotated by a CDM replace), so a receiver can tell "no key" from "no copy" without a second call. `fingerprint` is the SHA-256 of the secret as issued, stored beside it so a receiver can compare `sha256(secret)` with it; it is `null` for a key created before fingerprints existed and not rotated since. `PASSWORD` and `API_KEY_SECRET` can be requested together: the password and the keys of a member come back in one entry.
+- **Audited.** A successful call writes one summary row on the project credential audit log (`action = 'export'`, with the number of users, the number of credentials and secrets returned, and the kinds) and **one row per exported secret on the API-key audit log** (`action = 'export'`, the key id, `performedBy` the caller, metadata `{ projectId, userId, kind }`). A key listed with `secret: null` exported nothing and has no row. All rows are written in the transaction of the export, so a failed audit write fails the call and no secret is returned. A caller that is an API key is attributed to the system user, with the key's id in the metadata, as for hashes. No row holds a secret, a hash or a ciphertext.
+- **Where it is decrypted.** Only inside the export, for the members it names and the keys of that project, with `API_KEY_EXPORTABLE_SECRET_ENCRYPTION_KEY` resolved at that moment. The plaintext is never logged, cached, put in an event, a webhook, an audit row or an error. If the key is missing or a copy does not decrypt under it, the call fails with a configuration error that names the variable.
+- **What a receiver does.** Subscribe to `api_key.created` and `api_key.rotated` for the project (the event names the key as `aggregate.id` and its owner as `grantsubjectuser`, and never carries a secret), read `User.apiKeyCredentials` to see which keys changed (`fingerprint`) and which are `exportable`, call the export for the members that changed, write the secrets into the other system (keeping the value it already holds in that system's grace slot, since Grant keeps no previous secret), and compare `sha256(secret)` with the exported `fingerprint`. Whether the other system accepts the string is the receiver's check, outside Grant; what Grant guarantees is that the exported string is the one its own `POST /auth/token` accepted.
+
 ## Security
 
-- **Secret shown once** — the `clientSecret` is returned only at creation time (and at rotation). It is hashed with bcrypt before storage and cannot be retrieved again. The one exception is a project user's key in a project that [opted in to exportable secrets](#exportable-secrets-opt-in): Grant also keeps an encrypted copy of it, which no API reads yet. Secrets of such keys are 88 characters of standard base64, and bcrypt verifies the first 72 bytes only.
+- **Secret shown once** — the `clientSecret` is returned only at creation time (and at rotation). It is hashed with bcrypt before storage and cannot be retrieved again. The one exception is a project user's key in a project that [opted in to exportable secrets](#exportable-secrets-opt-in): Grant also keeps an encrypted copy of it, which only the audited [credential export](#exporting-the-secret) reads. Secrets of such keys are 88 characters of standard base64, and bcrypt verifies the first 72 bytes only.
 - **Revocation** — revoked keys are immediately rejected on **exchange**. Access JWTs already issued stay valid until `exp` (default 15 minutes). `Grant.getAuth` does not denylist `jti`. See [Security — Residual access JWT window](/architecture/security#residual-access-jwt-window).
 - **Expiration** — keys can have an optional `expiresAt` date. Expired keys are rejected on exchange.
 - **Audit logging** — all key operations (create, revoke, delete, exchange) are recorded in the audit log with scope metadata.

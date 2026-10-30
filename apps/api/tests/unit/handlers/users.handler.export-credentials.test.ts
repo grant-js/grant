@@ -175,6 +175,38 @@ describe('UserHandler exportProjectUserCredentials', () => {
     );
   });
 
+  it('passes the API_KEY_SECRET kind through, deduplicated, in the project scope the transport authorized', async () => {
+    const { handler, tx, exportCredentials } = createHandler();
+
+    await handler.exportProjectUserCredentials(
+      exportArgs([memberA], {
+        kinds: [CredentialKind.ApiKeySecret, CredentialKind.Password, CredentialKind.ApiKeySecret],
+      })
+    );
+
+    expect(exportCredentials).toHaveBeenCalledWith(
+      {
+        projectId,
+        userIds: [memberA],
+        kinds: [CredentialKind.ApiKeySecret, CredentialKind.Password],
+      },
+      tx
+    );
+  });
+
+  it('refuses the API_KEY_SECRET kind in a non-project scope before any read', async () => {
+    const { handler, withTransaction, exportCredentials } = createHandler();
+
+    await expect(
+      handler.exportProjectUserCredentials({
+        input: { scope: orgScope, userIds: [memberA], kinds: [CredentialKind.ApiKeySecret] },
+      })
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    expect(withTransaction).not.toHaveBeenCalled();
+    expect(exportCredentials).not.toHaveBeenCalled();
+  });
+
   it('does not re-check roles in the handler (the transport owns authorization)', async () => {
     const { handler, isAuthorized } = createHandler();
 
