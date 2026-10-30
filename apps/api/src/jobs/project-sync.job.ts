@@ -460,6 +460,8 @@ export default class ProjectSyncJob extends Job {
     for (const u of importPayload.users) {
       if (u.key.findBy === CdmFindBy.Id) {
         ids.add(u.key.value);
+      } else if (u.key.grantUserId) {
+        ids.add(u.key.grantUserId);
       }
     }
     return Array.from(ids);

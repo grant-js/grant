@@ -2,6 +2,7 @@ import type {
   CdmExportContext,
   IApiKeyService,
   ICdmEntityHandler,
+  ICdmImportTombstoneRepository,
   ICredentialService,
   IGroupPermissionService,
   IGroupService,
@@ -119,6 +120,7 @@ export class ProjectExportService implements IProjectExportService {
     userAuthenticationMethods: IUserAuthenticationMethodService,
     userRepository: IUserRepository,
     credentials: ICredentialService,
+    cdmImportTombstones: ICdmImportTombstoneRepository,
     handlers?: ReadonlyArray<ICdmEntityHandler>
   ) {
     this.exportRepo = exportRepo;
@@ -156,6 +158,7 @@ export class ProjectExportService implements IProjectExportService {
         userAuthenticationMethods,
         userRepository,
         credentials,
+        cdmImportTombstones,
       });
   }
 

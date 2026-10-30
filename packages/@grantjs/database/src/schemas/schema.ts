@@ -20,6 +20,7 @@ import {
   apiKeys,
   apiKeysRelations,
 } from './api-keys.schema';
+import { cdmImportTombstones, cdmImportTombstonesRelations } from './cdm-import-tombstones.schema';
 import { eventLog, eventLogRelations } from './event-log.schema';
 import { groupPermissions, groupPermissionsRelations } from './group-permissions.schema';
 import { groupTags, groupTagsRelations } from './group-tags.schema';
@@ -253,6 +254,7 @@ export const schema = {
   projectUserCredentialAuditLogs,
   projectUserCredentialLockouts,
   projectPasswordResets,
+  cdmImportTombstones,
   projectUsers,
   projects,
   roleGroups,
@@ -327,6 +329,7 @@ export const schema = {
   projectUserCredentialsRelations,
   projectUserCredentialAuditLogsRelations,
   projectPasswordResetsRelations,
+  cdmImportTombstonesRelations,
   projectUsersRelations,
   apiKeysRelations,
   apiKeyAuditLogsRelations,

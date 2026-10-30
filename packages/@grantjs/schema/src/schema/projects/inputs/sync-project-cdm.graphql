@@ -53,6 +53,11 @@ input CdmKeyResolverInput {
   """
   findBy: CdmFindBy
   ifMissing: CdmIfMissing
+  """
+  Only with `findBy: key`: an existing, live Grant user this key is, reused instead of creating one and marked
+  with the key for this project. Refused for a missing, deleted or already-imported-under-another-key user.
+  """
+  grantUserId: ID
 }
 
 """

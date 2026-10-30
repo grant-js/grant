@@ -134,6 +134,10 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
     const roleAssignments: { userId: string; roleId: string }[] = [];
 
     for (const ua of input) {
+      // The provision step skipped this user (a deletion tombstone covers the key): no
+      // membership, role, group, permission or tag is written for them, and it is not an
+      // unresolved key. Dropped silently; the skip is counted once, by the provision step.
+      if (ua.userKey != null && ctx.skippedUserKeys.has(ua.userKey)) continue;
       const effectiveUserId = resolveAssignmentUserId(ua, ctx);
       const directRefs = ua.directPermissionRefs ?? [];
       const roleKeys = ua.roleTemplateKeys ?? [];

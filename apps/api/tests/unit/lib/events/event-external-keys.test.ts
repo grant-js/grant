@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveExternalKeys } from '@/lib/events/event-external-keys.lib';
+import { readMarkerExternalKey, resolveExternalKeys } from '@/lib/events/event-external-keys.lib';
 
 const A = '30000000-0000-4000-8000-00000000000a';
 const B = '30000000-0000-4000-8000-00000000000b';
@@ -160,5 +160,30 @@ describe('resolveExternalKeys', () => {
     expect(entries).toEqual([{ projectId: A, externalKey: 'k-row' }]);
     expect(Object.keys(entries[0]!).sort()).toEqual(['externalKey', 'projectId']);
     expect(JSON.stringify(entries)).not.toMatch(/example\.test|Jane|abc|admin/);
+  });
+});
+
+describe('readMarkerExternalKey (shared with the deletion tombstone)', () => {
+  it('returns the marker key exactly as stored, an e-mail address included', () => {
+    expect(readMarkerExternalKey(marker(A, 'someone@example.test'), A)).toBe(
+      'someone@example.test'
+    );
+    expect(readMarkerExternalKey(marker(A, ' padded '), A)).toBe(' padded ');
+  });
+
+  it('is what resolveExternalKeys filters: the event never carries the address the marker holds', () => {
+    const metadata = marker(A, 'someone@example.test');
+    expect(readMarkerExternalKey(metadata, A)).toBe('someone@example.test');
+    expect(resolveExternalKeys({}, [{ projectId: A, metadata }])).toEqual([]);
+  });
+
+  it('ignores a marker of another project or kind, an empty or non-string key, and non-objects', () => {
+    expect(readMarkerExternalKey(marker(B, 'k'), A)).toBeNull();
+    expect(readMarkerExternalKey(marker(A, 'k', 'group'), A)).toBeNull();
+    expect(readMarkerExternalKey(marker(A, ''), A)).toBeNull();
+    expect(readMarkerExternalKey(marker(A, 7), A)).toBeNull();
+    expect(readMarkerExternalKey(null, A)).toBeNull();
+    expect(readMarkerExternalKey([], A)).toBeNull();
+    expect(readMarkerExternalKey({ cdmImport: 'x' }, A)).toBeNull();
   });
 });

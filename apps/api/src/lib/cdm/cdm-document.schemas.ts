@@ -27,10 +27,16 @@ import { bcryptHashProblem, cdmPasswordProblem } from './cdm-password.lib';
  * Unknown keys are stripped, not refused — the same as the REST body has always behaved.
  */
 
+const grantUserIdSchema = z.string().uuid();
+
 const cdmKeyResolverSchema = z.object({
   value: z.string().min(1),
   findBy: z.nativeEnum(CdmFindBy).optional(),
   ifMissing: z.nativeEnum(CdmIfMissing).optional(),
+  grantUserId: grantUserIdSchema.optional().openapi({
+    description:
+      'Only with `findBy: key`: an existing, live Grant user this key is, reused instead of creating one and marked with the key for this project. Refused for a missing, deleted or already-imported-under-another-key user.',
+  }),
 });
 
 /**
@@ -252,7 +258,7 @@ export interface SyncInputUnderValidation {
   mode?: { strategy?: string | null; confirmDestructive?: boolean | null } | null;
   roles: readonly { key: string }[];
   users: readonly {
-    key: { value: string; findBy?: string | null };
+    key: { value: string; findBy?: string | null; grantUserId?: string | null };
     password?: { algorithm?: unknown; hash?: unknown } | null;
   }[];
 }
@@ -297,7 +303,30 @@ export function validateSyncInput(
     }
     userSeen.add(dedupe);
 
+    assertUserGrantUserId(u, index);
     assertUserPassword(u, index);
+  }
+}
+
+/**
+ * `key.grantUserId` says "this key is that existing Grant user", so it only belongs on a
+ * user identified by key: with `findBy: id` the value already is the id, and with
+ * `findBy: email` the person is resolved by address. The message names the position, never
+ * the key (an address) or the id.
+ */
+function assertUserGrantUserId(
+  user: SyncInputUnderValidation['users'][number],
+  index: number
+): void {
+  if (user.key.grantUserId == null) {
+    return;
+  }
+  if (user.key.findBy != null && user.key.findBy !== CdmFindBy.Key) {
+    throw new ValidationError(`users[${index}]: grantUserId is only allowed with key.findBy 'key'`);
+  }
+  // GraphQL types the field as `ID`, so a GraphQL document reaches here unchecked.
+  if (!grantUserIdSchema.safeParse(user.key.grantUserId).success) {
+    throw new ValidationError(`users[${index}]: grantUserId must be a UUID`);
   }
 }
 

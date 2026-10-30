@@ -587,7 +587,7 @@ Platform-scope credential operations (login verification, register, change, rese
 
 ### Policy coverage
 
-RLS policies apply to pivot tables (organization_users, project_resources, account_projects, etc.) and to project-owned tables that carry a `project_id` column (`project_apps`, `project_oauth_connections`, `project_sync_jobs`, `project_password_resets`, and the project credential siblings). Core/shared tables (users, roles, groups, permissions, resources, tags) do not have RLS — they are accessible only through tenant-scoped pivots or those project-owned rows, so filtering at that layer protects the entire data graph.
+RLS policies apply to pivot tables (organization_users, project_resources, account_projects, etc.) and to project-owned tables that carry a `project_id` column (`project_apps`, `project_oauth_connections`, `project_sync_jobs`, `project_password_resets`, `cdm_import_tombstones`, and the project credential siblings). Core/shared tables (users, roles, groups, permissions, resources, tags) do not have RLS — they are accessible only through tenant-scoped pivots or those project-owned rows, so filtering at that layer protects the entire data graph.
 
 ## Security Best Practices
 

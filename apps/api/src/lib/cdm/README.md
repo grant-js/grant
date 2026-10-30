@@ -45,6 +45,12 @@ metadata.cdmSource = { ...importer JSON, grantTagId / grantRoleId / ... }
 
 ## Replace-import pivot sweep
 
+> **Two meanings of "tombstone" in this directory.** Below, a _tombstone_ is the soft-delete
+> (`deleted_at`) a replace import applies to CDM-managed rows. A _deletion tombstone_ is a row
+> of `cdm_import_tombstones`: the fingerprint of an import key whose identity the person deleted
+> themselves, which the import then does not create again (see "Deletion tombstones" below).
+> They share no code.
+
 Replace mode tombstones CDM-managed **entities** (`metadata.cdmImport` for the
 project). When an entity row is soft-deleted, **every live pivot pointing at that
 id must be soft-deleted too** — including pivots on non-CDM entities (for example
@@ -104,6 +110,30 @@ already exists on more than one CDM key. The worker logs `hashPrepSeconds` and
 stays sequential. Key teardown is a no-op; apply owns the set-diff inside the
 same import transaction. The HMAC key is resolver-backed
 (`CDM_API_KEY_FINGERPRINT_HMAC_SECRET`); empty stays rotate-all.
+
+## User identity paths
+
+`UserProvisionCdmEntity.apply` resolves each `users[]` entry through one of three paths:
+
+| `findBy`        | Resolution                                                                                                                                                                                                                        |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | No provisioning entry: the value is an existing user id; the assignment step attaches it (no marker).                                                                                                                             |
+| `email`         | Email authentication method of a live user first (a deleted account's method is not an identity), then the key lookup, else create unless a deletion tombstone covers the key.                                                    |
+| `key` (default) | `findUserIdByCdmImport` (global marker, then the live membership row's), else the optional `key.grantUserId` match, else create unless a deletion tombstone covers the key. The match rule is the pure `grant-user-match.lib.ts`. |
+
+The `key.grantUserId` match records the named user as the key's user without creating one and without touching the global user's metadata; the assignment step writes the marker on the membership row. Every refusal is a `ValidationError` naming the document position only (a key can be an address). `findLiveUserCdmMarkers` is the one read behind the rule and returns nothing for a missing or soft-deleted user.
+
+## Deletion tombstones
+
+`UserService.deleteUser` records one `cdm_import_tombstones` row per project when a person deletes
+**themselves** and their identity carries an import key (`cdm-import-tombstone.lib.ts` holds the
+three decisions as pure functions: which keys, whether to write, whether to create; the key is
+hashed with `fingerprintCdmExternalKey`, never stored). `UserProvisionCdmEntity.apply` reads the
+tombstones once per import and skips an identity only at the two places it would **create** one;
+a key that resolves to a live identity (marker, e-mail method of a live user, `grantUserId` match)
+is never blocked. A skipped key is put on `ctx.skippedUserKeys` and counted in
+`usersSkippedTombstoned`; the assignment, API-key and password steps drop it without error.
+Nothing in this path logs, returns or embeds a key: positions and counts only.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

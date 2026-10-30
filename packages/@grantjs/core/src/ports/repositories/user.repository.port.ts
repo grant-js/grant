@@ -53,12 +53,26 @@ export interface IUserRepository extends IEntityExistence {
   ): Promise<User>;
 
   /**
-   * Lookup a user row created by CDM import (`metadata.cdmImport`) for idempotent re-import.
+   * The live user an earlier CDM import of `projectId` keyed as `kind` / `externalKey`, for
+   * idempotent re-import. Matches the global user's `metadata.cdmImport` first, then the live
+   * `project_users` row's of that project (a reused identity carries its marker there, never
+   * globally). A soft-deleted user never matches, nor a soft-deleted row.
    */
   findUserIdByCdmImport(
     params: { projectId: string; kind: string; externalKey: string },
     transaction?: unknown
   ): Promise<string | null>;
+
+  /**
+   * The import markers of a live user, for the `key.grantUserId` match rule: the global
+   * user's `metadata.cdmImport` and that of the user's live `project_users` row in
+   * `projectId`, each `null` when absent. `null` when the user does not exist or is
+   * soft-deleted.
+   */
+  findLiveUserCdmMarkers(
+    params: { userId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<{ globalMarker: unknown; membershipMarker: unknown } | null>;
 
   updateUser(
     id: string,

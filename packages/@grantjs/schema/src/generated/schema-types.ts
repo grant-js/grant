@@ -453,6 +453,11 @@ export type CdmKeyResolverInput = {
    * import/export.
    */
   findBy?: InputMaybe<CdmFindBy>;
+  /**
+   * Only with `findBy: key`: an existing, live Grant user this key is, reused instead of creating one and marked
+   * with the key for this project. Refused for a missing, deleted or already-imported-under-another-key user.
+   */
+  grantUserId?: InputMaybe<Scalars['ID']['input']>;
   ifMissing?: InputMaybe<CdmIfMissing>;
   /**
    * Identifier value. For `findBy: email`, Grant normalizes this to lowercase
@@ -3797,6 +3802,11 @@ export type SyncProjectResult = {
   userRolesAssigned: Scalars['Int']['output'];
   userTagsLinked: Scalars['Int']['output'];
   usersCreated: Scalars['Int']['output'];
+  /**
+   * Document users not created because the person deleted this imported identity; their
+   * membership, credential and API keys were not written either.
+   */
+  usersSkippedTombstoned: Scalars['Int']['output'];
   warnings: Array<Scalars['String']['output']>;
 };
 

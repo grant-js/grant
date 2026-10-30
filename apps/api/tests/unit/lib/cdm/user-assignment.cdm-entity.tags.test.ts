@@ -41,6 +41,7 @@ function baseResult(): SyncProjectResult {
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
     passwordsSkippedExisting: 0,
+    usersSkippedTombstoned: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -148,6 +149,7 @@ describe('UserAssignmentCdmEntity — tag wiring', () => {
       },
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
+      skippedUserKeys: new Set<string>(),
     };
 
     await handler.apply(ctx, [{ userId, roleTemplateKeys: ['viewer'], tagKeys: ['t1', 't2'] }]);
@@ -184,6 +186,7 @@ describe('UserAssignmentCdmEntity — tag wiring', () => {
       },
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set([userId]),
+      skippedUserKeys: new Set<string>(),
     };
 
     await expect(

@@ -38,6 +38,7 @@ function baseResult(): SyncProjectResult {
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
     passwordsSkippedExisting: 0,
+    usersSkippedTombstoned: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -170,6 +171,7 @@ describe('PermissionCdmEntity', () => {
       produced,
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set<string>(),
     };
 
     await handler.apply(ctx, [
@@ -244,6 +246,7 @@ describe('PermissionCdmEntity', () => {
       produced,
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set<string>(),
     };
 
     await handler.apply(ctx, [
@@ -317,6 +320,7 @@ describe('PermissionCdmEntity', () => {
       produced,
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set<string>(),
     };
 
     await handler.apply(ctx, [
@@ -351,6 +355,7 @@ describe('PermissionCdmEntity', () => {
       produced,
       documentGroupsByKey: new Map(),
       assignmentUserIds: new Set<string>(),
+      skippedUserKeys: new Set<string>(),
     };
 
     await expect(

@@ -372,7 +372,8 @@ export function createServices(
       audit(userAuditLogs, 'userId', user, db),
       fileStorage,
       credentials,
-      events
+      events,
+      repositories.cdmImportTombstoneRepository
     ),
     userAuthenticationMethods: new UserAuthenticationMethodService(
       repositories.userAuthenticationMethodRepository,
@@ -733,6 +734,7 @@ export function createServices(
       servicesBase.resourceTags,
       servicesBase.permissionTags,
       servicesBase.credentials,
+      repositories.cdmImportTombstoneRepository,
       repositories.projectExportRepository
     ),
     projectExport: new ProjectExportService(
@@ -766,7 +768,8 @@ export function createServices(
       servicesBase.users,
       servicesBase.userAuthenticationMethods,
       repositories.userRepository,
-      servicesBase.credentials
+      servicesBase.credentials,
+      repositories.cdmImportTombstoneRepository
     ),
     projectSyncJobs: new ProjectSyncJobService(
       repositories.projectSyncJobRepository,

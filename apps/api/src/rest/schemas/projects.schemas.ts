@@ -502,6 +502,10 @@ const syncProjectResultSchema = z.object({
     description:
       'Users whose project credential was not written because the person owns it: it was set or reset in Grant, not imported.',
   }),
+  usersSkippedTombstoned: z.number().openapi({
+    description:
+      'Document users not created because the person deleted this imported identity; their membership, credential and API keys were not written either.',
+  }),
   tagsCreated: z.number(),
   projectTagsLinked: z.number(),
   roleTagsLinked: z.number(),

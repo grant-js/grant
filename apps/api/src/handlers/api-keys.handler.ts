@@ -133,6 +133,7 @@ export class ApiKeysHandler extends CacheHandler {
               name,
               description,
               expiresAt: expiresAt ? new Date(expiresAt) : null,
+              owner: { projectId, userId },
             },
             tx
           );
