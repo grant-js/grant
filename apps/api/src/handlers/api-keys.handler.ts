@@ -153,7 +153,13 @@ export class ApiKeysHandler extends CacheHandler {
 
         case Tenant.AccountProject: {
           const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-          if (!roleId) {
+          if (roleId) {
+            await this.accountProjectApiKeys.validateAccountProjectApiKeyRolePermission(
+              accountId,
+              roleId,
+              tx
+            );
+          } else {
             roleId = await this.accountProjectApiKeys.resolveAccountRoleIdForCurrentUser(
               accountId,
               tx

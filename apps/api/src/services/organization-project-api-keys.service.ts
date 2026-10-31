@@ -122,7 +122,7 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
 
     if (!canAssignRole(currentUserRoleName, targetRole.roles[0].name)) {
       throw new AuthorizationError(
-        'Cannot create API keys with equal or higher privilege than your own role'
+        'API keys can only be created with a standard role of lower level than your own role'
       );
     }
   }
@@ -166,7 +166,7 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
 
     if (!canAssignRole(currentUserRoleName, keyRole.roles[0].name)) {
       throw new AuthorizationError(
-        'Cannot manage API keys with equal or higher privilege than your own role'
+        'API keys can only be managed when their role is a standard role of lower level than your own role'
       );
     }
   }

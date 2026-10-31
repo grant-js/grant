@@ -20,6 +20,7 @@ function build() {
   const projectUserApiKeys = { addProjectUserApiKey: vi.fn() };
   const accountProjectApiKeys = {
     addAccountProjectApiKey: vi.fn(),
+    validateAccountProjectApiKeyRolePermission: vi.fn(),
     resolveAccountRoleIdForCurrentUser: vi.fn().mockResolvedValue(roleId),
   };
   const organizationProjectApiKeys = {

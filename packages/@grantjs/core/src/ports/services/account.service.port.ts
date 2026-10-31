@@ -172,5 +172,11 @@ export interface IAccountProjectApiKeyService {
     transaction?: unknown
   ): Promise<AccountProjectApiKey | null>;
 
+  validateAccountProjectApiKeyRolePermission(
+    accountId: string,
+    roleId: string,
+    transaction?: unknown
+  ): Promise<void>;
+
   resolveAccountRoleIdForCurrentUser(accountId: string, transaction?: unknown): Promise<string>;
 }
