@@ -31,7 +31,7 @@ sequenceDiagram
 
 ## Key Behaviors
 
-**Role hierarchy enforcement** — an inviter can only assign a role equal to or lower than their own. This prevents privilege escalation through invitations.
+**Role hierarchy enforcement** — an inviter can only assign a role strictly lower than their own: an Admin can invite a Dev or a Viewer, not another Admin, and an Owner can invite an Admin, a Dev or a Viewer.
 
 Invitations and member role changes are refused for roles without a level, that is, for any role outside the standard organization roles.
 

@@ -214,7 +214,7 @@ These groups control what organization-level roles can do **with** the Project r
 Dev can only delete/revoke their own API keys (enforced by condition) \*
 :::
 
-`ApiKey:Update` is a permission of the `ApiKey` resource and of the three groups above (the account-project group already listed it). It gates `setApiKeyPermissions` and `PUT /api/api-keys/{id}/permissions`, which replace the permissions a project key carries (see [API keys](/core-concepts/api-keys#editing-a-keys-permissions)).
+`ApiKey:Update` is a permission of the `ApiKey` resource and of the three groups above (the account-project group already listed it). It gates `setApiKeyPermissions` and `PUT /api/api-keys/{id}/permissions`, which replace the permissions a project key carries (see [API keys](/core-concepts/api-keys#editing-a-key-s-permissions)).
 
 ##### API keys are attenuated
 
