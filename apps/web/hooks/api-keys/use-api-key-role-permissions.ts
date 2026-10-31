@@ -1,14 +1,17 @@
 import { useMemo } from 'react';
-import type { Scope } from '@grantjs/schema';
+import { useQuery } from '@apollo/client/react';
+import {
+  GetApiKeyRolePermissionsDocument,
+  type Permission,
+  type RolePage,
+  type Scope,
+} from '@grantjs/schema';
 
-import { useGroups } from '@/hooks/groups';
-import { usePermissions } from '@/hooks/permissions';
-import { useRoles } from '@/hooks/roles';
 import { getApiKeyParentScope } from '@/lib/api-key-grants';
 
 /**
- * What a role key's role grants: the permissions of the role's groups plus its direct ones, with
- * the permission rows. The role is read from the parent tenant it belongs to. A preview for the
+ * What a role key's role grants: the permissions of the role's groups, read through the role in the
+ * parent tenant it belongs to, plus the ids of any direct role permissions. A preview for the
  * dashboard; the server decides what a key may carry.
  */
 export function useApiKeyRolePermissions(
@@ -16,42 +19,32 @@ export function useApiKeyRolePermissions(
   roleId: string | undefined
 ) {
   const parentScope = useMemo(() => getApiKeyParentScope(scope), [scope]);
-  const roleIds = useMemo(() => (roleId ? [roleId] : []), [roleId]);
+  const ids = useMemo(() => (roleId ? [roleId] : []), [roleId]);
 
-  const {
-    roles,
-    loading: rolesLoading,
-    error: rolesError,
-  } = useRoles({ scope: parentScope!, ids: roleIds, limit: 1, page: 1 });
-  const role = roles[0];
-
-  const groupIds = useMemo(() => role?.groups?.map((group) => group.id) ?? [], [role]);
-  const {
-    groups,
-    loading: groupsLoading,
-    error: groupsError,
-  } = useGroups({ scope: parentScope!, ids: groupIds, limit: -1 });
-
-  const permissionIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const rolePermission of role?.rolePermissions ?? []) ids.add(rolePermission.permissionId);
-    for (const group of groups) {
-      for (const permission of group.permissions ?? []) ids.add(permission.id);
+  const { data, loading, error } = useQuery<{ roles: Pick<RolePage, 'roles'> }>(
+    GetApiKeyRolePermissionsDocument,
+    {
+      variables: { scope: parentScope!, ids },
+      skip: !parentScope || ids.length === 0,
+      fetchPolicy: 'cache-and-network',
     }
-    return Array.from(ids);
-  }, [role, groups]);
+  );
 
-  const {
-    permissions,
-    loading: permissionsLoading,
-    error: permissionsError,
-  } = usePermissions({ scope: scope!, ids: permissionIds, limit: -1 });
-
-  return {
-    permissionIds,
-    permissions,
-    role,
-    loading: rolesLoading || groupsLoading || permissionsLoading,
-    error: rolesError ?? groupsError ?? permissionsError,
-  };
+  return useMemo(() => {
+    const role = data?.roles?.roles?.[0];
+    const rows = new Map<string, Permission>();
+    for (const group of role?.groups ?? []) {
+      for (const permission of group.permissions ?? []) rows.set(permission.id, permission);
+    }
+    const permissionIds = new Set(rows.keys());
+    for (const rolePermission of role?.rolePermissions ?? []) {
+      permissionIds.add(rolePermission.permissionId);
+    }
+    return {
+      permissionIds: Array.from(permissionIds),
+      permissions: Array.from(rows.values()),
+      loading,
+      error,
+    };
+  }, [data, loading, error]);
 }

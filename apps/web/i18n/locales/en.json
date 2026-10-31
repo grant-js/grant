@@ -1254,7 +1254,6 @@
           "name": "Permission",
           "permission": "Scope",
           "description": "Description",
-          "machineOnly": "Credentials only",
           "select": "Select {name}"
         },
         "groups": {
@@ -2659,7 +2658,8 @@
         "delete": "Delete API Key",
         "query": "Query API Key",
         "revoke": "Revoke API Key",
-        "exchange": "Exchange API Key"
+        "exchange": "Exchange API Key",
+        "update": "Update API Key"
       },
       "organizationMember": {
         "read": "Read Organization Member",
@@ -2776,7 +2776,8 @@
         "delete": "Permission to delete an API key",
         "query": "Permission to query API keys",
         "revoke": "Permission to revoke an API key",
-        "exchange": "Permission to exchange an API key"
+        "exchange": "Permission to exchange an API key",
+        "update": "Permission to update the permissions of an API key"
       },
       "organizationMember": {
         "read": "Permission to read organization member information",
