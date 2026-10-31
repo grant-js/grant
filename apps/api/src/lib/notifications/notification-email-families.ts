@@ -73,6 +73,7 @@ export const NOTIFICATION_EMAIL_FAMILY_BY_TYPE: Record<EventType, NotificationEm
   'project.user_email_changed': 'webhookOnly',
   'project.user_password_set': 'webhookOnly',
   'api_key.deleted': 'webhookOnly',
+  'api_key.updated': 'webhookOnly',
   'tag.created': 'webhookOnly',
   'tag.updated': 'webhookOnly',
   'tag.deleted': 'webhookOnly',

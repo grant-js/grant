@@ -51,4 +51,90 @@ export class ApiKeyPermissionService implements IApiKeyPermissionService {
       );
     }
   }
+
+  public async listForKey(apiKeyId: string, transaction?: Transaction): Promise<string[]> {
+    const rows = await this.apiKeyPermissionRepository.listForKey(apiKeyId, transaction);
+    return rows.map((row) => row.permissionId);
+  }
+
+  public async listForKeys(
+    apiKeyIds: readonly string[],
+    transaction?: Transaction
+  ): Promise<Map<string, string[]>> {
+    const rows = await this.apiKeyPermissionRepository.listForKeys(apiKeyIds, transaction);
+    const byKey = new Map<string, string[]>();
+    for (const row of rows) {
+      byKey.set(row.apiKeyId, [...(byKey.get(row.apiKeyId) ?? []), row.permissionId]);
+    }
+    return byKey;
+  }
+
+  public async replace(
+    params: {
+      apiKeyId: string;
+      projectId: string;
+      permissionIds: readonly string[];
+      fromRoleId?: string | null;
+    },
+    transaction?: Transaction
+  ): Promise<{ added: string[]; removed: string[] }> {
+    const { apiKeyId, projectId, fromRoleId } = params;
+    const permissionIds = [...new Set(params.permissionIds)];
+    const { added, removed } = await this.apiKeyPermissionRepository.replaceForKey(
+      { apiKeyId, projectId, permissionIds },
+      transaction
+    );
+    if (added.length === 0 && removed.length === 0 && !fromRoleId) {
+      return { added, removed };
+    }
+
+    const refs = new Map(
+      (
+        await this.permissionRepository.getPermissionRefsByIds([...added, ...removed], transaction)
+      ).map((ref) => [ref.id, ref])
+    );
+    const describe = (permissionId: string) => ({
+      permissionId,
+      resource: refs.get(permissionId)?.resource ?? null,
+      action: refs.get(permissionId)?.action ?? null,
+    });
+    const metadata = fromRoleId ? { fromRoleId } : undefined;
+
+    for (const permissionId of added) {
+      await this.audit.logAction(
+        {
+          entityId: apiKeyId,
+          action: 'ADD_PERMISSION',
+          newValues: describe(permissionId),
+          metadata,
+        },
+        transaction
+      );
+    }
+    for (const permissionId of removed) {
+      await this.audit.logAction(
+        {
+          entityId: apiKeyId,
+          action: 'REMOVE_PERMISSION',
+          oldValues: describe(permissionId),
+          metadata,
+        },
+        transaction
+      );
+    }
+    await this.audit.logAction(
+      {
+        entityId: apiKeyId,
+        action: 'UPDATE_API_KEY_PERMISSIONS',
+        newValues: {
+          added: added.length,
+          removed: removed.length,
+          ...(fromRoleId && { convertedFromRoleId: fromRoleId }),
+        },
+      },
+      transaction
+    );
+
+    return { added, removed };
+  }
 }

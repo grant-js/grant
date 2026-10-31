@@ -4,7 +4,11 @@ input CreateApiKeyInput {
   expiresAt: Date
   scope: Scope!
   """
-  Required when scope.tenant is accountProject or organizationProject: the parent-tenant role the key impersonates.
+  For a project key (scope.tenant is accountProject or organizationProject): the standard role the key carries. Give exactly one of `roleId` or `permissionIds`. An account project key with neither carries the creator's account role. The role's permissions must be covered by what you can do in this scope.
   """
   roleId: ID
+  """
+  For a project key: the permissions the key carries instead of a role. Give exactly one of `roleId` or `permissionIds`. Each must be covered by what you can do in this scope, except machine-only permissions, which a holder of their gate permission may attach. Not allowed for other scopes.
+  """
+  permissionIds: [ID!]
 }

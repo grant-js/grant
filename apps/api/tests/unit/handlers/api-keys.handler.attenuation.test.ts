@@ -48,6 +48,7 @@ function build(options: { refuseAttach?: boolean; refuseManage?: boolean } = {})
     apiKeyAttenuation as never,
     apiKeyPermissions as never,
     {} as never,
+    {} as never,
     cache as never,
     {} as never,
     { withTransaction: async <T>(fn: (t: unknown) => Promise<T>): Promise<T> => fn(tx) } as never

@@ -882,6 +882,45 @@ export class ApiKeyService implements IApiKeyService {
     return validateOutput(createApiKeyResponseSchema, response, context) as CreateApiKeyResult;
   }
 
+  public async getEditableApiKey(
+    params: { id: string },
+    transaction?: Transaction
+  ): Promise<ApiKey> {
+    const apiKey = await this.apiKeyRepository.getApiKey(params.id, transaction);
+    if (!apiKey) {
+      throw new NotFoundError('ApiKey');
+    }
+    if (apiKey.isRevoked) {
+      throw new BadRequestError('Cannot change the permissions of a revoked API key');
+    }
+    return apiKey;
+  }
+
+  public async publishApiKeyUpdated(
+    params: {
+      apiKey: ApiKey;
+      before: { permissionCount: number };
+      after: { permissionCount: number };
+    },
+    transaction?: Transaction
+  ): Promise<void> {
+    const { apiKey, before, after } = params;
+    const { projectIds } = await this.resolveOwnerSubject(apiKey.id, transaction);
+
+    await this.events.publish(
+      {
+        type: 'api_key.updated',
+        aggregate: { kind: 'apiKey', id: apiKey.id },
+        data: {
+          before: { id: apiKey.id, name: apiKey.name, permissionCount: before.permissionCount },
+          after: { id: apiKey.id, name: apiKey.name, permissionCount: after.permissionCount },
+        },
+        projectIds,
+      },
+      transaction
+    );
+  }
+
   public async deleteApiKey(
     params: { id: string; hardDelete?: boolean },
     transaction?: Transaction

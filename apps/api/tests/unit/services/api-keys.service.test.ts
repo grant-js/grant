@@ -7,7 +7,7 @@ import type {
 import { type ApiKey, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ConflictError } from '@/lib/errors';
+import { BadRequestError, ConflictError, NotFoundError } from '@/lib/errors';
 import { hashSecret } from '@/lib/token.lib';
 import { ApiKeyService } from '@/services/api-keys.service';
 
@@ -512,6 +512,73 @@ describe('API-key event owner (subjectUserId and projectIds)', () => {
 
       expect(apiKeyRepository.createApiKey).not.toHaveBeenCalled();
       expect(events.publish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getEditableApiKey', () => {
+    it('returns a live key', async () => {
+      const existing = apiKey({ name: 'Receiver key' });
+      const { service, apiKeyRepository } = buildService({
+        getApiKey: vi.fn().mockResolvedValue(existing),
+      });
+      const tx = { __tx: true };
+
+      await expect(service.getEditableApiKey({ id: apiKeyId }, tx as never)).resolves.toBe(
+        existing
+      );
+      expect(apiKeyRepository.getApiKey).toHaveBeenCalledWith(apiKeyId, tx);
+    });
+
+    it('refuses a key that does not exist', async () => {
+      const { service } = buildService({ getApiKey: vi.fn().mockResolvedValue(null) });
+
+      await expect(service.getEditableApiKey({ id: apiKeyId })).rejects.toBeInstanceOf(
+        NotFoundError
+      );
+    });
+
+    it('refuses a revoked key', async () => {
+      const { service } = buildService({
+        getApiKey: vi.fn().mockResolvedValue(apiKey({ isRevoked: true })),
+      });
+
+      await expect(service.getEditableApiKey({ id: apiKeyId })).rejects.toBeInstanceOf(
+        BadRequestError
+      );
+    });
+  });
+
+  describe('api_key.updated', () => {
+    it('names the key and the project links, carries the counts, and names no owner and no permission', async () => {
+      const key = apiKey({ name: 'Receiver key' });
+      const { service, events } = buildService();
+      vi.mocked(events.resolveLinkedProjectIds).mockResolvedValue([projectId]);
+      const tx = { __tx: true };
+
+      await service.publishApiKeyUpdated(
+        { apiKey: key, before: { permissionCount: 3 }, after: { permissionCount: 2 } },
+        tx as never
+      );
+
+      expect(events.resolveLinkedProjectIds).toHaveBeenCalledWith(
+        [{ kind: 'apiKey', id: apiKeyId }],
+        tx
+      );
+      expect(events.publish).toHaveBeenCalledOnce();
+      expect(events.publish).toHaveBeenCalledWith(
+        {
+          type: 'api_key.updated',
+          aggregate: { kind: 'apiKey', id: apiKeyId },
+          data: {
+            before: { id: apiKeyId, name: 'Receiver key', permissionCount: 3 },
+            after: { id: apiKeyId, name: 'Receiver key', permissionCount: 2 },
+          },
+          projectIds: [projectId],
+        },
+        tx
+      );
+      const [event] = vi.mocked(events.publish).mock.calls[0];
+      expect(event).not.toHaveProperty('subjectUserId');
     });
   });
 });

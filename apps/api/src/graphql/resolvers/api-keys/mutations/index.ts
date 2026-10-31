@@ -3,3 +3,4 @@ export { deleteApiKeyResolver as deleteApiKey } from './delete-api-key.resolver'
 export { exchangeApiKeyResolver as exchangeApiKey } from './exchange-api-key.resolver';
 export { revokeApiKeyResolver as revokeApiKey } from './revoke-api-key.resolver';
 export { rotateApiKeyResolver as rotateApiKey } from './rotate-api-key.resolver';
+export { setApiKeyPermissionsResolver as setApiKeyPermissions } from './set-api-key-permissions.resolver';
