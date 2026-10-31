@@ -104,7 +104,7 @@ function buildService(repositoryOverrides: Partial<IApiKeyRepository> = {}) {
     exportableSecrets
   );
 
-  return { service, apiKeyRepository, grant, events, exportableSecrets };
+  return { service, apiKeyRepository, grant, events, exportableSecrets, audit };
 }
 
 describe('ApiKeyService scoped client ids', () => {
@@ -456,6 +456,51 @@ describe('API-key event owner (subjectUserId and projectIds)', () => {
       expect(event).toMatchObject({ type: 'api_key.created' });
       expect(event).not.toHaveProperty('subjectUserId');
       expect(event).not.toHaveProperty('projectIds');
+    });
+
+    it.each([
+      [
+        { kind: 'role', permissionCount: 0 },
+        { grant: 'role', permissionCount: 0 },
+      ],
+      [
+        { kind: 'permissions', permissionCount: 3 },
+        { grant: 'permissions', permissionCount: 3 },
+      ],
+    ] as const)(
+      'records what a project key carries in the audit metadata only (%j)',
+      async (grant, metadata) => {
+        const { service, apiKeyRepository, events, audit } = buildService();
+        const tx = { __tx: true };
+
+        await service.createApiKey({ name: 'Prod key', grant }, tx as never);
+
+        expect(audit.logCreate).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.any(Object),
+          { action: 'CREATE_API_KEY', ...metadata },
+          tx
+        );
+        expect(apiKeyRepository.createApiKey).toHaveBeenCalledWith(
+          expect.not.objectContaining({ grant: expect.anything() }),
+          tx
+        );
+        const [event] = vi.mocked(events.publish).mock.calls[0];
+        expect(JSON.stringify(event)).not.toContain('permissionCount');
+      }
+    );
+
+    it('leaves the audit metadata as it was for a key without a grant', async () => {
+      const { service, audit } = buildService();
+
+      await service.createApiKey({ name: 'Prod key' });
+
+      expect(audit.logCreate).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Object),
+        { action: 'CREATE_API_KEY' },
+        undefined
+      );
     });
 
     it('rejects an owner that is not a pair of ids, before anything is written', async () => {

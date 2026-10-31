@@ -280,7 +280,7 @@ export class GrantRepository implements IGrantRepository {
         if (!accountId || !projectId) {
           return [];
         }
-        // Project API key path: userId is apiKeyId; return assigned role if found
+        // Project API key path: userId is apiKeyId; the assigned role, none for a key without one
         if (scope.tenant === Tenant.AccountProject) {
           try {
             const projectKeyRow = await db.query.accountProjectApiKeys.findFirst({
@@ -293,7 +293,7 @@ export class GrantRepository implements IGrantRepository {
               columns: { accountRoleId: true },
             });
             if (projectKeyRow) {
-              return [projectKeyRow.accountRoleId];
+              return projectKeyRow.accountRoleId ? [projectKeyRow.accountRoleId] : [];
             }
           } catch (err) {
             this.logger.error(
@@ -370,7 +370,7 @@ export class GrantRepository implements IGrantRepository {
         if (!organizationId || !projectId) {
           return [];
         }
-        // Project API key path: userId is apiKeyId; return assigned role if found
+        // Project API key path: userId is apiKeyId; the assigned role, none for a key without one
         if (scope.tenant === Tenant.OrganizationProject) {
           try {
             const projectKeyRow = await db.query.organizationProjectApiKeys.findFirst({
@@ -383,7 +383,7 @@ export class GrantRepository implements IGrantRepository {
               columns: { organizationRoleId: true },
             });
             if (projectKeyRow) {
-              return [projectKeyRow.organizationRoleId];
+              return projectKeyRow.organizationRoleId ? [projectKeyRow.organizationRoleId] : [];
             }
           } catch (err) {
             this.logger.error(

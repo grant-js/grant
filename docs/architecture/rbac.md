@@ -203,16 +203,28 @@ These groups control what organization-level roles can do **with** the Project r
 
 #### API Key Groups
 
-| Group Name       | Resource | Permissions                    | Assigned To        | Description                                     |
-| ---------------- | -------- | ------------------------------ | ------------------ | ----------------------------------------------- |
-| `API Key Owner`  | API Key  | `create` `delete` `revoke`     | Organization Owner | Full API key management                         |
-| `API Key Admin`  | API Key  | `create` `delete` `revoke`     | Organization Admin | Full API key management                         |
-| `API Key Dev`    | API Key  | `create` `delete`\* `revoke`\* | Organization Dev   | API key creation; delete/revoke own keys only   |
-| `API Key Viewer` | API Key  | _(no additional permissions)_  | —                  | Viewer has same API key access as common groups |
+| Group Name       | Resource | Permissions                             | Assigned To        | Description                                     |
+| ---------------- | -------- | --------------------------------------- | ------------------ | ----------------------------------------------- |
+| `API Key Owner`  | API Key  | `create` `update` `delete` `revoke`     | Organization Owner | Full API key management                         |
+| `API Key Admin`  | API Key  | `create` `update` `delete` `revoke`     | Organization Admin | Full API key management                         |
+| `API Key Dev`    | API Key  | `create` `update` `delete`\* `revoke`\* | Organization Dev   | API key creation; delete/revoke own keys only   |
+| `API Key Viewer` | API Key  | _(no additional permissions)_           | —                  | Viewer has same API key access as common groups |
 
 ::: info
 Dev can only delete/revoke their own API keys (enforced by condition) \*
 :::
+
+`ApiKey:Update` is a permission of the `ApiKey` resource and of the three groups above (the account-project group already listed it). Nothing in the API uses it yet.
+
+##### API keys are attenuated
+
+A project API key (an `accountProject` or `organizationProject` scope) never carries more than its creator can do in the key's project scope. When a key is created, everything its role resolves to there (the role's groups and the role's direct permissions for that project) must be among the permissions its creator holds in the same scope. Equality is allowed: an Owner may create a key with the Owner role. The creator's permissions are collected the way a request is authorized (`GrantService.collectPermissionIds`) with the creator's own token type, so a key that creates a key is bound by its own permissions.
+
+The same check decides who may rotate, revoke or delete a key: the caller must cover the key's permissions. A key with neither a role nor permissions is not manageable by anyone. The rule is the same for account and organization projects. A role key carries only a standard role (a standard organization role for an organization project, a standard account role for an account project); any other role is refused. Permissions are compared by row, so a row that carries a condition is covered only by the same row.
+
+A **machine-only** permission may be carried by a key whose creator does not hold it, when the creator holds the permission its template names as the gate (`attachableByHoldersOf`). `ProjectUser:ExportCredentials` is the first: its gate is `ProjectUser:SetPassword`, held by the Owner, the Admin and the account owners and not by the Dev or the Viewer. The flag describes who may attach the permission to a key; it does not change who is authorized to use it.
+
+Member role changes and invitations are not API keys and keep the role-level comparison.
 
 #### Project App Groups
 
@@ -465,7 +477,7 @@ Organization `read` is enforced by scope (users can only read organizations they
 
 ## Implementation Notes
 
-**Role hierarchy (conceptual):** Owner ⊃ Admin ⊃ Dev ⊃ Viewer; only Tags are Owner-only (Admin has no tag write). **Self-management (conditions):** Dev can update own user; all users can read own sessions and auth methods; Dev can delete/revoke own API keys. See [Permission Conditions](/core-concepts/permission-conditions) for syntax. **Auth-only (no RBAC):** Login, register, session refresh, password reset, profile picture, session revocation, auth method CRUD — require only authentication.
+**Role hierarchy (conceptual):** Owner ⊃ Admin ⊃ Dev ⊃ Viewer; only Tags are Owner-only (Admin has no tag write). **Self-management (conditions):** Dev can update own user; all users can read own sessions and auth methods; Dev can delete/revoke own API keys. API keys are not bound by this hierarchy but by [permission containment](#api-keys-are-attenuated). See [Permission Conditions](/core-concepts/permission-conditions) for syntax. **Auth-only (no RBAC):** Login, register, session refresh, password reset, profile picture, session revocation, auth method CRUD — require only authentication.
 
 ## Permission evaluation
 

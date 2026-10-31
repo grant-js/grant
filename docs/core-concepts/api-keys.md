@@ -39,7 +39,13 @@ Every API key is created within a specific scope. The scope determines which pro
 
 For `AccountProject` and `OrganizationProject` scopes, the key is also associated with a **role** that determines its permissions. If no role is specified at creation, the creating user's current role is used.
 
-A project API key may only be created, rotated, revoked or deleted with a standard organization role of strictly lower level than the caller's (for an account project, a standard account role the caller holds); roles without a level are refused.
+### What a project key may carry, and who may manage it
+
+A project API key never carries more than its creator can do in the key's project scope. At creation, every permission the key's role resolves to in that scope must be among the permissions the creator holds there; equality is allowed, so a key may do exactly what its creator can. A request that exceeds the creator is refused with `403` and nothing is stored.
+
+The same rule applies when a key is rotated, revoked or deleted: the caller's permissions must cover the key's. It is the same for account and organization projects. A role key carries only a standard role (a standard organization role for an organization project, a standard account role for an account project); any other role is refused. A key with neither a role nor permissions can be managed by no one.
+
+A machine-only permission, today `ProjectUser:ExportCredentials`, may also be carried by a key whose creator holds its gate permission (`ProjectUser:SetPassword`) without holding the permission itself. See [API keys are attenuated](/architecture/rbac#api-keys-are-attenuated).
 
 ## Token Exchange
 

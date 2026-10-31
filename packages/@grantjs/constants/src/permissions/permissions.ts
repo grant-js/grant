@@ -1110,6 +1110,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       condition: null,
     },
     {
+      action: ResourceAction.Update,
+      resource: ResourceSlug.ApiKey,
+      condition: null,
+    },
+    {
       action: ResourceAction.Delete,
       resource: ResourceSlug.ApiKey,
       condition: null,
@@ -1128,6 +1133,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       condition: null,
     },
     {
+      action: ResourceAction.Update,
+      resource: ResourceSlug.ApiKey,
+      condition: null,
+    },
+    {
       action: ResourceAction.Delete,
       resource: ResourceSlug.ApiKey,
       condition: null,
@@ -1142,6 +1152,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
   [GroupKey.ApiKeyDev]: [
     {
       action: ResourceAction.Create,
+      resource: ResourceSlug.ApiKey,
+      condition: null,
+    },
+    {
+      action: ResourceAction.Update,
       resource: ResourceSlug.ApiKey,
       condition: null,
     },
@@ -1265,7 +1280,14 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
  * seeded as a row with no `group_permissions` link. Do not list an action both here
  * and in a template: a template for the same resource:action would reuse the row.
  */
-export type StandalonePermission = PermissionMappingTemplate;
+export type StandalonePermission = PermissionMappingTemplate & {
+  /**
+   * Machine-only permission: a project API key may carry it when its creator holds the gate
+   * permission named here in the key's project scope, even if the creator does not hold the
+   * permission itself. It describes who may attach the permission to a key and nothing else.
+   */
+  attachableByHoldersOf?: { resource: ResourceSlugType; action: ResourceAction };
+};
 
 export const STANDALONE_PERMISSIONS: readonly StandalonePermission[] = [
   {
@@ -1273,8 +1295,29 @@ export const STANDALONE_PERMISSIONS: readonly StandalonePermission[] = [
     action: ResourceAction.ExportCredentials,
     resource: ResourceSlug.ProjectUser,
     condition: null,
+    attachableByHoldersOf: {
+      resource: ResourceSlug.ProjectUser,
+      action: ResourceAction.SetPassword,
+    },
   },
 ];
+
+export const MACHINE_ONLY_PERMISSIONS: readonly StandalonePermission[] =
+  STANDALONE_PERMISSIONS.filter((permission) => permission.attachableByHoldersOf !== undefined);
+
+/** The gate permission of a machine-only permission, or undefined when it is not machine-only. */
+export function machineOnlyGate(
+  resource: string,
+  action: string
+): { resource: ResourceSlugType; action: ResourceAction } | undefined {
+  const normalizedResource = resource.trim().toLowerCase();
+  const normalizedAction = action.trim().toLowerCase();
+  return MACHINE_ONLY_PERMISSIONS.find(
+    (permission) =>
+      permission.resource.toLowerCase() === normalizedResource &&
+      permission.action.toLowerCase() === normalizedAction
+  )?.attachableByHoldersOf;
+}
 
 export const PERMISSION_MAPPINGS: Record<string, PermissionMapping[]> = Object.keys(
   GroupKey
