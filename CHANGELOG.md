@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.22.1
+
+### Platform
+
+**Docker images:** tagged `:1.22.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.22.1** (fixed group with apps).
+
+### Patch Changes
+
+- 1cb4e9c: API-key role assignment is hardened: a project API key may only be created, rotated, revoked or deleted with a standard organization or account role of strictly lower level than the caller's; roles without a level are refused. Member role changes and invitations are refused for roles without a level.
+
 ## 1.22.0
 
 ### Platform
