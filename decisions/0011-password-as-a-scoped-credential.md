@@ -653,7 +653,9 @@ against the stored hash on an operator path, a comparison oracle for no benefit.
   grants it deliberately to the group of the role a mirror's API key carries. The seed created
   `permissions` rows only from group templates, so an action with no group would have had no row to
   grant; `STANDALONE_PERMISSIONS` in `@grantjs/constants` lists such actions and
-  `seed-permissions.ts` seeds each as a row with no `group_permissions` link.
+  `seed-permissions.ts` seeds each as a row with no `group_permissions` link. A scoped key is now
+  the recommended carrier: [0014](./0014-api-key-scopes.md) lets a holder of `ProjectUser:SetPassword`
+  attach this permission to a project API key directly.
 - Both reach organizations bootstrapped earlier the way every standard permission does: `seedAll`
   is instance-wide and idempotent (ADR 0001). There is no per-organization backfill.
 

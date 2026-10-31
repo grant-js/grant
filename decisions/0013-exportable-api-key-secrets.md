@@ -62,7 +62,7 @@ A 32- or 64-byte random secret makes the unsalted digest safe against guessing. 
 
 A key without a copy is listed with `secret: null`, not refused: the export is keyed by user, a member without a credential is already listed with `password: null`, and the receiver can then tell "no key" from "no copy" without a second call. The whole-call refusals are unchanged: a non-member in `userIds` fails the call with `NotFoundError` and nothing is read or audited, and the scope, the page cap and `kinds` (never empty) are validated first.
 
-**Same permission, same guards.** `ProjectUser:ExportCredentials` at the transport, project scope only, the authorized-scope guard, membership of every id, one page, `Cache-Control: no-store`. One permission for both kinds follows ADR 0011's reasoning (a new kind, not a second export) and the holder is the same machine.
+**Same permission, same guards.** `ProjectUser:ExportCredentials` at the transport, project scope only, the authorized-scope guard, membership of every id, one page, `Cache-Control: no-store`. One permission for both kinds follows ADR 0011's reasoning (a new kind, not a second export) and the holder is the same machine. That machine's API key carries the permission as a machine-only scope, attached by a holder of `ProjectUser:SetPassword` ([0014](./0014-api-key-scopes.md)).
 
 ### 7. Audit
 
