@@ -9,6 +9,8 @@ export interface EntityCreateToolbarProps {
   formId: string;
   isSubmitting: boolean;
   onCancel: () => void;
+  /** Keeps submit disabled while the form is not ready to send (e.g. `!form.formState.isValid`). */
+  submitDisabled?: boolean;
   /** i18n namespace for createDialog.confirm / createDialog.submitting (e.g. "roles", "projectApps"). */
   labelsNamespace: string;
 }
@@ -17,6 +19,7 @@ export function EntityCreateToolbar({
   formId,
   isSubmitting,
   onCancel,
+  submitDisabled = false,
   labelsNamespace,
 }: EntityCreateToolbarProps) {
   const tCommon = useTranslations('common');
@@ -40,7 +43,7 @@ export function EntityCreateToolbar({
           key="submit"
           type="submit"
           form={formId}
-          disabled={isSubmitting}
+          disabled={isSubmitting || submitDisabled}
           className="w-full sm:w-auto"
         >
           {isSubmitting ? tLabels('createDialog.submitting') : tLabels('createDialog.confirm')}

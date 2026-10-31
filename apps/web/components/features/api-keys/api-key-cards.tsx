@@ -1,21 +1,29 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ApiKey, Tenant } from '@grantjs/schema';
+import { ApiKey } from '@grantjs/schema';
 import { Calendar, KeyRound, Shield } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, CopyToClipboard } from '@/components/common';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  CopyToClipboard,
+  EntityNavigationButton,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
+import { isProjectApiKeyScope } from '@/lib/api-key-grants';
 import { useApiKeysStore } from '@/stores/api-keys.store';
 
 import { ApiKeyActions } from './api-key-actions';
 import { ApiKeyAudit } from './api-key-audit';
 import { ApiKeyCardSkeleton } from './api-key-card-skeleton';
-import { ApiKeyCreateDialog } from './api-key-create-dialog';
+import { ApiKeyCreateAction } from './api-key-create-action';
+import { useApiKeyGrantLabel } from './use-api-key-grant-label';
 
 export function ApiKeyCards() {
   const t = useTranslations('user.apiKeys');
-  const tRoot = useTranslations();
+  const grantLabel = useApiKeyGrantLabel();
   const scope = useScopeFromParams();
   const apiKeys = useApiKeysStore((state) => state.apiKeys);
   const loading = useApiKeysStore((state) => state.loading);
@@ -46,9 +54,7 @@ export function ApiKeyCards() {
     return t('status.active');
   };
 
-  const showRole =
-    scope &&
-    (scope.tenant === Tenant.AccountProject || scope.tenant === Tenant.OrganizationProject);
+  const showRole = isProjectApiKeyScope(scope);
 
   if (!scope) return null;
 
@@ -61,7 +67,7 @@ export function ApiKeyCards() {
         title: hasActiveFilters ? t('empty') : t('empty'),
         description: hasActiveFilters ? '' : t('emptyDescription'),
         action: hasActiveFilters ? undefined : (
-          <ApiKeyCreateDialog onApiKeyCreated={handleApiKeyCreated} triggerAlwaysShowLabel />
+          <ApiKeyCreateAction onApiKeyCreated={handleApiKeyCreated} alwaysShowLabel />
         ),
       }}
       skeleton={{
@@ -97,7 +103,7 @@ export function ApiKeyCards() {
                 </div>
               ),
             },
-            ...(showRole && apiKey.role
+            ...(showRole && (apiKey.role || apiKey.permissions)
               ? [
                   {
                     label: {
@@ -105,9 +111,7 @@ export function ApiKeyCards() {
                       text: t('table.role'),
                     },
                     value: (
-                      <span className="text-sm text-muted-foreground">
-                        {tRoot(apiKey.role.name ?? '—')}
-                      </span>
+                      <span className="text-sm text-muted-foreground">{grantLabel(apiKey)}</span>
                     ),
                   },
                 ]
@@ -156,7 +160,21 @@ export function ApiKeyCards() {
           ]}
         />
       )}
-      renderFooter={(apiKey: ApiKey) => <ApiKeyAudit apiKey={apiKey} />}
+      renderFooter={(apiKey: ApiKey) =>
+        showRole ? (
+          <div className="flex w-full items-center justify-between gap-2">
+            <ApiKeyAudit apiKey={apiKey} />
+            <EntityNavigationButton
+              entitySegment="api-keys"
+              entityId={apiKey.id}
+              ariaLabel={t('actions.view')}
+              size="lg"
+            />
+          </div>
+        ) : (
+          <ApiKeyAudit apiKey={apiKey} />
+        )
+      }
     />
   );
 }
