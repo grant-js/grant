@@ -93,20 +93,43 @@ Because an edit can widen a key after its consumer was vetted, watch `api_key.up
 
 ### A key for a receiver that mirrors Grant into another system
 
-A receiver that mirrors a project into another system does five things: it lists the project's members, reads each member's credential fingerprints, exports the credentials it carries across (see [Exporting the secret](#exporting-the-secret)), starts CDM imports and exports, and polls the jobs it started. A key for it needs these four permissions in the project:
+A receiver that mirrors a project into another system does three separate things: it **reads the project's state** (members with their roles, tags and password fingerprints, groups with their permissions, and permissions), it **writes credentials** into the other system by calling the credential export, and it **imports** a document into Grant as a CDM sync job. Give each function its own key with exactly the permissions it uses; a key's secret then reaches only that function's permissions, and each key can be rotated or revoked on its own.
 
-| Permission                      | What needs it                                                                                                                                                                        | Where it is checked                                                                                                                                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `User:Query`                    | Listing the members, including the nested `passwordCredential` and `apiKeyCredentials` fields                                                                                        | `GET /api/users`; GraphQL `users`                                                                                                                                                                           |
-| `ProjectSyncJob:Update`         | Starting an import or an export job, and requesting an upload URL for an import by reference                                                                                         | `POST /api/projects/{id}/sync/jobs`, `POST /api/projects/{id}/sync/jobs/export`, `POST /api/projects/{id}/sync/upload-url`; GraphQL `startProjectSync`, `startProjectExport`, `requestProjectSyncUploadUrl` |
-| `ProjectSyncJob:Query`          | Listing jobs and reading one job, its payload or its snapshot                                                                                                                        | `GET /api/projects/{id}/sync/jobs`, `GET /api/projects/{id}/sync/jobs/{jobId}` and its `/payload` and `/snapshot`; GraphQL `projectSyncJob`, `projectSyncJobs`                                              |
-| `ProjectUser:ExportCredentials` | The credential export, and the two credential fields on `User`, which resolve to `null` without it. A [machine-only permission](#what-a-project-key-may-carry-and-who-may-manage-it) | `POST /api/users/credentials/export`; GraphQL `exportProjectUserCredentials`                                                                                                                                |
+All three keys are project keys that carry permissions instead of a role, every call names the key's own project scope, and each key exchanges its credentials at `POST /api/auth/token`.
 
-Two cases change the list. `User:Read` is needed only if the receiver reads one member by id over REST (`GET /api/users/{id}`); the GraphQL `users` query takes `ids` and needs `User:Query` alone. A receiver that never starts an import or an export leaves out `ProjectSyncJob:Update`.
+**The state reader.** A GraphQL read of `users(scope:)` (with its nested `roles`, `tags` and `passwordCredential`), `groups(scope:)` (with nested `permissions`) and `permissions(scope:)`.
 
-Nothing else is needed. The key manages no keys (no `ApiKey:*`), reads no project settings (no `Project:*`) and needs no write permission on users, roles or permissions: an import is applied by the sync job's worker, not under the key's own permissions. Every call names the key's own project scope, and the email and MFA steps that guard these operations for a signed-in person do not apply to a key.
+| Permission                      | What needs it                                                                                        | Where it is checked                                                          |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `User:Query`                    | `users`; REST `GET /api/users`                                                                       | The `users` query guard                                                      |
+| `Group:Query`                   | `groups`                                                                                             | The `groups` query guard                                                     |
+| `Permission:Query`              | `permissions`                                                                                        | The `permissions` query guard                                                |
+| `ProjectUser:ExportCredentials` | The `passwordCredential` field (`source`, `updatedAt`, `fingerprint`), only if the reader selects it | The field resolver: without the permission the field is `null`, not an error |
 
-An Owner or Admin creates the key, because `ProjectUser:ExportCredentials` is attachable only by a holder of `ProjectUser:SetPassword`, which a Dev does not hold. First list what the caller may attach and pick the four ids:
+The nested fields check nothing of their own. `roles`, `tags` and a group's `permissions` are covered by the guard of the query that returned them; `passwordCredential` (and `apiKeyCredentials`) resolve to `null` unless the caller holds `ProjectUser:ExportCredentials`. A reader that does not select them does not need that permission. `User:Read` is needed only to read one member by id over REST (`GET /api/users/{id}`); the GraphQL queries above take `ids` and need the `Query` permissions alone.
+
+The `organizationMembers` query is guarded by `OrganizationMember:Query`, but it accepts only an organization scope, and a project key can name only its own project scope (and cannot be exchanged for an organization scope), so a project key cannot call it. Read the members of a project through `users`.
+
+**The writer.** `POST /api/users/credentials/export` (GraphQL `exportProjectUserCredentials`), which returns the password hashes and the exportable API-key secrets of the members it names (see [Exporting the secret](#exporting-the-secret)).
+
+| Permission                      | What needs it                           | Where it is checked                                          |
+| ------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| `ProjectUser:ExportCredentials` | The credential export, and nothing else | The route guard and the `exportProjectUserCredentials` guard |
+
+It is a machine-only permission, so only a holder of `ProjectUser:SetPassword` (an Owner or Admin) can attach it (see [What a project key may carry](#what-a-project-key-may-carry-and-who-may-manage-it)). The user ids it exports come from the reader.
+
+**The importer.** `POST /api/projects/{id}/sync/upload-url` and `POST /api/projects/{id}/sync/jobs` start an import (GraphQL `requestProjectSyncUploadUrl`, `startProjectSync`), and `GET /api/projects/{id}/sync/jobs/{jobId}` reads the job it started.
+
+| Permission              | What needs it                                                                                       | Where it is checked                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `ProjectSyncJob:Update` | Requesting the upload URL and starting the job (also `POST .../sync/jobs/export` for an export job) | The route guards and the `requestProjectSyncUploadUrl`, `startProjectSync`, `startProjectExport` guards |
+| `ProjectSyncJob:Query`  | Reading a job (`GET .../sync/jobs`, `.../sync/jobs/{jobId}`, its `/payload` and `/snapshot`)        | The route guards and the `projectSyncJob`, `projectSyncJobs` guards                                     |
+
+An import is applied by the sync job's worker, not under the key's own permissions, so the importer needs no write permission on users, roles or permissions. The email and MFA steps that guard these operations for a signed-in person do not apply to a key.
+
+A single key that carries the union of the three sets also works, but it is wider: whoever holds its secret can read the project's state, export its credentials and start imports. Prefer one key per function. Nothing here needs any `ApiKey:*` or `Project:*` permission.
+
+An Owner or Admin creates the writer, and a reader that selects `passwordCredential`; a Dev can create a reader that does not and the importer, because those need only permissions a Dev already holds. First list what the caller may attach and pick the ids:
 
 ```graphql
 query {
@@ -127,24 +150,27 @@ query {
 }
 ```
 
-`ProjectUser:ExportCredentials` is in the list with `machineOnly: true` for an Owner or an Admin, and absent for a Dev. Then create the key with those ids and no role:
+`ProjectUser:ExportCredentials` is in the list with `machineOnly: true` for an Owner or an Admin, and absent for a Dev. Then create each key with its ids and no role, for example the writer:
 
 ```bash
 curl -X POST "$GRANT_URL/api/api-keys" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{
-    "name": "Mirror receiver",
+    "name": "Mirror writer",
     "scope": { "tenant": "organizationProject", "id": "<organization-id>:<project-id>" },
-    "permissionIds": [
-      "<User:Query id>",
-      "<ProjectSyncJob:Update id>",
-      "<ProjectSyncJob:Query id>",
-      "<ProjectUser:ExportCredentials id>"
-    ]
+    "permissionIds": ["<ProjectUser:ExportCredentials id>"]
   }'
 ```
 
-The response carries the `clientId` and the `clientSecret`, which is shown once. The receiver exchanges them at `POST /auth/token` with the same project scope, as for any key (see [Token Exchange](#token-exchange)), and calls Grant with the access token. A call refused with `403` needs a permission the key does not carry; an Owner or Admin adds it with `PUT /api/api-keys/{id}/permissions` (see [Editing a key's permissions](#editing-a-key-s-permissions)) and the key's next request follows. For an account project the call is the same with `accountProject` and an account scope id.
+The response carries the `clientId` and the `clientSecret`, which is shown once. The receiver exchanges them at `POST /api/auth/token` with the same project scope, as for any key (see [Token Exchange](#token-exchange)), and calls Grant with the access token. A call refused with `403` needs a permission the key does not carry; an Owner or Admin adds it with `PUT /api/api-keys/{id}/permissions` (see [Editing a key's permissions](#editing-a-key-s-permissions)) and the key's next request follows. For an account project the call is the same with `accountProject` and an account scope id.
+
+In the dashboard, an Owner or Admin creates the same key from the project's pages:
+
+1. Open **API Keys** in the project's sidebar and choose **Create API Key**.
+2. In **Create API key**, fill in **General**: a name, and optionally a description and an expiration.
+3. In the **Authorization** card, choose **Scopes** ("The key can do only what the permissions you pick allow"). The **Scopes** card appears below it.
+4. In the **Scopes** card, select the key's permissions. They are grouped by resource, each group with an **All actions** checkbox, and the search field (**Search permissions...**) narrows the list. `ProjectUser:ExportCredentials` carries the **Credentials only** badge, and the card lists only permissions you may attach.
+5. Choose **Create** (it stays disabled until at least one permission is selected). The **API Key Created** dialog shows the **Client ID** and the **Client Secret** once: copy them (or **Download credentials**), then choose **I've Saved My Credentials**.
 
 ## Token Exchange
 
