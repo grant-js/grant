@@ -6,7 +6,7 @@ import {
   type IGrantService,
   type SessionSigningKey,
 } from '@grantjs/core';
-import { Permission, Scope, TokenType } from '@grantjs/schema';
+import { Permission, Scope, Tenant, TokenType } from '@grantjs/schema';
 
 import { config } from '@/config';
 import {
@@ -135,8 +135,23 @@ export class GrantService implements IGrantService {
     ]);
 
     const permissionIds = await this.resolvePermissionIds(roleIds, directUserGroupIds, projectId);
+    const apiKeyPermissionIds = await this.collectApiKeyPermissionIds(userId, scope, tokenType);
 
-    return [...new Set([...permissionIds, ...directUserPermissionIds])];
+    return [...new Set([...permissionIds, ...directUserPermissionIds, ...apiKeyPermissionIds])];
+  }
+
+  /** A project key's own permissions; only a key token in a project scope carries any. */
+  private async collectApiKeyPermissionIds(
+    userId: string,
+    scope: Scope,
+    tokenType?: TokenType
+  ): Promise<string[]> {
+    const isProjectScope =
+      scope.tenant === Tenant.OrganizationProject || scope.tenant === Tenant.AccountProject;
+    if (tokenType !== TokenType.ApiKey || !isProjectScope) {
+      return [];
+    }
+    return this.grantRepository.getPermissionIdsForApiKey(userId, scope);
   }
 
   async collectRolePermissionIds(roleIds: readonly string[], scope: Scope): Promise<string[]> {

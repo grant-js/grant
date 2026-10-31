@@ -177,5 +177,11 @@ export interface IAccountProjectApiKeyService {
     transaction?: unknown
   ): Promise<AccountProjectApiKeyRow | null>;
 
+  /** Turns a role key into a key that carries permissions of its own; audited. */
+  clearAccountProjectApiKeyRole(
+    params: { apiKeyId: string; accountId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<AccountProjectApiKeyRow>;
+
   resolveAccountRoleIdForCurrentUser(accountId: string, transaction?: unknown): Promise<string>;
 }

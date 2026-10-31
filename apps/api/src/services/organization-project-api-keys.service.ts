@@ -110,6 +110,41 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
     );
   }
 
+  public async clearOrganizationProjectApiKeyRole(
+    params: { apiKeyId: string; organizationId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<OrganizationProjectApiKeyRow> {
+    const context = 'OrganizationProjectApiKeyService.clearOrganizationProjectApiKeyRole';
+    const { apiKeyId, organizationId, projectId } = params;
+    const current =
+      await this.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
+        apiKeyId,
+        organizationId,
+        projectId,
+        transaction
+      );
+    if (current === null) {
+      throw new NotFoundError('ApiKey', apiKeyId);
+    }
+    if (current.organizationRoleId === null) {
+      return current;
+    }
+
+    const cleared = await this.organizationProjectApiKeyRepository.clearRole(params, transaction);
+    await this.audit.logUpdate(
+      current.id,
+      { organizationRoleId: current.organizationRoleId },
+      { organizationRoleId: null },
+      { context },
+      transaction
+    );
+    return validateOutput(
+      createDynamicSingleSchema(organizationProjectApiKeySchema),
+      cleared,
+      context
+    );
+  }
+
   public async getByApiKeyAndOrganizationAndProject(
     apiKeyId: string,
     organizationId: string,

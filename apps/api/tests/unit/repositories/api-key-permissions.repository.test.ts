@@ -95,6 +95,30 @@ describe('ApiKeyPermissionRepository', () => {
     expect(captured.from).toBe(apiKeyPermissions);
   });
 
+  it('lists the live permissions of several keys in one statement', async () => {
+    const { builder, captured } = chain([{ apiKeyId, permissionId: p1 }]);
+    const db = { select: vi.fn(() => builder) } as unknown as DbSchema;
+
+    await expect(new ApiKeyPermissionRepository(db).listForKeys([apiKeyId, p2])).resolves.toEqual([
+      { apiKeyId, permissionId: p1 },
+    ]);
+
+    const query = dialect.sqlToQuery(captured.where as never);
+    expect(query.sql).toContain('"api_key_permissions"."api_key_id" in ($1, $2)');
+    expect(query.sql).toContain('"api_key_permissions"."deleted_at" is null');
+    expect(query.params).toEqual([apiKeyId, p2]);
+    expect(
+      (db as unknown as { select: { mock: { calls: unknown[] } } }).select.mock.calls
+    ).toHaveLength(1);
+  });
+
+  it('reads nothing for no keys', async () => {
+    const db = { select: vi.fn() } as unknown as DbSchema;
+
+    await expect(new ApiKeyPermissionRepository(db).listForKeys([])).resolves.toEqual([]);
+    expect((db as unknown as { select: unknown }).select).not.toHaveBeenCalled();
+  });
+
   it('replaces by adding what is missing and removing what is no longer wanted', async () => {
     const repository = new ApiKeyPermissionRepository({} as DbSchema);
     vi.spyOn(repository, 'listForKey').mockResolvedValue([

@@ -140,6 +140,22 @@ export interface IApiKeyService {
     params: { id: string; hardDelete?: boolean },
     transaction?: unknown
   ): Promise<ApiKey>;
+
+  /** The key as it is now; refuses (`NotFoundError`) a missing one and a revoked one (`BadRequestError`). */
+  getEditableApiKey(params: { id: string }, transaction?: unknown): Promise<ApiKey>;
+
+  /**
+   * Publishes `api_key.updated` after a project key's permissions changed. The counts are the
+   * key's effective permissions before and after; the envelope names the key, never a permission.
+   */
+  publishApiKeyUpdated(
+    params: {
+      apiKey: ApiKey;
+      before: { permissionCount: number };
+      after: { permissionCount: number };
+    },
+    transaction?: unknown
+  ): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +208,28 @@ export interface IApiKeyPermissionService {
     params: { apiKeyId: string; projectId: string; permissionIds: readonly string[] },
     transaction?: unknown
   ): Promise<void>;
+
+  /** The permission ids a key carries in its own right (none for a role key). */
+  listForKey(apiKeyId: string, transaction?: unknown): Promise<string[]>;
+
+  /** The permission ids each of the given keys carries in its own right. */
+  listForKeys(apiKeyIds: readonly string[], transaction?: unknown): Promise<Map<string, string[]>>;
+
+  /**
+   * Makes the key carry exactly the given permissions. One `ADD_PERMISSION` or
+   * `REMOVE_PERMISSION` audit row per change (`{ permissionId, resource, action }`), plus one
+   * `UPDATE_API_KEY_PERMISSIONS` summary row of counts when anything changed. `fromRoleId`
+   * names the role a key had before this call turned it into a permission key.
+   */
+  replace(
+    params: {
+      apiKeyId: string;
+      projectId: string;
+      permissionIds: readonly string[];
+      fromRoleId?: string | null;
+    },
+    transaction?: unknown
+  ): Promise<{ added: string[]; removed: string[] }>;
 }
 
 // ---------------------------------------------------------------------------

@@ -629,6 +629,14 @@ export const Mutation = {
       apiKeyMutations.rotateApiKey!
     )
   ),
+  setApiKeyPermissions: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.ApiKey, action: ResourceAction.Update },
+      apiKeyMutations.setApiKeyPermissions!
+    )
+  ),
   deleteApiKey: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

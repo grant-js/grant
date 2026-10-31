@@ -291,6 +291,12 @@ export interface IOrganizationProjectApiKeyRepository {
     projectId: string,
     transaction?: unknown
   ): Promise<OrganizationProjectApiKeyRow | null>;
+
+  /** Sets the key's role to null: the key carries permissions of its own from then on. */
+  clearRole(
+    params: { apiKeyId: string; organizationId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<OrganizationProjectApiKeyRow>;
 }
 
 export interface IOrganizationTagRepository {

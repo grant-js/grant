@@ -219,6 +219,8 @@ export type ResolversTypes = ResolversObject<{
   AddUserRoleInput: Types.AddUserRoleInput;
   AddUserTagInput: Types.AddUserTagInput;
   ApiKey: ResolverTypeWrapper<Types.ApiKey>;
+  ApiKeyAttachableGrants: ResolverTypeWrapper<Types.ApiKeyAttachableGrants>;
+  ApiKeyAttachablePermission: ResolverTypeWrapper<Types.ApiKeyAttachablePermission>;
   ApiKeyPage: ResolverTypeWrapper<Types.ApiKeyPage>;
   ApiKeySearchableField: Types.ApiKeySearchableField;
   ApiKeySortInput: Types.ApiKeySortInput;
@@ -507,6 +509,7 @@ export type ResolversTypes = ResolversObject<{
   Scope: Types.Scope;
   Searchable: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Searchable']>;
   SessionExportData: ResolverTypeWrapper<Types.SessionExportData>;
+  SetApiKeyPermissionsInput: Types.SetApiKeyPermissionsInput;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
   SetProjectExportableApiKeySecretsInput: Types.SetProjectExportableApiKeySecretsInput;
@@ -649,6 +652,8 @@ export type ResolversParentTypes = ResolversObject<{
   AddUserRoleInput: Types.AddUserRoleInput;
   AddUserTagInput: Types.AddUserTagInput;
   ApiKey: Types.ApiKey;
+  ApiKeyAttachableGrants: Types.ApiKeyAttachableGrants;
+  ApiKeyAttachablePermission: Types.ApiKeyAttachablePermission;
   ApiKeyPage: Types.ApiKeyPage;
   ApiKeySortInput: Types.ApiKeySortInput;
   AssignRolePermissionInput: Types.AssignRolePermissionInput;
@@ -899,6 +904,7 @@ export type ResolversParentTypes = ResolversObject<{
   Scope: Types.Scope;
   Searchable: ResolversInterfaceTypes<ResolversParentTypes>['Searchable'];
   SessionExportData: Types.SessionExportData;
+  SetApiKeyPermissionsInput: Types.SetApiKeyPermissionsInput;
   SetMyNotificationPreferenceInput: Types.SetMyNotificationPreferenceInput;
   SetMyPrimaryMfaDeviceInput: Types.SetMyPrimaryMfaDeviceInput;
   SetProjectExportableApiKeySecretsInput: Types.SetProjectExportableApiKeySecretsInput;
@@ -1136,12 +1142,35 @@ export type ApiKeyResolvers<
   isRevoked?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   lastUsedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   name?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
   revokedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
   revokedBy?: Resolver<Types.Maybe<ResolversTypes['ID']>, ParentType, ContextType>;
   revokedByUser?: Resolver<Types.Maybe<ResolversTypes['User']>, ParentType, ContextType>;
   role?: Resolver<Types.Maybe<ResolversTypes['Role']>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type ApiKeyAttachableGrantsResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ApiKeyAttachableGrants'] =
+    ResolversParentTypes['ApiKeyAttachableGrants'],
+> = ResolversObject<{
+  permissions?: Resolver<
+    Array<ResolversTypes['ApiKeyAttachablePermission']>,
+    ParentType,
+    ContextType
+  >;
+  roles?: Resolver<Array<ResolversTypes['Role']>, ParentType, ContextType>;
+}>;
+
+export type ApiKeyAttachablePermissionResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['ApiKeyAttachablePermission'] =
+    ResolversParentTypes['ApiKeyAttachablePermission'],
+> = ResolversObject<{
+  machineOnly?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  permission?: Resolver<ResolversTypes['Permission'], ParentType, ContextType>;
 }>;
 
 export type ApiKeyPageResolvers<
@@ -2000,6 +2029,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<Types.MutationRotateWebhookSubscriptionSecretArgs, 'input'>
+  >;
+  setApiKeyPermissions?: Resolver<
+    ResolversTypes['ApiKey'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationSetApiKeyPermissionsArgs, 'input'>
   >;
   setMyNotificationPreference?: Resolver<
     ResolversTypes['NotificationPreference'],
@@ -2981,6 +3016,12 @@ export type QueryResolvers<
   ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query'],
 > = ResolversObject<{
   _empty?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  apiKeyAttachableGrants?: Resolver<
+    ResolversTypes['ApiKeyAttachableGrants'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.QueryApiKeyAttachableGrantsArgs, 'scope'>
+  >;
   apiKeys?: Resolver<
     ResolversTypes['ApiKeyPage'],
     ParentType,
@@ -3870,6 +3911,8 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   AccountRole?: AccountRoleResolvers<ContextType>;
   AccountTag?: AccountTagResolvers<ContextType>;
   ApiKey?: ApiKeyResolvers<ContextType>;
+  ApiKeyAttachableGrants?: ApiKeyAttachableGrantsResolvers<ContextType>;
+  ApiKeyAttachablePermission?: ApiKeyAttachablePermissionResolvers<ContextType>;
   ApiKeyPage?: ApiKeyPageResolvers<ContextType>;
   Auditable?: AuditableResolvers<ContextType>;
   AuthSignupPolicy?: AuthSignupPolicyResolvers<ContextType>;

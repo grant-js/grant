@@ -23,6 +23,28 @@ export class ApiKeyPermissionRepository implements IApiKeyPermissionRepository {
       .where(and(eq(apiKeyPermissions.apiKeyId, apiKeyId), isNull(apiKeyPermissions.deletedAt)));
   }
 
+  public async listForKeys(
+    apiKeyIds: readonly string[],
+    transaction?: Transaction
+  ): Promise<{ apiKeyId: string; permissionId: string }[]> {
+    if (apiKeyIds.length === 0) {
+      return [];
+    }
+    const dbInstance = transaction ?? this.db;
+    return dbInstance
+      .select({
+        apiKeyId: apiKeyPermissions.apiKeyId,
+        permissionId: apiKeyPermissions.permissionId,
+      })
+      .from(apiKeyPermissions)
+      .where(
+        and(
+          inArray(apiKeyPermissions.apiKeyId, [...apiKeyIds]),
+          isNull(apiKeyPermissions.deletedAt)
+        )
+      );
+  }
+
   public async addForKey(
     params: { apiKeyId: string; projectId: string; permissionIds: readonly string[] },
     transaction?: Transaction

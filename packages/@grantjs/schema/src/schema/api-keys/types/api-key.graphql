@@ -15,7 +15,11 @@ type ApiKey implements Auditable {
   createdByUser: User
   revokedByUser: User
   """
-  Role bound to this API key (project-level keys only). Null for user-scoped keys.
+  Standard role bound to this API key (project-level keys only). Null for user-scoped keys and for keys that carry permissions.
   """
   role: Role
+  """
+  Permissions this API key carries instead of a role (project-level keys only). Null for user-scoped keys and for role keys.
+  """
+  permissions: [Permission!]
 }

@@ -1,0 +1,8 @@
+input SetApiKeyPermissionsInput {
+  scope: Scope!
+  id: ID!
+  """
+  The complete set of permissions the key carries afterwards; it may not be empty. Permissions you add must be covered by what you can do in this scope (machine-only permissions: see `apiKeyAttachableGrants`); permissions you leave out are removed.
+  """
+  permissionIds: [ID!]!
+}
