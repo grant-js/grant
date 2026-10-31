@@ -38,6 +38,13 @@ export class OrganizationProjectApiKeyRepository
     return this.add(params, transaction);
   }
 
+  public async clearRole(
+    params: { apiKeyId: string; organizationId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<OrganizationProjectApiKeyRow> {
+    return this.update(params, { organizationRoleId: null, updatedAt: new Date() }, transaction);
+  }
+
   public async getByApiKeyAndOrganizationAndProject(
     apiKeyId: string,
     organizationId: string,

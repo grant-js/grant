@@ -1,0 +1,6 @@
+extend type Mutation {
+  """
+  Replace the permissions a project API key carries. Applied to a role key it converts the key to permissions; the conversion is one way. The key keeps its id, clientId and secret, and the change applies to its next request. Refuses a revoked key.
+  """
+  setApiKeyPermissions(input: SetApiKeyPermissionsInput!): ApiKey!
+}

@@ -12,13 +12,29 @@ import {
   createApiKeyRequestSchema,
   deleteApiKeyRequestSchema,
   exchangeApiKeyRequestSchema,
+  getApiKeyAttachableGrantsQuerySchema,
   getApiKeysQuerySchema,
   revokeApiKeyRequestSchema,
   rotateApiKeyRequestSchema,
+  setApiKeyPermissionsRequestSchema,
 } from '@/rest/schemas/api-keys.schemas';
 import { createSuccessResponseSchema } from '@/rest/schemas/common.schemas';
 
 // Response schemas
+const apiKeyPermissionSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  action: z.string(),
+  resourceId: z.uuid().nullable(),
+});
+
+const apiKeyRoleSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+});
+
 const apiKeySchema = z.object({
   id: z.uuid(),
   clientId: z.uuid(),
@@ -33,6 +49,25 @@ const apiKeySchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   deletedAt: z.date().nullable(),
+  role: apiKeyRoleSchema
+    .nullable()
+    .optional()
+    .describe('Standard role of a project key; null for a key that carries permissions'),
+  permissions: z
+    .array(apiKeyPermissionSchema)
+    .nullable()
+    .optional()
+    .describe('Permissions of a project key that carries them instead of a role; null otherwise'),
+});
+
+const apiKeyAttachableGrantsSchema = z.object({
+  permissions: z.array(
+    z.object({
+      permission: apiKeyPermissionSchema,
+      machineOnly: z.boolean(),
+    })
+  ),
+  roles: z.array(apiKeyRoleSchema),
 });
 
 const apiKeyPageSchema = z.object({
@@ -62,6 +97,7 @@ const exchangeApiKeyResponseSchema = z.object({
 export function registerApiKeysOpenApi(registry: OpenAPIRegistry) {
   registry.register('ApiKey', apiKeySchema);
   registry.register('ApiKeyPage', apiKeyPageSchema);
+  registry.register('ApiKeyAttachableGrants', apiKeyAttachableGrantsSchema);
   registry.register('CreateApiKeyResponse', createApiKeyResponseSchema);
   registry.register('ExchangeApiKeyResponse', exchangeApiKeyResponseSchema);
   registry.register('ApiKeyIdParams', apiKeyIdParamsSchema);
@@ -185,8 +221,10 @@ Create a new API key for a specific scope. The API key consists of:
 - \`scope.tenant\`: The tenant type (\`account\`, \`organization\`, \`project\`, \`projectUser\`, \`accountProject\`, \`organizationProject\`)
 
 ### Project-level API keys (accountProject / organizationProject)
-- \`roleId\` is **required** when \`scope.tenant\` is \`accountProject\` or \`organizationProject\`.
-- The role must belong to the parent tenant (account or organization) and defines the permissions the key has for that project only.
+A project key carries exactly one of a standard role or a set of permissions:
+- \`roleId\`: a standard role of the parent tenant (account or organization). The key has the permissions of that role for that project only. An account project key with neither \`roleId\` nor \`permissionIds\` carries the creator's account role; an organization project key needs one of the two.
+- \`permissionIds\`: the permissions the key carries instead of a role (at least one). Not allowed for other scopes.
+- Either way, everything the key can do in the project must be covered by what the creator can do there (equality is allowed). A request that exceeds the creator is refused with \`403\` and nothing is stored. A machine-only permission such as \`ProjectUser:ExportCredentials\` may also be given by a creator who holds its gate permission (\`ProjectUser:SetPassword\`). \`GET /api/api-keys/attachable-grants\` lists what the caller may attach.
 
 ### Expiration
 - \`expiresAt\`: Optional expiration date (ISO 8601 format)
@@ -238,6 +276,20 @@ Create a new API key for a specific scope. The API key consists of:
                     tenant: 'organizationProject',
                   },
                   roleId: '550e8400-e29b-41d4-a716-446655440011',
+                },
+              },
+              organizationProjectPermissions: {
+                summary: 'Organization project API key with permissions instead of a role',
+                value: {
+                  name: 'Receiver key',
+                  scope: {
+                    id: '550e8400-e29b-41d4-a716-446655440020:550e8400-e29b-41d4-a716-446655440002',
+                    tenant: 'organizationProject',
+                  },
+                  permissionIds: [
+                    '550e8400-e29b-41d4-a716-446655440031',
+                    '550e8400-e29b-41d4-a716-446655440032',
+                  ],
                 },
               },
             },
@@ -524,6 +576,158 @@ immediately. Revoked keys cannot be rotated.
         content: {
           'application/json': {
             schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'API key not found',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * GET /api/api-keys/attachable-grants
+   */
+  registry.registerPath({
+    method: 'get',
+    path: '/api/api-keys/attachable-grants',
+    operationId: 'getApiApiKeysAttachableGrants',
+    tags: ['API Keys'],
+    summary: 'List what the caller may give a project API key',
+    description: `
+List the permissions and the standard roles the caller may give a new API key in a project scope.
+
+### Scope
+- \`tenant\`: \`accountProject\` or \`organizationProject\`
+- \`scopeId\`: \`accountId:projectId\` or \`organizationId:projectId\`
+
+### Result
+- \`permissions\`: the permissions the caller holds in the scope, plus machine-only permissions (\`machineOnly: true\`) whose gate permission the caller holds
+- \`roles\`: the standard roles of the parent tenant whose permissions the caller covers
+
+Requires \`ApiKey:Create\`.
+    `.trim(),
+    request: {
+      query: getApiKeyAttachableGrantsQuerySchema,
+    },
+    responses: {
+      200: {
+        description: 'What the caller may attach',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(apiKeyAttachableGrantsSchema),
+          },
+        },
+      },
+      400: {
+        description: 'Invalid request parameters or a scope that is not a project scope',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * PUT /api/api-keys/:id/permissions
+   */
+  registry.registerPath({
+    method: 'put',
+    path: '/api/api-keys/{id}/permissions',
+    operationId: 'putApiApiKeysByIdPermissions',
+    tags: ['API Keys'],
+    summary: 'Replace the permissions of a project API key',
+    description: `
+Replace the permissions a project API key carries. The key keeps its id, client ID and secret, and the change applies to its next request.
+
+### Rules
+- \`permissionIds\` is the complete set the key carries afterwards (at least one).
+- Permissions you add must be covered by what you can do in the key's project scope (machine-only permissions: see \`GET /api/api-keys/attachable-grants\`). Permissions you leave out are removed; removing is always allowed.
+- You must be able to do everything the key can do today.
+- Applied to a role key, this turns the key into a permission key. The conversion is one way.
+- A revoked key is refused.
+
+Requires \`ApiKey:Update\`. Each added or removed permission writes an audit row, and an \`api_key.updated\` event is published.
+    `.trim(),
+    request: {
+      params: apiKeyIdParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: setApiKeyPermissionsRequestSchema,
+            example: {
+              scope: {
+                id: '550e8400-e29b-41d4-a716-446655440020:550e8400-e29b-41d4-a716-446655440002',
+                tenant: 'organizationProject',
+              },
+              permissionIds: ['550e8400-e29b-41d4-a716-446655440031'],
+            },
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Permissions replaced',
+        content: {
+          'application/json': {
+            schema: createSuccessResponseSchema(apiKeySchema),
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid request, a key that is revoked, or a scope that is not a project scope',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'The key or an added permission exceeds what the caller can do',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },

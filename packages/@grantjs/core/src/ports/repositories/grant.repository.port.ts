@@ -62,4 +62,15 @@ export interface IGrantRepository {
     projectId?: string | null,
     transaction?: unknown
   ): Promise<string[]>;
+
+  /**
+   * The permission ids a project API key carries in its own right: the live rows of the key,
+   * joined through the key's pivot row of the given project scope (`organizationProject` or
+   * `accountProject`). A key resolves nothing in a scope its pivot does not name.
+   */
+  getPermissionIdsForApiKey(
+    apiKeyId: string,
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<string[]>;
 }

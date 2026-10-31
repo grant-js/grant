@@ -271,6 +271,12 @@ export interface IOrganizationProjectApiKeyService {
     projectId: string,
     transaction?: unknown
   ): Promise<OrganizationProjectApiKeyRow | null>;
+
+  /** Turns a role key into a key that carries permissions of its own; audited. */
+  clearOrganizationProjectApiKeyRole(
+    params: { apiKeyId: string; organizationId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<OrganizationProjectApiKeyRow>;
 }
 
 // ---------------------------------------------------------------------------

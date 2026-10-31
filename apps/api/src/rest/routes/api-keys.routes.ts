@@ -9,9 +9,11 @@ import {
   apiKeyIdParamsSchema,
   createApiKeyRequestSchema,
   deleteApiKeyRequestSchema,
+  getApiKeyAttachableGrantsQuerySchema,
   getApiKeysQuerySchema,
   revokeApiKeyRequestSchema,
   rotateApiKeyRequestSchema,
+  setApiKeyPermissionsRequestSchema,
 } from '@/rest/schemas/api-keys.schemas';
 import { TypedRequest } from '@/rest/types';
 import { queryListCommons } from '@/rest/utils/list-query';
@@ -51,6 +53,27 @@ export function createApiKeysRoutes(fallback?: RequestContext) {
     }
   );
 
+  router.get(
+    '/attachable-grants',
+    validate({ query: getApiKeyAttachableGrantsQuerySchema }),
+    authorizeRestRoute({
+      resource: ResourceSlug.ApiKey,
+      action: ResourceAction.Create,
+    }),
+    async (
+      req: TypedRequest<{ query: typeof getApiKeyAttachableGrantsQuerySchema }>,
+      res: Response
+    ) => {
+      const { scopeId, tenant } = req.query;
+
+      const grants = await requestContext(req, fallback).handlers.apiKeys.getAttachableGrants({
+        scope: { id: scopeId, tenant },
+      });
+
+      sendSuccessResponse(res, grants);
+    }
+  );
+
   router.post(
     '/',
     validate({ body: createApiKeyRequestSchema }),
@@ -60,7 +83,7 @@ export function createApiKeysRoutes(fallback?: RequestContext) {
       action: ResourceAction.Create,
     }),
     async (req: TypedRequest<{ body: typeof createApiKeyRequestSchema }>, res: Response) => {
-      const { name, description, expiresAt, scope, roleId } = req.body;
+      const { name, description, expiresAt, scope, roleId, permissionIds } = req.body;
 
       const result = await requestContext(req, fallback).handlers.apiKeys.createApiKey({
         input: {
@@ -69,6 +92,7 @@ export function createApiKeysRoutes(fallback?: RequestContext) {
           expiresAt: expiresAt ? new Date(expiresAt) : undefined,
           scope,
           roleId,
+          permissionIds,
         },
       });
 
@@ -125,6 +149,32 @@ export function createApiKeysRoutes(fallback?: RequestContext) {
       });
 
       sendSuccessResponse(res, result);
+    }
+  );
+
+  router.put(
+    '/:id/permissions',
+    validate({ params: apiKeyIdParamsSchema, body: setApiKeyPermissionsRequestSchema }),
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    authorizeRestRoute({
+      resource: ResourceSlug.ApiKey,
+      action: ResourceAction.Update,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof apiKeyIdParamsSchema;
+        body: typeof setApiKeyPermissionsRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { scope, permissionIds } = req.body;
+
+      const apiKey = await requestContext(req, fallback).handlers.apiKeys.setApiKeyPermissions({
+        input: { id, scope, permissionIds },
+      });
+
+      sendSuccessResponse(res, apiKey);
     }
   );
 

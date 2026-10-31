@@ -1,0 +1,7 @@
+type ApiKeyAttachablePermission {
+  permission: Permission!
+  """
+  True for a permission meant for credentials only (such as ProjectUser:ExportCredentials): it can be given to a key by a holder of its gate permission, without holding it.
+  """
+  machineOnly: Boolean!
+}

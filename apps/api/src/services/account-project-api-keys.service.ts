@@ -105,6 +105,36 @@ export class AccountProjectApiKeyService implements IAccountProjectApiKeyService
     return validateOutput(createDynamicSingleSchema(accountProjectApiKeySchema), pivot, context);
   }
 
+  public async clearAccountProjectApiKeyRole(
+    params: { apiKeyId: string; accountId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<AccountProjectApiKeyRow> {
+    const context = 'AccountProjectApiKeyService.clearAccountProjectApiKeyRole';
+    const { apiKeyId, accountId, projectId } = params;
+    const current = await this.accountProjectApiKeyRepository.getByApiKeyAndAccountAndProject(
+      apiKeyId,
+      accountId,
+      projectId,
+      transaction
+    );
+    if (current === null) {
+      throw new NotFoundError('ApiKey', apiKeyId);
+    }
+    if (current.accountRoleId === null) {
+      return current;
+    }
+
+    const cleared = await this.accountProjectApiKeyRepository.clearRole(params, transaction);
+    await this.audit.logUpdate(
+      current.id,
+      { accountRoleId: current.accountRoleId },
+      { accountRoleId: null },
+      { context },
+      transaction
+    );
+    return validateOutput(createDynamicSingleSchema(accountProjectApiKeySchema), cleared, context);
+  }
+
   public async getByApiKeyAndAccountAndProject(
     apiKeyId: string,
     accountId: string,

@@ -7,6 +7,12 @@ export interface IApiKeyPermissionRepository {
   /** Live permission ids of one key. */
   listForKey(apiKeyId: string, transaction?: unknown): Promise<{ permissionId: string }[]>;
 
+  /** Live permission ids of several keys, one row per key and permission. */
+  listForKeys(
+    apiKeyIds: readonly string[],
+    transaction?: unknown
+  ): Promise<{ apiKeyId: string; permissionId: string }[]>;
+
   /** Adds the permissions the key does not carry yet; returns the ids that were added. */
   addForKey(
     params: { apiKeyId: string; projectId: string; permissionIds: readonly string[] },

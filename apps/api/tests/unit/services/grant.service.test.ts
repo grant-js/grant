@@ -36,6 +36,7 @@ describe('GrantService.getUserPermissions', () => {
       getPermissionIdsForGroups: vi.fn().mockResolvedValue([]),
       getDirectPermissionIdsForRoles: vi.fn().mockResolvedValue([]),
       getDirectPermissionIdsForUser: vi.fn().mockResolvedValue([]),
+      getPermissionIdsForApiKey: vi.fn().mockResolvedValue([]),
       getPermissionsByIds: vi.fn().mockResolvedValue([]),
     } as unknown as IGrantRepository;
 
@@ -255,6 +256,7 @@ describe('GrantService.collectPermissionIds', () => {
       getPermissionIdsForGroups: vi.fn().mockResolvedValue([]),
       getDirectPermissionIdsForRoles: vi.fn().mockResolvedValue([]),
       getDirectPermissionIdsForUser: vi.fn().mockResolvedValue([]),
+      getPermissionIdsForApiKey: vi.fn().mockResolvedValue([]),
       getPermissionsByIds: vi.fn().mockResolvedValue([]),
     } as unknown as IGrantRepository;
     service = new GrantService({} as IEntityCacheAdapter, grantRepository, {} as SigningKeyService);
@@ -306,6 +308,95 @@ describe('GrantService.collectPermissionIds', () => {
 
   it('returns nothing for a principal with no roles, groups or permissions', async () => {
     await expect(service.collectPermissionIds(userId, scope)).resolves.toEqual([]);
+  });
+});
+
+describe('GrantService.collectPermissionIds for a project key', () => {
+  const accountProjectScope: Scope = {
+    tenant: Tenant.AccountProject,
+    id: '10000000-0000-4000-8000-000000000004:10000000-0000-4000-8000-000000000003',
+  };
+  let grantRepository: IGrantRepository;
+  let service: GrantService;
+
+  beforeEach(() => {
+    grantRepository = {
+      getUserRoleIdsInScope: vi.fn().mockResolvedValue([]),
+      getGroupIdsForRoles: vi.fn().mockResolvedValue([]),
+      getDirectGroupIdsForUser: vi.fn().mockResolvedValue([]),
+      getPermissionIdsForGroups: vi.fn().mockResolvedValue([]),
+      getDirectPermissionIdsForRoles: vi.fn().mockResolvedValue([]),
+      getDirectPermissionIdsForUser: vi.fn().mockResolvedValue([]),
+      getPermissionIdsForApiKey: vi.fn().mockResolvedValue(['p-key-1', 'p-key-2']),
+      getPermissionsByIds: vi.fn().mockResolvedValue([]),
+    } as unknown as IGrantRepository;
+    service = new GrantService({} as IEntityCacheAdapter, grantRepository, {} as SigningKeyService);
+  });
+
+  it.each([
+    ['organization', projectScope],
+    ['account', accountProjectScope],
+  ])(
+    'resolves exactly the permissions of a key without a role in an %s project',
+    async (_label, keyScope) => {
+      const ids = await service.collectPermissionIds(userId, keyScope, TokenType.ApiKey);
+
+      expect(ids.sort()).toEqual(['p-key-1', 'p-key-2']);
+      expect(grantRepository.getPermissionIdsForApiKey).toHaveBeenCalledWith(userId, keyScope);
+      expect(grantRepository.getGroupIdsForRoles).not.toHaveBeenCalled();
+      expect(grantRepository.getPermissionIdsForGroups).not.toHaveBeenCalled();
+      expect(grantRepository.getDirectPermissionIdsForRoles).not.toHaveBeenCalled();
+    }
+  );
+
+  it('leaves a role key as it was: its role resolves, and the key row adds nothing', async () => {
+    vi.mocked(grantRepository.getUserRoleIdsInScope).mockResolvedValue(['role-1']);
+    vi.mocked(grantRepository.getGroupIdsForRoles).mockResolvedValue(['g-role']);
+    vi.mocked(grantRepository.getPermissionIdsForGroups).mockResolvedValue(['p-group']);
+    vi.mocked(grantRepository.getPermissionIdsForApiKey).mockResolvedValue([]);
+
+    const ids = await service.collectPermissionIds(userId, projectScope, TokenType.ApiKey);
+
+    expect(ids).toEqual(['p-group']);
+  });
+
+  it.each([
+    ['a session', TokenType.Session],
+    ['a project app', TokenType.ProjectApp],
+    ['a token of no type', undefined],
+  ])('does not read a key row for %s', async (_label, tokenType) => {
+    const ids = await service.collectPermissionIds(userId, projectScope, tokenType);
+
+    expect(ids).toEqual([]);
+    expect(grantRepository.getPermissionIdsForApiKey).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['organization', scope],
+    ['project user', { tenant: Tenant.ProjectUser, id: `${userId}:${userId}` } as Scope],
+    ['organization project user', { tenant: Tenant.OrganizationProjectUser, id: 'o:p:u' } as Scope],
+  ])('does not read a key row in an %s scope', async (_label, otherScope) => {
+    await service.collectPermissionIds(userId, otherScope, TokenType.ApiKey);
+
+    expect(grantRepository.getPermissionIdsForApiKey).not.toHaveBeenCalled();
+  });
+
+  it('is what the authorization check filters from', async () => {
+    vi.mocked(grantRepository.getPermissionsByIds).mockResolvedValue([buildPermission('p-key-1')]);
+
+    const result = await service.getUserPermissions(
+      userId,
+      projectScope,
+      'resource',
+      'read',
+      TokenType.ApiKey
+    );
+
+    expect(vi.mocked(grantRepository.getPermissionsByIds).mock.calls[0][0].sort()).toEqual([
+      'p-key-1',
+      'p-key-2',
+    ]);
+    expect(result.map((permission) => permission.id)).toEqual(['p-key-1']);
   });
 });
 

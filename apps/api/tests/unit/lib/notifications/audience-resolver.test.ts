@@ -156,6 +156,7 @@ describe('AudienceResolver', () => {
     'user.deleted',
     'project.user_updated',
     'api_key.deleted',
+    'api_key.updated',
     'tag.created',
     'tag.updated',
     'tag.deleted',

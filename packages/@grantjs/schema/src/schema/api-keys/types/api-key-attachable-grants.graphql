@@ -1,0 +1,4 @@
+type ApiKeyAttachableGrants {
+  permissions: [ApiKeyAttachablePermission!]!
+  roles: [Role!]!
+}
