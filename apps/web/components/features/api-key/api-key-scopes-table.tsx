@@ -39,7 +39,13 @@ import {
   toggleScopeRow,
 } from '@/lib/api-key-scope-groups';
 import type { DetailAttachmentFilter } from '@/lib/detail-attachment-filter';
-import { type KeyTranslator, toCamelCaseSlug, translateOrRaw } from '@/lib/translate-or-raw';
+import {
+  isKeyLike,
+  type KeyTranslator,
+  toCamelCaseSlug,
+  translateOrRaw,
+  translatePermissionField,
+} from '@/lib/translate-or-raw';
 import { cn } from '@/lib/utils';
 
 import { ApiKeyScopeSearch } from './api-key-scope-search';
@@ -115,7 +121,7 @@ export function ApiKeyScopesTable({
       if (byName && byName !== group.resourceName) return byName;
       const byCatalogue = `resources.names.${toCamelCaseSlug(group.key)}`;
       if (translate.has(byCatalogue)) return translate(byCatalogue);
-      return group.resourceName ?? group.key;
+      return group.resourceName && !isKeyLike(group.resourceName) ? group.resourceName : group.key;
     },
     [translate]
   );
@@ -126,8 +132,8 @@ export function ApiKeyScopesTable({
       if (attachmentFilter === 'selected' && !selectedSet.has(row.permission.id)) return false;
       if (!needle) return true;
       const haystack = [
-        translateOrRaw(translate, row.permission.name),
-        translateOrRaw(translate, row.permission.description),
+        translatePermissionField(translate, row.permission, 'name'),
+        translatePermissionField(translate, row.permission, 'description'),
         `${row.permission.resource?.slug ?? ''}:${row.permission.action}`,
         row.permission.resource?.name
           ? translateOrRaw(translate, row.permission.resource.name)
@@ -258,6 +264,25 @@ export function ApiKeyScopesTable({
     [disabledIds, handleGroupToggle, interactive, resourceLabel, selectedSet, t, toggleCollapsed]
   );
 
+  const renderMachineOnlyBadge = (row: ApiKeyScopeRow) => {
+    if (!row.machineOnly) return null;
+    const gate = machineOnlyGate(row.permission.resource?.slug ?? '', row.permission.action);
+    const badge = <Badge variant="outline">{t('machineOnly.badge')}</Badge>;
+    if (!gate) return badge;
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">{badge}</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {t('machineOnly.tooltip', { gate: `${gate.resource}:${gate.action}` })}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
   const columns: DataTableColumnConfig<ScopeTableItem>[] = [
     {
       key: 'checkbox',
@@ -273,7 +298,7 @@ export function ApiKeyScopesTable({
             onCheckedChange={(checked) => handleRowToggle(id, checked === true)}
             disabled={!interactive || reason !== undefined}
             aria-label={t('table.select', {
-              name: translateOrRaw(translate, item.row.permission.name),
+              name: translatePermissionField(translate, item.row.permission, 'name'),
             })}
           />
         );
@@ -297,20 +322,23 @@ export function ApiKeyScopesTable({
     {
       key: 'name',
       header: t('table.name'),
-      width: '240px',
+      width: '220px',
       ...DETAIL_TEXT_COLUMN,
       className: DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
       render: (item) =>
         item.kind === 'row' ? (
-          <span className="text-sm font-medium">
-            {translateOrRaw(translate, item.row.permission.name)}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">
+              {translatePermissionField(translate, item.row.permission, 'name')}
+            </span>
+            {renderMachineOnlyBadge(item.row)}
+          </div>
         ) : null,
     },
     {
       key: 'permission',
       header: t('table.permission'),
-      width: '220px',
+      width: '200px',
       ...DETAIL_TEXT_COLUMN,
       className: DETAIL_CONTENT_COLUMN_CLASS,
       render: (item) =>
@@ -329,39 +357,9 @@ export function ApiKeyScopesTable({
       render: (item) =>
         item.kind === 'row' ? (
           <span className="text-sm text-muted-foreground">
-            {translateOrRaw(translate, item.row.permission.description) || '—'}
+            {translatePermissionField(translate, item.row.permission, 'description') || '—'}
           </span>
         ) : null,
-    },
-    {
-      key: 'machineOnly',
-      header: t('table.machineOnly'),
-      width: '160px',
-      enableHiding: false,
-      defaultHidden: false,
-      ...DETAIL_TEXT_COLUMN,
-      className: DETAIL_CONTENT_COLUMN_CLASS,
-      render: (item) => {
-        if (item.kind !== 'row' || !item.row.machineOnly) return null;
-        const gate = machineOnlyGate(
-          item.row.permission.resource?.slug ?? '',
-          item.row.permission.action
-        );
-        const badge = <Badge variant="outline">{t('machineOnly.badge')}</Badge>;
-        if (!gate) return badge;
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex">{badge}</span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {t('machineOnly.tooltip', { gate: `${gate.resource}:${gate.action}` })}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      },
     },
     ...(updatingIds
       ? [
@@ -390,7 +388,6 @@ export function ApiKeyScopesTable({
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'permission', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...DETAIL_TEXT_COLUMN },
-      { key: 'machineOnly', type: 'text', ...DETAIL_TEXT_COLUMN },
       ...(updatingIds ? [DETAIL_LOADING_SKELETON] : []),
     ]),
     rowCount: 5,

@@ -1,0 +1,28 @@
+query GetApiKeyRolePermissions($scope: Scope!, $ids: [ID!]) {
+  roles(scope: $scope, ids: $ids, limit: 1, page: 1) {
+    roles {
+      id
+      name
+      # The permissions a role key resolves to come from the role's groups. `groups(scope)` does not
+      # list the standard groups, so they are read through the role.
+      groups {
+        id
+        permissions {
+          id
+          name
+          action
+          description
+          resource {
+            id
+            slug
+            name
+          }
+        }
+      }
+      rolePermissions {
+        id
+        permissionId
+      }
+    }
+  }
+}
