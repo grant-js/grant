@@ -10,15 +10,21 @@ const suppliedRoleId = '10000000-0000-4000-8000-0000000000d3';
 const resolvedRoleId = '10000000-0000-4000-8000-0000000000d4';
 const apiKeyId = '10000000-0000-4000-8000-0000000000d5';
 
-function build(options: { refuseSupplied?: boolean } = {}) {
+function build(options: { refuseSupplied?: boolean; refuseManage?: boolean } = {}) {
   const tx = { __tx: true };
   const apiKeys = {
     createApiKey: vi
       .fn()
       .mockResolvedValue({ id: apiKeyId, clientId: 'client', clientSecret: 's' }),
+    revokeApiKey: vi.fn().mockResolvedValue({ id: apiKeyId }),
+    rotateApiKey: vi.fn().mockResolvedValue({ id: apiKeyId }),
+    deleteApiKey: vi.fn().mockResolvedValue({ id: apiKeyId }),
   };
   const accountProjectApiKeys = {
     addAccountProjectApiKey: vi.fn(),
+    validateCanManageAccountProjectApiKey: options.refuseManage
+      ? vi.fn().mockRejectedValue(new AuthorizationError('refused'))
+      : vi.fn(),
     validateAccountProjectApiKeyRolePermission: options.refuseSupplied
       ? vi.fn().mockRejectedValue(new AuthorizationError('refused'))
       : vi.fn(),
@@ -80,5 +86,35 @@ describe('ApiKeysHandler.createApiKey for an account project', () => {
       expect.objectContaining({ accountRoleId: resolvedRoleId }),
       tx
     );
+  });
+});
+
+describe.each([
+  ['revoke', 'revokeApiKey'],
+  ['rotate', 'rotateApiKey'],
+  ['delete', 'deleteApiKey'],
+] as const)('ApiKeysHandler %s for an account project', (_label, method) => {
+  const input = { id: apiKeyId, scope };
+
+  it('runs the manage check before the key is changed', async () => {
+    const { handler, apiKeys, accountProjectApiKeys, tx } = build();
+
+    await handler[method]({ input } as never);
+
+    expect(accountProjectApiKeys.validateCanManageAccountProjectApiKey).toHaveBeenCalledWith(
+      accountId,
+      projectId,
+      apiKeyId,
+      tx
+    );
+    expect(apiKeys[method]).toHaveBeenCalledOnce();
+  });
+
+  it('leaves the key unchanged when the manage check refuses', async () => {
+    const { handler, apiKeys } = build({ refuseManage: true });
+
+    await expect(handler[method]({ input } as never)).rejects.toBeInstanceOf(AuthorizationError);
+
+    expect(apiKeys[method]).not.toHaveBeenCalled();
   });
 });

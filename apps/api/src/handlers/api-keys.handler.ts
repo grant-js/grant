@@ -247,6 +247,14 @@ export class ApiKeysHandler extends CacheHandler {
           id,
           tx
         );
+      } else if (scope.tenant === Tenant.AccountProject) {
+        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
+        await this.accountProjectApiKeys.validateCanManageAccountProjectApiKey(
+          accountId,
+          projectId,
+          id,
+          tx
+        );
       }
       const apiKey = await this.apiKeys.revokeApiKey(input, tx);
       return apiKey;
@@ -265,6 +273,14 @@ export class ApiKeysHandler extends CacheHandler {
           id,
           tx
         );
+      } else if (scope.tenant === Tenant.AccountProject) {
+        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
+        await this.accountProjectApiKeys.validateCanManageAccountProjectApiKey(
+          accountId,
+          projectId,
+          id,
+          tx
+        );
       }
       return await this.apiKeys.rotateApiKey({ id }, tx);
     });
@@ -278,6 +294,14 @@ export class ApiKeysHandler extends CacheHandler {
         const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
         await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
           organizationId,
+          projectId,
+          id,
+          tx
+        );
+      } else if (scope.tenant === Tenant.AccountProject) {
+        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
+        await this.accountProjectApiKeys.validateCanManageAccountProjectApiKey(
+          accountId,
           projectId,
           id,
           tx

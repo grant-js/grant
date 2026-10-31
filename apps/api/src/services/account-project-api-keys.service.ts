@@ -12,6 +12,7 @@ import { GrantAuth } from '@grantjs/core';
 import { AccountProjectApiKey } from '@grantjs/schema';
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { hasSingleRoleRow } from '@/lib/single-role-row.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import {
@@ -120,11 +121,7 @@ export class AccountProjectApiKeyService implements IAccountProjectApiKeyService
     return validateOutput(createDynamicSingleSchema(accountProjectApiKeySchema), result, context);
   }
 
-  public async validateAccountProjectApiKeyRolePermission(
-    accountId: string,
-    roleId: string,
-    transaction?: Transaction
-  ): Promise<void> {
+  private async canCarryRole(roleId: string, transaction?: Transaction): Promise<boolean> {
     if (!this.user?.userId) {
       throw new AuthorizationError('Authentication required');
     }
@@ -138,18 +135,53 @@ export class AccountProjectApiKeyService implements IAccountProjectApiKeyService
       throw new NotFoundError('Role', roleId);
     }
 
+    const roleName = targetRole.roles[0].name;
+
     // Account roles carry no level: a standard account role the caller already holds is the
     // most a key may carry.
-    if (
-      !isStandardAccountRoleName(targetRole.roles[0].name) ||
-      !userRoles.some((ur) => ur.roleId === roleId)
-    ) {
+    return (
+      isStandardAccountRoleName(roleName) &&
+      userRoles.some((ur) => ur.roleId === roleId) &&
+      (await hasSingleRoleRow(this.roleRepository, roleName, transaction))
+    );
+  }
+
+  public async validateAccountProjectApiKeyRolePermission(
+    accountId: string,
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    if (!(await this.canCarryRole(roleId, transaction))) {
       throw new AuthorizationError(
         'API keys can only be created with a standard account role that you hold'
       );
     }
 
     await this.ensureAccountHasRole(accountId, roleId, transaction);
+  }
+
+  public async validateCanManageAccountProjectApiKey(
+    accountId: string,
+    projectId: string,
+    apiKeyId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const pivot = await this.getByApiKeyAndAccountAndProject(
+      apiKeyId,
+      accountId,
+      projectId,
+      transaction
+    );
+
+    if (!pivot) {
+      throw new NotFoundError('ApiKey', apiKeyId);
+    }
+
+    if (!(await this.canCarryRole(pivot.accountRoleId, transaction))) {
+      throw new AuthorizationError(
+        'API keys can only be managed when their role is a standard account role that you hold'
+      );
+    }
   }
 
   public async resolveAccountRoleIdForCurrentUser(

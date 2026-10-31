@@ -1,4 +1,4 @@
-import { ROLES } from '@grantjs/constants';
+import { isRoleI18nKey, ROLES } from '@grantjs/constants';
 import type {
   IAuditLogger,
   IEventPublisher,
@@ -15,7 +15,7 @@ import {
   UpdateRoleInput,
 } from '@grantjs/schema';
 
-import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 import { buildDelta } from '@/lib/events';
 import { buildSearchDocument } from '@/lib/search-document.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -49,10 +49,8 @@ export class RoleService implements IRoleService {
 
   private validateRoleNameNotReserved(roleName: string): void {
     const coreRoleNames = this.getCorePlatformRoleNames();
-    if (coreRoleNames.includes(roleName)) {
-      throw new BadRequestError(
-        `Role name '${roleName}' is reserved for core platform roles and cannot be used`
-      );
+    if (coreRoleNames.includes(roleName) || isRoleI18nKey(roleName)) {
+      throw new ValidationError(`Role name '${roleName}' is a reserved name`, ['name']);
     }
   }
 

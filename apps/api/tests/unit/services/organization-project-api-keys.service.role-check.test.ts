@@ -12,7 +12,7 @@ const userId = '10000000-0000-4000-8000-0000000000b5';
 
 const name = (key: RoleKey) => ORGANIZATION_ROLE_DEFINITIONS[key].name;
 
-function build(options: { callerRole: string; targetRole: string }) {
+function build(options: { callerRole: string; targetRole: string; duplicateRoleName?: string }) {
   const organizationMemberRepository = {
     getOrganizationMember: vi.fn().mockResolvedValue({ role: { name: options.callerRole } }),
   };
@@ -28,7 +28,20 @@ function build(options: { callerRole: string; targetRole: string }) {
     }),
   };
   const roleRepository = {
-    getRoles: vi.fn().mockResolvedValue({ roles: [{ id: roleId, name: options.targetRole }] }),
+    getRoles: vi.fn().mockImplementation(async (params: { ids?: string[]; search?: string }) => {
+      if (params.ids) {
+        return { roles: [{ id: roleId, name: options.targetRole }] };
+      }
+      // Lookup by name: one row per standard name, two for the duplicated one.
+      const rows = [options.callerRole, options.targetRole]
+        .filter((roleName) => roleName === params.search)
+        .slice(0, 1)
+        .map((roleName, index) => ({ id: `row-${index}`, name: roleName }));
+      if (params.search && rows.length > 0 && options.duplicateRoleName === params.search) {
+        rows.push({ id: 'row-duplicate', name: params.search });
+      }
+      return { roles: rows };
+    }),
   };
   const service = new OrganizationProjectApiKeyService(
     organizationMemberRepository as never,
@@ -100,6 +113,44 @@ describe('OrganizationProjectApiKeyService role check', () => {
       await expect(
         service.validateOrganizationProjectApiKeyRolePermission(organizationId, roleId)
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('a standard role name carried by more than one role row', () => {
+    it('is treated as non-standard when creating a key (target role)', async () => {
+      const service = build({
+        callerRole: name(RoleKey.OrganizationDev),
+        targetRole: name(RoleKey.OrganizationViewer),
+        duplicateRoleName: name(RoleKey.OrganizationViewer),
+      });
+
+      await expect(
+        service.validateOrganizationProjectApiKeyRolePermission(organizationId, roleId)
+      ).rejects.toBeInstanceOf(AuthorizationError);
+    });
+
+    it('is treated as non-standard when creating a key (caller role)', async () => {
+      const service = build({
+        callerRole: name(RoleKey.OrganizationDev),
+        targetRole: name(RoleKey.OrganizationViewer),
+        duplicateRoleName: name(RoleKey.OrganizationDev),
+      });
+
+      await expect(
+        service.validateOrganizationProjectApiKeyRolePermission(organizationId, roleId)
+      ).rejects.toBeInstanceOf(AuthorizationError);
+    });
+
+    it('is treated as non-standard when managing a key', async () => {
+      const service = build({
+        callerRole: name(RoleKey.OrganizationAdmin),
+        targetRole: name(RoleKey.OrganizationDev),
+        duplicateRoleName: name(RoleKey.OrganizationDev),
+      });
+
+      await expect(
+        service.validateCanManageOrganizationProjectApiKey(organizationId, projectId, apiKeyId)
+      ).rejects.toBeInstanceOf(AuthorizationError);
     });
   });
 

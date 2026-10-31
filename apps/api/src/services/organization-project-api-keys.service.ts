@@ -12,6 +12,7 @@ import {
 import { ApiKey, OrganizationProjectApiKey, Role } from '@grantjs/schema';
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { hasSingleRoleRow } from '@/lib/single-role-row.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
@@ -49,6 +50,18 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
       transaction
     );
     return member?.role?.name ?? null;
+  }
+
+  private async canCarryRole(
+    currentUserRoleName: string,
+    targetRoleName: string,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    return (
+      canAssignRole(currentUserRoleName, targetRoleName) &&
+      (await hasSingleRoleRow(this.roleRepository, currentUserRoleName, transaction)) &&
+      (await hasSingleRoleRow(this.roleRepository, targetRoleName, transaction))
+    );
   }
 
   private async ensureOrganizationProjectExists(
@@ -120,7 +133,7 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
       throw new NotFoundError('Role', roleId);
     }
 
-    if (!canAssignRole(currentUserRoleName, targetRole.roles[0].name)) {
+    if (!(await this.canCarryRole(currentUserRoleName, targetRole.roles[0].name, transaction))) {
       throw new AuthorizationError(
         'API keys can only be created with a standard role of lower level than your own role'
       );
@@ -164,7 +177,7 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
       throw new NotFoundError('Role', pivot.organizationRoleId);
     }
 
-    if (!canAssignRole(currentUserRoleName, keyRole.roles[0].name)) {
+    if (!(await this.canCarryRole(currentUserRoleName, keyRole.roles[0].name, transaction))) {
       throw new AuthorizationError(
         'API keys can only be managed when their role is a standard role of lower level than your own role'
       );
