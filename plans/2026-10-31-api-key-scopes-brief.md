@@ -4,14 +4,14 @@ Copy of Grant template `docs/contributing/templates/story-brief.md`. Project Man
 
 Grounded on `origin/main` at `23869429` (**v1.22.0**, the version commit after #676/#677). Story shape: **a permission model change on one credential kind** (project API keys carry explicit permissions, bound by what their creator holds) with a dashboard surface: Architect + Backend + Frontend + QA + Security + Verifier (activation matrix in `docs/contributing/agentic-sdlc.md`); slices in [the stack plan](./2026-10-31-api-key-scopes-stack.md). Open-source language only: no customer or tenant names; the other system is "a receiver that mirrors Grant into another system". Release proposed as **v1.23.0** (minor; the stack plan justifies it).
 
-**Status: draft (Gates 1–2 pending Alejandro).** Section "Decisions for Gate 1" lists each question with a recommended answer; the criteria are written for the recommended option and say where another option would change them. Section "Findings that shape the criteria" lists what the code changed about the request, including two places where the API-key role check is hardened (findings 1 and 2). **The hardening ships in S1; release wording follows SECURITY.md, see "Risk flags".**
+**Status: approved (Gates 1–2, Alejandro 2026-10-31, every recommended answer; question 14 decided for the separate patch release first, v1.22.1, see the note under question 14).** Section "Decisions for Gate 1" lists each question with a recommended answer; the criteria are written for the recommended option and say where another option would change them. Section "Findings that shape the criteria" lists what the code changed about the request, including two places where the API-key role check is hardened (findings 1 and 2). **The hardening ships in S1; release wording follows SECURITY.md, see "Risk flags".**
 
 ## Metadata
 
 - **Slug**: `api-key-scopes`
 - **Date**: 2026-10-31
 - **Author** (human / PM agent): PM agent (Claude, for Alejandro)
-- **Status**: draft (Gates 1–2 pending Alejandro)
+- **Status**: approved (Gates 1–2, Alejandro 2026-10-31; question 14 → patch release v1.22.1 first)
 
 ## Objective
 
@@ -169,8 +169,11 @@ Each question has a recommended answer; the criteria above are written for it.
 12. **Release.** Minor, **v1.23.0**: a migration, a new action, new fields, a new query, a mutation and two routes, an event type; all additive (`roleId` keeps working, existing keys unchanged). **Recommended: minor.**
 13. **Review bars.** Security-full on S1 and S2, Security blocking, independent reviewer before each gate 3; light on S3 and S4 with a Security read. **Recommended as stated.**
 14. **Release of the S1 hardening.** Lands in S1 of this story, described as a hardening until release, detailed in the ADR and the release notes after v1.23.0, advisory at Alejandro's discretion. **Recommended.** Alternative: a separate patch release (v1.22.1) with only the S1 check, ahead of the story; slice 1 then rebases onto it (stack plan, slice 1 notes).
+
+    **Decided at Gate 1 (Alejandro, 2026-10-31):** the S1 hardening ships **first as a separate patch release, v1.22.1**, from a plain PR against `main` with the same content, tests and review bar; this story's trunk rebases onto the released `main` before `gh stack init`, and S1 then carries the remainder (model, attenuation service, machine-only flag) without the already-released hardening.
+
 15. **Slice count.** Four (model and attenuation; resolution and surface; web; ADR and example). **Recommended: four**; the stack plan gives the three-slice collapse (S4 into S2) as the alternative.
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until Alejandro confirms before stack planning.
+- [x] Gate 1: Story brief approved — Alejandro, 2026-10-31: questions 1–13 and 15 as recommended; question 14 decided for the patch release first (v1.22.1 from a plain PR against `main`, then this trunk rebases on the released `main`).
