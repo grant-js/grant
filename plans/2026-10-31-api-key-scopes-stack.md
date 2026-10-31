@@ -10,7 +10,7 @@ Grounded on `origin/main` `23869429` (v1.22.0, the version commit after #676/#67
 
 - **Slug**: `api-key-scopes`
 - **Story brief**: `plans/2026-10-31-api-key-scopes-brief.md`
-- **Status**: approved (Gates 1–2, Alejandro 2026-10-31; four slices, bars as planned, minor v1.23.0; hardening first as patch v1.22.1, trunk rebases on it)
+- **Status**: in review (Gates 1–3 done, Alejandro 2026-10-31; Gate 4 on the story PR; four slices, minor v1.23.0; the hardening shipped first as #678 and the trunk merged `main` instead of rebasing)
 - **Story trunk**: `feat/api-key-scopes` from `main` at `23869429` (exists locally, holds the two plan files; **not pushed until Gate 1 is answered**). The `feat/` prefix is deliberate: `ci.yml` runs only for pull requests whose base is `main` or `feat/**` (`.github/workflows/ci.yml:7`), and every slice branch below also starts with `feat/`, so every slice PR gets CI, including the e2e suite.
 - **worktree_path**: `/Users/aleheredia/workspace/worktrees/grant-platform-feat-api-key-scopes` (holds the trunk; slice branches are created from it after Gate 2 by `gh stack init` / `gh stack add`, which check the slice out in this worktree, or in a second worktree when two slices run at once). `pnpm install --frozen-lockfile --ignore-scripts` has been run in it (2026-10-31); `tsx` runs from `node_modules/.bin`, so unit tests and the constants probe run here. No Docker stack in this worktree: e2e runs in CI or on a host with `pnpm test:e2e`.
 - **Release**: **minor, v1.23.0** (`grant-api`, `@grantjs/schema`, `grant-web`, `grant-docs` move with the fixed group). Justification: one migration (two columns made nullable, one new table), a new resource action placed in three groups, new GraphQL fields, one query, one mutation, two REST routes, one event type, a new dashboard view pair; all additive (`roleId` keeps working, existing keys and their roles are unchanged, `ApiKey.role` was already nullable), so minor rather than major or patch. Each slice carries its own changeset; the version PR takes the highest bump. The S1 hardening of the API-key role check ships inside this minor unless Gate 1 question 14 pulls it forward as a separate patch release (slice 1 notes).
@@ -177,8 +177,8 @@ gh pr view <bottom-pr> --json baseRefName   # must be feat/api-key-scopes, never
 
 - [x] Gate 1: Story brief approved — Alejandro, 2026-10-31, as recommended; question 14 → patch release first. (Was: pending Alejandro (15 questions, each with a recommended answer; question 6 recommends editable scopes, question 14 decides whether the S1 hardening ships first as a patch release).
 - [x] Gate 2: Stack plan approved — Alejandro, 2026-10-31, as written (four slices). Was pending: order 1→2→3→4 (or the three-slice collapse), security-full on 1 and 2, the named contracts above, the Frontend flow point under slice 3, minor v1.23.0. No implementation until confirmed.
-- [ ] Gate 3: Stack PRs merged into trunk (security-full on 1 and 2, light with a Security read on 3 and 4).
-- [ ] Gate 4: Story → `main` deep review complete.
+- [x] Gate 3: Stack PRs merged into trunk — Alejandro, 2026-10-31: #679 → `6b625272`, #682 → `6d0b6248`, #684 → `b79cbf33`, #685 → `8497b5cd`.
+- [ ] Gate 4: Story → `main` deep review complete (story PR opened 2026-10-31, minor v1.23.0).
 
 ## Cleanup
 
