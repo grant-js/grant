@@ -7,11 +7,8 @@ import { LucideIcon, ShieldPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from '@/i18n/navigation';
-import { getEntityCreateUrl } from '@/lib/entity-detail-url';
+import { type EntitySegment, getEntityCreateUrl } from '@/lib/entity-detail-url';
 import { cn } from '@/lib/utils';
-
-type EntitySegment =
-  'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps' | 'webhooks';
 
 interface EntityCreateNavigateButtonProps {
   entitySegment: EntitySegment;

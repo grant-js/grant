@@ -54,10 +54,12 @@ describe('operation documents', () => {
   // 138 after operator-set-email: SetProjectUserEmailDocument.
   // 140 after operator-set-password: SetProjectUserPasswordDocument, ExportProjectUserCredentialsDocument.
   // 141 after exportable-api-key-secret opt-in: SetProjectExportableApiKeySecretsDocument.
+  // 144 after api-key scopes web: GetApiKeyAttachableGrantsDocument, SetApiKeyPermissionsDocument,
+  // GetApiKeyRolePermissionsDocument.
   // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(141);
+    expect(files).toHaveLength(144);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {
