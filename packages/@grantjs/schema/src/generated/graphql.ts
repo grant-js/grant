@@ -50,6 +50,26 @@ export type ExchangeApiKeyMutationVariables = Exact<{
 
 export type ExchangeApiKeyMutation = { exchangeApiKey: { accessToken: string; expiresIn: number } };
 
+export type GetApiKeyAttachableGrantsQueryVariables = Exact<{
+  scope: Types.Scope;
+}>;
+
+export type GetApiKeyAttachableGrantsQuery = {
+  apiKeyAttachableGrants: {
+    permissions: Array<{
+      machineOnly: boolean;
+      permission: {
+        id: string;
+        name: string;
+        action: string;
+        description: string | null;
+        resource: { id: string; slug: string; name: string } | null;
+      };
+    }>;
+    roles: Array<{ id: string; name: string; description: string | null }>;
+  };
+};
+
 export type GetApiKeysQueryVariables = Exact<{
   scope: Types.Scope;
   page?: number | null | undefined;
@@ -78,6 +98,13 @@ export type GetApiKeysQuery = {
       updatedAt: Date;
       deletedAt: Date | null;
       role: { id: string; name: string } | null;
+      permissions: Array<{
+        id: string;
+        name: string;
+        action: string;
+        description: string | null;
+        resource: { id: string; slug: string; name: string } | null;
+      }> | null;
       createdByUser: { id: string; name: string; pictureUrl: string | null } | null;
       revokedByUser: { id: string; name: string; pictureUrl: string | null } | null;
     }>;
@@ -119,6 +146,31 @@ export type RotateApiKeyMutation = {
     description: string | null;
     expiresAt: Date | null;
     createdAt: Date;
+  };
+};
+
+export type SetApiKeyPermissionsMutationVariables = Exact<{
+  input: Types.SetApiKeyPermissionsInput;
+}>;
+
+export type SetApiKeyPermissionsMutation = {
+  setApiKeyPermissions: {
+    id: string;
+    clientId: string;
+    name: string | null;
+    description: string | null;
+    expiresAt: Date | null;
+    lastUsedAt: Date | null;
+    isRevoked: boolean;
+    updatedAt: Date;
+    role: { id: string; name: string } | null;
+    permissions: Array<{
+      id: string;
+      name: string;
+      action: string;
+      description: string | null;
+      resource: { id: string; slug: string; name: string } | null;
+    }> | null;
   };
 };
 
@@ -2530,6 +2582,97 @@ export const ExchangeApiKeyDocument = {
     },
   ],
 } as unknown as DocumentNode<ExchangeApiKeyMutation, ExchangeApiKeyMutationVariables>;
+export const GetApiKeyAttachableGrantsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetApiKeyAttachableGrants' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'apiKeyAttachableGrants' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'permissions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'machineOnly' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'permission' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'resource' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'roles' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetApiKeyAttachableGrantsQuery,
+  GetApiKeyAttachableGrantsQueryVariables
+>;
 export const GetApiKeysDocument = {
   kind: 'Document',
   definitions: [
@@ -2646,6 +2789,31 @@ export const GetApiKeysDocument = {
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'permissions' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'resource' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                ],
+                              },
+                            },
                           ],
                         },
                       },
@@ -2788,6 +2956,91 @@ export const RotateApiKeyDocument = {
     },
   ],
 } as unknown as DocumentNode<RotateApiKeyMutation, RotateApiKeyMutationVariables>;
+export const SetApiKeyPermissionsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetApiKeyPermissions' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'SetApiKeyPermissionsInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'setApiKeyPermissions' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'clientId' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'expiresAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'lastUsedAt' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'isRevoked' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'role' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'permissions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'action' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'resource' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'slug' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SetApiKeyPermissionsMutation, SetApiKeyPermissionsMutationVariables>;
 export const AuthSignupPolicyDocument = {
   kind: 'Document',
   definitions: [

@@ -25,6 +25,17 @@ query GetApiKeys(
         id
         name
       }
+      permissions {
+        id
+        name
+        action
+        description
+        resource {
+          id
+          slug
+          name
+        }
+      }
       createdByUser {
         id
         name

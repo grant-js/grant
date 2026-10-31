@@ -36,7 +36,7 @@ type DialogFieldType =
   | 'select'
   | 'json';
 
-export interface DialogFieldOption {
+interface DialogFieldOption {
   value: string;
   label: string;
   /** Optional description shown below the label (e.g. for role selector) */
