@@ -18,6 +18,13 @@ import type {
 
 import type { IEntityExistence, OptionalListScope, SelectedFields } from './common';
 
+/** A live permission row reduced to what identifies it: its id, resource slug and action. */
+export interface PermissionRef {
+  id: string;
+  resource: string;
+  action: string;
+}
+
 export interface IPermissionRepository extends IEntityExistence {
   getPermissions(
     params: Omit<QueryPermissionsArgs, 'scope'> & OptionalListScope & SelectedFields<Permission>,
@@ -45,6 +52,15 @@ export interface IPermissionRepository extends IEntityExistence {
   ): Promise<Permission>;
 
   getPermissionsByResourceId(resourceId: string, transaction?: unknown): Promise<Permission[]>;
+
+  /** The live rows among the given ids; an id with no live row is absent from the result. */
+  getPermissionRefsByIds(ids: readonly string[], transaction?: unknown): Promise<PermissionRef[]>;
+
+  /** The live rows of the given resource and action pairs (slug match is case-insensitive). */
+  getPermissionRefsByActions(
+    pairs: readonly { resource: string; action: string }[],
+    transaction?: unknown
+  ): Promise<PermissionRef[]>;
 }
 
 export interface IPermissionTagRepository {

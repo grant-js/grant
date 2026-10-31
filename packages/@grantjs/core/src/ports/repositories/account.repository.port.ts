@@ -167,21 +167,36 @@ export interface IAccountProjectTagRepository {
   ): Promise<AccountProjectTag>;
 }
 
+/** An account project API key pivot row; the role is null for a key that carries permissions instead. */
+export type AccountProjectApiKeyRow = Omit<AccountProjectApiKey, 'accountRoleId'> & {
+  accountRoleId: string | null;
+};
+
+export type AddAccountProjectApiKeyParams = Omit<AddAccountProjectApiKeyInput, 'accountRoleId'> & {
+  accountRoleId: string | null;
+};
+
 export interface IAccountProjectApiKeyRepository {
   getAccountProjectApiKeys(
     params: QueryAccountProjectApiKeysInput,
     transaction?: unknown
-  ): Promise<AccountProjectApiKey[]>;
+  ): Promise<AccountProjectApiKeyRow[]>;
 
   addAccountProjectApiKey(
-    params: AddAccountProjectApiKeyInput,
+    params: AddAccountProjectApiKeyParams,
     transaction?: unknown
-  ): Promise<AccountProjectApiKey>;
+  ): Promise<AccountProjectApiKeyRow>;
 
   getByApiKeyAndAccountAndProject(
     apiKeyId: string,
     accountId: string,
     projectId: string,
     transaction?: unknown
-  ): Promise<AccountProjectApiKey | null>;
+  ): Promise<AccountProjectApiKeyRow | null>;
+
+  /** Sets the key's role to null: the key carries permissions of its own from then on. */
+  clearRole(
+    params: { apiKeyId: string; accountId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<AccountProjectApiKeyRow>;
 }

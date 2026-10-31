@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { ApiKey, Scope, Tenant } from '@grantjs/schema';
+import { ApiKey, Scope } from '@grantjs/schema';
 import { format } from 'date-fns';
 import { KeyRound } from 'lucide-react';
 
@@ -13,6 +13,7 @@ import {
   CopyToClipboard,
   DataTable,
   type DataTableColumnConfig,
+  EntityNavigationButton,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import {
@@ -24,14 +25,16 @@ import {
 } from '@/components/features/user/user-detail-table-layout';
 import { useApiKeys } from '@/hooks/api-keys';
 import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { isProjectApiKeyScope } from '@/lib/api-key-grants';
 import { API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
 import { type ApiKeyView, useApiKeysStore } from '@/stores/api-keys.store';
 
 import { ApiKeyActions } from './api-key-actions';
 import { ApiKeyAudit } from './api-key-audit';
 import { ApiKeyCards } from './api-key-cards';
-import { ApiKeyCreateDialog } from './api-key-create-dialog';
+import { ApiKeyCreateAction } from './api-key-create-action';
 import { ApiKeySecretDialog } from './api-key-secret-dialog';
+import { useApiKeyGrantLabel } from './use-api-key-grant-label';
 
 export interface ApiKeyViewerProps {
   /** When not provided, scope is derived from URL params. */
@@ -51,7 +54,7 @@ export function ApiKeyViewer({
   const scope = scopeProp ?? scopeFromParams;
 
   const t = useTranslations('user.apiKeys');
-  const tRoot = useTranslations();
+  const grantLabel = useApiKeyGrantLabel();
   const page = useApiKeysStore((state) => state.page);
   const limit = useApiKeysStore((state) => state.limit);
   const search = useApiKeysStore((state) => state.search);
@@ -104,9 +107,7 @@ export function ApiKeyViewer({
     scope: scope!,
   });
 
-  const showRoleColumn =
-    scope != null &&
-    (scope.tenant === Tenant.AccountProject || scope.tenant === Tenant.OrganizationProject);
+  const showRoleColumn = isProjectApiKeyScope(scope);
 
   const formatDate = useCallback(
     (date: string | Date | null | undefined): string => {
@@ -191,9 +192,7 @@ export function ApiKeyViewer({
               width: '150px',
               ...USER_DETAIL_TEXT_COLUMN,
               render: (apiKey: ApiKey) => (
-                <span className="text-sm text-muted-foreground">
-                  {tRoot(apiKey.role?.name ?? '—')}
-                </span>
+                <span className="text-sm text-muted-foreground">{grantLabel(apiKey)}</span>
               ),
             },
           ]
@@ -242,8 +241,25 @@ export function ApiKeyViewer({
         width: '200px',
         render: (apiKey: ApiKey) => <ApiKeyAudit apiKey={apiKey} />,
       },
+      ...(showRoleColumn
+        ? [
+            {
+              key: 'navigation',
+              header: '',
+              width: '60px',
+              render: (apiKey: ApiKey) => (
+                <EntityNavigationButton
+                  entitySegment="api-keys"
+                  entityId={apiKey.id}
+                  ariaLabel={t('actions.view')}
+                  size="sm"
+                />
+              ),
+            },
+          ]
+        : []),
     ],
-    [embedded, formatDate, showRoleColumn, t, tRoot]
+    [embedded, formatDate, grantLabel, showRoleColumn, t]
   );
 
   const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
@@ -275,6 +291,7 @@ export function ApiKeyViewer({
         { key: 'expiresAt', type: 'text' },
         { key: 'lastUsedAt', type: 'text' },
         { key: 'audit', type: 'audit' },
+        ...(showRoleColumn ? [{ key: 'navigation' as const, type: 'icon' as const }] : []),
       ]),
       rowCount: 5,
     }),
@@ -326,9 +343,7 @@ export function ApiKeyViewer({
           icon: <KeyRound />,
           title: t('empty'),
           description: t('emptyDescription'),
-          action: (
-            <ApiKeyCreateDialog onApiKeyCreated={handleApiKeyCreated} triggerAlwaysShowLabel />
-          ),
+          action: <ApiKeyCreateAction onApiKeyCreated={handleApiKeyCreated} alwaysShowLabel />,
         }}
         actionsColumn={{
           render: (apiKey: ApiKey) => <ApiKeyActions apiKey={apiKey} scope={scope!} />,

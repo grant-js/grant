@@ -6,9 +6,7 @@ import { ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/navigation';
-import { getEntityDetailUrl } from '@/lib/entity-detail-url';
-
-type EntitySegment = 'roles' | 'groups' | 'permissions' | 'users' | 'resources' | 'apps';
+import { type EntitySegment, getEntityDetailUrl } from '@/lib/entity-detail-url';
 
 interface EntityNavigationButtonProps {
   entitySegment: EntitySegment;

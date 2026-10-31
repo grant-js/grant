@@ -1,16 +1,16 @@
-import type { IOrganizationProjectApiKeyRepository } from '@grantjs/core';
+import type {
+  AddOrganizationProjectApiKeyParams,
+  IOrganizationProjectApiKeyRepository,
+  OrganizationProjectApiKeyRow,
+} from '@grantjs/core';
 import { OrganizationProjectApiKeyModel, organizationProjectApiKeys } from '@grantjs/database';
-import {
-  AddOrganizationProjectApiKeyInput,
-  OrganizationProjectApiKey,
-  QueryOrganizationProjectApiKeysInput,
-} from '@grantjs/schema';
+import { QueryOrganizationProjectApiKeysInput } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
 export class OrganizationProjectApiKeyRepository
-  extends PivotRepository<OrganizationProjectApiKeyModel, OrganizationProjectApiKey>
+  extends PivotRepository<OrganizationProjectApiKeyModel, OrganizationProjectApiKeyRow>
   implements IOrganizationProjectApiKeyRepository
 {
   protected table = organizationProjectApiKeys;
@@ -20,22 +20,29 @@ export class OrganizationProjectApiKeyRepository
     'apiKeyId',
   ];
 
-  protected toEntity(dbPivot: OrganizationProjectApiKeyModel): OrganizationProjectApiKey {
+  protected toEntity(dbPivot: OrganizationProjectApiKeyModel): OrganizationProjectApiKeyRow {
     return dbPivot;
   }
 
   public async getOrganizationProjectApiKeys(
     params: QueryOrganizationProjectApiKeysInput,
     transaction?: Transaction
-  ): Promise<OrganizationProjectApiKey[]> {
+  ): Promise<OrganizationProjectApiKeyRow[]> {
     return this.query(params, transaction);
   }
 
   public async addOrganizationProjectApiKey(
-    params: AddOrganizationProjectApiKeyInput,
+    params: AddOrganizationProjectApiKeyParams,
     transaction?: Transaction
-  ): Promise<OrganizationProjectApiKey> {
+  ): Promise<OrganizationProjectApiKeyRow> {
     return this.add(params, transaction);
+  }
+
+  public async clearRole(
+    params: { apiKeyId: string; organizationId: string; projectId: string },
+    transaction?: Transaction
+  ): Promise<OrganizationProjectApiKeyRow> {
+    return this.update(params, { organizationRoleId: null, updatedAt: new Date() }, transaction);
   }
 
   public async getByApiKeyAndOrganizationAndProject(
@@ -43,7 +50,7 @@ export class OrganizationProjectApiKeyRepository
     organizationId: string,
     projectId: string,
     transaction?: Transaction
-  ): Promise<OrganizationProjectApiKey | null> {
+  ): Promise<OrganizationProjectApiKeyRow | null> {
     const rows = await this.getOrganizationProjectApiKeys(
       { apiKeyId, organizationId, projectId },
       transaction

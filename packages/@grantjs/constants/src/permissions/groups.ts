@@ -550,17 +550,32 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
 
   [GroupKey.ApiKeyOwner]: {
     resource: ResourceSlug.ApiKey,
-    permissions: [ResourceAction.Create, ResourceAction.Delete, ResourceAction.Revoke],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.Revoke,
+    ],
     assignedRoles: [RoleKey.OrganizationOwner],
   },
   [GroupKey.ApiKeyAdmin]: {
     resource: ResourceSlug.ApiKey,
-    permissions: [ResourceAction.Create, ResourceAction.Delete, ResourceAction.Revoke],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.Revoke,
+    ],
     assignedRoles: [RoleKey.OrganizationAdmin],
   },
   [GroupKey.ApiKeyDev]: {
     resource: ResourceSlug.ApiKey,
-    permissions: [ResourceAction.Create, ResourceAction.Delete, ResourceAction.Revoke],
+    permissions: [
+      ResourceAction.Create,
+      ResourceAction.Update,
+      ResourceAction.Delete,
+      ResourceAction.Revoke,
+    ],
     assignedRoles: [RoleKey.OrganizationDev],
   },
   [GroupKey.ApiKeyViewer]: {

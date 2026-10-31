@@ -390,7 +390,7 @@ Revokes the user's project-app OAuth grants and clears the project lockout. Plat
 
 Two kinds, chosen with \`kinds\` (default \`["PASSWORD"]\`, never empty): \`PASSWORD\` returns \`password: { algorithm: "bcrypt", hash }\`; \`API_KEY_SECRET\` returns \`apiKeySecrets\`, the member's live project-user API keys (oldest first), each with its \`clientId\`, its \`fingerprint\` (the SHA-256 of the secret as issued, for the receiver to verify the pair) and the plaintext \`secret\`. Every exported secret is 88 characters of standard base64 (64 random bytes). A key has a \`secret\` only when its project opted in to exportable API-key secrets before the key was created or last rotated; any other key is listed with \`secret: null\`. A kind that was not requested is \`null\` in the result.
 
-Requires \`ProjectUser:ExportCredentials\`, which no standard group holds: grant it to a role's group per organization. An unauthorized call is refused before anything runs and writes no audit row.
+Requires \`ProjectUser:ExportCredentials\`, a machine-only permission: no standard group holds it, and an Owner or Admin (holders of \`ProjectUser:SetPassword\`) attaches it to a project API key (ADR 0014). An unauthorized call is refused before anything runs and writes no audit row.
 
 Every user in \`userIds\` must be a member of the project, otherwise the whole call fails with 404 and nothing is exported or audited (no partial export). \`userIds\` is capped at one page (the API maximum page size). Members without a project credential are listed with \`password: null\`. The result follows the order of \`userIds\`.
 

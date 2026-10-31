@@ -20,13 +20,11 @@ function build() {
   const projectUserApiKeys = { addProjectUserApiKey: vi.fn() };
   const accountProjectApiKeys = {
     addAccountProjectApiKey: vi.fn(),
-    validateAccountProjectApiKeyRolePermission: vi.fn(),
     resolveAccountRoleIdForCurrentUser: vi.fn().mockResolvedValue(roleId),
   };
-  const organizationProjectApiKeys = {
-    addOrganizationProjectApiKey: vi.fn(),
-    validateOrganizationProjectApiKeyRolePermission: vi.fn(),
-  };
+  const organizationProjectApiKeys = { addOrganizationProjectApiKey: vi.fn() };
+  const apiKeyAttenuation = { assertAttachable: vi.fn(), assertCanManage: vi.fn() };
+  const apiKeyPermissions = { attach: vi.fn() };
   const cache = { apiKeys: { has: vi.fn().mockResolvedValue(false) } };
 
   const handler = new ApiKeysHandler(
@@ -34,6 +32,9 @@ function build() {
     accountProjectApiKeys as never,
     organizationProjectApiKeys as never,
     projectUserApiKeys as never,
+    apiKeyAttenuation as never,
+    apiKeyPermissions as never,
+    {} as never,
     {} as never,
     cache as never,
     {} as never,

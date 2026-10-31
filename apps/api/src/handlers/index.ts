@@ -113,7 +113,10 @@ export function createHandlers(
       services.accountProjectApiKeys,
       services.organizationProjectApiKeys,
       services.projectUserApiKeys,
+      services.apiKeyAttenuation,
+      services.apiKeyPermissions,
       services.roles,
+      services.permissions,
       cache,
       services,
       db

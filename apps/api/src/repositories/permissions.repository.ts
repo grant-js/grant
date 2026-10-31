@@ -1,4 +1,4 @@
-import type { IPermissionRepository, OptionalListScope } from '@grantjs/core';
+import type { IPermissionRepository, OptionalListScope, PermissionRef } from '@grantjs/core';
 import { PermissionModel, permissions, permissionTags, resources, tags } from '@grantjs/database';
 import {
   CreatePermissionInput,
@@ -11,7 +11,7 @@ import {
   QueryPermissionsArgs,
   Resource,
 } from '@grantjs/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import {
@@ -129,5 +129,51 @@ export class PermissionRepository
       updatedAt: p.updatedAt,
       deletedAt: p.deletedAt,
     })) as Permission[];
+  }
+
+  public async getPermissionRefsByIds(
+    ids: readonly string[],
+    transaction?: Transaction
+  ): Promise<PermissionRef[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const db = transaction || this.db;
+    return db
+      .select({ id: permissions.id, resource: resources.slug, action: permissions.action })
+      .from(permissions)
+      .innerJoin(
+        resources,
+        and(eq(permissions.resourceId, resources.id), isNull(resources.deletedAt))
+      )
+      .where(and(inArray(permissions.id, [...ids]), isNull(permissions.deletedAt)));
+  }
+
+  public async getPermissionRefsByActions(
+    pairs: readonly { resource: string; action: string }[],
+    transaction?: Transaction
+  ): Promise<PermissionRef[]> {
+    if (pairs.length === 0) {
+      return [];
+    }
+    const db = transaction || this.db;
+    return db
+      .select({ id: permissions.id, resource: resources.slug, action: permissions.action })
+      .from(permissions)
+      .innerJoin(
+        resources,
+        and(eq(permissions.resourceId, resources.id), isNull(resources.deletedAt))
+      )
+      .where(
+        and(
+          isNull(permissions.deletedAt),
+          or(
+            ...pairs.map(
+              (pair) =>
+                sql`(lower(${resources.slug}) = ${pair.resource.trim().toLowerCase()} AND lower(${permissions.action}) = ${pair.action.trim().toLowerCase()})`
+            )
+          )
+        )
+      );
   }
 }

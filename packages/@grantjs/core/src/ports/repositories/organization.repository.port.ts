@@ -264,23 +264,39 @@ export interface IOrganizationProjectTagRepository {
   ): Promise<OrganizationProjectTag>;
 }
 
+/** An organization project API key pivot row; the role is null for a key that carries permissions instead. */
+export type OrganizationProjectApiKeyRow = Omit<OrganizationProjectApiKey, 'organizationRoleId'> & {
+  organizationRoleId: string | null;
+};
+
+export type AddOrganizationProjectApiKeyParams = Omit<
+  AddOrganizationProjectApiKeyInput,
+  'organizationRoleId'
+> & { organizationRoleId: string | null };
+
 export interface IOrganizationProjectApiKeyRepository {
   getOrganizationProjectApiKeys(
     params: QueryOrganizationProjectApiKeysInput,
     transaction?: unknown
-  ): Promise<OrganizationProjectApiKey[]>;
+  ): Promise<OrganizationProjectApiKeyRow[]>;
 
   addOrganizationProjectApiKey(
-    params: AddOrganizationProjectApiKeyInput,
+    params: AddOrganizationProjectApiKeyParams,
     transaction?: unknown
-  ): Promise<OrganizationProjectApiKey>;
+  ): Promise<OrganizationProjectApiKeyRow>;
 
   getByApiKeyAndOrganizationAndProject(
     apiKeyId: string,
     organizationId: string,
     projectId: string,
     transaction?: unknown
-  ): Promise<OrganizationProjectApiKey | null>;
+  ): Promise<OrganizationProjectApiKeyRow | null>;
+
+  /** Sets the key's role to null: the key carries permissions of its own from then on. */
+  clearRole(
+    params: { apiKeyId: string; organizationId: string; projectId: string },
+    transaction?: unknown
+  ): Promise<OrganizationProjectApiKeyRow>;
 }
 
 export interface IOrganizationTagRepository {

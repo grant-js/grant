@@ -25,6 +25,7 @@ import { ConfigurationError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { buildCloudEventEnvelope } from '@/lib/webhooks/webhook-envelope.lib';
 import { ApiKeyExportableSecretService } from '@/services/api-key-exportable-secrets.service';
+import { ApiKeyPermissionService } from '@/services/api-key-permissions.service';
 import { ApiKeyService } from '@/services/api-keys.service';
 
 const SENTINEL = sentinelBytes.toString('base64url');
@@ -292,6 +293,113 @@ describe('API-key events never carry a secret', () => {
       expect(storedCopies).toHaveLength(0);
       expect(audit.logCreate).not.toHaveBeenCalled();
       expect(events.publish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('a project key that carries permissions', () => {
+    const permissionRefs = [
+      {
+        id: '40000000-0000-4000-8000-000000000001',
+        resource: 'SentinelResource',
+        action: 'SentinelRead',
+      },
+      {
+        id: '40000000-0000-4000-8000-000000000002',
+        resource: 'SentinelResource',
+        action: 'SentinelWrite',
+      },
+    ];
+
+    it('keeps the secret out of every surface, and names no permission in api_key.updated', async () => {
+      const logs = captureLogs();
+      const { service, audit, events, hashes } = build();
+      const permissionAudit = { logAction: vi.fn() };
+      const permissionService = new ApiKeyPermissionService(
+        {
+          addForKey: vi.fn().mockResolvedValue(permissionRefs.map((ref) => ref.id)),
+          replaceForKey: vi
+            .fn()
+            .mockResolvedValue({ added: [permissionRefs[1].id], removed: [permissionRefs[0].id] }),
+        } as never,
+        { getPermissionRefsByIds: vi.fn().mockResolvedValue(permissionRefs) } as never,
+        permissionAudit as never
+      );
+
+      const created = await service.createApiKey({
+        name: 'Prod key',
+        grant: { kind: 'permissions', permissionCount: permissionRefs.length },
+      });
+      await permissionService.attach({
+        apiKeyId,
+        projectId,
+        permissionIds: permissionRefs.map((ref) => ref.id),
+      });
+      await permissionService.replace({
+        apiKeyId,
+        projectId,
+        permissionIds: [permissionRefs[1].id],
+      });
+      const key = await service.getEditableApiKey({ id: apiKeyId });
+      await service.publishApiKeyUpdated({
+        apiKey: key,
+        before: { permissionCount: 2 },
+        after: { permissionCount: 1 },
+      });
+      logs.restore();
+
+      expect(created.clientSecret).toBe(SENTINEL);
+
+      const published = vi.mocked(events.publish).mock.calls.map(([event]) => event);
+      expect(published.map((event) => event.type)).toEqual(['api_key.created', 'api_key.updated']);
+      const updated = published[1];
+      const envelope = buildCloudEventEnvelope(
+        {
+          id: '20000000-0000-4000-8000-000000000009',
+          sequence: 9,
+          type: updated.type,
+          category: 'security',
+          deliveryClass: 'transactional',
+          scope: { tenant: Tenant.ProjectUser, id: `${projectId}:${userId}` },
+          actorUserId: createdBy,
+          subjectUserId: null,
+          aggregate: updated.aggregate,
+          data: updated.data,
+          occurredAt: new Date('2026-01-04T00:00:00.000Z'),
+          projectIds: updated.projectIds,
+        } as DomainEvent,
+        'https://grant.example.invalid'
+      );
+
+      const surfaces = {
+        'published events': published,
+        'external envelope': envelope,
+        'audit values': [
+          ...vi.mocked(audit.logCreate).mock.calls,
+          ...permissionAudit.logAction.mock.calls,
+        ],
+        'log lines': logs.lines,
+      };
+      for (const [surface, value] of Object.entries(surfaces)) {
+        const text = JSON.stringify(value);
+        for (const secret of [SENTINEL, ...hashes]) {
+          expect(text, `${surface} must not contain a secret`).not.toContain(secret);
+        }
+      }
+
+      // The event and its envelope carry the key and two counts: no permission, no owner.
+      for (const text of [JSON.stringify(updated), JSON.stringify(envelope)]) {
+        expect(text).not.toContain('Sentinel');
+        for (const ref of permissionRefs) {
+          expect(text).not.toContain(ref.id);
+        }
+      }
+      expect(updated.data).toEqual({
+        before: { id: apiKeyId, name: 'Prod key', permissionCount: 2 },
+        after: { id: apiKeyId, name: 'Prod key', permissionCount: 1 },
+      });
+      expect(envelope.grantsubjectuser).toBeNull();
+      expect(envelope.data).toMatchObject({ before: { id: apiKeyId, name: 'Prod key' } });
+      expect(JSON.stringify(envelope.data.before)).not.toContain('permissionCount');
     });
   });
 });

@@ -314,7 +314,10 @@ export class ApiKeyService implements IApiKeyService {
   }
 
   public async createApiKey(
-    params: Omit<CreateApiKeyInput, 'scope'> & { owner?: { projectId: string; userId: string } },
+    params: Omit<CreateApiKeyInput, 'scope'> & {
+      owner?: { projectId: string; userId: string };
+      grant?: { kind: 'role' | 'permissions'; permissionCount: number };
+    },
     transaction?: Transaction
   ): Promise<CreateApiKeyResult> {
     const context = 'ApiKeyService.createApiKey';
@@ -364,7 +367,18 @@ export class ApiKeyService implements IApiKeyService {
       createdAt: apiKey.createdAt,
     };
 
-    await this.audit.logCreate(apiKey.id, newValues, { action: 'CREATE_API_KEY' }, transaction);
+    await this.audit.logCreate(
+      apiKey.id,
+      newValues,
+      {
+        action: 'CREATE_API_KEY',
+        ...(validatedParams.grant && {
+          grant: validatedParams.grant.kind,
+          permissionCount: validatedParams.grant.permissionCount,
+        }),
+      },
+      transaction
+    );
 
     await this.events.publish(
       {
@@ -866,6 +880,45 @@ export class ApiKeyService implements IApiKeyService {
     };
 
     return validateOutput(createApiKeyResponseSchema, response, context) as CreateApiKeyResult;
+  }
+
+  public async getEditableApiKey(
+    params: { id: string },
+    transaction?: Transaction
+  ): Promise<ApiKey> {
+    const apiKey = await this.apiKeyRepository.getApiKey(params.id, transaction);
+    if (!apiKey) {
+      throw new NotFoundError('ApiKey');
+    }
+    if (apiKey.isRevoked) {
+      throw new BadRequestError('Cannot change the permissions of a revoked API key');
+    }
+    return apiKey;
+  }
+
+  public async publishApiKeyUpdated(
+    params: {
+      apiKey: ApiKey;
+      before: { permissionCount: number };
+      after: { permissionCount: number };
+    },
+    transaction?: Transaction
+  ): Promise<void> {
+    const { apiKey, before, after } = params;
+    const { projectIds } = await this.resolveOwnerSubject(apiKey.id, transaction);
+
+    await this.events.publish(
+      {
+        type: 'api_key.updated',
+        aggregate: { kind: 'apiKey', id: apiKey.id },
+        data: {
+          before: { id: apiKey.id, name: apiKey.name, permissionCount: before.permissionCount },
+          after: { id: apiKey.id, name: apiKey.name, permissionCount: after.permissionCount },
+        },
+        projectIds,
+      },
+      transaction
+    );
   }
 
   public async deleteApiKey(

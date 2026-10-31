@@ -4,14 +4,13 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { canAssignRole } from '@grantjs/constants';
-import { ApiKey, Scope, Tenant } from '@grantjs/schema';
+import { ApiKey, Scope } from '@grantjs/schema';
 import { Ban, RefreshCw, Trash2 } from 'lucide-react';
 
 import { type ActionItem, Actions } from '@/components/common';
+import { useApiKeyAttachableGrants } from '@/hooks/api-keys';
 import { useRequiresEmailVerificationForMutation } from '@/hooks/auth';
-import { useMembers } from '@/hooks/members';
-import { useAuthStore } from '@/stores/auth.store';
+import { canManageApiKeyFromCohort, isProjectApiKeyScope } from '@/lib/api-key-grants';
 
 import { ApiKeyDeleteDialog } from './api-key-delete-dialog';
 import { ApiKeyRevokeDialog } from './api-key-revoke-dialog';
@@ -50,29 +49,18 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
 
   const requiresEmailVerification = useRequiresEmailVerificationForMutation(scope);
 
-  const organizationId =
-    scope.tenant === Tenant.OrganizationProject ? (scope.id.split(':')[0] ?? '') : '';
-  const { members } = useMembers({
-    organizationId,
-    page: 1,
-    limit: 50,
-  });
-  const { getCurrentAccount } = useAuthStore();
-  const currentAccount = getCurrentAccount();
-  const ownerId = currentAccount?.ownerId;
+  const isProjectKey = isProjectApiKeyScope(scope);
+  const {
+    cohort,
+    loading: isCohortLoading,
+    error: cohortError,
+  } = useApiKeyAttachableGrants(scope, { enabled: hasBeenOpened });
 
-  const currentUserRoleName = useMemo(() => {
-    if (!ownerId || !members.length) return null;
-    const currentMember = members.find((m) => m.type === 'member' && m.user?.id === ownerId);
-    return currentMember?.role?.name ?? null;
-  }, [ownerId, members]);
-
+  // Hides what the server would refuse. If the cohort cannot be read the server still decides.
   const canManageApiKey = useMemo(() => {
-    if (scope.tenant !== Tenant.OrganizationProject) return true;
-    if (!currentUserRoleName) return false;
-    if (!apiKey.role?.name) return true;
-    return canAssignRole(currentUserRoleName, apiKey.role.name);
-  }, [scope.tenant, currentUserRoleName, apiKey.role]);
+    if (!isProjectKey || cohortError) return true;
+    return canManageApiKeyFromCohort(apiKey, cohort);
+  }, [isProjectKey, cohortError, apiKey, cohort]);
 
   if (requiresEmailVerification) return null;
 
@@ -121,7 +109,9 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
     });
   }
 
-  const isLoading = hasBeenOpened && (isRevokeLoading || isDeleteLoading);
+  const isLoading =
+    hasBeenOpened &&
+    (isRevokeLoading || isDeleteLoading || (isProjectKey && isCohortLoading && !cohort));
 
   return (
     <>

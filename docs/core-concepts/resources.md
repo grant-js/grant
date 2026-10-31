@@ -41,7 +41,7 @@ Grant ships with 16 platform resources. These are seeded automatically and cover
 | **Group**                    | `Create` `Update` `Delete` `Query`                                     |
 | **Permission**               | `Create` `Update` `Delete` `Query`                                     |
 | **Tag**                      | `Create` `Update` `Delete` `Query`                                     |
-| **ApiKey**                   | `Create` `Delete` `Query` `Revoke` `Exchange`                          |
+| **ApiKey**                   | `Create` `Update` `Delete` `Query` `Revoke` `Exchange`                 |
 | **OrganizationMember**       | `Read` `Update` `Remove` `Query`                                       |
 | **OrganizationInvitation**   | `Create` `Read` `Query` `Revoke` `ResendEmail` `Renew`                 |
 | **ProjectUser**              | `Read` `Query` `SetEmail` `SetPassword` `ExportCredentials`            |

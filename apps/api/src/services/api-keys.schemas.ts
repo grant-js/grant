@@ -137,6 +137,12 @@ export const createApiKeyRequestSchema = z
     description: descriptionSchema.nullable().optional(),
     expiresAt: z.date().nullable().optional(),
     owner: z.object({ projectId: z.uuid(), userId: z.uuid() }).optional(),
+    grant: z
+      .object({
+        kind: z.enum(['role', 'permissions']),
+        permissionCount: z.number().int().min(0),
+      })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.expiresAt == null) {

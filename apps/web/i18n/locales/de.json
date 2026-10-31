@@ -1119,7 +1119,7 @@
         "name": "Name",
         "clientId": "Client-ID",
         "description": "Beschreibung",
-        "role": "Rolle",
+        "role": "Rolle / Berechtigungen",
         "status": "Status",
         "expiresAt": "Läuft ab am",
         "lastUsedAt": "Zuletzt verwendet",
@@ -1157,7 +1157,8 @@
       "actions": {
         "rotate": "Rotieren",
         "revoke": "Widerrufen",
-        "delete": "Löschen"
+        "delete": "Löschen",
+        "view": "Anzeigen"
       },
       "revokeDialog": {
         "title": "API-Schlüssel widerrufen",
@@ -1187,6 +1188,94 @@
         "clientSecret": "Client-Geheimnis",
         "close": "Ich habe meine Anmeldedaten gespeichert",
         "downloadCredentials": "Anmeldedaten herunterladen"
+      },
+      "permissionsCount": "Berechtigungen ({count})",
+      "create": {
+        "title": "API-Schlüssel erstellen",
+        "generalTitle": "Allgemein",
+        "generalDescription": "Name, Beschreibung und Ablauf dieses Schlüssels."
+      },
+      "grantKind": {
+        "title": "Autorisierung",
+        "description": "Ein Schlüssel trägt entweder eine Rolle oder eine Reihe von Berechtigungen, nie beides. Wähle eines, um fortzufahren.",
+        "label": "Autorisierungsmodell",
+        "role": {
+          "title": "Rolle",
+          "description": "Der Schlüssel darf, was eine Standardrolle erlaubt."
+        },
+        "scopes": {
+          "title": "Scopes",
+          "description": "Der Schlüssel darf nur, was die gewählten Berechtigungen erlauben."
+        }
+      },
+      "roleCard": {
+        "title": "Rolle",
+        "description": "Der Schlüssel trägt eine Standardrolle. Du kannst nur Rollen wählen, deren Berechtigungen du selbst hältst.",
+        "label": "Rolle",
+        "placeholder": "Rolle wählen",
+        "loading": "Rollen werden geladen...",
+        "empty": "Es gibt keine Rolle, die du einem Schlüssel in diesem Projekt geben darfst.",
+        "error": "Fehler beim Laden der zuweisbaren Rollen"
+      },
+      "scopes": {
+        "title": "Scopes",
+        "description": "Wähle die Berechtigungen, die dieser Schlüssel trägt. Du kannst nur Berechtigungen wählen, die du selbst hältst.",
+        "empty": "Keine Berechtigungen vorhanden",
+        "emptyDescription": "Keine Berechtigungen entsprechen deiner Suche oder deinem Filter",
+        "error": "Fehler beim Laden der Berechtigungen",
+        "saving": "Wird gespeichert",
+        "search": {
+          "placeholder": "Berechtigungen suchen..."
+        },
+        "table": {
+          "name": "Berechtigung",
+          "permission": "Scope",
+          "description": "Beschreibung",
+          "select": "{name} auswählen"
+        },
+        "groups": {
+          "allActions": "Alle Aktionen",
+          "allActionsFor": "Alle Aktionen für {resource}",
+          "count": "{selected} von {total}"
+        },
+        "machineOnly": {
+          "badge": "Nur für Zugangsdaten",
+          "tooltip": "Für API-Schlüssel gedacht. Wer {gate} hält, kann sie vergeben, ohne sie selbst zu halten."
+        }
+      },
+      "detail": {
+        "title": "API-Schlüssel-Details",
+        "error": "Fehler beim Laden des API-Schlüssels",
+        "authorization": "Autorisierung",
+        "created": "Erstellt",
+        "createdBy": "Erstellt von",
+        "tableField": "Feld",
+        "tableValue": "Wert",
+        "scopes": {
+          "title": "Scopes",
+          "description": "Die Berechtigungen, die dieser Schlüssel trägt. Eine Änderung gilt ab der nächsten Anfrage des Schlüssels.",
+          "roleDescription": "Die Berechtigungen der Rolle, die dieser Schlüssel trägt.",
+          "roleNotice": "Dieser Schlüssel wird von seiner Rolle {role} bestimmt. Wandle ihn in Scopes um, um seine Berechtigungen einzeln zu wählen.",
+          "convert": "In Scopes umwandeln",
+          "readOnlyNotice": "Du kannst diese Berechtigungen ansehen, aber nicht ändern.",
+          "revokedNotice": "Dieser Schlüssel ist widerrufen und kann nicht geändert werden.",
+          "lastScope": "Ein Schlüssel braucht mindestens eine Berechtigung."
+        }
+      },
+      "convertDialog": {
+        "title": "In Scopes umwandeln?",
+        "description": "Die Rolle {role} bestimmt diesen Schlüssel derzeit. Stattdessen trägt der Schlüssel {count, plural, one {# Berechtigung} other {# Berechtigungen}} dieser Rolle, begrenzt auf das, was du vergeben darfst.",
+        "oneWay": "Das lässt sich nicht rückgängig machen: Ein Schlüssel mit Scopes kann nicht zu einer Rolle zurückkehren.",
+        "secretStays": "Client-ID und Secret bleiben unverändert.",
+        "review": "Prüfe die Berechtigungen anschließend. Du kannst jede davon entfernen.",
+        "cancel": "Abbrechen",
+        "confirm": "In Scopes umwandeln",
+        "converting": "Wird umgewandelt..."
+      },
+      "validation": {
+        "grantKindRequired": "Wähle, wie dieser Schlüssel autorisiert wird",
+        "roleRequired": "Rolle wählen",
+        "scopesRequired": "Wähle mindestens eine Berechtigung"
       }
     },
     "groups": {
@@ -2295,7 +2384,8 @@
         "delete": "API-Schlüssel löschen",
         "query": "API-Schlüssel abfragen",
         "revoke": "API-Schlüssel widerrufen",
-        "exchange": "API-Schlüssel austauschen"
+        "exchange": "API-Schlüssel austauschen",
+        "update": "API-Schlüssel aktualisieren"
       },
       "organizationMember": {
         "read": "Organisationsmitglied lesen",
@@ -2412,7 +2502,8 @@
         "delete": "Berechtigung zum Löschen eines API-Schlüssels",
         "query": "Berechtigung zum Abfragen von API-Schlüsseln",
         "revoke": "Berechtigung zum Widerrufen eines API-Schlüssels",
-        "exchange": "Berechtigung zum Austauschen eines API-Schlüssels"
+        "exchange": "Berechtigung zum Austauschen eines API-Schlüssels",
+        "update": "Berechtigung, die Berechtigungen eines API-Schlüssels zu ändern"
       },
       "organizationMember": {
         "read": "Berechtigung zum Lesen von Organisationsmitgliedinformationen",
@@ -3765,7 +3856,9 @@
       "revokeError": "Fehler beim Widerrufen des API-Schlüssels",
       "rotateSuccess": "API-Schlüssel rotiert",
       "rotateError": "Fehler beim Rotieren des API-Schlüssels",
-      "exchangeError": "Fehler beim Austauschen des API-Schlüssels"
+      "exchangeError": "Fehler beim Austauschen des API-Schlüssels",
+      "setPermissionsSuccess": "Berechtigungen des API-Schlüssels aktualisiert",
+      "setPermissionsError": "Fehler beim Aktualisieren der Berechtigungen des API-Schlüssels"
     }
   },
   "webhooks": {

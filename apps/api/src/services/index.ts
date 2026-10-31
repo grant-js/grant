@@ -85,7 +85,9 @@ import { AccountProjectService } from './account-projects.service';
 import { AccountRoleService } from './account-roles.service';
 import { AccountTagsService } from './account-tags.service';
 import { AccountService } from './accounts.service';
+import { ApiKeyAttenuationService } from './api-key-attenuation.service';
 import { ApiKeyExportableSecretService } from './api-key-exportable-secrets.service';
+import { ApiKeyPermissionService } from './api-key-permissions.service';
 import { ApiKeyService } from './api-keys.service';
 import { AuthService } from './auth.service';
 import { CredentialLockoutService } from './credential-lockouts.service';
@@ -315,7 +317,6 @@ export function createServices(
       repositories.accountRoleRepository,
       repositories.accountProjectApiKeyRepository,
       repositories.userRoleRepository,
-      repositories.roleRepository,
       user,
       audit(accountProjectApiKeyAuditLogs, 'accountProjectApiKeyId', user, db)
     ),
@@ -558,6 +559,22 @@ export function createServices(
       events,
       apiKeyExportableSecrets
     ),
+    apiKeyAttenuation: new ApiKeyAttenuationService(
+      grant,
+      repositories.apiKeyPermissionRepository,
+      repositories.organizationProjectApiKeyRepository,
+      repositories.accountProjectApiKeyRepository,
+      repositories.organizationRoleRepository,
+      repositories.accountRoleRepository,
+      repositories.roleRepository,
+      repositories.permissionRepository,
+      user
+    ),
+    apiKeyPermissions: new ApiKeyPermissionService(
+      repositories.apiKeyPermissionRepository,
+      repositories.permissionRepository,
+      audit(apiKeyAuditLogs, 'apiKeyId', user, db)
+    ),
     projectUserApiKeys: new ProjectUserApiKeyService(
       repositories.projectRepository,
       repositories.userRepository,
@@ -692,12 +709,9 @@ export function createServices(
       audit(organizationPermissionsAuditLogs, 'organizationPermissionId', user, db)
     ),
     organizationProjectApiKeys: new OrganizationProjectApiKeyService(
-      repositories.organizationMemberRepository,
       repositories.organizationProjectRepository,
       repositories.organizationRoleRepository,
       repositories.organizationProjectApiKeyRepository,
-      repositories.roleRepository,
-      user,
       audit(organizationProjectApiKeyAuditLogs, 'organizationProjectApiKeyId', user, db)
     ),
     organizationGroups: new OrganizationGroupService(

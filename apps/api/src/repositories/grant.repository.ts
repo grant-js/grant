@@ -9,6 +9,7 @@ import {
   accountProjects,
   accountRoles,
   accounts,
+  apiKeyPermissions,
   DbSchema,
   groupPermissions,
   groups,
@@ -280,7 +281,7 @@ export class GrantRepository implements IGrantRepository {
         if (!accountId || !projectId) {
           return [];
         }
-        // Project API key path: userId is apiKeyId; return assigned role if found
+        // Project API key path: userId is apiKeyId; the assigned role, none for a key without one
         if (scope.tenant === Tenant.AccountProject) {
           try {
             const projectKeyRow = await db.query.accountProjectApiKeys.findFirst({
@@ -293,7 +294,7 @@ export class GrantRepository implements IGrantRepository {
               columns: { accountRoleId: true },
             });
             if (projectKeyRow) {
-              return [projectKeyRow.accountRoleId];
+              return projectKeyRow.accountRoleId ? [projectKeyRow.accountRoleId] : [];
             }
           } catch (err) {
             this.logger.error(
@@ -370,7 +371,7 @@ export class GrantRepository implements IGrantRepository {
         if (!organizationId || !projectId) {
           return [];
         }
-        // Project API key path: userId is apiKeyId; return assigned role if found
+        // Project API key path: userId is apiKeyId; the assigned role, none for a key without one
         if (scope.tenant === Tenant.OrganizationProject) {
           try {
             const projectKeyRow = await db.query.organizationProjectApiKeys.findFirst({
@@ -383,7 +384,7 @@ export class GrantRepository implements IGrantRepository {
               columns: { organizationRoleId: true },
             });
             if (projectKeyRow) {
-              return [projectKeyRow.organizationRoleId];
+              return projectKeyRow.organizationRoleId ? [projectKeyRow.organizationRoleId] : [];
             }
           } catch (err) {
             this.logger.error(
@@ -617,5 +618,69 @@ export class GrantRepository implements IGrantRepository {
       .where(and(eq(userGroups.userId, userId), isNull(userGroups.deletedAt)));
 
     return [...new Set(rows.map((r: { groupId: string }) => r.groupId))];
+  }
+
+  public async getPermissionIdsForApiKey(
+    apiKeyId: string,
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<string[]> {
+    const db = transaction || this.db;
+
+    if (scope.tenant === Tenant.OrganizationProject) {
+      const [organizationId, projectId] = scope.id.split(':');
+      if (!organizationId || !projectId) {
+        return [];
+      }
+      const rows = await db
+        .select({ permissionId: apiKeyPermissions.permissionId })
+        .from(apiKeyPermissions)
+        .innerJoin(
+          organizationProjectApiKeys,
+          and(
+            eq(organizationProjectApiKeys.apiKeyId, apiKeyPermissions.apiKeyId),
+            eq(organizationProjectApiKeys.organizationId, organizationId),
+            eq(organizationProjectApiKeys.projectId, projectId),
+            isNull(organizationProjectApiKeys.deletedAt)
+          )
+        )
+        .where(
+          and(
+            eq(apiKeyPermissions.apiKeyId, apiKeyId),
+            eq(apiKeyPermissions.projectId, projectId),
+            isNull(apiKeyPermissions.deletedAt)
+          )
+        );
+      return [...new Set(rows.map((r: { permissionId: string }) => r.permissionId))];
+    }
+
+    if (scope.tenant === Tenant.AccountProject) {
+      const [accountId, projectId] = scope.id.split(':');
+      if (!accountId || !projectId) {
+        return [];
+      }
+      const rows = await db
+        .select({ permissionId: apiKeyPermissions.permissionId })
+        .from(apiKeyPermissions)
+        .innerJoin(
+          accountProjectApiKeys,
+          and(
+            eq(accountProjectApiKeys.apiKeyId, apiKeyPermissions.apiKeyId),
+            eq(accountProjectApiKeys.accountId, accountId),
+            eq(accountProjectApiKeys.projectId, projectId),
+            isNull(accountProjectApiKeys.deletedAt)
+          )
+        )
+        .where(
+          and(
+            eq(apiKeyPermissions.apiKeyId, apiKeyId),
+            eq(apiKeyPermissions.projectId, projectId),
+            isNull(apiKeyPermissions.deletedAt)
+          )
+        );
+      return [...new Set(rows.map((r: { permissionId: string }) => r.permissionId))];
+    }
+
+    return [];
   }
 }

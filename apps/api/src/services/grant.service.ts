@@ -6,7 +6,7 @@ import {
   type IGrantService,
   type SessionSigningKey,
 } from '@grantjs/core';
-import { Permission, Scope, TokenType } from '@grantjs/schema';
+import { Permission, Scope, Tenant, TokenType } from '@grantjs/schema';
 
 import { config } from '@/config';
 import {
@@ -121,13 +121,11 @@ export class GrantService implements IGrantService {
     }
   }
 
-  async getUserPermissions(
+  async collectPermissionIds(
     userId: string,
     scope: Scope,
-    resourceSlug: string,
-    action: string,
     tokenType?: TokenType
-  ): Promise<Permission[]> {
+  ): Promise<string[]> {
     const projectId = tryProjectIdFromScope(scope);
 
     const [roleIds, directUserGroupIds, directUserPermissionIds] = await Promise.all([
@@ -136,20 +134,60 @@ export class GrantService implements IGrantService {
       this.grantRepository.getDirectPermissionIdsForUser(userId, projectId),
     ]);
 
+    const permissionIds = await this.resolvePermissionIds(roleIds, directUserGroupIds, projectId);
+    const apiKeyPermissionIds = await this.collectApiKeyPermissionIds(userId, scope, tokenType);
+
+    return [...new Set([...permissionIds, ...directUserPermissionIds, ...apiKeyPermissionIds])];
+  }
+
+  /** A project key's own permissions; only a key token in a project scope carries any. */
+  private async collectApiKeyPermissionIds(
+    userId: string,
+    scope: Scope,
+    tokenType?: TokenType
+  ): Promise<string[]> {
+    const isProjectScope =
+      scope.tenant === Tenant.OrganizationProject || scope.tenant === Tenant.AccountProject;
+    if (tokenType !== TokenType.ApiKey || !isProjectScope) {
+      return [];
+    }
+    return this.grantRepository.getPermissionIdsForApiKey(userId, scope);
+  }
+
+  async collectRolePermissionIds(roleIds: readonly string[], scope: Scope): Promise<string[]> {
+    return this.resolvePermissionIds(roleIds, [], tryProjectIdFromScope(scope));
+  }
+
+  /** Roles' groups plus the extra groups give group permissions; roles add direct permissions. */
+  private async resolvePermissionIds(
+    roleIds: readonly string[],
+    extraGroupIds: readonly string[],
+    projectId: string | null
+  ): Promise<string[]> {
     const [roleGroupIds, directRolePermissionIds] = await Promise.all([
-      roleIds.length > 0 ? this.grantRepository.getGroupIdsForRoles(roleIds) : Promise.resolve([]),
       roleIds.length > 0
-        ? this.grantRepository.getDirectPermissionIdsForRoles(roleIds, projectId)
+        ? this.grantRepository.getGroupIdsForRoles([...roleIds])
+        : Promise.resolve([]),
+      roleIds.length > 0
+        ? this.grantRepository.getDirectPermissionIdsForRoles([...roleIds], projectId)
         : Promise.resolve([]),
     ]);
 
-    const groupIds = [...new Set([...roleGroupIds, ...directUserGroupIds])];
+    const groupIds = [...new Set([...roleGroupIds, ...extraGroupIds])];
     const groupPermissionIds =
       groupIds.length > 0 ? await this.grantRepository.getPermissionIdsForGroups(groupIds) : [];
 
-    const permissionIds = [
-      ...new Set([...groupPermissionIds, ...directRolePermissionIds, ...directUserPermissionIds]),
-    ];
+    return [...new Set([...groupPermissionIds, ...directRolePermissionIds])];
+  }
+
+  async getUserPermissions(
+    userId: string,
+    scope: Scope,
+    resourceSlug: string,
+    action: string,
+    tokenType?: TokenType
+  ): Promise<Permission[]> {
+    const permissionIds = await this.collectPermissionIds(userId, scope, tokenType);
 
     if (permissionIds.length === 0) {
       return [];
