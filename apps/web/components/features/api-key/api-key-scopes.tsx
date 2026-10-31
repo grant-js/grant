@@ -134,19 +134,15 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
     return Array.from(byId.values());
   }, [attachable, apiKey.permissions]);
 
+  // A key the caller may edit only carries permissions the caller may attach, so the only row
+  // that cannot move is the last one.
   const disabledRows = useMemo(() => {
     const reasons = new Map<string, string>();
-    if (!canEdit) return reasons;
-    for (const permission of apiKey.permissions ?? []) {
-      if (!cohort?.permissionIds.has(permission.id)) {
-        reasons.set(permission.id, t('scopes.outsideCohort'));
-      }
-    }
-    if (optimisticIds.length === 1) {
+    if (canEdit && optimisticIds.length === 1) {
       reasons.set(optimisticIds[0], t('scopes.lastScope'));
     }
     return reasons;
-  }, [canEdit, apiKey.permissions, cohort, optimisticIds, t]);
+  }, [canEdit, optimisticIds, t]);
 
   const roleRows = useMemo(
     () => rolePermissions.permissions.map(toRow),

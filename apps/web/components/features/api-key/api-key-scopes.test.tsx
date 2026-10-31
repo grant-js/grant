@@ -223,13 +223,12 @@ describe('ApiKeyScopes of a scope key', () => {
     expect(screen.getByRole('checkbox', { name: /table.select user query/ })).toBeEnabled();
   });
 
-  it('shows a permission outside the caller cohort as disabled', () => {
+  it('is read-only when the key carries a permission the caller may not attach', () => {
     renderCard({
       ...scopeKey,
       permissions: [permission('perm-query', 'query'), permission('perm-foreign', 'export')],
     } as ApiKey);
 
-    // the key carries a permission the caller may not attach, so the caller may not manage it
     for (const checkbox of screen.getAllByRole('checkbox')) {
       expect(checkbox).toBeDisabled();
     }

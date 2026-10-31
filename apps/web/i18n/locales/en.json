@@ -1283,7 +1283,6 @@
           "convert": "Convert to scopes",
           "readOnlyNotice": "You can view these permissions but not change them.",
           "revokedNotice": "This key is revoked and cannot be changed.",
-          "outsideCohort": "You cannot change a permission you do not hold yourself.",
           "lastScope": "A key needs at least one permission."
         }
       },
