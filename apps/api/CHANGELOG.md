@@ -1,5 +1,30 @@
 # grant-api
 
+## 1.23.0
+
+### Minor Changes
+
+- f5d212e: Project API keys are attenuated: a key's role, which must be a standard role, must be covered by what its creator can do in the key's scope, for account and organization projects alike, at create and before revoke, rotate and delete. API-key role assignment is hardened accordingly and a regression test pins it. `ApiKey:Update` is a new action held by Owner, Admin and Dev. Migration 0096; no route changes.
+- f5d212e: Project API keys can carry explicit permissions instead of a role (`CreateApiKeyInput.permissionIds`, `ApiKey.permissions`), bounded by what the creator holds: a permission key is authorized by exactly those permissions in its own project. `apiKeyAttachableGrants` (and `GET /api/api-keys/attachable-grants`) lists what the caller may attach, including machine-only permissions such as `ProjectUser:ExportCredentials` for holders of `ProjectUser:SetPassword`. `setApiKeyPermissions` and `PUT /api/api-keys/{id}/permissions` replace a key's permissions under `ApiKey:Update` (additions bounded by the editor's own permissions, removals always allowed, a role key converted one way), with an audit row per change, an `api_key.updated` event, and effect on the key's next request. Two new routes.
+
+### Patch Changes
+
+- Updated dependencies [f5d212e]
+  - @grantjs/schema@1.23.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.22.1
 
 ### Patch Changes

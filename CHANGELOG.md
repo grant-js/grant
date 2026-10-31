@@ -3,6 +3,26 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.23.0
+
+### Platform
+
+**Docker images:** tagged `:1.23.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.23.0** (fixed group with apps).
+
+### Minor Changes
+
+- f5d212e: Project API keys are attenuated: a key's role, which must be a standard role, must be covered by what its creator can do in the key's scope, for account and organization projects alike, at create and before revoke, rotate and delete. API-key role assignment is hardened accordingly and a regression test pins it. `ApiKey:Update` is a new action held by Owner, Admin and Dev. Migration 0096; no route changes.
+
+- f5d212e: Project API keys can carry explicit permissions instead of a role (`CreateApiKeyInput.permissionIds`, `ApiKey.permissions`), bounded by what the creator holds: a permission key is authorized by exactly those permissions in its own project. `apiKeyAttachableGrants` (and `GET /api/api-keys/attachable-grants`) lists what the caller may attach, including machine-only permissions such as `ProjectUser:ExportCredentials` for holders of `ProjectUser:SetPassword`. `setApiKeyPermissions` and `PUT /api/api-keys/{id}/permissions` replace a key's permissions under `ApiKey:Update` (additions bounded by the editor's own permissions, removals always allowed, a role key converted one way), with an audit row per change, an `api_key.updated` event, and effect on the key's next request. Two new routes.
+
+- f5d212e: Project API keys get a dedicated create view: the authorization model is chosen first (a role or a set of permissions), then a role selector or a permission picker grouped by resource with an all-actions toggle and a search box, limited to what the signed-in user may attach. A key detail view shows a scopes card that edits permissions in place, and a role key can be converted to scopes through an explicit, confirmed action. Which actions the key list offers is now derived from what the user may attach.
+
+### Patch Changes
+
+- f5d212e: Documents API-key scopes: ADR 0014 (a project key carries one standard role or a set of permissions, never more than its creator holds), a worked example of the permissions a receiver that mirrors Grant into another system needs, and the invitation role-hierarchy wording.
+
 ## 1.22.1
 
 ### Platform
