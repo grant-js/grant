@@ -315,6 +315,7 @@ export function createServices(
       repositories.accountRoleRepository,
       repositories.accountProjectApiKeyRepository,
       repositories.userRoleRepository,
+      repositories.roleRepository,
       user,
       audit(accountProjectApiKeyAuditLogs, 'accountProjectApiKeyId', user, db)
     ),

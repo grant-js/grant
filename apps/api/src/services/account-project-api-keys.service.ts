@@ -1,15 +1,18 @@
+import { isStandardAccountRoleName } from '@grantjs/constants';
 import type {
   IAccountProjectApiKeyRepository,
   IAccountProjectApiKeyService,
   IAccountProjectRepository,
   IAccountRoleRepository,
   IAuditLogger,
+  IRoleRepository,
   IUserRoleRepository,
 } from '@grantjs/core';
 import { GrantAuth } from '@grantjs/core';
 import { AccountProjectApiKey } from '@grantjs/schema';
 
-import { BadRequestError, NotFoundError } from '@/lib/errors';
+import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { hasSingleRoleRow } from '@/lib/single-role-row.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import {
@@ -25,6 +28,7 @@ export class AccountProjectApiKeyService implements IAccountProjectApiKeyService
     private readonly accountRoleRepository: IAccountRoleRepository,
     private readonly accountProjectApiKeyRepository: IAccountProjectApiKeyRepository,
     private readonly userRoleRepository: IUserRoleRepository,
+    private readonly roleRepository: IRoleRepository,
     private readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger
   ) {}
@@ -115,6 +119,69 @@ export class AccountProjectApiKeyService implements IAccountProjectApiKeyService
       return null;
     }
     return validateOutput(createDynamicSingleSchema(accountProjectApiKeySchema), result, context);
+  }
+
+  private async canCarryRole(roleId: string, transaction?: Transaction): Promise<boolean> {
+    if (!this.user?.userId) {
+      throw new AuthorizationError('Authentication required');
+    }
+
+    const [targetRole, userRoles] = await Promise.all([
+      this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction),
+      this.userRoleRepository.getUserRoles({ userId: this.user.userId }, transaction),
+    ]);
+
+    if (targetRole.roles.length === 0) {
+      throw new NotFoundError('Role', roleId);
+    }
+
+    const roleName = targetRole.roles[0].name;
+
+    // Account roles carry no level: a standard account role the caller already holds is the
+    // most a key may carry.
+    return (
+      isStandardAccountRoleName(roleName) &&
+      userRoles.some((ur) => ur.roleId === roleId) &&
+      (await hasSingleRoleRow(this.roleRepository, roleName, transaction))
+    );
+  }
+
+  public async validateAccountProjectApiKeyRolePermission(
+    accountId: string,
+    roleId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    if (!(await this.canCarryRole(roleId, transaction))) {
+      throw new AuthorizationError(
+        'API keys can only be created with a standard account role that you hold'
+      );
+    }
+
+    await this.ensureAccountHasRole(accountId, roleId, transaction);
+  }
+
+  public async validateCanManageAccountProjectApiKey(
+    accountId: string,
+    projectId: string,
+    apiKeyId: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const pivot = await this.getByApiKeyAndAccountAndProject(
+      apiKeyId,
+      accountId,
+      projectId,
+      transaction
+    );
+
+    if (!pivot) {
+      throw new NotFoundError('ApiKey', apiKeyId);
+    }
+
+    if (!(await this.canCarryRole(pivot.accountRoleId, transaction))) {
+      throw new AuthorizationError(
+        'API keys can only be managed when their role is a standard account role that you hold'
+      );
+    }
   }
 
   public async resolveAccountRoleIdForCurrentUser(

@@ -33,6 +33,8 @@ sequenceDiagram
 
 **Role hierarchy enforcement** — an inviter can only assign a role equal to or lower than their own. This prevents privilege escalation through invitations.
 
+Invitations and member role changes are refused for roles without a level, that is, for any role outside the standard organization roles.
+
 **Duplicate detection** — if the email already belongs to an organization member, or has a pending invitation, the request is rejected.
 
 **Account creation on accept** — if the invitee is new to Grant, accepting the invitation creates their user record and an Organization-type account. Users can have at most two accounts: one Personal and one Organization.

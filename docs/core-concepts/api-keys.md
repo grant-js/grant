@@ -39,6 +39,8 @@ Every API key is created within a specific scope. The scope determines which pro
 
 For `AccountProject` and `OrganizationProject` scopes, the key is also associated with a **role** that determines its permissions. If no role is specified at creation, the creating user's current role is used.
 
+A project API key may only be created, rotated, revoked or deleted with a standard organization role of strictly lower level than the caller's (for an account project, a standard account role the caller holds); roles without a level are refused.
+
 ## Token Exchange
 
 The primary integration point is the token exchange endpoint:
