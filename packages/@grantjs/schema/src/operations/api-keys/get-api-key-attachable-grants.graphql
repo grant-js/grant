@@ -1,0 +1,23 @@
+query GetApiKeyAttachableGrants($scope: Scope!) {
+  apiKeyAttachableGrants(scope: $scope) {
+    permissions {
+      machineOnly
+      permission {
+        id
+        name
+        action
+        description
+        resource {
+          id
+          slug
+          name
+        }
+      }
+    }
+    roles {
+      id
+      name
+      description
+    }
+  }
+}

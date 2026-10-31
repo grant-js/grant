@@ -15,6 +15,8 @@ import {
   RevokeApiKeyInput,
   RotateApiKeyDocument,
   RotateApiKeyInput,
+  SetApiKeyPermissionsDocument,
+  SetApiKeyPermissionsInput,
 } from '@grantjs/schema';
 import { toast } from 'sonner';
 
@@ -42,6 +44,11 @@ export function useApiKeyMutations() {
   const [rotateApiKey] = useMutation<{ rotateApiKey: CreateApiKeyResult }>(RotateApiKeyDocument, {
     update,
   });
+
+  const [setApiKeyPermissions] = useMutation<{ setApiKeyPermissions: ApiKey }>(
+    SetApiKeyPermissionsDocument,
+    { update }
+  );
 
   const [exchangeApiKey] = useMutation<{ exchangeApiKey: ExchangeApiKeyResult }>(
     ExchangeApiKeyDocument
@@ -115,6 +122,23 @@ export function useApiKeyMutations() {
     }
   };
 
+  const handleSetApiKeyPermissions = async (input: SetApiKeyPermissionsInput) => {
+    try {
+      const result = await setApiKeyPermissions({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.setPermissionsSuccess'));
+      return result.data?.setApiKeyPermissions;
+    } catch (error) {
+      console.error('Error setting API key permissions:', error);
+      toast.error(t('notifications.setPermissionsError'), {
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
   const handleExchangeApiKey = async (input: ExchangeApiKeyInput) => {
     try {
       const result = await exchangeApiKey({
@@ -136,6 +160,7 @@ export function useApiKeyMutations() {
     deleteApiKey: handleDeleteApiKey,
     revokeApiKey: handleRevokeApiKey,
     rotateApiKey: handleRotateApiKey,
+    setApiKeyPermissions: handleSetApiKeyPermissions,
     exchangeApiKey: handleExchangeApiKey,
   };
 }

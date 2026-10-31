@@ -1,0 +1,27 @@
+mutation SetApiKeyPermissions($input: SetApiKeyPermissionsInput!) {
+  setApiKeyPermissions(input: $input) {
+    id
+    clientId
+    name
+    description
+    expiresAt
+    lastUsedAt
+    isRevoked
+    updatedAt
+    role {
+      id
+      name
+    }
+    permissions {
+      id
+      name
+      action
+      description
+      resource {
+        id
+        slug
+        name
+      }
+    }
+  }
+}

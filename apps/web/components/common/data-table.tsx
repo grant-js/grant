@@ -46,6 +46,11 @@ export interface DataTableProps<T> {
     columns?: TableSkeletonColumnConfig[];
     rowCount?: number;
   };
+  /**
+   * When it returns a node for an item, that item renders as one cell spanning every column
+   * instead of a data row (e.g. a group header row).
+   */
+  fullWidthRow?: (item: T) => ReactNode | null | undefined;
 }
 
 function resolveColumnWidthMode<T>(column: DataTableColumnConfig<T>): DetailTableColumnWidthMode {
@@ -70,6 +75,7 @@ export function DataTable<T>({
   emptyState,
   actionsColumn,
   skeletonConfig,
+  fullWidthRow,
 }: DataTableProps<T>) {
   const hasData = data.length > 0;
   const showEmptyState = !hasData && !loading;
@@ -125,25 +131,38 @@ export function DataTable<T>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((item, rowIndex) => (
-            <TableRow key={rowIndex}>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.key}
-                  className={cn(
-                    tableLayoutClass === 'table-fixed' && 'min-w-0 overflow-hidden',
-                    column.className
-                  )}
-                  style={detailTableColumnStyle(column.width, resolveColumnWidthMode(column))}
-                >
-                  {column.render(item)}
-                </TableCell>
-              ))}
-              {actionsColumn && (
-                <TableCell className="text-right">{actionsColumn.render(item)}</TableCell>
-              )}
-            </TableRow>
-          ))}
+          {data.map((item, rowIndex) => {
+            const fullWidthContent = fullWidthRow?.(item);
+            if (fullWidthContent != null) {
+              return (
+                <TableRow key={rowIndex} className="bg-muted/40 hover:bg-muted/40">
+                  <TableCell colSpan={columns.length + (actionsColumn ? 1 : 0)} className="py-2">
+                    {fullWidthContent}
+                  </TableCell>
+                </TableRow>
+              );
+            }
+
+            return (
+              <TableRow key={rowIndex}>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.key}
+                    className={cn(
+                      tableLayoutClass === 'table-fixed' && 'min-w-0 overflow-hidden',
+                      column.className
+                    )}
+                    style={detailTableColumnStyle(column.width, resolveColumnWidthMode(column))}
+                  >
+                    {column.render(item)}
+                  </TableCell>
+                ))}
+                {actionsColumn && (
+                  <TableCell className="text-right">{actionsColumn.render(item)}</TableCell>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
