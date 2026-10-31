@@ -8,7 +8,7 @@ import { DataTableColumnToggle, RefreshButton, Toolbar, toolbarGrow } from '@/co
 import { useScopeFromParams } from '@/hooks/common';
 import { useApiKeysStore } from '@/stores/api-keys.store';
 
-import { ApiKeyCreateDialog } from './api-key-create-dialog';
+import { ApiKeyCreateAction } from './api-key-create-action';
 import { ApiKeySearch } from './api-key-search';
 import { ApiKeySorter } from './api-key-sorter';
 import { ApiKeyViewSwitcher } from './api-key-view-switcher';
@@ -62,7 +62,7 @@ export function ApiKeyToolbar({ showViewSwitcher = true, showSorter = true }: Ap
     ),
     showViewSwitcher && <ApiKeyViewSwitcher key="view" />,
     ...(canCreate
-      ? [<ApiKeyCreateDialog key="create" onApiKeyCreated={handleApiKeyCreated} />]
+      ? [<ApiKeyCreateAction key="create" onApiKeyCreated={handleApiKeyCreated} />]
       : []),
   ].filter(Boolean);
 

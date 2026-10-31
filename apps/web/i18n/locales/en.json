@@ -1142,7 +1142,7 @@
         "name": "Name",
         "clientId": "Client ID",
         "description": "Description",
-        "role": "Role",
+        "role": "Role / permissions",
         "status": "Status",
         "expiresAt": "Expires At",
         "lastUsedAt": "Last Used",
@@ -1180,7 +1180,8 @@
       "actions": {
         "rotate": "Rotate",
         "revoke": "Revoke",
-        "delete": "Delete"
+        "delete": "Delete",
+        "view": "View"
       },
       "revokeDialog": {
         "title": "Revoke API Key",
@@ -1210,6 +1211,96 @@
         "clientSecret": "Client Secret",
         "close": "I've Saved My Credentials",
         "downloadCredentials": "Download credentials"
+      },
+      "permissionsCount": "Permissions ({count})",
+      "create": {
+        "title": "Create API key",
+        "generalTitle": "General",
+        "generalDescription": "Name, description and expiration of this key."
+      },
+      "grantKind": {
+        "title": "Authorization",
+        "description": "A key carries either a role or a set of permissions, never both. Choose one to continue.",
+        "label": "Authorization model",
+        "role": {
+          "title": "Role",
+          "description": "The key can do what a standard role allows."
+        },
+        "scopes": {
+          "title": "Scopes",
+          "description": "The key can do only what the permissions you pick allow."
+        }
+      },
+      "roleCard": {
+        "title": "Role",
+        "description": "The key carries a standard role. You can only pick roles whose permissions you hold yourself.",
+        "label": "Role",
+        "placeholder": "Select a role",
+        "loading": "Loading roles...",
+        "empty": "There is no role you may give to a key in this project.",
+        "error": "Error loading the roles you can assign"
+      },
+      "scopes": {
+        "title": "Scopes",
+        "description": "Pick the permissions this key carries. You can only pick permissions you hold yourself.",
+        "empty": "No permissions to show",
+        "emptyDescription": "No permissions match your search or filter",
+        "error": "Error loading permissions",
+        "saving": "Saving",
+        "search": {
+          "placeholder": "Search permissions..."
+        },
+        "table": {
+          "name": "Permission",
+          "permission": "Scope",
+          "description": "Description",
+          "machineOnly": "Credentials only",
+          "select": "Select {name}"
+        },
+        "groups": {
+          "allActions": "All actions",
+          "allActionsFor": "All actions for {resource}",
+          "count": "{selected} of {total}"
+        },
+        "machineOnly": {
+          "badge": "Credentials only",
+          "tooltip": "Meant for API keys. Holders of {gate} can attach it without holding it themselves."
+        }
+      },
+      "detail": {
+        "title": "API key details",
+        "error": "Error loading the API key",
+        "authorization": "Authorization",
+        "created": "Created",
+        "createdBy": "Created by",
+        "tableField": "Field",
+        "tableValue": "Value",
+        "scopes": {
+          "title": "Scopes",
+          "description": "The permissions this key carries. A change applies to the key's next request.",
+          "roleDescription": "The permissions of the role this key carries.",
+          "roleNotice": "This key is governed by its role, {role}. Convert it to scopes to choose its permissions one by one.",
+          "convert": "Convert to scopes",
+          "readOnlyNotice": "You can view these permissions but not change them.",
+          "revokedNotice": "This key is revoked and cannot be changed.",
+          "outsideCohort": "You cannot change a permission you do not hold yourself.",
+          "lastScope": "A key needs at least one permission."
+        }
+      },
+      "convertDialog": {
+        "title": "Convert to scopes?",
+        "description": "The role {role} governs this key today. The key will carry {count, plural, one {# permission} other {# permissions}} of that role instead, limited to what you may attach.",
+        "oneWay": "This cannot be undone: a key with scopes cannot go back to a role.",
+        "secretStays": "The client ID and the secret stay the same.",
+        "review": "Review the permissions afterwards. You can remove any of them.",
+        "cancel": "Cancel",
+        "confirm": "Convert to scopes",
+        "converting": "Converting..."
+      },
+      "validation": {
+        "grantKindRequired": "Choose how this key is authorized",
+        "roleRequired": "Select a role",
+        "scopesRequired": "Select at least one permission"
       }
     },
     "groups": {
@@ -4040,7 +4131,9 @@
       "revokeError": "Failed to revoke API key",
       "rotateSuccess": "API key rotated",
       "rotateError": "Failed to rotate API key",
-      "exchangeError": "Failed to exchange API key"
+      "exchangeError": "Failed to exchange API key",
+      "setPermissionsSuccess": "API key permissions updated",
+      "setPermissionsError": "Failed to update API key permissions"
     }
   },
   "webhooks": {
