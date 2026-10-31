@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.22.1
+
+### Patch Changes
+
+- 1cb4e9c: API-key role assignment is hardened: a project API key may only be created, rotated, revoked or deleted with a standard organization or account role of strictly lower level than the caller's; roles without a level are refused. Member role changes and invitations are refused for roles without a level.
+- @grantjs/schema@1.22.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.22.0
 
 ### Minor Changes
