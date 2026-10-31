@@ -1,4 +1,10 @@
-import { MACHINE_ONLY_PERMISSIONS, machineOnlyGate } from '@grantjs/constants';
+import {
+  ACCOUNT_ROLES,
+  MACHINE_ONLY_PERMISSIONS,
+  machineOnlyGate,
+  ORGANIZATION_ROLES,
+  ROLES,
+} from '@grantjs/constants';
 import type {
   ApiKeyAttachableGrantIds,
   GrantAuth,
@@ -16,6 +22,7 @@ import type {
 import { Scope, Tenant } from '@grantjs/schema';
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
+import { unboundedList } from '@/lib/pagination.lib';
 import {
   accountProjectFromScopeOrThrow,
   organizationProjectFromScopeOrThrow,
@@ -38,6 +45,10 @@ interface KeyPivot {
  * that creates a key is bound by its own set. A machine-only permission is also covered when
  * the caller holds its gate permission (`attachableByHoldersOf`). Permissions are compared by
  * row id: a row carries its own condition, so a covered row is covered with that condition.
+ *
+ * A role key carries only a standard role (a standard organization role for an organization
+ * project, a standard account role for an account project). A permission set of any other
+ * shape is carried by the key itself.
  */
 export class ApiKeyAttenuationService implements IApiKeyAttenuationService {
   constructor(
@@ -70,8 +81,11 @@ export class ApiKeyAttenuationService implements IApiKeyAttenuationService {
       throw new BadRequestError('An API key needs at least one permission');
     }
 
+    if (roleId) {
+      await this.assertStandardRole(roleId, scope, 'carry', transaction);
+    }
     const requested = roleId
-      ? await this.rolePermissionIds(roleId, scope, transaction)
+      ? await this.permissionSets.collectRolePermissionIds([roleId], scope)
       : await this.livePermissionIds(permissionIds ?? [], transaction);
 
     const callerCover = await this.callerCover(scope, transaction);
@@ -94,6 +108,10 @@ export class ApiKeyAttenuationService implements IApiKeyAttenuationService {
     // A key with neither a role nor permissions is not manageable by anyone.
     if (pivot.roleId === null && ownPermissionIds.length === 0) {
       throw new AuthorizationError('API key is not covered by your permissions');
+    }
+
+    if (pivot.roleId !== null) {
+      await this.assertStandardRole(pivot.roleId, scope, 'manage', transaction);
     }
 
     const keyPermissionIds = await this.keyPermissionIds(scope, pivot, ownPermissionIds);
@@ -120,6 +138,9 @@ export class ApiKeyAttenuationService implements IApiKeyAttenuationService {
 
     const roleIds: string[] = [];
     for (const candidateRoleId of await this.parentTenantRoleIds(scope, transaction)) {
+      if (!(await this.isStandardRole(candidateRoleId, scope, transaction))) {
+        continue;
+      }
       const roleSet = await this.permissionSets.collectRolePermissionIds([candidateRoleId], scope);
       if (this.countUncovered(roleSet, callerCover) === 0) {
         roleIds.push(candidateRoleId);
@@ -223,6 +244,49 @@ export class ApiKeyAttenuationService implements IApiKeyAttenuationService {
     return attachable;
   }
 
+  private async assertStandardRole(
+    roleId: string,
+    scope: Scope,
+    use: 'carry' | 'manage',
+    transaction?: Transaction
+  ): Promise<void> {
+    if (!(await this.isStandardRole(roleId, scope, transaction))) {
+      throw new AuthorizationError(
+        use === 'carry'
+          ? 'API keys can only carry a standard role'
+          : 'API keys can only be managed when their role is a standard role'
+      );
+    }
+  }
+
+  /**
+   * A standard role of the scope's tenant: its name is one of the seeded names for the tenant
+   * and exactly one live role row carries that name. An unknown role id is not found.
+   */
+  private async isStandardRole(
+    roleId: string,
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<boolean> {
+    const page = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
+    const role = page.roles[0];
+    if (!role) {
+      throw new NotFoundError('Role', roleId);
+    }
+
+    const standardKeys =
+      scope.tenant === Tenant.OrganizationProject ? ORGANIZATION_ROLES : ACCOUNT_ROLES;
+    if (!standardKeys.some((key) => ROLES[key].name === role.name)) {
+      return false;
+    }
+
+    const sameName = await this.roleRepository.getRoles(
+      unboundedList({ search: role.name, limit: -1 }),
+      transaction
+    );
+    return sameName.roles.filter((row) => row.name === role.name).length === 1;
+  }
+
   private async livePermissionIds(
     permissionIds: readonly string[],
     transaction?: Transaction
@@ -233,18 +297,6 @@ export class ApiKeyAttenuationService implements IApiKeyAttenuationService {
       throw new BadRequestError('One or more permissions do not exist');
     }
     return unique;
-  }
-
-  private async rolePermissionIds(
-    roleId: string,
-    scope: Scope,
-    transaction?: Transaction
-  ): Promise<string[]> {
-    const page = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
-    if (page.roles.length === 0) {
-      throw new NotFoundError('Role', roleId);
-    }
-    return this.permissionSets.collectRolePermissionIds([roleId], scope);
   }
 
   private async ownPermissionIds(apiKeyId: string, transaction?: Transaction): Promise<string[]> {
