@@ -56,6 +56,11 @@ E2E_DB_URL="${E2E_DB_URL:-postgresql://grant_user:grant_password@localhost:5433/
 # ---------------------------------------------------------------------------
 
 start_stack() {
+  # A cancelled run never reaches stop_stack, and `up -d` would reuse its
+  # containers and volume; start from a clean stack every time.
+  log "Removing any leftover E2E stack..."
+  docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" --env-file "$ENV_FILE" down -v --remove-orphans 2>/dev/null || true
+
   log "Starting E2E stack (postgres + redis + localstack)..."
   docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" --env-file "$ENV_FILE" up -d postgres redis localstack
 
