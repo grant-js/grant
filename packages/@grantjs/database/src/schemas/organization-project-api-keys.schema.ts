@@ -28,9 +28,9 @@ export const organizationProjectApiKeys = pgTable(
     apiKeyId: uuid('api_key_id')
       .references(() => apiKeys.id, { onDelete: 'cascade' })
       .notNull(),
-    organizationRoleId: uuid('organization_role_id')
-      .references(() => roles.id, { onDelete: 'cascade' })
-      .notNull(),
+    organizationRoleId: uuid('organization_role_id').references(() => roles.id, {
+      onDelete: 'cascade',
+    }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
     deletedAt: timestamp('deleted_at'),

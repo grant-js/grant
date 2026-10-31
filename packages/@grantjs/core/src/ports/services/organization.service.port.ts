@@ -13,7 +13,6 @@ import type {
   AddOrganizationRoleInput,
   AddOrganizationTagInput,
   AddOrganizationUserInput,
-  ApiKey,
   CreateOrganizationInput,
   CreateOrganizationInvitationInput,
   GetInvitationQueryVariables,
@@ -28,7 +27,6 @@ import type {
   OrganizationPage,
   OrganizationPermission,
   OrganizationProject,
-  OrganizationProjectApiKey,
   OrganizationProjectTag,
   OrganizationRole,
   OrganizationTag,
@@ -52,8 +50,9 @@ import type {
   UpdateOrganizationProjectTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
 import type { DeleteParams } from '../repositories/common';
+import type { SelectedFields } from '../repositories/common';
+import type { OrganizationProjectApiKeyRow } from '../repositories/organization.repository.port';
 
 // ---------------------------------------------------------------------------
 // IOrganizationService
@@ -254,43 +253,24 @@ export interface IOrganizationProjectApiKeyService {
   getOrganizationProjectApiKeys(
     params: { organizationId?: string; projectId?: string; apiKeyId?: string },
     transaction?: unknown
-  ): Promise<OrganizationProjectApiKey[]>;
-
-  validateOrganizationProjectApiKeyRolePermission(
-    organizationId: string,
-    roleId: string,
-    transaction?: unknown
-  ): Promise<void>;
-
-  validateCanManageOrganizationProjectApiKey(
-    organizationId: string,
-    projectId: string,
-    apiKeyId: string,
-    transaction?: unknown
-  ): Promise<void>;
-
-  filterApiKeysByManageable(
-    organizationId: string,
-    apiKeys: (ApiKey & { role?: Role | null })[],
-    transaction?: unknown
-  ): Promise<(ApiKey & { role?: Role | null })[]>;
+  ): Promise<OrganizationProjectApiKeyRow[]>;
 
   addOrganizationProjectApiKey(
     params: {
       organizationId: string;
       projectId: string;
       apiKeyId: string;
-      organizationRoleId: string;
+      organizationRoleId: string | null;
     },
     transaction?: unknown
-  ): Promise<OrganizationProjectApiKey>;
+  ): Promise<OrganizationProjectApiKeyRow>;
 
   getByApiKeyAndOrganizationAndProject(
     apiKeyId: string,
     organizationId: string,
     projectId: string,
     transaction?: unknown
-  ): Promise<OrganizationProjectApiKey | null>;
+  ): Promise<OrganizationProjectApiKeyRow | null>;
 }
 
 // ---------------------------------------------------------------------------

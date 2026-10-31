@@ -172,6 +172,23 @@ export class Grant {
     return this.grantService.getGrantedScopeSlugs(userId, scope, candidateSlugs);
   }
 
+  /** Every permission id the principal holds in the scope (see `IGrantService`). */
+  public async collectPermissionIds(
+    userId: string,
+    scope: Scope,
+    tokenType?: TokenType
+  ): Promise<string[]> {
+    return this.grantService.collectPermissionIds(userId, scope, tokenType);
+  }
+
+  /** Every permission id the given roles resolve to in the scope (see `IGrantService`). */
+  public async collectRolePermissionIds(
+    roleIds: readonly string[],
+    scope: Scope
+  ): Promise<string[]> {
+    return this.grantService.collectRolePermissionIds(roleIds, scope);
+  }
+
   public async isAuthorized(
     permission: IsAuthorizedPermissionInput,
     context: IsAuthorizedContextInput,

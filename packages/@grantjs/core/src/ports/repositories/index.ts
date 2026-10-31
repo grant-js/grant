@@ -1,6 +1,7 @@
 export * from './account.repository.port';
 export * from './api-key.repository.port';
 export * from './api-key-exportable-secret.repository.port';
+export * from './api-key-permission.repository.port';
 export * from './cdm-import-tombstone.repository.port';
 export type { OptionalListScope, SelectedFields } from './common';
 export * from './credential.repository.port';

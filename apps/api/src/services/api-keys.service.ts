@@ -314,7 +314,10 @@ export class ApiKeyService implements IApiKeyService {
   }
 
   public async createApiKey(
-    params: Omit<CreateApiKeyInput, 'scope'> & { owner?: { projectId: string; userId: string } },
+    params: Omit<CreateApiKeyInput, 'scope'> & {
+      owner?: { projectId: string; userId: string };
+      grant?: { kind: 'role' | 'permissions'; permissionCount: number };
+    },
     transaction?: Transaction
   ): Promise<CreateApiKeyResult> {
     const context = 'ApiKeyService.createApiKey';
@@ -364,7 +367,18 @@ export class ApiKeyService implements IApiKeyService {
       createdAt: apiKey.createdAt,
     };
 
-    await this.audit.logCreate(apiKey.id, newValues, { action: 'CREATE_API_KEY' }, transaction);
+    await this.audit.logCreate(
+      apiKey.id,
+      newValues,
+      {
+        action: 'CREATE_API_KEY',
+        ...(validatedParams.grant && {
+          grant: validatedParams.grant.kind,
+          permissionCount: validatedParams.grant.permissionCount,
+        }),
+      },
+      transaction
+    );
 
     await this.events.publish(
       {

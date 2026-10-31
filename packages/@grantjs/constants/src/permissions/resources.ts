@@ -145,6 +145,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
   [ResourceSlug.ApiKey]: {
     actions: [
       ResourceAction.Create,
+      ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.Query,
       ResourceAction.Revoke,
