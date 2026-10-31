@@ -1,16 +1,16 @@
-import type { IAccountProjectApiKeyRepository } from '@grantjs/core';
+import type {
+  AccountProjectApiKeyRow,
+  AddAccountProjectApiKeyParams,
+  IAccountProjectApiKeyRepository,
+} from '@grantjs/core';
 import { AccountProjectApiKeyModel, accountProjectApiKeys } from '@grantjs/database';
-import {
-  AccountProjectApiKey,
-  AddAccountProjectApiKeyInput,
-  QueryAccountProjectApiKeysInput,
-} from '@grantjs/schema';
+import { QueryAccountProjectApiKeysInput } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { PivotRepository } from '@/repositories/common';
 
 export class AccountProjectApiKeyRepository
-  extends PivotRepository<AccountProjectApiKeyModel, AccountProjectApiKey>
+  extends PivotRepository<AccountProjectApiKeyModel, AccountProjectApiKeyRow>
   implements IAccountProjectApiKeyRepository
 {
   protected table = accountProjectApiKeys;
@@ -20,21 +20,21 @@ export class AccountProjectApiKeyRepository
     'apiKeyId',
   ];
 
-  protected toEntity(dbPivot: AccountProjectApiKeyModel): AccountProjectApiKey {
+  protected toEntity(dbPivot: AccountProjectApiKeyModel): AccountProjectApiKeyRow {
     return dbPivot;
   }
 
   public async getAccountProjectApiKeys(
     params: QueryAccountProjectApiKeysInput,
     transaction?: Transaction
-  ): Promise<AccountProjectApiKey[]> {
+  ): Promise<AccountProjectApiKeyRow[]> {
     return this.query(params, transaction);
   }
 
   public async addAccountProjectApiKey(
-    params: AddAccountProjectApiKeyInput,
+    params: AddAccountProjectApiKeyParams,
     transaction?: Transaction
-  ): Promise<AccountProjectApiKey> {
+  ): Promise<AccountProjectApiKeyRow> {
     return this.add(params, transaction);
   }
 
@@ -43,7 +43,7 @@ export class AccountProjectApiKeyRepository
     accountId: string,
     projectId: string,
     transaction?: Transaction
-  ): Promise<AccountProjectApiKey | null> {
+  ): Promise<AccountProjectApiKeyRow | null> {
     const rows = await this.getAccountProjectApiKeys(
       { apiKeyId, accountId, projectId },
       transaction

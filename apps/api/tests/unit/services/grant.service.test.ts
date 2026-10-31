@@ -242,3 +242,112 @@ describe('GrantService.getUserPermissions', () => {
     );
   });
 });
+
+describe('GrantService.collectPermissionIds', () => {
+  let grantRepository: IGrantRepository;
+  let service: GrantService;
+
+  beforeEach(() => {
+    grantRepository = {
+      getUserRoleIdsInScope: vi.fn().mockResolvedValue([]),
+      getGroupIdsForRoles: vi.fn().mockResolvedValue([]),
+      getDirectGroupIdsForUser: vi.fn().mockResolvedValue([]),
+      getPermissionIdsForGroups: vi.fn().mockResolvedValue([]),
+      getDirectPermissionIdsForRoles: vi.fn().mockResolvedValue([]),
+      getDirectPermissionIdsForUser: vi.fn().mockResolvedValue([]),
+      getPermissionsByIds: vi.fn().mockResolvedValue([]),
+    } as unknown as IGrantRepository;
+    service = new GrantService({} as IEntityCacheAdapter, grantRepository, {} as SigningKeyService);
+  });
+
+  it('returns the union of role, group and direct permission ids, once each', async () => {
+    vi.mocked(grantRepository.getUserRoleIdsInScope).mockResolvedValue(['role-1']);
+    vi.mocked(grantRepository.getGroupIdsForRoles).mockResolvedValue(['g-role']);
+    vi.mocked(grantRepository.getDirectGroupIdsForUser).mockResolvedValue(['g-user']);
+    vi.mocked(grantRepository.getPermissionIdsForGroups).mockResolvedValue(['p-group', 'p-shared']);
+    vi.mocked(grantRepository.getDirectPermissionIdsForRoles).mockResolvedValue([
+      'p-role',
+      'p-shared',
+    ]);
+    vi.mocked(grantRepository.getDirectPermissionIdsForUser).mockResolvedValue(['p-user']);
+
+    const ids = await service.collectPermissionIds(userId, projectScope, TokenType.ApiKey);
+
+    expect(ids.sort()).toEqual(['p-group', 'p-role', 'p-shared', 'p-user']);
+    expect(grantRepository.getUserRoleIdsInScope).toHaveBeenCalledWith(
+      userId,
+      projectScope,
+      undefined,
+      { tokenType: TokenType.ApiKey }
+    );
+    expect(grantRepository.getDirectPermissionIdsForRoles).toHaveBeenCalledWith(
+      ['role-1'],
+      '10000000-0000-4000-8000-000000000003'
+    );
+  });
+
+  it('is the collection getUserPermissions filters from', async () => {
+    vi.mocked(grantRepository.getUserRoleIdsInScope).mockResolvedValue(['role-1']);
+    vi.mocked(grantRepository.getDirectPermissionIdsForRoles).mockResolvedValue(['p-role']);
+    vi.mocked(grantRepository.getDirectPermissionIdsForUser).mockResolvedValue(['p-user']);
+
+    const ids = await service.collectPermissionIds(userId, scope);
+    await service.getUserPermissions(userId, scope, 'resource', 'read');
+
+    expect(grantRepository.getPermissionsByIds).toHaveBeenCalledWith(
+      expect.arrayContaining(ids),
+      'read',
+      'resource'
+    );
+    expect(vi.mocked(grantRepository.getPermissionsByIds).mock.calls[0][0]).toHaveLength(
+      ids.length
+    );
+  });
+
+  it('returns nothing for a principal with no roles, groups or permissions', async () => {
+    await expect(service.collectPermissionIds(userId, scope)).resolves.toEqual([]);
+  });
+});
+
+describe('GrantService.collectRolePermissionIds', () => {
+  it('resolves roles through their groups and project-filtered direct permissions only', async () => {
+    const grantRepository = {
+      getUserRoleIdsInScope: vi.fn(),
+      getGroupIdsForRoles: vi.fn().mockResolvedValue(['g-role']),
+      getDirectGroupIdsForUser: vi.fn(),
+      getPermissionIdsForGroups: vi.fn().mockResolvedValue(['p-group']),
+      getDirectPermissionIdsForRoles: vi.fn().mockResolvedValue(['p-role']),
+      getDirectPermissionIdsForUser: vi.fn(),
+    } as unknown as IGrantRepository;
+    const service = new GrantService(
+      {} as IEntityCacheAdapter,
+      grantRepository,
+      {} as SigningKeyService
+    );
+
+    const ids = await service.collectRolePermissionIds(['role-1', 'role-2'], projectScope);
+
+    expect(ids.sort()).toEqual(['p-group', 'p-role']);
+    expect(grantRepository.getGroupIdsForRoles).toHaveBeenCalledWith(['role-1', 'role-2']);
+    expect(grantRepository.getPermissionIdsForGroups).toHaveBeenCalledWith(['g-role']);
+    expect(grantRepository.getDirectPermissionIdsForRoles).toHaveBeenCalledWith(
+      ['role-1', 'role-2'],
+      '10000000-0000-4000-8000-000000000003'
+    );
+    expect(grantRepository.getUserRoleIdsInScope).not.toHaveBeenCalled();
+    expect(grantRepository.getDirectGroupIdsForUser).not.toHaveBeenCalled();
+    expect(grantRepository.getDirectPermissionIdsForUser).not.toHaveBeenCalled();
+  });
+
+  it('returns nothing for no roles without reading the repository', async () => {
+    const grantRepository = { getGroupIdsForRoles: vi.fn() } as unknown as IGrantRepository;
+    const service = new GrantService(
+      {} as IEntityCacheAdapter,
+      grantRepository,
+      {} as SigningKeyService
+    );
+
+    await expect(service.collectRolePermissionIds([], projectScope)).resolves.toEqual([]);
+    expect(grantRepository.getGroupIdsForRoles).not.toHaveBeenCalled();
+  });
+});

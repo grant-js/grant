@@ -37,9 +37,14 @@ export interface IApiKeyService {
   /**
    * `owner` names the project user the key is about to be linked to; it only decides which
    * user and project the `api_key.created` event names (no API field, never stored here).
+   * `grant` says what the project key carries (a role, or a count of permissions) and only
+   * goes into the audit row's metadata.
    */
   createApiKey(
-    params: Omit<CreateApiKeyInput, 'scope'> & { owner?: { projectId: string; userId: string } },
+    params: Omit<CreateApiKeyInput, 'scope'> & {
+      owner?: { projectId: string; userId: string };
+      grant?: { kind: 'role' | 'permissions'; permissionCount: number };
+    },
     transaction?: unknown
   ): Promise<CreateApiKeyResult>;
 
@@ -135,6 +140,58 @@ export interface IApiKeyService {
     params: { id: string; hardDelete?: boolean },
     transaction?: unknown
   ): Promise<ApiKey>;
+}
+
+// ---------------------------------------------------------------------------
+// IApiKeyAttenuationService
+// ---------------------------------------------------------------------------
+
+/** The ids a caller may attach to a project API key in a project scope. */
+export interface ApiKeyAttachableGrantIds {
+  /** The caller's own permissions, plus machine-only permissions whose gate the caller holds. */
+  permissions: { permissionId: string; machineOnly: boolean }[];
+  /** Roles of the parent tenant whose effective permissions the caller's cover. */
+  roleIds: string[];
+}
+
+/**
+ * The one rule for what a project API key may carry and who may manage it: the key's effective
+ * permissions in its project scope must be covered by the caller's, equality allowed. A
+ * machine-only permission may also be carried by a key whose creator holds its gate permission.
+ * `scope` is an `organizationProject` or `accountProject` scope.
+ */
+export interface IApiKeyAttenuationService {
+  /**
+   * Refuses (`AuthorizationError`) a role or permission set the caller does not cover, and a
+   * request that names both kinds, neither, or an empty permission set (`BadRequestError`).
+   */
+  assertAttachable(
+    params: { scope: Scope; roleId?: string | null; permissionIds?: readonly string[] | null },
+    transaction?: unknown
+  ): Promise<void>;
+
+  /** Refuses (`AuthorizationError`) a key whose effective permissions the caller does not cover. */
+  assertCanManage(params: { scope: Scope; apiKeyId: string }, transaction?: unknown): Promise<void>;
+
+  attachableGrants(scope: Scope, transaction?: unknown): Promise<ApiKeyAttachableGrantIds>;
+
+  /** The key's permission ids: its role's effective permissions and its own permission rows. */
+  effectivePermissionIdsForKey(
+    params: { scope: Scope; apiKeyId: string },
+    transaction?: unknown
+  ): Promise<string[]>;
+}
+
+// ---------------------------------------------------------------------------
+// IApiKeyPermissionService
+// ---------------------------------------------------------------------------
+
+export interface IApiKeyPermissionService {
+  /** Gives a key permissions of its own, one `ADD_PERMISSION` audit row per permission. */
+  attach(
+    params: { apiKeyId: string; projectId: string; permissionIds: readonly string[] },
+    transaction?: unknown
+  ): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------

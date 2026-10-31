@@ -6,7 +6,7 @@ export const addAccountProjectApiKeyParamsSchema = z.object({
   accountId: idSchema,
   projectId: idSchema,
   apiKeyId: idSchema,
-  accountRoleId: idSchema,
+  accountRoleId: idSchema.nullable(),
 });
 
 export const getAccountProjectApiKeysParamsSchema = z.object({
@@ -19,5 +19,5 @@ export const accountProjectApiKeySchema = baseEntitySchema.extend({
   accountId: idSchema,
   projectId: idSchema,
   apiKeyId: idSchema,
-  accountRoleId: idSchema,
+  accountRoleId: idSchema.nullable(),
 });

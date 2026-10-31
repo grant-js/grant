@@ -64,10 +64,6 @@ function getRoleLevelByName(roleName: string): number | undefined {
   return definition?.level;
 }
 
-export function isStandardAccountRoleName(roleName: string): boolean {
-  return Object.values(ACCOUNT_ROLE_DEFINITIONS).some((def) => def.name === roleName);
-}
-
 /** Both roles must be standard organization roles, and the target strictly lower than the current. */
 export function canAssignRole(currentUserRoleName: string, targetRoleName: string): boolean {
   const currentLevel = getRoleLevelByName(currentUserRoleName);

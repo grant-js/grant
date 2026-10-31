@@ -7,7 +7,6 @@ import type {
   Account,
   AccountPage,
   AccountProject,
-  AccountProjectApiKey,
   AccountProjectTag,
   AccountRole,
   AccountTag,
@@ -27,8 +26,9 @@ import type {
   UpdateAccountProjectTagInput,
 } from '@grantjs/schema';
 
-import type { SelectedFields } from '../repositories/common';
+import type { AccountProjectApiKeyRow } from '../repositories/account.repository.port';
 import type { DeleteParams } from '../repositories/common';
+import type { SelectedFields } from '../repositories/common';
 
 // ---------------------------------------------------------------------------
 // IAccountService
@@ -158,32 +158,24 @@ export interface IAccountProjectApiKeyService {
   getAccountProjectApiKeys(
     params: { accountId?: string; projectId?: string; apiKeyId?: string },
     transaction?: unknown
-  ): Promise<AccountProjectApiKey[]>;
+  ): Promise<AccountProjectApiKeyRow[]>;
 
   addAccountProjectApiKey(
-    params: { accountId: string; projectId: string; apiKeyId: string; accountRoleId: string },
+    params: {
+      accountId: string;
+      projectId: string;
+      apiKeyId: string;
+      accountRoleId: string | null;
+    },
     transaction?: unknown
-  ): Promise<AccountProjectApiKey>;
+  ): Promise<AccountProjectApiKeyRow>;
 
   getByApiKeyAndAccountAndProject(
     apiKeyId: string,
     accountId: string,
     projectId: string,
     transaction?: unknown
-  ): Promise<AccountProjectApiKey | null>;
-
-  validateAccountProjectApiKeyRolePermission(
-    accountId: string,
-    roleId: string,
-    transaction?: unknown
-  ): Promise<void>;
-
-  validateCanManageAccountProjectApiKey(
-    accountId: string,
-    projectId: string,
-    apiKeyId: string,
-    transaction?: unknown
-  ): Promise<void>;
+  ): Promise<AccountProjectApiKeyRow | null>;
 
   resolveAccountRoleIdForCurrentUser(accountId: string, transaction?: unknown): Promise<string>;
 }

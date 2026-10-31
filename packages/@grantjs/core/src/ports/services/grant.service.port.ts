@@ -40,6 +40,20 @@ export interface IGrantService {
   ): Promise<Permission[]>;
 
   /**
+   * Every permission id the principal holds in the scope: roles in scope, their groups and
+   * project-filtered direct permissions, the principal's direct groups and direct permissions.
+   * The one collection `getUserPermissions` filters from.
+   */
+  collectPermissionIds(userId: string, scope: Scope, tokenType?: TokenType): Promise<string[]>;
+
+  /**
+   * Every permission id the given roles resolve to in the scope: their groups' permissions and
+   * their direct permissions, filtered to the scope's project when it has one. A principal
+   * whose only role is one of these resolves to exactly this set.
+   */
+  collectRolePermissionIds(roleIds: readonly string[], scope: Scope): Promise<string[]>;
+
+  /**
    * Return which of the candidate scope slugs (resource:action) the user is granted in the given scope.
    * Used for project-app token scope intersection.
    */

@@ -1,18 +1,13 @@
-import { canAssignRole } from '@grantjs/constants';
-import {
-  GrantAuth,
-  type IAuditLogger,
-  type IOrganizationMemberRepository,
-  type IOrganizationProjectApiKeyRepository,
-  type IOrganizationProjectApiKeyService,
-  type IOrganizationProjectRepository,
-  type IOrganizationRoleRepository,
-  type IRoleRepository,
+import type {
+  IAuditLogger,
+  IOrganizationProjectApiKeyRepository,
+  IOrganizationProjectApiKeyService,
+  IOrganizationProjectRepository,
+  IOrganizationRoleRepository,
+  OrganizationProjectApiKeyRow,
 } from '@grantjs/core';
-import { ApiKey, OrganizationProjectApiKey, Role } from '@grantjs/schema';
 
-import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
-import { hasSingleRoleRow } from '@/lib/single-role-row.lib';
+import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
 
 import { createDynamicSingleSchema, validateInput, validateOutput } from './common';
@@ -24,45 +19,11 @@ import {
 
 export class OrganizationProjectApiKeyService implements IOrganizationProjectApiKeyService {
   constructor(
-    private readonly organizationMemberRepository: IOrganizationMemberRepository,
     private readonly organizationProjectRepository: IOrganizationProjectRepository,
     private readonly organizationRoleRepository: IOrganizationRoleRepository,
     private readonly organizationProjectApiKeyRepository: IOrganizationProjectApiKeyRepository,
-    private readonly roleRepository: IRoleRepository,
-    readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger
   ) {}
-
-  private getCurrentUserId(): string {
-    if (!this.user?.userId) {
-      throw new AuthorizationError('Authentication required');
-    }
-    return this.user.userId;
-  }
-
-  private async getUserRoleNameInOrganization(
-    organizationId: string,
-    userId: string,
-    transaction?: Transaction
-  ): Promise<string | null> {
-    const member = await this.organizationMemberRepository.getOrganizationMember(
-      { organizationId, userId },
-      transaction
-    );
-    return member?.role?.name ?? null;
-  }
-
-  private async canCarryRole(
-    currentUserRoleName: string,
-    targetRoleName: string,
-    transaction?: Transaction
-  ): Promise<boolean> {
-    return (
-      canAssignRole(currentUserRoleName, targetRoleName) &&
-      (await hasSingleRoleRow(this.roleRepository, currentUserRoleName, transaction)) &&
-      (await hasSingleRoleRow(this.roleRepository, targetRoleName, transaction))
-    );
-  }
 
   private async ensureOrganizationProjectExists(
     organizationId: string,
@@ -96,7 +57,7 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
   public async getOrganizationProjectApiKeys(
     params: { organizationId?: string; projectId?: string; apiKeyId?: string },
     transaction?: Transaction
-  ): Promise<OrganizationProjectApiKey[]> {
+  ): Promise<OrganizationProjectApiKeyRow[]> {
     const context = 'OrganizationProjectApiKeyService.getOrganizationProjectApiKeys';
     const validated = validateInput(getOrganizationProjectApiKeysParamsSchema, params, context);
     const result = await this.organizationProjectApiKeyRepository.getOrganizationProjectApiKeys(
@@ -110,116 +71,23 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
     );
   }
 
-  public async validateOrganizationProjectApiKeyRolePermission(
-    organizationId: string,
-    roleId: string,
-    transaction?: Transaction
-  ): Promise<void> {
-    const currentUserId = this.getCurrentUserId();
-
-    const currentUserRoleName = await this.getUserRoleNameInOrganization(
-      organizationId,
-      currentUserId,
-      transaction
-    );
-
-    if (!currentUserRoleName) {
-      throw new AuthorizationError('You are not a member of this organization');
-    }
-
-    const targetRole = await this.roleRepository.getRoles({ ids: [roleId], limit: 1 }, transaction);
-
-    if (targetRole.roles.length === 0) {
-      throw new NotFoundError('Role', roleId);
-    }
-
-    if (!(await this.canCarryRole(currentUserRoleName, targetRole.roles[0].name, transaction))) {
-      throw new AuthorizationError(
-        'API keys can only be created with a standard role of lower level than your own role'
-      );
-    }
-  }
-
-  public async validateCanManageOrganizationProjectApiKey(
-    organizationId: string,
-    projectId: string,
-    apiKeyId: string,
-    transaction?: Transaction
-  ): Promise<void> {
-    const pivot = await this.getByApiKeyAndOrganizationAndProject(
-      apiKeyId,
-      organizationId,
-      projectId,
-      transaction
-    );
-
-    if (!pivot) {
-      throw new NotFoundError('ApiKey', apiKeyId);
-    }
-
-    const currentUserId = this.getCurrentUserId();
-    const currentUserRoleName = await this.getUserRoleNameInOrganization(
-      organizationId,
-      currentUserId,
-      transaction
-    );
-
-    if (!currentUserRoleName) {
-      throw new AuthorizationError('You are not a member of this organization');
-    }
-
-    const keyRole = await this.roleRepository.getRoles(
-      { ids: [pivot.organizationRoleId], limit: 1 },
-      transaction
-    );
-
-    if (keyRole.roles.length === 0) {
-      throw new NotFoundError('Role', pivot.organizationRoleId);
-    }
-
-    if (!(await this.canCarryRole(currentUserRoleName, keyRole.roles[0].name, transaction))) {
-      throw new AuthorizationError(
-        'API keys can only be managed when their role is a standard role of lower level than your own role'
-      );
-    }
-  }
-
-  public async filterApiKeysByManageable(
-    organizationId: string,
-    apiKeys: (ApiKey & { role?: Role | null })[],
-    transaction?: Transaction
-  ): Promise<(ApiKey & { role?: Role | null })[]> {
-    const currentUserId = this.getCurrentUserId();
-    const currentUserRoleName = await this.getUserRoleNameInOrganization(
-      organizationId,
-      currentUserId,
-      transaction
-    );
-
-    if (!currentUserRoleName) {
-      return [];
-    }
-
-    return apiKeys.filter(
-      (key) => !key.role?.name || canAssignRole(currentUserRoleName, key.role!.name!)
-    );
-  }
-
   public async addOrganizationProjectApiKey(
     params: {
       organizationId: string;
       projectId: string;
       apiKeyId: string;
-      organizationRoleId: string;
+      organizationRoleId: string | null;
     },
     transaction?: Transaction
-  ): Promise<OrganizationProjectApiKey> {
+  ): Promise<OrganizationProjectApiKeyRow> {
     const context = 'OrganizationProjectApiKeyService.addOrganizationProjectApiKey';
     const validated = validateInput(addOrganizationProjectApiKeyParamsSchema, params, context);
     const { organizationId, projectId, organizationRoleId } = validated;
 
     await this.ensureOrganizationProjectExists(organizationId, projectId, transaction);
-    await this.ensureOrganizationHasRole(organizationId, organizationRoleId, transaction);
+    if (organizationRoleId) {
+      await this.ensureOrganizationHasRole(organizationId, organizationRoleId, transaction);
+    }
 
     const pivot = await this.organizationProjectApiKeyRepository.addOrganizationProjectApiKey(
       validated,
@@ -247,7 +115,7 @@ export class OrganizationProjectApiKeyService implements IOrganizationProjectApi
     organizationId: string,
     projectId: string,
     transaction?: Transaction
-  ): Promise<OrganizationProjectApiKey | null> {
+  ): Promise<OrganizationProjectApiKeyRow | null> {
     const context = 'OrganizationProjectApiKeyService.getByApiKeyAndOrganizationAndProject';
     const result =
       await this.organizationProjectApiKeyRepository.getByApiKeyAndOrganizationAndProject(
