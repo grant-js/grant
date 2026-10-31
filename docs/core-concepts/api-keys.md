@@ -37,7 +37,26 @@ Every API key is created within a specific scope. The scope determines which pro
 | **AccountProject**      | `accountId:projectId`      | Key acts on behalf of a personal account's project |
 | **OrganizationProject** | `organizationId:projectId` | Key acts on behalf of an organization's project    |
 
-For `AccountProject` and `OrganizationProject` scopes, the key is also associated with a **role** that determines its permissions. If no role is specified at creation, the creating user's current role is used.
+### Two grant kinds: a role or a set of permissions
+
+A project key (`AccountProject` or `OrganizationProject`) carries exactly one of two things, and what it carries is what the key is authorized to do in that project:
+
+- **A role.** `roleId` names a standard role of the parent tenant (a standard organization role for an organization project, a standard account role for an account project). The key has what the role resolves to in that project. An account project key created with neither `roleId` nor `permissionIds` carries the creator's account role; an organization project key needs one of the two.
+- **A set of permissions.** `permissionIds` lists the permissions the key carries instead of a role, at least one. The key is authorized by exactly those permissions in its own project (the rows are read through the key's link to that project, so they resolve nowhere else) and by nothing from any role. Permissions are named by id, because a permission row can carry a condition and custom permissions exist; `apiKeyAttachableGrants` returns them.
+
+A request that names both, neither (organization project), an empty list or a permission that does not exist is refused with `400`. `permissionIds` is not accepted for a project-user key, which is the user and which a list could not narrow.
+
+In the API, `ApiKey.role` is set for a role key and `ApiKey.permissions` for a permission key; the other is `null`.
+
+```bash
+curl -X POST "$GRANT_URL/api/api-keys" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{
+    "name": "Reporting",
+    "scope": { "tenant": "organizationProject", "id": "<organization-id>:<project-id>" },
+    "permissionIds": ["<User:Query id>", "<ProjectSyncJob:Query id>"]
+  }'
+```
 
 ### What a project key may carry, and who may manage it
 
@@ -46,6 +65,31 @@ A project API key never carries more than its creator can do in the key's projec
 The same rule applies when a key is rotated, revoked or deleted: the caller's permissions must cover the key's. It is the same for account and organization projects. A role key carries only a standard role (a standard organization role for an organization project, a standard account role for an account project); any other role is refused. A key with neither a role nor permissions can be managed by no one.
 
 A machine-only permission, today `ProjectUser:ExportCredentials`, may also be carried by a key whose creator holds its gate permission (`ProjectUser:SetPassword`) without holding the permission itself. See [API keys are attenuated](/architecture/rbac#api-keys-are-attenuated).
+
+### What you may attach
+
+`apiKeyAttachableGrants(scope)` (GraphQL) and `GET /api/api-keys/attachable-grants?tenant=&scopeId=` (REST) list what the caller may give a new key in a project scope, which is the one question the creation check answers:
+
+- `permissions`: each permission the caller holds in the scope, plus each machine-only permission whose gate the caller holds, flagged `machineOnly: true`;
+- `roles`: the standard roles of the parent tenant whose permissions the caller covers.
+
+It requires `ApiKey:Create`, takes a project scope the request is authorized in, and is not paged (the catalogue is small). A custom role of the organization is never listed: a role key carries only a standard role, and a permission key is the way to carry anything else.
+
+### Editing a key's permissions
+
+`setApiKeyPermissions` (GraphQL) and `PUT /api/api-keys/{id}/permissions` (REST, body `{ scope, permissionIds }`) replace the permissions a key carries. They require `ApiKey:Update`, and:
+
+- `permissionIds` is the complete set the key carries afterwards, and it may not be empty;
+- the caller must cover the key as it is today, which is the rule for rotating, revoking and deleting it;
+- each permission the call **adds** must be covered by the caller's own cohort (what `apiKeyAttachableGrants` lists), machine-only permissions included; permissions the call leaves out are removed, and removing is always allowed;
+- applied to a **role key**, the call converts it: the role is cleared and the listed permissions are stored. The conversion is one way (a permission key never goes back to a role), and it is bounded by the caller's cohort, not by what the old role held;
+- a revoked key is refused (`400`), and a key that is not in the named scope is not found (`404`).
+
+The key keeps its id, client ID and secret, and nothing new is handed out. The change reaches the key's next request: the key's cached authorization results are dropped when the change commits, so a token issued before the edit follows the new set at once.
+
+Each change leaves a trail. The key's audit log gets one `ADD_PERMISSION` or `REMOVE_PERMISSION` row per permission added or removed (the permission id, its resource and action, never a secret; a conversion names the role it came from) and one `UPDATE_API_KEY_PERMISSIONS` row of counts. A call that changes nothing writes no row and publishes nothing. One `api_key.updated` [event](./events-webhooks-notifications.md) is published per change: it names the key and the number of permissions before and after, and no permission. It is webhook-only and, like `api_key.deleted`, has no owning user.
+
+Because an edit can widen a key after its consumer was vetted, watch `api_key.updated` in the projects that matter, and give `ApiKey:Update` only to the people who should be able to do it.
 
 ## Token Exchange
 
@@ -92,13 +136,15 @@ External services can verify these tokens using the JWKS endpoint published at t
 
 ## REST Endpoints
 
-| Method   | Path                   | Permission      | Description                       |
-| -------- | ---------------------- | --------------- | --------------------------------- |
-| `GET`    | `/api-keys`            | `ApiKey:Query`  | List keys (paginated, searchable) |
-| `POST`   | `/api-keys`            | `ApiKey:Create` | Create a new key                  |
-| `POST`   | `/api-keys/:id/revoke` | `ApiKey:Revoke` | Revoke an active key              |
-| `DELETE` | `/api-keys/:id`        | `ApiKey:Delete` | Soft- or hard-delete a key        |
-| `POST`   | `/auth/token`          | —               | Exchange credentials for a JWT    |
+| Method   | Path                          | Permission      | Description                                  |
+| -------- | ----------------------------- | --------------- | -------------------------------------------- |
+| `GET`    | `/api-keys`                   | `ApiKey:Query`  | List keys (paginated, searchable)            |
+| `POST`   | `/api-keys`                   | `ApiKey:Create` | Create a new key (a role or `permissionIds`) |
+| `GET`    | `/api-keys/attachable-grants` | `ApiKey:Create` | List what the caller may give a project key  |
+| `PUT`    | `/api-keys/:id/permissions`   | `ApiKey:Update` | Replace a project key's permissions          |
+| `POST`   | `/api-keys/:id/revoke`        | `ApiKey:Revoke` | Revoke an active key                         |
+| `DELETE` | `/api-keys/:id`               | `ApiKey:Delete` | Soft- or hard-delete a key                   |
+| `POST`   | `/auth/token`                 | —               | Exchange credentials for a JWT               |
 
 The exchange endpoint (`/auth/token`) is not permission-guarded — it authenticates via the client credentials themselves.
 
@@ -155,7 +201,7 @@ It lists the member's live (not revoked, not deleted) project-user keys, oldest 
 
 ### Exporting the secret
 
-The copy is read back by one call, the credential export that already returns project password hashes, with a second kind: `exportProjectUserCredentials` (GraphQL) and `POST /api/users/credentials/export` (REST, `Cache-Control: no-store`). It requires `ProjectUser:ExportCredentials`, the same permission as for hashes, which no standard group holds: grant it to the role a receiver's API key carries. The scope is a project scope (`accountProject` or `organizationProject`) that the request is authorized in, every id in `userIds` must be a member of the project (a non-member fails the whole call), and a call is capped at one page of users.
+The copy is read back by one call, the credential export that already returns project password hashes, with a second kind: `exportProjectUserCredentials` (GraphQL) and `POST /api/users/credentials/export` (REST, `Cache-Control: no-store`). It requires `ProjectUser:ExportCredentials`, the same permission as for hashes, which no standard group holds: a holder of `ProjectUser:SetPassword` attaches it to the receiver's API key as a machine-only permission (see [What you may attach](#what-you-may-attach)). The scope is a project scope (`accountProject` or `organizationProject`) that the request is authorized in, every id in `userIds` must be a member of the project (a non-member fails the whole call), and a call is capped at one page of users.
 
 ```graphql
 query {
