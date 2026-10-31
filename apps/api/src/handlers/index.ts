@@ -116,6 +116,7 @@ export function createHandlers(
       services.apiKeyAttenuation,
       services.apiKeyPermissions,
       services.roles,
+      services.permissions,
       cache,
       services,
       db

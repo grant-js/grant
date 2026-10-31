@@ -168,6 +168,10 @@ export const Query = {
     { resource: ResourceSlug.ApiKey, action: ResourceAction.Query },
     apiKeyQueries.getApiKeys!
   ),
+  apiKeyAttachableGrants: authorizeGraphQLResolver(
+    { resource: ResourceSlug.ApiKey, action: ResourceAction.Create },
+    apiKeyQueries.getApiKeyAttachableGrants!
+  ),
   // Signing Keys (scoped; project only)
   signingKeys: authorizeGraphQLResolver(
     { resource: ResourceSlug.ApiKey, action: ResourceAction.Query },

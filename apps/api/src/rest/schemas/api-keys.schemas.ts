@@ -33,6 +33,7 @@ export const createApiKeyRequestSchema = z
     expiresAt: z.date().optional(),
     scope: scopeSchema,
     roleId: z.uuid('errors.validation.invalidRoleId').optional(),
+    permissionIds: z.array(z.uuid('errors.validation.invalidPermissionId')).min(1).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.expiresAt == null || data.expiresAt === undefined) {
@@ -46,6 +47,16 @@ export const createApiKeyRequestSchema = z
       });
     }
   });
+
+export const getApiKeyAttachableGrantsQuerySchema = z.object({
+  scopeId: z.string().min(1, 'errors.validation.scopeIdRequired'),
+  tenant: z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]),
+});
+
+export const setApiKeyPermissionsRequestSchema = z.object({
+  scope: scopeSchema,
+  permissionIds: z.array(z.uuid('errors.validation.invalidPermissionId')).min(1),
+});
 
 export const exchangeApiKeyRequestSchema = z.object({
   clientId: z.uuid('errors.validation.invalidClientId'),

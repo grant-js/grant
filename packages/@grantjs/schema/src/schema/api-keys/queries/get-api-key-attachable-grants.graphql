@@ -1,0 +1,6 @@
+extend type Query {
+  """
+  What the caller may give a new project API key in this scope: the permissions (machine-only ones flagged) and the standard roles whose permissions the caller covers. Project scopes only.
+  """
+  apiKeyAttachableGrants(scope: Scope!): ApiKeyAttachableGrants!
+}

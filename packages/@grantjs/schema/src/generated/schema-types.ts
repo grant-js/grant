@@ -340,12 +340,27 @@ export type ApiKey = Auditable & {
   isRevoked: Scalars['Boolean']['output'];
   lastUsedAt?: Maybe<Scalars['Date']['output']>;
   name?: Maybe<Scalars['String']['output']>;
+  /** Permissions this API key carries instead of a role (project-level keys only). Null for user-scoped keys and for role keys. */
+  permissions?: Maybe<Array<Permission>>;
   revokedAt?: Maybe<Scalars['Date']['output']>;
   revokedBy?: Maybe<Scalars['ID']['output']>;
   revokedByUser?: Maybe<User>;
-  /** Role bound to this API key (project-level keys only). Null for user-scoped keys. */
+  /** Standard role bound to this API key (project-level keys only). Null for user-scoped keys and for keys that carry permissions. */
   role?: Maybe<Role>;
   updatedAt: Scalars['Date']['output'];
+};
+
+export type ApiKeyAttachableGrants = {
+  __typename?: 'ApiKeyAttachableGrants';
+  permissions: Array<ApiKeyAttachablePermission>;
+  roles: Array<Role>;
+};
+
+export type ApiKeyAttachablePermission = {
+  __typename?: 'ApiKeyAttachablePermission';
+  /** True for a permission meant for credentials only (such as ProjectUser:ExportCredentials): it can be given to a key by a holder of its gate permission, without holding it. */
+  machineOnly: Scalars['Boolean']['output'];
+  permission: Permission;
 };
 
 export type ApiKeyPage = PaginatedResults & {
@@ -610,7 +625,9 @@ export type CreateApiKeyInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   expiresAt?: InputMaybe<Scalars['Date']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
-  /** Required when scope.tenant is accountProject or organizationProject: the parent-tenant role the key impersonates. */
+  /** For a project key: the permissions the key carries instead of a role. Give exactly one of `roleId` or `permissionIds`. Each must be covered by what you can do in this scope, except machine-only permissions, which a holder of their gate permission may attach. Not allowed for other scopes. */
+  permissionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** For a project key (scope.tenant is accountProject or organizationProject): the standard role the key carries. Give exactly one of `roleId` or `permissionIds`. An account project key with neither carries the creator's account role. The role's permissions must be covered by what you can do in this scope. */
   roleId?: InputMaybe<Scalars['ID']['input']>;
   scope: Scope;
 };
@@ -1356,6 +1373,8 @@ export type Mutation = {
   rotateSigningKey: SigningKey;
   /** Rotate the signing secret. The new secret is returned once. */
   rotateWebhookSubscriptionSecret: WebhookSubscriptionWithSecret;
+  /** Replace the permissions a project API key carries. Applied to a role key it converts the key to permissions; the conversion is one way. The key keeps its id, clientId and secret, and the change applies to its next request. Refuses a revoked key. */
+  setApiKeyPermissions: ApiKey;
   setMyNotificationPreference: NotificationPreference;
   setMyPrimaryAuthenticationMethod: UserAuthenticationMethod;
   setMyPrimaryMfaDevice: MfaDevice;
@@ -1729,6 +1748,10 @@ export type MutationRotateSigningKeyArgs = {
 
 export type MutationRotateWebhookSubscriptionSecretArgs = {
   input: RotateWebhookSubscriptionSecretInput;
+};
+
+export type MutationSetApiKeyPermissionsArgs = {
+  input: SetApiKeyPermissionsInput;
 };
 
 export type MutationSetMyNotificationPreferenceArgs = {
@@ -2706,6 +2729,8 @@ export type ProjectUserPermission = Auditable & {
 export type Query = {
   __typename?: 'Query';
   _empty?: Maybe<Scalars['String']['output']>;
+  /** What the caller may give a new project API key in this scope: the permissions (machine-only ones flagged) and the standard roles whose permissions the caller covers. Project scopes only. */
+  apiKeyAttachableGrants: ApiKeyAttachableGrants;
   apiKeys: ApiKeyPage;
   /** Public signup policy. No authentication required. */
   authSignupPolicy: AuthSignupPolicy;
@@ -2777,6 +2802,10 @@ export type Query = {
   webhookSubscription: WebhookSubscription;
   /** List webhook subscriptions for a project scope. */
   webhookSubscriptions: Array<WebhookSubscription>;
+};
+
+export type QueryApiKeyAttachableGrantsArgs = {
+  scope: Scope;
 };
 
 export type QueryApiKeysArgs = {
@@ -3702,6 +3731,13 @@ export type SessionExportData = {
   ipAddress?: Maybe<Scalars['String']['output']>;
   lastUsedAt?: Maybe<Scalars['Date']['output']>;
   userAgent?: Maybe<Scalars['String']['output']>;
+};
+
+export type SetApiKeyPermissionsInput = {
+  id: Scalars['ID']['input'];
+  /** The complete set of permissions the key carries afterwards; it may not be empty. Permissions you add must be covered by what you can do in this scope (machine-only permissions: see `apiKeyAttachableGrants`); permissions you leave out are removed. */
+  permissionIds: Array<Scalars['ID']['input']>;
+  scope: Scope;
 };
 
 export type SetMyNotificationPreferenceInput = {
