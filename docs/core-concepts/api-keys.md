@@ -91,6 +91,61 @@ Each change leaves a trail. The key's audit log gets one `ADD_PERMISSION` or `RE
 
 Because an edit can widen a key after its consumer was vetted, watch `api_key.updated` in the projects that matter, and give `ApiKey:Update` only to the people who should be able to do it.
 
+### A key for a receiver that mirrors Grant into another system
+
+A receiver that mirrors a project into another system does five things: it lists the project's members, reads each member's credential fingerprints, exports the credentials it carries across (see [Exporting the secret](#exporting-the-secret)), starts CDM imports and exports, and polls the jobs it started. A key for it needs these four permissions in the project:
+
+| Permission                      | What needs it                                                                                                                                                                        | Where it is checked                                                                                                                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `User:Query`                    | Listing the members, including the nested `passwordCredential` and `apiKeyCredentials` fields                                                                                        | `GET /api/users`; GraphQL `users`                                                                                                                                                                           |
+| `ProjectSyncJob:Update`         | Starting an import or an export job, and requesting an upload URL for an import by reference                                                                                         | `POST /api/projects/{id}/sync/jobs`, `POST /api/projects/{id}/sync/jobs/export`, `POST /api/projects/{id}/sync/upload-url`; GraphQL `startProjectSync`, `startProjectExport`, `requestProjectSyncUploadUrl` |
+| `ProjectSyncJob:Query`          | Listing jobs and reading one job, its payload or its snapshot                                                                                                                        | `GET /api/projects/{id}/sync/jobs`, `GET /api/projects/{id}/sync/jobs/{jobId}` and its `/payload` and `/snapshot`; GraphQL `projectSyncJob`, `projectSyncJobs`                                              |
+| `ProjectUser:ExportCredentials` | The credential export, and the two credential fields on `User`, which resolve to `null` without it. A [machine-only permission](#what-a-project-key-may-carry-and-who-may-manage-it) | `POST /api/users/credentials/export`; GraphQL `exportProjectUserCredentials`                                                                                                                                |
+
+Two cases change the list. `User:Read` is needed only if the receiver reads one member by id over REST (`GET /api/users/{id}`); the GraphQL `users` query takes `ids` and needs `User:Query` alone. A receiver that never starts an import or an export leaves out `ProjectSyncJob:Update`.
+
+Nothing else is needed. The key manages no keys (no `ApiKey:*`), reads no project settings (no `Project:*`) and needs no write permission on users, roles or permissions: an import is applied by the sync job's worker, not under the key's own permissions. Every call names the key's own project scope, and the email and MFA steps that guard these operations for a signed-in person do not apply to a key.
+
+An Owner or Admin creates the key, because `ProjectUser:ExportCredentials` is attachable only by a holder of `ProjectUser:SetPassword`, which a Dev does not hold. First list what the caller may attach and pick the four ids:
+
+```graphql
+query {
+  apiKeyAttachableGrants(
+    scope: { tenant: OrganizationProject, id: "<organizationId>:<projectId>" }
+  ) {
+    permissions {
+      machineOnly
+      permission {
+        id
+        action
+        resource {
+          slug
+        }
+      }
+    }
+  }
+}
+```
+
+`ProjectUser:ExportCredentials` is in the list with `machineOnly: true` for an Owner or an Admin, and absent for a Dev. Then create the key with those ids and no role:
+
+```bash
+curl -X POST "$GRANT_URL/api/api-keys" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mirror receiver",
+    "scope": { "tenant": "organizationProject", "id": "<organization-id>:<project-id>" },
+    "permissionIds": [
+      "<User:Query id>",
+      "<ProjectSyncJob:Update id>",
+      "<ProjectSyncJob:Query id>",
+      "<ProjectUser:ExportCredentials id>"
+    ]
+  }'
+```
+
+The response carries the `clientId` and the `clientSecret`, which is shown once. The receiver exchanges them at `POST /auth/token` with the same project scope, as for any key (see [Token Exchange](#token-exchange)), and calls Grant with the access token. A call refused with `403` needs a permission the key does not carry; an Owner or Admin adds it with `PUT /api/api-keys/{id}/permissions` (see [Editing a key's permissions](#editing-a-key-s-permissions)) and the key's next request follows. For an account project the call is the same with `accountProject` and an account scope id.
+
 ## Token Exchange
 
 The primary integration point is the token exchange endpoint:
