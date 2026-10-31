@@ -18,6 +18,7 @@ import {
   apiKeyExportableSecrets,
   apiKeyExportableSecretsRelations,
 } from './api-key-exportable-secrets.schema';
+import { apiKeyPermissions, apiKeyPermissionsRelations } from './api-key-permissions.schema';
 import {
   apiKeyAuditLogs,
   apiKeyAuditLogsRelations,
@@ -205,6 +206,7 @@ export const schema = {
   accounts,
   apiKeys,
   apiKeyExportableSecrets,
+  apiKeyPermissions,
   apiKeyAuditLogs,
   eventLog,
   groupPermissions,
@@ -338,6 +340,7 @@ export const schema = {
   projectUsersRelations,
   apiKeysRelations,
   apiKeyExportableSecretsRelations,
+  apiKeyPermissionsRelations,
   apiKeyAuditLogsRelations,
   eventLogRelations,
   notificationPreferencesRelations,

@@ -1,5 +1,7 @@
 import type {
   IAccountProjectApiKeyService,
+  IApiKeyAttenuationService,
+  IApiKeyPermissionService,
   IApiKeyService,
   IOrganizationProjectApiKeyService,
   IProjectUserApiKeyService,
@@ -18,6 +20,7 @@ import {
   MutationRotateApiKeyArgs,
   QueryApiKeysArgs,
   Role,
+  Scope,
   Tenant,
 } from '@grantjs/schema';
 
@@ -29,12 +32,22 @@ import { SelectedFields } from '@/types';
 
 import { CacheHandler, type ScopeServices } from './base/cache-handler';
 
+/**
+ * `permissionIds` is accepted here for a key that carries permissions instead of a role; no
+ * transport passes it yet.
+ */
+type CreateApiKeyParams = Omit<MutationCreateApiKeyArgs, 'input'> & {
+  input: MutationCreateApiKeyArgs['input'] & { permissionIds?: string[] | null };
+};
+
 export class ApiKeysHandler extends CacheHandler {
   constructor(
     private readonly apiKeys: IApiKeyService,
     private readonly accountProjectApiKeys: IAccountProjectApiKeyService,
     private readonly organizationProjectApiKeys: IOrganizationProjectApiKeyService,
     private readonly projectUserApiKeys: IProjectUserApiKeyService,
+    private readonly apiKeyAttenuation: IApiKeyAttenuationService,
+    private readonly apiKeyPermissions: IApiKeyPermissionService,
     private readonly roles: IRoleService,
     cache: IEntityCacheAdapter,
     scopeServices: ScopeServices,
@@ -75,7 +88,7 @@ export class ApiKeysHandler extends CacheHandler {
     apiKeys: ApiKey[]
   ): Promise<(ApiKey & { role?: Role | null })[]> {
     const apiKeyIds = apiKeys.map((k) => k.id);
-    let pivotRows: { apiKeyId: string; roleId: string }[];
+    let pivotRows: { apiKeyId: string; roleId: string | null }[];
 
     if (scope.tenant === Tenant.AccountProject) {
       const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
@@ -97,7 +110,9 @@ export class ApiKeysHandler extends CacheHandler {
         .map((r) => ({ apiKeyId: r.apiKeyId, roleId: r.organizationRoleId }));
     }
 
-    const roleIds = [...new Set(pivotRows.map((r) => r.roleId))];
+    const roleIds = [
+      ...new Set(pivotRows.map((r) => r.roleId).filter((id): id is string => id !== null)),
+    ];
     if (roleIds.length === 0) {
       return apiKeys.map((k) => ({ ...k, role: null }));
     }
@@ -117,10 +132,11 @@ export class ApiKeysHandler extends CacheHandler {
     }));
   }
 
-  public async createApiKey(params: MutationCreateApiKeyArgs): Promise<CreateApiKeyResult> {
+  public async createApiKey(params: CreateApiKeyParams): Promise<CreateApiKeyResult> {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, name, description, expiresAt } = input;
+      const permissionIds = input.permissionIds ?? null;
       let { roleId } = input;
 
       switch (scope.tenant) {
@@ -153,23 +169,19 @@ export class ApiKeysHandler extends CacheHandler {
 
         case Tenant.AccountProject: {
           const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-          if (roleId) {
-            await this.accountProjectApiKeys.validateAccountProjectApiKeyRolePermission(
-              accountId,
-              roleId,
-              tx
-            );
-          } else {
+          if (!roleId && permissionIds === null) {
             roleId = await this.accountProjectApiKeys.resolveAccountRoleIdForCurrentUser(
               accountId,
               tx
             );
           }
+          await this.apiKeyAttenuation.assertAttachable({ scope, roleId, permissionIds }, tx);
           const apiKey = await this.apiKeys.createApiKey(
             {
               name: name ?? undefined,
               description: description ?? undefined,
               expiresAt: expiresAt ? new Date(expiresAt) : null,
+              grant: this.describeGrant(roleId, permissionIds),
             },
             tx
           );
@@ -178,31 +190,29 @@ export class ApiKeysHandler extends CacheHandler {
               accountId,
               projectId,
               apiKeyId: apiKey.id,
-              accountRoleId: roleId,
+              accountRoleId: roleId ?? null,
             },
             tx
           );
+          await this.attachPermissions(apiKey.id, projectId, permissionIds, tx);
           await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
 
         case Tenant.OrganizationProject: {
-          if (!roleId) {
+          if (!roleId && permissionIds === null) {
             throw new BadRequestError(
               'roleId is required when creating an API key for organizationProject scope'
             );
           }
           const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-          await this.organizationProjectApiKeys.validateOrganizationProjectApiKeyRolePermission(
-            organizationId,
-            roleId,
-            tx
-          );
+          await this.apiKeyAttenuation.assertAttachable({ scope, roleId, permissionIds }, tx);
           const apiKey = await this.apiKeys.createApiKey(
             {
               name: name ?? undefined,
               description: description ?? undefined,
               expiresAt: expiresAt ? new Date(expiresAt) : null,
+              grant: this.describeGrant(roleId, permissionIds),
             },
             tx
           );
@@ -211,10 +221,11 @@ export class ApiKeysHandler extends CacheHandler {
               organizationId,
               projectId,
               apiKeyId: apiKey.id,
-              organizationRoleId: roleId,
+              organizationRoleId: roleId ?? null,
             },
             tx
           );
+          await this.attachPermissions(apiKey.id, projectId, permissionIds, tx);
           await this.addApiKeyIdToScopeCache(scope, apiKey.id);
           return apiKey;
         }
@@ -223,6 +234,33 @@ export class ApiKeysHandler extends CacheHandler {
           throw new BadRequestError(`Unsupported tenant type: ${scope.tenant}`);
       }
     });
+  }
+
+  private describeGrant(
+    roleId: string | null | undefined,
+    permissionIds: string[] | null
+  ): { kind: 'role' | 'permissions'; permissionCount: number } {
+    return roleId
+      ? { kind: 'role', permissionCount: 0 }
+      : { kind: 'permissions', permissionCount: new Set(permissionIds ?? []).size };
+  }
+
+  private async attachPermissions(
+    apiKeyId: string,
+    projectId: string,
+    permissionIds: string[] | null,
+    tx: Transaction
+  ): Promise<void> {
+    if (permissionIds !== null) {
+      await this.apiKeyPermissions.attach({ apiKeyId, projectId, permissionIds }, tx);
+    }
+  }
+
+  /** A project key may only be changed by a caller whose permissions cover the key's. */
+  private async assertCanManage(scope: Scope, apiKeyId: string, tx: Transaction): Promise<void> {
+    if (scope.tenant === Tenant.OrganizationProject || scope.tenant === Tenant.AccountProject) {
+      await this.apiKeyAttenuation.assertCanManage({ scope, apiKeyId }, tx);
+    }
   }
 
   public async exchangeApiKey(
@@ -239,23 +277,7 @@ export class ApiKeysHandler extends CacheHandler {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, id } = input;
-      if (scope.tenant === Tenant.OrganizationProject) {
-        const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-        await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
-          organizationId,
-          projectId,
-          id,
-          tx
-        );
-      } else if (scope.tenant === Tenant.AccountProject) {
-        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-        await this.accountProjectApiKeys.validateCanManageAccountProjectApiKey(
-          accountId,
-          projectId,
-          id,
-          tx
-        );
-      }
+      await this.assertCanManage(scope, id, tx);
       const apiKey = await this.apiKeys.revokeApiKey(input, tx);
       return apiKey;
     });
@@ -265,23 +287,7 @@ export class ApiKeysHandler extends CacheHandler {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, id } = input;
-      if (scope.tenant === Tenant.OrganizationProject) {
-        const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-        await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
-          organizationId,
-          projectId,
-          id,
-          tx
-        );
-      } else if (scope.tenant === Tenant.AccountProject) {
-        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-        await this.accountProjectApiKeys.validateCanManageAccountProjectApiKey(
-          accountId,
-          projectId,
-          id,
-          tx
-        );
-      }
+      await this.assertCanManage(scope, id, tx);
       return await this.apiKeys.rotateApiKey({ id }, tx);
     });
   }
@@ -290,23 +296,7 @@ export class ApiKeysHandler extends CacheHandler {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { input } = params;
       const { scope, id } = input;
-      if (scope.tenant === Tenant.OrganizationProject) {
-        const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
-        await this.organizationProjectApiKeys.validateCanManageOrganizationProjectApiKey(
-          organizationId,
-          projectId,
-          id,
-          tx
-        );
-      } else if (scope.tenant === Tenant.AccountProject) {
-        const { accountId, projectId } = this.extractAccountProjectFromScope(scope);
-        await this.accountProjectApiKeys.validateCanManageAccountProjectApiKey(
-          accountId,
-          projectId,
-          id,
-          tx
-        );
-      }
+      await this.assertCanManage(scope, id, tx);
       const apiKey = await this.apiKeys.deleteApiKey(
         {
           id,

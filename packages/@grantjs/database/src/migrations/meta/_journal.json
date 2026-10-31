@@ -673,6 +673,13 @@
       "when": 1793373284151,
       "tag": "0095_api_key_exportable_secrets",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1793459096997,
+      "tag": "0096_api_key_permissions",
+      "breakpoints": true
     }
   ]
 }

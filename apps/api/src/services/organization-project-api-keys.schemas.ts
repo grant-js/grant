@@ -6,7 +6,7 @@ export const addOrganizationProjectApiKeyParamsSchema = z.object({
   organizationId: idSchema,
   projectId: idSchema,
   apiKeyId: idSchema,
-  organizationRoleId: idSchema,
+  organizationRoleId: idSchema.nullable(),
 });
 
 export const getOrganizationProjectApiKeysParamsSchema = z.object({
@@ -19,5 +19,5 @@ export const organizationProjectApiKeySchema = baseEntitySchema.extend({
   organizationId: idSchema,
   projectId: idSchema,
   apiKeyId: idSchema,
-  organizationRoleId: idSchema,
+  organizationRoleId: idSchema.nullable(),
 });
