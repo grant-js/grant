@@ -1260,7 +1260,6 @@
           "convert": "In Scopes umwandeln",
           "readOnlyNotice": "Du kannst diese Berechtigungen ansehen, aber nicht ändern.",
           "revokedNotice": "Dieser Schlüssel ist widerrufen und kann nicht geändert werden.",
-          "outsideCohort": "Du kannst keine Berechtigung ändern, die du nicht selbst hältst.",
           "lastScope": "Ein Schlüssel braucht mindestens eine Berechtigung."
         }
       },

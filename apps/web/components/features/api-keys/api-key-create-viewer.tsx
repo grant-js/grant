@@ -106,6 +106,8 @@ export function ApiKeyCreateViewer({ sidebar }: ApiKeyCreateViewerProps) {
           clientSecret: result.clientSecret,
         });
       }
+    } catch {
+      // The mutation hook already reported the error; the form stays as it is.
     } finally {
       setIsSubmitting(false);
     }

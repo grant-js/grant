@@ -149,6 +149,16 @@ describe('ApiKeyCreateViewer', () => {
     expect(submitButton()).toBeDisabled();
   });
 
+  it('moves between the two options with the arrow keys', async () => {
+    renderViewer();
+
+    kindOption('role').focus();
+    fireEvent.keyDown(kindOption('role'), { key: 'ArrowRight' });
+
+    // Radix moves the roving focus on the next tick
+    await waitFor(() => expect(kindOption('scopes')).toHaveFocus());
+  });
+
   it('shows the role card only after choosing a role, and keeps submit disabled until one is picked', () => {
     renderViewer();
 
