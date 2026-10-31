@@ -5,6 +5,7 @@ import {
   ORGANIZATION_ROLES,
   PERMISSION_MAPPINGS,
   RoleKey,
+  ROLES,
 } from '@grantjs/constants';
 import type { PermissionRef } from '@grantjs/core';
 import { Tenant, TokenType } from '@grantjs/schema';
@@ -49,7 +50,13 @@ interface KeyFixture {
 
 interface BuildOptions {
   callerHolds: string[];
+  /** The scope the test works in; decides which role names are standard (default: organization). */
+  scope?: { tenant: Tenant };
   roles?: Record<string, string[]>;
+  /** Role names by id; a role without an entry carries a standard name of the scope's tenant. */
+  roleNames?: Record<string, string>;
+  /** Names carried by more than one live role row. */
+  duplicateNames?: string[];
   keys?: Record<string, KeyFixture>;
   parentRoleIds?: string[];
   tokenType?: TokenType;
@@ -96,10 +103,25 @@ function build(options: BuildOptions) {
       .fn()
       .mockResolvedValue((options.parentRoleIds ?? []).map((roleId) => ({ roleId }))),
   };
+  const standardName =
+    options.scope?.tenant === Tenant.AccountProject
+      ? ROLES[RoleKey.PersonalAccountOwner].name
+      : ORGANIZATION_ROLE_DEFINITIONS[RoleKey.OrganizationDev].name;
   const roleRepository = {
-    getRoles: vi.fn().mockImplementation(async (params: { ids: string[] }) => ({
-      roles: params.ids.filter((id) => id in roles).map((id) => ({ id, name: `name of ${id}` })),
-    })),
+    getRoles: vi.fn().mockImplementation(async (params: { ids?: string[]; search?: string }) => {
+      if (params.ids) {
+        return {
+          roles: params.ids
+            .filter((id) => id in roles)
+            .map((id) => ({ id, name: options.roleNames?.[id] ?? standardName })),
+        };
+      }
+      const rows = [{ id: 'row-1', name: params.search }];
+      if (options.duplicateNames?.includes(params.search ?? '')) {
+        rows.push({ id: 'row-2', name: params.search });
+      }
+      return { roles: rows };
+    }),
   };
   const permissionRepository = {
     getPermissionRefsByIds: vi
@@ -143,8 +165,9 @@ describe.each([
   ['an account project', accountScope],
 ])('ApiKeyAttenuationService.assertAttachable for %s', (_label, scope) => {
   describe('a role', () => {
-    it('refuses a role whose permissions exceed the creator, whatever its name or level', async () => {
+    it('refuses a role whose permissions exceed the creator', async () => {
       const { service } = build({
+        scope,
         callerHolds: READ,
         roles: { 'role-above': READ_AND_SYNC },
       });
@@ -155,13 +178,17 @@ describe.each([
     });
 
     it('passes a role whose permissions equal the creator own', async () => {
-      const { service } = build({ callerHolds: READ_AND_SYNC, roles: { equal: READ_AND_SYNC } });
+      const { service } = build({
+        scope,
+        callerHolds: READ_AND_SYNC,
+        roles: { equal: READ_AND_SYNC },
+      });
 
       await expect(service.assertAttachable({ scope, roleId: 'equal' })).resolves.toBeUndefined();
     });
 
     it('passes a role whose permissions are a subset of the creator', async () => {
-      const { service } = build({ callerHolds: READ_AND_SYNC, roles: { below: READ } });
+      const { service } = build({ scope, callerHolds: READ_AND_SYNC, roles: { below: READ } });
 
       await expect(service.assertAttachable({ scope, roleId: 'below' })).resolves.toBeUndefined();
     });
@@ -169,6 +196,7 @@ describe.each([
     it('binds a creator whose own role has no level by the creator own permissions', async () => {
       const own = ['User:Query'];
       const { service } = build({
+        scope,
         callerHolds: own,
         roles: { 'within-own': own, 'beyond-own': ['User:Query', 'User:Read'] },
       });
@@ -181,14 +209,58 @@ describe.each([
       ).rejects.toBeInstanceOf(AuthorizationError);
     });
 
-    it('judges a role by its permissions even when its name matches a standard role', async () => {
-      const standardName = ORGANIZATION_ROLE_DEFINITIONS[RoleKey.OrganizationViewer].name;
-      const { service, roleRepository } = build({
+    it('carries only a standard role: a role outside the standard roles is refused even when the creator covers it', async () => {
+      const { service } = build({
+        scope,
+        callerHolds: READ_AND_SYNC,
+        roles: { custom: READ },
+        roleNames: { custom: 'a custom role' },
+      });
+
+      await expect(service.assertAttachable({ scope, roleId: 'custom' })).rejects.toBeInstanceOf(
+        AuthorizationError
+      );
+    });
+
+    it('carries only a standard role of the key tenant', async () => {
+      const otherTenantName =
+        scope.tenant === Tenant.AccountProject
+          ? ORGANIZATION_ROLE_DEFINITIONS[RoleKey.OrganizationViewer].name
+          : ROLES[RoleKey.PersonalAccountOwner].name;
+      const { service } = build({
+        scope,
+        callerHolds: READ_AND_SYNC,
+        roles: { foreign: READ },
+        roleNames: { foreign: otherTenantName },
+      });
+
+      await expect(service.assertAttachable({ scope, roleId: 'foreign' })).rejects.toBeInstanceOf(
+        AuthorizationError
+      );
+    });
+
+    it('treats a standard role name carried by more than one role row as non-standard', async () => {
+      const name =
+        scope.tenant === Tenant.AccountProject
+          ? ROLES[RoleKey.PersonalAccountOwner].name
+          : ORGANIZATION_ROLE_DEFINITIONS[RoleKey.OrganizationDev].name;
+      const { service } = build({
+        scope,
+        callerHolds: READ_AND_SYNC,
+        roles: { twin: READ },
+        duplicateNames: [name],
+      });
+
+      await expect(service.assertAttachable({ scope, roleId: 'twin' })).rejects.toBeInstanceOf(
+        AuthorizationError
+      );
+    });
+
+    it('refuses a standard role whose permissions exceed the creator', async () => {
+      const { service } = build({
+        scope,
         callerHolds: READ,
         roles: { namesake: READ_AND_SYNC },
-      });
-      roleRepository.getRoles.mockResolvedValue({
-        roles: [{ id: 'namesake', name: standardName }],
       });
 
       await expect(service.assertAttachable({ scope, roleId: 'namesake' })).rejects.toBeInstanceOf(
@@ -197,7 +269,7 @@ describe.each([
     });
 
     it('refuses a role that does not exist', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       await expect(service.assertAttachable({ scope, roleId: 'missing' })).rejects.toBeInstanceOf(
         NotFoundError
@@ -206,6 +278,7 @@ describe.each([
 
     it('collects the creator permissions in the key scope with the creator token type', async () => {
       const { service, permissionSets } = build({
+        scope,
         callerHolds: READ,
         roles: { below: READ },
         tokenType: TokenType.ApiKey,
@@ -224,7 +297,7 @@ describe.each([
 
   describe('a permission set', () => {
     it('passes permissions the creator holds, equality included', async () => {
-      const { service } = build({ callerHolds: READ_AND_SYNC });
+      const { service } = build({ scope, callerHolds: READ_AND_SYNC });
 
       await expect(
         service.assertAttachable({ scope, permissionIds: READ_AND_SYNC })
@@ -232,7 +305,7 @@ describe.each([
     });
 
     it('refuses a set with a permission the creator does not hold, naming the count only', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       const error = await service
         .assertAttachable({ scope, permissionIds: [...READ, 'ProjectSyncJob:Update'] })
@@ -244,7 +317,7 @@ describe.each([
     });
 
     it('refuses an empty set', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       await expect(service.assertAttachable({ scope, permissionIds: [] })).rejects.toBeInstanceOf(
         BadRequestError
@@ -252,7 +325,7 @@ describe.each([
     });
 
     it('refuses a request that names both a role and permissions', async () => {
-      const { service } = build({ callerHolds: READ, roles: { below: READ } });
+      const { service } = build({ scope, callerHolds: READ, roles: { below: READ } });
 
       await expect(
         service.assertAttachable({ scope, roleId: 'below', permissionIds: READ })
@@ -260,13 +333,13 @@ describe.each([
     });
 
     it('refuses a request that names neither', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       await expect(service.assertAttachable({ scope })).rejects.toBeInstanceOf(BadRequestError);
     });
 
     it('refuses a permission that does not exist or is not live', async () => {
-      const { service } = build({ callerHolds: [...READ, 'Ghost:Action'] });
+      const { service } = build({ scope, callerHolds: [...READ, 'Ghost:Action'] });
 
       await expect(
         service.assertAttachable({ scope, permissionIds: ['Ghost:Action'] })
@@ -274,7 +347,7 @@ describe.each([
     });
 
     it('counts a repeated id once', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       await expect(
         service.assertAttachable({ scope, permissionIds: ['User:Query', 'User:Query'] })
@@ -286,7 +359,7 @@ describe.each([
     const machineOnly = 'ProjectUser:ExportCredentials';
 
     it('is attachable by a holder of its gate permission who does not hold it', async () => {
-      const { service } = build({ callerHolds: [...READ, 'ProjectUser:SetPassword'] });
+      const { service } = build({ scope, callerHolds: [...READ, 'ProjectUser:SetPassword'] });
 
       await expect(
         service.assertAttachable({ scope, permissionIds: [...READ, machineOnly] })
@@ -294,7 +367,7 @@ describe.each([
     });
 
     it('is refused for a creator without the gate permission', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       await expect(
         service.assertAttachable({ scope, permissionIds: [machineOnly] })
@@ -302,7 +375,7 @@ describe.each([
     });
 
     it('does not make the gate permission itself attachable to a creator without it', async () => {
-      const { service } = build({ callerHolds: READ });
+      const { service } = build({ scope, callerHolds: READ });
 
       await expect(
         service.assertAttachable({ scope, permissionIds: ['ProjectUser:SetPassword'] })
@@ -311,6 +384,7 @@ describe.each([
 
     it('is attachable through a role that carries it when the creator holds the gate', async () => {
       const { service } = build({
+        scope,
         callerHolds: ['ProjectUser:SetPassword'],
         roles: { exporter: [machineOnly] },
       });
@@ -322,7 +396,7 @@ describe.each([
   });
 
   it('refuses a caller without an authenticated user', async () => {
-    const { service } = build({ callerHolds: READ, user: null });
+    const { service } = build({ scope, callerHolds: READ, user: null });
 
     await expect(service.assertAttachable({ scope, permissionIds: READ })).rejects.toBeInstanceOf(
       AuthorizationError
@@ -347,6 +421,7 @@ describe.each([
 ])('ApiKeyAttenuationService.assertCanManage for %s', (_label, scope) => {
   it('refuses a key whose role has permissions beyond the caller', async () => {
     const { service } = build({
+      scope,
       callerHolds: READ,
       roles: { above: READ_AND_SYNC },
       keys: { [apiKeyId]: { roleId: 'above' } },
@@ -359,6 +434,7 @@ describe.each([
 
   it('passes a key whose role the caller covers, equality included', async () => {
     const { service } = build({
+      scope,
       callerHolds: READ_AND_SYNC,
       roles: { equal: READ_AND_SYNC },
       keys: { [apiKeyId]: { roleId: 'equal' } },
@@ -367,14 +443,49 @@ describe.each([
     await expect(service.assertCanManage({ scope, apiKeyId })).resolves.toBeUndefined();
   });
 
+  it('manages a role key only when its role is a standard role, even when the caller covers it', async () => {
+    const { service } = build({
+      scope,
+      callerHolds: READ_AND_SYNC,
+      roles: { custom: READ },
+      roleNames: { custom: 'a custom role' },
+      keys: { [apiKeyId]: { roleId: 'custom' } },
+    });
+
+    await expect(service.assertCanManage({ scope, apiKeyId })).rejects.toBeInstanceOf(
+      AuthorizationError
+    );
+  });
+
+  it('treats a standard role name carried by more than one role row as non-standard when managing', async () => {
+    const name =
+      scope.tenant === Tenant.AccountProject
+        ? ROLES[RoleKey.PersonalAccountOwner].name
+        : ORGANIZATION_ROLE_DEFINITIONS[RoleKey.OrganizationDev].name;
+    const { service } = build({
+      scope,
+      callerHolds: READ_AND_SYNC,
+      roles: { twin: READ },
+      duplicateNames: [name],
+      keys: { [apiKeyId]: { roleId: 'twin' } },
+    });
+
+    await expect(service.assertCanManage({ scope, apiKeyId })).rejects.toBeInstanceOf(
+      AuthorizationError
+    );
+  });
+
   it('manages a key without a role only when the caller covers its permissions', async () => {
     const keys = { [apiKeyId]: { roleId: null, own: READ_AND_SYNC } };
 
     await expect(
-      build({ callerHolds: READ, keys }).service.assertCanManage({ scope, apiKeyId })
+      build({ scope, callerHolds: READ, keys }).service.assertCanManage({ scope, apiKeyId })
     ).rejects.toBeInstanceOf(AuthorizationError);
     await expect(
-      build({ callerHolds: READ_AND_SYNC, keys }).service.assertCanManage({ scope, apiKeyId })
+      build({ scope, callerHolds: READ_AND_SYNC, keys }).service.assertCanManage({
+        scope,
+        apiKeyId,
+      })
     ).resolves.toBeUndefined();
   });
 
@@ -382,10 +493,10 @@ describe.each([
     const keys = { [apiKeyId]: { roleId: null, own: ['ProjectUser:ExportCredentials'] } };
 
     await expect(
-      build({ callerHolds: READ, keys }).service.assertCanManage({ scope, apiKeyId })
+      build({ scope, callerHolds: READ, keys }).service.assertCanManage({ scope, apiKeyId })
     ).rejects.toBeInstanceOf(AuthorizationError);
     await expect(
-      build({ callerHolds: ['ProjectUser:SetPassword'], keys }).service.assertCanManage({
+      build({ scope, callerHolds: ['ProjectUser:SetPassword'], keys }).service.assertCanManage({
         scope,
         apiKeyId,
       })
@@ -394,6 +505,7 @@ describe.each([
 
   it('manages no key that has neither a role nor permissions', async () => {
     const { service } = build({
+      scope,
       callerHolds: READ_AND_SYNC,
       keys: { [apiKeyId]: { roleId: null, own: [] } },
     });
@@ -404,7 +516,7 @@ describe.each([
   });
 
   it('refuses a key that does not exist in the project', async () => {
-    const { service } = build({ callerHolds: READ_AND_SYNC });
+    const { service } = build({ scope, callerHolds: READ_AND_SYNC });
 
     await expect(service.assertCanManage({ scope, apiKeyId })).rejects.toBeInstanceOf(
       NotFoundError
@@ -438,11 +550,17 @@ describe('ApiKeyAttenuationService.effectivePermissionIdsForKey', () => {
 });
 
 describe('ApiKeyAttenuationService.attachableGrants', () => {
-  it('lists the caller permissions, the gated machine-only ones flagged, and the roles it covers', async () => {
+  it('lists the caller permissions, the gated machine-only ones flagged, and the standard roles it covers', async () => {
     const { service } = build({
       callerHolds: [...READ, 'ProjectUser:SetPassword'],
-      roles: { covered: READ, beyond: READ_AND_SYNC, exporter: ['ProjectUser:ExportCredentials'] },
-      parentRoleIds: ['covered', 'beyond', 'exporter'],
+      roles: {
+        covered: READ,
+        beyond: READ_AND_SYNC,
+        exporter: ['ProjectUser:ExportCredentials'],
+        custom: READ,
+      },
+      roleNames: { custom: 'a custom role' },
+      parentRoleIds: ['covered', 'beyond', 'exporter', 'custom'],
     });
 
     const grants = await service.attachableGrants(organizationScope);
@@ -510,9 +628,13 @@ describe('standard organization roles', () => {
       {} as never,
       {} as never,
       {
-        getRoles: vi.fn().mockImplementation(async (params: { ids: string[] }) => ({
-          roles: params.ids.map((id) => ({ id })),
-        })),
+        getRoles: vi
+          .fn()
+          .mockImplementation(async (params: { ids?: string[]; search?: string }) =>
+            params.ids
+              ? { roles: params.ids.map((id) => ({ id, name: ROLES[id as RoleKey].name })) }
+              : { roles: [{ id: 'row', name: params.search }] }
+          ),
       } as never,
       {
         getPermissionRefsByIds: vi

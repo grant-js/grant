@@ -38,6 +38,7 @@ describe('API-key attenuation', () => {
   let org: { id: string; name: string; slug: string };
   let projectId: string;
   let exceedingRoleId: string;
+  let plainRoleId: string;
   let adminRoleId: string;
   let devRoleId: string;
   let viewerRoleId: string;
@@ -128,6 +129,17 @@ describe('API-key attenuation', () => {
     expect(role.status, JSON.stringify(role.body)).toBe(201);
     exceedingRoleId = (role.body as IdBody).data!.id;
 
+    const plain = await apiClient()
+      .post('/api/roles')
+      .set('Authorization', owner.authHeader)
+      .send({
+        name: `E2E Key Attenuation Plain Role ${stamp}`,
+        description: 'carries no permission',
+        scope: { tenant: Tenant.Organization, id: org.id },
+      });
+    expect(plain.status, JSON.stringify(plain.body)).toBe(201);
+    plainRoleId = (plain.body as IdBody).data!.id;
+
     viewerRoleId = (await getOrganizationRoleIdByName(org.id, ROLE_VIEWER))!;
     adminRoleId = (await getOrganizationRoleIdByName(org.id, ROLE_ADMIN))!;
     ownerRoleId = (await getOrganizationRoleIdByName(org.id, ROLE_OWNER))!;
@@ -135,6 +147,17 @@ describe('API-key attenuation', () => {
     const adminKey = await createKey(owner, adminRoleId);
     expect(adminKey.status, JSON.stringify(adminKey.body)).toBe(201);
     adminKeyId = (adminKey.body as IdBody).data!.id;
+  });
+
+  it('a role key carries only a standard role: a role outside the standard roles is refused (403) and nothing is stored', async () => {
+    for (const user of [owner, dev]) {
+      const before = await counts(user);
+
+      const res = await createKey(user, plainRoleId);
+
+      expect(res.status, JSON.stringify(res.body)).toBe(403);
+      expect(await counts(user)).toEqual(before);
+    }
   });
 
   it('refuses a role whose permissions exceed the creator (403) and stores nothing', async () => {
