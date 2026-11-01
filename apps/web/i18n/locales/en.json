@@ -1243,6 +1243,14 @@
       "scopes": {
         "title": "Scopes",
         "description": "Pick the permissions this key carries. You can only pick permissions you hold yourself.",
+        "grant": {
+          "title": "Grant scopes",
+          "description": "Seeded Grant permissions you may attach to this key."
+        },
+        "project": {
+          "title": "Project scopes",
+          "description": "Custom project permissions you may attach to this key."
+        },
         "empty": "No permissions to show",
         "emptyDescription": "No permissions match your search or filter",
         "error": "Error loading permissions",
@@ -1277,7 +1285,11 @@
         "scopes": {
           "title": "Scopes",
           "description": "The permissions this key carries. A change applies to the key's next request.",
+          "grantDescription": "The Grant catalogue permissions this key carries. A change applies to the key's next request.",
+          "projectDescription": "The custom project permissions this key carries. A change applies to the key's next request.",
           "roleDescription": "The permissions of the role this key carries.",
+          "grantRoleDescription": "The Grant catalogue permissions of the role this key carries.",
+          "projectRoleDescription": "The custom project permissions of the role this key carries.",
           "roleNotice": "This key is governed by its role, {role}. Convert it to scopes to choose its permissions one by one.",
           "convert": "Convert to scopes",
           "readOnlyNotice": "You can view these permissions but not change them.",

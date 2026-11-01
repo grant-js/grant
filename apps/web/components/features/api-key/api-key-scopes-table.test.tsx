@@ -182,6 +182,37 @@ describe('ApiKeyScopesTable', () => {
     expect(screen.getByText('user:query')).toBeInTheDocument();
   });
 
+  it('insets nested permission rows under the resource group header', () => {
+    renderTable();
+
+    const groupCheckbox = screen.getByRole('checkbox', {
+      name: /scopes.groups.allActionsFor user$/,
+    });
+    const childCheckbox = screen.getByRole('checkbox', { name: /scopes.table.select user query/ });
+    const groupLeading = groupCheckbox.closest('[data-leading-inset]');
+    const childLeading = childCheckbox.closest('[data-leading-inset]');
+
+    expect(groupLeading).not.toBeNull();
+    expect(childLeading).not.toBeNull();
+    expect(Number(childLeading!.getAttribute('data-leading-inset'))).toBeGreaterThan(
+      Number(groupLeading!.getAttribute('data-leading-inset'))
+    );
+    expect(groupCheckbox.closest('td')?.cellIndex).toBe(0);
+    expect(childCheckbox.closest('td')?.cellIndex).toBe(0);
+  });
+
+  it('lets a hosted pager use the full footer width instead of shrinking', () => {
+    renderTable({ paginated: true, limit: 2, page: 1, onPageChange: vi.fn() });
+
+    const footer = document.querySelector('[data-slot="card-footer"]');
+    const pager = footer?.querySelector('[data-slot="pagination"]');
+    const pagerWrap = pager?.parentElement;
+
+    expect(pager).toHaveClass('w-full');
+    expect(pagerWrap).toHaveClass('flex-1');
+    expect(pagerWrap).toHaveClass('min-w-0');
+  });
+
   it('renders every checkbox disabled when read only', () => {
     renderTable({ readOnly: true, selectedIds: ['u-query'] });
 

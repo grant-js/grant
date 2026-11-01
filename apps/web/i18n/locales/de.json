@@ -1220,6 +1220,14 @@
       "scopes": {
         "title": "Scopes",
         "description": "Wähle die Berechtigungen, die dieser Schlüssel trägt. Du kannst nur Berechtigungen wählen, die du selbst hältst.",
+        "grant": {
+          "title": "Grant-Scopes",
+          "description": "Vorgegebene Grant-Berechtigungen, die du diesem Schlüssel geben darfst."
+        },
+        "project": {
+          "title": "Projekt-Scopes",
+          "description": "Eigene Projekt-Berechtigungen, die du diesem Schlüssel geben darfst."
+        },
         "empty": "Keine Berechtigungen vorhanden",
         "emptyDescription": "Keine Berechtigungen entsprechen deiner Suche oder deinem Filter",
         "error": "Fehler beim Laden der Berechtigungen",
@@ -1254,7 +1262,11 @@
         "scopes": {
           "title": "Scopes",
           "description": "Die Berechtigungen, die dieser Schlüssel trägt. Eine Änderung gilt ab der nächsten Anfrage des Schlüssels.",
+          "grantDescription": "Die Grant-Katalog-Berechtigungen, die dieser Schlüssel trägt. Eine Änderung gilt ab der nächsten Anfrage des Schlüssels.",
+          "projectDescription": "Die eigenen Projekt-Berechtigungen, die dieser Schlüssel trägt. Eine Änderung gilt ab der nächsten Anfrage des Schlüssels.",
           "roleDescription": "Die Berechtigungen der Rolle, die dieser Schlüssel trägt.",
+          "grantRoleDescription": "Die Grant-Katalog-Berechtigungen der Rolle, die dieser Schlüssel trägt.",
+          "projectRoleDescription": "Die eigenen Projekt-Berechtigungen der Rolle, die dieser Schlüssel trägt.",
           "roleNotice": "Dieser Schlüssel wird von seiner Rolle {role} bestimmt. Wandle ihn in Scopes um, um seine Berechtigungen einzeln zu wählen.",
           "convert": "In Scopes umwandeln",
           "readOnlyNotice": "Du kannst diese Berechtigungen ansehen, aber nicht ändern.",

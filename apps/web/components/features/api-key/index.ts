@@ -5,6 +5,7 @@ export * from './api-key-create-role-card';
 export * from './api-key-create-scopes';
 export * from './api-key-detail-viewer';
 export * from './api-key-general-card';
+export * from './api-key-scope-cards';
 export * from './api-key-scope-search';
 export * from './api-key-scopes';
 export * from './api-key-scopes-table';
