@@ -7,10 +7,41 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const scope = { tenant: Tenant.OrganizationProject, id: 'org-1:project-1' };
+const route = {
+  organizationId: 'org-1' as string | undefined,
+  accountId: undefined as string | undefined,
+  projectId: 'project-1',
+};
+const scope = { tenant: Tenant.OrganizationProject as Tenant, id: 'org-1:project-1' };
 const createApiKey = vi.fn();
 const push = vi.fn();
 const back = vi.fn();
+
+function attachablePermission(id: string, slug: string, action: string) {
+  return {
+    machineOnly: false,
+    permission: {
+      id,
+      name: `${slug} ${action}`,
+      action,
+      description: null,
+      resource: { id: `r-${slug}`, slug, name: slug },
+    },
+  };
+}
+
+const defaultRoles = [
+  { id: 'role-dev', name: 'Developer', description: null },
+  { id: 'role-owner', name: 'Owner', description: null },
+];
+const defaultPermissions = [
+  attachablePermission('perm-query', 'user', 'query'),
+  attachablePermission('perm-read', 'user', 'read'),
+];
+const attachable = {
+  roles: [...defaultRoles],
+  permissions: [...defaultPermissions],
+};
 
 vi.mock('next-intl', () => ({
   useTranslations: (namespace?: string) => {
@@ -24,7 +55,11 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('next/navigation', () => ({
-  useParams: () => ({ organizationId: 'org-1', projectId: 'project-1' }),
+  useParams: () => ({
+    organizationId: route.organizationId,
+    accountId: route.accountId,
+    projectId: route.projectId,
+  }),
 }));
 
 vi.mock('@/i18n/navigation', () => ({
@@ -56,29 +91,8 @@ vi.mock('@/hooks/api-keys', () => ({
     error: undefined,
     refetch: vi.fn(),
     cohort: null,
-    roles: [{ id: 'role-dev', name: 'Developer', description: null }],
-    permissions: [
-      {
-        machineOnly: false,
-        permission: {
-          id: 'perm-query',
-          name: 'user query',
-          action: 'query',
-          description: null,
-          resource: { id: 'r1', slug: 'user', name: 'user' },
-        },
-      },
-      {
-        machineOnly: false,
-        permission: {
-          id: 'perm-read',
-          name: 'user read',
-          action: 'read',
-          description: null,
-          resource: { id: 'r1', slug: 'user', name: 'user' },
-        },
-      },
-    ],
+    roles: attachable.roles,
+    permissions: attachable.permissions,
   }),
 }));
 
@@ -123,6 +137,12 @@ beforeEach(() => {
   createApiKey.mockReset();
   push.mockReset();
   back.mockReset();
+  scope.tenant = Tenant.OrganizationProject;
+  scope.id = 'org-1:project-1';
+  route.organizationId = 'org-1';
+  route.accountId = undefined;
+  attachable.roles = [...defaultRoles];
+  attachable.permissions = [...defaultPermissions];
 });
 
 function renderViewer() {
@@ -145,7 +165,7 @@ describe('ApiKeyCreateViewer', () => {
     expect(kindOption('role')).toHaveAttribute('aria-checked', 'false');
     expect(kindOption('scopes')).toHaveAttribute('aria-checked', 'false');
     expect(screen.queryByText('user.apiKeys.roleCard.title')).toBeNull();
-    expect(screen.queryByText('user.apiKeys.scopes.title')).toBeNull();
+    expect(screen.queryByText('user.apiKeys.scopes.grant.title')).toBeNull();
     expect(submitButton()).toBeDisabled();
   });
 
@@ -165,7 +185,7 @@ describe('ApiKeyCreateViewer', () => {
     fireEvent.click(kindOption('role'));
 
     expect(screen.getByText('user.apiKeys.roleCard.title')).toBeInTheDocument();
-    expect(screen.queryByText('user.apiKeys.scopes.title')).toBeNull();
+    expect(screen.queryByText('user.apiKeys.scopes.grant.title')).toBeNull();
     expect(submitButton()).toBeDisabled();
   });
 
@@ -174,7 +194,8 @@ describe('ApiKeyCreateViewer', () => {
 
     fireEvent.click(kindOption('scopes'));
 
-    expect(screen.getByText('user.apiKeys.scopes.title')).toBeInTheDocument();
+    expect(screen.getByText('user.apiKeys.scopes.grant.title')).toBeInTheDocument();
+    expect(screen.queryByText('user.apiKeys.scopes.project.title')).toBeNull();
     expect(screen.queryByText('user.apiKeys.roleCard.title')).toBeNull();
     expect(submitButton()).toBeDisabled();
 
@@ -247,5 +268,78 @@ describe('ApiKeyCreateViewer', () => {
     const input = createApiKey.mock.calls[0][0];
     expect(input.roleId).toBe('role-dev');
     expect(input).not.toHaveProperty('permissionIds');
+  });
+
+  it('lists Owner when attachable grants include it', async () => {
+    renderViewer();
+
+    fireEvent.click(kindOption('role'));
+    fireEvent.click(screen.getByRole('combobox', { name: 'user.apiKeys.roleCard.label' }));
+
+    expect(await screen.findByRole('option', { name: 'Owner' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Developer' })).toBeInTheDocument();
+  });
+
+  it('splits Grant and Project scopes and keeps a custom user-like slug off the Grant card', async () => {
+    attachable.permissions = [
+      attachablePermission('user-query', 'User', 'Query'),
+      attachablePermission('session-query', 'UserSession', 'Query'),
+      attachablePermission('custom-user', 'user-directory', 'Read'),
+    ];
+    renderViewer();
+    fireEvent.click(kindOption('scopes'));
+
+    expect(screen.getByText('user.apiKeys.scopes.grant.title')).toBeInTheDocument();
+    expect(screen.getByText('user.apiKeys.scopes.project.title')).toBeInTheDocument();
+
+    const grantCard = screen
+      .getByText('user.apiKeys.scopes.grant.title')
+      .closest('[data-slot="card"]') as HTMLElement;
+    const projectCard = screen
+      .getByText('user.apiKeys.scopes.project.title')
+      .closest('[data-slot="card"]') as HTMLElement;
+
+    expect(grantCard).toBeTruthy();
+    expect(projectCard).toBeTruthy();
+    expect(within(grantCard).getByText('User:Query')).toBeInTheDocument();
+    expect(within(grantCard).getByText('UserSession:Query')).toBeInTheDocument();
+    expect(within(grantCard).queryByText('user-directory:Read')).toBeNull();
+    expect(within(projectCard).getByText('user-directory:Read')).toBeInTheDocument();
+
+    const searches = screen.getAllByPlaceholderText('user.apiKeys.scopes.search.placeholder');
+    expect(searches).toHaveLength(2);
+    fireEvent.change(searches[0], { target: { value: 'session' } });
+
+    await waitFor(() => {
+      expect(within(grantCard).queryByText('User:Query')).toBeNull();
+      expect(within(grantCard).getByText('UserSession:Query')).toBeInTheDocument();
+    });
+    expect(within(projectCard).getByText('user-directory:Read')).toBeInTheDocument();
+  });
+
+  it('uses Grant vs Project card copy on a personal-account project', () => {
+    scope.tenant = Tenant.AccountProject;
+    scope.id = 'account-1:project-1';
+    route.organizationId = undefined;
+    route.accountId = 'account-1';
+    attachable.permissions = [
+      ...defaultPermissions,
+      attachablePermission('custom-user', 'user-directory', 'Read'),
+    ];
+    renderViewer();
+    fireEvent.click(kindOption('scopes'));
+
+    const grantCard = screen
+      .getByText('user.apiKeys.scopes.grant.title')
+      .closest('[data-slot="card"]');
+    const projectCard = screen
+      .getByText('user.apiKeys.scopes.project.title')
+      .closest('[data-slot="card"]');
+
+    expect(grantCard).toHaveTextContent(/Grant scopes|scopes\.grant/);
+    expect(projectCard).toHaveTextContent(/Project scopes|scopes\.project/);
+    expect(`${grantCard?.textContent ?? ''}\n${projectCard?.textContent ?? ''}`).not.toMatch(
+      /organi[sz]ation/i
+    );
   });
 });

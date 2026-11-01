@@ -23,7 +23,7 @@ import type { ApiKeyScopeRow } from '@/lib/api-key-scope-groups';
 import { useApiKeyStore } from '@/stores/api-key.store';
 
 import { ApiKeyConvertDialog } from './api-key-convert-dialog';
-import { ApiKeyScopesTable } from './api-key-scopes-table';
+import { ApiKeyScopeCards } from './api-key-scope-cards';
 
 interface ApiKeyScopesProps {
   apiKey: ApiKey;
@@ -40,18 +40,20 @@ function toRow(permission: ApiKeyScopeRow['permission']): ApiKeyScopeRow {
 }
 
 /**
- * The scopes card of the detail view. The key's model fixes the mode: a scope key edits in place,
+ * The scopes cards of the detail view. The key's model fixes the mode: a scope key edits in place,
  * a role key shows its role's permissions and offers one explicit, confirmed conversion.
  */
 export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
-  const t = useTranslations('user.apiKeys.detail');
+  const t = useTranslations('user.apiKeys');
   const tRoot = useTranslations();
   const scope = useScopeFromParams();
   const kind = getApiKeyGrantKind(apiKey);
 
-  const page = useApiKeyStore((state) => state.scopesPage);
+  const grantPage = useApiKeyStore((state) => state.grantScopesPage);
+  const projectPage = useApiKeyStore((state) => state.projectScopesPage);
   const limit = useApiKeyStore((state) => state.scopesLimit);
-  const setPage = useApiKeyStore((state) => state.setScopesPage);
+  const setGrantPage = useApiKeyStore((state) => state.setGrantScopesPage);
+  const setProjectPage = useApiKeyStore((state) => state.setProjectScopesPage);
 
   const canUpdate = useGrant(ResourceSlug.ApiKey, ResourceAction.Update, { scope: scope! });
   const {
@@ -139,7 +141,7 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
   const disabledRows = useMemo(() => {
     const reasons = new Map<string, string>();
     if (canEdit && optimisticIds.length === 1) {
-      reasons.set(optimisticIds[0], t('scopes.lastScope'));
+      reasons.set(optimisticIds[0], t('detail.scopes.lastScope'));
     }
     return reasons;
   }, [canEdit, optimisticIds, t]);
@@ -168,21 +170,27 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
 
     return (
       <>
-        <ApiKeyScopesTable
-          title={t('scopes.title')}
-          description={t('scopes.roleDescription')}
+        <ApiKeyScopeCards
+          grantTitle={t('scopes.grant.title')}
+          grantDescription={t('detail.scopes.grantRoleDescription')}
+          projectTitle={t('scopes.project.title')}
+          projectDescription={t('detail.scopes.projectRoleDescription')}
           rows={roleRows}
           selectedIds={rolePermissions.permissionIds}
           readOnly
           loading={rolePermissions.loading || (cohortLoading && cohort === null)}
           error={Boolean(rolePermissions.error)}
           paginated
-          page={page}
+          grantPage={grantPage}
+          projectPage={projectPage}
           limit={limit}
-          onPageChange={setPage}
+          onGrantPageChange={setGrantPage}
+          onProjectPageChange={setProjectPage}
           notice={
             <Alert variant="info" className="mb-4 rounded-lg border-info bg-info/10">
-              <AlertDescription>{t('scopes.roleNotice', { role: roleName })}</AlertDescription>
+              <AlertDescription>
+                {t('detail.scopes.roleNotice', { role: roleName })}
+              </AlertDescription>
             </Alert>
           }
           footerActions={
@@ -193,7 +201,7 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
                 onClick={() => setConvertOpen(true)}
                 disabled={!canConvert}
               >
-                {t('scopes.convert')}
+                {t('detail.scopes.convert')}
               </Button>
             ) : undefined
           }
@@ -210,9 +218,11 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
   }
 
   return (
-    <ApiKeyScopesTable
-      title={t('scopes.title')}
-      description={t('scopes.description')}
+    <ApiKeyScopeCards
+      grantTitle={t('scopes.grant.title')}
+      grantDescription={t('detail.scopes.grantDescription')}
+      projectTitle={t('scopes.project.title')}
+      projectDescription={t('detail.scopes.projectDescription')}
       rows={scopeRows}
       selectedIds={optimisticIds}
       onSelectionChange={handleSelectionChange}
@@ -223,14 +233,18 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
       error={Boolean(cohortError) && scopeRows.length === 0}
       onRefresh={() => refetchCohort()}
       paginated
-      page={page}
+      grantPage={grantPage}
+      projectPage={projectPage}
       limit={limit}
-      onPageChange={setPage}
+      onGrantPageChange={setGrantPage}
+      onProjectPageChange={setProjectPage}
       notice={
         !canEdit && !(cohortLoading && cohort === null) ? (
           <Alert variant="info" className="mb-4 rounded-lg border-info bg-info/10">
             <AlertDescription>
-              {apiKey.isRevoked ? t('scopes.revokedNotice') : t('scopes.readOnlyNotice')}
+              {apiKey.isRevoked
+                ? t('detail.scopes.revokedNotice')
+                : t('detail.scopes.readOnlyNotice')}
             </AlertDescription>
           </Alert>
         ) : undefined

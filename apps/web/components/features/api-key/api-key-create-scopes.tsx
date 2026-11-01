@@ -9,9 +9,9 @@ import { useScopeFromParams } from '@/hooks/common';
 import type { ApiKeyScopeRow } from '@/lib/api-key-scope-groups';
 
 import type { ProjectApiKeyCreateFormValues } from '../api-keys/api-key-types';
-import { ApiKeyScopesTable } from './api-key-scopes-table';
+import { ApiKeyScopeCards } from './api-key-scope-cards';
 
-/** The scope picker: only what the caller may attach, grouped by resource, the whole catalogue at once. */
+/** The scope picker: only what the caller may attach, split into Grant and Project cards. */
 export function ApiKeyCreateScopes() {
   const t = useTranslations('user.apiKeys.scopes');
   const scope = useScopeFromParams();
@@ -37,9 +37,11 @@ export function ApiKeyCreateScopes() {
   );
 
   return (
-    <ApiKeyScopesTable
-      title={t('title')}
-      description={t('description')}
+    <ApiKeyScopeCards
+      grantTitle={t('grant.title')}
+      grantDescription={t('grant.description')}
+      projectTitle={t('project.title')}
+      projectDescription={t('project.description')}
       rows={rows}
       selectedIds={selectedIds}
       onSelectionChange={handleSelectionChange}
