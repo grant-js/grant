@@ -59,7 +59,10 @@ export function DashboardLayout({
 
           {/* Sticky Footer */}
           {footer && (
-            <div className="sticky bottom-0 border-t bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div
+              data-slot="dashboard-footer"
+              className="sticky bottom-0 w-full min-w-0 border-t bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 [&>*]:w-full [&>*]:min-w-0"
+            >
               {footer}
             </div>
           )}

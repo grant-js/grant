@@ -84,7 +84,9 @@ function CardBodySection({
       {footer && (
         <>
           <Separator />
-          <CardFooter className="w-full pt-0">{footer}</CardFooter>
+          <CardFooter className="w-full min-w-0 pt-0 [&>*]:w-full [&>*]:min-w-0">
+            {footer}
+          </CardFooter>
         </>
       )}
     </div>

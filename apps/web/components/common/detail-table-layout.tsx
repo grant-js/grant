@@ -17,12 +17,14 @@ export const DETAIL_CHECKBOX_COLUMN = {
   width: LEADING_COLUMN_WIDTH,
   className: CHECKBOX_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
+  truncate: false,
 } as const;
 
 export const DETAIL_ICON_COLUMN = {
   width: LEADING_COLUMN_WIDTH,
   className: ICON_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
+  truncate: false,
 } as const;
 
 /** First column for tables without a checkbox (general info, embedded API keys). */
@@ -30,15 +32,17 @@ export const DETAIL_ICON_ONLY_COLUMN = {
   width: ICON_ONLY_COLUMN_WIDTH,
   className: ICON_ONLY_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
+  truncate: false,
 } as const;
 
 export const DETAIL_LOADING_COLUMN = {
   width: LEADING_COLUMN_WIDTH,
   className: ICON_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
+  truncate: false,
 } as const;
 
-/** Text columns that may grow wider than their minimum width. */
+/** Text columns that share leftover width and truncate instead of growing the table. */
 export const DETAIL_TEXT_COLUMN = {
   columnWidthMode: 'min' as const satisfies DetailTableColumnWidthMode,
 } as const;
