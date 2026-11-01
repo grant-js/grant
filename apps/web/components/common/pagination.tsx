@@ -28,11 +28,11 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   };
 
   return (
-    <div className="flex w-full items-center justify-between py-2">
-      <div className="text-sm text-muted-foreground">
+    <div data-slot="pagination" className="flex w-full min-w-0 items-center justify-between py-2">
+      <div data-slot="pagination-info" className="text-sm text-muted-foreground">
         {t('pagination.info', { current: page, total: totalPages })}
       </div>
-      <div className="flex items-center gap-2">
+      <div data-slot="pagination-nav" className="flex items-center gap-2">
         <Button
           type="button"
           variant="outline"

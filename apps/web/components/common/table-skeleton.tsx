@@ -31,6 +31,7 @@ export interface TableSkeletonProps {
   rowCount?: number;
   showActions?: boolean;
   className?: string;
+  containerClassName?: string;
 }
 
 function resolveColumnWidthMode(column: TableSkeletonColumnConfig): DetailTableColumnWidthMode {
@@ -42,6 +43,7 @@ export function TableSkeleton({
   rowCount = 5,
   showActions = false,
   className,
+  containerClassName,
 }: TableSkeletonProps) {
   const renderSkeletonCell = (column: TableSkeletonColumnConfig) => {
     switch (column.type) {
@@ -105,7 +107,7 @@ export function TableSkeleton({
 
   return (
     <div className="min-w-0 rounded-md border">
-      <Table className={cn(className)}>
+      <Table className={cn(className)} containerClassName={containerClassName}>
         <DataTableColGroup columns={columns} actionsColumn={showActions} />
         <TableHeader>
           <TableRow>
