@@ -4,17 +4,20 @@ import { devtools } from 'zustand/middleware';
 import { API_KEY_SCOPES_PAGE_LIMIT } from '@/lib/api-key-scope-groups';
 
 interface ApiKeyState {
-  scopesPage: number;
+  grantScopesPage: number;
+  projectScopesPage: number;
   scopesLimit: number;
 
-  setScopesPage: (page: number) => void;
+  setGrantScopesPage: (page: number) => void;
+  setProjectScopesPage: (page: number) => void;
   setScopesLimit: (limit: number) => void;
 
   reset: () => void;
 }
 
 const initialState = {
-  scopesPage: 1,
+  grantScopesPage: 1,
+  projectScopesPage: 1,
   scopesLimit: API_KEY_SCOPES_PAGE_LIMIT,
 };
 
@@ -23,8 +26,10 @@ export const useApiKeyStore = create<ApiKeyState>()(
     (set) => ({
       ...initialState,
 
-      setScopesPage: (scopesPage) => set({ scopesPage }),
-      setScopesLimit: (scopesLimit) => set({ scopesLimit, scopesPage: 1 }),
+      setGrantScopesPage: (grantScopesPage) => set({ grantScopesPage }),
+      setProjectScopesPage: (projectScopesPage) => set({ projectScopesPage }),
+      setScopesLimit: (scopesLimit) =>
+        set({ scopesLimit, grantScopesPage: 1, projectScopesPage: 1 }),
 
       reset: () => set(initialState),
     }),

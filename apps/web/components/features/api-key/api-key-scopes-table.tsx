@@ -50,6 +50,9 @@ import { cn } from '@/lib/utils';
 
 import { ApiKeyScopeSearch } from './api-key-scope-search';
 
+const GROUP_LEADING_INSET = 8;
+const CHILD_LEADING_INSET = 24;
+
 type ScopeTableItem =
   | { kind: 'group'; group: ApiKeyScopeGroup; rowsInView: ApiKeyScopeRow[]; collapsed: boolean }
   | { kind: 'row'; row: ApiKeyScopeRow };
@@ -219,17 +222,15 @@ export function ApiKeyScopesTable({
     [onSelectionChange, selectedIds, disabledIds]
   );
 
-  const renderGroupRow = useCallback(
-    (item: ScopeTableItem) => {
-      if (item.kind !== 'group') return null;
-      const { group, rowsInView: groupRows, collapsed } = item;
+  const renderGroupCheckbox = useCallback(
+    (item: Extract<ScopeTableItem, { kind: 'group' }>) => {
+      const { group, rowsInView: groupRows } = item;
       const label = resourceLabel(group);
       const state = getScopeGroupState(groupRows, selectedSet, disabledIds);
-      const selectedCount = groupRows.filter((row) => selectedSet.has(row.permission.id)).length;
       const checkboxId = `api-key-scope-group-${group.key}`;
 
       return (
-        <div className="flex items-center gap-3 pl-1">
+        <div data-scope-row="group" data-leading-inset={GROUP_LEADING_INSET}>
           <Checkbox
             id={checkboxId}
             checked={state === 'indeterminate' ? 'indeterminate' : state === 'checked'}
@@ -237,6 +238,21 @@ export function ApiKeyScopesTable({
             disabled={!interactive || state === 'disabled'}
             aria-label={t('groups.allActionsFor', { resource: label })}
           />
+        </div>
+      );
+    },
+    [disabledIds, handleGroupToggle, interactive, resourceLabel, selectedSet, t]
+  );
+
+  const renderGroupLabel = useCallback(
+    (item: Extract<ScopeTableItem, { kind: 'group' }>) => {
+      const { group, rowsInView: groupRows, collapsed } = item;
+      const label = resourceLabel(group);
+      const selectedCount = groupRows.filter((row) => selectedSet.has(row.permission.id)).length;
+      const checkboxId = `api-key-scope-group-${group.key}`;
+
+      return (
+        <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={() => toggleCollapsed(group.key)}
@@ -261,7 +277,7 @@ export function ApiKeyScopesTable({
         </div>
       );
     },
-    [disabledIds, handleGroupToggle, interactive, resourceLabel, selectedSet, t, toggleCollapsed]
+    [resourceLabel, selectedSet, t, toggleCollapsed]
   );
 
   const renderMachineOnlyBadge = (row: ApiKeyScopeRow) => {
@@ -289,7 +305,7 @@ export function ApiKeyScopesTable({
       header: '',
       ...DETAIL_CHECKBOX_COLUMN,
       render: (item) => {
-        if (item.kind !== 'row') return null;
+        if (item.kind === 'group') return renderGroupCheckbox(item);
         const id = item.row.permission.id;
         const reason = disabledRows?.get(id);
         const checkbox = (
@@ -302,20 +318,23 @@ export function ApiKeyScopesTable({
             })}
           />
         );
-        if (reason === undefined) {
-          return <DetailTableCheckboxCell>{checkbox}</DetailTableCheckboxCell>;
-        }
         return (
-          <DetailTableCheckboxCell>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex">{checkbox}</span>
-                </TooltipTrigger>
-                <TooltipContent>{reason}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </DetailTableCheckboxCell>
+          <div data-scope-row="child" data-leading-inset={CHILD_LEADING_INSET} className="pl-4">
+            {reason === undefined ? (
+              <DetailTableCheckboxCell>{checkbox}</DetailTableCheckboxCell>
+            ) : (
+              <DetailTableCheckboxCell>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">{checkbox}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{reason}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DetailTableCheckboxCell>
+            )}
+          </div>
         );
       },
     },
@@ -326,14 +345,16 @@ export function ApiKeyScopesTable({
       ...DETAIL_TEXT_COLUMN,
       className: DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
       render: (item) =>
-        item.kind === 'row' ? (
+        item.kind === 'group' ? (
+          renderGroupLabel(item)
+        ) : (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium">
               {translatePermissionField(translate, item.row.permission, 'name')}
             </span>
             {renderMachineOnlyBadge(item.row)}
           </div>
-        ) : null,
+        ),
     },
     {
       key: 'permission',
@@ -442,8 +463,8 @@ export function ApiKeyScopesTable({
       }
       footer={
         pager || footerActions ? (
-          <div className="flex w-full flex-wrap items-center justify-between gap-3">
-            <div>{pager}</div>
+          <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">{pager}</div>
             {footerActions}
           </div>
         ) : undefined
@@ -454,7 +475,6 @@ export function ApiKeyScopesTable({
         data={items}
         columns={visibleColumns}
         loading={loading}
-        fullWidthRow={renderGroupRow}
         emptyState={{
           icon: <KeyRound />,
           title: emptyTitle ?? t('empty'),

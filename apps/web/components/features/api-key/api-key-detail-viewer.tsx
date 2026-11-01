@@ -25,6 +25,7 @@ export function ApiKeyDetailViewer() {
         cards={[
           { showFooter: false, rows: 6 },
           { variant: 'table', rows: 4, showToolbar: true },
+          { variant: 'table', rows: 4, showToolbar: true },
         ]}
       />
     );
