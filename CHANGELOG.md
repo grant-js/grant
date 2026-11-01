@@ -3,6 +3,22 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.23.1
+
+### Platform
+
+**Docker images:** tagged `:1.23.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.23.1** (fixed group with apps).
+
+### Patch Changes
+
+- a1c4f39: Shared DataTable cells truncate wide text and keep the full value on the native title, and pagination footers keep the page counter on the left and navigation on the right.
+
+- a1c4f39: Split the project API-key scope picker into Grant scopes and Project scopes cards, with an inset accordion under each resource.
+
+- a1c4f39: Note that the dashboard splits Grant scopes from Project scopes on project API keys.
+
 ## 1.23.0
 
 ### Platform

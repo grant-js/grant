@@ -1,5 +1,16 @@
 # grant-web
 
+## 1.23.1
+
+### Patch Changes
+
+- a1c4f39: Shared DataTable cells truncate wide text and keep the full value on the native title, and pagination footers keep the page counter on the left and navigation on the right.
+- a1c4f39: Split the project API-key scope picker into Grant scopes and Project scopes cards, with an inset accordion under each resource.
+- @grantjs/client@1.23.1
+  - @grantjs/schema@1.23.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.23.0
 
 ### Minor Changes

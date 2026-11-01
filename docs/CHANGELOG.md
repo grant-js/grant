@@ -1,5 +1,11 @@
 # grant-docs
 
+## 1.23.1
+
+### Patch Changes
+
+- a1c4f39: Note that the dashboard splits Grant scopes from Project scopes on project API keys.
+
 ## 1.23.0
 
 ### Patch Changes
