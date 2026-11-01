@@ -8,7 +8,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const scope = { tenant: Tenant.OrganizationProject, id: 'org-1:project-1' };
+const scope = { tenant: Tenant.OrganizationProject as Tenant, id: 'org-1:project-1' };
 const setApiKeyPermissions = vi.fn();
 const state = { canUpdate: true };
 
@@ -38,21 +38,22 @@ vi.mock('@/hooks/common', async (importOriginal) => ({
   useScopeFromParams: () => scope,
 }));
 
-function permission(id: string, action: string) {
+function permission(id: string, action: string, slug = 'user') {
   return {
     id,
-    name: `user ${action}`,
+    name: `${slug} ${action}`,
     action,
     description: null,
-    resource: { id: 'r1', slug: 'user', name: 'user' },
+    resource: { id: `r-${slug}`, slug, name: slug },
   };
 }
 
-const cohortPermissions = [
+const defaultCohortPermissions = [
   { machineOnly: false, permission: permission('perm-query', 'query') },
   { machineOnly: false, permission: permission('perm-read', 'read') },
   { machineOnly: false, permission: permission('perm-update', 'update') },
 ];
+const cohortPermissions = [...defaultCohortPermissions];
 
 vi.mock('@/hooks/api-keys', () => ({
   useApiKeyMutations: () => ({ setApiKeyPermissions }),
@@ -104,6 +105,9 @@ beforeEach(() => {
   setApiKeyPermissions.mockReset();
   setApiKeyPermissions.mockResolvedValue({});
   state.canUpdate = true;
+  scope.tenant = Tenant.OrganizationProject;
+  scope.id = 'org-1:project-1';
+  cohortPermissions.splice(0, cohortPermissions.length, ...defaultCohortPermissions);
 });
 
 const baseKey = {
@@ -143,6 +147,7 @@ describe('ApiKeyScopes of a role key', () => {
   it('shows the role permissions read-only, with the governing note and no toggle', () => {
     renderCard(roleKey as ApiKey);
 
+    expect(screen.getByText('user.apiKeys.scopes.grant.title')).toBeInTheDocument();
     expect(screen.getByText(/scopes.roleNotice Developer/)).toBeInTheDocument();
     for (const checkbox of screen.getAllByRole('checkbox')) {
       expect(checkbox).toBeDisabled();
@@ -244,5 +249,64 @@ describe('ApiKeyScopes of a scope key', () => {
     renderCard({ ...scopeKey, isRevoked: true } as ApiKey);
     for (const checkbox of screen.getAllByRole('checkbox')) expect(checkbox).toBeDisabled();
     expect(setApiKeyPermissions).not.toHaveBeenCalled();
+  });
+
+  it('splits Grant and Project cards and keeps a custom user-like slug off Grant', () => {
+    cohortPermissions.splice(
+      0,
+      cohortPermissions.length,
+      { machineOnly: false, permission: permission('user-query', 'Query', 'User') },
+      { machineOnly: false, permission: permission('session-query', 'Query', 'UserSession') },
+      { machineOnly: false, permission: permission('custom-user', 'Read', 'user-directory') }
+    );
+    renderCard({
+      ...scopeKey,
+      permissions: [permission('user-query', 'Query', 'User')],
+    } as ApiKey);
+
+    const grantCard = screen
+      .getByText('user.apiKeys.scopes.grant.title')
+      .closest('[data-slot="card"]') as HTMLElement;
+    const projectCard = screen
+      .getByText('user.apiKeys.scopes.project.title')
+      .closest('[data-slot="card"]') as HTMLElement;
+
+    expect(grantCard).toBeTruthy();
+    expect(projectCard).toBeTruthy();
+    expect(within(grantCard).getByText('User:Query')).toBeInTheDocument();
+    expect(within(grantCard).getByText('UserSession:Query')).toBeInTheDocument();
+    expect(within(grantCard).queryByText('user-directory:Read')).toBeNull();
+    expect(within(projectCard).getByText('user-directory:Read')).toBeInTheDocument();
+  });
+
+  it('omits the Project card when every row is Grant', () => {
+    renderCard(scopeKey as ApiKey);
+
+    expect(screen.getByText('user.apiKeys.scopes.grant.title')).toBeInTheDocument();
+    expect(screen.queryByText('user.apiKeys.scopes.project.title')).toBeNull();
+  });
+
+  it('uses Grant vs Project titles on a personal-account project', () => {
+    scope.tenant = Tenant.AccountProject;
+    scope.id = 'account-1:project-1';
+    cohortPermissions.splice(0, cohortPermissions.length, ...defaultCohortPermissions, {
+      machineOnly: false,
+      permission: permission('custom-user', 'Read', 'user-directory'),
+    });
+    renderCard({
+      ...scopeKey,
+      permissions: [permission('perm-query', 'query')],
+    } as ApiKey);
+
+    const grantCard = screen
+      .getByText('user.apiKeys.scopes.grant.title')
+      .closest('[data-slot="card"]');
+    const projectCard = screen
+      .getByText('user.apiKeys.scopes.project.title')
+      .closest('[data-slot="card"]');
+
+    expect(`${grantCard?.textContent ?? ''}\n${projectCard?.textContent ?? ''}`).not.toMatch(
+      /organi[sz]ation/i
+    );
   });
 });

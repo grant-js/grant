@@ -75,6 +75,8 @@ A machine-only permission, today `ProjectUser:ExportCredentials`, may also be ca
 
 It requires `ApiKey:Create`, takes a project scope the request is authorized in, and is not paged (the catalogue is small). A custom role of the organization is never listed: a role key carries only a standard role, and a permission key is the way to carry anything else.
 
+The project dashboard splits those attachable permissions into **Grant scopes** (the seeded catalogue) and **Project scopes** (custom permissions the caller holds). The Project card is omitted when there are no custom rows to show. This is a grouping in the picker only: what may be attached is still what `apiKeyAttachableGrants` lists.
+
 ### Editing a key's permissions
 
 `setApiKeyPermissions` (GraphQL) and `PUT /api/api-keys/{id}/permissions` (REST, body `{ scope, permissionIds }`) replace the permissions a key carries. They require `ApiKey:Update`, and:
