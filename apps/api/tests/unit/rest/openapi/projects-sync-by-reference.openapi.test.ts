@@ -186,6 +186,7 @@ describe('imported password credentials (ADR 0010)', () => {
       'passwordsUnchanged',
       'passwordsSkippedExisting',
       'usersSkippedTombstoned',
+      'usersRenamed',
     ]) {
       expect(properties[counter], counter).toBeDefined();
       expect(properties[counter]?.description, counter).toBeTruthy();

@@ -30,6 +30,7 @@ query ProjectSyncJob($id: ID!, $scope: Scope!, $jobId: ID!) {
       passwordsUnchanged
       passwordsSkippedExisting
       usersSkippedTombstoned
+      usersRenamed
       warnings
     }
     warnings

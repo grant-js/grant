@@ -223,6 +223,7 @@ describe.skipIf(!url)('CDM user marker lookup on PostgreSQL', () => {
       expect(await repo.findLiveUserCdmMarkers({ userId: id, projectId: projectA })).toEqual({
         globalMarker: marker(projectB, 'elsewhere').cdmImport,
         membershipMarker: marker(projectA, key).cdmImport,
+        name: `lookup-${tag}-markers`,
       });
     });
 
@@ -231,6 +232,7 @@ describe.skipIf(!url)('CDM user marker lookup on PostgreSQL', () => {
       expect(await repo.findLiveUserCdmMarkers({ userId: id, projectId: projectA })).toEqual({
         globalMarker: null,
         membershipMarker: null,
+        name: `lookup-${tag}-bare`,
       });
     });
 
@@ -244,6 +246,7 @@ describe.skipIf(!url)('CDM user marker lookup on PostgreSQL', () => {
       expect(await repo.findLiveUserCdmMarkers({ userId: id, projectId: projectA })).toEqual({
         globalMarker: null,
         membershipMarker: null,
+        name: `lookup-${tag}-stale-rows`,
       });
     });
 

@@ -59,6 +59,7 @@ function compactResultSummary(result: SyncProjectResult): Record<string, unknown
     passwordsUnchanged: result.passwordsUnchanged,
     passwordsSkippedExisting: result.passwordsSkippedExisting,
     usersSkippedTombstoned: result.usersSkippedTombstoned,
+    usersRenamed: result.usersRenamed,
     warningsCount: Array.isArray(result.warnings) ? result.warnings.length : 0,
   };
 }

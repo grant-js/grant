@@ -1578,6 +1578,7 @@ export type ProjectSyncJobQuery = {
       passwordsUnchanged: number;
       passwordsSkippedExisting: number;
       usersSkippedTombstoned: number;
+      usersRenamed: number;
       warnings: Array<string>;
     } | null;
   };
@@ -8603,6 +8604,7 @@ export const ProjectSyncJobDocument = {
                       { kind: 'Field', name: { kind: 'Name', value: 'passwordsUnchanged' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'passwordsSkippedExisting' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'usersSkippedTombstoned' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'usersRenamed' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'warnings' } },
                     ],
                   },

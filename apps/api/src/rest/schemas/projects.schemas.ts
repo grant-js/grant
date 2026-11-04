@@ -510,6 +510,10 @@ const syncProjectResultSchema = z.object({
     description:
       'Document users not created because the person deleted this imported identity; their membership, credential and API keys were not written either.',
   }),
+  usersRenamed: z.number().openapi({
+    description:
+      "Users created by an earlier import of this project whose name was updated to the document's name. A user the import only matched keeps its own name and is not counted.",
+  }),
   tagsCreated: z.number(),
   projectTagsLinked: z.number(),
   roleTagsLinked: z.number(),

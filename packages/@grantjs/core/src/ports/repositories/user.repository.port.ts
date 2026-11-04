@@ -66,13 +66,14 @@ export interface IUserRepository extends IEntityExistence {
   /**
    * The import markers of a live user, for the `key.grantUserId` match rule: the global
    * user's `metadata.cdmImport` and that of the user's live `project_users` row in
-   * `projectId`, each `null` when absent. `null` when the user does not exist or is
-   * soft-deleted.
+   * `projectId`, each `null` when absent, with the user's current `name` (read here so the
+   * import can tell a changed name without a second query). `null` when the user does not
+   * exist or is soft-deleted.
    */
   findLiveUserCdmMarkers(
     params: { userId: string; projectId: string },
     transaction?: unknown
-  ): Promise<{ globalMarker: unknown; membershipMarker: unknown } | null>;
+  ): Promise<{ globalMarker: unknown; membershipMarker: unknown; name: string } | null>;
 
   updateUser(
     id: string,

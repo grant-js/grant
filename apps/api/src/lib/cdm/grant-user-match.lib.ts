@@ -80,6 +80,24 @@ export function markerNamesAnotherKey(
   return typeof markerKey === 'string' && markerKey !== '' && markerKey !== externalKey;
 }
 
+/**
+ * True when `marker` is the import marker of `projectId` for user key `externalKey`: this
+ * project's import keyed the user under exactly this key. Used on the **global** user marker
+ * to tell a user an import created (its marker is global) from one it only matched or reused
+ * (its marker is on the membership row, the global user is never changed).
+ */
+export function markerOwnsKey(marker: unknown, projectId: string, externalKey: string): boolean {
+  if (marker == null || typeof marker !== 'object' || Array.isArray(marker)) {
+    return false;
+  }
+  const {
+    projectId: markerProjectId,
+    kind,
+    externalKey: markerKey,
+  } = marker as Record<string, unknown>;
+  return markerProjectId === projectId && kind === 'user' && markerKey === externalKey;
+}
+
 export function decideGrantUserMatch(input: GrantUserMatchInput): GrantUserMatchDecision {
   const { projectId, externalKey, userIdFoundByKey, candidate } = input;
   const hint = input.grantUserId ?? null;

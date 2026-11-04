@@ -56,6 +56,12 @@ type SyncProjectResult {
   membership, credential and API keys were not written either.
   """
   usersSkippedTombstoned: Int!
+  """
+  Users created by an earlier import of this project whose name was updated to the
+  document's name. A user the import only matched (a `grantUserId` hint) keeps its own name
+  and is not counted.
+  """
+  usersRenamed: Int!
   resourcesCreated: Int!
   permissionsCreated: Int!
   tagsCreated: Int!
