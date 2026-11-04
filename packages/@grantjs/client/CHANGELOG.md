@@ -1,5 +1,12 @@
 # @grantjs/client
 
+## 1.24.0
+
+### Patch Changes
+
+- Updated dependencies [6e6af55]
+  - @grantjs/schema@1.24.0
+
 ## 1.23.1
 
 ### Patch Changes
