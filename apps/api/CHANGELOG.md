@@ -1,5 +1,29 @@
 # grant-api
 
+## 1.24.0
+
+### Minor Changes
+
+- 6e6af55: A CDM import now keeps the names of the users it created in line with the document: when a later import of the project lists a user it created earlier under a different `name`, the user is renamed (`findBy: key` and `findBy: email`). Before, a name was written only on create, so a user renamed at the source kept the old name forever. An account that existed before the import and was matched by e-mail or by `grantUserId` keeps its own name. The rename is the ordinary user update (audit row and a `user.updated` event naming the changed field, no value), and only when the name differs. `SyncProjectResult.usersRenamed` counts the renames, in the import result and the sync job's result.
+
+### Patch Changes
+
+- Updated dependencies [6e6af55]
+  - @grantjs/schema@1.24.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.23.1
 
 ### Patch Changes
