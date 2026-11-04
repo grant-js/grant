@@ -210,10 +210,17 @@ A `findBy: key` user may also carry `key.grantUserId`, the id of an existing Gra
 - **Refusals** fail and roll back the whole import, like the other document rules. The message names the position in `users[]` and never the key or an id: `grantUserId does not name an existing user`, `grantUserId is already imported under another key`, `grantUserId names another user than the one already imported under this key`. A `grantUserId` is also refused (naming the position) when it is not a UUID or when the user is not identified by `findBy: key`: with `findBy: id` the value already is the id, and with `findBy: email` the person is resolved by address.
 - **Membership comes from the assignment.** Users are global in Grant, and there is no tenant a user belongs to, so the match does not require the person to be a member already; as for `findBy: id`, the document's assignment (`roles`, `groups` or `permissions`) is what adds them to the importing project. A user the document names but does not assign gets no membership and no marker yet; the next import with the hint matches again.
 - **The key sticks.** For a user the document assigns, the import writes this project's `metadata.cdmImport` marker on the **project membership row** (the global user is not changed), so the next import resolves the same key to the same user without the hint. The key lookup reads the membership row's marker as well as the global one (see [Row metadata](#row-metadata)).
-- **No events, no removals.** Imports publish no domain events, so a match publishes none. A `replace` import removes no membership and no user, so a matched user keeps their membership and marker.
+- **No events, no removals.** A match publishes no domain event and never changes the matched user's name. A `replace` import removes no membership and no user, so a matched user keeps their membership and marker.
 - **Not exported as keyed.** The export lists users by the global marker, so a user matched this way is exported as a `findBy: id` reference, not as a keyed `users[]` entry.
 
 For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
+
+### Names follow the document {#user-names}
+
+A user's `name` is written when the import creates the user, and a later import brings it back in line: when the document's trimmed `name` differs from the stored one, the import renames the user, for `findBy: key` and `findBy: email` alike. This applies only to a user **this project's import created** (the global user carries this project's `cdmImport` marker under the same key). An account that existed before the import, matched by e-mail or by [`grantUserId`](#grant-user-id), keeps its own name, and keeps it on later imports even though its membership row then carries the key. Another project's marker does not count.
+
+- **One write path.** The rename is the ordinary user update: an audit row and one `user.updated` event whose data names the changed field (`name`) and never its value, delivered to the webhooks of the projects the user belongs to. An unchanged name writes nothing and emits nothing. A rename burst after an import is one event per renamed user.
+- **The counter.** The import result reports `usersRenamed`, a number only.
 
 ### Deletion tombstones {#deletion-tombstones}
 

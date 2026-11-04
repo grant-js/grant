@@ -3486,6 +3486,7 @@ export type SyncProjectResultResolvers<
   userRolesAssigned?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   userTagsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   usersCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  usersRenamed?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   usersSkippedTombstoned?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   warnings?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
 }>;

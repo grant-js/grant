@@ -333,6 +333,12 @@ A \`password\` on any other user, or an invalid hash, is a validation error that
 hash. The hash is never kept in metadata, search tokens, audit values or events, is removed
 from the stored job payload when the job ends, and is replaced by \`[redacted]\` in the payload download.
 
+### User names
+
+On a later import a user this project's import created takes the document's \`name\` when it differs
+(\`usersRenamed\` counts them; one \`user.updated\` event per renamed user). A user the import only
+matched, by e-mail or by \`grantUserId\`, keeps their own name.
+
 ### Deletion tombstones
 
 When a person deletes an identity that a CDM import created or marked, Grant records a tombstone

@@ -135,6 +135,16 @@ is never blocked. A skipped key is put on `ctx.skippedUserKeys` and counted in
 `usersSkippedTombstoned`; the assignment, API-key and password steps drop it without error.
 Nothing in this path logs, returns or embeds a key: positions and counts only.
 
+## User names on re-import
+
+`UserProvisionCdmEntity.renameIfImportCreated` updates a reused user's name to the document's
+trimmed `name` when it differs, **only** for a user whose global `metadata.cdmImport` marker names
+this project and key (`markerOwnsKey`): the marker an import's `createUser` writes. A reused or
+matched identity carries the marker on its membership row only, so a pre-existing account (e-mail
+match, `grantUserId` match) keeps its name. The write is `IUserService.updateUser` (audit row and a
+`user.updated` event naming `name` as changed, no value); the count is `usersRenamed`. The name is
+read in the same query as the markers (`findLiveUserCdmMarkers`), so a reused user costs no extra read.
+
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.
 

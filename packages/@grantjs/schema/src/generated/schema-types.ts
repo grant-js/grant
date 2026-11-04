@@ -3931,6 +3931,12 @@ export type SyncProjectResult = {
   userTagsLinked: Scalars['Int']['output'];
   usersCreated: Scalars['Int']['output'];
   /**
+   * Users created by an earlier import of this project whose name was updated to the
+   * document's name. A user the import only matched (a `grantUserId` hint) keeps its own name
+   * and is not counted.
+   */
+  usersRenamed: Scalars['Int']['output'];
+  /**
    * Document users not created because the person deleted this imported identity; their
    * membership, credential and API keys were not written either.
    */

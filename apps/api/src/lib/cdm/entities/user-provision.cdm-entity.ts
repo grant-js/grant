@@ -31,7 +31,11 @@ import {
 } from '../cdm-import-tombstone.lib';
 import type { CdmUserProvisionInternal } from '../cdm-internal.types';
 import { cdmPasswordProblem } from '../cdm-password.lib';
-import { decideGrantUserMatch, grantUserMatchRefusalMessage } from '../grant-user-match.lib';
+import {
+  decideGrantUserMatch,
+  grantUserMatchRefusalMessage,
+  markerOwnsKey,
+} from '../grant-user-match.lib';
 import { buildExternalKey } from '../identity.lib';
 
 const INPUT_KEY = 'provisionedUsers' as const;
@@ -197,6 +201,12 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
    * `decideGrantUserMatch`; this reads its facts and acts on it. A matched user is not
    * created and its global metadata is not touched: the assignment step writes the marker on
    * the membership row, as it does for every provisioned user.
+   *
+   * Names follow the document for a user **this project's import created** (its global user
+   * carries this project's marker, `renameIfImportCreated`): a user renamed at the source is
+   * renamed here, through `UserService.updateUser` (audit row, `user.updated` event). A user
+   * the import only matched with `grantUserId`, or reused without that global marker, keeps
+   * its own name: the document does not own it.
    */
   private async applyKeyIdentity(
     ctx: CdmApplyContext,
@@ -239,7 +249,11 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       case 'refused':
         throw new ValidationError(grantUserMatchRefusalMessage(position, decision.refusal));
       case 'reuse-keyed':
+        await this.renameIfImportCreated(ctx, row, decision.userId, tx);
+        this.recordProducedUser(ctx, row.externalKey, decision.userId);
+        return;
       case 'matched':
+        // Never renamed: the named user is an existing account the document does not own.
         this.recordProducedUser(ctx, row.externalKey, decision.userId);
         return;
       case 'create': {
@@ -324,12 +338,14 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     // Liveness: a soft delete leaves the user's e-mail method in place, and the method lookup
     // does not look at the user, so a method of a deleted user must not count as a live
     // identity here. The one liveness read is the one the `grantUserId` match already uses.
-    const methodOwnerIsLive =
-      emailMethod == null ||
-      (await this.userRepository.findLiveUserCdmMarkers(
-        { userId: emailMethod.userId, projectId: ctx.projectId },
-        tx
-      )) !== null;
+    const methodOwner =
+      emailMethod == null
+        ? undefined
+        : await this.userRepository.findLiveUserCdmMarkers(
+            { userId: emailMethod.userId, projectId: ctx.projectId },
+            tx
+          );
+    const methodOwnerIsLive = emailMethod == null || methodOwner !== null;
     const existingAuthMethod = methodOwnerIsLive ? emailMethod : null;
     if (existingAuthMethod) {
       if (existingAuthMethod.provider === UserAuthenticationMethodProvider.Github) {
@@ -344,6 +360,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
           tx
         );
       }
+      await this.renameIfImportCreated(ctx, row, existingAuthMethod.userId, tx, methodOwner);
       this.recordProducedUser(ctx, row.externalKey, existingAuthMethod.userId);
       return;
     }
@@ -374,6 +391,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         },
         tx
       );
+      await this.renameIfImportCreated(ctx, row, existingCdmUserId, tx);
       this.recordProducedUser(ctx, row.externalKey, existingCdmUserId);
       return;
     }
@@ -418,6 +436,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       tx
     );
     if (liveUserIdByKey) {
+      await this.renameIfImportCreated(ctx, row, liveUserIdByKey, tx);
       this.recordProducedUser(ctx, row.externalKey, liveUserIdByKey);
       return;
     }
@@ -425,6 +444,38 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     throw new ValidationError(
       `users[${position}]: the e-mail identity belongs to a deleted account`
     );
+  }
+
+  /**
+   * Keeps a user this project's import created in line with the document's name. "Created"
+   * is read from the **global** user's marker, which only an import's `createUser` writes:
+   * a reused or matched identity carries this project's marker on its membership row only,
+   * so an account that existed before the import, whether matched by e-mail or by
+   * `grantUserId`, keeps its own name (and keeps it on later imports, when the membership
+   * marker makes it resolve by key). The write is `UserService.updateUser`, the one user
+   * update path: it writes the audit row and publishes `user.updated` (changed field names
+   * only, never the name), and only when the name differs. Pass `known` when the caller
+   * already read the user's markers.
+   */
+  private async renameIfImportCreated(
+    ctx: CdmApplyContext,
+    row: CdmUserProvisionInternal,
+    userId: string,
+    tx: Transaction,
+    known?: { globalMarker: unknown; name: string } | null
+  ): Promise<void> {
+    const live =
+      known !== undefined
+        ? known
+        : await this.userRepository.findLiveUserCdmMarkers(
+            { userId, projectId: ctx.projectId },
+            tx
+          );
+    if (live == null || !markerOwnsKey(live.globalMarker, ctx.projectId, row.externalKey)) return;
+    const name = row.name.trim();
+    if (live.name === name) return;
+    await this.users.updateUser(userId, { name }, tx);
+    ctx.result.usersRenamed += 1;
   }
 
   private recordProducedUser(ctx: CdmApplyContext, externalKey: string, userId: string): void {

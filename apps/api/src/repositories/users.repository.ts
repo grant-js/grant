@@ -154,12 +154,13 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
   public async findLiveUserCdmMarkers(
     params: { userId: string; projectId: string },
     transaction?: Transaction
-  ): Promise<{ globalMarker: unknown; membershipMarker: unknown } | null> {
+  ): Promise<{ globalMarker: unknown; membershipMarker: unknown; name: string } | null> {
     const dbInstance = transaction ?? this.db;
     const rows = await dbInstance
       .select({
         globalMarker: sql<unknown>`${users.metadata}->'cdmImport'`,
         membershipMarker: sql<unknown>`${projectUsers.metadata}->'cdmImport'`,
+        name: users.name,
       })
       .from(users)
       .leftJoin(
@@ -173,7 +174,9 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
       .where(and(eq(users.id, params.userId), isNull(users.deletedAt)))
       .limit(1);
     const row = rows[0];
-    return row ? { globalMarker: row.globalMarker, membershipMarker: row.membershipMarker } : null;
+    return row
+      ? { globalMarker: row.globalMarker, membershipMarker: row.membershipMarker, name: row.name }
+      : null;
   }
 
   public async updateUser(
