@@ -72,6 +72,7 @@ function build() {
         ['user@example.test', userId],
         ['other@example.test', otherUserId],
       ]),
+      userNamesByKey: new Map(),
       groupIdsByKey: new Map(),
     },
     documentGroupsByKey: new Map([

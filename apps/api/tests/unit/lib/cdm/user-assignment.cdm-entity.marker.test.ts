@@ -48,6 +48,7 @@ function build() {
       resourceIds: new Map(),
       permissionIds: new Map(),
       userIds: new Map([[key, userId]]),
+      userNamesByKey: new Map<string, string>(),
       groupIdsByKey: new Map(),
     },
     documentGroupsByKey: new Map(),

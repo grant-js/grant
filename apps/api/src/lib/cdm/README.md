@@ -135,14 +135,28 @@ is never blocked. A skipped key is put on `ctx.skippedUserKeys` and counted in
 `usersSkippedTombstoned`; the assignment, API-key and password steps drop it without error.
 Nothing in this path logs, returns or embeds a key: positions and counts only.
 
+## Project display names
+
+`UserProvisionCdmEntity` records the trimmed `name` of every provisioned user (created, reused or
+matched) in `ctx.produced.userNamesByKey`. `UserAssignmentCdmEntity.syncProjectDisplayName` then
+sets the membership's `project_users.display_name` to it when it differs, through
+`IProjectUserService.updateProjectUserProfile` (the one write path: an audit row; events such as
+`project.user_profile_updated` are suppressed during an import). In project scope `User.name` is
+`displayName ?? users.name`, so each project keeps its own name for a person and the global
+name is untouched, for a shared user too. A blank name is written as `null`, never `''`; a name
+longer than 255 characters (the column size) fails the import in `validateInput`, as `users.name`
+already does, and is never truncated. The write rebuilds the search document, so the import's
+own sync is skipped for that user. The count is `projectDisplayNamesUpdated`. **An operator's or
+self-service edit of the project display name is overwritten by the next replace import.**
+
 ## User names on re-import
 
 `UserProvisionCdmEntity.renameIfImportCreated` updates a reused user's name to the document's
 trimmed `name` when it differs, **only** for a user whose global `metadata.cdmImport` marker names
 this project and key (`markerOwnsKey`): the marker an import's `createUser` writes. A reused or
 matched identity carries the marker on its membership row only, so a pre-existing account (e-mail
-match, `grantUserId` match) keeps its name. The write is `IUserService.updateUser` (audit row and a
-`user.updated` event naming `name` as changed, no value); the count is `usersRenamed`. The name is
+match, `grantUserId` match) keeps its name. The write is `IUserService.updateUser` (an audit row; events are
+suppressed during an import, so no `user.updated` is published); the count is `usersRenamed`. The name is
 read in the same query as the markers (`findLiveUserCdmMarkers`), so a reused user costs no extra read.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in

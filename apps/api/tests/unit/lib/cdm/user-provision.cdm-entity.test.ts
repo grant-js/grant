@@ -72,6 +72,7 @@ function createCtx(): CdmApplyContext {
     passwordsSkippedExisting: 0,
     usersSkippedTombstoned: 0,
     usersRenamed: 0,
+    projectDisplayNamesUpdated: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -94,6 +95,7 @@ function createCtx(): CdmApplyContext {
       resourceIds: new Map(),
       permissionIds: new Map(),
       userIds: new Map(),
+      userNamesByKey: new Map<string, string>(),
       groupIdsByKey: new Map(),
     },
     documentGroupsByKey: new Map(),
@@ -870,5 +872,51 @@ describe('UserProvisionCdmEntity names follow the document', () => {
       expect(users.updateUser).toHaveBeenCalledWith(userId, { name: 'Ada Lovelace' }, tx);
       expect(ctx.result.usersRenamed).toBe(1);
     });
+  });
+});
+
+describe('UserProvisionCdmEntity records the document name for the project display name', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue(null);
+    userAuthenticationMethods.createUserAuthenticationMethod.mockResolvedValue({});
+    userRepository.findUserIdByCdmImport.mockResolvedValue(null);
+    users.createUser.mockResolvedValue({ id: 'new-user-id' });
+  });
+
+  it('records the trimmed name of a created user', async () => {
+    const ctx = createCtx();
+    await createEntity().apply(ctx, [
+      { externalKey: 'new@example.com', findBy: 'email', name: '  New User ', metadata: null },
+    ]);
+    expect(ctx.produced.userNamesByKey.get('new@example.com')).toBe('New User');
+  });
+
+  it('records the name of a reused user too, without renaming the global user', async () => {
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+      userId: 'existing-user-id',
+      provider: UserAuthenticationMethodProvider.Email,
+    });
+    const ctx = createCtx();
+    await createEntity().apply(ctx, [
+      { externalKey: 'existing@example.com', findBy: 'email', name: 'Our Name', metadata: null },
+    ]);
+    expect(ctx.produced.userNamesByKey.get('existing@example.com')).toBe('Our Name');
+    expect(users.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('refuses a name over 255 characters, naming the position and never the name', () => {
+    const name = 'x'.repeat(256);
+    expect(() =>
+      createEntity().validateInput([
+        { externalKey: 'a@example.com', findBy: 'email', name: 'A' },
+        { externalKey: 'b@example.com', findBy: 'email', name },
+      ])
+    ).toThrow(/provisioned users\[1\]: name is longer than 255 characters/);
+    expect(() =>
+      createEntity().validateInput([
+        { externalKey: 'b@example.com', findBy: 'email', name: ` ${'x'.repeat(255)} ` },
+      ])
+    ).not.toThrow();
   });
 });

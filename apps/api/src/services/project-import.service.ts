@@ -356,6 +356,7 @@ export class ProjectImportService implements IProjectImportService {
       passwordsSkippedExisting: 0,
       usersSkippedTombstoned: 0,
       usersRenamed: 0,
+      projectDisplayNamesUpdated: 0,
       tagsCreated: 0,
       projectTagsLinked: 0,
       roleTagsLinked: 0,
@@ -372,6 +373,7 @@ export class ProjectImportService implements IProjectImportService {
       resourceIds: new Map<string, string>(),
       permissionIds: new Map<string, string>(),
       userIds: new Map<string, string>(),
+      userNamesByKey: new Map<string, string>(),
       groupIdsByKey: new Map<string, string>(),
     };
 

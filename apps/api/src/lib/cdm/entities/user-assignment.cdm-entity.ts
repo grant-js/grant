@@ -277,14 +277,27 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         );
       }
 
-      await this.projectUsers.syncProjectUserSearchDocument(
-        {
-          projectId: ctx.projectId,
-          userId: effectiveUserId,
-          searchable: ua.searchable,
-        },
+      // This project's name for the person: the document's `name`, per membership. The one
+      // write path is `updateProjectUserProfile` (audit row; events are suppressed during an
+      // import). It also rebuilds the search document, from the pivot metadata merged just
+      // above (the same `searchable` as `ua.searchable`), so the import's own sync is skipped
+      // for a user it wrote and runs exactly once either way.
+      const displayNameWritten = await this.syncProjectDisplayName(
+        ctx,
+        effectiveUserId,
+        userExternalKey,
         tx
       );
+      if (!displayNameWritten) {
+        await this.projectUsers.syncProjectUserSearchDocument(
+          {
+            projectId: ctx.projectId,
+            userId: effectiveUserId,
+            searchable: ua.searchable,
+          },
+          tx
+        );
+      }
 
       for (const key of roleKeys) {
         const rid = ctx.produced.roleIdsByKey.get(key);
@@ -311,6 +324,39 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
     if (roleAssignments.length > 0) {
       await this.userRoles.addUserRolesForCdmImport({ assignments: roleAssignments }, tx);
     }
+  }
+
+  /**
+   * Sets this project's name for the person (`project_users.display_name`) to the document's
+   * trimmed `name`, when it differs from the stored one. In project scope `User.name` reads
+   * `displayName ?? users.name`, so each project keeps its own name for a shared user and the
+   * global name is never touched. Returns whether a write happened (counted in
+   * `projectDisplayNamesUpdated`). A blank name is written as `null`, never `''`, which would
+   * beat the `??` overlay. A user without a name from this document (assigned by `userId`
+   * only) is left alone.
+   */
+  private async syncProjectDisplayName(
+    ctx: CdmApplyContext,
+    userId: string,
+    userExternalKey: string | null,
+    tx: Transaction
+  ): Promise<boolean> {
+    if (userExternalKey == null) return false;
+    const documentName = ctx.produced.userNamesByKey.get(userExternalKey);
+    if (documentName === undefined) return false;
+    const target = documentName.trim() === '' ? null : documentName.trim();
+    const [membership] = await this.projectUsers.getProjectUsers(
+      { projectId: ctx.projectId, userId },
+      tx
+    );
+    const current = membership?.displayName ?? null;
+    if (current === target) return false;
+    await this.projectUsers.updateProjectUserProfile(
+      { projectId: ctx.projectId, userId, displayName: target },
+      tx
+    );
+    ctx.result.projectDisplayNamesUpdated += 1;
+    return true;
   }
 
   /**

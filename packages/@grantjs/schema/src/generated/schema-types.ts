@@ -3899,6 +3899,12 @@ export type SyncProjectResult = {
    */
   passwordsUpdated: Scalars['Int']['output'];
   permissionsCreated: Scalars['Int']['output'];
+  /**
+   * Project memberships whose display name (this project's name for the person) was set to the
+   * document's `name` because it differed from the stored one. Counted for every provisioned
+   * user, created, reused or matched; the global user name is not touched.
+   */
+  projectDisplayNamesUpdated: Scalars['Int']['output'];
   projectGroupsLinked: Scalars['Int']['output'];
   projectId: Scalars['ID']['output'];
   projectPermissionsLinked: Scalars['Int']['output'];

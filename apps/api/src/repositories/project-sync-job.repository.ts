@@ -102,6 +102,7 @@ function normalizeSyncJobResult(raw: unknown): SyncProjectResult | null {
     passwordsSkippedExisting: Number(r.passwordsSkippedExisting ?? 0),
     usersSkippedTombstoned: Number(r.usersSkippedTombstoned ?? 0),
     usersRenamed: Number(r.usersRenamed ?? 0),
+    projectDisplayNamesUpdated: Number(r.projectDisplayNamesUpdated ?? 0),
     tagsCreated: Number(r.tagsCreated ?? 0),
     projectTagsLinked: Number(r.projectTagsLinked ?? 0),
     roleTagsLinked: Number(r.roleTagsLinked ?? 0),

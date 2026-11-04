@@ -327,6 +327,7 @@ class World {
     mergeProjectUserCdmMetadata: vi.fn(),
     syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
     getProjectUsers: vi.fn().mockResolvedValue([]),
+    updateProjectUserProfile: vi.fn().mockResolvedValue({}),
   };
 
   readonly lockouts = {

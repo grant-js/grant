@@ -219,8 +219,17 @@ For `findBy: email`, import treats the address as an identity claim, not proof o
 
 A user's `name` is written when the import creates the user, and a later import brings it back in line: when the document's trimmed `name` differs from the stored one, the import renames the user, for `findBy: key` and `findBy: email` alike. This applies only to a user **this project's import created** (the global user carries this project's `cdmImport` marker under the same key). An account that existed before the import, matched by e-mail or by [`grantUserId`](#grant-user-id), keeps its own name, and keeps it on later imports even though its membership row then carries the key. Another project's marker does not count.
 
-- **One write path.** The rename is the ordinary user update: an audit row and one `user.updated` event whose data names the changed field (`name`) and never its value, delivered to the webhooks of the projects the user belongs to. An unchanged name writes nothing and emits nothing. A rename burst after an import is one event per renamed user.
+- **One write path.** The rename is the ordinary user update and writes an audit row. Events are suppressed during an import, so no `user.updated` is published. An unchanged name writes nothing.
 - **The counter.** The import result reports `usersRenamed`, a number only.
+
+### Each project keeps its own name {#project-display-names}
+
+The global `name` above is not the name a project shows. Every provisioned user of the document, whether the import created, reused or matched them, also gets **this project's name for the person**: the import sets the membership's `display_name` to the document's trimmed `name` when it differs, and in project scope `name` reads `displayName ?? name`. Two projects that import the same person therefore keep different names, and a matched or shared user's global name is never touched.
+
+- **One write path.** The ordinary project-user profile update: an audit row, and no `project.user_profile_updated` event (events are suppressed during an import). An unchanged name writes nothing and is not counted.
+- **The counter.** `projectDisplayNamesUpdated`, a number only.
+- **A replace import overwrites edits.** An operator's or a person's own edit of the project display name is replaced by the document's name on the next import that lists them with a different name.
+- **Length.** The column holds 255 characters. A longer `name` fails the whole import (naming the position in `users[]`), as for the global name; it is never truncated.
 
 ### Deletion tombstones {#deletion-tombstones}
 
