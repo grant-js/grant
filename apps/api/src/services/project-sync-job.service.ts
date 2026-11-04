@@ -60,6 +60,7 @@ function compactResultSummary(result: SyncProjectResult): Record<string, unknown
     passwordsSkippedExisting: result.passwordsSkippedExisting,
     usersSkippedTombstoned: result.usersSkippedTombstoned,
     usersRenamed: result.usersRenamed,
+    projectDisplayNamesUpdated: result.projectDisplayNamesUpdated,
     warningsCount: Array.isArray(result.warnings) ? result.warnings.length : 0,
   };
 }

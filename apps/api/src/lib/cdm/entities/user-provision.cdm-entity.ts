@@ -43,6 +43,9 @@ const INPUT_KEY = 'provisionedUsers' as const;
 /** Positions named in a refusal; the rest are counted. Keeps a large document's error short. */
 const MAX_POSITIONS_IN_MESSAGE = 10;
 
+/** `project_users.display_name` is varchar(255). */
+const PROJECT_DISPLAY_NAME_MAX_LENGTH = 255;
+
 /**
  * What a document's keys look like to the deletion tombstones, computed once per import:
  * each key's fingerprint and the subset of them a tombstone covers for this project. Both
@@ -102,6 +105,13 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       }
       if (typeof row.name !== 'string' || row.name.trim() === '') {
         throw new ValidationError(`users[${row.externalKey}]: name is required`);
+      }
+      // The name is also written to `project_users.display_name` (varchar(255)). A longer
+      // name fails the import up front, as it already does for `users.name`; never truncated.
+      if (row.name.trim().length > PROJECT_DISPLAY_NAME_MAX_LENGTH) {
+        throw new ValidationError(
+          `provisioned users[${index}]: name is longer than ${PROJECT_DISPLAY_NAME_MAX_LENGTH} characters`
+        );
       }
       if (row.password != null) {
         if (row.findBy !== 'email') {
@@ -250,11 +260,11 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         throw new ValidationError(grantUserMatchRefusalMessage(position, decision.refusal));
       case 'reuse-keyed':
         await this.renameIfImportCreated(ctx, row, decision.userId, tx);
-        this.recordProducedUser(ctx, row.externalKey, decision.userId);
+        this.recordProducedUser(ctx, row, decision.userId);
         return;
       case 'matched':
         // Never renamed: the named user is an existing account the document does not own.
-        this.recordProducedUser(ctx, row.externalKey, decision.userId);
+        this.recordProducedUser(ctx, row, decision.userId);
         return;
       case 'create': {
         if (this.skipIfTombstoned(ctx, row.externalKey, tombstones)) return;
@@ -263,7 +273,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
           row.metadata
         );
         const user = await this.users.createUser({ name: row.name.trim(), metadata }, tx);
-        this.recordProducedUser(ctx, row.externalKey, user.id);
+        this.recordProducedUser(ctx, row, user.id);
         ctx.result.usersCreated += 1;
         return;
       }
@@ -361,7 +371,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         );
       }
       await this.renameIfImportCreated(ctx, row, existingAuthMethod.userId, tx, methodOwner);
-      this.recordProducedUser(ctx, row.externalKey, existingAuthMethod.userId);
+      this.recordProducedUser(ctx, row, existingAuthMethod.userId);
       return;
     }
 
@@ -392,7 +402,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
         tx
       );
       await this.renameIfImportCreated(ctx, row, existingCdmUserId, tx);
-      this.recordProducedUser(ctx, row.externalKey, existingCdmUserId);
+      this.recordProducedUser(ctx, row, existingCdmUserId);
       return;
     }
 
@@ -412,7 +422,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       },
       tx
     );
-    this.recordProducedUser(ctx, row.externalKey, user.id);
+    this.recordProducedUser(ctx, row, user.id);
     ctx.result.usersCreated += 1;
   }
 
@@ -437,7 +447,7 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     );
     if (liveUserIdByKey) {
       await this.renameIfImportCreated(ctx, row, liveUserIdByKey, tx);
-      this.recordProducedUser(ctx, row.externalKey, liveUserIdByKey);
+      this.recordProducedUser(ctx, row, liveUserIdByKey);
       return;
     }
     if (this.skipIfTombstoned(ctx, row.externalKey, tombstones)) return;
@@ -478,8 +488,15 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     ctx.result.usersRenamed += 1;
   }
 
-  private recordProducedUser(ctx: CdmApplyContext, externalKey: string, userId: string): void {
-    ctx.produced.userIds.set(externalKey, userId);
+  private recordProducedUser(
+    ctx: CdmApplyContext,
+    row: CdmUserProvisionInternal,
+    userId: string
+  ): void {
+    ctx.produced.userIds.set(row.externalKey, userId);
+    // The document's name for this person in this project, written to the membership's
+    // `display_name` by the assignment step (blank is written as null there).
+    ctx.produced.userNamesByKey.set(row.externalKey, row.name.trim());
     ctx.assignmentUserIds.add(userId);
   }
 

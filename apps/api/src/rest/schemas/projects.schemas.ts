@@ -514,6 +514,10 @@ const syncProjectResultSchema = z.object({
     description:
       "Users created by an earlier import of this project whose name was updated to the document's name. A user the import only matched keeps its own name and is not counted.",
   }),
+  projectDisplayNamesUpdated: z.number().openapi({
+    description:
+      "Project memberships whose display name was set to the document's name for that user, because it differed from the stored one. A user keeps one display name per project; the global name is not touched.",
+  }),
   tagsCreated: z.number(),
   projectTagsLinked: z.number(),
   roleTagsLinked: z.number(),

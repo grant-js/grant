@@ -3467,6 +3467,7 @@ export type SyncProjectResultResolvers<
   passwordsUnchanged?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   passwordsUpdated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   permissionsCreated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  projectDisplayNamesUpdated?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectGroupsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   projectId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   projectPermissionsLinked?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

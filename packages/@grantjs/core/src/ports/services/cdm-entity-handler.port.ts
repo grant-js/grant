@@ -62,6 +62,12 @@ export interface CdmProducedRefs {
    */
   userIds: Map<string, string>;
   /**
+   * External-key → the document's trimmed `name` for that user (every provisioned user, whether
+   * created, reused or matched). Consumed by the user-assignment handler to set the project
+   * membership's `display_name`.
+   */
+  userNamesByKey: Map<string, string>;
+  /**
    * CDM document group key (`groups[].key`) → Grant group id.
    * Populated by role-template and user-assignment handlers; consumed when
    * linking direct `user_groups` from `userAssignments[].directGroupKeys`.

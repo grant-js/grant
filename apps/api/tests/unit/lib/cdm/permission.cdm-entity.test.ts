@@ -40,6 +40,7 @@ function baseResult(): SyncProjectResult {
     passwordsSkippedExisting: 0,
     usersSkippedTombstoned: 0,
     usersRenamed: 0,
+    projectDisplayNamesUpdated: 0,
     tagsCreated: 0,
     projectTagsLinked: 0,
     roleTagsLinked: 0,
@@ -58,6 +59,7 @@ function buildProduced(seed?: { resourceIds?: Map<string, string> }) {
     resourceIds: seed?.resourceIds ?? new Map<string, string>(),
     permissionIds: new Map<string, string>(),
     userIds: new Map<string, string>(),
+    userNamesByKey: new Map<string, string>(),
     groupIdsByKey: new Map<string, string>(),
   };
 }

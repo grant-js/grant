@@ -448,6 +448,7 @@ describe('CDM round-trip integration', () => {
       resourceIds: new Map<string, string>(),
       permissionIds: new Map<string, string>(),
       userIds: new Map<string, string>(),
+      userNamesByKey: new Map<string, string>(),
       groupIdsByKey: new Map<string, string>(),
     };
 
