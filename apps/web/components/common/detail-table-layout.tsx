@@ -11,9 +11,6 @@ const CHECKBOX_COLUMN_CLASS = 'box-border w-10 min-w-10 max-w-10 py-2 pl-2 pr-0 
 const ICON_COLUMN_CLASS = 'box-border w-10 min-w-10 max-w-10 py-2 px-0 align-middle';
 const ICON_ONLY_COLUMN_CLASS = 'box-border w-11 min-w-11 max-w-11 py-2 pl-2 pr-1 align-middle';
 
-/** Read-only label column in entity detail info tables (field / value rows). */
-export const DETAIL_INFO_FIELD_COLUMN_WIDTH = '160px';
-
 /** Shared leading-column layout for entity detail relationship tables. */
 export const DETAIL_CHECKBOX_COLUMN = {
   width: DATA_TABLE_CHECKBOX_COLUMN_WIDTH,

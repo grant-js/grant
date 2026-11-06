@@ -36,6 +36,13 @@ export const DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH = '52px';
 /** 32px actions (⋮) button + 8px padding a side. */
 export const DATA_TABLE_ACTIONS_COLUMN_WIDTH = '48px';
 
+/**
+ * Centred control columns that keep a header text (a switch or a check per row): exactly this
+ * wide, not resizable, so the control stays centred under its label.
+ */
+export const DATA_TABLE_SWITCH_COLUMN_WIDTH = '96px';
+export const DATA_TABLE_STATUS_COLUMN_WIDTH = '120px';
+
 const CHROME_WIDTH_BY_COLUMN_KEY: Record<string, string> = {
   avatar: DATA_TABLE_AVATAR_COLUMN_WIDTH,
   navigation: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,

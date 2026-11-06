@@ -19,7 +19,16 @@ import {
 import { cn } from '@/lib/utils';
 
 type TableSkeletonColumnType =
-  'avatar' | 'avatar-only' | 'text' | 'button' | 'list' | 'badge' | 'actions' | 'audit' | 'icon';
+  | 'avatar'
+  | 'avatar-only'
+  | 'text'
+  | 'button'
+  | 'switch'
+  | 'list'
+  | 'badge'
+  | 'actions'
+  | 'audit'
+  | 'icon';
 
 export interface TableSkeletonColumnConfig {
   key: string;
@@ -80,6 +89,9 @@ export function TableSkeleton({
 
       case 'button':
         return <div className="h-8 w-20 bg-muted rounded animate-pulse" />;
+
+      case 'switch':
+        return <div className="mx-auto h-5 w-9 bg-muted rounded-full animate-pulse" />;
 
       case 'list':
         return (

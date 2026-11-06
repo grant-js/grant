@@ -14,10 +14,10 @@ import { z } from 'zod';
 import {
   Avatar,
   CopyToClipboard,
+  EntityDetailInfoTable,
   FeatureModuleCard,
   PrimaryTagSelector,
 } from '@/components/common';
-import { DataTableColGroup } from '@/components/common/data-table-colgroup';
 import { OAuthProviderIcon } from '@/components/common/oauth-provider-icon';
 import {
   SettingImageUploadDialog,
@@ -33,31 +33,12 @@ import {
   TranslatedFormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useProjectUserScope, useScopeFromParams } from '@/hooks/common';
 import { useUserMutations } from '@/hooks/users';
 import { getCurrentUserId } from '@/lib/auth';
-import { detailTableColumnStyle } from '@/lib/detail-table-column-width';
 import { getPrimaryTagFromEntity } from '@/lib/entity-list';
 import { cn, formatLocalizedDateTime, getInitials } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
-
-import {
-  USER_DETAIL_CONTENT_COLUMN_CLASS,
-  USER_DETAIL_ICON_ONLY_COLUMN,
-  USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS,
-  USER_DETAIL_TEXT_COLUMN,
-  UserDetailTableIconCell,
-} from './user-detail-table-layout';
-
-const USER_DETAIL_INFO_FIELD_COLUMN_WIDTH = '240px';
 
 const userGeneralSchema = z.object({
   name: z.string().min(2, 'errors.validation.labelMin2'),
@@ -343,71 +324,12 @@ export function UserGeneralCard({
             </form>
           </Form>
         </div>
-        <div className="mt-6 border-t pt-4">
-          <div className="min-w-0 rounded-md border">
-            <Table className="table-auto w-max min-w-full">
-              <DataTableColGroup
-                columns={[
-                  { key: 'icon', width: USER_DETAIL_ICON_ONLY_COLUMN.width },
-                  { key: 'field', width: USER_DETAIL_INFO_FIELD_COLUMN_WIDTH },
-                  { key: 'value' },
-                ]}
-              />
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    className={USER_DETAIL_ICON_ONLY_COLUMN.className}
-                    style={detailTableColumnStyle(
-                      USER_DETAIL_ICON_ONLY_COLUMN.width,
-                      USER_DETAIL_ICON_ONLY_COLUMN.columnWidthMode
-                    )}
-                  />
-                  <TableHead
-                    className="w-[240px]"
-                    style={detailTableColumnStyle(
-                      USER_DETAIL_INFO_FIELD_COLUMN_WIDTH,
-                      USER_DETAIL_TEXT_COLUMN.columnWidthMode
-                    )}
-                  >
-                    {t('tableField')}
-                  </TableHead>
-                  <TableHead>{t('tableValue')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {infoRows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell
-                      className={USER_DETAIL_ICON_ONLY_COLUMN.className}
-                      style={detailTableColumnStyle(
-                        USER_DETAIL_ICON_ONLY_COLUMN.width,
-                        USER_DETAIL_ICON_ONLY_COLUMN.columnWidthMode
-                      )}
-                    >
-                      <UserDetailTableIconCell>
-                        <Avatar size="sm" initial="" icon={row.icon} />
-                      </UserDetailTableIconCell>
-                    </TableCell>
-                    <TableCell
-                      className={USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS}
-                      style={detailTableColumnStyle(
-                        USER_DETAIL_INFO_FIELD_COLUMN_WIDTH,
-                        USER_DETAIL_TEXT_COLUMN.columnWidthMode
-                      )}
-                    >
-                      <span className="text-sm text-muted-foreground">{row.label}</span>
-                    </TableCell>
-                    <TableCell
-                      className={cn('whitespace-normal', USER_DETAIL_CONTENT_COLUMN_CLASS)}
-                    >
-                      {row.value}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <EntityDetailInfoTable
+          tableId="user.info"
+          rows={infoRows}
+          fieldColumnHeader={t('tableField')}
+          valueColumnHeader={t('tableValue')}
+        />
       </FeatureModuleCard>
 
       <SettingImageUploadDialog
