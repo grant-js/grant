@@ -96,7 +96,7 @@ export function SigningKeyViewer({ scope: scopeProp }: SigningKeyViewerProps) {
     {
       key: 'icon',
       header: '',
-      width: '50px',
+      width: '60px',
       className: 'pl-4',
       render: (row: SigningKeyRow) => (
         <div className="flex items-center justify-center">

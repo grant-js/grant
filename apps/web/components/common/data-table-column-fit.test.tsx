@@ -250,6 +250,28 @@ describe('DataTable container-aware widths', () => {
   });
 });
 
+function ResetHarness() {
+  const { visibleColumns, resetColumns } = useDataTableColumnState(
+    [
+      { key: 'open', header: '', width: '60px', render: () => <button>Open</button> },
+      { key: 'name', header: 'Name', width: '100px', render: (row: Row) => row.name },
+    ],
+    { tableId: 'fit.test' }
+  );
+  return (
+    <>
+      <button onClick={resetColumns}>reset</button>
+      <DataTable
+        tableId="fit.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={visibleColumns}
+        loading={false}
+        emptyState={emptyState}
+      />
+    </>
+  );
+}
+
 describe('DataTable empty-header columns', () => {
   beforeEach(() => {
     clientWidth.mockReturnValue(0);
@@ -286,23 +308,32 @@ describe('DataTable empty-header columns', () => {
     expect(container.querySelector('thead [role="separator"]')).toBeNull();
   });
 
-  it('grows to its content when the declared width would clip it', () => {
-    scrollWidth.mockImplementation(function (this: Element) {
-      return this.getAttribute('data-column-key') === 'open' && this.tagName === 'TD' ? 90 : 0;
+  it('renders at exactly the declared width: wider container, narrower container and after reset', () => {
+    rectWidth.mockImplementation(function (this: HTMLElement) {
+      return rect(
+        this.hasAttribute('data-fit-content') ? (this.textContent ?? '').length * CHAR_PX : 0
+      );
     });
-    clientWidth.mockImplementation(function (this: Element) {
-      return this.getAttribute('data-column-key') === 'open' && this.tagName === 'TD' ? 60 : 0;
-    });
-    const { container } = render(
-      <DataTable
-        tableId="btn.test"
-        data={[{ id: 'r1', name: 'Short' }]}
-        columns={buttonColumns}
-        loading={false}
-        emptyState={emptyState}
-      />
-    );
-    expect(colWidths(container)[0]).toBe('91px');
+    const exact = (container: HTMLElement) => {
+      const col = container.querySelector('colgroup > col') as HTMLElement;
+      const th = container.querySelector('th') as HTMLElement;
+      const td = container.querySelector('tbody td') as HTMLElement;
+      for (const el of [col, th, td]) expect(el.style.width).toBe('60px');
+      for (const el of [th, td]) {
+        expect(el.style.minWidth).toBe('60px');
+        expect(el.style.maxWidth).toBe('60px');
+      }
+    };
+    for (const width of [1000, 120]) {
+      clientWidth.mockImplementation(function (this: Element) {
+        return this.hasAttribute('data-table-id') ? width : 0;
+      });
+      const { container, unmount } = render(<ResetHarness />);
+      exact(container);
+      fireEvent.click(screen.getByText('reset'));
+      exact(container);
+      unmount();
+    }
   });
 });
 

@@ -128,7 +128,7 @@ export function ApiKeyViewer({
       {
         key: 'icon',
         header: '',
-        width: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.width : '50px',
+        width: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.width : '60px',
         columnWidthMode: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.columnWidthMode : 'fixed',
         className: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.className : 'pl-4',
         enableHiding: false,

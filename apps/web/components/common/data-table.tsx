@@ -115,6 +115,10 @@ function resolveColumnLayout<T>(
   width?: string;
   mode: DetailTableColumnWidthMode;
 } {
+  // Chrome (checkbox, icon, avatar, open button): exactly the declared width, whatever the slack.
+  if (isChromeDataTableColumn(column)) {
+    return { width: column.width, mode: 'fixed' };
+  }
   const userWidth = column.resize?.width;
   if (userWidth !== undefined && isDataTableColumnResizable(column)) {
     return { width: `${userWidth}px`, mode: 'fixed' };
@@ -137,11 +141,6 @@ function shouldTruncateDataTableColumn<T>(column: DataTableColumnConfig<T>): boo
   return !isChromeDataTableColumn(column);
 }
 
-/** An empty-header column (button, avatar, icon) is chrome: compact padding, no wrapper, no clip. */
-function isEmptyHeaderColumn<T>(column: DataTableColumnConfig<T>): boolean {
-  return column.header.trim() === '';
-}
-
 /**
  * Columns whose default width is fitted to their content: resizable, truncating, declared in px
  * (fixed or min mode).
@@ -150,15 +149,6 @@ function isFittableColumn<T>(column: DataTableColumnConfig<T>): boolean {
   return (
     isDataTableColumnResizable(column) &&
     shouldTruncateDataTableColumn(column) &&
-    parseColumnWidthPx(column.width) !== undefined
-  );
-}
-
-/** Empty-header, non-truncating columns only grow, to at least their content (never clipped). */
-function isGrowColumn<T>(column: DataTableColumnConfig<T>): boolean {
-  return (
-    isEmptyHeaderColumn(column) &&
-    column.truncate !== true &&
     parseColumnWidthPx(column.width) !== undefined
   );
 }
@@ -312,7 +302,7 @@ export function DataTable<T>({
 
     const toMeasure = columns.filter(
       (column) =>
-        (isFittableColumn(column) || isGrowColumn(column)) &&
+        isFittableColumn(column) &&
         column.resize?.width === undefined &&
         (!measuredKeys.current.has(column.key) || pendingRemeasure.current.has(column.key))
     );
@@ -327,28 +317,9 @@ export function DataTable<T>({
         Math.max(contentWidths.get(key) ?? 0, measureFitContentWidth(element))
       );
     });
-    // Cells without a wrapper: a width past the cell's box is content that would be cut.
-    const overflowWidths = new Map<string, number>();
-    root.querySelectorAll<HTMLElement>('td[data-column-key]').forEach((cell) => {
-      const key = cell.dataset.columnKey as string;
-      const seen = overflowWidths.get(key) ?? 0;
-      overflowWidths.set(
-        key,
-        Math.max(seen, cell.scrollWidth > cell.clientWidth ? cell.scrollWidth + 1 : 0)
-      );
-    });
-
     const next: Record<string, number> = {};
     for (const column of toMeasure) {
       pendingRemeasure.current.delete(column.key);
-      if (isGrowColumn(column)) {
-        if (!overflowWidths.has(column.key)) continue;
-        measuredKeys.current.add(column.key);
-        const declared = parseColumnWidthPx(column.width) as number;
-        const needed = Math.ceil(overflowWidths.get(column.key) as number);
-        if (needed > declared) next[column.key] = needed;
-        continue;
-      }
       const content = contentWidths.get(column.key);
       if (!content) continue;
       measuredKeys.current.add(column.key);
