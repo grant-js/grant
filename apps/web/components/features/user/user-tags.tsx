@@ -23,7 +23,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
@@ -45,6 +45,8 @@ import {
   UserDetailTableIconCell,
 } from './user-detail-table-layout';
 import { UserTagSearch } from './user-tag-search';
+
+const TABLE_ID = 'user.tags';
 
 interface UserTagsProps {
   user: User;
@@ -226,8 +228,8 @@ export function UserTags({ user }: UserTagsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -281,6 +283,7 @@ export function UserTags({ user }: UserTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -292,6 +295,7 @@ export function UserTags({ user }: UserTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

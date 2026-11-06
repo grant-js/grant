@@ -19,6 +19,8 @@ import { TagActions } from './tag-actions';
 import { TagAudit } from './tag-audit';
 import { TagCreateDialog } from './tag-create-dialog';
 
+const TABLE_ID = 'tags.list';
+
 export function TagTable() {
   const t = useTranslations('tags');
   const { tags, loading } = useTagsStore();
@@ -67,7 +69,9 @@ export function TagTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -81,6 +85,7 @@ export function TagTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={tags}
       columns={visibleColumns}
       loading={loading}

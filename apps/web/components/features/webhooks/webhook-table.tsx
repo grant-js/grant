@@ -21,6 +21,8 @@ import { WebhookAudit } from './webhook-audit';
 import { WebhookNavigationButton } from './webhook-navigation-button';
 import { WebhookSubscriptionActions } from './webhook-subscription-actions';
 
+const TABLE_ID = 'webhooks.list';
+
 export function WebhookTable() {
   const t = useTranslations('webhooks');
   const tCreate = useTranslations('webhooks.createDialog');
@@ -92,7 +94,9 @@ export function WebhookTable() {
     [t]
   );
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = useMemo(
     () => ({
@@ -115,6 +119,7 @@ export function WebhookTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={subscriptions}
       columns={visibleColumns}
       loading={loading}

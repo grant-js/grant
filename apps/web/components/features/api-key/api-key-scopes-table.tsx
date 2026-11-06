@@ -28,7 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState } from '@/hooks/common';
 import {
   API_KEY_SCOPES_PAGE_LIMIT,
   type ApiKeyScopeGroup,
@@ -49,6 +49,8 @@ import {
 import { cn } from '@/lib/utils';
 
 import { ApiKeyScopeSearch } from './api-key-scope-search';
+
+const TABLE_ID = 'apiKey.scopes';
 
 const GROUP_LEADING_INSET = 8;
 const CHILD_LEADING_INSET = 24;
@@ -400,8 +402,8 @@ export function ApiKeyScopesTable({
       : []),
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -457,6 +459,7 @@ export function ApiKeyScopesTable({
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -472,6 +475,7 @@ export function ApiKeyScopesTable({
     >
       {notice}
       <DataTable
+        tableId={TABLE_ID}
         data={items}
         columns={visibleColumns}
         loading={loading}

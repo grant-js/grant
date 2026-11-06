@@ -80,7 +80,8 @@
     },
     "dataTable": {
       "columns": "Spalten",
-      "toggleColumns": "Spalten ein-/ausblenden"
+      "toggleColumns": "Spalten ein-/ausblenden",
+      "resetColumns": "Spalten zurücksetzen"
     },
     "detailAttachmentFilter": {
       "label": "Anzeigen",

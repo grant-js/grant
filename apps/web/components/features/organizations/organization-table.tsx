@@ -21,6 +21,8 @@ import { OrganizationAvatar } from './organization-avatar';
 import { OrganizationCreateDialog } from './organization-create-dialog';
 import { OrganizationNavigationButton } from './organization-navigation-button';
 
+const TABLE_ID = 'organizations.list';
+
 export function OrganizationTable() {
   const t = useTranslations('organizations');
   const tCommon = useTranslations('common');
@@ -96,7 +98,9 @@ export function OrganizationTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -113,6 +117,7 @@ export function OrganizationTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={organizations}
       columns={visibleColumns}
       loading={loading}

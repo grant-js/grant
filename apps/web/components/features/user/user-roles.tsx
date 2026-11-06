@@ -24,7 +24,7 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useRoles } from '@/hooks/roles';
 import { useUserMutations } from '@/hooks/users';
@@ -47,6 +47,8 @@ import {
   UserDetailTableIconCell,
 } from './user-detail-table-layout';
 import { UserRoleSearch } from './user-role-search';
+
+const TABLE_ID = 'user.roles';
 
 interface UserRolesProps {
   user: User;
@@ -236,8 +238,8 @@ export function UserRoles({ user }: UserRolesProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -299,6 +301,7 @@ export function UserRoles({ user }: UserRolesProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -310,6 +313,7 @@ export function UserRoles({ user }: UserRolesProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={roles}
         columns={visibleColumns}
         loading={loading}

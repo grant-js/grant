@@ -26,6 +26,8 @@ import { GroupActions } from './group-actions';
 import { GroupAudit } from './group-audit';
 import { GroupNavigationButton } from './group-navigation-button';
 
+const TABLE_ID = 'groups.list';
+
 export function GroupTable() {
   const t = useTranslations('groups');
   const tCommon = useTranslations('common');
@@ -111,7 +113,9 @@ export function GroupTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -128,6 +132,7 @@ export function GroupTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={visibleGroups}
       columns={visibleColumns}
       loading={loading}

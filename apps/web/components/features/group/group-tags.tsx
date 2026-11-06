@@ -33,7 +33,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroupMutations } from '@/hooks/groups';
 import { useTags } from '@/hooks/tags';
@@ -42,6 +42,8 @@ import { cn } from '@/lib/utils';
 import { useGroupStore } from '@/stores/group.store';
 
 import { GroupTagSearch } from './group-tag-search';
+
+const TABLE_ID = 'group.tags';
 
 interface GroupTagsProps {
   group: Group;
@@ -220,8 +222,8 @@ export function GroupTags({ group }: GroupTagsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -270,6 +272,7 @@ export function GroupTags({ group }: GroupTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -281,6 +284,7 @@ export function GroupTags({ group }: GroupTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

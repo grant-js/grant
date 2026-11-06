@@ -24,7 +24,7 @@ import {
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useGroupsList } from '@/hooks/groups';
 import { useRoles } from '@/hooks/roles';
@@ -52,6 +52,8 @@ import {
   UserDetailTableCheckboxCell,
   UserDetailTableIconCell,
 } from './user-detail-table-layout';
+
+const TABLE_ID = 'user.groups';
 
 interface UserGroupsProps {
   user: User;
@@ -301,8 +303,8 @@ export function UserGroups({ user }: UserGroupsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -362,6 +364,7 @@ export function UserGroups({ user }: UserGroupsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -373,6 +376,7 @@ export function UserGroups({ user }: UserGroupsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={groups}
         columns={visibleColumns}
         loading={tableLoading}

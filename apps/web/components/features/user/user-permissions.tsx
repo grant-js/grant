@@ -24,7 +24,7 @@ import {
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useGroups } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
@@ -56,6 +56,8 @@ import {
   UserDetailTableCheckboxCell,
   UserDetailTableIconCell,
 } from './user-detail-table-layout';
+
+const TABLE_ID = 'user.permissions';
 
 interface UserPermissionsProps {
   user: User;
@@ -348,8 +350,8 @@ export function UserPermissions({ user }: UserPermissionsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -409,6 +411,7 @@ export function UserPermissions({ user }: UserPermissionsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -420,6 +423,7 @@ export function UserPermissions({ user }: UserPermissionsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={permissions}
         columns={visibleColumns}
         loading={tableLoading}

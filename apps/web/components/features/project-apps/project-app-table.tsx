@@ -22,6 +22,8 @@ import { ProjectAppActions } from './project-app-actions';
 import { ProjectAppAvatar } from './project-app-avatar';
 import { ProjectAppSignUpStatusLabel } from './project-app-sign-up-status-label';
 
+const TABLE_ID = 'projectApps.list';
+
 export function ProjectAppTable() {
   const t = useTranslations('projectApps');
   const tCommon = useTranslations('common');
@@ -107,6 +109,7 @@ export function ProjectAppTable() {
 
   return (
     <DataTable<ProjectApp>
+      tableId={TABLE_ID}
       data={projectApps}
       columns={columns}
       loading={loading}

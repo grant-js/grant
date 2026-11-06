@@ -33,7 +33,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionMutations } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
@@ -42,6 +42,8 @@ import { cn } from '@/lib/utils';
 import { usePermissionStore } from '@/stores/permission.store';
 
 import { PermissionTagSearch } from './permission-tag-search';
+
+const TABLE_ID = 'permission.tags';
 
 interface PermissionTagsProps {
   permission: Permission;
@@ -219,8 +221,8 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -269,6 +271,7 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -280,6 +283,7 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

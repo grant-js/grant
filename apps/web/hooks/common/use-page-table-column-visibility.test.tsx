@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { NextIntlClientProvider } from 'next-intl';
-import { act, render, renderHook, screen } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { DataTableColumnConfig } from '@/components/common/data-table';
@@ -25,7 +25,9 @@ afterEach(() => {
 
 describe('usePageTableColumnVisibility', () => {
   it('shows every column by default and publishes the hideable ones to the toolbar', () => {
-    const { result } = renderHook(() => usePageTableColumnVisibility(columns));
+    const { result } = renderHook(() =>
+      usePageTableColumnVisibility(columns, { tableId: 'test.table' })
+    );
 
     expect(result.current.visibleColumns.map((column) => column.key)).toEqual([
       'icon',
@@ -40,7 +42,9 @@ describe('usePageTableColumnVisibility', () => {
   });
 
   it('hides a column when the toolbar toggles it off', () => {
-    const { result } = renderHook(() => usePageTableColumnVisibility(columns));
+    const { result } = renderHook(() =>
+      usePageTableColumnVisibility(columns, { tableId: 'test.table' })
+    );
 
     act(() => {
       useDataTableColumnsStore.getState().toggleColumnVisibility?.('tags', false);
@@ -66,7 +70,10 @@ describe('usePageTableColumnVisibility', () => {
 
   it('honours the default hidden keys a view passes', () => {
     const { result } = renderHook(() =>
-      usePageTableColumnVisibility(columns, { defaultHiddenKeys: new Set(['tags']) })
+      usePageTableColumnVisibility(columns, {
+        tableId: 'test.table',
+        defaultHiddenKeys: new Set(['tags']),
+      })
     );
 
     expect(result.current.visibleColumns.map((column) => column.key)).not.toContain('tags');
@@ -74,7 +81,7 @@ describe('usePageTableColumnVisibility', () => {
 
   it('withdraws the picker when disabled and when the table unmounts', () => {
     const { rerender, unmount } = renderHook(
-      ({ enabled }) => usePageTableColumnVisibility(columns, { enabled }),
+      ({ enabled }) => usePageTableColumnVisibility(columns, { tableId: 'test.table', enabled }),
       { initialProps: { enabled: true } }
     );
     expect(useDataTableColumnsStore.getState().toggleColumnVisibility).not.toBeNull();
@@ -92,7 +99,11 @@ describe('usePageTableColumnVisibility', () => {
 });
 
 describe('PageTableColumnToggle', () => {
-  const messages = { common: { dataTable: { columns: 'Columns', toggleColumns: 'Toggle' } } };
+  const messages = {
+    common: {
+      dataTable: { columns: 'Columns', toggleColumns: 'Toggle', resetColumns: 'Reset columns' },
+    },
+  };
 
   function Harness({ withTable }: { withTable: boolean }) {
     return (
@@ -104,7 +115,7 @@ describe('PageTableColumnToggle', () => {
   }
 
   function PublishingTable() {
-    usePageTableColumnVisibility(columns);
+    usePageTableColumnVisibility(columns, { tableId: 'test.table' });
     return null;
   }
 
@@ -116,5 +127,26 @@ describe('PageTableColumnToggle', () => {
   it('renders the column picker once a list table publishes its columns', () => {
     render(<Harness withTable />);
     expect(screen.getByRole('button', { name: 'Columns' })).toBeInTheDocument();
+  });
+
+  it('resets the table to its defaults from the picker', async () => {
+    render(<Harness withTable />);
+    act(() => {
+      useDataTableColumnsStore.getState().toggleColumnVisibility?.('tags', false);
+    });
+    expect(useDataTableColumnsStore.getState().columnToggleItems).toContainEqual({
+      key: 'tags',
+      label: 'Tags',
+      visible: false,
+    });
+
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Columns' }), { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Reset columns' }));
+
+    expect(useDataTableColumnsStore.getState().columnToggleItems).toContainEqual({
+      key: 'tags',
+      label: 'Tags',
+      visible: true,
+    });
   });
 });

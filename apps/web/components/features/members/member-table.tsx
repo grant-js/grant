@@ -18,6 +18,8 @@ import { useMembersStore } from '@/stores/members.store';
 import { MemberActions } from './member-actions';
 import { MemberAudit } from './member-audit';
 
+const TABLE_ID = 'members.list';
+
 export function MemberTable() {
   const t = useTranslations('members');
   const tRoot = useTranslations();
@@ -127,7 +129,9 @@ export function MemberTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -143,6 +147,7 @@ export function MemberTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={members}
       columns={visibleColumns}
       loading={loading}

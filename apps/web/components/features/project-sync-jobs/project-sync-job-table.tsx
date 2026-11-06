@@ -23,6 +23,8 @@ import { ProjectSyncJobStartTrigger } from './project-sync-job-start-trigger';
 import { ProjectSyncJobStatusBadge } from './project-sync-job-status-badge';
 import { ProjectSyncJobsModuleIconElement } from './project-sync-jobs-icon';
 
+const TABLE_ID = 'projectSyncJobs.list';
+
 export function ProjectSyncJobTable() {
   const t = useTranslations('projectSyncJobs');
   const limit = useProjectSyncJobsStore((state) => state.limit);
@@ -119,7 +121,9 @@ export function ProjectSyncJobTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -141,6 +145,7 @@ export function ProjectSyncJobTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={jobs}
       columns={visibleColumns}
       loading={loading}

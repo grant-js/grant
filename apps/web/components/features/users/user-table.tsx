@@ -27,6 +27,8 @@ import { UserActions } from './user-actions';
 import { UserAudit } from './user-audit';
 import { UserNavigationButton } from './user-navigation-button';
 
+const TABLE_ID = 'users.list';
+
 export function UserTable() {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
@@ -126,7 +128,9 @@ export function UserTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -144,6 +148,7 @@ export function UserTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={visibleUsers}
       columns={visibleColumns}
       loading={loading}

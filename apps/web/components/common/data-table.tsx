@@ -41,6 +41,8 @@ export interface DataTableColumnConfig<T> {
 }
 
 export interface DataTableProps<T> {
+  /** Stable id, unique across the app (e.g. `users.list`); scopes the saved column state. */
+  tableId: string;
   data: T[];
   columns: DataTableColumnConfig<T>[];
   loading: boolean;
@@ -137,6 +139,7 @@ function DataTableCellContent({ children, truncate }: { children: ReactNode; tru
 }
 
 export function DataTable<T>({
+  tableId,
   data,
   columns,
   loading,
@@ -179,7 +182,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="min-w-0 rounded-md border">
+    <div className="min-w-0 rounded-md border" data-table-id={tableId}>
       <Table
         className={cn(tableLayoutClass)}
         style={dataTableMinWidthStyle(columns, !!actionsColumn)}

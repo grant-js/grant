@@ -26,6 +26,8 @@ import { RoleActions } from './role-actions';
 import { RoleAudit } from './role-audit';
 import { RoleNavigationButton } from './role-navigation-button';
 
+const TABLE_ID = 'roles.list';
+
 export function RoleTable() {
   const t = useTranslations('roles');
   const tCommon = useTranslations('common');
@@ -107,7 +109,9 @@ export function RoleTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -124,6 +128,7 @@ export function RoleTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={visibleRoles}
       columns={visibleColumns}
       loading={loading}

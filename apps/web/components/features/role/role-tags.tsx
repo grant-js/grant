@@ -33,7 +33,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useRoleMutations } from '@/hooks/roles';
 import { useTags } from '@/hooks/tags';
@@ -42,6 +42,8 @@ import { cn } from '@/lib/utils';
 import { useRoleStore } from '@/stores/role.store';
 
 import { RoleTagSearch } from './role-tag-search';
+
+const TABLE_ID = 'role.tags';
 
 interface RoleTagsProps {
   role: Role;
@@ -217,8 +219,8 @@ export function RoleTags({ role }: RoleTagsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -267,6 +269,7 @@ export function RoleTags({ role }: RoleTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -278,6 +281,7 @@ export function RoleTags({ role }: RoleTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

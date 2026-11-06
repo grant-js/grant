@@ -23,6 +23,8 @@ import { useSigningKeysStore } from '@/stores/signing-keys.store';
 import { SigningKeyAudit } from './signing-key-audit';
 import { SigningKeyCards } from './signing-key-cards';
 
+const TABLE_ID = 'signingKeys.list';
+
 type SigningKeyRow = GetSigningKeysQuery['signingKeys'][number];
 
 export interface SigningKeyViewerProps {
@@ -184,6 +186,7 @@ export function SigningKeyViewer({ scope: scopeProp }: SigningKeyViewerProps) {
   return (
     <>
       <DataTable<SigningKeyRow>
+        tableId={TABLE_ID}
         data={signingKeys}
         columns={columns}
         loading={loading}

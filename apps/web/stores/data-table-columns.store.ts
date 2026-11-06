@@ -10,10 +10,12 @@ import type { DataTableColumnToggleItem } from '@/components/common/data-table-c
 interface DataTableColumnsState {
   columnToggleItems: DataTableColumnToggleItem[];
   toggleColumnVisibility: ((key: string, visible: boolean) => void) | null;
+  resetColumns: (() => void) | null;
 
   setColumnToggle: (
     items: DataTableColumnToggleItem[],
-    toggle: (key: string, visible: boolean) => void
+    toggle: (key: string, visible: boolean) => void,
+    reset: () => void
   ) => void;
   clearColumnToggle: () => void;
 }
@@ -23,10 +25,12 @@ export const useDataTableColumnsStore = create<DataTableColumnsState>()(
     (set) => ({
       columnToggleItems: [],
       toggleColumnVisibility: null,
+      resetColumns: null,
 
-      setColumnToggle: (items, toggle) =>
-        set({ columnToggleItems: items, toggleColumnVisibility: toggle }),
-      clearColumnToggle: () => set({ columnToggleItems: [], toggleColumnVisibility: null }),
+      setColumnToggle: (items, toggle, reset) =>
+        set({ columnToggleItems: items, toggleColumnVisibility: toggle, resetColumns: reset }),
+      clearColumnToggle: () =>
+        set({ columnToggleItems: [], toggleColumnVisibility: null, resetColumns: null }),
     }),
     { name: 'grant-data-table-columns-store' }
   )
