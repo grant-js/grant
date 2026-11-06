@@ -310,9 +310,9 @@ describe('DataTable empty-header columns', () => {
     expect(cell).not.toHaveClass('overflow-hidden');
     expect(cell.querySelector('.truncate')).toBeNull();
     expect(container.querySelector('th')).not.toHaveClass('px-3');
-    // No handle on the chrome column; a table without a picker now resizes its data columns.
+    // No handle on the chrome column, nor on the last real column (nothing sits to its right).
     expect(container.querySelector('th[data-column-key="open"] [role="separator"]')).toBeNull();
-    expect(container.querySelector('th[data-column-key="name"] [role="separator"]')).not.toBeNull();
+    expect(container.querySelector('th[data-column-key="name"] [role="separator"]')).toBeNull();
   });
 
   it('renders at exactly the declared width: wider container, narrower container and after reset', () => {
@@ -502,5 +502,69 @@ describe('chrome column widths come from the shared constants', () => {
     const cols = Array.from(container.querySelectorAll('colgroup > col')) as HTMLElement[];
     expect(cols[0].style.width).toBe(DATA_TABLE_AVATAR_COLUMN_WIDTH);
     expect(cols[2].style.width).toBe(DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH);
+  });
+});
+
+describe('last real column has no resize handle', () => {
+  beforeEach(() => {
+    clientWidth.mockReturnValue(0);
+    scrollWidth.mockReturnValue(0);
+    rectWidth.mockReturnValue(rect(0));
+  });
+
+  const all: DataTableColumnConfig<Row>[] = [
+    { key: 'name', header: 'Name', width: '100px', render: (row) => row.name },
+    { key: 'code', header: 'Code', width: '100px', render: (row) => row.id },
+    { key: 'extra', header: 'Extra', width: '100px', render: () => 'x' },
+  ];
+
+  function ListHarness({ initial, actions }: { initial: string[]; actions?: boolean }) {
+    const [keys, setKeys] = useState(initial);
+    const { visibleColumns } = useDataTableColumnState(
+      keys.map((key) => all.find((column) => column.key === key) as DataTableColumnConfig<Row>),
+      { tableId: 'last.test' }
+    );
+    return (
+      <>
+        <button onClick={() => setKeys(['name', 'code', 'extra'])}>show extra</button>
+        <button onClick={() => setKeys(['code', 'name'])}>swap</button>
+        <DataTable
+          tableId="last.test"
+          data={[{ id: 'r1', name: 'Short' }]}
+          columns={visibleColumns}
+          loading={false}
+          emptyState={emptyState}
+          actionsColumn={actions ? { render: () => <button>More</button> } : undefined}
+        />
+      </>
+    );
+  }
+
+  const labels = () =>
+    screen.queryAllByRole('separator').map((el) => el.getAttribute('aria-label'));
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    setUser('u1');
+  });
+  afterEach(() => setUser(null));
+
+  it('shows no handle on a trailing data column; the filler is not "last"', () => {
+    const { container } = render(<ListHarness initial={['name', 'code']} />);
+    expect(container.querySelector('[data-column-filler]')).not.toBeNull();
+    expect(labels()).toEqual(['resizeColumn{"column":"Name"}']);
+  });
+
+  it('gives it a handle again once another column follows, and follows the visible order', () => {
+    render(<ListHarness initial={['name', 'code']} />);
+    fireEvent.click(screen.getByText('show extra'));
+    expect(labels()).toEqual(['resizeColumn{"column":"Name"}', 'resizeColumn{"column":"Code"}']);
+    fireEvent.click(screen.getByText('swap'));
+    expect(labels()).toEqual(['resizeColumn{"column":"Code"}']);
+  });
+
+  it('keeps the handle when an actions column sits to its right', () => {
+    render(<ListHarness initial={['name', 'code']} actions />);
+    expect(labels()).toEqual(['resizeColumn{"column":"Name"}', 'resizeColumn{"column":"Code"}']);
   });
 });

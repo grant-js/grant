@@ -38,7 +38,7 @@ describe('EntityDetailInfoTable', () => {
   });
   afterEach(() => rectWidth.mockReset());
 
-  it('renders through DataTable: resize handles on field and value, none on the icon column', () => {
+  it('renders through DataTable: a resize handle on field only: none on the icon column nor on the last column, value', () => {
     const { container } = render(
       <EntityDetailInfoTable rows={rows} fieldColumnHeader="Field" valueColumnHeader="Value" />
     );
@@ -46,7 +46,7 @@ describe('EntityDetailInfoTable', () => {
     const handleColumns = screen
       .getAllByRole('separator')
       .map((handle) => handle.closest('th')?.getAttribute('data-column-key'));
-    expect(handleColumns).toEqual(['field', 'value']);
+    expect(handleColumns).toEqual(['field']);
   });
 
   it('keeps the icon column at its exact shared width and fits the field column to its content', () => {

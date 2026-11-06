@@ -407,43 +407,51 @@ function DataTableView<T>({
         />
         <TableHeader>
           <TableRow>
-            {columns.map((column, index) => (
-              <TableHead
-                key={column.key}
-                className={cn(
-                  shouldTruncateDataTableColumn(column) && 'min-w-0 overflow-hidden',
-                  column.resize && isDataTableColumnResizable(column) && 'relative',
-                  column.className,
-                  alignClass(column),
-                  dataCellPaddingClass(column)
-                )}
-                data-column-key={column.key}
-                style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
-              >
-                {isFittableColumn(column) ? (
-                  <span data-fit-content data-column-key={column.key} className="inline-block">
-                    {column.header}
-                  </span>
-                ) : (
-                  column.header
-                )}
-                {column.resize && isDataTableColumnResizable(column) && (
-                  <DataTableColumnResizeHandle
-                    label={column.header}
-                    width={
-                      column.resize.width ??
-                      (fitted[column.key] !== undefined
-                        ? parseColumnWidthPx(layouts[index].width)
-                        : undefined)
-                    }
-                    defaultWidth={parseColumnWidthPx(column.width)}
-                    bounds={resolveColumnBounds(column)}
-                    onResize={(width) => column.resize?.onChange(column.key, width)}
-                    onReset={() => column.resize?.onChange(column.key, null)}
-                  />
-                )}
-              </TableHead>
-            ))}
+            {columns.map((column, index) => {
+              // Nothing sits to the right of the last real column (the filler does not count), so
+              // there is nothing to drag; it keeps its width. Follows the visible order.
+              const hasResizeHandle =
+                !!column.resize &&
+                isDataTableColumnResizable(column) &&
+                (index < columns.length - 1 || !!actionsColumn);
+              return (
+                <TableHead
+                  key={column.key}
+                  className={cn(
+                    shouldTruncateDataTableColumn(column) && 'min-w-0 overflow-hidden',
+                    hasResizeHandle && 'relative',
+                    column.className,
+                    alignClass(column),
+                    dataCellPaddingClass(column)
+                  )}
+                  data-column-key={column.key}
+                  style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
+                >
+                  {isFittableColumn(column) ? (
+                    <span data-fit-content data-column-key={column.key} className="inline-block">
+                      {column.header}
+                    </span>
+                  ) : (
+                    column.header
+                  )}
+                  {hasResizeHandle && column.resize && (
+                    <DataTableColumnResizeHandle
+                      label={column.header}
+                      width={
+                        column.resize.width ??
+                        (fitted[column.key] !== undefined
+                          ? parseColumnWidthPx(layouts[index].width)
+                          : undefined)
+                      }
+                      defaultWidth={parseColumnWidthPx(column.width)}
+                      bounds={resolveColumnBounds(column)}
+                      onResize={(width) => column.resize?.onChange(column.key, width)}
+                      onReset={() => column.resize?.onChange(column.key, null)}
+                    />
+                  )}
+                </TableHead>
+              );
+            })}
             {actionsColumn && (
               <TableHead style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')} />
             )}

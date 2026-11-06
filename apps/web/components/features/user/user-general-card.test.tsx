@@ -62,8 +62,8 @@ describe('UserGeneralCard', () => {
     // user id, one sign-in method, created, updated
     expect(infoTable.props[0].rows).toHaveLength(4);
     expect(container.querySelector('[data-table-id="user.info"]')).toBeInTheDocument();
-    // The shared table: Field and Value are resizable.
-    expect(screen.getAllByRole('separator')).toHaveLength(2);
+    // The shared table: Field is resizable; Value is the last column, so it has no handle.
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
     expect(container.querySelectorAll('table')).toHaveLength(1);
   });
 });
