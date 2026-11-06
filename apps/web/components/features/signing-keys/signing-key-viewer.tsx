@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useScopeFromParams } from '@/hooks/common';
 import { useSigningKeys } from '@/hooks/signing-keys';
+import { DATA_TABLE_AVATAR_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useSigningKeysStore } from '@/stores/signing-keys.store';
 
 import { SigningKeyAudit } from './signing-key-audit';
@@ -96,7 +97,7 @@ export function SigningKeyViewer({ scope: scopeProp }: SigningKeyViewerProps) {
     {
       key: 'icon',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (row: SigningKeyRow) => (
         <div className="flex items-center justify-center">

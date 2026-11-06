@@ -6,6 +6,11 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useDataTableColumnState } from '@/hooks/common/use-data-table-column-state';
+import {
+  DATA_TABLE_ACTIONS_COLUMN_WIDTH,
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { useAuthStore } from '@/stores/auth.store';
 
 import { DataTable, type DataTableColumnConfig } from './data-table';
@@ -204,7 +209,7 @@ describe('DataTable default width fits the content', () => {
   });
 });
 
-describe('DataTable container-aware widths', () => {
+describe('DataTable widths wider than the declared width', () => {
   const badgeColumns: DataTableColumnConfig<Row>[] = [
     { key: 'name', header: 'Name', width: '100px', render: (row) => row.name },
     { key: 'badges', header: 'Auth', width: '140px', render: () => 'B'.repeat(30) },
@@ -240,13 +245,13 @@ describe('DataTable container-aware widths', () => {
     expect(colWidths(container)).toEqual(['65px', '265px', '']);
   });
 
-  it('shrinks it back toward the declared width when the container is too narrow', () => {
+  it('does not shrink fitted columns in a narrow container: the table scrolls instead', () => {
     const { container } = renderIn(300);
-    // 65 + 265 = 330 > 300: badges gives up 30px, still above its declared 140.
-    expect(colWidths(container)).toEqual(['65px', '235px', '']);
-    const narrow = renderIn(100);
-    // Not below the declared width: scroll takes over.
-    expect(colWidths(narrow.container).slice(-3)).toEqual(['65px', '140px', '']);
+    expect(colWidths(container)).toEqual(['65px', '265px', '']);
+    const table = container.querySelector<HTMLTableElement>('[data-slot="table"]');
+    const probe = document.createElement('table');
+    probe.style.minWidth = 'calc(65px + 265px)';
+    expect(table?.style.minWidth).toBe(probe.style.minWidth);
   });
 });
 
@@ -318,10 +323,11 @@ describe('DataTable empty-header columns', () => {
       const col = container.querySelector('colgroup > col') as HTMLElement;
       const th = container.querySelector('th') as HTMLElement;
       const td = container.querySelector('tbody td') as HTMLElement;
-      for (const el of [col, th, td]) expect(el.style.width).toBe('60px');
+      for (const el of [col, th, td])
+        expect(el.style.width).toBe(DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH);
       for (const el of [th, td]) {
-        expect(el.style.minWidth).toBe('60px');
-        expect(el.style.maxWidth).toBe('60px');
+        expect(el.style.minWidth).toBe(DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH);
+        expect(el.style.maxWidth).toBe(DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH);
       }
     };
     for (const width of [1000, 120]) {
@@ -429,5 +435,70 @@ describe('DataTable filler column', () => {
       />
     );
     expect(container.querySelector('tbody td')).toHaveAttribute('colspan', '4');
+  });
+});
+
+describe('chrome column widths come from the shared constants', () => {
+  beforeEach(() => {
+    clientWidth.mockReturnValue(0);
+    scrollWidth.mockReturnValue(0);
+    rectWidth.mockReturnValue(rect(0));
+  });
+
+  const chrome: DataTableColumnConfig<Row>[] = [
+    { key: 'avatar', header: '', width: '90px', render: () => <i /> },
+    { key: 'name', header: 'Name', width: '100px', render: (row) => row.name },
+    { key: 'navigation', header: '', width: '90px', render: () => <button>Open</button> },
+  ];
+
+  it('uses the same actions width in the table, the colgroup and the skeleton', () => {
+    const actions = { render: () => <button>More</button> };
+    const loaded = render(
+      <DataTable
+        tableId="chrome.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={chrome}
+        loading={false}
+        emptyState={emptyState}
+        actionsColumn={actions}
+      />
+    );
+    const headers = Array.from(loaded.container.querySelectorAll('th'));
+    const actionsHeader = headers[3] as HTMLElement;
+    expect(actionsHeader.style.width).toBe(DATA_TABLE_ACTIONS_COLUMN_WIDTH);
+    expect(actionsHeader.style.minWidth).toBe(DATA_TABLE_ACTIONS_COLUMN_WIDTH);
+    expect(actionsHeader.className).not.toContain('w-[100px]');
+    const cols = Array.from(loaded.container.querySelectorAll('colgroup > col')) as HTMLElement[];
+    expect(cols[3].style.width).toBe(DATA_TABLE_ACTIONS_COLUMN_WIDTH);
+
+    const skeleton = render(
+      <DataTable
+        tableId="chrome.test"
+        data={[]}
+        columns={chrome}
+        loading
+        emptyState={emptyState}
+        actionsColumn={actions}
+      />
+    );
+    const skeletonCols = Array.from(
+      skeleton.container.querySelectorAll('colgroup > col')
+    ) as HTMLElement[];
+    expect(skeletonCols[skeletonCols.length - 1].style.width).toBe(DATA_TABLE_ACTIONS_COLUMN_WIDTH);
+  });
+
+  it('the constant wins over a width the caller declares for an avatar or open-button column', () => {
+    const { container } = render(
+      <DataTable
+        tableId="chrome.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={chrome}
+        loading={false}
+        emptyState={emptyState}
+      />
+    );
+    const cols = Array.from(container.querySelectorAll('colgroup > col')) as HTMLElement[];
+    expect(cols[0].style.width).toBe(DATA_TABLE_AVATAR_COLUMN_WIDTH);
+    expect(cols[2].style.width).toBe(DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH);
   });
 });
