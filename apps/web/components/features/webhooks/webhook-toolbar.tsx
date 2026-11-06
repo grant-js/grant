@@ -7,6 +7,7 @@ import { Plus } from 'lucide-react';
 
 import {
   EntityCreateNavigateButton,
+  PageTableColumnToggle,
   RefreshButton,
   Toolbar,
   toolbarGrow,
@@ -37,6 +38,7 @@ export function WebhookToolbar() {
     toolbarGrow(<WebhookSearch key="search" />),
     totalCount > 0 && <WebhookSorter key="sorter" />,
     <WebhookLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <WebhookViewSwitcher key="view" />,
     ...(canCreate
       ? [

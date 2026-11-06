@@ -2,8 +2,6 @@ import { ApiKey, ApiKeySortableField, SortOrder } from '@grantjs/schema';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-import type { DataTableColumnToggleItem } from '@/components/common/data-table-column-toggle';
-
 export type ApiKeyView = 'card' | 'table';
 export type ApiKeySecretDialogMode = 'created' | 'rotated';
 
@@ -20,8 +18,6 @@ interface ApiKeysState {
   createdApiKey: { clientId: string; clientSecret: string } | null;
   loading: boolean;
   refetch: (() => void) | null;
-  columnToggleItems: DataTableColumnToggleItem[];
-  toggleColumnVisibility: ((key: string, visible: boolean) => void) | null;
 
   setPage: (page: number) => void;
   setLimit: (limit: number) => void;
@@ -36,11 +32,6 @@ interface ApiKeysState {
   handleApiKeyRotated: (apiKey: { clientId: string; clientSecret: string } | null) => void;
   setLoading: (loading: boolean) => void;
   setRefetch: (refetch: (() => void) | null) => void;
-  setColumnToggle: (
-    items: DataTableColumnToggleItem[],
-    toggle: (key: string, visible: boolean) => void
-  ) => void;
-  clearColumnToggle: () => void;
 
   reset: () => void;
 }
@@ -63,8 +54,6 @@ const initialState = {
   createdApiKey: null,
   loading: false,
   refetch: null as (() => void) | null,
-  columnToggleItems: [] as DataTableColumnToggleItem[],
-  toggleColumnVisibility: null as ((key: string, visible: boolean) => void) | null,
 };
 
 export const useApiKeysStore = create<ApiKeysState>()(
@@ -93,9 +82,6 @@ export const useApiKeysStore = create<ApiKeysState>()(
       },
       setLoading: (loading) => set({ loading }),
       setRefetch: (refetch) => set({ refetch }),
-      setColumnToggle: (items, toggle) =>
-        set({ columnToggleItems: items, toggleColumnVisibility: toggle }),
-      clearColumnToggle: () => set({ columnToggleItems: [], toggleColumnVisibility: null }),
 
       reset: () => set(initialState),
     }),

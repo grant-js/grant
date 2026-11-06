@@ -5,7 +5,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { CopyCheck } from 'lucide-react';
 
-import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  PageTableColumnToggle,
+  RefreshButton,
+  Toolbar,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionsStore } from '@/stores/permissions.store';
 
@@ -31,6 +36,7 @@ export function PermissionToolbar() {
     <PermissionSorter key="sorter" />,
     <PermissionTagSelector key="tags" />,
     <PermissionLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <PermissionViewSwitcher key="view" />,
     ...(canCreate
       ? [

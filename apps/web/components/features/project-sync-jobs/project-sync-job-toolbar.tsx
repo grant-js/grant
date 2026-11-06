@@ -1,6 +1,6 @@
 'use client';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar } from '@/components/common';
 import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
 import { ProjectSyncJobExportTrigger } from './project-sync-job-export-trigger';
@@ -21,6 +21,7 @@ export function ProjectSyncJobToolbar() {
     <ProjectSyncJobSorter key="sorter" />,
     <ProjectSyncJobStatusFilter key="status" />,
     <ProjectSyncJobLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <ProjectSyncJobViewSwitcher key="view" />,
     <ProjectSyncJobStartTrigger key="start" layout="toolbar" />,
     <ProjectSyncJobExportTrigger key="export" layout="toolbar" />,

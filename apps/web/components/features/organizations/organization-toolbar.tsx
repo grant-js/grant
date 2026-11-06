@@ -3,7 +3,7 @@
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar } from '@/components/common';
 import { useAccountScope } from '@/hooks/common/use-account-scope';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
@@ -27,6 +27,7 @@ export function OrganizationToolbar() {
     <OrganizationSearch key="search" />,
     <OrganizationSorter key="sorter" />,
     <OrganizationLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <OrganizationViewSwitcher key="view" />,
     ...(canCreate ? [<OrganizationCreateDialog key="create" />] : []),
   ];

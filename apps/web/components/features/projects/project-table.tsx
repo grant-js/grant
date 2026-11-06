@@ -11,7 +11,7 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
-import { useProjectTags } from '@/hooks/common';
+import { usePageTableColumnVisibility, useProjectTags } from '@/hooks/common';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -135,8 +135,10 @@ export function ProjectTable() {
     },
   ];
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
+    columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar' },
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
@@ -145,14 +147,14 @@ export function ProjectTable() {
       { key: 'audit', type: 'audit' },
       { key: 'actions', type: 'actions' },
       { key: 'navigation', type: 'button' },
-    ],
+    ]),
     rowCount: limit,
   };
 
   return (
     <DataTable
       data={projects}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <FolderOpen />,

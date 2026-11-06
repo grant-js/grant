@@ -10,6 +10,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  DATA_TABLE_ACTIONS_COLUMN_WIDTH,
+  dataTableMinWidthStyle,
   detailTableColumnStyle,
   type DetailTableColumnWidthMode,
 } from '@/lib/detail-table-column-width';
@@ -31,7 +33,6 @@ export interface TableSkeletonProps {
   rowCount?: number;
   showActions?: boolean;
   className?: string;
-  containerClassName?: string;
 }
 
 function resolveColumnWidthMode(column: TableSkeletonColumnConfig): DetailTableColumnWidthMode {
@@ -43,7 +44,6 @@ export function TableSkeleton({
   rowCount = 5,
   showActions = false,
   className,
-  containerClassName,
 }: TableSkeletonProps) {
   const renderSkeletonCell = (column: TableSkeletonColumnConfig) => {
     switch (column.type) {
@@ -107,7 +107,7 @@ export function TableSkeleton({
 
   return (
     <div className="min-w-0 rounded-md border">
-      <Table className={cn(className)} containerClassName={containerClassName}>
+      <Table className={cn(className)} style={dataTableMinWidthStyle(columns, showActions)}>
         <DataTableColGroup columns={columns} actionsColumn={showActions} />
         <TableHeader>
           <TableRow>
@@ -121,7 +121,10 @@ export function TableSkeleton({
               </TableHead>
             ))}
             {showActions && (
-              <TableHead className="w-[100px]" style={detailTableColumnStyle('100px', 'fixed')}>
+              <TableHead
+                className="w-[100px]"
+                style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')}
+              >
                 <div className="h-4 w-16 bg-muted rounded animate-pulse" />
               </TableHead>
             )}

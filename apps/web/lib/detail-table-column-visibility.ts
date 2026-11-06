@@ -11,6 +11,9 @@ export const DETAIL_TABLE_DEFAULT_HIDDEN_COLUMN_KEYS = new Set([
   'color',
 ]);
 
+/** List views show every column until the user hides one. */
+export const NO_DEFAULT_HIDDEN_COLUMN_KEYS: ReadonlySet<string> = new Set<string>();
+
 /** Additional columns hidden by default on API key tables. */
 export const API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS = new Set([
   ...DETAIL_TABLE_DEFAULT_HIDDEN_COLUMN_KEYS,

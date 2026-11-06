@@ -11,6 +11,7 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageTableColumnVisibility } from '@/hooks/common';
 import { MemberWithInvitation } from '@/hooks/members';
 import { useMembersStore } from '@/stores/members.store';
 
@@ -126,22 +127,24 @@ export function MemberTable() {
     },
   ];
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
+    columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
       { key: 'email', type: 'text' },
       { key: 'role', type: 'badge' },
       { key: 'status', type: 'badge' },
       { key: 'audit', type: 'text' },
-    ],
+    ]),
     rowCount: limit,
   };
 
   return (
     <DataTable
       data={members}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <UserCheck />,

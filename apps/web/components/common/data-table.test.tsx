@@ -3,6 +3,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { dataTableMinWidthStyle } from '@/lib/detail-table-column-width';
+
 import { DataTable } from './data-table';
 import {
   DETAIL_CHECKBOX_COLUMN,
@@ -12,6 +14,13 @@ import {
 
 const LONG_NAME = `GrantScope${'A'.repeat(80)}`;
 
+/** The min-width string as the DOM normalises it, so the assertion does not depend on calc() folding. */
+function normalisedMinWidth(...args: Parameters<typeof dataTableMinWidthStyle>): string {
+  const probe = document.createElement('table');
+  probe.style.minWidth = String(dataTableMinWidthStyle(...args)?.minWidth ?? '');
+  return probe.style.minWidth;
+}
+
 const emptyState = {
   icon: <span />,
   title: 'Empty',
@@ -19,7 +28,7 @@ const emptyState = {
 };
 
 describe('DataTable', () => {
-  it('keeps a long unbreakable text cell inside the container and exposes the full value on title', () => {
+  it('truncates a long unbreakable text cell and exposes the full value on title', () => {
     const { container } = render(
       <div data-testid="table-harness" className="w-[320px] max-w-[320px]">
         <DataTable
@@ -45,10 +54,64 @@ describe('DataTable', () => {
     expect(table).toHaveClass('table-fixed', 'w-full');
     expect(table).not.toHaveClass('w-max');
     expect(table).not.toHaveClass('table-auto');
-    expect(tableContainer).toHaveClass('overflow-x-hidden');
+    expect(tableContainer).toHaveClass('overflow-x-auto');
+    expect(tableContainer).not.toHaveClass('overflow-x-hidden');
     expect(titled).not.toBeNull();
     expect(titled).toHaveClass('truncate');
     expect(screen.getByText(LONG_NAME)).toBeInTheDocument();
+  });
+
+  it('scrolls horizontally once the declared column widths exceed the container', () => {
+    const { container } = render(
+      <div className="w-[320px] max-w-[320px]">
+        <DataTable
+          data={[{ id: 'row-1', name: LONG_NAME }]}
+          columns={[
+            { key: 'name', header: 'Name', width: '240px', render: (row) => row.name },
+            { key: 'id', header: 'ID', width: '15rem', render: (row) => row.id },
+            {
+              key: 'description',
+              header: 'Description',
+              columnWidthMode: 'min',
+              render: (row) => row.name,
+            },
+          ]}
+          loading={false}
+          emptyState={emptyState}
+          actionsColumn={{ render: () => <button type="button">Open</button> }}
+        />
+      </div>
+    );
+
+    const table = container.querySelector<HTMLTableElement>('[data-slot="table"]');
+    const tableContainer = container.querySelector('[data-slot="table-container"]');
+
+    expect(tableContainer).toHaveClass('overflow-x-auto');
+    expect(tableContainer).not.toHaveClass('overflow-x-hidden');
+    expect(table?.style.minWidth).toBe(
+      normalisedMinWidth([{ width: '240px' }, { width: '15rem' }, {}], true)
+    );
+    expect(container.querySelector(`[title="${LONG_NAME}"]`)).toHaveClass('truncate');
+  });
+
+  it('keeps the loading skeleton scrollable with the same minimum width', () => {
+    const { container } = render(
+      <DataTable
+        data={[]}
+        columns={[
+          { key: 'name', header: 'Name', width: '240px', render: () => null },
+          { key: 'id', header: 'ID', width: '120px', render: () => null },
+        ]}
+        loading
+        emptyState={emptyState}
+      />
+    );
+
+    const table = container.querySelector<HTMLTableElement>('[data-slot="table"]');
+    expect(container.querySelector('[data-slot="table-container"]')).toHaveClass('overflow-x-auto');
+    expect(table?.style.minWidth).toBe(
+      normalisedMinWidth([{ width: '240px' }, { width: '120px' }])
+    );
   });
 
   it('does not truncate checkbox chrome columns', () => {
