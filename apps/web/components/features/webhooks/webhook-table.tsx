@@ -13,7 +13,7 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
-import { useScopeFromParams } from '@/hooks/common';
+import { usePageTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
 import { useWebhooksStore } from '@/stores/webhooks.store';
 
 import { WebhookActiveStatusLabel } from './webhook-active-status-label';
@@ -92,19 +92,21 @@ export function WebhookTable() {
     [t]
   );
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = useMemo(
     () => ({
-      columns: [
+      columns: filterSkeletonColumns([
         { key: 'description', type: 'text' },
         { key: 'url', type: 'text' },
         { key: 'status', type: 'text' },
         { key: 'events', type: 'text' },
         { key: 'audit', type: 'audit' },
         { key: 'navigation', type: 'icon' },
-      ],
+      ]),
       rowCount: limit,
     }),
-    [limit]
+    [filterSkeletonColumns, limit]
   );
 
   if (!scope) {
@@ -114,7 +116,7 @@ export function WebhookTable() {
   return (
     <DataTable
       data={subscriptions}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <Webhook />,

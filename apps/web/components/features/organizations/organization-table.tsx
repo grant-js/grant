@@ -11,6 +11,7 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageTableColumnVisibility } from '@/hooks/common';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
@@ -95,8 +96,10 @@ export function OrganizationTable() {
     },
   ];
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
+    columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
       { key: 'slug', type: 'text' },
@@ -104,14 +107,14 @@ export function OrganizationTable() {
       { key: 'audit', type: 'audit' },
       { key: 'actions', type: 'actions' },
       { key: 'navigation', type: 'button' },
-    ],
+    ]),
     rowCount: limit,
   };
 
   return (
     <DataTable
       data={organizations}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <Building2 />,

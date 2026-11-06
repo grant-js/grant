@@ -4,7 +4,7 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { ApiKeySortableField, SortOrder } from '@grantjs/schema';
 
-import { DataTableColumnToggle, RefreshButton, Toolbar, toolbarGrow } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar, toolbarGrow } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useApiKeysStore } from '@/stores/api-keys.store';
 
@@ -30,9 +30,6 @@ export function ApiKeyToolbar({ showViewSwitcher = true, showSorter = true }: Ap
   const setSearch = useApiKeysStore((state) => state.setSearch);
   const setSort = useApiKeysStore((state) => state.setSort);
   const handleApiKeyCreated = useApiKeysStore((state) => state.handleApiKeyCreated);
-  const view = useApiKeysStore((state) => state.view);
-  const columnToggleItems = useApiKeysStore((state) => state.columnToggleItems);
-  const toggleColumnVisibility = useApiKeysStore((state) => state.toggleColumnVisibility);
 
   const canCreate = useGrant(ResourceSlug.ApiKey, ResourceAction.Create, {
     scope: scope!,
@@ -42,24 +39,13 @@ export function ApiKeyToolbar({ showViewSwitcher = true, showSorter = true }: Ap
     setSort(field, order);
   };
 
-  const showColumnToggle =
-    (!showViewSwitcher || view === 'table') &&
-    columnToggleItems.length > 0 &&
-    toggleColumnVisibility;
-
   const toolbarItems = [
     <RefreshButton key="refresh" onRefresh={refetch ?? undefined} loading={loading} />,
     toolbarGrow(<ApiKeySearch key="search" search={search} onSearchChange={setSearch} grow />),
     showSorter && totalCount > 0 && (
       <ApiKeySorter key="sorter" sort={sort} onSortChange={handleSortChange} />
     ),
-    showColumnToggle && (
-      <DataTableColumnToggle
-        key="columns"
-        columns={columnToggleItems}
-        onToggle={toggleColumnVisibility}
-      />
-    ),
+    <PageTableColumnToggle key="columns" />,
     showViewSwitcher && <ApiKeyViewSwitcher key="view" />,
     ...(canCreate
       ? [<ApiKeyCreateAction key="create" onApiKeyCreated={handleApiKeyCreated} />]

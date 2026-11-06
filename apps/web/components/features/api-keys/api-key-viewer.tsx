@@ -24,7 +24,7 @@ import {
   UserDetailTableIconCell,
 } from '@/components/features/user/user-detail-table-layout';
 import { useApiKeys } from '@/hooks/api-keys';
-import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { usePageTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
 import { isProjectApiKeyScope } from '@/lib/api-key-grants';
 import { API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
 import { type ApiKeyView, useApiKeysStore } from '@/stores/api-keys.store';
@@ -70,8 +70,6 @@ export function ApiKeyViewer({
   const setCreatedApiKey = useApiKeysStore((state) => state.setCreatedApiKey);
   const handleApiKeyCreated = useApiKeysStore((state) => state.handleApiKeyCreated);
   const storeView = useApiKeysStore((state) => state.view);
-  const setColumnToggle = useApiKeysStore((state) => state.setColumnToggle);
-  const clearColumnToggle = useApiKeysStore((state) => state.clearColumnToggle);
   const view = forcedView ?? storeView;
 
   const { apiKeys, loading, error, totalCount, refetch } = useApiKeys({
@@ -262,20 +260,10 @@ export function ApiKeyViewer({
     [embedded, formatDate, grantLabel, showRoleColumn, t]
   );
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns, {
-      defaultHiddenKeys: API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS,
-    });
-
-  useEffect(() => {
-    if (view !== 'table') {
-      clearColumnToggle();
-      return;
-    }
-
-    setColumnToggle(columnToggleItems, toggleColumn);
-    return () => clearColumnToggle();
-  }, [view, columnToggleItems, toggleColumn, setColumnToggle, clearColumnToggle]);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    defaultHiddenKeys: API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS,
+    enabled: view === 'table',
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = useMemo(
     () => ({

@@ -13,6 +13,7 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
@@ -110,8 +111,10 @@ export function GroupTable() {
     },
   ];
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
+    columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
@@ -119,14 +122,14 @@ export function GroupTable() {
       { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'navigation', type: 'icon' },
-    ],
+    ]),
     rowCount: limit,
   };
 
   return (
     <DataTable
       data={visibleGroups}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <Shield />,

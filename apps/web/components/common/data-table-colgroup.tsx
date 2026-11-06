@@ -1,4 +1,7 @@
-import { detailTableColWidth } from '@/lib/detail-table-column-width';
+import {
+  DATA_TABLE_ACTIONS_COLUMN_WIDTH,
+  detailTableColWidth,
+} from '@/lib/detail-table-column-width';
 
 interface DataTableColGroupColumn {
   key: string;
@@ -21,7 +24,7 @@ export function DataTableColGroup({ columns, actionsColumn }: DataTableColGroupP
       {columns.map((column) => (
         <col key={column.key} style={detailTableColWidth(column.width)} />
       ))}
-      {actionsColumn && <col style={detailTableColWidth('100px')} />}
+      {actionsColumn && <col style={detailTableColWidth(DATA_TABLE_ACTIONS_COLUMN_WIDTH)} />}
     </colgroup>
   );
 }

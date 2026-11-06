@@ -7,7 +7,7 @@ import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Tenant } from '@grantjs/schema';
 import { Mail } from 'lucide-react';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,7 @@ export function MemberToolbar() {
     <MemberSearch key="search" />,
     <MemberSorter key="sorter" />,
     <MemberLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <MemberViewSwitcher key="view" />,
     ...(canInvite
       ? [

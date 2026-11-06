@@ -5,7 +5,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { UserPlus } from 'lucide-react';
 
-import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  PageTableColumnToggle,
+  RefreshButton,
+  Toolbar,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -31,6 +36,7 @@ export function UserToolbar() {
     <UserSorter key="sorter" />,
     <UserTagSelector key="tags" />,
     <UserLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <UserViewSwitcher key="view" />,
     ...(canCreate
       ? [

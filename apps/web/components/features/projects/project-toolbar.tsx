@@ -3,7 +3,7 @@
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useProjectsStore } from '@/stores/projects.store';
 
@@ -31,6 +31,7 @@ export function ProjectToolbar() {
         <ProjectSorter key="sorter" />,
         <ProjectTagSelector key="tagSelector" />,
         <ProjectLimit key="limit" />,
+        <PageTableColumnToggle key="columns" />,
         <ProjectViewSwitcher key="viewSwitcher" />,
         ...(canCreate ? [<ProjectCreateDialog key="create" />] : []),
       ]}

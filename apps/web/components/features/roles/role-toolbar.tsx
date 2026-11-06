@@ -5,7 +5,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { ShieldPlus } from 'lucide-react';
 
-import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  PageTableColumnToggle,
+  RefreshButton,
+  Toolbar,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useRolesStore } from '@/stores/roles.store';
 
@@ -31,6 +36,7 @@ export function RoleToolbar() {
     <RoleSorter key="sorter" />,
     <RoleTagSelector key="tags" />,
     <RoleLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <RoleViewSwitcher key="view" />,
     ...(canCreate
       ? [

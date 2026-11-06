@@ -9,6 +9,7 @@ import {
   type DataTableColumnConfig,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
+import { usePageTableColumnVisibility } from '@/hooks/common';
 import { formatTimestamp } from '@/lib/utils';
 import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
@@ -118,8 +119,10 @@ export function ProjectSyncJobTable() {
     },
   ];
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
+    columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar' },
       { key: 'jobName', type: 'text' },
       { key: 'operation', type: 'text' },
@@ -130,7 +133,7 @@ export function ProjectSyncJobTable() {
       { key: 'startedAt', type: 'text' },
       { key: 'completedAt', type: 'text' },
       { key: 'navigation', type: 'icon' },
-    ],
+    ]),
     rowCount: limit,
   };
 
@@ -139,7 +142,7 @@ export function ProjectSyncJobTable() {
   return (
     <DataTable
       data={jobs}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <ProjectSyncJobsModuleIconElement />,

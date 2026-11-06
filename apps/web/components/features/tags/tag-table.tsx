@@ -12,6 +12,7 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageTableColumnVisibility } from '@/hooks/common';
 import { useTagsStore } from '@/stores/tags.store';
 
 import { TagActions } from './tag-actions';
@@ -66,20 +67,22 @@ export function TagTable() {
     },
   ];
 
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
-    columns: [
+    columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
       { key: 'color', type: 'text' },
       { key: 'audit', type: 'audit' },
-    ],
+    ]),
     rowCount: 5,
   };
 
   return (
     <DataTable
       data={tags}
-      columns={columns}
+      columns={visibleColumns}
       loading={loading}
       emptyState={{
         icon: <TagIcon />,

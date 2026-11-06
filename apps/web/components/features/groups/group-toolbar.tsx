@@ -5,7 +5,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Group } from 'lucide-react';
 
-import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  PageTableColumnToggle,
+  RefreshButton,
+  Toolbar,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroupsStore } from '@/stores/groups.store';
 
@@ -31,6 +36,7 @@ export function GroupToolbar() {
     <GroupSorter key="sorter" />,
     <GroupTagSelector key="tags" />,
     <GroupLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <GroupViewSwitcher key="view" />,
     ...(canCreate
       ? [

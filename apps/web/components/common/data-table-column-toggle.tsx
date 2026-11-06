@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useDataTableColumnsStore } from '@/stores/data-table-columns.store';
 
 export interface DataTableColumnToggleItem {
   key: string;
@@ -77,4 +78,16 @@ export function DataTableColumnToggle({
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+/** Toolbar item for the page's list table; renders nothing until a table publishes columns. */
+export function PageTableColumnToggle({ iconOnly }: Pick<DataTableColumnToggleProps, 'iconOnly'>) {
+  const columns = useDataTableColumnsStore((state) => state.columnToggleItems);
+  const onToggle = useDataTableColumnsStore((state) => state.toggleColumnVisibility);
+
+  if (!onToggle) {
+    return null;
+  }
+
+  return <DataTableColumnToggle columns={columns} onToggle={onToggle} iconOnly={iconOnly} />;
 }

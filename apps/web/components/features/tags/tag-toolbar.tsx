@@ -3,7 +3,7 @@
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar } from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useTagsStore } from '@/stores/tags.store';
 
@@ -27,6 +27,7 @@ export function TagToolbar() {
     <TagSearch key="search" />,
     <TagSorter key="sorter" />,
     <TagLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <TagViewSwitcher key="view" />,
     ...(canCreate ? [<TagCreateDialog key="create" />] : []),
   ];

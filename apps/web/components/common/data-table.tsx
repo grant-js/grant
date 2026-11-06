@@ -12,6 +12,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  DATA_TABLE_ACTIONS_COLUMN_WIDTH,
+  dataTableMinWidthStyle,
   detailTableColumnStyle,
   type DetailTableColumnWidthMode,
 } from '@/lib/detail-table-column-width';
@@ -172,14 +174,16 @@ export function DataTable<T>({
         rowCount={skeletonConfig?.rowCount || 5}
         showActions={!!actionsColumn}
         className={tableLayoutClass}
-        containerClassName="overflow-x-hidden"
       />
     );
   }
 
   return (
     <div className="min-w-0 rounded-md border">
-      <Table className={cn(tableLayoutClass)} containerClassName="overflow-x-hidden">
+      <Table
+        className={cn(tableLayoutClass)}
+        style={dataTableMinWidthStyle(columns, !!actionsColumn)}
+      >
         <DataTableColGroup columns={columns} actionsColumn={!!actionsColumn} />
         <TableHeader>
           <TableRow>
@@ -196,7 +200,10 @@ export function DataTable<T>({
               </TableHead>
             ))}
             {actionsColumn && (
-              <TableHead className="w-[100px]" style={detailTableColumnStyle('100px', 'fixed')} />
+              <TableHead
+                className="w-[100px]"
+                style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')}
+              />
             )}
           </TableRow>
         </TableHeader>

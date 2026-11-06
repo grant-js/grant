@@ -5,7 +5,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { PackagePlus } from 'lucide-react';
 
-import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  PageTableColumnToggle,
+  RefreshButton,
+  Toolbar,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useResourcesStore } from '@/stores/resources.store';
 
@@ -31,6 +36,7 @@ export function ResourceToolbar() {
     <ResourceSorter key="sorter" />,
     <ResourceTagSelector key="tags" />,
     <ResourceLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <ResourceViewSwitcher key="view" />,
     ...(canCreate
       ? [
