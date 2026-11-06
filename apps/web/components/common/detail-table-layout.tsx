@@ -108,9 +108,6 @@ export const USER_DETAIL_TEXT_COLUMN = DETAIL_TEXT_COLUMN;
 export const USER_DETAIL_CONTENT_COLUMN_CLASS = DETAIL_CONTENT_COLUMN_CLASS;
 /** @deprecated Use {@link DETAIL_PRIMARY_CONTENT_COLUMN_CLASS}. */
 export const USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS = DETAIL_PRIMARY_CONTENT_COLUMN_CLASS;
-/** @deprecated Use {@link DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS}. */
-export const USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS =
-  DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS;
 /** @deprecated Use {@link DetailTableCheckboxCell}. */
 export const UserDetailTableCheckboxCell = DetailTableCheckboxCell;
 /** @deprecated Use {@link DetailTableIconCell}. */
