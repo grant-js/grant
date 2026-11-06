@@ -26,6 +26,8 @@ import { PermissionActions } from './permission-actions';
 import { PermissionAudit } from './permission-audit';
 import { PermissionNavigationButton } from './permission-navigation-button';
 
+const TABLE_ID = 'permissions.list';
+
 export function PermissionTable() {
   const t = useTranslations('permissions');
   const tCommon = useTranslations('common');
@@ -122,7 +124,9 @@ export function PermissionTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -140,6 +144,7 @@ export function PermissionTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={visiblePermissions}
       columns={visibleColumns}
       loading={loading}

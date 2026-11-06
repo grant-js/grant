@@ -23,6 +23,8 @@ import { ResourceActions } from './resource-actions';
 import { ResourceActiveStatusLabel } from './resource-active-status-label';
 import { ResourceAudit } from './resource-audit';
 
+const TABLE_ID = 'resources.list';
+
 export function ResourceTable() {
   const t = useTranslations('resources');
   const tCommon = useTranslations('common');
@@ -124,7 +126,9 @@ export function ResourceTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -143,6 +147,7 @@ export function ResourceTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={resources}
       columns={visibleColumns}
       loading={loading}

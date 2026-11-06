@@ -13,6 +13,8 @@ import { useWebhookDeliveriesStore } from '@/stores/webhook-deliveries.store';
 
 import { WebhookDeliveryStatusLabel } from '../webhooks/webhook-delivery-status-label';
 
+const TABLE_ID = 'webhook.deliveries';
+
 interface WebhookDeliveriesViewerProps {
   scope: Scope;
   subscriptionId: string;
@@ -107,6 +109,7 @@ export function WebhookDeliveriesViewer({ scope, subscriptionId }: WebhookDelive
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={deliveries}
       columns={columns}
       loading={loading}

@@ -33,7 +33,7 @@ import {
 } from '@/components/common';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce, useScopeFromParams } from '@/hooks/common';
 import {
   type ScopeSlugOption,
   useProjectAppFormData,
@@ -42,6 +42,8 @@ import {
 import { type DetailAttachmentFilter, resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 
 import { ProjectAppScopeSearch } from './project-app-scope-search';
+
+const TABLE_ID = 'projectApp.scopes';
 
 const SCOPES_PAGE_LIMIT = 10;
 
@@ -245,8 +247,8 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -296,6 +298,7 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -312,6 +315,7 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
         </Alert>
       ) : (
         <DataTable
+          tableId={TABLE_ID}
           data={tableScopes}
           columns={visibleColumns}
           loading={loading}

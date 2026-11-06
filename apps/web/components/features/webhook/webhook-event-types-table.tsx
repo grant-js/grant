@@ -30,11 +30,13 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState } from '@/hooks/common';
 import { type DetailAttachmentFilter, resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { eventTypeLabelKey } from '@/lib/event-type-label.lib';
 
 import { WebhookEventSearch } from './webhook-event-search';
+
+const TABLE_ID = 'webhook.eventTypes';
 
 const EVENTS_PAGE_LIMIT = 10;
 
@@ -203,8 +205,8 @@ export function WebhookEventTypesTable({
       : []),
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -254,6 +256,7 @@ export function WebhookEventTypesTable({
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -265,6 +268,7 @@ export function WebhookEventTypesTable({
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tableEvents}
         columns={visibleColumns}
         loading={false}

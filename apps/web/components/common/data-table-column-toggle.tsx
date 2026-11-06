@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -24,12 +25,15 @@ export interface DataTableColumnToggleItem {
 export interface DataTableColumnToggleProps {
   columns: DataTableColumnToggleItem[];
   onToggle: (key: string, visible: boolean) => void;
+  /** Restores visibility, order and widths to the defaults; the menu item is hidden without it. */
+  onReset?: () => void;
   iconOnly?: boolean;
 }
 
 export function DataTableColumnToggle({
   columns,
   onToggle,
+  onReset,
   iconOnly = true,
 }: DataTableColumnToggleProps) {
   const t = useTranslations('common.dataTable');
@@ -75,6 +79,12 @@ export function DataTableColumnToggle({
             {column.label}
           </DropdownMenuCheckboxItem>
         ))}
+        {onReset && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onReset}>{t('resetColumns')}</DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -84,10 +94,18 @@ export function DataTableColumnToggle({
 export function PageTableColumnToggle({ iconOnly }: Pick<DataTableColumnToggleProps, 'iconOnly'>) {
   const columns = useDataTableColumnsStore((state) => state.columnToggleItems);
   const onToggle = useDataTableColumnsStore((state) => state.toggleColumnVisibility);
+  const onReset = useDataTableColumnsStore((state) => state.resetColumns);
 
   if (!onToggle) {
     return null;
   }
 
-  return <DataTableColumnToggle columns={columns} onToggle={onToggle} iconOnly={iconOnly} />;
+  return (
+    <DataTableColumnToggle
+      columns={columns}
+      onToggle={onToggle}
+      onReset={onReset ?? undefined}
+      iconOnly={iconOnly}
+    />
+  );
 }

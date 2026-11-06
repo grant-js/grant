@@ -22,6 +22,8 @@ import { ProjectAvatar } from './project-avatar';
 import { ProjectCreateDialog } from './project-create-dialog';
 import { ProjectNavigationButton } from './project-navigation-button';
 
+const TABLE_ID = 'projects.list';
+
 export function ProjectTable() {
   const t = useTranslations('projects');
   const tCommon = useTranslations('common');
@@ -135,7 +137,9 @@ export function ProjectTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -153,6 +157,7 @@ export function ProjectTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={projects}
       columns={visibleColumns}
       loading={loading}

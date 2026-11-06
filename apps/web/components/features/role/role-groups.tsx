@@ -33,7 +33,7 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroupsList } from '@/hooks/groups';
 import { useRoleMutations } from '@/hooks/roles';
@@ -43,6 +43,8 @@ import { cn } from '@/lib/utils';
 import { useRoleStore } from '@/stores/role.store';
 
 import { RoleGroupSearch } from './role-group-search';
+
+const TABLE_ID = 'role.groups';
 
 interface RoleGroupsProps {
   role: Role;
@@ -226,8 +228,8 @@ export function RoleGroups({ role }: RoleGroupsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -277,6 +279,7 @@ export function RoleGroups({ role }: RoleGroupsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -288,6 +291,7 @@ export function RoleGroups({ role }: RoleGroupsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={groups}
         columns={visibleColumns}
         loading={loading}

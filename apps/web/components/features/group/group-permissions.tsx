@@ -33,7 +33,7 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
@@ -43,6 +43,8 @@ import { cn } from '@/lib/utils';
 import { useGroupStore } from '@/stores/group.store';
 
 import { GroupPermissionSearch } from './group-permission-search';
+
+const TABLE_ID = 'group.permissions';
 
 interface GroupPermissionsProps {
   group: Group;
@@ -237,8 +239,8 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
+    useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -288,6 +290,7 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
             />,
           ]}
         />
@@ -299,6 +302,7 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={permissions}
         columns={visibleColumns}
         loading={loading}

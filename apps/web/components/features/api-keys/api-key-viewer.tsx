@@ -36,6 +36,8 @@ import { ApiKeyCreateAction } from './api-key-create-action';
 import { ApiKeySecretDialog } from './api-key-secret-dialog';
 import { useApiKeyGrantLabel } from './use-api-key-grant-label';
 
+const TABLE_ID = 'apiKeys.list';
+
 export interface ApiKeyViewerProps {
   /** When not provided, scope is derived from URL params. */
   scope?: Scope | null;
@@ -261,6 +263,7 @@ export function ApiKeyViewer({
   );
 
   const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
     defaultHiddenKeys: API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS,
     enabled: view === 'table',
   });
@@ -324,6 +327,7 @@ export function ApiKeyViewer({
   return (
     <>
       <DataTable
+        tableId={TABLE_ID}
         data={apiKeys}
         columns={visibleColumns}
         loading={loading}

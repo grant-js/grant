@@ -32,6 +32,7 @@ describe('DataTable', () => {
     const { container } = render(
       <div data-testid="table-harness" className="w-[320px] max-w-[320px]">
         <DataTable
+          tableId="test.table"
           data={[{ id: 'row-1', name: LONG_NAME }]}
           columns={[
             {
@@ -51,6 +52,7 @@ describe('DataTable', () => {
     const tableContainer = container.querySelector('[data-slot="table-container"]');
     const titled = container.querySelector(`[title="${LONG_NAME}"]`);
 
+    expect(container.querySelector('[data-table-id="test.table"]')).not.toBeNull();
     expect(table).toHaveClass('table-fixed', 'w-full');
     expect(table).not.toHaveClass('w-max');
     expect(table).not.toHaveClass('table-auto');
@@ -65,6 +67,7 @@ describe('DataTable', () => {
     const { container } = render(
       <div className="w-[320px] max-w-[320px]">
         <DataTable
+          tableId="test.table"
           data={[{ id: 'row-1', name: LONG_NAME }]}
           columns={[
             { key: 'name', header: 'Name', width: '240px', render: (row) => row.name },
@@ -97,6 +100,7 @@ describe('DataTable', () => {
   it('keeps the loading skeleton scrollable with the same minimum width', () => {
     const { container } = render(
       <DataTable
+        tableId="test.table"
         data={[]}
         columns={[
           { key: 'name', header: 'Name', width: '240px', render: () => null },
@@ -117,6 +121,7 @@ describe('DataTable', () => {
   it('does not truncate checkbox chrome columns', () => {
     const { container } = render(
       <DataTable
+        tableId="test.table"
         data={[{ id: 'row-1', name: LONG_NAME }]}
         columns={[
           {
@@ -153,6 +158,7 @@ describe('DataTable', () => {
   it('does not truncate the actions column', () => {
     render(
       <DataTable
+        tableId="test.table"
         data={[{ id: 'row-1', name: 'Role' }]}
         columns={[
           {
