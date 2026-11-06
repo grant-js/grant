@@ -15,6 +15,10 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { getEntityTagCount, getPrimaryTagFromEntity } from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { useResourcesStore } from '@/stores/resources.store';
@@ -38,7 +42,7 @@ export function ResourceTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (resource: Resource) => {
         const primaryTag = getPrimaryTagFromEntity(resource);
@@ -114,7 +118,7 @@ export function ResourceTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (resource: Resource) => (
         <EntityNavigationButton
           entitySegment="resources"

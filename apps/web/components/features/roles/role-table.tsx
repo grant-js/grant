@@ -15,6 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
+import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
@@ -46,7 +50,7 @@ export function RoleTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (role: Role) => {
         const primaryTag = getPrimaryTagFromEntity(role);
@@ -104,7 +108,7 @@ export function RoleTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (role: Role) => <RoleNavigationButton role={role} size="sm" round={false} />,
     },
   ];

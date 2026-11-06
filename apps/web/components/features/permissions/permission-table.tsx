@@ -15,6 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
+import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
@@ -48,7 +52,7 @@ export function PermissionTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (permission: Permission) => {
         const primaryTag = getPrimaryTagFromEntity(permission);
@@ -117,7 +121,7 @@ export function PermissionTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (permission: Permission) => (
         <PermissionNavigationButton permission={permission} size="sm" round={false} />
       ),

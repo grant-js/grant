@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 
-import type { DetailTableColumnWidthMode } from '@/lib/detail-table-column-width';
-
-const LEADING_COLUMN_WIDTH = '2.5rem';
-const ICON_ONLY_COLUMN_WIDTH = '2.75rem';
+import {
+  DATA_TABLE_CHECKBOX_COLUMN_WIDTH,
+  DATA_TABLE_ICON_COLUMN_WIDTH,
+  DATA_TABLE_ICON_ONLY_COLUMN_WIDTH,
+  type DetailTableColumnWidthMode,
+} from '@/lib/detail-table-column-width';
 
 const CHECKBOX_COLUMN_CLASS = 'box-border w-10 min-w-10 max-w-10 py-2 pl-2 pr-0 align-middle';
 const ICON_COLUMN_CLASS = 'box-border w-10 min-w-10 max-w-10 py-2 px-0 align-middle';
@@ -14,14 +16,14 @@ export const DETAIL_INFO_FIELD_COLUMN_WIDTH = '160px';
 
 /** Shared leading-column layout for entity detail relationship tables. */
 export const DETAIL_CHECKBOX_COLUMN = {
-  width: LEADING_COLUMN_WIDTH,
+  width: DATA_TABLE_CHECKBOX_COLUMN_WIDTH,
   className: CHECKBOX_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
   truncate: false,
 } as const;
 
 export const DETAIL_ICON_COLUMN = {
-  width: LEADING_COLUMN_WIDTH,
+  width: DATA_TABLE_ICON_COLUMN_WIDTH,
   className: ICON_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
   truncate: false,
@@ -29,14 +31,14 @@ export const DETAIL_ICON_COLUMN = {
 
 /** First column for tables without a checkbox (general info, embedded API keys). */
 export const DETAIL_ICON_ONLY_COLUMN = {
-  width: ICON_ONLY_COLUMN_WIDTH,
+  width: DATA_TABLE_ICON_ONLY_COLUMN_WIDTH,
   className: ICON_ONLY_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
   truncate: false,
 } as const;
 
 export const DETAIL_LOADING_COLUMN = {
-  width: LEADING_COLUMN_WIDTH,
+  width: DATA_TABLE_ICON_COLUMN_WIDTH,
   className: ICON_COLUMN_CLASS,
   columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
   truncate: false,

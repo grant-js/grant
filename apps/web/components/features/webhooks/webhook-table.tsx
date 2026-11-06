@@ -14,6 +14,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useWebhooksStore } from '@/stores/webhooks.store';
 
 import { WebhookActiveStatusLabel } from './webhook-active-status-label';
@@ -81,7 +82,7 @@ export function WebhookTable() {
       {
         key: 'navigation',
         header: '',
-        width: '60px',
+        width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
         render: (subscription) => (
           <WebhookNavigationButton
             subscriptionId={subscription.id}

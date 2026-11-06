@@ -10,6 +10,10 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { formatTimestamp } from '@/lib/utils';
 import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
@@ -36,7 +40,7 @@ export function ProjectSyncJobTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (job) => <Avatar initial={getJobAvatarInitial(job)} size="md" />,
     },
@@ -109,7 +113,7 @@ export function ProjectSyncJobTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (job) => (
         <ProjectSyncJobNavigationButton
           projectId={job.projectId}

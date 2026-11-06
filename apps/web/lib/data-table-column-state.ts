@@ -1,5 +1,10 @@
 import type { DataTableColumnConfig } from '@/components/common/data-table';
 import {
+  clampColumnWidth,
+  isDataTableColumnResizable,
+  resolveColumnBounds,
+} from '@/lib/data-table-column-resize';
+import {
   buildInitialColumnVisibility,
   DETAIL_TABLE_DEFAULT_HIDDEN_COLUMN_KEYS,
   isToggleableColumn,
@@ -11,13 +16,9 @@ export interface DataTableColumnState {
   visibility: Record<string, boolean>;
   /** Every column key, in display order. */
   order: string[];
-  /** User-set widths in px by column key. A column without an entry uses its declared width. */
+  /** User-set widths in px by column key. A column without an entry uses its declared (default) width. */
   widths: Record<string, number>;
 }
-
-/** Bounds for a user-set width until columns declare their own. */
-export const DATA_TABLE_COLUMN_MIN_WIDTH_PX = 64;
-export const DATA_TABLE_COLUMN_MAX_WIDTH_PX = 640;
 
 const STORAGE_KEY_PREFIX = 'grant:table:v1';
 
@@ -66,10 +67,6 @@ export function parseStoredColumnState(raw: string | null): DataTableColumnState
     order: order as string[],
     widths: widths as Record<string, number>,
   };
-}
-
-function clampColumnWidth(width: number): number {
-  return Math.min(DATA_TABLE_COLUMN_MAX_WIDTH_PX, Math.max(DATA_TABLE_COLUMN_MIN_WIDTH_PX, width));
 }
 
 /** Reads the stored state; a missing entry, bad JSON or unavailable storage all yield `null`. */
@@ -137,8 +134,13 @@ export function mergeColumnState<T>(
   }
 
   const widths: Record<string, number> = {};
+  const columnsByKey = new Map(columns.map((column) => [column.key, column]));
   for (const [key, width] of Object.entries(previous.widths)) {
-    if (known.has(key)) widths[key] = clampColumnWidth(width);
+    const column = columnsByKey.get(key);
+    // A column that cannot be resized ignores a stale saved width.
+    if (column && isDataTableColumnResizable(column)) {
+      widths[key] = clampColumnWidth(width, resolveColumnBounds(column));
+    }
   }
 
   // A saved value must not hide a column the picker cannot bring back (chrome, enableHiding: false).

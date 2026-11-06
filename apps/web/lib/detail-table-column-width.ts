@@ -22,7 +22,30 @@ export function detailTableColWidth(width?: string): CSSProperties | undefined {
 /** Floor for a column with no declared width, so it cannot collapse to nothing before the table scrolls. */
 export const DATA_TABLE_UNSIZED_COLUMN_MIN_WIDTH = '8rem';
 
-export const DATA_TABLE_ACTIONS_COLUMN_WIDTH = '100px';
+/**
+ * Chrome columns are exactly as wide as their control plus compact padding, one width per kind,
+ * for every table. A caller's own width for such a column does not count.
+ */
+export const DATA_TABLE_CHECKBOX_COLUMN_WIDTH = '2.5rem';
+export const DATA_TABLE_ICON_COLUMN_WIDTH = '2.5rem';
+export const DATA_TABLE_ICON_ONLY_COLUMN_WIDTH = '2.75rem';
+/** 32px avatar + 16px left + 8px right padding. */
+export const DATA_TABLE_AVATAR_COLUMN_WIDTH = '56px';
+/** 36px go-to-detail button + 8px padding a side. */
+export const DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH = '52px';
+/** 32px actions (⋮) button + 8px padding a side. */
+export const DATA_TABLE_ACTIONS_COLUMN_WIDTH = '48px';
+
+const CHROME_WIDTH_BY_COLUMN_KEY: Record<string, string> = {
+  avatar: DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  navigation: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+  open: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+};
+
+/** The shared width for an avatar / open-button column; any other column keeps its own. */
+export function resolveChromeColumnWidth(key: string, width?: string): string | undefined {
+  return CHROME_WIDTH_BY_COLUMN_KEY[key] ?? width;
+}
 
 /**
  * Minimum table width: the sum of the declared column widths, with unsized columns at
