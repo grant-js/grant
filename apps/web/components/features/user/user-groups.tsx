@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Group, Tag, User } from '@grantjs/schema';
-import { Group as GroupIcon, Loader2, Users } from 'lucide-react';
+import { Group as GroupIcon, Users } from 'lucide-react';
 
 import {
   Avatar,
@@ -22,6 +22,7 @@ import {
   Toolbar,
   toolbarGrow,
 } from '@/components/common';
+import { withCheckboxSavingState } from '@/components/common/detail-table-layout';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDataTableColumnState, useDebounce } from '@/hooks/common';
@@ -45,8 +46,6 @@ import {
   USER_DETAIL_CONTENT_COLUMN_CLASS,
   USER_DETAIL_ICON_COLUMN,
   USER_DETAIL_ICON_SKELETON,
-  USER_DETAIL_LOADING_COLUMN,
-  USER_DETAIL_LOADING_SKELETON,
   USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   USER_DETAIL_TEXT_COLUMN,
   UserDetailTableCheckboxCell,
@@ -191,38 +190,41 @@ export function UserGroups({ user }: UserGroupsProps) {
   };
 
   const columns: DataTableColumnConfig<Group>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...USER_DETAIL_CHECKBOX_COLUMN,
-      render: (group: Group) => {
-        const rowState = getRowState(group.id);
-        const checkbox = (
-          <Checkbox
-            checked={rowState.checked}
-            onCheckedChange={(checked) => handleGroupToggle(group.id, checked === true)}
-            disabled={!canUpdate || rowState.disabled}
-          />
-        );
-
-        if (rowState.disabled && rowState.source?.kind === 'inherited') {
-          return (
-            <UserDetailTableCheckboxCell>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">{checkbox}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>{formatSourceLabel(group.id)}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </UserDetailTableCheckboxCell>
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...USER_DETAIL_CHECKBOX_COLUMN,
+        render: (group: Group) => {
+          const rowState = getRowState(group.id);
+          const checkbox = (
+            <Checkbox
+              checked={rowState.checked}
+              onCheckedChange={(checked) => handleGroupToggle(group.id, checked === true)}
+              disabled={!canUpdate || rowState.disabled}
+            />
           );
-        }
 
-        return <UserDetailTableCheckboxCell>{checkbox}</UserDetailTableCheckboxCell>;
+          if (rowState.disabled && rowState.source?.kind === 'inherited') {
+            return (
+              <UserDetailTableCheckboxCell>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">{checkbox}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{formatSourceLabel(group.id)}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </UserDetailTableCheckboxCell>
+            );
+          }
+
+          return <UserDetailTableCheckboxCell>{checkbox}</UserDetailTableCheckboxCell>;
+        },
       },
-    },
+      (group: Group) => updatingGroupId === group.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -290,17 +292,6 @@ export function UserGroups({ user }: UserGroupsProps) {
         );
       },
     },
-    {
-      key: 'loading',
-      header: '',
-      ...USER_DETAIL_LOADING_COLUMN,
-      render: (group: Group) =>
-        updatingGroupId === group.id ? (
-          <UserDetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </UserDetailTableIconCell>
-        ) : null,
-    },
   ];
 
   const {
@@ -320,7 +311,6 @@ export function UserGroups({ user }: UserGroupsProps) {
       { key: 'description', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'source', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
-      USER_DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };

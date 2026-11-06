@@ -1,5 +1,8 @@
+import { useTranslations } from 'next-intl';
+import { Loader2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import type { DataTableColumnConfig } from '@/components/common/data-table';
 import {
   DATA_TABLE_CHECKBOX_COLUMN_WIDTH,
   DATA_TABLE_ICON_COLUMN_WIDTH,
@@ -34,13 +37,6 @@ export const DETAIL_ICON_ONLY_COLUMN = {
   truncate: false,
 } as const;
 
-export const DETAIL_LOADING_COLUMN = {
-  width: DATA_TABLE_ICON_COLUMN_WIDTH,
-  className: ICON_COLUMN_CLASS,
-  columnWidthMode: 'fixed' as const satisfies DetailTableColumnWidthMode,
-  truncate: false,
-} as const;
-
 /** Text columns that share leftover width and truncate instead of growing the table. */
 export const DETAIL_TEXT_COLUMN = {
   columnWidthMode: 'min' as const satisfies DetailTableColumnWidthMode,
@@ -54,8 +50,46 @@ export const DETAIL_PRIMARY_CONTENT_COLUMN_CLASS = 'align-middle py-2 pl-1 pr-2'
 /** First text column after icon-only leading column (general info, embedded API keys). */
 export const DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS = 'align-middle py-2 pl-2 pr-2';
 
-export function DetailTableCheckboxCell({ children }: { children: ReactNode }) {
+/**
+ * The checkbox of a row. While the row is being saved (`saving`) a spinner of the same size takes
+ * its place, announced as "Saving...", so the column keeps its width and nothing shifts.
+ */
+export function DetailTableCheckboxCell({
+  children,
+  saving = false,
+}: {
+  children?: ReactNode;
+  saving?: boolean;
+}) {
+  const t = useTranslations('common');
+  if (saving) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        aria-label={t('actions.saving')}
+        data-row-saving
+        className="flex size-4 items-center justify-center"
+      >
+        <Loader2 aria-hidden className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
   return <div className="flex size-4 items-center justify-center">{children}</div>;
+}
+
+/**
+ * Wraps a table's checkbox column so a row that is being saved shows the spinner in place of its
+ * checkbox: the one path for the per-row saving state of the assignment tables.
+ */
+export function withCheckboxSavingState<T>(
+  column: DataTableColumnConfig<T>,
+  isSaving: (item: T) => boolean
+): DataTableColumnConfig<T> {
+  return {
+    ...column,
+    render: (item) => (isSaving(item) ? <DetailTableCheckboxCell saving /> : column.render(item)),
+  };
 }
 
 export function DetailTableIconCell({ children }: { children: ReactNode }) {
@@ -86,22 +120,12 @@ const DETAIL_ICON_ONLY_SKELETON = {
   columnWidthMode: DETAIL_ICON_ONLY_COLUMN.columnWidthMode,
 };
 
-export const DETAIL_LOADING_SKELETON = {
-  key: 'loading',
-  type: 'icon' as const,
-  width: DETAIL_LOADING_COLUMN.width,
-  className: DETAIL_LOADING_COLUMN.className,
-  columnWidthMode: DETAIL_LOADING_COLUMN.columnWidthMode,
-};
-
 /** @deprecated Use {@link DETAIL_CHECKBOX_COLUMN} from `@/components/common/detail-table-layout`. */
 export const USER_DETAIL_CHECKBOX_COLUMN = DETAIL_CHECKBOX_COLUMN;
 /** @deprecated Use {@link DETAIL_ICON_COLUMN}. */
 export const USER_DETAIL_ICON_COLUMN = DETAIL_ICON_COLUMN;
 /** @deprecated Use {@link DETAIL_ICON_ONLY_COLUMN}. */
 export const USER_DETAIL_ICON_ONLY_COLUMN = DETAIL_ICON_ONLY_COLUMN;
-/** @deprecated Use {@link DETAIL_LOADING_COLUMN}. */
-export const USER_DETAIL_LOADING_COLUMN = DETAIL_LOADING_COLUMN;
 /** @deprecated Use {@link DETAIL_TEXT_COLUMN}. */
 export const USER_DETAIL_TEXT_COLUMN = DETAIL_TEXT_COLUMN;
 /** @deprecated Use {@link DETAIL_CONTENT_COLUMN_CLASS}. */
@@ -118,5 +142,3 @@ export const USER_DETAIL_CHECKBOX_SKELETON = DETAIL_CHECKBOX_SKELETON;
 export const USER_DETAIL_ICON_SKELETON = DETAIL_ICON_SKELETON;
 /** @deprecated Use {@link DETAIL_ICON_ONLY_SKELETON}. */
 export const USER_DETAIL_ICON_ONLY_SKELETON = DETAIL_ICON_ONLY_SKELETON;
-/** @deprecated Use {@link DETAIL_LOADING_SKELETON}. */
-export const USER_DETAIL_LOADING_SKELETON = DETAIL_LOADING_SKELETON;

@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { EVENT_TYPES, type EventType } from '@grantjs/schema';
-import { Loader2, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 import {
   Avatar,
@@ -15,8 +15,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -140,8 +138,6 @@ export function WebhookEventTypesTable({
     await onRefresh?.();
   }, [onRefresh]);
 
-  const showLoadingColumn = onRefresh != null;
-
   const columns: DataTableColumnConfig<EventTypeRow>[] = [
     {
       key: 'checkbox',
@@ -150,7 +146,7 @@ export function WebhookEventTypesTable({
       render: (row) => {
         const checked = isEventChecked(row.type);
         return (
-          <DetailTableCheckboxCell>
+          <DetailTableCheckboxCell saving={updatingEventType === row.type}>
             <Checkbox
               checked={checked}
               onCheckedChange={(nextChecked) => onToggle(row.type, nextChecked === true)}
@@ -190,19 +186,6 @@ export function WebhookEventTypesTable({
         </span>
       ),
     },
-    ...(showLoadingColumn
-      ? [
-          {
-            key: 'loading',
-            header: '',
-            ...DETAIL_LOADING_COLUMN,
-            render: (row: EventTypeRow) =>
-              updatingEventType === row.type ? (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              ) : null,
-          } satisfies DataTableColumnConfig<EventTypeRow>,
-        ]
-      : []),
   ];
 
   const {
@@ -220,7 +203,6 @@ export function WebhookEventTypesTable({
       DETAIL_ICON_SKELETON,
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'event', type: 'text', ...DETAIL_TEXT_COLUMN },
-      ...(showLoadingColumn ? [DETAIL_LOADING_SKELETON] : []),
     ]),
     rowCount: 5,
   };

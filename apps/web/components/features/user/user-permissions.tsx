@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Group, Permission, Role, Tag, User } from '@grantjs/schema';
-import { Key, Loader2 } from 'lucide-react';
+import { Key } from 'lucide-react';
 
 import {
   Avatar,
@@ -22,6 +22,7 @@ import {
   Toolbar,
   toolbarGrow,
 } from '@/components/common';
+import { withCheckboxSavingState } from '@/components/common/detail-table-layout';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDataTableColumnState, useDebounce } from '@/hooks/common';
@@ -49,8 +50,6 @@ import {
   USER_DETAIL_CONTENT_COLUMN_CLASS,
   USER_DETAIL_ICON_COLUMN,
   USER_DETAIL_ICON_SKELETON,
-  USER_DETAIL_LOADING_COLUMN,
-  USER_DETAIL_LOADING_SKELETON,
   USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   USER_DETAIL_TEXT_COLUMN,
   UserDetailTableCheckboxCell,
@@ -236,38 +235,41 @@ export function UserPermissions({ user }: UserPermissionsProps) {
   };
 
   const columns: DataTableColumnConfig<Permission>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...USER_DETAIL_CHECKBOX_COLUMN,
-      render: (permission: Permission) => {
-        const rowState = getRowState(permission.id);
-        const checkbox = (
-          <Checkbox
-            checked={rowState.checked}
-            onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked === true)}
-            disabled={!canUpdate || rowState.disabled}
-          />
-        );
-
-        if (rowState.disabled) {
-          return (
-            <UserDetailTableCheckboxCell>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">{checkbox}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>{formatSourceLabel(permission.id)}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </UserDetailTableCheckboxCell>
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...USER_DETAIL_CHECKBOX_COLUMN,
+        render: (permission: Permission) => {
+          const rowState = getRowState(permission.id);
+          const checkbox = (
+            <Checkbox
+              checked={rowState.checked}
+              onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked === true)}
+              disabled={!canUpdate || rowState.disabled}
+            />
           );
-        }
 
-        return <UserDetailTableCheckboxCell>{checkbox}</UserDetailTableCheckboxCell>;
+          if (rowState.disabled) {
+            return (
+              <UserDetailTableCheckboxCell>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">{checkbox}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{formatSourceLabel(permission.id)}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </UserDetailTableCheckboxCell>
+            );
+          }
+
+          return <UserDetailTableCheckboxCell>{checkbox}</UserDetailTableCheckboxCell>;
+        },
       },
-    },
+      (permission: Permission) => updatingPermissionId === permission.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -337,17 +339,6 @@ export function UserPermissions({ user }: UserPermissionsProps) {
         );
       },
     },
-    {
-      key: 'loading',
-      header: '',
-      ...USER_DETAIL_LOADING_COLUMN,
-      render: (permission: Permission) =>
-        updatingPermissionId === permission.id ? (
-          <UserDetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </UserDetailTableIconCell>
-        ) : null,
-    },
   ];
 
   const {
@@ -367,7 +358,6 @@ export function UserPermissions({ user }: UserPermissionsProps) {
       { key: 'action', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'source', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
-      USER_DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };
