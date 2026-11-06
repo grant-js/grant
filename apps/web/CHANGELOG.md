@@ -1,5 +1,15 @@
 # grant-web
 
+## 1.25.1
+
+### Patch Changes
+
+- 1b97ee2: Shared DataTable scrolls horizontally again when its columns are wider than the container, keeping the column max widths and text truncation; every list view (projects, users, roles, groups, permissions, resources, tags, members, organizations, webhooks, project sync jobs, API keys) now offers the column picker in its toolbar.
+- @grantjs/client@1.25.1
+  - @grantjs/schema@1.25.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.25.0
 
 ### Patch Changes
