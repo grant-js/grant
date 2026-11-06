@@ -6,6 +6,7 @@ import {
   isDataTableColumnResizable,
   parseColumnWidthPx,
   resolveColumnBounds,
+  shrinkFittedWidths,
 } from './data-table-column-resize';
 
 describe('resolveColumnBounds / clampColumnWidth', () => {
@@ -52,5 +53,31 @@ describe('parseColumnWidthPx', () => {
     expect(parseColumnWidthPx('15rem')).toBe(240);
     expect(parseColumnWidthPx('20%')).toBeUndefined();
     expect(parseColumnWidthPx(undefined)).toBeUndefined();
+  });
+});
+
+describe('shrinkFittedWidths', () => {
+  const items = [
+    { width: 200, floor: 100 },
+    { width: 300, floor: 200 },
+    { width: 40, floor: 40 },
+  ];
+
+  it('leaves widths alone when everything fits', () => {
+    expect(shrinkFittedWidths(items, 600)).toEqual([200, 300, 40]);
+    expect(shrinkFittedWidths(items, 0)).toEqual([200, 300, 40]);
+  });
+
+  it('shrinks proportionally to the room above the floor', () => {
+    // 540 total, container 440: 100 excess over 200 room, half of it each.
+    expect(shrinkFittedWidths(items, 440)).toEqual([150, 250, 40]);
+  });
+
+  it('never goes below the floor; the rest is left to scroll', () => {
+    expect(shrinkFittedWidths(items, 100)).toEqual([100, 200, 40]);
+  });
+
+  it('counts the reserved width', () => {
+    expect(shrinkFittedWidths(items, 540, 100)).toEqual([150, 250, 40]);
   });
 });

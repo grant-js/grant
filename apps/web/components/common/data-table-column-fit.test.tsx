@@ -16,9 +16,12 @@ vi.mock('next-intl', () => ({
     `${key}${values ? JSON.stringify(values) : ''}`,
 }));
 
-/** jsdom has no layout: a fit-content element is "8px per character" wide. */
+/** jsdom has no layout: a fit-content element is "8px per character" wide (rect width). */
 const CHAR_PX = 8;
-const scrollWidth = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get');
+const rectWidth = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect');
+const clientWidth = vi.spyOn(Element.prototype, 'clientWidth', 'get');
+const scrollWidth = vi.spyOn(Element.prototype, 'scrollWidth', 'get');
+const rect = (width: number) => ({ width }) as DOMRect;
 
 type Row = { id: string; name: string };
 
@@ -84,7 +87,7 @@ const rows: Row[] = [
 ];
 
 describe('DataTable cell padding', () => {
-  beforeEach(() => scrollWidth.mockReturnValue(0));
+  beforeEach(() => rectWidth.mockReturnValue(rect(0)));
 
   it('pads data header and body cells on both sides, and leaves chrome cells compact', () => {
     const { container } = render(
@@ -112,42 +115,55 @@ describe('DataTable default width fits the content', () => {
   beforeEach(() => {
     window.localStorage.clear();
     setUser('u1');
-    scrollWidth.mockImplementation(function (this: HTMLElement) {
-      return this.hasAttribute('data-fit-content') ? (this.textContent ?? '').length * CHAR_PX : 0;
+    clientWidth.mockReturnValue(0);
+    scrollWidth.mockReturnValue(0);
+    rectWidth.mockImplementation(function (this: HTMLElement) {
+      return rect(
+        this.hasAttribute('data-fit-content') ? (this.textContent ?? '').length * CHAR_PX : 0
+      );
     });
   });
   afterEach(() => setUser(null));
 
   it('fits to the widest content plus padding, clamped to min and to the declared width', () => {
     const { container } = render(<Harness initialRows={rows} />);
-    // name: 12 chars = 96 + 24 padding = 120 (below the declared 200). code: "Code"/"r1" = 32 + 24
-    // = 56 (above min 48, below 60). flex shares leftover space: not fitted.
-    expect(colWidths(container)).toEqual(['2.5rem', '120px', '56px', '120px']);
+    // name: 12 chars = 96 + 1 safety + 24 padding = 121 (below the declared 200). code: 32 + 25
+    // = 57 (above min 48, below 60). flex (min mode) is fitted too: 57 raised to the default min
+    // 64. The trailing filler has no width.
+    expect(colWidths(container)).toEqual(['2.5rem', '121px', '57px', '64px', '']);
     const handles = screen.getAllByRole('separator');
-    expect(handles[0]).toHaveAttribute('aria-valuenow', '120');
-    expect(handles[1]).toHaveAttribute('aria-valuenow', '56');
+    expect(handles[0]).toHaveAttribute('aria-valuenow', '121');
+    expect(handles[1]).toHaveAttribute('aria-valuenow', '57');
   });
 
-  it('never exceeds the declared width, and never goes below min', () => {
+  it('is capped by maxWidth, not by the declared width, and never goes below min', () => {
     const wide: Row[] = [{ id: 'x', name: 'N'.repeat(100) }];
-    scrollWidth.mockImplementation(function (this: HTMLElement) {
-      return this.hasAttribute('data-fit-content') && this.dataset.columnKey === 'code'
-        ? 4
-        : this.hasAttribute('data-fit-content')
-          ? (this.textContent ?? '').length * CHAR_PX
-          : 0;
+    rectWidth.mockImplementation(function (this: HTMLElement) {
+      if (!this.hasAttribute('data-fit-content')) return rect(0);
+      return rect(
+        this.dataset.columnKey === 'code' ? 4 : (this.textContent ?? '').length * CHAR_PX
+      );
     });
     const { container } = render(<Harness initialRows={wide} />);
-    // name capped at 200; code (4 + 24 = 28) raised to its min 48.
-    expect(colWidths(container).slice(1, 3)).toEqual(['200px', '48px']);
+    // name: 100 chars is past the declared 200 and capped at the default max 640; code (4 + 24 = 28) raised to its min 48.
+    expect(colWidths(container).slice(1, 3)).toEqual(['640px', '48px']);
+  });
+
+  it('rounds a fractional content width up so the longest cell is not ellipsized', () => {
+    rectWidth.mockImplementation(function (this: HTMLElement) {
+      return rect(this.hasAttribute('data-fit-content') ? 167.2 : 0);
+    });
+    const { container } = render(<Harness initialRows={rows} />);
+    // ceil(167.2) = 168, +1 safety, +24 padding = 193: room for 167.2.
+    expect(colWidths(container)[1]).toBe('193px');
   });
 
   it('does not re-measure when the data changes', () => {
     const { container } = render(<Harness initialRows={rows} />);
-    expect(colWidths(container)[1]).toBe('120px');
+    expect(colWidths(container)[1]).toBe('121px');
     fireEvent.click(screen.getByText('change data'));
     expect(screen.getByText('A very long replacement name')).toBeInTheDocument();
-    expect(colWidths(container)[1]).toBe('120px');
+    expect(colWidths(container)[1]).toBe('121px');
   });
 
   it('a user width wins and is saved; the fitted width is not', () => {
@@ -156,10 +172,10 @@ describe('DataTable default width fits the content', () => {
 
     fireEvent.keyDown(screen.getAllByRole('separator')[0], { key: 'ArrowRight' });
 
-    expect(colWidths(container)[1]).toBe('136px');
-    expect(screen.getAllByRole('separator')[0]).toHaveAttribute('aria-valuenow', '136');
+    expect(colWidths(container)[1]).toBe('137px');
+    expect(screen.getAllByRole('separator')[0]).toHaveAttribute('aria-valuenow', '137');
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').widths).toEqual({
-      name: 136,
+      name: 137,
     });
   });
 
@@ -169,12 +185,12 @@ describe('DataTable default width fits the content', () => {
     expect(colWidths(container)[1]).toBe('640px');
 
     // The content grew in the meantime; a reset fits to what is there now.
-    scrollWidth.mockImplementation(function (this: HTMLElement) {
-      return this.hasAttribute('data-fit-content') ? 20 * CHAR_PX : 0;
+    rectWidth.mockImplementation(function (this: HTMLElement) {
+      return rect(this.hasAttribute('data-fit-content') ? 20 * CHAR_PX : 0);
     });
     fireEvent.click(screen.getByText('reset'));
 
-    expect(colWidths(container)[1]).toBe('184px');
+    expect(colWidths(container)[1]).toBe('185px');
     expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
@@ -188,8 +204,110 @@ describe('DataTable default width fits the content', () => {
   });
 });
 
+describe('DataTable container-aware widths', () => {
+  const badgeColumns: DataTableColumnConfig<Row>[] = [
+    { key: 'name', header: 'Name', width: '100px', render: (row) => row.name },
+    { key: 'badges', header: 'Auth', width: '140px', render: () => 'B'.repeat(30) },
+  ];
+
+  beforeEach(() => {
+    scrollWidth.mockReturnValue(0);
+    rectWidth.mockImplementation(function (this: HTMLElement) {
+      return rect(
+        this.hasAttribute('data-fit-content') ? (this.textContent ?? '').length * CHAR_PX : 0
+      );
+    });
+  });
+
+  function renderIn(width: number) {
+    clientWidth.mockImplementation(function (this: Element) {
+      return this.hasAttribute('data-table-id') ? width : 0;
+    });
+    return render(
+      <DataTable
+        tableId="room.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={badgeColumns}
+        loading={false}
+        emptyState={emptyState}
+      />
+    );
+  }
+
+  it('lets a cell wider than the declared width fit while there is room', () => {
+    const { container } = renderIn(1000);
+    // badges: 240 + 25 = 265 (declared 140); name: 40 + 25 = 65 raised to min 64 -> 65.
+    expect(colWidths(container)).toEqual(['65px', '265px', '']);
+  });
+
+  it('shrinks it back toward the declared width when the container is too narrow', () => {
+    const { container } = renderIn(300);
+    // 65 + 265 = 330 > 300: badges gives up 30px, still above its declared 140.
+    expect(colWidths(container)).toEqual(['65px', '235px', '']);
+    const narrow = renderIn(100);
+    // Not below the declared width: scroll takes over.
+    expect(colWidths(narrow.container).slice(-3)).toEqual(['65px', '140px', '']);
+  });
+});
+
+describe('DataTable empty-header columns', () => {
+  beforeEach(() => {
+    clientWidth.mockReturnValue(0);
+    scrollWidth.mockReturnValue(0);
+    rectWidth.mockReturnValue(rect(0));
+  });
+
+  const buttonColumns: DataTableColumnConfig<Row>[] = [
+    {
+      key: 'open',
+      header: '',
+      width: '60px',
+      className: 'pl-4',
+      render: () => <button>Open</button>,
+    },
+    { key: 'name', header: 'Name', width: '100px', render: (row) => row.name },
+  ];
+
+  it('treats them as chrome: compact padding, no truncate wrapper, no clipping', () => {
+    const { container } = render(
+      <DataTable
+        tableId="btn.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={buttonColumns}
+        loading={false}
+        emptyState={emptyState}
+      />
+    );
+    const cell = container.querySelector('tbody td') as HTMLElement;
+    expect(cell).not.toHaveClass('px-3');
+    expect(cell).not.toHaveClass('overflow-hidden');
+    expect(cell.querySelector('.truncate')).toBeNull();
+    expect(container.querySelector('th')).not.toHaveClass('px-3');
+    expect(container.querySelector('thead [role="separator"]')).toBeNull();
+  });
+
+  it('grows to its content when the declared width would clip it', () => {
+    scrollWidth.mockImplementation(function (this: Element) {
+      return this.getAttribute('data-column-key') === 'open' && this.tagName === 'TD' ? 90 : 0;
+    });
+    clientWidth.mockImplementation(function (this: Element) {
+      return this.getAttribute('data-column-key') === 'open' && this.tagName === 'TD' ? 60 : 0;
+    });
+    const { container } = render(
+      <DataTable
+        tableId="btn.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={buttonColumns}
+        loading={false}
+        emptyState={emptyState}
+      />
+    );
+    expect(colWidths(container)[0]).toBe('91px');
+  });
+});
+
 describe('DataTable filler column', () => {
-  beforeEach(() => scrollWidth.mockReturnValue(0));
+  beforeEach(() => rectWidth.mockReturnValue(rect(0)));
 
   const sized: DataTableColumnConfig<Row>[] = [
     { key: 'name', header: 'Name', width: '93px', render: (row) => row.name },
@@ -226,7 +344,32 @@ describe('DataTable filler column', () => {
     expect(container.querySelector('th[aria-hidden] [role="separator"]')).toBeNull();
   });
 
-  it('is left out when a column shares leftover space itself', () => {
+  it('is present for mixed fixed and min columns, which all keep their exact width', () => {
+    const { container } = render(
+      <DataTable
+        tableId="filler.test"
+        data={[{ id: 'r1', name: 'Short' }]}
+        columns={[
+          { key: 'icon', header: '', ...DETAIL_CHECKBOX_COLUMN, render: () => null },
+          {
+            key: 'name',
+            header: 'Name',
+            width: '240px',
+            columnWidthMode: 'min',
+            render: () => 'x',
+          },
+          { key: 'code', header: 'Code', width: '60px', render: (row) => row.id },
+        ]}
+        loading={false}
+        emptyState={emptyState}
+      />
+    );
+    const cols = Array.from(container.querySelectorAll('colgroup > col')) as HTMLElement[];
+    expect(cols.map((col) => col.style.width)).toEqual(['2.5rem', '240px', '60px', '']);
+    expect(cols[3]).toHaveAttribute('data-column-filler');
+  });
+
+  it('is left out when a column has no width and takes the leftover space by design', () => {
     const { container } = render(
       <DataTable
         tableId="filler.test"

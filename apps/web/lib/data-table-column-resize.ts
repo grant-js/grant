@@ -20,10 +20,14 @@ type ResizeConfig = Pick<
   'header' | 'width' | 'columnWidthMode' | 'className' | 'enableResizing' | 'minWidth' | 'maxWidth'
 >;
 
-/** Chrome columns hold a checkbox, icon or avatar: they are neither ellipsized nor resizable. */
+/** Chrome columns hold a checkbox, icon, avatar or button (an empty header): they are neither ellipsized nor resizable. */
 export function isChromeDataTableColumn(
-  column: Pick<ResizeConfig, 'width' | 'columnWidthMode' | 'className'>
+  column: Pick<ResizeConfig, 'width' | 'columnWidthMode' | 'className'> &
+    Partial<Pick<ResizeConfig, 'header'>>
 ): boolean {
+  // A column without header text holds a button, avatar or icon: chrome, never clipped.
+  if (column.header !== undefined && column.header.trim() === '') return true;
+
   const { className } = column;
   if (
     className &&
@@ -75,31 +79,61 @@ export function parseColumnWidthPx(width: string | undefined): number | undefine
  */
 export const DATA_TABLE_CELL_PADDING_CLASS = 'px-3';
 const DATA_TABLE_CELL_HORIZONTAL_PADDING_PX = 24;
+/** Spare pixel on top of the measured text, against rounding. */
+const DATA_TABLE_FIT_SAFETY_PX = 1;
 
 /**
  * Natural content width of an element that is normally boxed in (a truncate wrapper, a header
- * label): lets it grow to its content for a moment and reads `scrollWidth`. Runs synchronously,
+ * label): lets it grow to its content for a moment and reads its fractional rendered width (an integer `scrollWidth` can under-read by a sub-pixel and ellipsize the longest value). Runs synchronously,
  * so nothing is painted in between.
  */
 export function measureFitContentWidth(element: HTMLElement): number {
   const { width, maxWidth } = element.style;
   element.style.width = 'max-content';
   element.style.maxWidth = 'none';
-  const measured = Math.ceil(element.scrollWidth);
+  const measured = Math.ceil(element.getBoundingClientRect().width);
   element.style.width = width;
   element.style.maxWidth = maxWidth;
   return measured;
 }
 
 /**
- * Default width of a column: its widest content plus the cell padding, at least `bounds.min` and
- * at most the declared width (`cap`).
+ * Default width of a column: its widest content plus the cell padding, within the column's
+ * min/max. The declared width is not a cap: see {@link shrinkFittedWidths}.
  */
-export function fitColumnWidth(
-  contentWidth: number,
-  bounds: DataTableColumnBounds,
-  cap: number
-): number {
-  const wanted = Math.ceil(contentWidth) + DATA_TABLE_CELL_HORIZONTAL_PADDING_PX;
-  return Math.max(bounds.min, Math.min(cap, wanted));
+export function fitColumnWidth(contentWidth: number, bounds: DataTableColumnBounds): number {
+  const wanted =
+    Math.ceil(contentWidth) + DATA_TABLE_FIT_SAFETY_PX + DATA_TABLE_CELL_HORIZONTAL_PADDING_PX;
+  return clampColumnWidth(wanted, bounds);
+}
+
+export interface ColumnWidthItem {
+  /** Width the column has before any shrinking. */
+  width: number;
+  /** Smallest width it may be shrunk to; equal to `width` for a column that must not shrink. */
+  floor: number;
+}
+
+/**
+ * When the columns together are wider than the container, shrinks the shrinkable ones
+ * (`floor < width`) proportionally to how far they sit above their floor, never below it. With
+ * room to spare, or nothing shrinkable, the widths come back unchanged; any remaining overflow
+ * is left to horizontal scroll. `reserved` is width outside these columns (the actions column).
+ */
+export function shrinkFittedWidths(
+  items: ReadonlyArray<ColumnWidthItem>,
+  containerWidth: number,
+  reserved = 0
+): number[] {
+  const widths = items.map((item) => item.width);
+  const total = widths.reduce((sum, width) => sum + width, reserved);
+  const excess = total - containerWidth;
+  if (containerWidth <= 0 || excess <= 0) return widths;
+
+  const room = items.map((item) => Math.max(0, item.width - item.floor));
+  const totalRoom = room.reduce((sum, value) => sum + value, 0);
+  if (totalRoom === 0) return widths;
+
+  const share = Math.min(1, excess / totalRoom);
+  return items.map((item, index) => Math.ceil(item.width - room[index] * share));
 }
