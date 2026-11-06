@@ -1,5 +1,21 @@
 # grant-web
 
+## 1.26.0
+
+### Minor Changes
+
+- 72a9b65: Reorder data table columns in the column picker: it is now a list with a checkbox, a drag grip and move up / move down buttons per column (the buttons are the keyboard path and announce the new position). Checkbox, icon and avatar columns stay first and the actions column stays last. The order is remembered per user and table, and "Reset columns" restores the default order.
+- 72a9b65: Resize data table columns: drag the handle on a header's right edge, or focus it and use the arrow keys (Shift for bigger steps, Home/End for the limits, Enter or double-click to reset). Widths are remembered per user and table, and "Reset columns" restores the default widths. Columns start as wide as their longest content (up to their declared width), data cells have consistent horizontal padding, and spare room in a narrow table goes to an empty trailing column instead of stretching the real ones.
+- 72a9b65: Remember each user's column choices per table: the columns picked in a data table's column picker now survive a reload, and the picker gains a "Reset columns" action that restores the defaults.
+- 72a9b65: Every table now resizes and starts at a width that fits its content. The Field / Value tables on the detail pages (and the user General card, which no longer has its own copy), the notification preference tables and the feature comparison in the email verification dialog use the shared data table: resizable data columns with saved widths per user and table, fixed-width switch and check columns, and an empty last column that takes the spare space. Tables without a column picker (project apps, signing keys, webhook deliveries) now get resize handles too.
+
+### Patch Changes
+
+- @grantjs/client@1.26.0
+  - @grantjs/schema@1.26.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.25.1
 
 ### Patch Changes
