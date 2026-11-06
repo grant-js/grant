@@ -1,6 +1,7 @@
 import type { DataTableColumnConfig } from '@/components/common/data-table';
 import {
   clampColumnWidth,
+  isChromeDataTableColumn,
   isDataTableColumnResizable,
   resolveColumnBounds,
 } from '@/lib/data-table-column-resize';
@@ -156,4 +157,63 @@ export function mergeColumnState<T>(
     order,
     widths,
   };
+}
+
+/** Keys of columns that sit at the end of the table whatever the user's order. */
+const TRAILING_COLUMN_KEYS = new Set(['actions']);
+
+/**
+ * A column the user can move: one the picker can hide (so not checkbox, icon or avatar
+ * chrome, nor a column with `enableHiding: false`) that is not the actions column.
+ */
+export function isMovableColumn<T>(column: DataTableColumnConfig<T>): boolean {
+  return (
+    isToggleableColumn(column.key, column.header, column.enableHiding) &&
+    !isChromeDataTableColumn(column) &&
+    !TRAILING_COLUMN_KEYS.has(column.key)
+  );
+}
+
+/**
+ * Columns in display order: locked columns (chrome, actions, trailing icon buttons) keep the
+ * slot they are declared in, and the movable ones fill the remaining slots in `order`, hidden
+ * ones included so they keep their place. Columns missing from `order` go after the ordered ones.
+ */
+export function applyColumnOrder<T>(
+  columns: DataTableColumnConfig<T>[],
+  order: readonly string[]
+): DataTableColumnConfig<T>[] {
+  const position = new Map(order.map((key, index) => [key, index]));
+  const at = (column: DataTableColumnConfig<T>) =>
+    position.get(column.key) ?? Number.MAX_SAFE_INTEGER;
+
+  const sorted = columns.filter(isMovableColumn).sort((a, b) => at(a) - at(b));
+
+  let next = 0;
+  return columns.map((column) => (isMovableColumn(column) ? sorted[next++]! : column));
+}
+
+/**
+ * Moves a movable column to `toIndex` among the movable columns (0 = first). Locked columns
+ * and their slots in `order` are untouched. Returns `order` itself when nothing changes.
+ */
+export function moveColumnInOrder(
+  order: readonly string[],
+  movableKeys: ReadonlySet<string>,
+  key: string,
+  toIndex: number
+): string[] {
+  const movableOrder = order.filter((candidate) => movableKeys.has(candidate));
+  const from = movableOrder.indexOf(key);
+  if (from === -1) return [...order];
+
+  const to = Math.min(movableOrder.length - 1, Math.max(0, toIndex));
+  if (to === from) return [...order];
+
+  const reordered = [...movableOrder];
+  reordered.splice(from, 1);
+  reordered.splice(to, 0, key);
+
+  let next = 0;
+  return order.map((candidate) => (movableKeys.has(candidate) ? reordered[next++]! : candidate));
 }

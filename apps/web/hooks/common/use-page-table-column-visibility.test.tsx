@@ -36,8 +36,8 @@ describe('usePageTableColumnVisibility', () => {
       'id',
     ]);
     expect(useDataTableColumnsStore.getState().columnToggleItems).toEqual([
-      { key: 'name', label: 'Name', visible: true },
-      { key: 'tags', label: 'Tags', visible: true },
+      { key: 'name', label: 'Name', visible: true, movable: true },
+      { key: 'tags', label: 'Tags', visible: true, movable: true },
     ]);
   });
 
@@ -65,6 +65,7 @@ describe('usePageTableColumnVisibility', () => {
       key: 'tags',
       label: 'Tags',
       visible: false,
+      movable: true,
     });
   });
 
@@ -138,15 +139,17 @@ describe('PageTableColumnToggle', () => {
       key: 'tags',
       label: 'Tags',
       visible: false,
+      movable: true,
     });
 
-    fireEvent.keyDown(screen.getByRole('button', { name: 'Columns' }), { key: 'Enter' });
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Reset columns' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Columns' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reset columns' }));
 
     expect(useDataTableColumnsStore.getState().columnToggleItems).toContainEqual({
       key: 'tags',
       label: 'Tags',
       visible: true,
+      movable: true,
     });
   });
 });

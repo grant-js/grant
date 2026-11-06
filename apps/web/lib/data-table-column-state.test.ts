@@ -9,10 +9,13 @@ import {
   DATA_TABLE_COLUMN_MIN_WIDTH_PX,
 } from './data-table-column-resize';
 import {
+  applyColumnOrder,
   buildDefaultColumnState,
   clearStoredColumnState,
   dataTableColumnStorageKey,
+  isMovableColumn,
   mergeColumnState,
+  moveColumnInOrder,
   parseStoredColumnState,
   readStoredColumnState,
   writeStoredColumnState,
@@ -202,5 +205,127 @@ describe('storage access', () => {
     expect(readStoredColumnState(key)).toBeNull();
     expect(() => writeStoredColumnState(key, state)).not.toThrow();
     expect(() => clearStoredColumnState(key)).not.toThrow();
+  });
+});
+
+const reorderColumns: DataTableColumnConfig<Row>[] = [
+  { key: 'checkbox', header: '', width: '2.5rem', render: () => null },
+  { key: 'icon', header: '', render: () => null },
+  { key: 'name', header: 'Name', render: () => null },
+  { key: 'email', header: 'Email', render: () => null },
+  { key: 'role', header: 'Role', render: () => null },
+  { key: 'actions', header: 'Actions', render: () => null },
+  { key: 'navigation', header: '', render: () => null },
+];
+
+const keysOf = (list: DataTableColumnConfig<Row>[]) => list.map((column) => column.key);
+
+describe('isMovableColumn', () => {
+  it('locks chrome, headerless, non-hideable and actions columns', () => {
+    expect(reorderColumns.filter(isMovableColumn).map((column) => column.key)).toEqual([
+      'name',
+      'email',
+      'role',
+    ]);
+    expect(
+      isMovableColumn({ key: 'id', header: 'ID', enableHiding: false, render: () => null })
+    ).toBe(false);
+  });
+});
+
+describe('applyColumnOrder', () => {
+  it('keeps the declared order for the default order', () => {
+    const order = reorderColumns.map((column) => column.key);
+    expect(keysOf(applyColumnOrder(reorderColumns, order))).toEqual(order);
+  });
+
+  it('orders the movable columns and keeps chrome first and actions last', () => {
+    const ordered = applyColumnOrder(reorderColumns, [
+      'checkbox',
+      'icon',
+      'role',
+      'name',
+      'email',
+      'actions',
+      'navigation',
+    ]);
+    expect(keysOf(ordered)).toEqual([
+      'checkbox',
+      'icon',
+      'role',
+      'name',
+      'email',
+      'actions',
+      'navigation',
+    ]);
+
+    // A stored order that puts a locked column in the middle cannot move it.
+    expect(
+      keysOf(applyColumnOrder(reorderColumns, ['actions', 'role', 'email', 'name', 'icon']))
+    ).toEqual(['checkbox', 'icon', 'role', 'email', 'name', 'actions', 'navigation']);
+  });
+
+  it('puts columns missing from the order after the ordered ones', () => {
+    expect(keysOf(applyColumnOrder(reorderColumns, ['role', 'name']))).toEqual([
+      'checkbox',
+      'icon',
+      'role',
+      'name',
+      'email',
+      'actions',
+      'navigation',
+    ]);
+  });
+
+  it('returns the columns unchanged when none is movable', () => {
+    expect(applyColumnOrder(columns.slice(0, 1), ['icon'])).toEqual(columns.slice(0, 1));
+  });
+});
+
+describe('moveColumnInOrder', () => {
+  const order = ['checkbox', 'icon', 'name', 'email', 'role', 'actions', 'navigation'];
+  const movable = new Set(['name', 'email', 'role']);
+
+  it('moves a column among the movable ones and leaves locked slots alone', () => {
+    expect(moveColumnInOrder(order, movable, 'role', 0)).toEqual([
+      'checkbox',
+      'icon',
+      'role',
+      'name',
+      'email',
+      'actions',
+      'navigation',
+    ]);
+    expect(moveColumnInOrder(order, movable, 'name', 2)).toEqual([
+      'checkbox',
+      'icon',
+      'email',
+      'role',
+      'name',
+      'actions',
+      'navigation',
+    ]);
+  });
+
+  it('clamps to the ends and ignores no-op, locked and unknown keys', () => {
+    expect(moveColumnInOrder(order, movable, 'name', -5)).toEqual(order);
+    expect(moveColumnInOrder(order, movable, 'role', 99)).toEqual(order);
+    expect(moveColumnInOrder(order, movable, 'icon', 2)).toEqual(order);
+    expect(moveColumnInOrder(order, movable, 'nope', 1)).toEqual(order);
+  });
+});
+
+describe('mergeColumnState order', () => {
+  it('drops unknown keys and appends new columns to a stored order', () => {
+    const merged = mergeColumnState(
+      {
+        visibility: {},
+        order: ['tags', 'gone', 'name', 'icon'],
+        widths: {},
+      },
+      columns,
+      none
+    );
+    expect(merged.order).toEqual(['tags', 'name', 'icon']);
   });
 });

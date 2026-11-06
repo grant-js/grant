@@ -160,3 +160,115 @@ describe('useDataTableColumnState', () => {
     expect(setItem).not.toHaveBeenCalled();
   });
 });
+
+describe('useDataTableColumnState order', () => {
+  const orderColumns: DataTableColumnConfig<Row>[] = [
+    { key: 'icon', header: '', render: () => null },
+    { key: 'name', header: 'Name', render: () => null },
+    { key: 'email', header: 'Email', render: () => null },
+    { key: 'role', header: 'Role', render: () => null },
+    { key: 'actions', header: 'Actions', render: () => null },
+  ];
+
+  function useOrdered() {
+    return useDataTableColumnState(orderColumns, {
+      tableId: 'users.list',
+      defaultHiddenKeys: none,
+    });
+  }
+
+  const keys = (result: { current: ReturnType<typeof useOrdered> }) =>
+    result.current.visibleColumns.map((column) => column.key);
+
+  it('renders the visible columns in the stored order, locked ones first and last', () => {
+    window.localStorage.setItem(
+      keyFor('u1', 'users.list'),
+      JSON.stringify({
+        visibility: {},
+        order: ['actions', 'role', 'icon', 'email', 'name'],
+        widths: {},
+      })
+    );
+    const { result } = renderHook(() => useOrdered());
+
+    expect(keys(result)).toEqual(['icon', 'role', 'email', 'name', 'actions']);
+    expect(result.current.columnToggleItems.map((item) => item.key)).toEqual([
+      'role',
+      'email',
+      'name',
+      'actions',
+    ]);
+    expect(result.current.columnToggleItems.map((item) => item.movable)).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it('moves a column, saves the order and restores it on the next mount', () => {
+    const first = renderHook(() => useOrdered());
+    act(() => first.result.current.moveColumn('role', 0));
+
+    expect(keys(first.result)).toEqual(['icon', 'role', 'name', 'email', 'actions']);
+    expect(JSON.parse(window.localStorage.getItem(keyFor('u1', 'users.list'))!).order).toEqual([
+      'icon',
+      'role',
+      'name',
+      'email',
+      'actions',
+    ]);
+    first.unmount();
+
+    const second = renderHook(() => useOrdered());
+    expect(keys(second.result)).toEqual(['icon', 'role', 'name', 'email', 'actions']);
+  });
+
+  it('keeps a hidden column in its place when it is hidden and shown again', () => {
+    const { result } = renderHook(() => useOrdered());
+    act(() => result.current.moveColumn('email', 0));
+    act(() => result.current.toggleColumn('email', false));
+    expect(keys(result)).toEqual(['icon', 'name', 'role', 'actions']);
+    expect(result.current.order).toEqual(['icon', 'email', 'name', 'role', 'actions']);
+
+    act(() => result.current.toggleColumn('email', true));
+    expect(keys(result)).toEqual(['icon', 'email', 'name', 'role', 'actions']);
+  });
+
+  it('ignores moves of locked and unknown columns and writes nothing for a no-op', () => {
+    const { result } = renderHook(() => useOrdered());
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+
+    act(() => result.current.moveColumn('icon', 2));
+    act(() => result.current.moveColumn('actions', 0));
+    act(() => result.current.moveColumn('missing', 0));
+    act(() => result.current.moveColumn('name', 0));
+
+    expect(keys(result)).toEqual(['icon', 'name', 'email', 'role', 'actions']);
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
+  it('reset restores the default order', () => {
+    const { result } = renderHook(() => useOrdered());
+    act(() => result.current.moveColumn('role', 0));
+    act(() => result.current.resetColumns());
+
+    expect(keys(result)).toEqual(['icon', 'name', 'email', 'role', 'actions']);
+    expect(window.localStorage.getItem(keyFor('u1', 'users.list'))).toBeNull();
+  });
+
+  it('orders skeleton columns like the table', () => {
+    const { result } = renderHook(() => useOrdered());
+    act(() => result.current.moveColumn('role', 0));
+
+    expect(
+      result.current
+        .filterSkeletonColumns([
+          { key: 'icon', type: 'icon' },
+          { key: 'name', type: 'text' },
+          { key: 'role', type: 'text' },
+        ])
+        .map((column) => column.key)
+    ).toEqual(['icon', 'role', 'name']);
+  });
+});
