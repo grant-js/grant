@@ -1,6 +1,6 @@
 'use client';
 
-import { isValidElement, type ReactNode } from 'react';
+import { isValidElement, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 
 import { DataTableColGroup } from '@/components/common/data-table-colgroup';
 import {
@@ -12,8 +12,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  DATA_TABLE_CELL_PADDING_CLASS,
+  fitColumnWidth,
   isChromeDataTableColumn,
   isDataTableColumnResizable,
+  measureFitContentWidth,
   parseColumnWidthPx,
   resolveColumnBounds,
 } from '@/lib/data-table-column-resize';
@@ -32,7 +35,11 @@ import { TableSkeleton, TableSkeletonColumnConfig } from './table-skeleton';
 export interface DataTableColumnConfig<T> {
   key: string;
   header: string;
-  /** Default width. A width the user set by resizing takes its place, within min/max. */
+  /**
+   * Default width. A width the user set by resizing takes its place, within min/max. For a
+   * resizable, truncating column it is also the cap of the fitted default: the column starts as
+   * wide as its longest content, but never wider than this.
+   */
   width?: string;
   /** Smallest width in px the user can resize to. Default 64. */
   minWidth?: number;
@@ -89,14 +96,23 @@ function resolveTableLayoutClass(): string {
   return 'table-fixed w-full';
 }
 
-/** A user width makes the column fixed at that width; otherwise the declared layout stands. */
-function resolveColumnLayout<T>(column: DataTableColumnConfig<T>): {
+/**
+ * A user width makes the column fixed at that width, then a width fitted to the content (a
+ * default, never saved); otherwise the declared layout stands.
+ */
+function resolveColumnLayout<T>(
+  column: DataTableColumnConfig<T>,
+  fittedWidth?: number
+): {
   width?: string;
   mode: DetailTableColumnWidthMode;
 } {
   const userWidth = column.resize?.width;
   if (userWidth !== undefined && isDataTableColumnResizable(column)) {
     return { width: `${userWidth}px`, mode: 'fixed' };
+  }
+  if (fittedWidth !== undefined) {
+    return { width: `${fittedWidth}px`, mode: 'fixed' };
   }
   return { width: column.width, mode: resolveColumnWidthMode(column) };
 }
@@ -111,6 +127,21 @@ function shouldTruncateDataTableColumn<T>(column: DataTableColumnConfig<T>): boo
   }
 
   return !isChromeDataTableColumn(column);
+}
+
+/** Columns whose default width is fitted to their content: resizable, truncating, declared in px. */
+function isFittableColumn<T>(column: DataTableColumnConfig<T>): boolean {
+  return (
+    isDataTableColumnResizable(column) &&
+    shouldTruncateDataTableColumn(column) &&
+    resolveColumnWidthMode(column) === 'fixed' &&
+    parseColumnWidthPx(column.width) !== undefined
+  );
+}
+
+/** Data columns get the shared horizontal padding; chrome columns keep their compact one. */
+function dataCellPaddingClass<T>(column: DataTableColumnConfig<T>): string | undefined {
+  return isChromeDataTableColumn(column) ? undefined : DATA_TABLE_CELL_PADDING_CLASS;
 }
 
 function textFromReactNode(node: ReactNode): string {
@@ -137,7 +168,15 @@ function textFromReactNode(node: ReactNode): string {
   return '';
 }
 
-function DataTableCellContent({ children, truncate }: { children: ReactNode; truncate: boolean }) {
+function DataTableCellContent({
+  children,
+  truncate,
+  columnKey,
+}: {
+  children: ReactNode;
+  truncate: boolean;
+  columnKey: string;
+}) {
   if (!truncate) {
     return children;
   }
@@ -145,7 +184,12 @@ function DataTableCellContent({ children, truncate }: { children: ReactNode; tru
   const title = textFromReactNode(children).trim();
 
   return (
-    <div className="min-w-0 max-w-full truncate" title={title || undefined}>
+    <div
+      className="min-w-0 max-w-full truncate"
+      title={title || undefined}
+      data-fit-content
+      data-column-key={columnKey}
+    >
       {children}
     </div>
   );
@@ -164,7 +208,66 @@ export function DataTable<T>({
   const hasData = data.length > 0;
   const showEmptyState = !hasData && !loading;
   const tableLayoutClass = resolveTableLayoutClass();
-  const layouts = columns.map(resolveColumnLayout);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Widths fitted to the content, per column key. Measured once per table mount (and again for a
+  // column whose user width was reset); never saved.
+  const [fitted, setFitted] = useState<Record<string, number>>({});
+  const previousUserWidths = useRef<Record<string, number | undefined>>({});
+  const pendingRemeasure = useRef<Set<string>>(new Set());
+
+  useLayoutEffect(() => {
+    for (const column of columns) {
+      const previous = previousUserWidths.current[column.key];
+      if (previous !== undefined && column.resize?.width === undefined) {
+        pendingRemeasure.current.add(column.key);
+      }
+      previousUserWidths.current[column.key] = column.resize?.width;
+    }
+
+    const root = rootRef.current;
+    if (!root || loading || !hasData) return;
+
+    const toMeasure = columns.filter(
+      (column) =>
+        isFittableColumn(column) &&
+        column.resize?.width === undefined &&
+        (fitted[column.key] === undefined || pendingRemeasure.current.has(column.key))
+    );
+    if (toMeasure.length === 0) return;
+
+    const contentWidths = new Map<string, number>();
+    root.querySelectorAll<HTMLElement>('[data-fit-content]').forEach((element) => {
+      const key = element.dataset.columnKey;
+      if (key === undefined) return;
+      contentWidths.set(
+        key,
+        Math.max(contentWidths.get(key) ?? 0, measureFitContentWidth(element))
+      );
+    });
+
+    const next: Record<string, number> = {};
+    for (const column of toMeasure) {
+      const content = contentWidths.get(column.key);
+      pendingRemeasure.current.delete(column.key);
+      if (!content) continue;
+      next[column.key] = fitColumnWidth(
+        content,
+        resolveColumnBounds(column),
+        parseColumnWidthPx(column.width) as number
+      );
+    }
+    if (Object.keys(next).length > 0) setFitted((current) => ({ ...current, ...next }));
+  });
+
+  const declaredLayouts = columns.map((column) => resolveColumnLayout(column));
+  const layouts = columns.map((column) =>
+    resolveColumnLayout(column, isFittableColumn(column) ? fitted[column.key] : undefined)
+  );
+  // Slack goes to an empty trailing column so real columns keep their exact width. Not when a
+  // column shares leftover space itself.
+  const showFiller = layouts.every(
+    (layout) => layout.width !== undefined && layout.mode === 'fixed'
+  );
 
   if (showEmptyState) {
     return (
@@ -180,7 +283,7 @@ export function DataTable<T>({
       columns.map((column, index) => ({
         key: column.key,
         type: 'text',
-        width: layouts[index].width,
+        width: declaredLayouts[index].width,
         className: column.className,
         columnWidthMode: column.columnWidthMode,
       }));
@@ -196,7 +299,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="min-w-0 rounded-md border" data-table-id={tableId}>
+    <div ref={rootRef} className="min-w-0 rounded-md border" data-table-id={tableId}>
       <Table
         className={cn(tableLayoutClass)}
         style={dataTableMinWidthStyle(
@@ -210,6 +313,7 @@ export function DataTable<T>({
             width: layouts[index].width,
           }))}
           actionsColumn={!!actionsColumn}
+          filler={showFiller}
         />
         <TableHeader>
           <TableRow>
@@ -219,15 +323,23 @@ export function DataTable<T>({
                 className={cn(
                   shouldTruncateDataTableColumn(column) && 'min-w-0 overflow-hidden',
                   column.resize && isDataTableColumnResizable(column) && 'relative',
-                  column.className
+                  column.className,
+                  dataCellPaddingClass(column)
                 )}
+                data-column-key={column.key}
                 style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
               >
-                {column.header}
+                {isFittableColumn(column) ? (
+                  <span data-fit-content data-column-key={column.key} className="inline-block">
+                    {column.header}
+                  </span>
+                ) : (
+                  column.header
+                )}
                 {column.resize && isDataTableColumnResizable(column) && (
                   <DataTableColumnResizeHandle
                     label={column.header}
-                    width={column.resize.width}
+                    width={column.resize.width ?? fitted[column.key]}
                     defaultWidth={parseColumnWidthPx(column.width)}
                     bounds={resolveColumnBounds(column)}
                     onResize={(width) => column.resize?.onChange(column.key, width)}
@@ -242,6 +354,7 @@ export function DataTable<T>({
                 style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')}
               />
             )}
+            {showFiller && <TableHead aria-hidden data-column-filler className="p-0" />}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -250,7 +363,10 @@ export function DataTable<T>({
             if (fullWidthContent != null) {
               return (
                 <TableRow key={rowIndex} className="bg-muted/40 hover:bg-muted/40">
-                  <TableCell colSpan={columns.length + (actionsColumn ? 1 : 0)} className="py-2">
+                  <TableCell
+                    colSpan={columns.length + (actionsColumn ? 1 : 0) + (showFiller ? 1 : 0)}
+                    className="py-2"
+                  >
                     {fullWidthContent}
                   </TableCell>
                 </TableRow>
@@ -266,16 +382,24 @@ export function DataTable<T>({
                   return (
                     <TableCell
                       key={column.key}
-                      className={cn(truncate && 'min-w-0 overflow-hidden', column.className)}
+                      className={cn(
+                        truncate && 'min-w-0 overflow-hidden',
+                        column.className,
+                        dataCellPaddingClass(column)
+                      )}
+                      data-column-key={column.key}
                       style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
                     >
-                      <DataTableCellContent truncate={truncate}>{content}</DataTableCellContent>
+                      <DataTableCellContent truncate={truncate} columnKey={column.key}>
+                        {content}
+                      </DataTableCellContent>
                     </TableCell>
                   );
                 })}
                 {actionsColumn && (
                   <TableCell className="text-right">{actionsColumn.render(item)}</TableCell>
                 )}
+                {showFiller && <TableCell aria-hidden data-column-filler className="p-0" />}
               </TableRow>
             );
           })}

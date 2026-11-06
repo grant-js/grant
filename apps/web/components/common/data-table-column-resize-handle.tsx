@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 interface DataTableColumnResizeHandleProps {
   /** Header text of the column, for the accessible name. */
   label: string;
-  /** User-set width in px; `undefined` while the column has its default width. */
+  /** Width in px the table renders: the user's, or the one fitted to the content. */
   width?: number;
   /** Declared default width in px, when it is a px / rem value. */
   defaultWidth?: number;

@@ -68,3 +68,38 @@ export function parseColumnWidthPx(width: string | undefined): number | undefine
   if (!match) return undefined;
   return Number(match[1]) * (match[2] === 'rem' ? 16 : 1);
 }
+
+/**
+ * Horizontal padding of a data cell, header and body alike. The 8px resize handle sits inside the
+ * right padding (12px), so it never overlaps the text. Chrome columns keep their own, compact one.
+ */
+export const DATA_TABLE_CELL_PADDING_CLASS = 'px-3';
+const DATA_TABLE_CELL_HORIZONTAL_PADDING_PX = 24;
+
+/**
+ * Natural content width of an element that is normally boxed in (a truncate wrapper, a header
+ * label): lets it grow to its content for a moment and reads `scrollWidth`. Runs synchronously,
+ * so nothing is painted in between.
+ */
+export function measureFitContentWidth(element: HTMLElement): number {
+  const { width, maxWidth } = element.style;
+  element.style.width = 'max-content';
+  element.style.maxWidth = 'none';
+  const measured = Math.ceil(element.scrollWidth);
+  element.style.width = width;
+  element.style.maxWidth = maxWidth;
+  return measured;
+}
+
+/**
+ * Default width of a column: its widest content plus the cell padding, at least `bounds.min` and
+ * at most the declared width (`cap`).
+ */
+export function fitColumnWidth(
+  contentWidth: number,
+  bounds: DataTableColumnBounds,
+  cap: number
+): number {
+  const wanted = Math.ceil(contentWidth) + DATA_TABLE_CELL_HORIZONTAL_PADDING_PX;
+  return Math.max(bounds.min, Math.min(cap, wanted));
+}

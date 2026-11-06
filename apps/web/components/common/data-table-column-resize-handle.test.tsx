@@ -172,7 +172,10 @@ function setUser(userId: string | null) {
 }
 
 function colWidths(container: HTMLElement) {
-  return Array.from(container.querySelectorAll('col')).map((col) => col.style.width);
+  // Without the trailing filler column, which has no width of its own.
+  return Array.from(container.querySelectorAll('col:not([data-column-filler])')).map(
+    (col) => (col as HTMLElement).style.width
+  );
 }
 
 describe('DataTable column resize', () => {
