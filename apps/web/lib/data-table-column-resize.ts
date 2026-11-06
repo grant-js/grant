@@ -74,7 +74,7 @@ export function parseColumnWidthPx(width: string | undefined): number | undefine
  * right padding (12px), so it never overlaps the text. Chrome columns keep their own, compact one.
  */
 export const DATA_TABLE_CELL_PADDING_CLASS = 'px-3';
-export const DATA_TABLE_CELL_HORIZONTAL_PADDING_PX = 24;
+const DATA_TABLE_CELL_HORIZONTAL_PADDING_PX = 24;
 
 /**
  * Natural content width of an element that is normally boxed in (a truncate wrapper, a header
