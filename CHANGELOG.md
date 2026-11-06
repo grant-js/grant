@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.25.1
+
+### Platform
+
+**Docker images:** tagged `:1.25.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.25.1** (fixed group with apps).
+
+### Patch Changes
+
+- 1b97ee2: Shared DataTable scrolls horizontally again when its columns are wider than the container, keeping the column max widths and text truncation; every list view (projects, users, roles, groups, permissions, resources, tags, members, organizations, webhooks, project sync jobs, API keys) now offers the column picker in its toolbar.
+
 ## 1.25.0
 
 ### Platform
