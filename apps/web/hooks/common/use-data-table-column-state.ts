@@ -11,11 +11,14 @@ import {
   resolveColumnBounds,
 } from '@/lib/data-table-column-resize';
 import {
+  applyColumnOrder,
   buildDefaultColumnState,
   clearStoredColumnState,
   type DataTableColumnState,
   dataTableColumnStorageKey,
+  isMovableColumn,
   mergeColumnState,
+  moveColumnInOrder,
   readStoredColumnState,
   writeStoredColumnState,
 } from '@/lib/data-table-column-state';
@@ -37,7 +40,7 @@ export interface UseDataTableColumnStateOptions {
  * The one column-state hook for a `DataTable`: visibility, order and widths, saved per user and
  * table in localStorage. Nothing is written until the user changes something, and nothing is
  * written while the user id is unknown. `visibleColumns` carry the user's widths and the
- * resize callbacks the `DataTable` handles use; `order` holds the default until reorder lands.
+ * resize callbacks the `DataTable` handles use, in the user's column order.
  */
 export function useDataTableColumnState<T>(
   columns: DataTableColumnConfig<T>[],
@@ -107,6 +110,26 @@ export function useDataTableColumnState<T>(
     [storageKey]
   );
 
+  /** Moves a movable column to `toIndex` among the movable columns; locked columns never move. */
+  const moveColumn = useCallback(
+    (key: string, toIndex: number) => {
+      const movableKeys = new Set(
+        columnsRef.current.filter(isMovableColumn).map((column) => column.key)
+      );
+      if (!movableKeys.has(key)) return;
+
+      const current = stateRef.current;
+      const order = moveColumnInOrder(current.order, movableKeys, key, toIndex);
+      if (order.every((candidate, index) => candidate === current.order[index])) return;
+
+      const next: DataTableColumnState = { ...current, order };
+      stateRef.current = next;
+      setStored(next);
+      writeStoredColumnState(storageKey, next);
+    },
+    [storageKey]
+  );
+
   const resetColumns = useCallback(() => {
     const defaults = buildDefaultColumnState(columns, hiddenKeys);
     stateRef.current = defaults;
@@ -116,21 +139,23 @@ export function useDataTableColumnState<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, columnSignature, hiddenKeys]);
 
+  const orderedColumns = useMemo(() => applyColumnOrder(columns, order), [columns, order]);
+
   const toggleableColumns = useMemo(
     () =>
-      columns.filter((column) =>
+      orderedColumns.filter((column) =>
         isToggleableColumn(column.key, column.header, column.enableHiding)
       ),
-    [columns]
+    [orderedColumns]
   );
 
   const visibleColumns = useMemo(
     () =>
-      filterColumnsByVisibility(columns, visibility).map((column) => ({
+      filterColumnsByVisibility(orderedColumns, visibility).map((column) => ({
         ...column,
         resize: { width: widths[column.key], onChange: setColumnWidth },
       })),
-    [columns, visibility, widths, setColumnWidth]
+    [orderedColumns, visibility, widths, setColumnWidth]
   );
 
   const columnToggleItems: DataTableColumnToggleItem[] = useMemo(
@@ -139,14 +164,20 @@ export function useDataTableColumnState<T>(
         key: column.key,
         label: column.header,
         visible: visibility[column.key] !== false,
+        movable: isMovableColumn(column),
       })),
     [toggleableColumns, visibility]
   );
 
   const filterSkeletonColumns = useCallback(
-    (skeletonColumns: TableSkeletonColumnConfig[]) =>
-      skeletonColumns.filter((column) => visibility[column.key] !== false),
-    [visibility]
+    (skeletonColumns: TableSkeletonColumnConfig[]) => {
+      const position = new Map(orderedColumns.map((column, index) => [column.key, index]));
+      const at = (key: string) => position.get(key) ?? Number.MAX_SAFE_INTEGER;
+      return skeletonColumns
+        .filter((column) => visibility[column.key] !== false)
+        .sort((a, b) => at(a.key) - at(b.key));
+    },
+    [visibility, orderedColumns]
   );
 
   return {
@@ -156,6 +187,7 @@ export function useDataTableColumnState<T>(
     widths,
     toggleColumn,
     setColumnWidth,
+    moveColumn,
     resetColumns,
     columnToggleItems,
     filterSkeletonColumns,

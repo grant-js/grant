@@ -205,8 +205,14 @@ export function WebhookEventTypesTable({
       : []),
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
-    useDataTableColumnState(columns, { tableId: TABLE_ID });
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -257,6 +263,7 @@ export function WebhookEventTypesTable({
               columns={columnToggleItems}
               onToggle={toggleColumn}
               onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />

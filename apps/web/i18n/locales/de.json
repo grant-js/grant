@@ -82,7 +82,10 @@
       "columns": "Spalten",
       "toggleColumns": "Spalten ein-/ausblenden",
       "resetColumns": "Spalten zurücksetzen",
-      "resizeColumn": "Spalte {column} anpassen"
+      "resizeColumn": "Spalte {column} anpassen",
+      "moveColumnUp": "{column} nach oben verschieben",
+      "moveColumnDown": "{column} nach unten verschieben",
+      "columnMoved": "{column} an Position {position} von {total} verschoben"
     },
     "detailAttachmentFilter": {
       "label": "Anzeigen",

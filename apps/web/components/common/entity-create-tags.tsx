@@ -179,8 +179,14 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, resetColumns, filterSkeletonColumns } =
-    useDataTableColumnState(columns, { tableId: `${tagsNamespace}.create` });
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: `${tagsNamespace}.create` });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -230,6 +236,7 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
               columns={columnToggleItems}
               onToggle={toggleColumn}
               onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
