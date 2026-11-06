@@ -6,7 +6,7 @@ import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Tag, User } from '@grantjs/schema';
-import { Loader2, Tag as TagIcon } from 'lucide-react';
+import { Tag as TagIcon } from 'lucide-react';
 
 import {
   Avatar,
@@ -21,9 +21,10 @@ import {
   Toolbar,
   toolbarGrow,
 } from '@/components/common';
+import { withCheckboxSavingState } from '@/components/common/detail-table-layout';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useTags } from '@/hooks/tags';
 import { useUserMutations } from '@/hooks/users';
@@ -37,14 +38,14 @@ import {
   USER_DETAIL_CONTENT_COLUMN_CLASS,
   USER_DETAIL_ICON_COLUMN,
   USER_DETAIL_ICON_SKELETON,
-  USER_DETAIL_LOADING_COLUMN,
-  USER_DETAIL_LOADING_SKELETON,
   USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   USER_DETAIL_TEXT_COLUMN,
   UserDetailTableCheckboxCell,
   UserDetailTableIconCell,
 } from './user-detail-table-layout';
 import { UserTagSearch } from './user-tag-search';
+
+const TABLE_ID = 'user.tags';
 
 interface UserTagsProps {
   user: User;
@@ -160,20 +161,23 @@ export function UserTags({ user }: UserTagsProps) {
   };
 
   const columns: DataTableColumnConfig<Tag>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...USER_DETAIL_CHECKBOX_COLUMN,
-      render: (tag: Tag) => (
-        <UserDetailTableCheckboxCell>
-          <Checkbox
-            checked={isTagChecked(tag.id)}
-            onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </UserDetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...USER_DETAIL_CHECKBOX_COLUMN,
+        render: (tag: Tag) => (
+          <UserDetailTableCheckboxCell>
+            <Checkbox
+              checked={isTagChecked(tag.id)}
+              onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </UserDetailTableCheckboxCell>
+        ),
+      },
+      (tag: Tag) => updatingTagId === tag.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -213,21 +217,16 @@ export function UserTags({ user }: UserTagsProps) {
         </div>
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...USER_DETAIL_LOADING_COLUMN,
-      render: (tag: Tag) =>
-        updatingTagId === tag.id ? (
-          <UserDetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </UserDetailTableIconCell>
-        ) : null,
-    },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -235,7 +234,6 @@ export function UserTags({ user }: UserTagsProps) {
       USER_DETAIL_ICON_SKELETON,
       { key: 'name', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'color', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
-      USER_DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };
@@ -281,6 +279,8 @@ export function UserTags({ user }: UserTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -292,6 +292,7 @@ export function UserTags({ user }: UserTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

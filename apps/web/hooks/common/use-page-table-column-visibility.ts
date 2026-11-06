@@ -7,11 +7,11 @@ import { NO_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibil
 import { useDataTableColumnsStore } from '@/stores/data-table-columns.store';
 
 import {
-  useDetailTableColumnVisibility,
-  type UseDetailTableColumnVisibilityOptions,
-} from './use-detail-table-column-visibility';
+  useDataTableColumnState,
+  type UseDataTableColumnStateOptions,
+} from './use-data-table-column-state';
 
-export interface UsePageTableColumnVisibilityOptions extends UseDetailTableColumnVisibilityOptions {
+export interface UsePageTableColumnVisibilityOptions extends UseDataTableColumnStateOptions {
   /** When false, the table does not publish its column picker (e.g. card view is active). */
   enabled?: boolean;
 }
@@ -22,19 +22,20 @@ export interface UsePageTableColumnVisibilityOptions extends UseDetailTableColum
  */
 export function usePageTableColumnVisibility<T>(
   columns: DataTableColumnConfig<T>[],
-  options?: UsePageTableColumnVisibilityOptions
+  options: UsePageTableColumnVisibilityOptions
 ) {
-  const enabled = options?.enabled ?? true;
-  const visibility = useDetailTableColumnVisibility(columns, {
-    defaultHiddenKeys: options?.defaultHiddenKeys ?? NO_DEFAULT_HIDDEN_COLUMN_KEYS,
+  const enabled = options.enabled ?? true;
+  const visibility = useDataTableColumnState(columns, {
+    tableId: options.tableId,
+    defaultHiddenKeys: options.defaultHiddenKeys ?? NO_DEFAULT_HIDDEN_COLUMN_KEYS,
   });
-  const { columnToggleItems, toggleColumn } = visibility;
+  const { columnToggleItems, toggleColumn, resetColumns, moveColumn } = visibility;
 
   const setColumnToggle = useDataTableColumnsStore((state) => state.setColumnToggle);
   const clearColumnToggle = useDataTableColumnsStore((state) => state.clearColumnToggle);
 
   const itemsSignature = columnToggleItems
-    .map((item) => `${item.key}\0${item.label}\0${item.visible ? 1 : 0}`)
+    .map((item) => `${item.key}\0${item.label}\0${item.visible ? 1 : 0}\0${item.movable ? 1 : 0}`)
     .join('\n');
 
   useEffect(() => {
@@ -43,11 +44,19 @@ export function usePageTableColumnVisibility<T>(
       return;
     }
 
-    setColumnToggle(columnToggleItems, toggleColumn);
+    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn);
     // columnToggleItems is rebuilt whenever the caller rebuilds its columns; itemsSignature
     // tracks the values the picker actually shows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, itemsSignature, toggleColumn, setColumnToggle, clearColumnToggle]);
+  }, [
+    enabled,
+    itemsSignature,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    setColumnToggle,
+    clearColumnToggle,
+  ]);
 
   useEffect(() => () => clearColumnToggle(), [clearColumnToggle]);
 

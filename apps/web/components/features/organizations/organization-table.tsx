@@ -12,6 +12,10 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
@@ -20,6 +24,8 @@ import { OrganizationAudit } from './organization-audit';
 import { OrganizationAvatar } from './organization-avatar';
 import { OrganizationCreateDialog } from './organization-create-dialog';
 import { OrganizationNavigationButton } from './organization-navigation-button';
+
+const TABLE_ID = 'organizations.list';
 
 export function OrganizationTable() {
   const t = useTranslations('organizations');
@@ -33,7 +39,7 @@ export function OrganizationTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (organization: Organization) => (
         <OrganizationAvatar
@@ -89,14 +95,16 @@ export function OrganizationTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (organization: Organization) => (
         <OrganizationNavigationButton organization={organization} size="sm" round={false} />
       ),
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -113,6 +121,7 @@ export function OrganizationTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={organizations}
       columns={visibleColumns}
       loading={loading}

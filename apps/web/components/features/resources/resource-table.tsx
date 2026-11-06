@@ -15,6 +15,10 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { getEntityTagCount, getPrimaryTagFromEntity } from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { useResourcesStore } from '@/stores/resources.store';
@@ -22,6 +26,8 @@ import { useResourcesStore } from '@/stores/resources.store';
 import { ResourceActions } from './resource-actions';
 import { ResourceActiveStatusLabel } from './resource-active-status-label';
 import { ResourceAudit } from './resource-audit';
+
+const TABLE_ID = 'resources.list';
 
 export function ResourceTable() {
   const t = useTranslations('resources');
@@ -36,7 +42,7 @@ export function ResourceTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (resource: Resource) => {
         const primaryTag = getPrimaryTagFromEntity(resource);
@@ -112,7 +118,7 @@ export function ResourceTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (resource: Resource) => (
         <EntityNavigationButton
           entitySegment="resources"
@@ -124,7 +130,9 @@ export function ResourceTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -143,6 +151,7 @@ export function ResourceTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={resources}
       columns={visibleColumns}
       loading={loading}

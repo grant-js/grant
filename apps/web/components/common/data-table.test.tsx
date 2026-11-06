@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { dataTableMinWidthStyle } from '@/lib/detail-table-column-width';
 
@@ -11,6 +11,11 @@ import {
   DETAIL_TEXT_COLUMN,
   DetailTableCheckboxCell,
 } from './detail-table-layout';
+
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    `${key}${values ? JSON.stringify(values) : ''}`,
+}));
 
 const LONG_NAME = `GrantScope${'A'.repeat(80)}`;
 
@@ -32,6 +37,7 @@ describe('DataTable', () => {
     const { container } = render(
       <div data-testid="table-harness" className="w-[320px] max-w-[320px]">
         <DataTable
+          tableId="test.table"
           data={[{ id: 'row-1', name: LONG_NAME }]}
           columns={[
             {
@@ -51,6 +57,7 @@ describe('DataTable', () => {
     const tableContainer = container.querySelector('[data-slot="table-container"]');
     const titled = container.querySelector(`[title="${LONG_NAME}"]`);
 
+    expect(container.querySelector('[data-table-id="test.table"]')).not.toBeNull();
     expect(table).toHaveClass('table-fixed', 'w-full');
     expect(table).not.toHaveClass('w-max');
     expect(table).not.toHaveClass('table-auto');
@@ -65,6 +72,7 @@ describe('DataTable', () => {
     const { container } = render(
       <div className="w-[320px] max-w-[320px]">
         <DataTable
+          tableId="test.table"
           data={[{ id: 'row-1', name: LONG_NAME }]}
           columns={[
             { key: 'name', header: 'Name', width: '240px', render: (row) => row.name },
@@ -97,6 +105,7 @@ describe('DataTable', () => {
   it('keeps the loading skeleton scrollable with the same minimum width', () => {
     const { container } = render(
       <DataTable
+        tableId="test.table"
         data={[]}
         columns={[
           { key: 'name', header: 'Name', width: '240px', render: () => null },
@@ -117,6 +126,7 @@ describe('DataTable', () => {
   it('does not truncate checkbox chrome columns', () => {
     const { container } = render(
       <DataTable
+        tableId="test.table"
         data={[{ id: 'row-1', name: LONG_NAME }]}
         columns={[
           {
@@ -153,6 +163,7 @@ describe('DataTable', () => {
   it('does not truncate the actions column', () => {
     render(
       <DataTable
+        tableId="test.table"
         data={[{ id: 'row-1', name: 'Role' }]}
         columns={[
           {

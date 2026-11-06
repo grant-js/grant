@@ -33,7 +33,7 @@ import {
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { useDataTableColumnState, useScopeFromParams } from '@/hooks/common';
 import { useGroups } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
 import {
@@ -49,6 +49,8 @@ import { cn } from '@/lib/utils';
 
 import { GroupPermissionSearch } from '../group/group-permission-search';
 import type { RoleCreateFormValues } from '../roles/role-types';
+
+const TABLE_ID = 'role.create.permissions';
 
 const CREATE_ROLE_ATTACHMENT_PAGE_LIMIT = 10;
 
@@ -251,8 +253,14 @@ export function RoleCreatePermissions() {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -320,6 +328,8 @@ export function RoleCreatePermissions() {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -331,6 +341,7 @@ export function RoleCreatePermissions() {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={permissions}
         columns={visibleColumns}
         loading={tableLoading}

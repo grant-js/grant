@@ -13,11 +13,14 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import { DATA_TABLE_AVATAR_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useTagsStore } from '@/stores/tags.store';
 
 import { TagActions } from './tag-actions';
 import { TagAudit } from './tag-audit';
 import { TagCreateDialog } from './tag-create-dialog';
+
+const TABLE_ID = 'tags.list';
 
 export function TagTable() {
   const t = useTranslations('tags');
@@ -27,7 +30,7 @@ export function TagTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (tag: Tag) => (
         <Avatar
@@ -67,7 +70,9 @@ export function TagTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -81,6 +86,7 @@ export function TagTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={tags}
       columns={visibleColumns}
       loading={loading}

@@ -31,7 +31,7 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { useDataTableColumnState, useScopeFromParams } from '@/hooks/common';
 import { usePermissions } from '@/hooks/permissions';
 import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { transformTagsToBadges } from '@/lib/tag';
@@ -39,6 +39,8 @@ import { cn } from '@/lib/utils';
 
 import type { GroupCreateFormValues } from '../groups/group-types';
 import { GroupPermissionSearch } from './group-permission-search';
+
+const TABLE_ID = 'group.create.permissions';
 
 const CREATE_GROUP_ATTACHMENT_PAGE_LIMIT = 10;
 
@@ -163,8 +165,14 @@ export function GroupCreatePermissions() {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -217,6 +225,8 @@ export function GroupCreatePermissions() {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -228,6 +238,7 @@ export function GroupCreatePermissions() {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={permissions}
         columns={visibleColumns}
         loading={loading}

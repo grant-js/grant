@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Permission, Tag } from '@grantjs/schema';
-import { Loader2, Tag as TagIcon } from 'lucide-react';
+import { Tag as TagIcon } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -30,10 +28,11 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionMutations } from '@/hooks/permissions';
 import { useTags } from '@/hooks/tags';
@@ -42,6 +41,8 @@ import { cn } from '@/lib/utils';
 import { usePermissionStore } from '@/stores/permission.store';
 
 import { PermissionTagSearch } from './permission-tag-search';
+
+const TABLE_ID = 'permission.tags';
 
 interface PermissionTagsProps {
   permission: Permission;
@@ -153,20 +154,23 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
   };
 
   const columns: DataTableColumnConfig<Tag>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (tag: Tag) => (
-        <DetailTableCheckboxCell>
-          <Checkbox
-            checked={isTagChecked(tag.id)}
-            onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </DetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (tag: Tag) => (
+          <DetailTableCheckboxCell>
+            <Checkbox
+              checked={isTagChecked(tag.id)}
+              onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </DetailTableCheckboxCell>
+        ),
+      },
+      (tag: Tag) => updatingTagId === tag.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -206,21 +210,16 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
         </div>
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (tag: Tag) =>
-        updatingTagId === tag.id ? (
-          <DetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </DetailTableIconCell>
-        ) : null,
-    },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -228,7 +227,6 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
       DETAIL_ICON_SKELETON,
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'color', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };
@@ -269,6 +267,8 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -280,6 +280,7 @@ export function PermissionTags({ permission }: PermissionTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

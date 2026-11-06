@@ -14,12 +14,15 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useWebhooksStore } from '@/stores/webhooks.store';
 
 import { WebhookActiveStatusLabel } from './webhook-active-status-label';
 import { WebhookAudit } from './webhook-audit';
 import { WebhookNavigationButton } from './webhook-navigation-button';
 import { WebhookSubscriptionActions } from './webhook-subscription-actions';
+
+const TABLE_ID = 'webhooks.list';
 
 export function WebhookTable() {
   const t = useTranslations('webhooks');
@@ -79,7 +82,7 @@ export function WebhookTable() {
       {
         key: 'navigation',
         header: '',
-        width: '60px',
+        width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
         render: (subscription) => (
           <WebhookNavigationButton
             subscriptionId={subscription.id}
@@ -92,7 +95,9 @@ export function WebhookTable() {
     [t]
   );
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = useMemo(
     () => ({
@@ -115,6 +120,7 @@ export function WebhookTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={subscriptions}
       columns={visibleColumns}
       loading={loading}

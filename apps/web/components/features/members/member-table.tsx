@@ -13,10 +13,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import { MemberWithInvitation } from '@/hooks/members';
+import { DATA_TABLE_AVATAR_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useMembersStore } from '@/stores/members.store';
 
 import { MemberActions } from './member-actions';
 import { MemberAudit } from './member-audit';
+
+const TABLE_ID = 'members.list';
 
 export function MemberTable() {
   const t = useTranslations('members');
@@ -75,7 +78,7 @@ export function MemberTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (member: MemberWithInvitation) => (
         <Avatar initial={member.name.charAt(0)} size="md" />
@@ -127,7 +130,9 @@ export function MemberTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -143,6 +148,7 @@ export function MemberTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={members}
       columns={visibleColumns}
       loading={loading}

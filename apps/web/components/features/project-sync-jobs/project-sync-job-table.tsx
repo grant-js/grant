@@ -10,6 +10,10 @@ import {
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { formatTimestamp } from '@/lib/utils';
 import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
@@ -23,6 +27,8 @@ import { ProjectSyncJobStartTrigger } from './project-sync-job-start-trigger';
 import { ProjectSyncJobStatusBadge } from './project-sync-job-status-badge';
 import { ProjectSyncJobsModuleIconElement } from './project-sync-jobs-icon';
 
+const TABLE_ID = 'projectSyncJobs.list';
+
 export function ProjectSyncJobTable() {
   const t = useTranslations('projectSyncJobs');
   const limit = useProjectSyncJobsStore((state) => state.limit);
@@ -34,7 +40,7 @@ export function ProjectSyncJobTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (job) => <Avatar initial={getJobAvatarInitial(job)} size="md" />,
     },
@@ -107,7 +113,7 @@ export function ProjectSyncJobTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (job) => (
         <ProjectSyncJobNavigationButton
           projectId={job.projectId}
@@ -119,7 +125,9 @@ export function ProjectSyncJobTable() {
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -141,6 +149,7 @@ export function ProjectSyncJobTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={jobs}
       columns={visibleColumns}
       loading={loading}

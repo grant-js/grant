@@ -23,7 +23,7 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
 import { useRoles } from '@/hooks/roles';
 import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
@@ -43,6 +43,8 @@ import {
   UserDetailTableIconCell,
 } from './user-detail-table-layout';
 import { UserRoleSearch } from './user-role-search';
+
+const TABLE_ID = 'user.create.roles';
 
 const CREATE_USER_ATTACHMENT_PAGE_LIMIT = 10;
 
@@ -161,8 +163,14 @@ export function UserCreateRoles() {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -222,6 +230,8 @@ export function UserCreateRoles() {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -233,6 +243,7 @@ export function UserCreateRoles() {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={roles}
         columns={visibleColumns}
         loading={loading}

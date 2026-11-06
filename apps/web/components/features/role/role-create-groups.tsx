@@ -31,7 +31,7 @@ import {
   toolbarGrow,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { useDataTableColumnState, useScopeFromParams } from '@/hooks/common';
 import { useGroupsList } from '@/hooks/groups';
 import { resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { transformTagsToBadges } from '@/lib/tag';
@@ -39,6 +39,8 @@ import { cn } from '@/lib/utils';
 
 import type { RoleCreateFormValues } from '../roles/role-types';
 import { RoleGroupSearch } from './role-group-search';
+
+const TABLE_ID = 'role.create.groups';
 
 const CREATE_ROLE_ATTACHMENT_PAGE_LIMIT = 10;
 
@@ -159,8 +161,14 @@ export function RoleCreateGroups() {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -213,6 +221,8 @@ export function RoleCreateGroups() {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -224,6 +234,7 @@ export function RoleCreateGroups() {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={groups}
         columns={visibleColumns}
         loading={loading}

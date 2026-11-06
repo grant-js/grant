@@ -80,7 +80,12 @@
     },
     "dataTable": {
       "columns": "Columns",
-      "toggleColumns": "Toggle columns"
+      "toggleColumns": "Toggle columns",
+      "resetColumns": "Reset columns",
+      "resizeColumn": "Resize {column}",
+      "moveColumnUp": "Move {column} up",
+      "moveColumnDown": "Move {column} down",
+      "columnMoved": "{column} moved to position {position} of {total}"
     },
     "detailAttachmentFilter": {
       "label": "Show",

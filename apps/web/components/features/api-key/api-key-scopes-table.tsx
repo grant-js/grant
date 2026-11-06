@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { machineOnlyGate } from '@grantjs/constants';
-import { ChevronDown, KeyRound, Loader2 } from 'lucide-react';
+import { ChevronDown, KeyRound } from 'lucide-react';
 
 import {
   DataTable,
@@ -12,8 +12,6 @@ import {
   DETAIL_CHECKBOX_COLUMN,
   DETAIL_CHECKBOX_SKELETON,
   DETAIL_CONTENT_COLUMN_CLASS,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -28,7 +26,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState } from '@/hooks/common';
 import {
   API_KEY_SCOPES_PAGE_LIMIT,
   type ApiKeyScopeGroup,
@@ -49,6 +47,8 @@ import {
 import { cn } from '@/lib/utils';
 
 import { ApiKeyScopeSearch } from './api-key-scope-search';
+
+const TABLE_ID = 'apiKey.scopes';
 
 const GROUP_LEADING_INSET = 8;
 const CHILD_LEADING_INSET = 24;
@@ -318,9 +318,12 @@ export function ApiKeyScopesTable({
             })}
           />
         );
+        const saving = updatingIds?.has(id) ?? false;
         return (
           <div data-scope-row="child" data-leading-inset={CHILD_LEADING_INSET} className="pl-4">
-            {reason === undefined ? (
+            {saving ? (
+              <DetailTableCheckboxCell saving />
+            ) : reason === undefined ? (
               <DetailTableCheckboxCell>{checkbox}</DetailTableCheckboxCell>
             ) : (
               <DetailTableCheckboxCell>
@@ -382,26 +385,16 @@ export function ApiKeyScopesTable({
           </span>
         ) : null,
     },
-    ...(updatingIds
-      ? [
-          {
-            key: 'loading',
-            header: '',
-            ...DETAIL_LOADING_COLUMN,
-            render: (item: ScopeTableItem) =>
-              item.kind === 'row' && updatingIds.has(item.row.permission.id) ? (
-                <Loader2
-                  className="size-4 animate-spin text-muted-foreground"
-                  aria-label={t('saving')}
-                />
-              ) : null,
-          },
-        ]
-      : []),
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -409,7 +402,6 @@ export function ApiKeyScopesTable({
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'permission', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...DETAIL_TEXT_COLUMN },
-      ...(updatingIds ? [DETAIL_LOADING_SKELETON] : []),
     ]),
     rowCount: 5,
   };
@@ -457,6 +449,8 @@ export function ApiKeyScopesTable({
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -472,6 +466,7 @@ export function ApiKeyScopesTable({
     >
       {notice}
       <DataTable
+        tableId={TABLE_ID}
         data={items}
         columns={visibleColumns}
         loading={loading}

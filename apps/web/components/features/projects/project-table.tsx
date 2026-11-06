@@ -12,6 +12,10 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility, useProjectTags } from '@/hooks/common';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { cn } from '@/lib/utils';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -21,6 +25,8 @@ import { ProjectAudit } from './project-audit';
 import { ProjectAvatar } from './project-avatar';
 import { ProjectCreateDialog } from './project-create-dialog';
 import { ProjectNavigationButton } from './project-navigation-button';
+
+const TABLE_ID = 'projects.list';
 
 export function ProjectTable() {
   const t = useTranslations('projects');
@@ -39,7 +45,7 @@ export function ProjectTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       render: (project: Project) => (
         <ProjectAvatar
           project={project}
@@ -128,14 +134,16 @@ export function ProjectTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (project: Project) => (
         <ProjectNavigationButton project={project} size="sm" round={false} />
       ),
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -153,6 +161,7 @@ export function ProjectTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={projects}
       columns={visibleColumns}
       loading={loading}

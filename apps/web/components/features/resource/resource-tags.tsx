@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Resource, Tag } from '@grantjs/schema';
-import { Loader2, Tag as TagIcon } from 'lucide-react';
+import { Tag as TagIcon } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -30,10 +28,11 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useResourceMutations } from '@/hooks/resources';
 import { useTags } from '@/hooks/tags';
@@ -42,6 +41,8 @@ import { cn } from '@/lib/utils';
 import { useResourceStore } from '@/stores/resource.store';
 
 import { ResourceTagSearch } from './resource-tag-search';
+
+const TABLE_ID = 'resource.tags';
 
 interface ResourceTagsProps {
   resource: Resource;
@@ -154,20 +155,23 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
   };
 
   const columns: DataTableColumnConfig<Tag>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (tag: Tag) => (
-        <DetailTableCheckboxCell>
-          <Checkbox
-            checked={isTagChecked(tag.id)}
-            onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </DetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (tag: Tag) => (
+          <DetailTableCheckboxCell>
+            <Checkbox
+              checked={isTagChecked(tag.id)}
+              onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </DetailTableCheckboxCell>
+        ),
+      },
+      (tag: Tag) => updatingTagId === tag.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -207,21 +211,16 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
         </div>
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (tag: Tag) =>
-        updatingTagId === tag.id ? (
-          <DetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </DetailTableIconCell>
-        ) : null,
-    },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -229,7 +228,6 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
       DETAIL_ICON_SKELETON,
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'color', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };
@@ -270,6 +268,8 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -281,6 +281,7 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={tags}
         columns={visibleColumns}
         loading={loading}

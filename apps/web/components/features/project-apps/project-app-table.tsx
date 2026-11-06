@@ -15,12 +15,15 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { useScopeFromParams } from '@/hooks/common';
+import { DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
 import { ProjectAppActions } from './project-app-actions';
 import { ProjectAppAvatar } from './project-app-avatar';
 import { ProjectAppSignUpStatusLabel } from './project-app-sign-up-status-label';
+
+const TABLE_ID = 'projectApps.list';
 
 export function ProjectAppTable() {
   const t = useTranslations('projectApps');
@@ -82,7 +85,7 @@ export function ProjectAppTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (app: ProjectApp) => (
         <EntityNavigationButton
           entitySegment="apps"
@@ -107,6 +110,7 @@ export function ProjectAppTable() {
 
   return (
     <DataTable<ProjectApp>
+      tableId={TABLE_ID}
       data={projectApps}
       columns={columns}
       loading={loading}

@@ -15,6 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
+import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
@@ -25,6 +29,8 @@ import { useRolesStore } from '@/stores/roles.store';
 import { RoleActions } from './role-actions';
 import { RoleAudit } from './role-audit';
 import { RoleNavigationButton } from './role-navigation-button';
+
+const TABLE_ID = 'roles.list';
 
 export function RoleTable() {
   const t = useTranslations('roles');
@@ -44,7 +50,7 @@ export function RoleTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (role: Role) => {
         const primaryTag = getPrimaryTagFromEntity(role);
@@ -102,12 +108,14 @@ export function RoleTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (role: Role) => <RoleNavigationButton role={role} size="sm" round={false} />,
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -124,6 +132,7 @@ export function RoleTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={visibleRoles}
       columns={visibleColumns}
       loading={loading}

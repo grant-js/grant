@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { ProjectApp } from '@grantjs/schema';
-import { Key, Loader2 } from 'lucide-react';
+import { Key } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -30,10 +28,11 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce, useScopeFromParams } from '@/hooks/common';
 import {
   type ScopeSlugOption,
   useProjectAppFormData,
@@ -42,6 +41,8 @@ import {
 import { type DetailAttachmentFilter, resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 
 import { ProjectAppScopeSearch } from './project-app-scope-search';
+
+const TABLE_ID = 'projectApp.scopes';
 
 const SCOPES_PAGE_LIMIT = 10;
 
@@ -174,20 +175,23 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
   }, [refetch]);
 
   const columns: DataTableColumnConfig<ScopeSlugOption>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (scopeSlug: ScopeSlugOption) => (
-        <DetailTableCheckboxCell>
-          <Checkbox
-            checked={isScopeChecked(scopeSlug.slug)}
-            onCheckedChange={(checked) => handleScopeToggle(scopeSlug.slug, checked === true)}
-            disabled={!canUpdate}
-          />
-        </DetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (scopeSlug: ScopeSlugOption) => (
+          <DetailTableCheckboxCell>
+            <Checkbox
+              checked={isScopeChecked(scopeSlug.slug)}
+              onCheckedChange={(checked) => handleScopeToggle(scopeSlug.slug, checked === true)}
+              disabled={!canUpdate}
+            />
+          </DetailTableCheckboxCell>
+        ),
+      },
+      (scopeSlug: ScopeSlugOption) => updatingScopeSlug === scopeSlug.slug
+    ),
     {
       key: 'icon',
       header: '',
@@ -234,19 +238,16 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
         <span className="text-sm text-muted-foreground">{scopeSlug.description ?? '—'}</span>
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (scopeSlug: ScopeSlugOption) =>
-        updatingScopeSlug === scopeSlug.slug ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : null,
-    },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -255,7 +256,6 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'scope', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };
@@ -296,6 +296,8 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -312,6 +314,7 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
         </Alert>
       ) : (
         <DataTable
+          tableId={TABLE_ID}
           data={tableScopes}
           columns={visibleColumns}
           loading={loading}

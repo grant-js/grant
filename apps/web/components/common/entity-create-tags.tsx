@@ -31,7 +31,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDetailTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
+import { useDataTableColumnState, useScopeFromParams } from '@/hooks/common';
 import { useTags } from '@/hooks/tags';
 import { type DetailAttachmentFilter, resolveDetailQueryIds } from '@/lib/detail-attachment-filter';
 import { cn } from '@/lib/utils';
@@ -179,8 +179,14 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
     },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: `${tagsNamespace}.create` });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -229,6 +235,8 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -240,6 +248,7 @@ export function EntityCreateTags({ tagsNamespace }: EntityCreateTagsProps) {
       }
     >
       <DataTable
+        tableId={`${tagsNamespace}.create`}
         data={tableTags}
         columns={visibleColumns}
         loading={loading}

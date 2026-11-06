@@ -16,9 +16,9 @@ import {
   EntityNavigationButton,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
+import { DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS } from '@/components/common/detail-table-layout';
 import {
   USER_DETAIL_ICON_ONLY_COLUMN,
-  USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS,
   USER_DETAIL_ICON_ONLY_SKELETON,
   USER_DETAIL_TEXT_COLUMN,
   UserDetailTableIconCell,
@@ -27,6 +27,10 @@ import { useApiKeys } from '@/hooks/api-keys';
 import { usePageTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
 import { isProjectApiKeyScope } from '@/lib/api-key-grants';
 import { API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { type ApiKeyView, useApiKeysStore } from '@/stores/api-keys.store';
 
 import { ApiKeyActions } from './api-key-actions';
@@ -35,6 +39,8 @@ import { ApiKeyCards } from './api-key-cards';
 import { ApiKeyCreateAction } from './api-key-create-action';
 import { ApiKeySecretDialog } from './api-key-secret-dialog';
 import { useApiKeyGrantLabel } from './use-api-key-grant-label';
+
+const TABLE_ID = 'apiKeys.list';
 
 export interface ApiKeyViewerProps {
   /** When not provided, scope is derived from URL params. */
@@ -126,7 +132,7 @@ export function ApiKeyViewer({
       {
         key: 'icon',
         header: '',
-        width: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.width : '50px',
+        width: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.width : DATA_TABLE_AVATAR_COLUMN_WIDTH,
         columnWidthMode: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.columnWidthMode : 'fixed',
         className: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.className : 'pl-4',
         enableHiding: false,
@@ -154,7 +160,7 @@ export function ApiKeyViewer({
         header: t('table.name'),
         width: '200px',
         ...USER_DETAIL_TEXT_COLUMN,
-        className: embedded ? USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS : undefined,
+        className: embedded ? DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS : undefined,
         render: (apiKey: ApiKey) => (
           <span className="text-sm font-medium">{apiKey.name || apiKey.clientId}</span>
         ),
@@ -244,7 +250,7 @@ export function ApiKeyViewer({
             {
               key: 'navigation',
               header: '',
-              width: '60px',
+              width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
               render: (apiKey: ApiKey) => (
                 <EntityNavigationButton
                   entitySegment="api-keys"
@@ -261,6 +267,7 @@ export function ApiKeyViewer({
   );
 
   const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
     defaultHiddenKeys: API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS,
     enabled: view === 'table',
   });
@@ -324,6 +331,7 @@ export function ApiKeyViewer({
   return (
     <>
       <DataTable
+        tableId={TABLE_ID}
         data={apiKeys}
         columns={visibleColumns}
         loading={loading}

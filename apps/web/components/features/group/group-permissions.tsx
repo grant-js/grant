@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Group, Permission, Tag } from '@grantjs/schema';
-import { Key, Loader2 } from 'lucide-react';
+import { Key } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -31,9 +29,10 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useDebounce, useDetailTableColumnVisibility } from '@/hooks/common';
+import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroupMutations } from '@/hooks/groups';
 import { usePermissions } from '@/hooks/permissions';
@@ -43,6 +42,8 @@ import { cn } from '@/lib/utils';
 import { useGroupStore } from '@/stores/group.store';
 
 import { GroupPermissionSearch } from './group-permission-search';
+
+const TABLE_ID = 'group.permissions';
 
 interface GroupPermissionsProps {
   group: Group;
@@ -156,20 +157,23 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
   };
 
   const columns: DataTableColumnConfig<Permission>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (permission: Permission) => (
-        <DetailTableCheckboxCell>
-          <Checkbox
-            checked={isPermissionChecked(permission.id)}
-            onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </DetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (permission: Permission) => (
+          <DetailTableCheckboxCell>
+            <Checkbox
+              checked={isPermissionChecked(permission.id)}
+              onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </DetailTableCheckboxCell>
+        ),
+      },
+      (permission: Permission) => updatingPermissionId === permission.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -224,21 +228,16 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
         <ScrollBadges items={transformTagsToBadges(permission.tags)} height={60} />
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (permission: Permission) =>
-        updatingPermissionId === permission.id ? (
-          <DetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </DetailTableIconCell>
-        ) : null,
-    },
   ];
 
-  const { visibleColumns, columnToggleItems, toggleColumn, filterSkeletonColumns } =
-    useDetailTableColumnVisibility(columns);
+  const {
+    visibleColumns,
+    columnToggleItems,
+    toggleColumn,
+    resetColumns,
+    moveColumn,
+    filterSkeletonColumns,
+  } = useDataTableColumnState(columns, { tableId: TABLE_ID });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -247,7 +246,6 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'action', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };
@@ -288,6 +286,8 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
               key="columns"
               columns={columnToggleItems}
               onToggle={toggleColumn}
+              onReset={resetColumns}
+              onMove={moveColumn}
             />,
           ]}
         />
@@ -299,6 +299,7 @@ export function GroupPermissions({ group }: GroupPermissionsProps) {
       }
     >
       <DataTable
+        tableId={TABLE_ID}
         data={permissions}
         columns={visibleColumns}
         loading={loading}

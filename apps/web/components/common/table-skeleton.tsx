@@ -14,11 +14,21 @@ import {
   dataTableMinWidthStyle,
   detailTableColumnStyle,
   type DetailTableColumnWidthMode,
+  resolveChromeColumnWidth,
 } from '@/lib/detail-table-column-width';
 import { cn } from '@/lib/utils';
 
 type TableSkeletonColumnType =
-  'avatar' | 'avatar-only' | 'text' | 'button' | 'list' | 'badge' | 'actions' | 'audit' | 'icon';
+  | 'avatar'
+  | 'avatar-only'
+  | 'text'
+  | 'button'
+  | 'switch'
+  | 'list'
+  | 'badge'
+  | 'actions'
+  | 'audit'
+  | 'icon';
 
 export interface TableSkeletonColumnConfig {
   key: string;
@@ -40,11 +50,18 @@ function resolveColumnWidthMode(column: TableSkeletonColumnConfig): DetailTableC
 }
 
 export function TableSkeleton({
-  columns,
+  columns: declaredColumns,
   rowCount = 5,
   showActions = false,
   className,
 }: TableSkeletonProps) {
+  // Chrome columns (avatar, open button) have one shared width, whatever the caller declared.
+  const columns = declaredColumns.map((column) =>
+    column.type === 'avatar-only' || column.type === 'icon'
+      ? { ...column, width: resolveChromeColumnWidth(column.key, column.width) }
+      : column
+  );
+
   const renderSkeletonCell = (column: TableSkeletonColumnConfig) => {
     switch (column.type) {
       case 'avatar':
@@ -72,6 +89,9 @@ export function TableSkeleton({
 
       case 'button':
         return <div className="h-8 w-20 bg-muted rounded animate-pulse" />;
+
+      case 'switch':
+        return <div className="mx-auto h-5 w-9 bg-muted rounded-full animate-pulse" />;
 
       case 'list':
         return (
@@ -121,10 +141,7 @@ export function TableSkeleton({
               </TableHead>
             ))}
             {showActions && (
-              <TableHead
-                className="w-[100px]"
-                style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')}
-              >
+              <TableHead style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')}>
                 <div className="h-4 w-16 bg-muted rounded animate-pulse" />
               </TableHead>
             )}

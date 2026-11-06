@@ -15,6 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
+import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
@@ -25,6 +29,8 @@ import { useGroupsStore } from '@/stores/groups.store';
 import { GroupActions } from './group-actions';
 import { GroupAudit } from './group-audit';
 import { GroupNavigationButton } from './group-navigation-button';
+
+const TABLE_ID = 'groups.list';
 
 export function GroupTable() {
   const t = useTranslations('groups');
@@ -44,7 +50,7 @@ export function GroupTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (group: Group) => {
         const primaryTag = getPrimaryTagFromEntity(group);
@@ -106,12 +112,14 @@ export function GroupTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (group: Group) => <GroupNavigationButton group={group} size="sm" round={false} />,
     },
   ];
 
-  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns);
+  const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {
+    tableId: TABLE_ID,
+  });
 
   const skeletonConfig: { columns: TableSkeletonColumnConfig[]; rowCount?: number } = {
     columns: filterSkeletonColumns([
@@ -128,6 +136,7 @@ export function GroupTable() {
 
   return (
     <DataTable
+      tableId={TABLE_ID}
       data={visibleGroups}
       columns={visibleColumns}
       loading={loading}
