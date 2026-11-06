@@ -310,7 +310,9 @@ describe('DataTable empty-header columns', () => {
     expect(cell).not.toHaveClass('overflow-hidden');
     expect(cell.querySelector('.truncate')).toBeNull();
     expect(container.querySelector('th')).not.toHaveClass('px-3');
-    expect(container.querySelector('thead [role="separator"]')).toBeNull();
+    // No handle on the chrome column; a table without a picker now resizes its data columns.
+    expect(container.querySelector('th[data-column-key="open"] [role="separator"]')).toBeNull();
+    expect(container.querySelector('th[data-column-key="name"] [role="separator"]')).not.toBeNull();
   });
 
   it('renders at exactly the declared width: wider container, narrower container and after reset', () => {
