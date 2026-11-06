@@ -68,7 +68,7 @@ export function parseStoredColumnState(raw: string | null): DataTableColumnState
   };
 }
 
-export function clampColumnWidth(width: number): number {
+function clampColumnWidth(width: number): number {
   return Math.min(DATA_TABLE_COLUMN_MAX_WIDTH_PX, Math.max(DATA_TABLE_COLUMN_MIN_WIDTH_PX, width));
 }
 
