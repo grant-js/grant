@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Check, Info, Lock } from 'lucide-react';
 
+import { DataTable, type DataTableColumnConfig } from '@/components/common/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,14 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { DATA_TABLE_STATUS_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 
 interface Feature {
   name: string;
@@ -150,6 +144,28 @@ interface EmailVerificationFeaturesDialogProps {
 export function EmailVerificationFeaturesDialog({ trigger }: EmailVerificationFeaturesDialogProps) {
   const t = useTranslations('auth.featureGating');
 
+  // The feature column fits its content; the two check columns are fixed and centred.
+  const columns: DataTableColumnConfig<Feature>[] = [
+    {
+      key: 'feature',
+      header: t('table.feature'),
+      width: '160px',
+      className: 'font-medium',
+      render: (feature) => t(`features.${feature.name}`),
+    },
+    ...(['personal', 'organization'] as const).map((account): DataTableColumnConfig<Feature> => ({
+      key: account,
+      header: t(`table.${account}`),
+      width: DATA_TABLE_STATUS_COLUMN_WIDTH,
+      columnWidthMode: 'fixed',
+      enableResizing: false,
+      enableHiding: false,
+      truncate: false,
+      align: 'center',
+      render: (feature) => <StatusIcon status={feature[account]} />,
+    })),
+  ];
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -196,34 +212,13 @@ export function EmailVerificationFeaturesDialog({ trigger }: EmailVerificationFe
                       {group.features.length}
                     </Badge>
                   </h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50%]">{t('table.feature')}</TableHead>
-                        <TableHead className="text-center">{t('table.personal')}</TableHead>
-                        <TableHead className="text-center">{t('table.organization')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {group.features.map((feature) => (
-                        <TableRow key={feature.name}>
-                          <TableCell className="font-medium">
-                            {t(`features.${feature.name}`)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center">
-                              <StatusIcon status={feature.personal} />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center">
-                              <StatusIcon status={feature.organization} />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <DataTable<Feature>
+                    tableId="emailVerification.features"
+                    data={group.features}
+                    columns={columns}
+                    loading={false}
+                    emptyState={{ icon: null, title: '', description: '' }}
+                  />
                 </div>
               ))}
             </div>

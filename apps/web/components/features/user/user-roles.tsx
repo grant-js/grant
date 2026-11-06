@@ -6,7 +6,7 @@ import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, TagColor } from '@grantjs/constants';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Role, Tag, User } from '@grantjs/schema';
-import { Loader2, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 import {
   Avatar,
@@ -23,6 +23,7 @@ import {
   Toolbar,
   toolbarGrow,
 } from '@/components/common';
+import { withCheckboxSavingState } from '@/components/common/detail-table-layout';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDataTableColumnState, useDebounce } from '@/hooks/common';
 import { useProjectUserScope } from '@/hooks/common/use-project-user-scope';
@@ -39,8 +40,6 @@ import {
   USER_DETAIL_CONTENT_COLUMN_CLASS,
   USER_DETAIL_ICON_COLUMN,
   USER_DETAIL_ICON_SKELETON,
-  USER_DETAIL_LOADING_COLUMN,
-  USER_DETAIL_LOADING_SKELETON,
   USER_DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   USER_DETAIL_TEXT_COLUMN,
   UserDetailTableCheckboxCell,
@@ -161,20 +160,23 @@ export function UserRoles({ user }: UserRolesProps) {
   };
 
   const columns: DataTableColumnConfig<Role>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...USER_DETAIL_CHECKBOX_COLUMN,
-      render: (role: Role) => (
-        <UserDetailTableCheckboxCell>
-          <Checkbox
-            checked={isRoleChecked(role.id)}
-            onCheckedChange={(checked) => handleRoleToggle(role.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </UserDetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...USER_DETAIL_CHECKBOX_COLUMN,
+        render: (role: Role) => (
+          <UserDetailTableCheckboxCell>
+            <Checkbox
+              checked={isRoleChecked(role.id)}
+              onCheckedChange={(checked) => handleRoleToggle(role.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </UserDetailTableCheckboxCell>
+        ),
+      },
+      (role: Role) => updatingRoleId === role.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -225,17 +227,6 @@ export function UserRoles({ user }: UserRolesProps) {
       className: USER_DETAIL_CONTENT_COLUMN_CLASS,
       render: (role: Role) => <ScrollBadges items={transformTagsToBadges(role.tags)} height={60} />,
     },
-    {
-      key: 'loading',
-      header: '',
-      ...USER_DETAIL_LOADING_COLUMN,
-      render: (role: Role) =>
-        updatingRoleId === role.id ? (
-          <UserDetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </UserDetailTableIconCell>
-        ) : null,
-    },
   ];
 
   const {
@@ -254,7 +245,6 @@ export function UserRoles({ user }: UserRolesProps) {
       { key: 'name', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
-      USER_DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };

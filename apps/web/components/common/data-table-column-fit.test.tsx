@@ -310,7 +310,9 @@ describe('DataTable empty-header columns', () => {
     expect(cell).not.toHaveClass('overflow-hidden');
     expect(cell.querySelector('.truncate')).toBeNull();
     expect(container.querySelector('th')).not.toHaveClass('px-3');
-    expect(container.querySelector('thead [role="separator"]')).toBeNull();
+    // No handle on the chrome column, nor on the last real column (nothing sits to its right).
+    expect(container.querySelector('th[data-column-key="open"] [role="separator"]')).toBeNull();
+    expect(container.querySelector('th[data-column-key="name"] [role="separator"]')).toBeNull();
   });
 
   it('renders at exactly the declared width: wider container, narrower container and after reset', () => {

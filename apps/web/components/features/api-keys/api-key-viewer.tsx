@@ -16,9 +16,9 @@ import {
   EntityNavigationButton,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
+import { DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS } from '@/components/common/detail-table-layout';
 import {
   USER_DETAIL_ICON_ONLY_COLUMN,
-  USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS,
   USER_DETAIL_ICON_ONLY_SKELETON,
   USER_DETAIL_TEXT_COLUMN,
   UserDetailTableIconCell,
@@ -160,7 +160,7 @@ export function ApiKeyViewer({
         header: t('table.name'),
         width: '200px',
         ...USER_DETAIL_TEXT_COLUMN,
-        className: embedded ? USER_DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS : undefined,
+        className: embedded ? DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS : undefined,
         render: (apiKey: ApiKey) => (
           <span className="text-sm font-medium">{apiKey.name || apiKey.clientId}</span>
         ),

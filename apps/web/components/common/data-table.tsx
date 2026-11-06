@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useDataTableColumnState } from '@/hooks/common/use-data-table-column-state';
 import {
   DATA_TABLE_CELL_PADDING_CLASS,
   fitColumnWidth,
@@ -27,6 +28,7 @@ import {
   parseColumnWidthPx,
   resolveColumnBounds,
 } from '@/lib/data-table-column-resize';
+import { NO_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
 import {
   DATA_TABLE_ACTIONS_COLUMN_WIDTH,
   dataTableMinWidthStyle,
@@ -66,8 +68,18 @@ export interface DataTableColumnConfig<T> {
   /** When `fixed`, column keeps its width; default `fixed`. Use `min` for columns that share leftover space. */
   columnWidthMode?: DetailTableColumnWidthMode;
   className?: string;
+  /**
+   * Horizontal alignment of the header label and the cell content together, so they line up.
+   * Default left.
+   */
+  align?: 'left' | 'center' | 'right';
   /** When false, the cell is not ellipsized (checkbox, icon, and similar chrome). Default true. */
   truncate?: boolean;
+  /**
+   * For a resizable column that does not truncate (rich or wrapping content): still start as wide
+   * as its widest cell, within min/max. Truncating columns always do.
+   */
+  fitContent?: boolean;
   /** When false, column is always shown and excluded from the toggle menu. */
   enableHiding?: boolean;
   /** Overrides default hidden keys for this column. */
@@ -142,13 +154,13 @@ function shouldTruncateDataTableColumn<T>(column: DataTableColumnConfig<T>): boo
 }
 
 /**
- * Columns whose default width is fitted to their content: resizable, truncating, declared in px
- * (fixed or min mode).
+ * Columns whose default width is fitted to their content: resizable, truncating (or `fitContent`),
+ * declared in px (fixed or min mode).
  */
 function isFittableColumn<T>(column: DataTableColumnConfig<T>): boolean {
   return (
     isDataTableColumnResizable(column) &&
-    shouldTruncateDataTableColumn(column) &&
+    (shouldTruncateDataTableColumn(column) || column.fitContent === true) &&
     parseColumnWidthPx(column.width) !== undefined
   );
 }
@@ -156,6 +168,19 @@ function isFittableColumn<T>(column: DataTableColumnConfig<T>): boolean {
 /** Data columns get the shared horizontal padding; chrome columns keep their compact one. */
 function dataCellPaddingClass<T>(column: DataTableColumnConfig<T>): string | undefined {
   return isChromeDataTableColumn(column) ? undefined : DATA_TABLE_CELL_PADDING_CLASS;
+}
+
+function alignClass<T>(column: DataTableColumnConfig<T>): string | undefined {
+  if (column.align === 'center') return 'text-center';
+  if (column.align === 'right') return 'text-right';
+  return undefined;
+}
+
+/** Flex justification that aligns a block of cell content the same way as the header label. */
+function alignJustifyClass<T>(column: DataTableColumnConfig<T>): string | undefined {
+  if (column.align === 'center') return 'justify-center';
+  if (column.align === 'right') return 'justify-end';
+  return undefined;
 }
 
 function textFromReactNode(node: ReactNode): string {
@@ -185,14 +210,30 @@ function textFromReactNode(node: ReactNode): string {
 function DataTableCellContent({
   children,
   truncate,
+  fitContent,
+  justifyClass,
   columnKey,
 }: {
   children: ReactNode;
   truncate: boolean;
+  fitContent: boolean;
+  justifyClass?: string;
   columnKey: string;
 }) {
   if (!truncate) {
-    return children;
+    // Not clipped, but measured, so the column can still start as wide as its content.
+    if (fitContent) {
+      return (
+        <div
+          className={cn('min-w-0 max-w-full', justifyClass && 'flex', justifyClass)}
+          data-fit-content
+          data-column-key={columnKey}
+        >
+          {children}
+        </div>
+      );
+    }
+    return justifyClass ? <div className={cn('flex', justifyClass)}>{children}</div> : children;
   }
 
   const title = textFromReactNode(children).trim();
@@ -209,7 +250,27 @@ function DataTableCellContent({
   );
 }
 
-export function DataTable<T>({
+/**
+ * A table whose caller keeps no column state (no picker) still resizes: the state, saved per user
+ * and table like everywhere else, lives here. A caller that passes columns from
+ * `useDataTableColumnState` / `usePageTableColumnVisibility` owns its state, so this adds nothing.
+ */
+export function DataTable<T>(props: DataTableProps<T>) {
+  if (props.columns.some((column) => column.resize)) {
+    return <DataTableView {...props} />;
+  }
+  return <SelfManagedDataTable {...props} />;
+}
+
+function SelfManagedDataTable<T>(props: DataTableProps<T>) {
+  const { visibleColumns } = useDataTableColumnState(props.columns, {
+    tableId: props.tableId,
+    defaultHiddenKeys: NO_DEFAULT_HIDDEN_COLUMN_KEYS,
+  });
+  return <DataTableView {...props} columns={visibleColumns} />;
+}
+
+function DataTableView<T>({
   tableId,
   data,
   columns,
@@ -360,6 +421,7 @@ export function DataTable<T>({
                     shouldTruncateDataTableColumn(column) && 'min-w-0 overflow-hidden',
                     hasResizeHandle && 'relative',
                     column.className,
+                    alignClass(column),
                     dataCellPaddingClass(column)
                   )}
                   data-column-key={column.key}
@@ -424,12 +486,18 @@ export function DataTable<T>({
                       className={cn(
                         truncate && 'min-w-0 overflow-hidden',
                         column.className,
+                        alignClass(column),
                         dataCellPaddingClass(column)
                       )}
                       data-column-key={column.key}
                       style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
                     >
-                      <DataTableCellContent truncate={truncate} columnKey={column.key}>
+                      <DataTableCellContent
+                        truncate={truncate}
+                        fitContent={isFittableColumn(column)}
+                        justifyClass={alignJustifyClass(column)}
+                        columnKey={column.key}
+                      >
                         {content}
                       </DataTableCellContent>
                     </TableCell>

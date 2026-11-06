@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Permission, Role, Tag } from '@grantjs/schema';
-import { Key, Loader2 } from 'lucide-react';
+import { Key } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -32,6 +30,7 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -202,38 +201,41 @@ export function RolePermissions({ role }: RolePermissionsProps) {
   };
 
   const columns: DataTableColumnConfig<Permission>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (permission: Permission) => {
-        const rowState = getRowState(permission.id);
-        const checkbox = (
-          <Checkbox
-            checked={rowState.checked}
-            onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked === true)}
-            disabled={!canUpdate || rowState.disabled}
-          />
-        );
-
-        if (rowState.disabled) {
-          return (
-            <DetailTableCheckboxCell>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">{checkbox}</span>
-                  </TooltipTrigger>
-                  <TooltipContent>{formatSourceLabel(permission.id)}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </DetailTableCheckboxCell>
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (permission: Permission) => {
+          const rowState = getRowState(permission.id);
+          const checkbox = (
+            <Checkbox
+              checked={rowState.checked}
+              onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked === true)}
+              disabled={!canUpdate || rowState.disabled}
+            />
           );
-        }
 
-        return <DetailTableCheckboxCell>{checkbox}</DetailTableCheckboxCell>;
+          if (rowState.disabled) {
+            return (
+              <DetailTableCheckboxCell>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">{checkbox}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{formatSourceLabel(permission.id)}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DetailTableCheckboxCell>
+            );
+          }
+
+          return <DetailTableCheckboxCell>{checkbox}</DetailTableCheckboxCell>;
+        },
       },
-    },
+      (permission: Permission) => updatingPermissionId === permission.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -303,17 +305,6 @@ export function RolePermissions({ role }: RolePermissionsProps) {
         );
       },
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (permission: Permission) =>
-        updatingPermissionId === permission.id ? (
-          <DetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </DetailTableIconCell>
-        ) : null,
-    },
   ];
 
   const {
@@ -333,7 +324,6 @@ export function RolePermissions({ role }: RolePermissionsProps) {
       { key: 'action', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'source', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };

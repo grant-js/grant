@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Group, Role, Tag } from '@grantjs/schema';
-import { Group as GroupIcon, Loader2 } from 'lucide-react';
+import { Group as GroupIcon } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -31,6 +29,7 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useDataTableColumnState, useDebounce } from '@/hooks/common';
@@ -149,20 +148,23 @@ export function RoleGroups({ role }: RoleGroupsProps) {
   };
 
   const columns: DataTableColumnConfig<Group>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (group: Group) => (
-        <DetailTableCheckboxCell>
-          <Checkbox
-            checked={isGroupChecked(group.id)}
-            onCheckedChange={(checked) => handleGroupToggle(group.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </DetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (group: Group) => (
+          <DetailTableCheckboxCell>
+            <Checkbox
+              checked={isGroupChecked(group.id)}
+              onCheckedChange={(checked) => handleGroupToggle(group.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </DetailTableCheckboxCell>
+        ),
+      },
+      (group: Group) => updatingGroupId === group.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -215,17 +217,6 @@ export function RoleGroups({ role }: RoleGroupsProps) {
         <ScrollBadges items={transformTagsToBadges(group.tags)} height={60} />
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (group: Group) =>
-        updatingGroupId === group.id ? (
-          <DetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </DetailTableIconCell>
-        ) : null,
-    },
   ];
 
   const {
@@ -244,7 +235,6 @@ export function RoleGroups({ role }: RoleGroupsProps) {
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };

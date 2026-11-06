@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
 import { Resource, Tag } from '@grantjs/schema';
-import { Loader2, Tag as TagIcon } from 'lucide-react';
+import { Tag as TagIcon } from 'lucide-react';
 
 import {
   Avatar,
@@ -17,8 +17,6 @@ import {
   DETAIL_CONTENT_COLUMN_CLASS,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
-  DETAIL_LOADING_COLUMN,
-  DETAIL_LOADING_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
@@ -30,6 +28,7 @@ import {
   type TableSkeletonColumnConfig,
   Toolbar,
   toolbarGrow,
+  withCheckboxSavingState,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -156,20 +155,23 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
   };
 
   const columns: DataTableColumnConfig<Tag>[] = [
-    {
-      key: 'checkbox',
-      header: '',
-      ...DETAIL_CHECKBOX_COLUMN,
-      render: (tag: Tag) => (
-        <DetailTableCheckboxCell>
-          <Checkbox
-            checked={isTagChecked(tag.id)}
-            onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
-            disabled={!canUpdate}
-          />
-        </DetailTableCheckboxCell>
-      ),
-    },
+    withCheckboxSavingState(
+      {
+        key: 'checkbox',
+        header: '',
+        ...DETAIL_CHECKBOX_COLUMN,
+        render: (tag: Tag) => (
+          <DetailTableCheckboxCell>
+            <Checkbox
+              checked={isTagChecked(tag.id)}
+              onCheckedChange={(checked) => handleTagToggle(tag.id, checked === true)}
+              disabled={!canUpdate}
+            />
+          </DetailTableCheckboxCell>
+        ),
+      },
+      (tag: Tag) => updatingTagId === tag.id
+    ),
     {
       key: 'icon',
       header: '',
@@ -209,17 +211,6 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
         </div>
       ),
     },
-    {
-      key: 'loading',
-      header: '',
-      ...DETAIL_LOADING_COLUMN,
-      render: (tag: Tag) =>
-        updatingTagId === tag.id ? (
-          <DetailTableIconCell>
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </DetailTableIconCell>
-        ) : null,
-    },
   ];
 
   const {
@@ -237,7 +228,6 @@ export function ResourceTags({ resource }: ResourceTagsProps) {
       DETAIL_ICON_SKELETON,
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'color', type: 'text', ...DETAIL_TEXT_COLUMN },
-      DETAIL_LOADING_SKELETON,
     ]),
     rowCount: 5,
   };

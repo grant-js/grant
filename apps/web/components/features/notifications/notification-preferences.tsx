@@ -4,20 +4,13 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AccountType, NotificationChannel, type NotificationPreference } from '@grantjs/schema';
 
-import { FieldInfoPopover } from '@/components/common';
+import { DataTable, type DataTableColumnConfig } from '@/components/common/data-table';
+import { FieldInfoPopover } from '@/components/common/field-info-popover';
 import { SettingCard } from '@/components/features/settings';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { useNotificationPreferences } from '@/hooks/notifications';
+import { DATA_TABLE_SWITCH_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useAuthStore } from '@/stores/auth.store';
 
 const EDITABLE_CATEGORIES = ['iam', 'membership', 'integrations'] as const;
@@ -52,44 +45,6 @@ function isOrgEnforced(
 ): boolean {
   return preferences.some(
     (p) => p.source === 'org_enforced' && p.category === category && p.channel === channel
-  );
-}
-
-function PreferencesTableSkeleton() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-4 w-3/4 max-w-md" />
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <Skeleton className="h-4 w-20" />
-            </TableHead>
-            <TableHead className="text-center">
-              <Skeleton className="mx-auto h-4 w-12" />
-            </TableHead>
-            <TableHead className="text-center">
-              <Skeleton className="mx-auto h-4 w-12" />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: PREFERENCE_ROW_COUNT }, (_, index) => (
-            <TableRow key={index}>
-              <TableCell>
-                <Skeleton className="h-4 w-24" />
-              </TableCell>
-              <TableCell className="text-center">
-                <Skeleton className="mx-auto h-5 w-9 rounded-full" />
-              </TableCell>
-              <TableCell className="text-center">
-                <Skeleton className="mx-auto h-5 w-9 rounded-full" />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
   );
 }
 
@@ -136,9 +91,46 @@ function PreferencesTable({ scopeTenant }: { scopeTenant: ScopeTenant }) {
     }
   };
 
-  if (loading) {
-    return <PreferencesTableSkeleton />;
-  }
+  const columns: DataTableColumnConfig<(typeof rows)[number]>[] = [
+    {
+      key: 'category',
+      header: t('category'),
+      width: '120px',
+      className: 'capitalize',
+      render: (row) => t(`categories.${row.category}`),
+    },
+    ...CHANNELS.map((channel): DataTableColumnConfig<(typeof rows)[number]> => ({
+      key: channel,
+      header: channel === NotificationChannel.InApp ? t('inApp') : t('email'),
+      width: DATA_TABLE_SWITCH_COLUMN_WIDTH,
+      columnWidthMode: 'fixed',
+      enableResizing: false,
+      enableHiding: false,
+      truncate: false,
+      align: 'center',
+      render: (row) => {
+        const enabled = row.channels.find((entry) => entry.channel === channel)?.enabled ?? false;
+        const enforced = isOrgEnforced(preferences, row.category, channel);
+        const disabled = row.locked || enforced || saving === `${row.category}:${channel}`;
+        return (
+          <Switch
+            checked={row.locked ? true : enabled}
+            disabled={disabled}
+            onCheckedChange={(checked) => {
+              if (!row.locked) {
+                void handleToggle(
+                  row.category as (typeof EDITABLE_CATEGORIES)[number],
+                  channel,
+                  checked
+                );
+              }
+            }}
+            aria-label={`${row.category} ${channel}`}
+          />
+        );
+      },
+    })),
+  ];
 
   if (error) {
     return <p className="text-destructive text-sm">{error.message}</p>;
@@ -147,44 +139,24 @@ function PreferencesTable({ scopeTenant }: { scopeTenant: ScopeTenant }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{t('securityLockedHint')}</p>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('category')}</TableHead>
-            <TableHead className="text-center">{t('inApp')}</TableHead>
-            <TableHead className="text-center">{t('email')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.category}>
-              <TableCell className="capitalize">{t(`categories.${row.category}`)}</TableCell>
-              {row.channels.map(({ channel, enabled }) => {
-                const enforced = isOrgEnforced(preferences, row.category, channel);
-                const disabled = row.locked || enforced || saving === `${row.category}:${channel}`;
-                return (
-                  <TableCell key={channel} className="text-center">
-                    <Switch
-                      checked={row.locked ? true : enabled}
-                      disabled={disabled}
-                      onCheckedChange={(checked) => {
-                        if (!row.locked) {
-                          void handleToggle(
-                            row.category as (typeof EDITABLE_CATEGORIES)[number],
-                            channel,
-                            checked
-                          );
-                        }
-                      }}
-                      aria-label={`${row.category} ${channel}`}
-                    />
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <DataTable
+        tableId={`notifications.preferences.${scopeTenant}`}
+        data={rows}
+        columns={columns}
+        loading={loading}
+        emptyState={{ icon: null, title: '', description: '' }}
+        skeletonConfig={{
+          rowCount: PREFERENCE_ROW_COUNT,
+          columns: [
+            { key: 'category', type: 'text', width: '120px' },
+            ...CHANNELS.map((channel) => ({
+              key: channel,
+              type: 'switch' as const,
+              width: DATA_TABLE_SWITCH_COLUMN_WIDTH,
+            })),
+          ],
+        }}
+      />
     </div>
   );
 }
