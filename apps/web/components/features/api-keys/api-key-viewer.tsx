@@ -27,6 +27,10 @@ import { useApiKeys } from '@/hooks/api-keys';
 import { usePageTableColumnVisibility, useScopeFromParams } from '@/hooks/common';
 import { isProjectApiKeyScope } from '@/lib/api-key-grants';
 import { API_KEY_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
+import {
+  DATA_TABLE_AVATAR_COLUMN_WIDTH,
+  DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 import { type ApiKeyView, useApiKeysStore } from '@/stores/api-keys.store';
 
 import { ApiKeyActions } from './api-key-actions';
@@ -128,7 +132,7 @@ export function ApiKeyViewer({
       {
         key: 'icon',
         header: '',
-        width: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.width : '60px',
+        width: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.width : DATA_TABLE_AVATAR_COLUMN_WIDTH,
         columnWidthMode: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.columnWidthMode : 'fixed',
         className: embedded ? USER_DETAIL_ICON_ONLY_COLUMN.className : 'pl-4',
         enableHiding: false,
@@ -246,7 +250,7 @@ export function ApiKeyViewer({
             {
               key: 'navigation',
               header: '',
-              width: '60px',
+              width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
               render: (apiKey: ApiKey) => (
                 <EntityNavigationButton
                   entitySegment="api-keys"

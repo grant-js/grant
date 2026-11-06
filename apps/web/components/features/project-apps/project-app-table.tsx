@@ -15,6 +15,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { useScopeFromParams } from '@/hooks/common';
+import { DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
@@ -84,7 +85,7 @@ export function ProjectAppTable() {
     {
       key: 'navigation',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH,
       render: (app: ProjectApp) => (
         <EntityNavigationButton
           entitySegment="apps"

@@ -26,13 +26,13 @@ import {
   measureFitContentWidth,
   parseColumnWidthPx,
   resolveColumnBounds,
-  shrinkFittedWidths,
 } from '@/lib/data-table-column-resize';
 import {
   DATA_TABLE_ACTIONS_COLUMN_WIDTH,
   dataTableMinWidthStyle,
   detailTableColumnStyle,
   type DetailTableColumnWidthMode,
+  resolveChromeColumnWidth,
 } from '@/lib/detail-table-column-width';
 import { cn } from '@/lib/utils';
 
@@ -117,7 +117,7 @@ function resolveColumnLayout<T>(
 } {
   // Chrome (checkbox, icon, avatar, open button): exactly the declared width, whatever the slack.
   if (isChromeDataTableColumn(column)) {
-    return { width: column.width, mode: 'fixed' };
+    return { width: resolveChromeColumnWidth(column.key, column.width), mode: 'fixed' };
   }
   const userWidth = column.resize?.width;
   if (userWidth !== undefined && isDataTableColumnResizable(column)) {
@@ -156,39 +156,6 @@ function isFittableColumn<T>(column: DataTableColumnConfig<T>): boolean {
 /** Data columns get the shared horizontal padding; chrome columns keep their compact one. */
 function dataCellPaddingClass<T>(column: DataTableColumnConfig<T>): string | undefined {
   return isChromeDataTableColumn(column) ? undefined : DATA_TABLE_CELL_PADDING_CLASS;
-}
-
-/**
- * Fitted widths can exceed a column's declared width. When the columns together are wider than
- * the container, those columns shrink back toward the declared width (proportionally, never below
- * it); only what is still too wide scrolls.
- */
-function shrinkLayouts<T>(
-  columns: DataTableColumnConfig<T>[],
-  layouts: { width?: string; mode: DetailTableColumnWidthMode }[],
-  fitted: Record<string, number>,
-  containerWidth: number,
-  hasActionsColumn: boolean
-) {
-  const items: { width: number; floor: number }[] = [];
-  for (let index = 0; index < columns.length; index++) {
-    const column = columns[index];
-    const width = parseColumnWidthPx(layouts[index].width);
-    if (width === undefined) {
-      // A column with no width of its own counts at its floor; %/calc widths cannot be summed.
-      if (layouts[index].width !== undefined) return layouts;
-      items.push({ width: 128, floor: 128 });
-      continue;
-    }
-    const isFitted = column.resize?.width === undefined && fitted[column.key] !== undefined;
-    const declared = parseColumnWidthPx(column.width) ?? width;
-    items.push({ width, floor: isFitted ? Math.min(width, declared) : width });
-  }
-
-  const shrunk = shrinkFittedWidths(items, containerWidth, hasActionsColumn ? 100 : 0);
-  return layouts.map((layout, index) =>
-    shrunk[index] === items[index].width ? layout : { ...layout, width: `${shrunk[index]}px` }
-  );
 }
 
 function textFromReactNode(node: ReactNode): string {
@@ -259,7 +226,6 @@ export function DataTable<T>({
   // Widths fitted to the content, per column key. Measured once per table mount (and again for a
   // column whose user width was reset); never saved.
   const [fitted, setFitted] = useState<Record<string, number>>({});
-  const [containerWidth, setContainerWidth] = useState(0);
   const measuredKeys = useRef<Set<string>>(new Set());
   const previousUserWidths = useRef<Record<string, number | undefined>>({});
   const pendingRemeasure = useRef<Set<string>>(new Set());
@@ -297,9 +263,6 @@ export function DataTable<T>({
       for (const column of columns) pendingRemeasure.current.add(column.key);
     }
 
-    const width = root.clientWidth;
-    setContainerWidth((current) => (current === width ? current : width));
-
     const toMeasure = columns.filter(
       (column) =>
         isFittableColumn(column) &&
@@ -328,21 +291,8 @@ export function DataTable<T>({
     if (Object.keys(next).length > 0) setFitted((current) => ({ ...current, ...next }));
   });
 
-  // Keep the container width current when the page or sidebar resizes.
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root || typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => {
-      const width = root.clientWidth;
-      setContainerWidth((current) => (current === width ? current : width));
-    });
-    observer.observe(root);
-    return () => observer.disconnect();
-  }, [loading, hasData]);
-
   const declaredLayouts = columns.map((column) => resolveColumnLayout(column));
-  const fittedLayouts = columns.map((column) => resolveColumnLayout(column, fitted[column.key]));
-  const layouts = shrinkLayouts(columns, fittedLayouts, fitted, containerWidth, !!actionsColumn);
+  const layouts = columns.map((column) => resolveColumnLayout(column, fitted[column.key]));
   // Slack goes to an empty trailing column so real columns keep their exact width: with every
   // column sized, a fixed table layout would otherwise spread it over all of them. Not when a
   // column has no width at all, which then takes the leftover space by design.
@@ -433,10 +383,7 @@ export function DataTable<T>({
               </TableHead>
             ))}
             {actionsColumn && (
-              <TableHead
-                className="w-[100px]"
-                style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')}
-              />
+              <TableHead style={detailTableColumnStyle(DATA_TABLE_ACTIONS_COLUMN_WIDTH, 'fixed')} />
             )}
             {showFiller && <TableHead aria-hidden data-column-filler className="p-0" />}
           </TableRow>
@@ -481,7 +428,9 @@ export function DataTable<T>({
                   );
                 })}
                 {actionsColumn && (
-                  <TableCell className="text-right">{actionsColumn.render(item)}</TableCell>
+                  <TableCell className="px-2">
+                    <div className="flex justify-center">{actionsColumn.render(item)}</div>
+                  </TableCell>
                 )}
                 {showFiller && <TableCell aria-hidden data-column-filler className="p-0" />}
               </TableRow>

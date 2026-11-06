@@ -13,6 +13,7 @@ import {
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
+import { DATA_TABLE_AVATAR_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { useTagsStore } from '@/stores/tags.store';
 
 import { TagActions } from './tag-actions';
@@ -29,7 +30,7 @@ export function TagTable() {
     {
       key: 'avatar',
       header: '',
-      width: '60px',
+      width: DATA_TABLE_AVATAR_COLUMN_WIDTH,
       className: 'pl-4',
       render: (tag: Tag) => (
         <Avatar

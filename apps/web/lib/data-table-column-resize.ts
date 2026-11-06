@@ -1,4 +1,9 @@
 import type { DataTableColumnConfig } from '@/components/common/data-table';
+import {
+  DATA_TABLE_CHECKBOX_COLUMN_WIDTH,
+  DATA_TABLE_ICON_COLUMN_WIDTH,
+  DATA_TABLE_ICON_ONLY_COLUMN_WIDTH,
+} from '@/lib/detail-table-column-width';
 
 /** Default bounds for a user-set width; a column overrides them with `minWidth` / `maxWidth`. */
 export const DATA_TABLE_COLUMN_MIN_WIDTH_PX = 64;
@@ -8,7 +13,11 @@ export const DATA_TABLE_COLUMN_MAX_WIDTH_PX = 640;
 export const DATA_TABLE_RESIZE_STEP_PX = 16;
 export const DATA_TABLE_RESIZE_LARGE_STEP_PX = 64;
 
-const CHROME_COLUMN_WIDTHS = new Set(['2.5rem', '2.75rem']);
+const CHROME_COLUMN_WIDTHS = new Set([
+  DATA_TABLE_CHECKBOX_COLUMN_WIDTH,
+  DATA_TABLE_ICON_COLUMN_WIDTH,
+  DATA_TABLE_ICON_ONLY_COLUMN_WIDTH,
+]);
 
 export interface DataTableColumnBounds {
   min: number;
@@ -99,41 +108,10 @@ export function measureFitContentWidth(element: HTMLElement): number {
 
 /**
  * Default width of a column: its widest content plus the cell padding, within the column's
- * min/max. The declared width is not a cap: see {@link shrinkFittedWidths}.
+ * min/max. The declared width is not a cap: a wide table scrolls.
  */
 export function fitColumnWidth(contentWidth: number, bounds: DataTableColumnBounds): number {
   const wanted =
     Math.ceil(contentWidth) + DATA_TABLE_FIT_SAFETY_PX + DATA_TABLE_CELL_HORIZONTAL_PADDING_PX;
   return clampColumnWidth(wanted, bounds);
-}
-
-export interface ColumnWidthItem {
-  /** Width the column has before any shrinking. */
-  width: number;
-  /** Smallest width it may be shrunk to; equal to `width` for a column that must not shrink. */
-  floor: number;
-}
-
-/**
- * When the columns together are wider than the container, shrinks the shrinkable ones
- * (`floor < width`) proportionally to how far they sit above their floor, never below it. With
- * room to spare, or nothing shrinkable, the widths come back unchanged; any remaining overflow
- * is left to horizontal scroll. `reserved` is width outside these columns (the actions column).
- */
-export function shrinkFittedWidths(
-  items: ReadonlyArray<ColumnWidthItem>,
-  containerWidth: number,
-  reserved = 0
-): number[] {
-  const widths = items.map((item) => item.width);
-  const total = widths.reduce((sum, width) => sum + width, reserved);
-  const excess = total - containerWidth;
-  if (containerWidth <= 0 || excess <= 0) return widths;
-
-  const room = items.map((item) => Math.max(0, item.width - item.floor));
-  const totalRoom = room.reduce((sum, value) => sum + value, 0);
-  if (totalRoom === 0) return widths;
-
-  const share = Math.min(1, excess / totalRoom);
-  return items.map((item, index) => Math.ceil(item.width - room[index] * share));
 }
