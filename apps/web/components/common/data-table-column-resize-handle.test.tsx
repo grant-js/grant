@@ -187,9 +187,9 @@ describe('DataTable column resize', () => {
 
   it('shows a handle only on resizable columns', () => {
     render(<TableHarness />);
+    // Status is the last column: nothing to its right, so no handle.
     expect(screen.getAllByRole('separator').map((el) => el.getAttribute('aria-label'))).toEqual([
       'resizeColumn{"column":"Name"}',
-      'resizeColumn{"column":"Status"}',
     ]);
   });
 
