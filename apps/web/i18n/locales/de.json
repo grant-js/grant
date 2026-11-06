@@ -81,7 +81,8 @@
     "dataTable": {
       "columns": "Spalten",
       "toggleColumns": "Spalten ein-/ausblenden",
-      "resetColumns": "Spalten zurücksetzen"
+      "resetColumns": "Spalten zurücksetzen",
+      "resizeColumn": "Spalte {column} anpassen"
     },
     "detailAttachmentFilter": {
       "label": "Anzeigen",

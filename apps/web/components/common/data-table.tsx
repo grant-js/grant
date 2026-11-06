@@ -12,6 +12,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  isChromeDataTableColumn,
+  isDataTableColumnResizable,
+  parseColumnWidthPx,
+  resolveColumnBounds,
+} from '@/lib/data-table-column-resize';
+import {
   DATA_TABLE_ACTIONS_COLUMN_WIDTH,
   dataTableMinWidthStyle,
   detailTableColumnStyle,
@@ -19,15 +25,29 @@ import {
 } from '@/lib/detail-table-column-width';
 import { cn } from '@/lib/utils';
 
+import { DataTableColumnResizeHandle } from './data-table-column-resize-handle';
 import { EmptyState, type EmptyStateProps } from './empty-state';
 import { TableSkeleton, TableSkeletonColumnConfig } from './table-skeleton';
-
-const CHROME_COLUMN_WIDTHS = new Set(['2.5rem', '2.75rem']);
 
 export interface DataTableColumnConfig<T> {
   key: string;
   header: string;
+  /** Default width. A width the user set by resizing takes its place, within min/max. */
   width?: string;
+  /** Smallest width in px the user can resize to. Default 64. */
+  minWidth?: number;
+  /** Largest width in px the user can resize to. Default 640. */
+  maxWidth?: number;
+  /**
+   * Whether the header shows a resize handle. Default: on, except for chrome columns (checkbox,
+   * icon, avatar) and columns without a header text.
+   */
+  enableResizing?: boolean;
+  /** Set by `useDataTableColumnState`: the user's width and how to change it. Do not set by hand. */
+  resize?: {
+    width?: number;
+    onChange: (key: string, width: number | null) => void;
+  };
   /** When `fixed`, column keeps its width; default `fixed`. Use `min` for columns that share leftover space. */
   columnWidthMode?: DetailTableColumnWidthMode;
   className?: string;
@@ -69,15 +89,16 @@ function resolveTableLayoutClass(): string {
   return 'table-fixed w-full';
 }
 
-function isChromeColumnClassName(className?: string): boolean {
-  if (!className) {
-    return false;
+/** A user width makes the column fixed at that width; otherwise the declared layout stands. */
+function resolveColumnLayout<T>(column: DataTableColumnConfig<T>): {
+  width?: string;
+  mode: DetailTableColumnWidthMode;
+} {
+  const userWidth = column.resize?.width;
+  if (userWidth !== undefined && isDataTableColumnResizable(column)) {
+    return { width: `${userWidth}px`, mode: 'fixed' };
   }
-
-  return (
-    (className.includes('w-10') && className.includes('min-w-10')) ||
-    (className.includes('w-11') && className.includes('min-w-11'))
-  );
+  return { width: column.width, mode: resolveColumnWidthMode(column) };
 }
 
 function shouldTruncateDataTableColumn<T>(column: DataTableColumnConfig<T>): boolean {
@@ -89,15 +110,7 @@ function shouldTruncateDataTableColumn<T>(column: DataTableColumnConfig<T>): boo
     return true;
   }
 
-  if (isChromeColumnClassName(column.className)) {
-    return false;
-  }
-
-  return !(
-    resolveColumnWidthMode(column) === 'fixed' &&
-    column.width !== undefined &&
-    CHROME_COLUMN_WIDTHS.has(column.width)
-  );
+  return !isChromeDataTableColumn(column);
 }
 
 function textFromReactNode(node: ReactNode): string {
@@ -151,6 +164,7 @@ export function DataTable<T>({
   const hasData = data.length > 0;
   const showEmptyState = !hasData && !loading;
   const tableLayoutClass = resolveTableLayoutClass();
+  const layouts = columns.map(resolveColumnLayout);
 
   if (showEmptyState) {
     return (
@@ -163,10 +177,10 @@ export function DataTable<T>({
   if (loading) {
     const skeletonColumns: TableSkeletonColumnConfig[] =
       skeletonConfig?.columns ||
-      columns.map((column) => ({
+      columns.map((column, index) => ({
         key: column.key,
         type: 'text',
-        width: column.width,
+        width: layouts[index].width,
         className: column.className,
         columnWidthMode: column.columnWidthMode,
       }));
@@ -185,21 +199,41 @@ export function DataTable<T>({
     <div className="min-w-0 rounded-md border" data-table-id={tableId}>
       <Table
         className={cn(tableLayoutClass)}
-        style={dataTableMinWidthStyle(columns, !!actionsColumn)}
+        style={dataTableMinWidthStyle(
+          columns.map((column, index) => ({ width: layouts[index].width })),
+          !!actionsColumn
+        )}
       >
-        <DataTableColGroup columns={columns} actionsColumn={!!actionsColumn} />
+        <DataTableColGroup
+          columns={columns.map((column, index) => ({
+            key: column.key,
+            width: layouts[index].width,
+          }))}
+          actionsColumn={!!actionsColumn}
+        />
         <TableHeader>
           <TableRow>
-            {columns.map((column) => (
+            {columns.map((column, index) => (
               <TableHead
                 key={column.key}
                 className={cn(
                   shouldTruncateDataTableColumn(column) && 'min-w-0 overflow-hidden',
+                  column.resize && isDataTableColumnResizable(column) && 'relative',
                   column.className
                 )}
-                style={detailTableColumnStyle(column.width, resolveColumnWidthMode(column))}
+                style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
               >
                 {column.header}
+                {column.resize && isDataTableColumnResizable(column) && (
+                  <DataTableColumnResizeHandle
+                    label={column.header}
+                    width={column.resize.width}
+                    defaultWidth={parseColumnWidthPx(column.width)}
+                    bounds={resolveColumnBounds(column)}
+                    onResize={(width) => column.resize?.onChange(column.key, width)}
+                    onReset={() => column.resize?.onChange(column.key, null)}
+                  />
+                )}
               </TableHead>
             ))}
             {actionsColumn && (
@@ -225,7 +259,7 @@ export function DataTable<T>({
 
             return (
               <TableRow key={rowIndex}>
-                {columns.map((column) => {
+                {columns.map((column, index) => {
                   const truncate = shouldTruncateDataTableColumn(column);
                   const content = column.render(item);
 
@@ -233,7 +267,7 @@ export function DataTable<T>({
                     <TableCell
                       key={column.key}
                       className={cn(truncate && 'min-w-0 overflow-hidden', column.className)}
-                      style={detailTableColumnStyle(column.width, resolveColumnWidthMode(column))}
+                      style={detailTableColumnStyle(layouts[index].width, layouts[index].mode)}
                     >
                       <DataTableCellContent truncate={truncate}>{content}</DataTableCellContent>
                     </TableCell>

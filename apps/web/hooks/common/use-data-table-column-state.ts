@@ -6,6 +6,11 @@ import type { DataTableColumnConfig } from '@/components/common/data-table';
 import type { DataTableColumnToggleItem } from '@/components/common/data-table-column-toggle';
 import type { TableSkeletonColumnConfig } from '@/components/common/table-skeleton';
 import {
+  clampColumnWidth,
+  isDataTableColumnResizable,
+  resolveColumnBounds,
+} from '@/lib/data-table-column-resize';
+import {
   buildDefaultColumnState,
   clearStoredColumnState,
   type DataTableColumnState,
@@ -31,8 +36,8 @@ export interface UseDataTableColumnStateOptions {
 /**
  * The one column-state hook for a `DataTable`: visibility, order and widths, saved per user and
  * table in localStorage. Nothing is written until the user changes something, and nothing is
- * written while the user id is unknown. `order` and `widths` hold defaults only until resize
- * and reorder land.
+ * written while the user id is unknown. `visibleColumns` carry the user's widths and the
+ * resize callbacks the `DataTable` handles use; `order` holds the default until reorder lands.
  */
 export function useDataTableColumnState<T>(
   columns: DataTableColumnConfig<T>[],
@@ -78,6 +83,30 @@ export function useDataTableColumnState<T>(
     [storageKey]
   );
 
+  const columnsRef = useRef(columns);
+  columnsRef.current = columns;
+
+  /** Sets a user width, clamped to the column's bounds; `null` goes back to the default width. */
+  const setColumnWidth = useCallback(
+    (key: string, width: number | null) => {
+      const column = columnsRef.current.find((candidate) => candidate.key === key);
+      if (!column || !isDataTableColumnResizable(column)) return;
+
+      const current = stateRef.current;
+      const nextWidths = { ...current.widths };
+      if (width === null) {
+        delete nextWidths[key];
+      } else {
+        nextWidths[key] = clampColumnWidth(width, resolveColumnBounds(column));
+      }
+      const next: DataTableColumnState = { ...current, widths: nextWidths };
+      stateRef.current = next;
+      setStored(next);
+      writeStoredColumnState(storageKey, next);
+    },
+    [storageKey]
+  );
+
   const resetColumns = useCallback(() => {
     const defaults = buildDefaultColumnState(columns, hiddenKeys);
     stateRef.current = defaults;
@@ -96,8 +125,12 @@ export function useDataTableColumnState<T>(
   );
 
   const visibleColumns = useMemo(
-    () => filterColumnsByVisibility(columns, visibility),
-    [columns, visibility]
+    () =>
+      filterColumnsByVisibility(columns, visibility).map((column) => ({
+        ...column,
+        resize: { width: widths[column.key], onChange: setColumnWidth },
+      })),
+    [columns, visibility, widths, setColumnWidth]
   );
 
   const columnToggleItems: DataTableColumnToggleItem[] = useMemo(
@@ -122,6 +155,7 @@ export function useDataTableColumnState<T>(
     order,
     widths,
     toggleColumn,
+    setColumnWidth,
     resetColumns,
     columnToggleItems,
     filterSkeletonColumns,

@@ -81,7 +81,8 @@
     "dataTable": {
       "columns": "Columns",
       "toggleColumns": "Toggle columns",
-      "resetColumns": "Reset columns"
+      "resetColumns": "Reset columns",
+      "resizeColumn": "Resize {column}"
     },
     "detailAttachmentFilter": {
       "label": "Show",

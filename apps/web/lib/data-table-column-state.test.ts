@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DataTableColumnConfig } from '@/components/common/data-table';
 
 import {
-  buildDefaultColumnState,
-  clearStoredColumnState,
   DATA_TABLE_COLUMN_MAX_WIDTH_PX,
   DATA_TABLE_COLUMN_MIN_WIDTH_PX,
+} from './data-table-column-resize';
+import {
+  buildDefaultColumnState,
+  clearStoredColumnState,
   dataTableColumnStorageKey,
   mergeColumnState,
   parseStoredColumnState,
@@ -103,9 +105,9 @@ describe('mergeColumnState', () => {
     expect(merged.order).toEqual(['name', 'icon', 'tags']);
   });
 
-  it('clamps widths to the allowed range', () => {
+  it('clamps widths to the default range', () => {
     const merged = mergeColumnState(
-      { visibility: {}, order: [], widths: { name: 5, tags: 5000, icon: 120 } },
+      { visibility: {}, order: [], widths: { name: 5, tags: 5000 } },
       columns,
       none
     );
@@ -113,8 +115,32 @@ describe('mergeColumnState', () => {
     expect(merged.widths).toEqual({
       name: DATA_TABLE_COLUMN_MIN_WIDTH_PX,
       tags: DATA_TABLE_COLUMN_MAX_WIDTH_PX,
-      icon: 120,
     });
+  });
+
+  it('clamps widths to the column own minWidth / maxWidth', () => {
+    const bounded: DataTableColumnConfig<Row>[] = [
+      { key: 'name', header: 'Name', minWidth: 120, maxWidth: 300, render: () => null },
+      { key: 'tags', header: 'Tags', maxWidth: 900, render: () => null },
+    ];
+    const merged = mergeColumnState(
+      { visibility: {}, order: [], widths: { name: 100, tags: 800 } },
+      bounded,
+      none
+    );
+    expect(merged.widths).toEqual({ name: 120, tags: 800 });
+    expect(
+      mergeColumnState({ visibility: {}, order: [], widths: { name: 999 } }, bounded, none).widths
+    ).toEqual({ name: 300 });
+  });
+
+  it('drops saved widths of columns that cannot be resized', () => {
+    const merged = mergeColumnState(
+      { visibility: {}, order: [], widths: { icon: 120, name: 120 } },
+      columns,
+      none
+    );
+    expect(merged.widths).toEqual({ name: 120 });
   });
 });
 
