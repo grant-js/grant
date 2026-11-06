@@ -161,12 +161,8 @@ export function EmailVerificationFeaturesDialog({ trigger }: EmailVerificationFe
       enableResizing: false,
       enableHiding: false,
       truncate: false,
-      className: 'text-center',
-      render: (feature) => (
-        <div className="flex justify-center">
-          <StatusIcon status={feature[account]} />
-        </div>
-      ),
+      align: 'center',
+      render: (feature) => <StatusIcon status={feature[account]} />,
     })),
   ];
 

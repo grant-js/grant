@@ -107,28 +107,26 @@ function PreferencesTable({ scopeTenant }: { scopeTenant: ScopeTenant }) {
       enableResizing: false,
       enableHiding: false,
       truncate: false,
-      className: 'text-center',
+      align: 'center',
       render: (row) => {
         const enabled = row.channels.find((entry) => entry.channel === channel)?.enabled ?? false;
         const enforced = isOrgEnforced(preferences, row.category, channel);
         const disabled = row.locked || enforced || saving === `${row.category}:${channel}`;
         return (
-          <div className="flex justify-center">
-            <Switch
-              checked={row.locked ? true : enabled}
-              disabled={disabled}
-              onCheckedChange={(checked) => {
-                if (!row.locked) {
-                  void handleToggle(
-                    row.category as (typeof EDITABLE_CATEGORIES)[number],
-                    channel,
-                    checked
-                  );
-                }
-              }}
-              aria-label={`${row.category} ${channel}`}
-            />
-          </div>
+          <Switch
+            checked={row.locked ? true : enabled}
+            disabled={disabled}
+            onCheckedChange={(checked) => {
+              if (!row.locked) {
+                void handleToggle(
+                  row.category as (typeof EDITABLE_CATEGORIES)[number],
+                  channel,
+                  checked
+                );
+              }
+            }}
+            aria-label={`${row.category} ${channel}`}
+          />
         );
       },
     })),

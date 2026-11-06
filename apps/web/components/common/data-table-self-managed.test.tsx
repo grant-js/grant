@@ -68,4 +68,40 @@ describe('DataTable without a column picker', () => {
       JSON.parse(window.localStorage.getItem('grant:table:v1:u1:plain.list') ?? '{}').widths
     ).toEqual({ name: 137 });
   });
+
+  it('centres a column header label wrapper and its cell content together', () => {
+    const centred: DataTableColumnConfig<Row>[] = [
+      { key: 'name', header: 'Name', width: '200px', render: (row) => row.name },
+      {
+        key: 'flag',
+        header: 'Flag',
+        width: '96px',
+        align: 'center',
+        truncate: false,
+        enableResizing: false,
+        render: () => <i data-testid="mark" />,
+      },
+      { key: 'wide', header: 'Wide', width: '120px', align: 'center', render: (row) => row.id },
+    ];
+    const { container } = render(
+      <DataTable
+        tableId="centred.list"
+        data={[{ id: '1', name: 'Twelve chars' }]}
+        columns={centred}
+        loading={false}
+        emptyState={{ icon: <span />, title: 'Empty', description: 'None' }}
+      />
+    );
+    for (const key of ['flag', 'wide']) {
+      expect(container.querySelector(`th[data-column-key="${key}"]`)).toHaveClass('text-center');
+      expect(container.querySelector(`td[data-column-key="${key}"]`)).toHaveClass('text-center');
+    }
+    expect(container.querySelector('th[data-column-key="name"]')).not.toHaveClass('text-center');
+    // The fitted, resizable header's label wrapper sits inside the centred th.
+    expect(container.querySelector('th[data-column-key="wide"] [data-fit-content]')).toHaveClass(
+      'inline-block'
+    );
+    // A non-clipped cell's content is centred by the table, not by the caller.
+    expect(screen.getByTestId('mark').parentElement).toHaveClass('flex', 'justify-center');
+  });
 });

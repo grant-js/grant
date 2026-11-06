@@ -68,6 +68,11 @@ export interface DataTableColumnConfig<T> {
   /** When `fixed`, column keeps its width; default `fixed`. Use `min` for columns that share leftover space. */
   columnWidthMode?: DetailTableColumnWidthMode;
   className?: string;
+  /**
+   * Horizontal alignment of the header label and the cell content together, so they line up.
+   * Default left.
+   */
+  align?: 'left' | 'center' | 'right';
   /** When false, the cell is not ellipsized (checkbox, icon, and similar chrome). Default true. */
   truncate?: boolean;
   /**
@@ -165,6 +170,19 @@ function dataCellPaddingClass<T>(column: DataTableColumnConfig<T>): string | und
   return isChromeDataTableColumn(column) ? undefined : DATA_TABLE_CELL_PADDING_CLASS;
 }
 
+function alignClass<T>(column: DataTableColumnConfig<T>): string | undefined {
+  if (column.align === 'center') return 'text-center';
+  if (column.align === 'right') return 'text-right';
+  return undefined;
+}
+
+/** Flex justification that aligns a block of cell content the same way as the header label. */
+function alignJustifyClass<T>(column: DataTableColumnConfig<T>): string | undefined {
+  if (column.align === 'center') return 'justify-center';
+  if (column.align === 'right') return 'justify-end';
+  return undefined;
+}
+
 function textFromReactNode(node: ReactNode): string {
   if (node == null || typeof node === 'boolean') {
     return '';
@@ -193,22 +211,29 @@ function DataTableCellContent({
   children,
   truncate,
   fitContent,
+  justifyClass,
   columnKey,
 }: {
   children: ReactNode;
   truncate: boolean;
   fitContent: boolean;
+  justifyClass?: string;
   columnKey: string;
 }) {
   if (!truncate) {
     // Not clipped, but measured, so the column can still start as wide as its content.
-    return fitContent ? (
-      <div className="min-w-0 max-w-full" data-fit-content data-column-key={columnKey}>
-        {children}
-      </div>
-    ) : (
-      children
-    );
+    if (fitContent) {
+      return (
+        <div
+          className={cn('min-w-0 max-w-full', justifyClass && 'flex', justifyClass)}
+          data-fit-content
+          data-column-key={columnKey}
+        >
+          {children}
+        </div>
+      );
+    }
+    return justifyClass ? <div className={cn('flex', justifyClass)}>{children}</div> : children;
   }
 
   const title = textFromReactNode(children).trim();
@@ -389,6 +414,7 @@ function DataTableView<T>({
                   shouldTruncateDataTableColumn(column) && 'min-w-0 overflow-hidden',
                   column.resize && isDataTableColumnResizable(column) && 'relative',
                   column.className,
+                  alignClass(column),
                   dataCellPaddingClass(column)
                 )}
                 data-column-key={column.key}
@@ -452,6 +478,7 @@ function DataTableView<T>({
                       className={cn(
                         truncate && 'min-w-0 overflow-hidden',
                         column.className,
+                        alignClass(column),
                         dataCellPaddingClass(column)
                       )}
                       data-column-key={column.key}
@@ -460,6 +487,7 @@ function DataTableView<T>({
                       <DataTableCellContent
                         truncate={truncate}
                         fitContent={isFittableColumn(column)}
+                        justifyClass={alignJustifyClass(column)}
                         columnKey={column.key}
                       >
                         {content}
