@@ -1,5 +1,29 @@
 # grant-api
 
+## 1.27.0
+
+### Minor Changes
+
+- d5706c0: The web header no longer links to surfaces a deployment has turned off: the API reference link shows only while `SWAGGER_ENABLED` is on, and the GraphQL link only while the Apollo Sandbox (`APOLLO_PLAYGROUND`) is on. With `APOLLO_PLAYGROUND` off, `/graphql` now serves no landing page; before, Apollo Server fell back to its own Sandbox page whenever `NODE_ENV` was not `production`. `GET /api/config` now reports both as `apiReferenceEnabled` and `graphqlPlaygroundEnabled`, plus `docsUrl`. When `DOCS_URL` is set, every docs link in the web app (header and in-page help) points at that site, so an install can link to the public docs at `https://demo.grantjs.org/docs/` instead of hosting `/docs` itself; a trailing slash is fine. `DOCS_URL` no longer defaults to `http://localhost:5173`: left unset, the web app keeps linking to its own `/docs`.
+
+### Patch Changes
+
+- de465ea: Fix the blank Swagger UI at `/api-docs`. The page now loads the OpenAPI document from `/api-docs.json` instead of having it inlined into `swagger-ui-init.js`, where a `$` pattern in a description (the CDM bcrypt hash) broke the script. A `?url=` query parameter no longer loads another document into the page.
+- @grantjs/schema@1.27.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.26.0
 
 ### Patch Changes
