@@ -1,6 +1,7 @@
 import type { IUserRepository, OptionalListScope } from '@grantjs/core';
 import {
   accounts,
+  eventLog,
   projectUsers,
   roles,
   tags,
@@ -22,7 +23,7 @@ import {
   UserSearchableField,
   UserTag,
 } from '@grantjs/schema';
-import { and, count, eq, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, count, eq, isNull, ne, or, sql } from 'drizzle-orm';
 
 import { isProjectScopedUserMetadataTenant } from '@/lib/effective-project-user-metadata.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -200,10 +201,31 @@ export class UserRepository extends EntityRepository<UserModel, User> implements
     return this.softDelete(params, transaction);
   }
 
+  /**
+   * Hard-deletes the user, taking locks in the same order as the event relay.
+   *
+   * The relay claims pending `event_log` rows `FOR UPDATE`, then its notification consumer
+   * inserts rows whose FK check takes a share lock on the recipient's `users` row. Deleting the
+   * user takes the `users` row first and then, through `ON DELETE SET NULL` on
+   * `event_log.actor_user_id` / `subject_user_id`, updates the same outbox rows: the opposite
+   * order, which deadlocked when the relay was fanning out this user's own events. Locking the
+   * user's outbox rows first (oldest first, as the relay claims them) makes the delete wait for an
+   * in-flight relay batch to commit; once held, the relay skips them (`SKIP LOCKED`).
+   *
+   * The lock only means something inside a transaction; every caller passes one.
+   */
   public async hardDeleteUser(
     params: Omit<MutationDeleteUserArgs, 'scope'>,
     transaction?: Transaction
   ): Promise<User> {
+    if (transaction) {
+      await transaction
+        .select({ id: eventLog.id })
+        .from(eventLog)
+        .where(or(eq(eventLog.actorUserId, params.id), eq(eventLog.subjectUserId, params.id)))
+        .orderBy(asc(eventLog.sequence))
+        .for('update');
+    }
     return this.hardDelete(params, transaction);
   }
 
