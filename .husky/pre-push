@@ -1,2 +1,12 @@
-# CI=1 disables Vitest watch mode so tests run once and exit
-pnpm run format:check && pnpm run lint && pnpm run dead-code:api && pnpm run dead-code:web && pnpm run dead-code:core && pnpm run dead-code:database && pnpm run dead-code:schema && pnpm run dead-code:packages && pnpm run dead-code:deploy && pnpm run codegen:check && pnpm run type-check && pnpm run build && pnpm run synth:check && CI=1 pnpm test && pnpm run secret-scan:protect
+# CI=1 disables Vitest watch mode so tests run once and exit.
+#
+# Unit tests are capped here, not in CI. Uncapped, turbo runs up to 10 packages'
+# tests at once and every Vitest picks cores-1 workers, so a 12-core laptop ran
+# ~75 node processes at load ~70 with RAM nearly full. Measured on an M4 Pro with a
+# cold turbo cache: 4 tasks x 3 workers took 94 s instead of 108 s, with 12% less
+# CPU and half the peak load. Override per machine, e.g.
+#   GRANT_PREPUSH_CONCURRENCY=8 GRANT_PREPUSH_VITEST_WORKERS=4 git push
+TEST_CONCURRENCY="${GRANT_PREPUSH_CONCURRENCY:-4}"
+TEST_WORKERS="${GRANT_PREPUSH_VITEST_WORKERS:-3}"
+
+pnpm run format:check && pnpm run lint && pnpm run dead-code:api && pnpm run dead-code:web && pnpm run dead-code:core && pnpm run dead-code:database && pnpm run dead-code:schema && pnpm run dead-code:packages && pnpm run dead-code:deploy && pnpm run codegen:check && pnpm run type-check && pnpm run build && pnpm run synth:check && CI=1 pnpm test -- --concurrency="$TEST_CONCURRENCY" -- --maxWorkers="$TEST_WORKERS" && pnpm run secret-scan:protect

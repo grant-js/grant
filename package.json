@@ -30,7 +30,7 @@
     "codegen:check": "pnpm --filter @grantjs/schema generate && git diff --exit-code -- packages/@grantjs/schema/src/generated",
     "lint:fix": "NODE_OPTIONS=--max-old-space-size=12288 turbo lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore --ignore-path .prettierignore",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore --ignore-path .prettierignore",
+    "format:check": "prettier --check --cache --cache-strategy content \"**/*.{ts,tsx,js,jsx,json,md,graphql}\" --ignore-path .gitignore --ignore-path .prettierignore",
     "format:apps": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md,graphql}\"",
     "format:packages": "prettier --write \"packages/**/*.{ts,tsx,js,jsx,json,md,graphql}\"",
     "test": "turbo test",
