@@ -131,7 +131,11 @@ jobs:
           echo "docker_matrix=$json" >> "$GITHUB_OUTPUT"
 
   prepare:
-    name: Build, test, upload artifact
+    name: Build and test
+    # No build artifact is handed to `release`: its publish script rebuilds the
+    # published packages (`pnpm build:release`, then each package's prepublishOnly
+    # builds again), so the tarball of packages/*/dist, apps/web/.next and
+    # apps/api/dist was never read. It cost ~40 s to upload per release.
     # Always-on `demo` host (logusgraphics-server). Not the overflow `ci` pool —
     # release builds must not land on a laptop/ubuntu runner that may go offline.
     runs-on: [self-hosted, demo]
@@ -162,23 +166,6 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Create build artifact
-        run: |
-          include=()
-          for p in packages/*/dist apps/web/.next apps/api/dist; do
-            [ -e "$p" ] && include+=( "$p" )
-          done
-          if [ ${#include[@]} -eq 0 ]; then
-            echo "No build outputs found" && exit 1
-          fi
-          tar --zstd --owner=0 --group=0 -cf build.tar.zst -C . "${include[@]}"
-
-      - name: Upload build outputs
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: build-outputs-${{ github.run_id }}
-          path: build.tar.zst
-
   release:
     name: Version and publish (@grantjs/schema, client, server, cli)
     # GitHub-hosted: npm trusted publishing does not accept OIDC from self-hosted runners.
@@ -199,17 +186,6 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-
-      - name: Download build outputs
-        uses: actions/download-artifact@v8.0.2
-        with:
-          name: build-outputs-${{ github.run_id }}
-          path: build-artifacts
-
-      - name: Restore build outputs
-        run: |
-          tar --zstd -xf build-artifacts/build.tar.zst -C .
-          rm -rf build-artifacts
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
