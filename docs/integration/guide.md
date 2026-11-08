@@ -5,8 +5,15 @@ cbf: true
 ---
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { GrantClient } from '@grantjs/client'
 import { useApiState } from '../.vitepress/theme/composables/useApiState'
+import {
+  createOAuthState,
+  generatePkcePair,
+  getOAuthCallbackUrl,
+  persistPkceSession,
+} from '../.vitepress/theme/composables/useProjectOAuth'
 
 const { state } = useApiState()
 
@@ -113,9 +120,11 @@ const step8Body = computed(() => JSON.stringify({
   scope: { tenant: 'projectUser', id: '{PROJECT_ID}:{PROJ_USER_ID}' },
 }))
 
-// Path-based: example app at origin/example, callback at origin/example/callback
-const exampleAppOrigin = computed(() => (state.exampleAppUrl || '').trim().replace(/\/+$/, ''))
-const exampleCallbackUrl = computed(() => exampleAppOrigin.value ? `${exampleAppOrigin.value}/callback` : '')
+// The docs callback page receives the Project OAuth redirect (filled in the browser; empty during SSR).
+const callbackUrl = ref('')
+onMounted(() => {
+  callbackUrl.value = getOAuthCallbackUrl()
+})
 
 function normalizeFrontendUrl (url) {
   const u = (url || '').trim()
@@ -135,7 +144,7 @@ const frontendUrl = computed(() => normalizeFrontendUrl(state.appUrl || ''))
 
 const step9Body = computed(() => JSON.stringify({
   name: 'Documents App',
-  redirectUris: [exampleCallbackUrl.value],
+  redirectUris: [callbackUrl.value],
   scopes: ['document:create', 'document:read', 'document:update', 'document:delete', 'document:query'],
   enabledProviders: ['email', 'github'],
   allowSignUp: true,
@@ -143,16 +152,31 @@ const step9Body = computed(() => JSON.stringify({
   scope: resourceScope(),
 }))
 
-const oauthState = computed(() => Math.random().toString(36).slice(2, 10))
-const authUrl = computed(() => {
-  if (!frontendUrl.value || !exampleCallbackUrl.value) return ''
-  const clientId = state.variables.APP_CLIENT_ID || ''
-  const redirect = encodeURIComponent(exampleCallbackUrl.value)
-  return `${frontendUrl.value}/en/auth/project?client_id=${clientId}&redirect_uri=${redirect}&state=${oauthState.value}`
-})
-const canOpenAuthFlow = computed(() => !!(frontendUrl.value && exampleCallbackUrl.value && state.variables.APP_CLIENT_ID))
-function openAuthFlowInNewTab() {
-  if (authUrl.value) window.open(authUrl.value, '_blank', 'noopener,noreferrer')
+const canStartSignIn = computed(() => !!(frontendUrl.value && callbackUrl.value && state.variables.APP_CLIENT_ID))
+const signInError = ref('')
+const signingIn = ref(false)
+
+/** Authorization code + S256 PKCE: the verifier stays in this tab's sessionStorage until the callback page uses it. */
+async function startSignIn() {
+  signInError.value = ''
+  signingIn.value = true
+  try {
+    const clientId = state.variables.APP_CLIENT_ID
+    const oauthState = createOAuthState()
+    const pkce = await generatePkcePair()
+    persistPkceSession(oauthState, { verifier: pkce.verifier, clientId, redirectUri: callbackUrl.value })
+    const grant = new GrantClient({ apiUrl: state.baseUrl, frontendUrl: frontendUrl.value })
+    await grant.signInWithProjectApp({
+      clientId,
+      redirectUri: callbackUrl.value,
+      state: oauthState,
+      codeChallenge: pkce.challenge,
+      codeChallengeMethod: 'S256',
+    })
+  } catch (e) {
+    signInError.value = e instanceof Error ? e.message : 'Could not start the sign-in'
+    signingIn.value = false
+  }
 }
 </script>
 
@@ -162,14 +186,14 @@ This tutorial walks you from a running Grant instance to a fully configured RBAC
 
 ::: info Prerequisites
 
-- Grant running locally — see [Quick Start](/getting-started/quick-start)
-- Set up email provider — see [Email Service](/advanced-topics/email-service)
-- Complete the sign up process with email provider — see [Email verification](/architecture/security#email-verification)
+- A running Grant instance — see [Quick Start](/getting-started/quick-start)
+- A Grant account. No account yet? Use **Sign up** in Step 1 below.
+- To use the **Organization** flow, a verified email address. Grant emails the verification link at sign-up; configure an [email provider](/advanced-topics/email-service) on your own instance. The **Personal** flow works before you verify.
   :::
 
 ## Step 1 — Setup
 
-Every API call on this page has a **Run** button. Configure the connection below, then work through the steps — responses and IDs are captured automatically so each step feeds into the next.
+Every API call on this page has a **Run** button. Connect below by signing in or signing up, then work through the steps — responses and IDs are captured automatically so each step feeds into the next.
 
 <ApiConfig />
 
@@ -184,6 +208,14 @@ Choose **Personal** or **Organization** above to continue.
 </div>
 
 <div v-if="hasFlow">
+
+<div v-if="isOrg && state.requiresEmailVerification" class="vp-doc">
+
+::: warning Verify your email first
+Organization calls return **403 Email verification required** until you open the verification link Grant emailed you. After verifying, sign in again in **API Configuration** above. Or switch to **Personal**, which works now.
+:::
+
+</div>
 
 <div v-if="needsComplementaryAccount" class="vp-doc">
 
@@ -307,9 +339,9 @@ Exchange the API key credentials for a JWT access token:
 
 The response contains an `accessToken` (RS256 JWT) and `expiresIn` (seconds). The token carries the permissions from the user's roles. You can now use this token with the [Server SDK](/integration/server-sdk) or any HTTP client to authorize requests against your protected endpoints.
 
-## Step 9 — Create a Project App
+## Step 9 — Create a Project App {#step-9-create-a-project-app}
 
-A Project App is an OAuth client that lets users sign in or sign up through Grant and be redirected back to your application with a token. Create one with all Document scopes, email and GitHub providers, and the role from Step 5 as the sign-up/default role:
+A Project App is an OAuth client that lets users sign in or sign up through Grant and be redirected back to your application with a token. Create one with all Document scopes, email and GitHub providers, and the role from Step 5 as the sign-up/default role. Its redirect URI is this site's [OAuth Callback](/integration/oauth-callback) page, which plays the part of your application in Step 10:
 
 When users were imported through CDM with `findBy: email`, their email authentication method starts unverified. Completing this Project OAuth email magic-link flow proves mailbox ownership and verifies that imported method before issuing project-scoped access.
 
@@ -317,23 +349,39 @@ When users were imported through CDM with `findBy: email`, their email authentic
   method="POST"
   path="/api/project-apps"
   :body="step9Body"
-  :captures="{ APP_CLIENT_ID: 'data.clientId' }"
+  :captures="{ APP_CLIENT_ID: 'data.clientId', APP_CLIENT_SECRET: 'data.clientSecret' }"
 />
 
-<div v-if="state.variables.APP_CLIENT_ID" class="api-tryit-auth-redirect">
+The response includes the app's `clientSecret`, saved as **APP_CLIENT_SECRET**. Project apps are confidential clients: the code exchange in Step 10 needs it. Like the API key secret in Step 7, it is shown only once.
 
-The app was created with **client_id** <code>{{ state.variables.APP_CLIENT_ID }}</code>. Click below to open the Project OAuth sign-in flow — you'll be redirected to the Grant UI to authenticate, grant consent, and then back to the callback URL with an access token.
+## Step 10 — Sign in through the Project App {#step-10-sign-in-through-the-project-app}
 
-<a v-if="canOpenAuthFlow" :href="authUrl" target="\_blank" rel="noopener noreferrer" class="api-tryit-auth-btn" @click.prevent="openAuthFlowInNewTab">
-Open Sign-in Flow →
-</a>
+Sign in as an end user of your application. The button starts the authorization-code flow with an S256 PKCE challenge through the [Client SDK](/integration/client-sdk)'s `signInWithProjectApp`. This tab goes to the Grant web app, where you sign in (or sign up, since the app allows it) and grant consent. Grant then redirects to the [OAuth Callback](/integration/oauth-callback) page, which exchanges the code for an access token and shows which `Document` permissions it carries.
 
-<p v-else-if="!frontendUrl || !exampleCallbackUrl" class="api-tryit-auth-note">
-  Configure app URL via <code>APP_URL</code> in env; docs entrypoint writes minimal <code>/config.json</code> and the app fetches full config from <code>GET ${appUrl}/api/config</code>. For local dev, defaults are used.
+<div class="api-tryit-auth-redirect">
+
+<p v-if="!state.variables.APP_CLIENT_ID" class="api-tryit-auth-note">
+  Run Step 9 first: this step needs the app's <strong>APP_CLIENT_ID</strong>.
 </p>
 
+<template v-else>
+
+<p>The app's <strong>client_id</strong> is <code>{{ state.variables.APP_CLIENT_ID }}</code> and its redirect URI is <code>{{ callbackUrl }}</code>.</p>
+
+<button type="button" class="api-tryit-auth-btn" :disabled="!canStartSignIn || signingIn" @click="startSignIn">
+{{ signingIn ? 'Redirecting…' : 'Sign in with the Project App →' }}
+</button>
+
+<p v-if="signInError" class="api-tryit-auth-note">{{ signInError }}</p>
+
+<p v-if="!frontendUrl" class="api-tryit-auth-note">
+  The Grant web app URL is unknown. The guide uses this site's origin; serve the docs from the same origin as the web app, or set <code>APP_URL</code>.
+</p>
+
+</template>
+
 ::: tip
-Make sure the Grant **web app** is running at the URL set by <code>APP_URL</code> (see [Quick Start](/getting-started/quick-start)). The example callback URL is <code>APP_URL/example/callback</code>. In Docker, set <code>APP_URL</code> in your env file; the docs entrypoint writes minimal <code>/config.json</code> and the app loads full config from the API.
+If the Grant page says **redirect_uri is not allowed for this app**, the app was created with a different redirect URI (before this callback page existed, or from another docs origin). Run Step 9 again to create an app for this page.
 :::
 
 </div>
@@ -343,7 +391,7 @@ Make sure the Grant **web app** is running at the URL set by <code>APP_URL</code
 - **Guard your endpoints** — integrate the [Server SDK](/integration/server-sdk) (`@grantjs/server`) to verify tokens and enforce permissions in Express, Fastify, Next.js, or NestJS
 - **Protect your frontend** — use the [Client SDK](/integration/client-sdk) (`@grantjs/client`) with `GrantGate`, `useGrant`, and [Project OAuth](/architecture/security#project-oauth) for user sign-in/sign-up flows
 - **Add conditions** — attach [Permission Conditions](/core-concepts/permission-conditions) and [resource resolvers](/integration/server-sdk#resource-resolvers) for fine-grained access control on update/delete
-- **Explore examples** — browse the [server examples](https://github.com/grant-js/grant/tree/main/packages/%40grantjs/server/examples) and [client example](https://github.com/grant-js/grant/tree/main/packages/%40grantjs/client/examples) (Next.js with Project OAuth and Document permission checks)
+- **Explore examples** — browse the [server examples](https://github.com/grant-js/grant/tree/main/packages/%40grantjs/server/examples); the [OAuth Callback](/integration/oauth-callback) page shows the client side of Project OAuth and Document permission checks
 
 </div>
 

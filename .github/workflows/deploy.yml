@@ -97,7 +97,6 @@ jobs:
           docker pull "$IMAGE_BASE/grant-api:demo"
           docker pull "$IMAGE_BASE/grant-web:demo"
           docker pull "$IMAGE_BASE/grant-docs:demo"
-          docker pull "$IMAGE_BASE/example-nextjs:demo"
 
           set -- docker compose -p "$PROJECT_NAME" --env-file ".env.demo"
           if [ -n "$CONFIG_FILES" ]; then
@@ -109,4 +108,6 @@ jobs:
             set -- "$@" -f "docker-compose.demo.yml"
           fi
 
-          "$@" up -d --no-build
+          # --remove-orphans drops containers of services no longer in the compose file
+          # (e.g. example-nextjs, retired in favour of the docs OAuth callback page).
+          "$@" up -d --no-build --remove-orphans

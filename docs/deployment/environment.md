@@ -5,7 +5,7 @@ description: Minimal environment configuration for Docker deployments
 
 # Environment Setup
 
-This page describes the **single root `.env`** used for Docker deployments. All apps use **canonical env variable names** (e.g. `APP_URL`). Frontends (web, docs, example-nextjs) receive URLs and flags at **runtime** via the API’s `GET /api/config` or (for docs) minimal `/config.json` then `/api/config`, not at build time.
+This page describes the **single root `.env`** used for Docker deployments. All apps use **canonical env variable names** (e.g. `APP_URL`). Frontends (web, docs) receive URLs and flags at **runtime** via the API’s `GET /api/config` or (for docs) minimal `/config.json` then `/api/config`, not at build time.
 
 ## 1. Env files (single source of config)
 
@@ -36,7 +36,7 @@ The API builds `DB_URL` from these (or you set `DB_URL` directly for a managed P
 
 ## 3. Public URLs and CORS (required)
 
-Single public URL; API and example app are reached via the same host (path-based proxy):
+Single public URL; the API is reached via the same host (path-based proxy):
 
 ```bash
 APP_URL=https://grant.yourdomain.com
@@ -45,15 +45,14 @@ SECURITY_FRONTEND_URL=${APP_URL}
 SECURITY_ADDITIONAL_ORIGINS=https://docs.yourdomain.com
 ```
 
-- **APP_URL** — single public base URL. Web, API (REST + GraphQL), docs, and example app (at `/example`) are derived from this when the web app proxies paths to the right services. Max portability with one canonical URL.
+- **APP_URL** — single public base URL. Web, API (REST + GraphQL) and docs are derived from this when the web app proxies paths to the right services. Max portability with one canonical URL.
 - **SECURITY_FRONTEND_URL** — must match the URL browsers use for the web app (typically same as `APP_URL`).
 - **SECURITY_ADDITIONAL_ORIGINS** — extra origins allowed to call the API (e.g. docs).
 
 **How frontends get these values:**
 
-- **Web (Next.js)** — Client fetches `GET /api/config` (proxied to the API) and uses the JSON (appUrl, apiUrl, exampleAppUrl, demoModeEnabled, etc.).
+- **Web (Next.js)** — Client fetches `GET /api/config` (proxied to the API) and uses the JSON (appUrl, apiUrl, demoModeEnabled, etc.).
 - **Docs (VitePress)** — Entrypoint writes minimal `/config.json` with only `{ "appUrl": "${APP_URL}" }`; the docs app then fetches `${appUrl}/api/config` for the full config.
-- **Example-nextjs** — Fetches config from the same API (`/api/config` when served under the web proxy, or its own env when standalone); exampleAppOrigin = `${APP_URL}/example`.
 
 No build-time URL injection; the same image works for any deployment.
 
@@ -117,7 +116,7 @@ Configure once DNS and TLS are in place.
 
 - **Compose interpolation** — When you run `docker compose up`, Compose reads `.env` (or `--env-file`) and substitutes `${VAR}` in the YAML. This happens at **parse time**.
 - **env_file** — Lists a file (e.g. `.env`) whose contents are injected into the **container at runtime**. They are **not** available during `docker build`; they are available when the container starts.
-- **Build args** — We do not pass URL or demo flags as build args for web, docs, or example-nextjs. Images are built once and reused; URLs come from runtime env.
+- **Build args** — We do not pass URL or demo flags as build args for web or docs. Images are built once and reused; URLs come from runtime env.
 
 ## 8. Config app and local development
 

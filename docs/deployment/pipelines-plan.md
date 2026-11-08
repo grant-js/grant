@@ -54,8 +54,6 @@ strategy:
         dockerfile: apps/web/Dockerfile
       - name: grant-docs
         dockerfile: docs/Dockerfile
-      - name: example-nextjs
-        dockerfile: packages/@grantjs/client/examples/nextjs/Dockerfile
 ```
 
 - **Tags (dynamic):**
@@ -68,12 +66,11 @@ strategy:
 
 **Naming consistency:** Use the same image names in **three places** — GHCR tags, `docker-compose.demo.yml`, and deployment commands — to avoid deployment bugs:
 
-| Image name                              | Tags                  |
-| --------------------------------------- | --------------------- |
-| `ghcr.io/<owner>/<repo>/grant-api`      | `:demo`, `:demo-$sha` |
-| `ghcr.io/<owner>/<repo>/grant-web`      | `:demo`, `:demo-$sha` |
-| `ghcr.io/<owner>/<repo>/grant-docs`     | `:demo`, `:demo-$sha` |
-| `ghcr.io/<owner>/<repo>/example-nextjs` | `:demo`, `:demo-$sha` |
+| Image name                          | Tags                  |
+| ----------------------------------- | --------------------- |
+| `ghcr.io/<owner>/<repo>/grant-api`  | `:demo`, `:demo-$sha` |
+| `ghcr.io/<owner>/<repo>/grant-web`  | `:demo`, `:demo-$sha` |
+| `ghcr.io/<owner>/<repo>/grant-docs` | `:demo`, `:demo-$sha` |
 
 ---
 
@@ -105,8 +102,7 @@ strategy:
 docker pull ghcr.io/<owner>/<repo>/grant-api:demo
 docker pull ghcr.io/<owner>/<repo>/grant-web:demo
 docker pull ghcr.io/<owner>/<repo>/grant-docs:demo
-docker pull ghcr.io/<owner>/<repo>/example-nextjs:demo
-docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --no-build
+docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --no-build --remove-orphans
 ```
 
 **GHCR authentication on the server**
@@ -154,7 +150,7 @@ push to main
 | #   | Task                                 | Notes                                                                                                                                        |
 | --- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Document versioning                  | New doc: changesets, "Version packages" PR, what gets versioned; optional platform version later.                                            |
-| 2   | Refactor image build to matrix       | Single job with matrix (grant-api, grant-web, grant-docs, example-nextjs); dynamic dockerfile and tags; keep GHA build cache.                |
+| 2   | Refactor image build to matrix       | Single job with matrix (grant-api, grant-web, grant-docs); dynamic dockerfile and tags; keep GHA build cache.                                |
 | 3   | Add concurrency to deploy            | `concurrency: group: deploy, cancel-in-progress: true`.                                                                                      |
 | 4   | Deploy job: compose pull + up        | SSH to server; run `docker compose pull && docker compose up -d --no-build`. Document GHCR one-time `docker login` with PAT (read:packages). |
 | 5   | Add "Release surfaces" table to docs | In docker.md or pipelines doc: artifact, trigger, versioning (npm, images, demo env, future semver images).                                  |

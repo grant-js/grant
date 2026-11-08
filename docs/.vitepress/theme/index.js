@@ -8,6 +8,7 @@ import ApiConfig from './components/ApiConfig.vue';
 import ApiTryIt from './components/ApiTryIt.vue';
 import BeautifulMermaid from './components/BeautifulMermaid.vue';
 import FlowSelector from './components/FlowSelector.vue';
+import OAuthCallback from './components/OAuthCallback.vue';
 
 export default {
   extends: DefaultTheme,
@@ -16,6 +17,7 @@ export default {
     app.component('ApiTryIt', ApiTryIt);
     app.component('BeautifulMermaid', BeautifulMermaid);
     app.component('FlowSelector', FlowSelector);
+    app.component('OAuthCallback', OAuthCallback);
   },
   setup() {
     const { frontmatter } = useData();

@@ -2,6 +2,5 @@ packages:
   - 'apps/*'
   - 'packages/@grantjs/*'
   - 'packages/@grantjs/server/examples/*'
-  - 'packages/@grantjs/client/examples/*'
   - 'docs'
   - 'deploy/aws'

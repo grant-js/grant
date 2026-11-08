@@ -79,7 +79,7 @@ const META: EnvVarMeta[] = [
     key: 'APP_URL',
     category: 'main',
     label: 'App URL',
-    description: 'Single public base URL for web, API, and example app (when proxied).',
+    description: 'Single public base URL for web and API (when proxied).',
     required: true,
     envFiles: ['.env'],
     section: 'Core',

@@ -20,6 +20,8 @@ RUN apk add --no-cache git
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY docs/package.json docs/package.json
 COPY docs ./docs
+# The guide compiles the browser SDK from source (vite alias in docs/.vitepress/config.ts).
+COPY packages/@grantjs/client/src ./packages/@grantjs/client/src
 
 RUN mkdir -p apps
 RUN pnpm install --frozen-lockfile --ignore-scripts --filter grant-docs...

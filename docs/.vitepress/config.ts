@@ -315,6 +315,13 @@ export default withMermaid({
           find: /^fastdom\/extensions\/fastdom-promised\.js$/,
           replacement: resolve(__dirname, 'fastdom-promised-shim.js'),
         },
+        {
+          // The Integration Guide and its OAuth callback page run the browser SDK compiled from
+          // source, so the docs always demo the SDK of the same commit and need no prebuilt dist/.
+          // Only the framework-free entry: the React entry (`@grantjs/client/react`) is not used here.
+          find: /^@grantjs\/client$/,
+          replacement: resolve(__dirname, '../../packages/@grantjs/client/src/index.ts'),
+        },
       ],
     },
     plugins: [

@@ -1,6 +1,5 @@
 # Example: Grant Platform behind a single canonical APP_URL
 # Routes: /graphql, /api, /api-docs, /health, /storage, /.well-known, ... → API (4000),
-#         /example, /callback → example-nextjs (3004),
 #         /docs → docs (5173), everything else → web (3000)
 #
 # Copy and adapt server_name, upstream ports, and SSL paths for your host.
@@ -19,10 +18,6 @@ upstream grant_api {
 
 upstream grant_web {
     server 127.0.0.1:3000;
-}
-
-upstream grant_example_nextjs {
-    server 127.0.0.1:3004;
 }
 
 upstream grant_docs {
@@ -136,29 +131,6 @@ server {
 
     location /storage {
         proxy_pass http://grant_api;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # --- /example → example-nextjs (port 3004) ---
-    location /example {
-        proxy_pass http://grant_example_nextjs;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Next.js static assets for example-nextjs (long cache, no upgrade)
-    location /example/_next {
-        proxy_pass http://grant_example_nextjs;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

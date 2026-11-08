@@ -91,7 +91,7 @@ The five examples are the primary documentation for these packages — what a co
 | `example-nextjs`        | 788   | ✓             | ✗                   |
 | `example-nextjs-client` | 1,122 | ✓             | ✗                   |
 
-`example-nextjs-client` is **built as a Docker image by `release.yml`** — a released artefact that had never been type-checked. All five type-check clean on the first run; the brief budgeted for pre-existing errors and there were none. Enabling lint surfaced 4 import-sort errors, all autofixed.
+`example-nextjs-client` is **built as a Docker image by `release.yml`** — a released artefact that had never been type-checked. All five type-check clean on the first run; the brief budgeted for pre-existing errors and there were none. Enabling lint surfaced 4 import-sort errors, all autofixed. (Since then `example-nextjs-client` and its image have been retired: its OAuth callback view now lives in the docs as the Integration Guide's [OAuth Callback](/integration/oauth-callback) page.)
 
 ### Two release-config gaps — **resolved** (slice 3)
 

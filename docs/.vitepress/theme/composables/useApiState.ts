@@ -9,10 +9,11 @@ interface Account {
 interface ApiState {
   baseUrl: string;
   appUrl: string;
-  exampleAppUrl: string;
   accessToken: string;
   refreshToken: string;
   verifiedEmail: string;
+  /** From GET /api/me: true until the user opens the emailed verification link. */
+  requiresEmailVerification: boolean;
   accounts: Account[];
   selectedFlow: 'personal' | 'organization' | '';
   variables: Record<string, string>;
@@ -20,11 +21,11 @@ interface ApiState {
 
 const STORAGE_KEY = 'grant-docs-api-state';
 
-// Path-based single origin: API, docs, example live under same origin. Defaults filled from window in browser.
+// Path-based single origin: API, web app and docs live under the same origin. Defaults filled from window in browser.
+// (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
 const RELATIVE_DEFAULTS = {
   baseUrl: '',
   appUrl: '',
-  exampleAppUrl: '/example',
 };
 
 function getOriginDefaults() {
@@ -32,17 +33,16 @@ function getOriginDefaults() {
   return {
     baseUrl: window.location.origin,
     appUrl: window.location.origin,
-    exampleAppUrl: `${window.location.origin}/example`,
   };
 }
 
 const state = reactive<ApiState>({
   baseUrl: RELATIVE_DEFAULTS.baseUrl,
   appUrl: RELATIVE_DEFAULTS.appUrl,
-  exampleAppUrl: RELATIVE_DEFAULTS.exampleAppUrl,
   accessToken: '',
   refreshToken: '',
   verifiedEmail: '',
+  requiresEmailVerification: false,
   accounts: [],
   selectedFlow: '',
   variables: {},
@@ -68,28 +68,21 @@ function hydrate() {
         saved.baseUrl && saved.baseUrl.trim() !== '' ? saved.baseUrl : originDefaults.baseUrl;
       state.appUrl =
         saved.appUrl && saved.appUrl.trim() !== '' ? saved.appUrl : originDefaults.appUrl;
-      // Treat legacy relative default '/example' as unset so we use origin + '/example'
-      const legacyExample = (saved.exampleAppUrl || '').trim();
-      state.exampleAppUrl =
-        legacyExample !== '' && legacyExample !== '/example'
-          ? saved.exampleAppUrl
-          : originDefaults.exampleAppUrl;
       if (saved.accessToken) state.accessToken = saved.accessToken;
       if (saved.refreshToken) state.refreshToken = saved.refreshToken;
       if (saved.verifiedEmail) state.verifiedEmail = saved.verifiedEmail;
+      state.requiresEmailVerification = saved.requiresEmailVerification === true;
       if (Array.isArray(saved.accounts)) state.accounts = saved.accounts;
       if (saved.selectedFlow) state.selectedFlow = saved.selectedFlow;
       if (saved.variables) Object.assign(state.variables, saved.variables);
     } else {
       state.baseUrl = originDefaults.baseUrl;
       state.appUrl = originDefaults.appUrl;
-      state.exampleAppUrl = originDefaults.exampleAppUrl;
     }
   } catch {
     /* corrupt data — use origin defaults */
     state.baseUrl = originDefaults.baseUrl;
     state.appUrl = originDefaults.appUrl;
-    state.exampleAppUrl = originDefaults.exampleAppUrl;
   }
 }
 
@@ -101,10 +94,10 @@ function persist() {
       JSON.stringify({
         baseUrl: state.baseUrl,
         appUrl: state.appUrl,
-        exampleAppUrl: state.exampleAppUrl,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         verifiedEmail: state.verifiedEmail,
+        requiresEmailVerification: state.requiresEmailVerification,
         accounts: state.accounts,
         selectedFlow: state.selectedFlow,
         variables: state.variables,
@@ -153,6 +146,7 @@ async function verifyConnection(): Promise<{
 
   state.accounts = accounts;
   state.verifiedEmail = email;
+  state.requiresEmailVerification = data.requiresEmailVerification === true;
 
   const first = accounts[0];
   const userId = first?.ownerId ?? '';
@@ -247,6 +241,7 @@ export function useApiState() {
     state.accessToken = '';
     state.refreshToken = '';
     state.verifiedEmail = '';
+    state.requiresEmailVerification = false;
     state.accounts = [];
     state.selectedFlow = '';
     for (const key of Object.keys(state.variables)) {
