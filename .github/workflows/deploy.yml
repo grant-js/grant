@@ -1,16 +1,23 @@
 # Rolling update: runs when Release workflow completes after new images were built.
-# Pulls already-published images and recreates services via Docker Compose.
+# Brings the demo stack's config files on the host to the released commit, pulls the
+# already-published images and recreates services via Docker Compose.
 # Pinned to the `demo` runner label (logusgraphics-server) — that host runs the
 # demo Compose stack. Overflow CI runners must not pick this up.
+#
+# Run it by hand (Actions → Deploy → Run workflow) for a dry run: it reports which
+# config files on the host differ from the chosen ref and which services would be
+# removed, and changes nothing.
 name: Deploy
 
 on:
   workflow_run:
     workflows: [Release]
     types: [completed]
+  workflow_dispatch:
 
 concurrency:
-  group: grant-${{ github.workflow }}-${{ github.ref }}
+  # The event is part of the group so a manual dry run never cancels a real deploy.
+  group: grant-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -21,9 +28,11 @@ jobs:
     name: Check if images were built
     runs-on: ubuntu-latest
     if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.event == 'push'
+      github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event == 'push'
+      )
     outputs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
     steps:
@@ -32,6 +41,11 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            if (context.eventName === 'workflow_dispatch') {
+              core.info('Manual run: dry run of the config sync, nothing is pulled or restarted.');
+              core.setOutput('should_deploy', 'true');
+              return;
+            }
             const jobs = await github.paginate(
               github.rest.actions.listJobsForWorkflowRun,
               {
@@ -58,22 +72,40 @@ jobs:
     needs: check
     if: needs.check.outputs.should_deploy == 'true'
     permissions:
+      contents: read
       packages: read
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+      # The commit whose images the Release run built; a manual run uses the chosen ref.
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      # Files in the compose project directory that the stack reads, synced from DEPLOY_SHA.
+      # Add a path here when docker-compose.demo.yml starts reading another file (a bind
+      # mount, an extra compose file). Never list env files: .env.demo holds the host's
+      # secrets and stays as it is, as do volumes.
+      STACK_CONFIG_FILES: |
+        docker-compose.demo.yml
+        deploy/gateway.conf.template
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v4.7.0
+      - name: Check out the stack's config files
+        uses: actions/checkout@v7.0.1
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ env.DEPLOY_SHA }}
+          path: demo-stack-config
+          sparse-checkout: ${{ env.STACK_CONFIG_FILES }}
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
 
-      - name: Pull images and rolling update
+      - name: Locate the running demo stack
+        id: stack
         run: |
-          set -e
+          set -euo pipefail
           GATEWAY_CONTAINER="grant-demo-gateway"
-          PROJECT_NAME="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project" }}' "$GATEWAY_CONTAINER" 2>/dev/null || true)"
-          WORKING_DIR="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' "$GATEWAY_CONTAINER" 2>/dev/null || true)"
-          CONFIG_FILES="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.project.config_files" }}' "$GATEWAY_CONTAINER" 2>/dev/null || true)"
+          label() {
+            docker inspect -f "{{ index .Config.Labels \"$1\" }}" "$GATEWAY_CONTAINER" 2>/dev/null || true
+          }
+          PROJECT_NAME="$(label com.docker.compose.project)"
+          WORKING_DIR="$(label com.docker.compose.project.working_dir)"
+          CONFIG_FILES="$(label com.docker.compose.project.config_files)"
 
           if [ -z "$PROJECT_NAME" ] || [ -z "$WORKING_DIR" ]; then
             echo "Could not detect existing compose project from '$GATEWAY_CONTAINER'."
@@ -81,6 +113,107 @@ jobs:
             exit 1
           fi
 
+          echo "Compose project '$PROJECT_NAME' in $WORKING_DIR (config files: ${CONFIG_FILES:-default})"
+          {
+            echo "project=$PROJECT_NAME"
+            echo "working_dir=$WORKING_DIR"
+            echo "config_files=$CONFIG_FILES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Sync stack config files to the deployed commit
+        id: sync
+        env:
+          PROJECT_NAME: ${{ steps.stack.outputs.project }}
+          WORKING_DIR: ${{ steps.stack.outputs.working_dir }}
+          CONFIG_FILES: ${{ steps.stack.outputs.config_files }}
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/demo-stack-config"
+          cd "$WORKING_DIR"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "DRY RUN at $DEPLOY_SHA: nothing below is written, pulled or restarted."
+          fi
+
+          # Compose reads the files named in the gateway's labels. Warn when that is not the
+          # docker-compose.demo.yml this step syncs, so a stack started another way is noticed.
+          if [ -n "$CONFIG_FILES" ]; then
+            case ",$CONFIG_FILES," in
+              *",$WORKING_DIR/docker-compose.demo.yml,"*) ;;
+              *) echo "::warning::The stack was started from '$CONFIG_FILES', not $WORKING_DIR/docker-compose.demo.yml; the synced compose file may not be the one it reads." ;;
+            esac
+          fi
+
+          # Only the state and the number of differing lines are logged, never file
+          # contents: a hand-edited copy on the host could hold values that must stay off
+          # this public log.
+          changed=()
+          while IFS= read -r file; do
+            [ -n "$file" ] || continue
+            src="$SRC/$file"
+            if [ ! -f "$src" ]; then
+              echo "::error::$file is listed in STACK_CONFIG_FILES but does not exist at $DEPLOY_SHA."
+              exit 1
+            fi
+            if [ -f "$file" ] && cmp -s "$src" "$file"; then
+              echo "unchanged  $file"
+              continue
+            fi
+            if [ -f "$file" ]; then
+              lines="$(diff "$file" "$src" | grep -c '^[<>]' || true)"
+              echo "update     $file ($lines lines differ)"
+            else
+              echo "create     $file"
+            fi
+            changed+=("$file")
+            if [ "$DRY_RUN" != "true" ]; then
+              mkdir -p "$(dirname "$file")"
+              # Copy beside the target, then rename over it, so compose never reads a half-written file.
+              cp "$src" "$file.deploy-tmp"
+              mv -f "$file.deploy-tmp" "$file"
+            fi
+          done <<< "$STACK_CONFIG_FILES"
+
+          # Services of this project that the new compose file no longer defines:
+          # `up --remove-orphans` stops and removes their containers.
+          env_args=()
+          if [ -f .env.demo ]; then env_args=(--env-file .env.demo); fi
+          if wanted="$(docker compose -p "$PROJECT_NAME" --project-directory "$WORKING_DIR" ${env_args[@]+"${env_args[@]}"} \
+                -f "$SRC/docker-compose.demo.yml" config --services 2>/dev/null)"; then
+            running="$(docker ps -a --filter "label=com.docker.compose.project=$PROJECT_NAME" \
+              --format '{{ .Label "com.docker.compose.service" }}' | sort -u)"
+            orphans="$(comm -23 <(echo "$running") <(echo "$wanted" | sort -u) | paste -sd ' ' -)"
+            echo "Services --remove-orphans will remove: ${orphans:-none}"
+          else
+            echo "::warning::Could not list the services of the new compose file; orphan preview skipped."
+          fi
+
+          gateway_template_changed=false
+          for file in ${changed[@]+"${changed[@]}"}; do
+            if [ "$file" = "deploy/gateway.conf.template" ]; then gateway_template_changed=true; fi
+          done
+          echo "gateway_template_changed=$gateway_template_changed" >> "$GITHUB_OUTPUT"
+          if [ "$DRY_RUN" = "true" ] && [ "$gateway_template_changed" = "true" ]; then
+            echo "The gateway would be recreated so nginx renders the new template."
+          fi
+
+      - name: Login to GHCR
+        if: env.DRY_RUN != 'true'
+        uses: docker/login-action@v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull images and rolling update
+        if: env.DRY_RUN != 'true'
+        env:
+          PROJECT_NAME: ${{ steps.stack.outputs.project }}
+          WORKING_DIR: ${{ steps.stack.outputs.working_dir }}
+          CONFIG_FILES: ${{ steps.stack.outputs.config_files }}
+          GATEWAY_TEMPLATE_CHANGED: ${{ steps.sync.outputs.gateway_template_changed }}
+        run: |
+          set -e
           cd "$WORKING_DIR"
 
           if [ ! -f ".env.demo" ] && [ -f ".env.demo.example" ]; then
@@ -109,4 +242,12 @@ jobs:
             set -- "$@" -f "docker-compose.demo.yml"
           fi
 
-          "$@" up -d --no-build
+          # --remove-orphans removes containers of services the synced compose file no longer defines.
+          "$@" up -d --no-build --remove-orphans
+
+          # nginx renders the template only when the container starts, and a changed
+          # bind-mounted file does not make compose recreate it.
+          if [ "$GATEWAY_TEMPLATE_CHANGED" = "true" ]; then
+            echo "deploy/gateway.conf.template changed: recreating the gateway."
+            "$@" up -d --no-build --no-deps --force-recreate gateway
+          fi
