@@ -1,5 +1,31 @@
 # grant-api
 
+## 1.27.1
+
+### Patch Changes
+
+- bcfed93: Fix an intermittent deadlock when a user is hard-deleted (`DELETE /api/me/accounts` with `hardDelete`, admin user deletion, data-retention cleanup) while the event relay is fanning out that user's own events into notifications. The two transactions took the same locks in opposite order:
+
+  - The relay claims `event_log` rows, then the notification insert's foreign-key check locks the recipient's `users` row.
+  - The delete locks the `users` row, then `ON DELETE SET NULL` updates the same `event_log` rows.
+
+  Postgres aborted the delete, and the request failed with a 500. The hard delete now locks the user's `event_log` rows first, in the relay's order, so it waits for an in-flight batch to commit instead of deadlocking.
+
+- @grantjs/schema@1.27.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.27.0
 
 ### Minor Changes
