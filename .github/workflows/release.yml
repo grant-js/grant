@@ -269,7 +269,7 @@ jobs:
 
   docker:
     name: Build and push images
-    # Same always-on `demo` host as prepare (disk, BuildKit cache, reliability).
+    # Same always-on `demo` host as prepare (disk, reliability).
     runs-on: [self-hosted, demo]
     needs: [prepare, changes, release]
     # Strict: :demo, :latest, and :semver ship together only on a real
@@ -341,8 +341,6 @@ jobs:
         with:
           context: .
           file: ${{ matrix.file }}
-          # Stable across commits so BuildKit GHA cache reuses layers when lockfile/Dockerfiles unchanged.
-          cache_scope: ${{ matrix.image }}-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile', 'apps/web/Dockerfile', 'docs/Dockerfile') }}
           image: ${{ matrix.image }}
           tags: ${{ steps.tags.outputs.tags }}
           push: true
@@ -419,9 +417,6 @@ jobs:
         with:
           context: .
           file: apps/api/Dockerfile
-          # Distinct from the grant-api scope: different target and architecture
-          # produce different layers, so sharing a scope would thrash the cache.
-          cache_scope: grant-api-lambda-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile') }}
           image: grant-api-lambda
           tags: ${{ steps.tags.outputs.tags }}
           push: true

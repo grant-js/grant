@@ -59,9 +59,7 @@ strategy:
 - **Tags (dynamic):**
   - <code>ghcr.io/$&#123;&#123; github.repository &#125;&#125;/$&#123;&#123; matrix.name &#125;&#125;:demo</code>
   - <code>ghcr.io/$&#123;&#123; github.repository &#125;&#125;/$&#123;&#123; matrix.name &#125;&#125;:demo-$&#123;&#123; github.sha &#125;&#125;</code>
-- **Build cache:** Keep (or add) on the docker build step:
-  - `cache-from: type=gha`
-  - `cache-to: type=gha,mode=max`
+- **Build cache:** None. The image jobs run on a self-hosted runner, where exporting a `type=gha` cache cost more time than it ever saved (see `.github/actions/docker-build-push/action.yml`).
 - **Versioned images (later):** When version PR merges, optionally build and push with semver tag (e.g. `:1.4.0`). Do not mix versioning with demo deploy; separation is correct. For now: `:demo` and `:demo-$sha` only.
 
 **Naming consistency:** Use the same image names in **three places** — GHCR tags, `docker-compose.demo.yml`, and deployment commands — to avoid deployment bugs:
