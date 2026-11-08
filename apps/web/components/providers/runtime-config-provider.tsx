@@ -2,15 +2,12 @@
 
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-import { getRuntimeConfig, type RuntimeConfig, setRuntimeConfig } from '@/lib/runtime-config';
-
-const DEFAULTS: RuntimeConfig = {
-  demoModeEnabled: false,
-  demoModeDbRefreshSchedule: '0 0 */2 * *',
-  accountDeletionRetentionDays: '30',
-  appVersion: 'dev',
-  cdmUploadMaxBytes: 64 * 1024 * 1024,
-};
+import {
+  getRuntimeConfig,
+  RUNTIME_CONFIG_DEFAULTS as DEFAULTS,
+  type RuntimeConfig,
+  setRuntimeConfig,
+} from '@/lib/runtime-config';
 
 const RuntimeConfigContext = createContext<RuntimeConfig>(DEFAULTS);
 RuntimeConfigContext.displayName = 'RuntimeConfigContext';
@@ -19,17 +16,21 @@ interface RuntimeConfigProviderProps {
   children: ReactNode;
 }
 
-/** Shape returned by GET /api/config (non-URL only; keeps images reusable). */
+/** Shape returned by GET /api/config. */
 interface ConfigPayload {
   demoModeEnabled?: boolean;
   demoModeDbRefreshSchedule?: string;
   accountDeletionRetentionDays?: string;
   appVersion?: string;
   cdmUploadMaxBytes?: number;
+  docsUrl?: string | null;
+  apiReferenceEnabled?: boolean;
+  graphqlPlaygroundEnabled?: boolean;
 }
 
 /**
- * Fetches GET /api/config for demo mode, privacy retention, app version, and the CDM upload limit.
+ * Fetches GET /api/config for demo mode, privacy retention, app version, the CDM upload limit,
+ * the docs site URL, and which API surfaces are enabled.
  * Enables CSR to get deploy-time config without baking env into the image.
  */
 export function RuntimeConfigProvider({ children }: RuntimeConfigProviderProps) {
@@ -56,6 +57,10 @@ export function RuntimeConfigProvider({ children }: RuntimeConfigProviderProps) 
             typeof data.cdmUploadMaxBytes === 'number' && data.cdmUploadMaxBytes > 0
               ? data.cdmUploadMaxBytes
               : DEFAULTS.cdmUploadMaxBytes,
+          docsUrl:
+            typeof data.docsUrl === 'string' && data.docsUrl.trim() ? data.docsUrl.trim() : null,
+          apiReferenceEnabled: data.apiReferenceEnabled === true,
+          graphqlPlaygroundEnabled: data.graphqlPlaygroundEnabled === true,
         };
         setRuntimeConfig(merged);
         setConfig(merged);

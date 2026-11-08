@@ -89,7 +89,8 @@ const META: EnvVarMeta[] = [
     key: 'DOCS_URL',
     category: 'main',
     label: 'Docs URL',
-    description: 'Public URL of the docs site (VitePress).',
+    description:
+      'Public base URL of the docs site (VitePress), including its path, e.g. https://demo.grantjs.org/docs/. Unset: the web app links to its own /docs.',
     envFiles: ['.env'],
     section: 'Core',
   },

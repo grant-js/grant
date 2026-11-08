@@ -8,6 +8,7 @@ import { DemoModeDialogProvider, DemoModeDialogTrigger, Logo } from '@/component
 import { NotificationBell } from '@/components/features/notifications';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
 import { useOAuthBrandingTheme } from '@/components/layout/oauth-branding-context';
+import { useRuntimeConfig } from '@/components/providers/runtime-config-provider';
 import { Button } from '@/components/ui/button';
 import { Link, usePathname } from '@/i18n/navigation';
 import { shouldShowNotificationBell } from '@/lib/auth';
@@ -22,6 +23,10 @@ export function Header() {
   const { isAuthenticated } = useAuthStore();
   const showNotificationBell = shouldShowNotificationBell(pathname, isAuthenticated());
   const hideThemeToggle = useOAuthBrandingTheme()?.themeMode != null;
+  // An adopter can turn off the Swagger UI or the Apollo Sandbox; their links render only while
+  // `/api/config` reports the surface on, so the header never points at a page the API won't serve.
+  const { docsUrl, apiReferenceEnabled, graphqlPlaygroundEnabled } = useRuntimeConfig();
+  const docsHref = `${getDocsUrl(docsUrl)}/`;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const languageSwitcherRef = useRef<HTMLButtonElement>(null);
   const themeToggleRef = useRef<HTMLButtonElement>(null);
@@ -90,7 +95,7 @@ export function Header() {
               </span>
               <DemoModeDialogTrigger />
               <a
-                href={getDocsUrl()}
+                href={docsHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -98,24 +103,28 @@ export function Header() {
                 <BookOpen className="h-[1rem] w-[1rem] shrink-0" />
                 {t('navigation.docs')}
               </a>
-              <a
-                href={getApiDocsUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <FileJson className="h-[1rem] w-[1rem] shrink-0" />
-                {t('navigation.apiDocs')}
-              </a>
-              <a
-                href={getGraphqlPlaygroundUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Network className="h-[1rem] w-[1rem] shrink-0" />
-                {t('navigation.graphqlPlayground')}
-              </a>
+              {apiReferenceEnabled ? (
+                <a
+                  href={getApiDocsUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <FileJson className="h-[1rem] w-[1rem] shrink-0" />
+                  {t('navigation.apiDocs')}
+                </a>
+              ) : null}
+              {graphqlPlaygroundEnabled ? (
+                <a
+                  href={getGraphqlPlaygroundUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Network className="h-[1rem] w-[1rem] shrink-0" />
+                  {t('navigation.graphqlPlayground')}
+                </a>
+              ) : null}
               {showNotificationBell ? <NotificationBell /> : null}
               {hideThemeToggle ? null : (
                 <ThemeToggle ref={themeToggleRef} trigger={desktopThemeTrigger} />
@@ -145,7 +154,7 @@ export function Header() {
                   <DemoModeDialogTrigger />
                 </div>
                 <a
-                  href={getDocsUrl()}
+                  href={docsHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -153,24 +162,28 @@ export function Header() {
                   <BookOpen className="h-[1rem] w-[1rem] shrink-0" />
                   {t('navigation.docs')}
                 </a>
-                <a
-                  href={getApiDocsUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <FileJson className="h-[1rem] w-[1rem] shrink-0" />
-                  {t('navigation.apiDocs')}
-                </a>
-                <a
-                  href={getGraphqlPlaygroundUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Network className="h-[1rem] w-[1rem] shrink-0" />
-                  {t('navigation.graphqlPlayground')}
-                </a>
+                {apiReferenceEnabled ? (
+                  <a
+                    href={getApiDocsUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <FileJson className="h-[1rem] w-[1rem] shrink-0" />
+                    {t('navigation.apiDocs')}
+                  </a>
+                ) : null}
+                {graphqlPlaygroundEnabled ? (
+                  <a
+                    href={getGraphqlPlaygroundUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 py-2 px-2 -mx-2 rounded-md hover:bg-accent text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Network className="h-[1rem] w-[1rem] shrink-0" />
+                    {t('navigation.graphqlPlayground')}
+                  </a>
+                ) : null}
                 {showNotificationBell ? (
                   <div className="py-2 -mx-2">
                     <NotificationBell />
