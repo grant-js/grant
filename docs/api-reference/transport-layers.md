@@ -7,10 +7,12 @@ description: Comparing REST and GraphQL APIs — when to use each, endpoint pari
 
 Grant exposes two API transports that share the same backend (handlers, services, repositories):
 
-| Transport   | Endpoint   | Documentation                                   |
-| ----------- | ---------- | ----------------------------------------------- |
-| **REST**    | `/api/*`   | [Swagger UI](http://localhost:4000/api-docs)    |
-| **GraphQL** | `/graphql` | [Apollo Sandbox](http://localhost:4000/graphql) |
+| Transport   | Endpoint   | Documentation (public demo)                        |
+| ----------- | ---------- | -------------------------------------------------- |
+| **REST**    | `/api/*`   | [Swagger UI](https://demo.grantjs.org/api-docs/)   |
+| **GraphQL** | `/graphql` | [Apollo Sandbox](https://demo.grantjs.org/graphql) |
+
+On your own deployment, the Swagger UI is at `/api-docs` and the Apollo Sandbox at `/graphql`, both on your API's origin. `SWAGGER_ENABLED` and `APOLLO_PLAYGROUND` turn them on or off.
 
 Both accept `Authorization: Bearer <token>` for authentication and use the same `scope: { tenant, id }` pattern for multi-tenancy.
 
@@ -126,7 +128,7 @@ In non-production environments, the GraphQL endpoint at `/graphql` serves the **
 
 To authenticate in the sandbox:
 
-1. Open `http://localhost:4000/graphql`
+1. Open `/graphql` on your API (`http://localhost:4000/graphql` with `pnpm dev`, or the [public demo](https://demo.grantjs.org/graphql))
 2. Click the **Headers** tab at the bottom
 3. Add: `{ "Authorization": "Bearer <accessToken>" }`
 4. Write and execute queries/mutations
