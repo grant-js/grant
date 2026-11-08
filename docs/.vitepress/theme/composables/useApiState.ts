@@ -23,25 +23,32 @@ const STORAGE_KEY = 'grant-docs-api-state';
 
 // Deployed docs sit behind the same gateway as the API and web app (path-based single origin), so
 // both URLs default to the docs origin. Under the VitePress dev server (`pnpm dev`, :5173) the docs
-// are on their own origin: there the Grant web app is the dev server on :3000, which also proxies
-// /api, so both default to it. (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
+// are on their own origin: there the API is its dev server on :4000 and the Grant web app is on
+// :3000. (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
 const RELATIVE_DEFAULTS = {
   baseUrl: '',
   appUrl: '',
 };
 
-const DEV_GRANT_ORIGIN = 'http://localhost:3000';
+// Local dev ports: apps/api (`API_PORT`, default 4000) and apps/web (`next dev`, 3000).
+const DEV_API_ORIGIN = 'http://localhost:4000';
+const DEV_WEB_ORIGIN = 'http://localhost:3000';
 
-/** Where the Grant web app (and its /api proxy) is assumed to live when nothing is saved. */
+/** Where the Grant web app is assumed to live when nothing is saved. */
 export function getDefaultGrantOrigin(): string {
   if (typeof window === 'undefined') return '';
-  return import.meta.env.DEV ? DEV_GRANT_ORIGIN : window.location.origin;
+  return import.meta.env.DEV ? DEV_WEB_ORIGIN : window.location.origin;
+}
+
+/** Where the Grant API is assumed to live when nothing is saved. */
+export function getDefaultApiBaseUrl(): string {
+  if (typeof window === 'undefined') return '';
+  return import.meta.env.DEV ? DEV_API_ORIGIN : window.location.origin;
 }
 
 function getOriginDefaults() {
   if (typeof window === 'undefined') return RELATIVE_DEFAULTS;
-  const origin = getDefaultGrantOrigin();
-  return { baseUrl: origin, appUrl: origin };
+  return { baseUrl: getDefaultApiBaseUrl(), appUrl: getDefaultGrantOrigin() };
 }
 
 /**
@@ -66,11 +73,6 @@ const state = reactive<ApiState>({
   selectedFlow: '',
   variables: {},
 });
-
-/** Default API base URL for display (see getDefaultGrantOrigin). */
-export function getDefaultApiBaseUrl(): string {
-  return getDefaultGrantOrigin();
-}
 
 let hydrated = false;
 let watcherActive = false;
