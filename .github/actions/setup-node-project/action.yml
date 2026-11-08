@@ -1,5 +1,17 @@
-# Composite action: Node + pnpm + native pnpm cache + install.
+# Composite action: Node + pnpm + install from a store that persists on the runner.
 # Single place for install logic; used by ci.yml and release.yml.
+#
+# Every caller runs on a self-hosted runner, so the pnpm store lives on the runner's
+# disk instead of in the GitHub cache:
+# - pnpm 8 puts its store under $PNPM_HOME, and pnpm/action-setup points PNPM_HOME
+#   into ~/setup-pnpm/node_modules, which the self-installer recreates on every run.
+#   The store was wiped each time.
+# - setup-node's `cache: pnpm` could not make up for it. CI runs only on
+#   pull_request, so caches are branch-scoped and most PR runs missed (1,945
+#   packages downloaded, ~50 s), then spent ~100 s in the post step saving a cache
+#   no other branch could read. A hit still took ~60 s to download over the
+#   runners' uplink.
+# A job running on a fresh runner simply downloads the packages once.
 # Pin checkout in each workflow job that needs the repo (e.g. actions/checkout@v4.2.2, fetch-depth: 0).
 # Order: pnpm/action-setup first, then setup-node (GitHub recommendation). If setup-node runs first, pnpm cache logic can fail because pnpm is not installed yet.
 # Do NOT set PATH or PNPM_HOME in env here; pnpm/action-setup uses GITHUB_PATH. Overriding PATH replaces the OS toolchain (/usr/bin, /bin) and breaks pnpm.
@@ -17,7 +29,15 @@ runs:
       uses: actions/setup-node@v6.1.0
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'pnpm'
+        # setup-node v5+ turns caching on by itself when package.json has a
+        # `packageManager` field (it does), so off must be explicit.
+        package-manager-cache: false
+
+    # GITHUB_ENV rather than an install flag, so every later pnpm call in the job
+    # resolves the same store.
+    - name: Use the runner's persistent pnpm store
+      shell: bash
+      run: echo "npm_config_store_dir=$HOME/.local/share/pnpm/store" >> "$GITHUB_ENV"
 
     - name: Install dependencies
       shell: bash
