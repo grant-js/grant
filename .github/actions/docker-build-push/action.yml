@@ -1,7 +1,13 @@
-# Composite action: Buildx + build-push with cache scope and optional provenance: false.
-# Workflow passes a stable cache_scope (e.g. matrix image + hashFiles(lockfile, Dockerfiles)).
+# Composite action: Buildx + build-push with provenance: false.
+#
+# No `type=gha` layer cache. These jobs run on the self-hosted `demo` host, whose
+# uplink to the GitHub cache service is slow: exporting the cache (mode=max) took
+# 86-225 s per image, ~553 s of the 866 s spent building the four images in
+# release run 42505916953. In that run and in 42297895851 the install and build
+# layers were never restored from it; only a few base-image layers were.
+# Reintroduce a cache only together with a Dockerfile layout that can hit it.
 name: Docker build and push
-description: Setup Buildx and build/push image with GHA cache scope
+description: Setup Buildx and build/push an image
 runs:
   using: composite
   steps:
@@ -15,8 +21,6 @@ runs:
         file: ${{ inputs.file }}
         push: ${{ inputs.push }}
         tags: ${{ inputs.tags }}
-        cache-from: type=gha,scope=${{ inputs.cache_scope }}
-        cache-to: type=gha,mode=max,scope=${{ inputs.cache_scope }}
         provenance: false
         # Both default to '' so existing callers are byte-identical: an empty
         # target builds the Dockerfile's last stage, and empty platforms builds
@@ -31,9 +35,6 @@ inputs:
     default: .
   file:
     description: Path to Dockerfile
-    required: true
-  cache_scope:
-    description: Cache scope (e.g. matrix.image-github.sha)
     required: true
   image:
     description: Image name (for reference; tags are passed explicitly)
