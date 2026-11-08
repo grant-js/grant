@@ -108,6 +108,7 @@ jobs:
             set -- "$@" -f "docker-compose.demo.yml"
           fi
 
-          # --remove-orphans drops containers of services no longer in the compose file
-          # (e.g. example-nextjs, retired in favour of the docs OAuth callback page).
+          # --remove-orphans drops containers of services no longer in the compose file on this
+          # host. This job does not update the host's checkout: a service removed from the repo
+          # (e.g. example-nextjs) only goes once docker-compose.demo.yml here is updated.
           "$@" up -d --no-build --remove-orphans
