@@ -15,7 +15,7 @@
  */
 
 /** The application that answers a request. */
-export type RouteTarget = 'api' | 'web' | 'docs' | 'example';
+export type RouteTarget = 'api' | 'web' | 'docs';
 
 export interface CanonicalRoute {
   /**
@@ -79,11 +79,6 @@ export const CANONICAL_ROUTES: readonly CanonicalRoute[] = [
     target: 'api',
     description:
       'Local-provider file serving. Mounted only when STORAGE_PROVIDER=local (apps/api/src/create-app.ts:157), so the AWS target omits it.',
-  },
-  {
-    pattern: '/example',
-    target: 'example',
-    description: 'The Next.js client example app.',
   },
   {
     pattern: '/docs/',

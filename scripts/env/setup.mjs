@@ -72,10 +72,6 @@ async function main() {
       example: 'packages/@grantjs/server/examples/nextjs/.env.example',
       env: 'packages/@grantjs/server/examples/nextjs/.env',
     },
-    {
-      example: 'packages/@grantjs/client/examples/nextjs/.env.example',
-      env: 'packages/@grantjs/client/examples/nextjs/.env',
-    },
   ];
 
   if (!quiet) {

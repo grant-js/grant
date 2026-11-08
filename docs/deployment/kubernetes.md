@@ -13,13 +13,12 @@ The same **canonical environment contract** applies as for Docker: [`@grantjs/en
 
 The chart deploys:
 
-| Workload               | Role                                                                                                                          |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **API**                | Grant API (REST + GraphQL); `ClusterIP` Service, configurable replicas                                                        |
-| **Web**                | Next.js app; catch-all `/` behind Ingress                                                                                     |
-| **Docs**               | VitePress static site; served under `/docs` (separate Ingress with path rewrite); configurable replicas (`docs.replicaCount`) |
-| **Example** (optional) | Next.js example app under `/example`                                                                                          |
-| **Migrations**         | `bootstrapDatabase()` runs in the **API** before HTTP listen (PostgreSQL advisory lock; safe with multiple replicas)          |
+| Workload       | Role                                                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **API**        | Grant API (REST + GraphQL); `ClusterIP` Service, configurable replicas                                                        |
+| **Web**        | Next.js app; catch-all `/` behind Ingress                                                                                     |
+| **Docs**       | VitePress static site; served under `/docs` (separate Ingress with path rewrite); configurable replicas (`docs.replicaCount`) |
+| **Migrations** | `bootstrapDatabase()` runs in the **API** before HTTP listen (PostgreSQL advisory lock; safe with multiple replicas)          |
 
 **PostgreSQL** and **Redis** are **not** bundled. Install them separately (managed cloud services, operators, or another Helm release) and point the chart at them.
 
@@ -61,7 +60,7 @@ This matches the single-host model documented in [Environment setup](/deployment
 
 ## Ingress and path routing
 
-- **Main Ingress** — Routes `/graphql`, `/api`, `/api-docs`, `/.well-known`, `/org`, `/acc`, `/health`, `/storage` to the API Service; `/example` to the example app; `/` to the web Service.
+- **Main Ingress** — Routes `/graphql`, `/api`, `/api-docs`, `/.well-known`, `/org`, `/acc`, `/health`, `/storage` to the API Service; `/` to the web Service.
 - **Docs Ingress** — **`ingress.docs.mode: traefik`** (default): Traefik `Middleware` with `stripPrefix` `/docs` plus a prefix path `/docs`. **`nginx`**: regex path and `nginx.ingress.kubernetes.io/rewrite-target` so `/docs/...` is served under the same host as the rest of the app.
 
 Configure proxy body size and timeouts for your controller (e.g. nginx annotations in `ingress.annotations`, or Traefik `Middleware` / annotations) via `ingress.annotations` and `ingress.extraAnnotations`.

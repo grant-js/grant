@@ -501,7 +501,11 @@ async function run() {
   cursor: pointer;
   transition: background .15s;
 }
-.api-tryit-auth-btn:hover {
+.api-tryit-auth-btn:hover:not(:disabled) {
   background: var(--vp-c-brand-2);
+}
+.api-tryit-auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

@@ -12,7 +12,6 @@ The recommended way to run the **Grant Platform** is with **Docker**: build or p
 - **API** — Grant API (REST + GraphQL) on port `4000`
 - **Web** — Next.js frontend on port `3000`
 - **Docs** (optional) — VitePress docs on port `5173`
-- **Example app** (optional) — SDK example on port `3004`
 - **PostgreSQL** — main database
 - **Redis** — cache (recommended for production)
 - **Observability stack (optional)** — PgAdmin, Prometheus, Grafana, Jaeger, Umami
@@ -30,7 +29,7 @@ Start from `.env.example`, copy it to `.env`, and make sure these are correct:
 | ---------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Database & cache | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`       | PostgreSQL database name, user, and password.                                                                                                   |
 |                  | `REDIS_PASSWORD`                                          | Password for the Redis instance.                                                                                                                |
-| Public URLs      | `APP_URL`                                                 | Single public base URL; web proxies `/api`, `/graphql`, `/example`, etc. to API and example app.                                                |
+| Public URLs      | `APP_URL`                                                 | Single public base URL; web proxies `/api`, `/graphql`, etc. to the API.                                                                        |
 | CORS             | `SECURITY_FRONTEND_URL`                                   | Must match the web app URL.                                                                                                                     |
 |                  | `SECURITY_ADDITIONAL_ORIGINS`                             | Extra origins such as `https://docs.yourdomain.com`.                                                                                            |
 | System user      | `SYSTEM_USER_ID`                                          | Must match the system user created during database seeding.                                                                                     |

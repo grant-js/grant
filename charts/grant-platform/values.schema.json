@@ -39,7 +39,6 @@
     "api": { "type": "object" },
     "web": { "type": "object" },
     "docs": { "type": "object" },
-    "example": { "type": "object" },
     "ingress": {
       "type": "object",
       "properties": {

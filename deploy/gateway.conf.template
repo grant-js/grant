@@ -12,7 +12,6 @@ server {
     set $upstream_api    api:${API_PORT};
     set $upstream_web    web:3000;
     set $upstream_docs   docs:8080;
-    set $upstream_example example-nextjs:3000;
 
     client_max_body_size 100M;
 
@@ -108,29 +107,6 @@ server {
 
     location /storage {
         proxy_pass http://$upstream_api;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # ── Example app ──────────────────────────────────────────────────
-
-    location /example {
-        proxy_pass http://$upstream_example;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location /example/_next {
-        proxy_pass http://$upstream_example;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

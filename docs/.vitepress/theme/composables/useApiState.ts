@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 
 interface Account {
   id: string;
@@ -8,11 +8,13 @@ interface Account {
 
 interface ApiState {
   baseUrl: string;
+  /** Web URL (the Grant web app). Only used under the docs dev server; deployed installs have one canonical URL. */
   appUrl: string;
-  exampleAppUrl: string;
   accessToken: string;
   refreshToken: string;
   verifiedEmail: string;
+  /** From GET /api/me: true until the user opens the emailed verification link. */
+  requiresEmailVerification: boolean;
   accounts: Account[];
   selectedFlow: 'personal' | 'organization' | '';
   variables: Record<string, string>;
@@ -20,38 +22,62 @@ interface ApiState {
 
 const STORAGE_KEY = 'grant-docs-api-state';
 
-// Path-based single origin: API, docs, example live under same origin. Defaults filled from window in browser.
+// A deployed install has one canonical URL (APP_URL): the gateway serves the API, the web app and
+// the docs from it, so the guide has a single "Grant URL" field, defaulting to the docs origin, and signs in
+// on that same URL. Under the VitePress dev server (`pnpm dev`, :5173) the API (:4000) and the web
+// app (:3000) are separate dev servers, so there, and only there, the web app gets its own field.
+// (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
 const RELATIVE_DEFAULTS = {
   baseUrl: '',
   appUrl: '',
-  exampleAppUrl: '/example',
 };
+
+/** True only under the docs dev server: the web app URL is a separate setting there. */
+export const SEPARATE_WEB_APP_URL = import.meta.env.DEV;
+
+// Local dev ports: apps/api (`API_PORT`, default 4000) and apps/web (`next dev`, 3000).
+const DEV_API_ORIGIN = 'http://localhost:4000';
+const DEV_WEB_ORIGIN = 'http://localhost:3000';
+
+/** Where the Grant web app is assumed to live when nothing is saved. */
+export function getDefaultGrantOrigin(): string {
+  if (typeof window === 'undefined') return '';
+  return SEPARATE_WEB_APP_URL ? DEV_WEB_ORIGIN : window.location.origin;
+}
+
+/** Where the Grant API is assumed to live when nothing is saved. */
+export function getDefaultApiBaseUrl(): string {
+  if (typeof window === 'undefined') return '';
+  return import.meta.env.DEV ? DEV_API_ORIGIN : window.location.origin;
+}
 
 function getOriginDefaults() {
   if (typeof window === 'undefined') return RELATIVE_DEFAULTS;
-  return {
-    baseUrl: window.location.origin,
-    appUrl: window.location.origin,
-    exampleAppUrl: `${window.location.origin}/example`,
-  };
+  return { baseUrl: getDefaultApiBaseUrl(), appUrl: getDefaultGrantOrigin() };
+}
+
+/**
+ * A saved URL, unless it is unusable: empty, or (under the dev server) the docs' own origin,
+ * which never serves the API or the web app. Older guide versions saved the docs origin.
+ */
+function savedUrlOr(saved: unknown, fallback: string): string {
+  const value = typeof saved === 'string' ? saved.trim() : '';
+  if (!value) return fallback;
+  if (import.meta.env.DEV && value.replace(/\/+$/, '') === window.location.origin) return fallback;
+  return value;
 }
 
 const state = reactive<ApiState>({
   baseUrl: RELATIVE_DEFAULTS.baseUrl,
   appUrl: RELATIVE_DEFAULTS.appUrl,
-  exampleAppUrl: RELATIVE_DEFAULTS.exampleAppUrl,
   accessToken: '',
   refreshToken: '',
   verifiedEmail: '',
+  requiresEmailVerification: false,
   accounts: [],
   selectedFlow: '',
   variables: {},
 });
-
-/** Default API base URL for display (current origin in browser, else empty). */
-export function getDefaultApiBaseUrl(): string {
-  return typeof window === 'undefined' ? '' : window.location.origin;
-}
 
 let hydrated = false;
 let watcherActive = false;
@@ -64,32 +90,23 @@ function hydrate() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      state.baseUrl =
-        saved.baseUrl && saved.baseUrl.trim() !== '' ? saved.baseUrl : originDefaults.baseUrl;
-      state.appUrl =
-        saved.appUrl && saved.appUrl.trim() !== '' ? saved.appUrl : originDefaults.appUrl;
-      // Treat legacy relative default '/example' as unset so we use origin + '/example'
-      const legacyExample = (saved.exampleAppUrl || '').trim();
-      state.exampleAppUrl =
-        legacyExample !== '' && legacyExample !== '/example'
-          ? saved.exampleAppUrl
-          : originDefaults.exampleAppUrl;
+      state.baseUrl = savedUrlOr(saved.baseUrl, originDefaults.baseUrl);
+      state.appUrl = savedUrlOr(saved.appUrl, originDefaults.appUrl);
       if (saved.accessToken) state.accessToken = saved.accessToken;
       if (saved.refreshToken) state.refreshToken = saved.refreshToken;
       if (saved.verifiedEmail) state.verifiedEmail = saved.verifiedEmail;
+      state.requiresEmailVerification = saved.requiresEmailVerification === true;
       if (Array.isArray(saved.accounts)) state.accounts = saved.accounts;
       if (saved.selectedFlow) state.selectedFlow = saved.selectedFlow;
       if (saved.variables) Object.assign(state.variables, saved.variables);
     } else {
       state.baseUrl = originDefaults.baseUrl;
       state.appUrl = originDefaults.appUrl;
-      state.exampleAppUrl = originDefaults.exampleAppUrl;
     }
   } catch {
     /* corrupt data — use origin defaults */
     state.baseUrl = originDefaults.baseUrl;
     state.appUrl = originDefaults.appUrl;
-    state.exampleAppUrl = originDefaults.exampleAppUrl;
   }
 }
 
@@ -101,10 +118,10 @@ function persist() {
       JSON.stringify({
         baseUrl: state.baseUrl,
         appUrl: state.appUrl,
-        exampleAppUrl: state.exampleAppUrl,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         verifiedEmail: state.verifiedEmail,
+        requiresEmailVerification: state.requiresEmailVerification,
         accounts: state.accounts,
         selectedFlow: state.selectedFlow,
         variables: state.variables,
@@ -153,6 +170,7 @@ async function verifyConnection(): Promise<{
 
   state.accounts = accounts;
   state.verifiedEmail = email;
+  state.requiresEmailVerification = data.requiresEmailVerification === true;
 
   const first = accounts[0];
   const userId = first?.ownerId ?? '';
@@ -186,6 +204,9 @@ async function tryRefresh(): Promise<boolean> {
     return false;
   }
 }
+
+/** The Grant web app the guide signs in on (see SEPARATE_WEB_APP_URL). */
+const webAppUrl = computed(() => (SEPARATE_WEB_APP_URL ? state.appUrl : state.baseUrl));
 
 export function useApiState() {
   hydrate();
@@ -247,6 +268,7 @@ export function useApiState() {
     state.accessToken = '';
     state.refreshToken = '';
     state.verifiedEmail = '';
+    state.requiresEmailVerification = false;
     state.accounts = [];
     state.selectedFlow = '';
     for (const key of Object.keys(state.variables)) {
@@ -257,6 +279,8 @@ export function useApiState() {
 
   return {
     state,
+    /** Where Step 10 signs in: the Web URL under the docs dev server, else the canonical Grant URL. */
+    webAppUrl,
     setVariable,
     setAccounts,
     getVariable,

@@ -45,7 +45,6 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
       docs: ${{ steps.filter.outputs.docs }}
-      example: ${{ steps.filter.outputs.example }}
       shared: ${{ steps.filter.outputs.shared }}
       workflow_release: ${{ steps.filter.outputs.workflow_release }}
       docker_matrix: ${{ steps.matrix.outputs.docker_matrix }}
@@ -85,7 +84,6 @@ jobs:
             api: 'apps/api/**'
             web: 'apps/web/**'
             docs: 'docs/**'
-            example: 'packages/@grantjs/client/examples/nextjs/**'
             shared: 'packages/**'
             workflow_release:
               - '.github/workflows/release.yml'
@@ -100,7 +98,6 @@ jobs:
             '{"image":"grant-api","file":"apps/api/Dockerfile"}'
             '{"image":"grant-web","file":"apps/web/Dockerfile"}'
             '{"image":"grant-docs","file":"docs/Dockerfile"}'
-            '{"image":"example-nextjs","file":"packages/@grantjs/client/examples/nextjs/Dockerfile"}'
           )
 
           release_json="[$(IFS=,; echo "${ALL_IMAGES[*]}")]"
@@ -127,10 +124,6 @@ jobs:
 
             if [[ "${{ steps.filter.outputs.docs }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
               items+=( '{"image":"grant-docs","file":"docs/Dockerfile"}' )
-            fi
-
-            if [[ "${{ steps.filter.outputs.example }}" == "true" || "${{ steps.filter.outputs.shared }}" == "true" ]]; then
-              items+=( '{"image":"example-nextjs","file":"packages/@grantjs/client/examples/nextjs/Dockerfile"}' )
             fi
           fi
 
@@ -373,7 +366,7 @@ jobs:
           context: .
           file: ${{ matrix.file }}
           # Stable across commits so BuildKit GHA cache reuses layers when lockfile/Dockerfiles unchanged.
-          cache_scope: ${{ matrix.image }}-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile', 'apps/web/Dockerfile', 'docs/Dockerfile', 'packages/@grantjs/client/examples/nextjs/Dockerfile') }}
+          cache_scope: ${{ matrix.image }}-${{ hashFiles('pnpm-lock.yaml', 'apps/api/Dockerfile', 'apps/web/Dockerfile', 'docs/Dockerfile') }}
           image: ${{ matrix.image }}
           tags: ${{ steps.tags.outputs.tags }}
           push: true
