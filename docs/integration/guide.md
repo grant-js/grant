@@ -7,7 +7,7 @@ cbf: true
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { GrantClient } from '@grantjs/client'
-import { useApiState } from '../.vitepress/theme/composables/useApiState'
+import { SEPARATE_WEB_APP_URL, useApiState } from '../.vitepress/theme/composables/useApiState'
 import {
   createOAuthState,
   generatePkcePair,
@@ -15,7 +15,7 @@ import {
   persistPkceSession,
 } from '../.vitepress/theme/composables/useProjectOAuth'
 
-const { state } = useApiState()
+const { state, webAppUrl } = useApiState()
 
 const flow = computed(() => state.selectedFlow)
 const isOrg = computed(() => flow.value === 'organization')
@@ -140,7 +140,9 @@ function normalizeFrontendUrl (url) {
     return u
   }
 }
-const frontendUrl = computed(() => normalizeFrontendUrl(state.appUrl || ''))
+const frontendUrl = computed(() => normalizeFrontendUrl(webAppUrl.value || ''))
+// The API Configuration field that holds it: its own field only under the docs dev server.
+const webAppField = SEPARATE_WEB_APP_URL ? 'Web URL' : 'Grant URL'
 
 const step9Body = computed(() => JSON.stringify({
   name: 'Documents App',
@@ -368,7 +370,7 @@ Sign in as an end user of your application. The button starts the authorization-
 
 <p>The app's <strong>client_id</strong> is <code>{{ state.variables.APP_CLIENT_ID }}</code> and its redirect URI is <code>{{ callbackUrl }}</code>.</p>
 
-<p>Sign-in opens on the Grant web app at <code>{{ frontendUrl || 'not set' }}</code>. If that is wrong, change <strong>Grant web app URL</strong> in API Configuration.</p>
+<p>Sign-in opens on the Grant web app at <code>{{ frontendUrl || 'not set' }}</code>. If that is wrong, change <strong>{{ webAppField }}</strong> in API Configuration.</p>
 
 <button type="button" class="api-tryit-auth-btn" :disabled="!canStartSignIn || signingIn" @click="startSignIn">
 {{ signingIn ? 'Redirecting…' : 'Sign in with the Project App →' }}
@@ -377,7 +379,7 @@ Sign in as an end user of your application. The button starts the authorization-
 <p v-if="signInError" class="api-tryit-auth-note">{{ signInError }}</p>
 
 <p v-if="!frontendUrl" class="api-tryit-auth-note">
-  The Grant web app URL is not set. Enter it as <strong>Grant web app URL</strong> in API Configuration above.
+  The Grant web app URL is not set. Enter it as <strong>{{ webAppField }}</strong> in API Configuration above.
 </p>
 
 </template>

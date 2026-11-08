@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 
 interface Account {
   id: string;
@@ -8,6 +8,7 @@ interface Account {
 
 interface ApiState {
   baseUrl: string;
+  /** Web URL (the Grant web app). Only used under the docs dev server; deployed installs have one canonical URL. */
   appUrl: string;
   accessToken: string;
   refreshToken: string;
@@ -21,14 +22,18 @@ interface ApiState {
 
 const STORAGE_KEY = 'grant-docs-api-state';
 
-// Deployed docs sit behind the same gateway as the API and web app (path-based single origin), so
-// both URLs default to the docs origin. Under the VitePress dev server (`pnpm dev`, :5173) the docs
-// are on their own origin: there the API is its dev server on :4000 and the Grant web app is on
-// :3000. (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
+// A deployed install has one canonical URL (APP_URL): the gateway serves the API, the web app and
+// the docs from it, so the guide has a single "Grant URL" field, defaulting to the docs origin, and signs in
+// on that same URL. Under the VitePress dev server (`pnpm dev`, :5173) the API (:4000) and the web
+// app (:3000) are separate dev servers, so there, and only there, the web app gets its own field.
+// (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
 const RELATIVE_DEFAULTS = {
   baseUrl: '',
   appUrl: '',
 };
+
+/** True only under the docs dev server: the web app URL is a separate setting there. */
+export const SEPARATE_WEB_APP_URL = import.meta.env.DEV;
 
 // Local dev ports: apps/api (`API_PORT`, default 4000) and apps/web (`next dev`, 3000).
 const DEV_API_ORIGIN = 'http://localhost:4000';
@@ -37,7 +42,7 @@ const DEV_WEB_ORIGIN = 'http://localhost:3000';
 /** Where the Grant web app is assumed to live when nothing is saved. */
 export function getDefaultGrantOrigin(): string {
   if (typeof window === 'undefined') return '';
-  return import.meta.env.DEV ? DEV_WEB_ORIGIN : window.location.origin;
+  return SEPARATE_WEB_APP_URL ? DEV_WEB_ORIGIN : window.location.origin;
 }
 
 /** Where the Grant API is assumed to live when nothing is saved. */
@@ -200,6 +205,9 @@ async function tryRefresh(): Promise<boolean> {
   }
 }
 
+/** The Grant web app the guide signs in on (see SEPARATE_WEB_APP_URL). */
+const webAppUrl = computed(() => (SEPARATE_WEB_APP_URL ? state.appUrl : state.baseUrl));
+
 export function useApiState() {
   hydrate();
   startWatcher();
@@ -271,6 +279,8 @@ export function useApiState() {
 
   return {
     state,
+    /** Where Step 10 signs in: the Web URL under the docs dev server, else the canonical Grant URL. */
+    webAppUrl,
     setVariable,
     setAccounts,
     getVariable,

@@ -17,13 +17,13 @@
 
       <div v-show="expanded" class="api-config-body">
         <div class="api-config-field">
-          <label for="ac-base-url">Base URL</label>
+          <label for="ac-base-url">{{ SEPARATE_WEB_APP_URL ? 'API URL' : 'Grant URL' }}</label>
           <input id="ac-base-url" v-model="state.baseUrl" :placeholder="getDefaultApiBaseUrl()" spellcheck="false" />
         </div>
-        <div class="api-config-field">
-          <label for="ac-app-url">Grant web app URL</label>
+        <div v-if="SEPARATE_WEB_APP_URL" class="api-config-field">
+          <label for="ac-app-url">Web URL</label>
           <input id="ac-app-url" v-model="state.appUrl" :placeholder="getDefaultGrantOrigin()" spellcheck="false" />
-          <span class="api-config-help">Where Grant's sign-in pages run. Step 10 sends you there to sign in through your project app.</span>
+          <span class="api-config-help">Local dev only: the web app runs apart from the API. Step 10 sends you there to sign in through your project app.</span>
         </div>
 
         <div class="api-config-divider"><span>Authentication</span></div>
@@ -154,7 +154,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useApiState, getDefaultApiBaseUrl, getDefaultGrantOrigin } from '../composables/useApiState';
+import { useApiState, getDefaultApiBaseUrl, getDefaultGrantOrigin, SEPARATE_WEB_APP_URL } from '../composables/useApiState';
 // Grant's own English error strings: the API returns some validation errors as i18n keys.
 import enErrors from '../../../../packages/@grantjs/i18n/locales/en/errors.json';
 
