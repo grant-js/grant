@@ -60,7 +60,9 @@ describe('resolveRoute', () => {
     ['/acc/1/prj/site/.well-known/jwks.json', '/acc/*/prj/*/.well-known/', 'api'],
     ['/storage/uploads/file.pdf', '/storage', 'api'],
     ['/docs/guide/getting-started.html', '/docs/', 'docs'],
-    ['/example/anything', '/example', 'example'],
+    ['/docs/integration/oauth-callback.html', '/docs/', 'docs'],
+    // The retired client example's path is no longer routed: it falls to the web catch-all.
+    ['/example/anything', '/', 'web'],
     // Locale-prefixed dashboard routes and everything else fall to the catch-all.
     ['/en/dashboard', '/', 'web'],
     ['/de/auth/login', '/', 'web'],

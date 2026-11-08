@@ -24,19 +24,18 @@ Compose resolves `${VAR}` in the YAML at **parse time** from the env passed to t
 
 Decide how users will reach the platform:
 
-| Component              | Default container port             | Typical public URL                      |
-| ---------------------- | ---------------------------------- | --------------------------------------- |
-| Web (Next.js)          | `3000`                             | `https://grant.yourdomain.com`          |
-| API                    | `4000`                             | `https://grant.yourdomain.com/api/`     |
-| Docs (optional)        | `8080` (container) → `5173` (host) | `https://grant.yourdomain.com/docs/`    |
-| Example app (optional) | `3000` (container) → `3004` (host) | `https://grant.yourdomain.com/example/` |
+| Component       | Default container port             | Typical public URL                   |
+| --------------- | ---------------------------------- | ------------------------------------ |
+| Web (Next.js)   | `3000`                             | `https://grant.yourdomain.com`       |
+| API             | `4000`                             | `https://grant.yourdomain.com/api/`  |
+| Docs (optional) | `8080` (container) → `5173` (host) | `https://grant.yourdomain.com/docs/` |
 
 You can keep the default ports from `docker-compose.yml` and put a reverse proxy (nginx, Traefik, load balancer, ingress) in front, or expose ports directly during initial testing.
 
 ## 2. Environment: build vs runtime
 
 - **env_file** — The compose file sets `env_file: .env` (or `.env.demo`) on services. Those vars are injected into the **container at runtime** only; they are not available during `docker build`.
-- **Build args** — We do not pass URLs or demo flags as build args for web, docs, or example-nextjs. Images are built once and are deployment-agnostic; each deployment sets `APP_URL` (and optionally `SECURITY_FRONTEND_URL`) in its env file, and the containers read them at startup.
+- **Build args** — We do not pass URLs or demo flags as build args for web or docs. Images are built once and are deployment-agnostic; each deployment sets `APP_URL` (and optionally `SECURITY_FRONTEND_URL`) in its env file, and the containers read them at startup.
 - **Compose interpolation** — When you run `docker compose up`, Compose reads your env file and substitutes `${VAR}` in the YAML (e.g. in `environment:` or image names). So the same compose file works for any domain.
 
 ## 3. Create `.env` from the template
@@ -71,14 +70,12 @@ This uses `docker-compose.yml` to start:
 - Grant API (`api`)
 - Grant web app (`web`)
 - Docs (`docs`)
-- Example Next.js app (`example-nextjs`)
 
 Default host ports:
 
 - `3000` → web
 - `4000` → API
 - `5173` → docs
-- `3004` → example app
 
 > Postgres and Redis are only reachable on the internal Docker network; the API connects to them via `postgres` / `redis` hostnames.
 
@@ -103,7 +100,7 @@ For production, terminate TLS and route traffic through a reverse proxy or load 
 
 You can use nginx, Traefik, Caddy, or your cloud’s load balancer / ingress. Reuse the URLs you configured in `.env` to keep CORS and redirects consistent. For a closed install with origin-verify, see [Closed install](#closed-install-origin-verify-and-public-signup): do not publish the API port; either let Next inject `x-origin-verify` or add `proxy_set_header` on API locations.
 
-For a single canonical APP_URL (e.g. `https://demo.grantjs.org`) that routes to api, web, docs, and the example app by path, see the sample `docs/deployment/nginx-gateway.conf.example` in the repo. Copy and adapt `server_name`, upstream ports, and SSL paths for your host; it is not required for deployment.
+For a single canonical APP_URL (e.g. `https://demo.grantjs.org`) that routes to api, web and docs by path, see the sample `docs/deployment/nginx-gateway.conf.example` in the repo. Copy and adapt `server_name`, upstream ports, and SSL paths for your host; it is not required for deployment.
 
 ## Closed install: origin verify and public signup
 
@@ -197,7 +194,6 @@ flowchart TD
       api[API (4000)]
       web[Web (3000)]
       docs[Docs (5173)]
-      example[Example app (3004)]
     end
   end
 
@@ -214,7 +210,6 @@ flowchart TD
   gw[Gateway nginx :80] --> api[API :4000]
   gw --> web[Web :3000]
   gw --> docs[Docs :8080]
-  gw --> example[Example :3000]
 
   api --> pg[(Host PostgreSQL)]
   api --> redis[(Host Redis)]
@@ -283,7 +278,7 @@ Back them up like any Docker volume:
 On **push to main**, three workflows run independently:
 
 - **ci.yml** — Lint, build, test.
-- **deploy.yml** — Build and push four images (grant-api, grant-web, grant-docs, example-nextjs) to GHCR with tags `:demo` and `:demo-$sha`; optionally deploy the demo stack via SSH.
+- **deploy.yml** — Build and push three images (grant-api, grant-web, grant-docs) to GHCR with tags `:demo` and `:demo-$sha`; optionally deploy the demo stack via SSH.
 - **release.yml** — Version and publish npm packages via [Changesets](/contributing/versioning) when the "chore: version packages" PR is merged.
 
 ### Release surfaces

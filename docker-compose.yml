@@ -231,24 +231,6 @@ services:
     networks:
       - grant-network
 
-  example-nextjs:
-    image: ${GRANT_EXAMPLE_NEXTJS_IMAGE:-ghcr.io/grant-js/grant/example-nextjs:latest}
-    build:
-      context: .
-      dockerfile: packages/@grantjs/client/examples/nextjs/Dockerfile
-    container_name: grant-example-nextjs
-    depends_on:
-      - api
-    ports:
-      - '${EXAMPLE_PORT:-3004}:3000'
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-    restart: unless-stopped
-    networks:
-      - grant-network
-
   gateway:
     image: nginx:alpine
     container_name: grant-gateway
@@ -256,7 +238,6 @@ services:
       - api
       - web
       - docs
-      - example-nextjs
     ports:
       - '80:80'
     volumes:

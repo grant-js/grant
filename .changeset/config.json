@@ -27,7 +27,6 @@
     "example-fastify",
     "example-nestjs",
     "example-nextjs",
-    "example-nextjs-client",
     "@grantjs/analytics",
     "@grantjs/cache",
     "@grantjs/constants",

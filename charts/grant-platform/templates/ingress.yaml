@@ -85,15 +85,6 @@ spec:
                 port:
                   number: {{ .Values.api.service.port }}
           {{- end }}
-          {{- if .Values.example.enabled }}
-          - path: /example
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "grant.fullname" . }}-example
-                port:
-                  number: {{ .Values.example.service.port }}
-          {{- end }}
           {{- if .Values.web.enabled }}
           - path: /
             pathType: Prefix

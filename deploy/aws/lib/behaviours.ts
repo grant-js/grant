@@ -34,7 +34,7 @@ export interface CloudFrontBehaviour {
   readonly description: string;
 }
 
-/** Targets needing an explicit behaviour. `web` is the default origin; `example` is not deployed. */
+/** Targets needing an explicit behaviour. `web` is the default origin. */
 type RoutedTarget = 'api' | 'docs';
 
 const ORIGIN_FOR_TARGET: Record<RoutedTarget, OriginKind> = {

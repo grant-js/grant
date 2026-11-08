@@ -97,7 +97,6 @@ jobs:
           docker pull "$IMAGE_BASE/grant-api:demo"
           docker pull "$IMAGE_BASE/grant-web:demo"
           docker pull "$IMAGE_BASE/grant-docs:demo"
-          docker pull "$IMAGE_BASE/example-nextjs:demo"
 
           set -- docker compose -p "$PROJECT_NAME" --env-file ".env.demo"
           if [ -n "$CONFIG_FILES" ]; then
@@ -109,4 +108,7 @@ jobs:
             set -- "$@" -f "docker-compose.demo.yml"
           fi
 
-          "$@" up -d --no-build
+          # --remove-orphans drops containers of services no longer in the compose file on this
+          # host. This job does not update the host's checkout: a service removed from the repo
+          # (e.g. example-nextjs) only goes once docker-compose.demo.yml here is updated.
+          "$@" up -d --no-build --remove-orphans

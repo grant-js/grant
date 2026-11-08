@@ -190,56 +190,6 @@ docs:
   podAnnotations: {}
 
 # -----------------------------------------------------------------------------
-# Example Next.js app (/example)
-# -----------------------------------------------------------------------------
-example:
-  enabled: true
-  replicaCount: 1
-  image:
-    repository: ghcr.io/grant-js/grant/example-nextjs
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 3000
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: '1'
-      memory: 1Gi
-  startupProbe:
-    tcpSocket:
-      port: http
-    failureThreshold: 30
-    periodSeconds: 5
-  readinessProbe:
-    httpGet:
-      path: /
-      port: http
-    initialDelaySeconds: 5
-  livenessProbe:
-    httpGet:
-      path: /
-      port: http
-    initialDelaySeconds: 15
-  podSecurityContext:
-    fsGroup: 1001
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1001
-    readOnlyRootFilesystem: true
-  extraVolumeMounts:
-    - name: tmp
-      mountPath: /tmp
-  extraVolumes:
-    - name: tmp
-      emptyDir: {}
-  extraEnv: []
-  podAnnotations: {}
-
-# -----------------------------------------------------------------------------
 # Ingress — Traefik-first (docs strip prefix via Middleware); nginx supported via ingress.docs.mode
 # -----------------------------------------------------------------------------
 ingress:
@@ -248,7 +198,7 @@ ingress:
   className: traefik
   # Override hostname (default: hostname from global.appUrl)
   host: ''
-  # Main Ingress only (API paths, web, example). Add controller-specific timeouts / size limits here.
+  # Main Ingress only (API paths, web). Add controller-specific timeouts / size limits here.
   annotations: {}
   # Applied to main Ingress and docs Ingress (e.g. cert-manager.io/cluster-issuer)
   extraAnnotations: {}

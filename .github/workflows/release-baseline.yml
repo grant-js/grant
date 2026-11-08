@@ -36,7 +36,7 @@ jobs:
           IMAGE_BASE: ghcr.io/${{ github.repository }}
         run: |
           set -euo pipefail
-          for image in grant-api grant-web grant-docs example-nextjs; do
+          for image in grant-api grant-web grant-docs; do
             echo "Tagging ${image}:${SOURCE} -> :${VERSION} and :latest"
             docker buildx imagetools create \
               "${IMAGE_BASE}/${image}:${SOURCE}" \

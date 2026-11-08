@@ -73,10 +73,6 @@ describe('toCloudFrontBehaviours', () => {
     expect(behaviours.map((b) => b.pathPattern)).not.toContain('*');
   });
 
-  it('omits the example app, which this target does not deploy', () => {
-    expect(behaviours.map((b) => b.pathPattern)).not.toContain('/example*');
-  });
-
   it('covers every API and docs route in the declaration', () => {
     // The generation guarantee, stated as a test: nothing routable is dropped.
     const expected = new Set(

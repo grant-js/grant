@@ -94,7 +94,7 @@ export default defineConfig(
       '**/node_modules/**',
       '**/dist/**',
       '**/.next/**',
-      '**/out/**', // Next.js static export (e.g. example-nextjs)
+      '**/out/**', // Next.js static export output
       '**/.turbo/**',
       '**/build/**',
       '**/coverage/**',

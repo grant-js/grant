@@ -9,7 +9,7 @@
 #   ./scripts/stack-deploy.sh down      # tear down
 #
 # Single entry point: the gateway (nginx) listens on one port and routes
-# all traffic internally by path — API, web, docs, example app.
+# all traffic internally by path — API, web, docs.
 # The API runs as one replica. Raise it with `--scale api=N` to retest clustering.
 #
 # Postgres and Redis run on the host. The API reaches them through
@@ -110,25 +110,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    restart: unless-stopped
-    networks:
-      - demo-network
-
-  example-nextjs:
-    image: ${GRANT_EXAMPLE_NEXTJS_IMAGE:-ghcr.io/grant-js/grant/example-nextjs:demo}
-    build:
-      context: .
-      dockerfile: packages/@grantjs/client/examples/nextjs/Dockerfile
-    container_name: grant-demo-example-nextjs
-    env_file:
-      - .env.demo
-    depends_on:
-      api:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
     restart: unless-stopped
     networks:
       - demo-network

@@ -119,7 +119,7 @@ Worked examples: [`docs/deployment/kubernetes.md`](../../docs/deployment/kuberne
 
 ## Ingress paths
 
-Main Ingress routes (see [`deploy/gateway.conf.template`](../../deploy/gateway.conf.template)): API under `/graphql`, `/api`, `/api-docs`, `/.well-known`, `/org`, `/acc`, `/health`, `/storage`; example under `/example`; web catch-all `/`. Docs are routed under `/docs` (Traefik: strip prefix; nginx: regex rewrite).
+Main Ingress routes (see [`deploy/gateway.conf.template`](../../deploy/gateway.conf.template)): API under `/graphql`, `/api`, `/api-docs`, `/.well-known`, `/org`, `/acc`, `/health`, `/storage`; web catch-all `/`. Docs are routed under `/docs` (Traefik: strip prefix; nginx: regex rewrite).
 
 ## Chart versioning
 

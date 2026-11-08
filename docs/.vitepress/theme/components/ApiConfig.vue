@@ -17,14 +17,20 @@
 
       <div v-show="expanded" class="api-config-body">
         <div class="api-config-field">
-          <label for="ac-base-url">Base URL</label>
+          <label for="ac-base-url">{{ SEPARATE_WEB_APP_URL ? 'API URL' : 'Grant URL' }}</label>
           <input id="ac-base-url" v-model="state.baseUrl" :placeholder="getDefaultApiBaseUrl()" spellcheck="false" />
+        </div>
+        <div v-if="SEPARATE_WEB_APP_URL" class="api-config-field">
+          <label for="ac-app-url">Web URL</label>
+          <input id="ac-app-url" v-model="state.appUrl" :placeholder="getDefaultGrantOrigin()" spellcheck="false" />
+          <span class="api-config-help">Local dev only: the web app runs apart from the API. Step 10 sends you there to sign in through your project app.</span>
         </div>
 
         <div class="api-config-divider"><span>Authentication</span></div>
 
         <div class="api-config-tabs">
           <button :class="{ active: tab === 'login' }" @click="tab = 'login'">Sign in</button>
+          <button :class="{ active: tab === 'signup' }" @click="openSignup">Sign up</button>
           <button :class="{ active: tab === 'token' }" @click="tab = 'token'">Tokens</button>
         </div>
 
@@ -43,6 +49,55 @@
           </button>
           <p v-if="loginError" class="api-config-msg err">{{ loginError }}</p>
           <p v-if="loginOk" class="api-config-msg ok">{{ loginOk }}</p>
+        </div>
+
+        <!-- Sign up -->
+        <div v-if="tab === 'signup'" class="api-config-login">
+          <p v-if="signupPolicy === 'loading'" class="api-config-msg verifying-msg">Checking whether this instance allows sign-up…</p>
+          <p v-else-if="signupPolicy === 'closed'" class="api-config-msg err">
+            Public sign-up is turned off on this instance. Ask an administrator for an invitation, then sign in.
+          </p>
+          <template v-else>
+            <div class="api-config-field">
+              <label for="ac-su-name">Name</label>
+              <input id="ac-su-name" v-model="signupName" autocomplete="name" placeholder="Ada Lovelace" />
+            </div>
+            <div class="api-config-field">
+              <label for="ac-su-email">Email</label>
+              <input id="ac-su-email" v-model="signupEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+            </div>
+            <div class="api-config-field">
+              <label for="ac-su-pwd">Password</label>
+              <input id="ac-su-pwd" v-model="signupPassword" type="password" autocomplete="new-password" placeholder="Password" @keyup.enter="signup" />
+            </div>
+            <div class="api-config-field">
+              <span class="api-config-label">Account type</span>
+              <div class="api-config-radios">
+                <label><input v-model="signupType" type="radio" value="personal" /> Personal</label>
+                <label><input v-model="signupType" type="radio" value="organization" /> Organization</label>
+              </div>
+              <span class="api-config-help">Either works for this guide. You can add the other type later in Step 1.</span>
+            </div>
+            <button class="api-config-login-btn" :disabled="busy" @click="signup">
+              {{ busy ? 'Creating account…' : 'Create account' }}
+            </button>
+            <p v-if="signupError" class="api-config-msg err">{{ signupError }}</p>
+          </template>
+        </div>
+
+        <!-- Email verification pending (after sign-up, or any unverified session) -->
+        <div v-if="connStatus === 'connected' && state.requiresEmailVerification" class="api-config-verify">
+          <p>
+            <strong>Verify your email.</strong> Grant sent a link to <code>{{ state.verifiedEmail }}</code>.
+            The <strong>Personal</strong> flow works now; the <strong>Organization</strong> flow is blocked until you
+            open the link. Then sign in again here so your session picks it up.
+          </p>
+          <div class="api-config-verify-actions">
+            <button class="api-config-refresh-btn" :disabled="resending" @click="resendVerification">
+              {{ resending ? 'Sending…' : 'Resend email' }}
+            </button>
+            <span v-if="resendMsg" class="api-config-refresh-msg" :class="resendOk ? 'ok' : 'err'">{{ resendMsg }}</span>
+          </div>
         </div>
 
         <!-- Tokens -->
@@ -99,17 +154,30 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useApiState, getDefaultApiBaseUrl } from '../composables/useApiState';
+import { useApiState, getDefaultApiBaseUrl, getDefaultGrantOrigin, SEPARATE_WEB_APP_URL } from '../composables/useApiState';
+// Grant's own English error strings: the API returns some validation errors as i18n keys.
+import enErrors from '../../../../packages/@grantjs/i18n/locales/en/errors.json';
 
 const { state, setVariable, clearState, verifyConnection, tryRefresh } = useApiState();
 
 const expanded = ref(false);
-const tab = ref<'login' | 'token'>('login');
+const tab = ref<'login' | 'signup' | 'token'>('login');
 const email = ref('');
 const password = ref('');
 const busy = ref(false);
 const loginError = ref('');
 const loginOk = ref('');
+
+const signupName = ref('');
+const signupEmail = ref('');
+const signupPassword = ref('');
+const signupType = ref<'personal' | 'organization'>('personal');
+const signupError = ref('');
+const signupPolicy = ref<'unknown' | 'loading' | 'open' | 'closed'>('unknown');
+
+const resending = ref(false);
+const resendMsg = ref('');
+const resendOk = ref(false);
 
 const connStatus = ref<'idle' | 'verifying' | 'connected' | 'error'>('idle');
 const connError = ref('');
@@ -124,6 +192,39 @@ const varCount = computed(() => Object.keys(state.variables).length);
 
 function truncate(s: string, n: number) {
   return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+/** `errors.validation.invalidEmail` → Grant's English string for that key, or null. */
+function translateErrorKey(key: string): string | null {
+  if (!/^errors\.[\w.]+$/.test(key)) return null;
+  const value = key
+    .split('.')
+    .slice(1)
+    .reduce<unknown>((node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), enErrors);
+  return typeof value === 'string' && !value.includes('{{') ? value : null;
+}
+
+/** One `validationErrors` entry (`Field "data": <sentence or key>`) as readable text. */
+function readableValidation(entry: string): string {
+  const text = entry.replace(/^Field "[^"]*":\s*/, '').trim();
+  return translateErrorKey(text) ?? text;
+}
+
+/**
+ * Readable text from an API error body (`{ error, code, details, translationKey, extensions }`).
+ * The API has no `message` field; `error` can be an untranslated `{{field}}` template, so
+ * field-level validation errors win when present.
+ */
+function apiErrorMessage(json: Record<string, unknown>, status: number, fallback: string): string {
+  const validation = (json.extensions as { validationErrors?: unknown } | undefined)?.validationErrors;
+  if (Array.isArray(validation) && validation.length > 0) {
+    return validation.map((v) => readableValidation(String(v))).join('. ');
+  }
+  for (const value of [json.message, json.error]) {
+    if (typeof value === 'string' && value.trim() && !value.includes('{{')) return value;
+  }
+  const translated = typeof json.translationKey === 'string' ? translateErrorKey(json.translationKey) : null;
+  return translated ?? `${fallback} (${status})`;
 }
 
 /** Verify the current access token via GET /api/me. */
@@ -192,31 +293,21 @@ async function login() {
       credentials: 'include',
     });
 
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      loginError.value = json.message || `Sign-in failed (${res.status})`;
+      loginError.value = apiErrorMessage(json, res.status, 'Sign-in failed');
       return;
     }
 
     const data = json.data ?? json;
-    const accessToken = data.accessToken ?? '';
-    const refreshToken = data.refreshToken ?? '';
-
-    if (!accessToken) {
+    if (!data.accessToken) {
       loginError.value = 'Sign-in succeeded but no access token was returned.';
       return;
     }
 
-    state.accessToken = accessToken;
-    state.refreshToken = refreshToken;
-
-    const account = data.account;
-    if (account?.ownerId) setVariable('USER_ID', account.ownerId);
-    if (account?.id) setVariable('ACCOUNT_ID', account.id);
-
     loginOk.value = 'Signed in — verifying…';
-    await verify();
+    await connectWithSession(data);
     if (connStatus.value === 'connected') {
       loginOk.value = `Signed in as ${state.verifiedEmail || 'user'}`;
     }
@@ -224,6 +315,104 @@ async function login() {
     loginError.value = `Network error: ${(err as Error).message}. Is the API running at ${state.baseUrl}?`;
   } finally {
     busy.value = false;
+  }
+}
+
+/** Store a session from POST /api/auth/login or /register, then verify it via GET /api/me. */
+async function connectWithSession(data: { accessToken?: string; refreshToken?: string; account?: { id?: string; ownerId?: string } }) {
+  state.accessToken = data.accessToken ?? '';
+  state.refreshToken = data.refreshToken ?? '';
+  if (data.account?.ownerId) setVariable('USER_ID', data.account.ownerId);
+  if (data.account?.id) setVariable('ACCOUNT_ID', data.account.id);
+  await verify();
+}
+
+/** GET /api/auth/providers says whether this instance accepts self sign-up. */
+async function openSignup() {
+  tab.value = 'signup';
+  if (signupPolicy.value === 'open' || signupPolicy.value === 'loading') return;
+  signupPolicy.value = 'loading';
+  try {
+    const res = await fetch(`${state.baseUrl}/api/auth/providers`);
+    const json = await res.json();
+    const data = json.data ?? json;
+    // Unknown shape or a failed request: show the form and let POST /register give the verdict.
+    signupPolicy.value =
+      res.ok && data.publicSignupEnabled === false && data.bootstrapOpen === false ? 'closed' : 'open';
+  } catch {
+    signupPolicy.value = 'open';
+  }
+}
+
+async function signup() {
+  signupError.value = '';
+  if (!signupName.value.trim() || !signupEmail.value.trim() || !signupPassword.value) {
+    signupError.value = 'Name, email and password are required.';
+    return;
+  }
+  busy.value = true;
+  try {
+    const res = await fetch(`${state.baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: signupName.value.trim(),
+        type: signupType.value,
+        provider: 'email',
+        providerId: signupEmail.value.trim(),
+        providerData: { password: signupPassword.value },
+      }),
+      credentials: 'include',
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.status === 409) {
+      // The email is already registered: hand over to Sign in with the address filled in.
+      email.value = signupEmail.value.trim();
+      signupPassword.value = '';
+      tab.value = 'login';
+      loginError.value = `An account with ${email.value} already exists. Sign in with its password.`;
+      return;
+    }
+    if (!res.ok) {
+      signupError.value = apiErrorMessage(json, res.status, 'Sign-up failed');
+      return;
+    }
+    const data = json.data ?? json;
+    if (!data.accessToken) {
+      signupError.value = 'The account was created but no access token was returned. Sign in instead.';
+      return;
+    }
+    signupPassword.value = '';
+    await connectWithSession(data);
+    if (connStatus.value === 'connected') {
+      // Show the confirmation where sign-in messages live; the reader picks a flow below next.
+      tab.value = 'login';
+      loginOk.value = `Account created — signed in as ${state.verifiedEmail || signupEmail.value.trim()}`;
+    }
+  } catch (err: unknown) {
+    signupError.value = `Network error: ${(err as Error).message}. Is the API running at ${state.baseUrl}?`;
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function resendVerification() {
+  resending.value = true;
+  resendMsg.value = '';
+  try {
+    const res = await fetch(`${state.baseUrl}/api/auth/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: state.verifiedEmail }),
+    });
+    const json = await res.json().catch(() => ({}));
+    resendOk.value = res.ok;
+    resendMsg.value = res.ok ? 'Verification email sent' : apiErrorMessage(json, res.status, 'Could not resend');
+  } catch (err: unknown) {
+    resendOk.value = false;
+    resendMsg.value = (err as Error).message;
+  } finally {
+    resending.value = false;
   }
 }
 
@@ -251,6 +440,8 @@ function doClear() {
   loginOk.value = '';
   loginError.value = '';
   refreshMsg.value = '';
+  signupError.value = '';
+  resendMsg.value = '';
 }
 </script>
 
@@ -380,6 +571,28 @@ function doClear() {
 }
 
 .api-config-login { display: flex; flex-direction: column; }
+
+.api-config-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.api-config-radios { display: flex; gap: 16px; font-size: 14px; }
+.api-config-radios label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.api-config-help { font-size: 12px; color: var(--vp-c-text-3); }
+
+.api-config-verify {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--vp-c-warning-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.api-config-verify p { margin: 0 0 8px; }
+.api-config-verify-actions { display: flex; align-items: center; gap: 10px; }
 
 .api-config-login-btn {
   align-self: flex-start;
