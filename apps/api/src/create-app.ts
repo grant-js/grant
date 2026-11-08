@@ -28,7 +28,6 @@
 import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
-import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { expressMiddleware } from '@as-integrations/express5';
 import {
   bootstrapDatabase,
@@ -41,7 +40,6 @@ import express from 'express';
 import { specifiedRules } from 'graphql';
 import helmet from 'helmet';
 import http from 'http';
-import swaggerUi from 'swagger-ui-express';
 
 import { config, printConfigSummary, resolveCredentials, validateConfig } from '@/config';
 import { schema } from '@/graphql/resolvers';
@@ -50,6 +48,7 @@ import { i18nMiddleware, initializeI18n } from '@/i18n';
 import { graphqlMinAalAtLoginMiddleware } from '@/lib/authorization/min-aal-at-login';
 import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
+import { createGraphqlLandingPagePlugin } from '@/lib/graphql/landing-page.lib';
 import { createGraphqlCostValidationRules } from '@/lib/graphql/query-cost.lib';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
@@ -67,6 +66,7 @@ import { requestLoggingMiddleware } from '@/middleware/request-logging.middlewar
 import { storageMiddleware, uploadMiddleware } from '@/middleware/storage.middleware';
 import { createRestRouter } from '@/rest';
 import { getOpenApiDocument } from '@/rest/openapi';
+import { createSwaggerUiHandlers } from '@/rest/openapi/swagger-ui';
 import { createEventDispatchRouter } from '@/rest/routes/event-dispatch.routes';
 import { createJwksRouter } from '@/rest/routes/jwks.routes';
 import { createProjectOAuthMetadataRouter } from '@/rest/routes/project-oauth-metadata.routes';
@@ -167,9 +167,7 @@ export async function createApp(): Promise<CreatedApp> {
     ],
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
-      ...(config.apollo.playground
-        ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
-        : []),
+      createGraphqlLandingPagePlugin(config.apollo.playground),
       ApolloServerPluginInlineTrace(),
     ],
   });
@@ -232,21 +230,16 @@ export async function createApp(): Promise<CreatedApp> {
     app.use(metricsMiddleware);
   }
 
-  // Both routes resolve the document on first request rather than at boot. See
+  // The Swagger UI page fetches its document from `/api-docs.json` (see
+  // createSwaggerUiHandlers), so setting it up needs no document.
+  if (config.swagger.enabled) {
+    app.use('/api-docs', ...createSwaggerUiHandlers(config.swaggerSetup));
+  }
+
+  // Resolves the document on first request rather than at boot. See
   // getOpenApiDocument: generating it walks 87 endpoints and measured 260 ms in the
   // shipped container, which a Lambda cold start pays for a document most requests
   // never read.
-  if (config.swagger.enabled) {
-    // The UI middleware is built on first use and then reused, so the document is
-    // generated once and the HTML template once — not per request.
-    let swaggerUiHandler: express.RequestHandler | undefined;
-    const lazySwaggerUi: express.RequestHandler = (req, res, next) => {
-      swaggerUiHandler ??= swaggerUi.setup(getOpenApiDocument(), config.swaggerSetup);
-      swaggerUiHandler(req, res, next);
-    };
-    app.use('/api-docs', swaggerUi.serve, lazySwaggerUi);
-  }
-
   app.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(getOpenApiDocument());

@@ -11,10 +11,12 @@ Grant exposes a full REST API at `/api/*` with interactive Swagger documentation
 
 The API ships with an interactive **Swagger UI** for exploring and testing every endpoint:
 
-| Resource         | URL                                   |
-| ---------------- | ------------------------------------- |
-| **Swagger UI**   | `http://localhost:4000/api-docs`      |
-| **OpenAPI JSON** | `http://localhost:4000/api-docs.json` |
+| Resource         | Local (`pnpm dev`)                    | Public demo                                                              |
+| ---------------- | ------------------------------------- | ------------------------------------------------------------------------ |
+| **Swagger UI**   | `http://localhost:4000/api-docs`      | [demo.grantjs.org/api-docs](https://demo.grantjs.org/api-docs/)          |
+| **OpenAPI JSON** | `http://localhost:4000/api-docs.json` | [demo.grantjs.org/api-docs.json](https://demo.grantjs.org/api-docs.json) |
+
+On your own deployment both live under your API's origin, at `/api-docs` and `/api-docs.json`. Setting `SWAGGER_ENABLED=false` turns off the Swagger UI; the OpenAPI JSON is always served.
 
 Swagger UI includes request/response schemas, example payloads, and a "Try it out" button for every endpoint. The OpenAPI spec can be imported into Postman, Insomnia, or used to generate client SDKs.
 
@@ -83,24 +85,24 @@ curl -s -X POST http://localhost:4000/api/auth/refresh \
 
 ## Endpoints by Tag
 
-Every endpoint is fully documented in the Swagger UI. The table below links to each tag for quick navigation:
+Every endpoint is fully documented in the Swagger UI. The table below links to each tag in the public demo's Swagger UI; on your own deployment, open the same tag under `/api-docs`:
 
-| Tag                                                                                    | Endpoints | Description                                                                        |
-| -------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------- |
-| [Authentication](http://localhost:4000/api-docs#/Authentication)                       | 10        | Login, register, refresh, logout, OAuth, token exchange, authorization check       |
-| [Me](http://localhost:4000/api-docs#/Me)                                               | 17        | Profile, sessions, password, auth methods, notifications, preferences, data export |
-| [Organizations](http://localhost:4000/api-docs#/Organizations)                         | 5         | CRUD for organizations                                                             |
-| [Organization Invitations](http://localhost:4000/api-docs#/Organization%20Invitations) | 7         | Invite, accept, resend, renew, revoke                                              |
-| [Organization Members](http://localhost:4000/api-docs#/Organization%20Members)         | 3         | List, update role, remove                                                          |
-| [Projects](http://localhost:4000/api-docs#/Projects)                                   | 4         | CRUD for projects                                                                  |
-| [Users](http://localhost:4000/api-docs#/Users)                                         | 5         | CRUD for users within a scope                                                      |
-| [Roles](http://localhost:4000/api-docs#/Roles)                                         | 4         | CRUD for roles                                                                     |
-| [Groups](http://localhost:4000/api-docs#/Groups)                                       | 4         | CRUD for groups (permission bundles)                                               |
-| [Permissions](http://localhost:4000/api-docs#/Permissions)                             | 4         | CRUD for permissions                                                               |
-| [Resources](http://localhost:4000/api-docs#/Resources)                                 | 4         | CRUD for resources (RBAC targets)                                                  |
-| [API Keys](http://localhost:4000/api-docs#/API%20Keys)                                 | 5         | Create, list, revoke, delete, token exchange                                       |
-| [Webhook Subscriptions](http://localhost:4000/api-docs#/Webhook%20Subscriptions)       | 8         | Project webhook CRUD, secret rotate, deliveries, replay                            |
-| [Tags](http://localhost:4000/api-docs#/Tags)                                           | 4         | CRUD for tags                                                                      |
+| Tag                                                                                        | Endpoints | Description                                                                        |
+| ------------------------------------------------------------------------------------------ | --------- | ---------------------------------------------------------------------------------- |
+| [Authentication](https://demo.grantjs.org/api-docs/#/Authentication)                       | 10        | Login, register, refresh, logout, OAuth, token exchange, authorization check       |
+| [Me](https://demo.grantjs.org/api-docs/#/Me)                                               | 17        | Profile, sessions, password, auth methods, notifications, preferences, data export |
+| [Organizations](https://demo.grantjs.org/api-docs/#/Organizations)                         | 5         | CRUD for organizations                                                             |
+| [Organization Invitations](https://demo.grantjs.org/api-docs/#/Organization%20Invitations) | 7         | Invite, accept, resend, renew, revoke                                              |
+| [Organization Members](https://demo.grantjs.org/api-docs/#/Organization%20Members)         | 3         | List, update role, remove                                                          |
+| [Projects](https://demo.grantjs.org/api-docs/#/Projects)                                   | 4         | CRUD for projects                                                                  |
+| [Users](https://demo.grantjs.org/api-docs/#/Users)                                         | 5         | CRUD for users within a scope                                                      |
+| [Roles](https://demo.grantjs.org/api-docs/#/Roles)                                         | 4         | CRUD for roles                                                                     |
+| [Groups](https://demo.grantjs.org/api-docs/#/Groups)                                       | 4         | CRUD for groups (permission bundles)                                               |
+| [Permissions](https://demo.grantjs.org/api-docs/#/Permissions)                             | 4         | CRUD for permissions                                                               |
+| [Resources](https://demo.grantjs.org/api-docs/#/Resources)                                 | 4         | CRUD for resources (RBAC targets)                                                  |
+| [API Keys](https://demo.grantjs.org/api-docs/#/API%20Keys)                                 | 5         | Create, list, revoke, delete, token exchange                                       |
+| [Webhook Subscriptions](https://demo.grantjs.org/api-docs/#/Webhook%20Subscriptions)       | 8         | Project webhook CRUD, secret rotate, deliveries, replay                            |
+| [Tags](https://demo.grantjs.org/api-docs/#/Tags)                                           | 4         | CRUD for tags                                                                      |
 
 ::: info REST-Only Endpoints
 Some operations are only available via REST (not GraphQL):

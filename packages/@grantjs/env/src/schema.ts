@@ -25,7 +25,14 @@ export const envSchema = z.object({
   // Core / app
   NODE_ENV: z.enum(['development', 'production', 'test']).optional().default('development'),
   APP_URL: optionalString('http://localhost:4000'),
-  DOCS_URL: optionalString('http://localhost:5173'),
+  /**
+   * Public docs site base URL, sent to the web app by `GET /api/config`. Unset (or blank) means
+   * the web app links to its own origin's `/docs` (or the VitePress dev server in development).
+   */
+  DOCS_URL: z
+    .string()
+    .optional()
+    .transform((s) => (s?.trim() ? s.trim() : undefined)),
   API_PORT: optionalNumber(4000),
   /** Max JSON request body size for Express (bytes). Default 10 MiB; raise for large CDM sync imports. */
   API_JSON_BODY_LIMIT_BYTES: optionalNumber(10 * 1024 * 1024),
