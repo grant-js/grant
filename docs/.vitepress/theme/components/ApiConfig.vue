@@ -20,6 +20,11 @@
           <label for="ac-base-url">Base URL</label>
           <input id="ac-base-url" v-model="state.baseUrl" :placeholder="getDefaultApiBaseUrl()" spellcheck="false" />
         </div>
+        <div class="api-config-field">
+          <label for="ac-app-url">Grant web app URL</label>
+          <input id="ac-app-url" v-model="state.appUrl" :placeholder="getDefaultGrantOrigin()" spellcheck="false" />
+          <span class="api-config-help">Where Grant's sign-in pages run. Step 10 sends you there to sign in through your project app.</span>
+        </div>
 
         <div class="api-config-divider"><span>Authentication</span></div>
 
@@ -149,7 +154,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useApiState, getDefaultApiBaseUrl } from '../composables/useApiState';
+import { useApiState, getDefaultApiBaseUrl, getDefaultGrantOrigin } from '../composables/useApiState';
+// Grant's own English error strings: the API returns some validation errors as i18n keys.
+import enErrors from '../../../../packages/@grantjs/i18n/locales/en/errors.json';
 
 const { state, setVariable, clearState, verifyConnection, tryRefresh } = useApiState();
 
@@ -185,6 +192,39 @@ const varCount = computed(() => Object.keys(state.variables).length);
 
 function truncate(s: string, n: number) {
   return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+/** `errors.validation.invalidEmail` → Grant's English string for that key, or null. */
+function translateErrorKey(key: string): string | null {
+  if (!/^errors\.[\w.]+$/.test(key)) return null;
+  const value = key
+    .split('.')
+    .slice(1)
+    .reduce<unknown>((node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), enErrors);
+  return typeof value === 'string' && !value.includes('{{') ? value : null;
+}
+
+/** One `validationErrors` entry (`Field "data": <sentence or key>`) as readable text. */
+function readableValidation(entry: string): string {
+  const text = entry.replace(/^Field "[^"]*":\s*/, '').trim();
+  return translateErrorKey(text) ?? text;
+}
+
+/**
+ * Readable text from an API error body (`{ error, code, details, translationKey, extensions }`).
+ * The API has no `message` field; `error` can be an untranslated `{{field}}` template, so
+ * field-level validation errors win when present.
+ */
+function apiErrorMessage(json: Record<string, unknown>, status: number, fallback: string): string {
+  const validation = (json.extensions as { validationErrors?: unknown } | undefined)?.validationErrors;
+  if (Array.isArray(validation) && validation.length > 0) {
+    return validation.map((v) => readableValidation(String(v))).join('. ');
+  }
+  for (const value of [json.message, json.error]) {
+    if (typeof value === 'string' && value.trim() && !value.includes('{{')) return value;
+  }
+  const translated = typeof json.translationKey === 'string' ? translateErrorKey(json.translationKey) : null;
+  return translated ?? `${fallback} (${status})`;
 }
 
 /** Verify the current access token via GET /api/me. */
@@ -253,10 +293,10 @@ async function login() {
       credentials: 'include',
     });
 
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      loginError.value = json.message || `Sign-in failed (${res.status})`;
+      loginError.value = apiErrorMessage(json, res.status, 'Sign-in failed');
       return;
     }
 
@@ -325,8 +365,16 @@ async function signup() {
       credentials: 'include',
     });
     const json = await res.json().catch(() => ({}));
+    if (res.status === 409) {
+      // The email is already registered: hand over to Sign in with the address filled in.
+      email.value = signupEmail.value.trim();
+      signupPassword.value = '';
+      tab.value = 'login';
+      loginError.value = `An account with ${email.value} already exists. Sign in with its password.`;
+      return;
+    }
     if (!res.ok) {
-      signupError.value = json.message || `Sign-up failed (${res.status})`;
+      signupError.value = apiErrorMessage(json, res.status, 'Sign-up failed');
       return;
     }
     const data = json.data ?? json;
@@ -359,7 +407,7 @@ async function resendVerification() {
     });
     const json = await res.json().catch(() => ({}));
     resendOk.value = res.ok;
-    resendMsg.value = res.ok ? 'Verification email sent' : json.message || `Could not resend (${res.status})`;
+    resendMsg.value = res.ok ? 'Verification email sent' : apiErrorMessage(json, res.status, 'Could not resend');
   } catch (err: unknown) {
     resendOk.value = false;
     resendMsg.value = (err as Error).message;

@@ -22,6 +22,8 @@ COPY docs/package.json docs/package.json
 COPY docs ./docs
 # The guide compiles the browser SDK from source (vite alias in docs/.vitepress/config.ts).
 COPY packages/@grantjs/client/src ./packages/@grantjs/client/src
+# The API Configuration panel shows Grant's English error strings for i18n keys the API returns.
+COPY packages/@grantjs/i18n/locales/en/errors.json ./packages/@grantjs/i18n/locales/en/errors.json
 
 RUN mkdir -p apps
 RUN pnpm install --frozen-lockfile --ignore-scripts --filter grant-docs...

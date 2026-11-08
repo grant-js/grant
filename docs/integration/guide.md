@@ -368,6 +368,8 @@ Sign in as an end user of your application. The button starts the authorization-
 
 <p>The app's <strong>client_id</strong> is <code>{{ state.variables.APP_CLIENT_ID }}</code> and its redirect URI is <code>{{ callbackUrl }}</code>.</p>
 
+<p>Sign-in opens on the Grant web app at <code>{{ frontendUrl || 'not set' }}</code>. If that is wrong, change <strong>Grant web app URL</strong> in API Configuration.</p>
+
 <button type="button" class="api-tryit-auth-btn" :disabled="!canStartSignIn || signingIn" @click="startSignIn">
 {{ signingIn ? 'Redirecting…' : 'Sign in with the Project App →' }}
 </button>
@@ -375,7 +377,7 @@ Sign in as an end user of your application. The button starts the authorization-
 <p v-if="signInError" class="api-tryit-auth-note">{{ signInError }}</p>
 
 <p v-if="!frontendUrl" class="api-tryit-auth-note">
-  The Grant web app URL is unknown. The guide uses this site's origin; serve the docs from the same origin as the web app, or set <code>APP_URL</code>.
+  The Grant web app URL is not set. Enter it as <strong>Grant web app URL</strong> in API Configuration above.
 </p>
 
 </template>

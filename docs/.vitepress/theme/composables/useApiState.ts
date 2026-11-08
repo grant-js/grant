@@ -21,19 +21,38 @@ interface ApiState {
 
 const STORAGE_KEY = 'grant-docs-api-state';
 
-// Path-based single origin: API, web app and docs live under the same origin. Defaults filled from window in browser.
-// (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
+// Deployed docs sit behind the same gateway as the API and web app (path-based single origin), so
+// both URLs default to the docs origin. Under the VitePress dev server (`pnpm dev`, :5173) the docs
+// are on their own origin: there the Grant web app is the dev server on :3000, which also proxies
+// /api, so both default to it. (Saved state from before 1.27 may carry an `exampleAppUrl`; it is ignored.)
 const RELATIVE_DEFAULTS = {
   baseUrl: '',
   appUrl: '',
 };
 
+const DEV_GRANT_ORIGIN = 'http://localhost:3000';
+
+/** Where the Grant web app (and its /api proxy) is assumed to live when nothing is saved. */
+export function getDefaultGrantOrigin(): string {
+  if (typeof window === 'undefined') return '';
+  return import.meta.env.DEV ? DEV_GRANT_ORIGIN : window.location.origin;
+}
+
 function getOriginDefaults() {
   if (typeof window === 'undefined') return RELATIVE_DEFAULTS;
-  return {
-    baseUrl: window.location.origin,
-    appUrl: window.location.origin,
-  };
+  const origin = getDefaultGrantOrigin();
+  return { baseUrl: origin, appUrl: origin };
+}
+
+/**
+ * A saved URL, unless it is unusable: empty, or (under the dev server) the docs' own origin,
+ * which never serves the API or the web app. Older guide versions saved the docs origin.
+ */
+function savedUrlOr(saved: unknown, fallback: string): string {
+  const value = typeof saved === 'string' ? saved.trim() : '';
+  if (!value) return fallback;
+  if (import.meta.env.DEV && value.replace(/\/+$/, '') === window.location.origin) return fallback;
+  return value;
 }
 
 const state = reactive<ApiState>({
@@ -48,9 +67,9 @@ const state = reactive<ApiState>({
   variables: {},
 });
 
-/** Default API base URL for display (current origin in browser, else empty). */
+/** Default API base URL for display (see getDefaultGrantOrigin). */
 export function getDefaultApiBaseUrl(): string {
-  return typeof window === 'undefined' ? '' : window.location.origin;
+  return getDefaultGrantOrigin();
 }
 
 let hydrated = false;
@@ -64,10 +83,8 @@ function hydrate() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
-      state.baseUrl =
-        saved.baseUrl && saved.baseUrl.trim() !== '' ? saved.baseUrl : originDefaults.baseUrl;
-      state.appUrl =
-        saved.appUrl && saved.appUrl.trim() !== '' ? saved.appUrl : originDefaults.appUrl;
+      state.baseUrl = savedUrlOr(saved.baseUrl, originDefaults.baseUrl);
+      state.appUrl = savedUrlOr(saved.appUrl, originDefaults.appUrl);
       if (saved.accessToken) state.accessToken = saved.accessToken;
       if (saved.refreshToken) state.refreshToken = saved.refreshToken;
       if (saved.verifiedEmail) state.verifiedEmail = saved.verifiedEmail;
