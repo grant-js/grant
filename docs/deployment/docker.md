@@ -278,7 +278,7 @@ Back them up like any Docker volume:
 On **push to main**, three workflows run independently:
 
 - **ci.yml** — Lint, build, test.
-- **deploy.yml** — Build and push three images (grant-api, grant-web, grant-docs) to GHCR with tags `:demo` and `:demo-$sha`; optionally deploy the demo stack via SSH.
+- **deploy.yml** — Runs after a Release run that built images, on the self-hosted `demo` runner. It brings the demo stack's config files on the host (`docker-compose.demo.yml`, `deploy/gateway.conf.template`) to the released commit, pulls the three `:demo` images (grant-api, grant-web, grant-docs) and runs `docker compose up -d --no-build --remove-orphans`, so a service or route removed from the repo also leaves the demo. It never touches `.env.demo`, other env files or volumes. See [Demo deploy job](#demo-deploy-job).
 - **release.yml** — Version and publish npm packages via [Changesets](/contributing/versioning) when the "chore: version packages" PR is merged.
 
 ### Release surfaces
@@ -300,9 +300,19 @@ docker login ghcr.io
 
 Use a GitHub PAT (Personal Access Token) with the **`read:packages`** scope. Document this in your runbook; without it, the deploy step can silently fail.
 
-### Deploy job (optional)
+### Demo deploy job
 
-To enable the deploy step in `deploy.yml`, set the repository variable **DEMO_DEPLOY_ENABLED** to `true` and configure secrets: **SSH_HOST**, **SSH_USER**, **SSH_PRIVATE_KEY**, **SSH_DEPLOY_PATH** (path on the server to the repo or directory containing `docker-compose.demo.yml`, `.env.demo`, and `scripts/stack-deploy.sh`). Optionally **SSH_PORT**. The job SSHs to the server and runs `./scripts/stack-deploy.sh up`, which builds images and runs `docker compose -f docker-compose.demo.yml --env-file .env.demo up -d`.
+The **Rolling update (demo)** job in `deploy.yml` runs on the runner labelled `demo`, which is the host of the demo Compose stack. It needs no SSH secrets. On each run it:
+
+1. Finds the running stack from the `grant-demo-gateway` container's Compose labels: project name, working directory and config files. The stack must already be running; the first start is manual (`./scripts/stack-deploy.sh`).
+2. Checks out the files listed in the job's `STACK_CONFIG_FILES` at the commit the Release run built, and copies each one that differs into the stack's working directory. The working directory doesn't need to be a git checkout. The log shows each file as `unchanged`, `update` (with the number of differing lines) or `create`, never its contents.
+3. Logs the services that `--remove-orphans` will remove: those that still have containers but are gone from the new compose file.
+4. Pulls the `:demo` images and runs `docker compose up -d --no-build --remove-orphans` with the stack's own config files and `.env.demo`.
+5. Recreates the gateway when `deploy/gateway.conf.template` changed. nginx renders the template only when the container starts, and a changed bind-mounted file doesn't make Compose recreate the container.
+
+When `docker-compose.demo.yml` starts reading another file from the repo (a new bind mount or an extra compose file), add it to `STACK_CONFIG_FILES`. Env files never go on that list: `.env.demo` holds the host's secrets and stays as it is. Hand edits to a listed file on the host are overwritten on the next deploy.
+
+**Dry run.** Start the workflow by hand (Actions → Deploy → Run workflow, or `gh workflow run deploy.yml --ref main`). A manual run does steps 1–3 and the gateway check without writing any file, pulling or restarting anything, and prints what a deploy would change.
 
 ## Related
 
