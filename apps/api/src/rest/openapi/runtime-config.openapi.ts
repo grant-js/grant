@@ -15,6 +15,17 @@ const runtimeConfigResponseSchema = z.object({
     description:
       'Largest CDM import document, in bytes, that can be uploaded by reference (`CDM_UPLOAD_MAX_BYTES`)',
   }),
+  docsUrl: z.string().nullable().openapi({
+    description:
+      'Base URL of the public docs site (`DOCS_URL`); null when unset, in which case frontends link to same-origin `/docs`',
+  }),
+  apiReferenceEnabled: z.boolean().openapi({
+    description:
+      'Whether the API serves the Swagger UI API reference at /api-docs (`SWAGGER_ENABLED`)',
+  }),
+  graphqlPlaygroundEnabled: z.boolean().openapi({
+    description: 'Whether the API serves the Apollo Sandbox at /graphql (`APOLLO_PLAYGROUND`)',
+  }),
 });
 
 export function registerRuntimeConfigOpenApi(registry: OpenAPIRegistry) {
@@ -30,12 +41,13 @@ export function registerRuntimeConfigOpenApi(registry: OpenAPIRegistry) {
     tags: ['Config'],
     summary: 'Get runtime config',
     description:
-      'Returns non-URL runtime configuration for frontend apps (demo mode, privacy, app version, CDM upload limit). ' +
-      'No authentication required. Frontends use relative paths for URLs; this endpoint does not return any URLs.',
+      'Returns runtime configuration for frontend apps (demo mode, privacy, app version, CDM upload limit, docs site URL, ' +
+      'and whether the API reference and GraphQL sandbox are enabled). No authentication required. ' +
+      'Frontends reach the API by relative path; the only URL returned is the docs site base URL.',
     security: [],
     responses: {
       200: {
-        description: 'Runtime config (non-URL values only)',
+        description: 'Runtime config',
         content: {
           'application/json': {
             schema: runtimeConfigResponseSchema,

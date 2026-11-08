@@ -53,7 +53,7 @@ const APP_CONFIG = {
    */
   url: env.APP_URL,
 
-  /** Public docs site URL (for runtime config consumed by web/docs) */
+  /** Public docs site base URL (`DOCS_URL`), returned by `GET /api/config`; undefined when unset. */
   docsUrl: env.DOCS_URL,
 
   /** Graceful shutdown budget (ms); from `GRACEFUL_SHUTDOWN_TIMEOUT_MS`. */

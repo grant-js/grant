@@ -21,6 +21,7 @@ import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { FieldInfoPopover } from '@/components/common';
+import { useRuntimeConfig } from '@/components/providers/runtime-config-provider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,15 +52,18 @@ type ExportDialogTab = 'contents' | 'options';
 const ON_CONFLICT_DEFAULT = '__default__';
 const CDM_EXPORT_VERSIONS = [1] as const;
 
-const CDM_EXPORT_DOCS_BASE = `${getDocsUrl()}/core-concepts/cdm-import-export`;
-const exportDocs = {
-  contents: `${CDM_EXPORT_DOCS_BASE}#export-dialog-contents`,
-  reimportDefaults: `${CDM_EXPORT_DOCS_BASE}#export-reimport-defaults`,
-  version: `${CDM_EXPORT_DOCS_BASE}#export-cdm-version`,
-  mode: `${CDM_EXPORT_DOCS_BASE}#export-reimport-mode`,
-  onConflict: `${CDM_EXPORT_DOCS_BASE}#export-on-conflict`,
-  confirmDestructive: `${CDM_EXPORT_DOCS_BASE}#export-confirm-destructive`,
-} as const;
+/** Built per render, not at module load, so a `DOCS_URL` that arrives with `/api/config` applies. */
+function buildExportDocs(docsUrl: string | null) {
+  const base = `${getDocsUrl(docsUrl)}/core-concepts/cdm-import-export`;
+  return {
+    contents: `${base}#export-dialog-contents`,
+    reimportDefaults: `${base}#export-reimport-defaults`,
+    version: `${base}#export-cdm-version`,
+    mode: `${base}#export-reimport-mode`,
+    onConflict: `${base}#export-on-conflict`,
+    confirmDestructive: `${base}#export-confirm-destructive`,
+  } as const;
+}
 
 function buildSections(params: {
   resources: boolean;
@@ -189,6 +193,8 @@ export function ProjectSyncJobExportDialog() {
   const open = useProjectSyncJobsStore((s) => s.isExportDialogOpen);
   const setOpen = useProjectSyncJobsStore((s) => s.setExportDialogOpen);
   const prependJob = useProjectSyncJobsStore((s) => s.prependJob);
+  const { docsUrl } = useRuntimeConfig();
+  const exportDocs = useMemo(() => buildExportDocs(docsUrl), [docsUrl]);
 
   const [tab, setTab] = useState<ExportDialogTab>('contents');
   const [cdmVersion, setCdmVersion] = useState<(typeof CDM_EXPORT_VERSIONS)[number]>(1);
@@ -280,7 +286,7 @@ export function ProjectSyncJobExportDialog() {
         infoDocsHref: exportDocs.reimportDefaults,
       },
     ],
-    [t]
+    [t, exportDocs]
   );
 
   const handleExport = useCallback(async () => {

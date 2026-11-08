@@ -51,7 +51,18 @@ SECURITY_ADDITIONAL_ORIGINS=https://docs.yourdomain.com
 
 **How frontends get these values:**
 
-- **Web (Next.js)** — Client fetches `GET /api/config` (proxied to the API) and uses the JSON (appUrl, apiUrl, exampleAppUrl, demoModeEnabled, etc.).
+- **Web (Next.js)** — Client fetches `GET /api/config` (proxied to the API) and uses the JSON (demo mode, app version, `docsUrl`, and whether the API reference and GraphQL sandbox are enabled). It reaches the API by relative path.
+
+**Docs links and API surfaces in the web header:**
+
+```bash
+DOCS_URL=https://demo.grantjs.org/docs/   # optional; unset = the web app links to its own /docs
+SWAGGER_ENABLED=true                      # API reference (Swagger UI) at /api-docs
+APOLLO_PLAYGROUND=false                   # Apollo Sandbox at /graphql; default on only in development
+```
+
+- **DOCS_URL** — base URL of the docs site. Set it when this install does not serve `/docs` itself, e.g. to link to the public docs. A trailing slash is optional.
+- **SWAGGER_ENABLED** / **APOLLO_PLAYGROUND** — when either surface is off, the web header hides its link.
 - **Docs (VitePress)** — Entrypoint writes minimal `/config.json` with only `{ "appUrl": "${APP_URL}" }`; the docs app then fetches `${appUrl}/api/config` for the full config.
 - **Example-nextjs** — Fetches config from the same API (`/api/config` when served under the web proxy, or its own env when standalone); exampleAppOrigin = `${APP_URL}/example`.
 
