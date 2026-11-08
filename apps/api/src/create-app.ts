@@ -28,7 +28,6 @@
 import { ApolloServer } from '@apollo/server';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { ApolloServerPluginInlineTrace } from '@apollo/server/plugin/inlineTrace';
-import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { expressMiddleware } from '@as-integrations/express5';
 import {
   bootstrapDatabase,
@@ -49,6 +48,7 @@ import { i18nMiddleware, initializeI18n } from '@/i18n';
 import { graphqlMinAalAtLoginMiddleware } from '@/lib/authorization/min-aal-at-login';
 import { CacheFactory, type IEntityCacheAdapter } from '@/lib/cache';
 import { formatGraphQLError } from '@/lib/errors';
+import { createGraphqlLandingPagePlugin } from '@/lib/graphql/landing-page.lib';
 import { createGraphqlCostValidationRules } from '@/lib/graphql/query-cost.lib';
 import { logger, loggerFactory } from '@/lib/logger';
 import { metricsHandler, metricsMiddleware } from '@/lib/metrics';
@@ -167,9 +167,7 @@ export async function createApp(): Promise<CreatedApp> {
     ],
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
-      ...(config.apollo.playground
-        ? [ApolloServerPluginLandingPageLocalDefault({ embed: true })]
-        : []),
+      createGraphqlLandingPagePlugin(config.apollo.playground),
       ApolloServerPluginInlineTrace(),
     ],
   });

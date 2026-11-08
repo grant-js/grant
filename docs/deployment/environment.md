@@ -62,7 +62,7 @@ APOLLO_PLAYGROUND=false                   # Apollo Sandbox at /graphql; default 
 ```
 
 - **DOCS_URL** — base URL of the docs site. Set it when this install does not serve `/docs` itself, e.g. to link to the public docs. A trailing slash is optional.
-- **SWAGGER_ENABLED** / **APOLLO_PLAYGROUND** — when either surface is off, the web header hides its link.
+- **SWAGGER_ENABLED** / **APOLLO_PLAYGROUND** — when either surface is off, the web header hides its link. With `APOLLO_PLAYGROUND` off, `GET /graphql` from a browser serves no landing page at all, whatever `NODE_ENV` is; GraphQL requests are unaffected.
 - **Docs (VitePress)** — Entrypoint writes minimal `/config.json` with only `{ "appUrl": "${APP_URL}" }`; the docs app then fetches `${appUrl}/api/config` for the full config.
 - **Example-nextjs** — Fetches config from the same API (`/api/config` when served under the web proxy, or its own env when standalone); exampleAppOrigin = `${APP_URL}/example`.
 
