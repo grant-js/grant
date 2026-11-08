@@ -7,12 +7,12 @@ import { BatchSpanProcessor, SimpleSpanProcessor } from '@opentelemetry/sdk-trac
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const startSpy = vi.fn();
-let capturedSpanProcessor: unknown = null;
+let capturedSpanProcessors: unknown[] | null = null;
 
 vi.mock('@opentelemetry/sdk-node', () => ({
   NodeSDK: class {
-    constructor(cfg: { spanProcessor: unknown }) {
-      capturedSpanProcessor = cfg.spanProcessor;
+    constructor(cfg: { spanProcessors?: unknown[] }) {
+      capturedSpanProcessors = cfg.spanProcessors ?? [];
     }
     start = startSpy;
     shutdown = vi.fn();
@@ -50,7 +50,7 @@ vi.mock('@/lib/logger', () => ({
 async function loadTracing(spanProcessor: string, enabled = true) {
   tracingConfig.spanProcessor = spanProcessor;
   tracingConfig.enabled = enabled;
-  capturedSpanProcessor = null;
+  capturedSpanProcessors = null;
   vi.resetModules();
   await import('@/lib/tracing');
 }
@@ -63,20 +63,22 @@ describe('tracing span processor selection', () => {
   it('defaults to BatchSpanProcessor, preserving server behavior', async () => {
     await loadTracing('batch');
 
-    expect(capturedSpanProcessor).toBeInstanceOf(BatchSpanProcessor);
+    expect(capturedSpanProcessors).toHaveLength(1);
+    expect(capturedSpanProcessors?.[0]).toBeInstanceOf(BatchSpanProcessor);
   });
 
   it('uses SimpleSpanProcessor when configured for a freezable runtime', async () => {
     await loadTracing('simple');
 
-    expect(capturedSpanProcessor).toBeInstanceOf(SimpleSpanProcessor);
-    expect(capturedSpanProcessor).not.toBeInstanceOf(BatchSpanProcessor);
+    expect(capturedSpanProcessors).toHaveLength(1);
+    expect(capturedSpanProcessors?.[0]).toBeInstanceOf(SimpleSpanProcessor);
+    expect(capturedSpanProcessors?.[0]).not.toBeInstanceOf(BatchSpanProcessor);
   });
 
   it('builds no SDK at all when tracing is disabled', async () => {
     await loadTracing('simple', false);
 
-    expect(capturedSpanProcessor).toBeNull();
+    expect(capturedSpanProcessors).toBeNull();
     expect(startSpy).not.toHaveBeenCalled();
   });
 });

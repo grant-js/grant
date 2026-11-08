@@ -102,7 +102,7 @@ function initializeTracing(): void {
 
     sdk = new NodeSDK({
       resource,
-      spanProcessor: createSpanProcessor(exporter),
+      spanProcessors: [createSpanProcessor(exporter)],
       instrumentations: [autoInstrumentations, new IORedisInstrumentation()],
     });
 
