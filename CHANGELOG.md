@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.29.0
+
+### Platform
+
+**Docker images:** tagged `:1.29.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.29.0** (fixed group with apps).
+
+### Minor Changes
+
+- b2da89c: A project API key that holds `OrganizationMember:Query` can read the members of its own organization, read-only. `organizationMembers` (GraphQL and `GET /api/organization-members`) now accepts an `organizationProject` scope (`organizationId:projectId` as the scope id): the organization is derived from the scope id and the project must belong to it. The key can name only its own project scope, so it cannot read another organization's members, and a key without the permission is still refused. The transport guards are unchanged, and the member mutations and invitations still take an organization scope only. A receiver that mirrors Grant into another system can use this to resolve the display names of the members who acted in its project.
+
 ## 1.28.0
 
 ### Platform

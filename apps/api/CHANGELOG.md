@@ -1,5 +1,28 @@
 # grant-api
 
+## 1.29.0
+
+### Minor Changes
+
+- b2da89c: A project API key that holds `OrganizationMember:Query` can read the members of its own organization, read-only. `organizationMembers` (GraphQL and `GET /api/organization-members`) now accepts an `organizationProject` scope (`organizationId:projectId` as the scope id): the organization is derived from the scope id and the project must belong to it. The key can name only its own project scope, so it cannot read another organization's members, and a key without the permission is still refused. The transport guards are unchanged, and the member mutations and invitations still take an organization scope only. A receiver that mirrors Grant into another system can use this to resolve the display names of the members who acted in its project.
+
+### Patch Changes
+
+- @grantjs/schema@1.29.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.28.0
 
 ### Patch Changes
