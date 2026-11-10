@@ -32,7 +32,7 @@
     "@grantjs/env": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "drizzle-seed": "^0.3.1",
-    "postgres": "^4.0.0"
+    "postgres": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
