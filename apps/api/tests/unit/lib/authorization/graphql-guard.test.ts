@@ -183,6 +183,30 @@ describe('authorizeGraphQLResolver: API key and project app requests', () => {
   );
 });
 
+describe('authorizeGraphQLResolver: a project API key reading its organization members', () => {
+  // The guard is not loosened for this: the key names its own organizationProject scope and the
+  // service derives the organization from it. Naming the organization, or another project, is
+  // still refused before any permission check.
+  it('allows the key to name its own project scope', async () => {
+    const { call, inner } = setup({ type: TokenType.ApiKey, authorizedScope: projectA });
+    await expect(call({ scope: projectA, page: 1 })).resolves.toBe('ran');
+    expect(inner).toHaveBeenCalledOnce();
+  });
+
+  it.each([organizationA, { tenant: Tenant.Organization, id: 'org-b' }, projectB])(
+    'refuses the key naming %o',
+    async (named) => {
+      const { call, inner, isAuthorized } = setup({
+        type: TokenType.ApiKey,
+        authorizedScope: projectA,
+      });
+      await refused(call({ scope: named }));
+      expect(isAuthorized).not.toHaveBeenCalled();
+      expect(inner).not.toHaveBeenCalled();
+    }
+  );
+});
+
 describe('authorizeGraphQLResolver: the resolver object form', () => {
   it('guards { resolve } the same way', async () => {
     const inner = vi.fn(async () => 'ran');

@@ -5,6 +5,7 @@ import {
   type IEventPublisher,
   type IOrganizationMemberRepository,
   type IOrganizationMemberService,
+  type IOrganizationProjectRepository,
   type IOrganizationRoleRepository,
   type IOrganizationUserRepository,
   type IRoleRepository,
@@ -20,6 +21,7 @@ import {
 
 import { AuthorizationError, BadRequestError, NotFoundError } from '@/lib/errors';
 import { buildDelta } from '@/lib/events';
+import { organizationProjectFromScopeOrThrow } from '@/lib/scope.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import { SelectedFields } from '@/types';
 
@@ -38,7 +40,8 @@ export class OrganizationMemberService implements IOrganizationMemberService {
     private readonly roleRepository: IRoleRepository,
     readonly user: GrantAuth | null,
     private readonly audit: IAuditLogger,
-    private readonly events: IEventPublisher
+    private readonly events: IEventPublisher,
+    private readonly organizationProjectRepository: IOrganizationProjectRepository
   ) {}
 
   private getCurrentUserId(): string {
@@ -106,14 +109,30 @@ export class OrganizationMemberService implements IOrganizationMemberService {
     const validatedParams = validateInput(getOrganizationMembersParamsSchema, params, context);
 
     const { scope } = validatedParams;
-    const { tenant } = scope;
 
-    if (tenant !== Tenant.Organization) {
+    // Organization scope: the dashboard path, unchanged.
+    // OrganizationProject scope: read-only access for a project key (or a session in a project
+    // scope). The organization is derived from the composite id and the project must belong to it.
+    // Member mutations never come through here and stay organization-scope only.
+    let organizationId: string;
+    if (scope.tenant === Tenant.Organization) {
+      organizationId = scope.id;
+    } else if (scope.tenant === Tenant.OrganizationProject) {
+      const derived = organizationProjectFromScopeOrThrow(scope);
+      const links = await this.organizationProjectRepository.getOrganizationProjects(
+        { organizationId: derived.organizationId, projectId: derived.projectId },
+        transaction
+      );
+      if (links.length === 0) {
+        throw new AuthorizationError('Forbidden');
+      }
+      organizationId = derived.organizationId;
+    } else {
       throw new BadRequestError('Invalid tenant');
     }
 
     const result = await this.organizationMemberRepository.getOrganizationMembers(
-      validatedParams,
+      { ...validatedParams, scope: { tenant: Tenant.Organization, id: organizationId } },
       transaction
     );
 

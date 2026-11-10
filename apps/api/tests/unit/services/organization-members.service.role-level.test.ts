@@ -41,7 +41,8 @@ function build(options: { callerRole: string; memberRole: string; newRole: strin
     roleRepository as never,
     { userId: callerId } as never,
     { logUpdate: vi.fn() } as never,
-    { publish: vi.fn() } as never
+    { publish: vi.fn() } as never,
+    { getOrganizationProjects: vi.fn() } as never
   );
   return { service, organizationUserRepository };
 }

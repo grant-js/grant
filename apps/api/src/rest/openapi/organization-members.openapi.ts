@@ -40,8 +40,8 @@ export function registerOrganizationMembersOpenApi(registry: OpenAPIRegistry) {
 List all members (both active users and pending invitations) for a scope.
 
 ### Query Parameters:
-- \`scopeId\`: UUID of the scope (organization or project) - required
-- \`tenant\`: Tenant type (\`organization\` or \`project\`) - required
+- \`scopeId\`: UUID of the organization, or \`organizationId:projectId\` with tenant \`organizationProject\` (read-only access for a project API key) - required
+- \`tenant\`: Tenant type (\`organization\` or \`organizationProject\`) - required
 - \`status\`: Filter by invitation status (optional)
   - \`pending\`: Pending invitations
   - \`accepted\`: Accepted invitations (active members)

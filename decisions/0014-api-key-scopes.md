@@ -71,6 +71,16 @@ The rule, in one sentence: **the key's effective permissions must be contained i
 
 `apiKeyAttachableGrants(scope)` and `GET /api/api-keys/attachable-grants` return the permissions the caller may attach in a project scope (flagged `machineOnly`) and the standard roles whose set the caller covers (`api-keys.handler.ts:166`; `ApiKeyAttenuationService.attachableGrants`, `api-key-attenuation.service.ts:125`). They require `ApiKey:Create`, take a project scope the request is authorized in, and are not paged. A client cannot compute containment from role names, so it asks the server; it uses the answer to show what would succeed, never to decide.
 
+### 7. Reading the organization's members with a project key
+
+A project key cannot be exchanged for an organization scope, and the transport guards (`namesOnlyTheAuthorizedScope`) require every scope an operation names to equal the scope the request was authorized in. Both stay as they are. The one operation a mirror needs outside its project, the display names of the organization members who acted in it, is served another way:
+
+- `organizationMembers` (GraphQL and `GET /api/organization-members`; the query only) also accepts an `organizationProject` scope. The guard is unchanged: the key names its own project scope, which equals the authorized scope. `OrganizationMemberService.getOrganizationMembers` splits the composite id (`organizationProjectFromScopeOrThrow`), checks that the project belongs to the organization, and reads that organization's members.
+- A key therefore reads only the organization its project belongs to. Naming the organization, another organization or another project is still refused by the guard before any permission check; a composite id whose project is not in the organization is refused by the service.
+- It needs `OrganizationMember:Query` in the key's permission set, like any other read.
+- Mutations (`updateOrganizationMember`, `removeOrganizationMember`) and invitations keep rejecting every scope but `Organization`.
+- The member rows are the same as for an organization caller, emails and roles included. A names-only projection for project keys is open.
+
 ## Why not the alternatives
 
 **Two pivots, one per tenant** (`organization_project_api_key_permissions`, `account_project_api_key_permissions`), mirroring the role columns. Rejected: the permission set belongs to the key, the tenant is already on the pivot row, and two tables would double the port, the repository, the service and the resolution path for no difference in meaning.
@@ -99,7 +109,7 @@ The rule, in one sentence: **the key's effective permissions must be contained i
 - **Concurrent edits are not serialized.** An edit reads the key's current set, computes its difference and applies it, with no lock. Two concurrent edits both land, and the result can be a combination neither editor wrote; each addition was still checked against its own editor, and both edits leave audit rows. Serializing edits (a row lock on the key's pivot row) is open.
 - **Tokens already issued keep identifying the key until they expire**, as for role keys. What a token may do follows the key's current permissions, since they are read when a request is authorized, so an edit reaches its next request. Revoking a key stops new exchanges and does not stop tokens already issued (the residual window, [Security](/architecture/security#residual-access-jwt-window)), unchanged by this record.
 - **Role and group authoring containment is a separate decision.** The check compares effective sets, so it holds whatever a role contains, but who may create or edit roles and groups, and with which permissions (`createRole`, `updateRole`, `addRoleGroup`, `assignRolePermission`, `assignGroupPermission`), is not bounded here.
-- **Not provided:** converting a permission key back to a role, per-key permission conditions beyond the rows' own, scopes for `Account` and `Organization` keys (the exchange does not support them), and denying machine-only permissions to sessions.
+- **Not provided:** a names-only member projection for project keys (§ 7), converting a permission key back to a role, per-key permission conditions beyond the rows' own, scopes for `Account` and `Organization` keys (the exchange does not support them), and denying machine-only permissions to sessions.
 - **`ApiKey:Update` reaches existing organizations through `seedAll`**, like every standard permission (ADR 0001); the account-project owner group already listed it and now has a row to hold.
 - **Operators** need do nothing: a key created before this release keeps its role and resolves as before, and nothing is back-filled.
 
