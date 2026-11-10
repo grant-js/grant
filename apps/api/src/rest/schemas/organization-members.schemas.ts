@@ -8,12 +8,19 @@ import { z } from '@/lib/zod-openapi.lib';
 import { createSuccessResponseSchema, scopeSchema } from '@/rest/schemas/common.schemas';
 
 export const getOrganizationMembersQuerySchema = z.object({
-  scopeId: z.uuid('errors.validation.invalidScopeId').openapi({
-    description: 'UUID of the scope to list members for',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  }),
-  tenant: z.enum(Object.values(Tenant) as [Tenant, ...Tenant[]]).openapi({
-    description: 'Tenant of the scope to list members for',
+  scopeId: z
+    .string()
+    .regex(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$/i,
+      'errors.validation.invalidScopeId'
+    )
+    .openapi({
+      description:
+        'UUID of the organization, or `organizationId:projectId` when `tenant` is `organizationProject` (a project API key reads its own organization read-only)',
+      example: '123e4567-e89b-12d3-a456-426614174000',
+    }),
+  tenant: z.enum([Tenant.Organization, Tenant.OrganizationProject] as const).openapi({
+    description: 'Tenant of the scope: `organization` or `organizationProject`',
     example: 'organization',
   }),
   status: z

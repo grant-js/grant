@@ -632,7 +632,8 @@ export function createServices(
       repositories.roleRepository,
       user,
       audit(organizationAuditLogs, 'organizationId', user, db),
-      events
+      events,
+      repositories.organizationProjectRepository
     ),
     organizationRoles: new OrganizationRoleService(
       repositories.organizationRepository,
