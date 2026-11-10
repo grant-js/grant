@@ -203,9 +203,11 @@ describe('DataTable default width fits the content', () => {
     const { container } = render(
       <DataTable tableId="fit.test" data={[]} columns={columns()} loading emptyState={emptyState} />
     );
-    expect(container.querySelector('[data-slot="table"]')?.getAttribute('style')).toContain(
-      '200px'
-    );
+    expect(colWidths(container)).toEqual(['2.5rem', '200px', '60px', '120px']);
+    const table = container.querySelector<HTMLTableElement>('[data-slot="table"]');
+    const probe = document.createElement('table');
+    probe.style.minWidth = 'calc(2.5rem + 200px + 60px + 120px)';
+    expect(table?.style.minWidth).toBe(probe.style.minWidth);
   });
 });
 
