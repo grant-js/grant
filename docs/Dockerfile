@@ -40,7 +40,11 @@ COPY docs/nginx-docs.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder --chown=nginx:nginx /app/docs/.vitepress/dist /usr/share/nginx/html
 
 COPY docs/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && \
+    sed -i 's#^pid .*#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf && \
+    chown -R nginx:nginx /var/cache/nginx
+
+USER nginx
 
 EXPOSE 8080
 ENTRYPOINT ["/docker-entrypoint.sh"]

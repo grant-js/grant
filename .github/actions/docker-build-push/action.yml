@@ -11,8 +11,14 @@ description: Setup Buildx and build/push an image
 runs:
   using: composite
   steps:
+    # `docker` driver: build with the daemon's built-in BuildKit. The default
+    # docker-container driver starts a privileged builder container with insecure
+    # entitlements on the self-hosted host, and leaves it running when a job is
+    # cancelled before its post step.
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3.3.0
+      with:
+        driver: docker
 
     - name: Build and push
       uses: docker/build-push-action@v6.6.0

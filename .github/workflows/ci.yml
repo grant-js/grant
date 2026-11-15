@@ -18,7 +18,9 @@ jobs:
     # `ci` label: always-on logusgraphics-server plus optional overflow runners
     # (laptop/ubuntu). Matching build-test below. Hosting this gate on ubuntu-latest
     # would strand the pipeline while a `ci` runner sits idle.
-    runs-on: [self-hosted, ci]
+    # Fork PRs run untrusted code, so they never get a self-hosted runner (the
+    # server also hosts production); they fall back to ubuntu-latest.
+    runs-on: ${{ github.event.pull_request.head.repo.full_name == github.repository && fromJSON('["self-hosted","ci"]') || 'ubuntu-latest' }}
     permissions:
       contents: read
       pull-requests: read
@@ -64,8 +66,9 @@ jobs:
   build-test:
     name: Lint, build, test
     # Same `ci` pool as changes — spreads across online overflow runners; falls
-    # back to logusgraphics-server when they are offline.
-    runs-on: [self-hosted, ci]
+    # back to logusgraphics-server when they are offline. Fork PRs: ubuntu-latest,
+    # see `changes`.
+    runs-on: ${{ github.event.pull_request.head.repo.full_name == github.repository && fromJSON('["self-hosted","ci"]') || 'ubuntu-latest' }}
     needs: changes
     if: needs.changes.outputs.code == 'true'
     permissions:
