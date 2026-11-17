@@ -15,11 +15,13 @@ import {
   DETAIL_CHECKBOX_COLUMN,
   DETAIL_CHECKBOX_SKELETON,
   DETAIL_CONTENT_COLUMN_CLASS,
+  DETAIL_ENTITY_LINK_SKELETON,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
+  detailEntityLinkColumn,
   DetailTableCheckboxCell,
   DetailTableIconCell,
   FeatureModuleCard,
@@ -305,6 +307,11 @@ export function RolePermissions({ role }: RolePermissionsProps) {
         );
       },
     },
+    detailEntityLinkColumn<Permission>(
+      'permission',
+      (permission) => permission.id,
+      (permission) => permission.name
+    ),
   ];
 
   const {
@@ -324,6 +331,7 @@ export function RolePermissions({ role }: RolePermissionsProps) {
       { key: 'action', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'source', type: 'text', ...DETAIL_TEXT_COLUMN },
+      DETAIL_ENTITY_LINK_SKELETON,
     ]),
     rowCount: 5,
   };
