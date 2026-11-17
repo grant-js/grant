@@ -46,6 +46,13 @@ import type { DeleteParams, OptionalListScope, SelectedFields } from '../reposit
 /** Which operator operation wrote an Email authentication method; recorded as `metadata.operation` on its audit row. */
 export type OperatorEmailOperation = 'operator-set-email' | 'operator-create-user';
 
+/**
+ * The mailbox proof an unverified Email method was claimed on: an OAuth provider that is
+ * authoritative for the address, or an organization invitation's emailed proof token.
+ * Recorded as `metadata.proof` on the claim's audit row.
+ */
+export type EmailClaimProof = 'google' | 'github' | 'organization-invitation';
+
 export interface IUserService {
   getUsers(
     params: Omit<QueryUsersArgs, 'scope'> & OptionalListScope & SelectedFields<User>,
@@ -355,6 +362,17 @@ export interface IUserAuthenticationMethodService {
   resetPassword(token: string, newPassword: string, transaction?: unknown): Promise<string | null>;
 
   invalidateAllUserSessions(userId: string, transaction?: unknown): Promise<void>;
+
+  /**
+   * Claim an unverified Email method on a mailbox proof: mark it verified, remove the platform
+   * credential that existed before the proof and revoke the user's sessions, so nothing set
+   * without the proof survives it (account pre-hijacking). The caller decides that the
+   * identity is claimable; this refuses a method that is not an unverified Email method.
+   */
+  claimUnverifiedEmailMethod(
+    params: { methodId: string; proof: EmailClaimProof },
+    transaction?: unknown
+  ): Promise<UserAuthenticationMethod>;
 
   /**
    * Whether the user has a platform password (a live platform credential). Not computed on

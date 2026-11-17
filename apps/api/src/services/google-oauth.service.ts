@@ -9,6 +9,7 @@ import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 import { config } from '@/config';
 import { AuthenticationError, ConfigurationError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
+import { isGoogleEmailAuthoritative } from '@/lib/oauth-contact-email.lib';
 import { normalizeOauthPictureUrl } from '@/lib/oauth-picture.lib';
 import { validateInput } from '@/services/common';
 
@@ -183,6 +184,7 @@ export class GoogleOAuthService implements IGoogleOAuthService {
         sub?: string;
         email?: string;
         email_verified?: boolean | string;
+        hd?: string;
         name?: string;
         picture?: unknown;
       };
@@ -198,6 +200,7 @@ export class GoogleOAuthService implements IGoogleOAuthService {
         id: data.sub,
         email,
         emailVerified: emailVerified && Boolean(email),
+        emailAuthoritative: isGoogleEmailAuthoritative(email, emailVerified, data.hd),
         name: data.name || null,
         avatarUrl: normalizeOauthPictureUrl(data.picture),
       };

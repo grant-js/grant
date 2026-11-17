@@ -183,6 +183,55 @@ describe('OAuthHandler', () => {
     ).rejects.toThrow('Email is not verified');
   });
 
+  it('passes a claim on when the IdP is authoritative for an unverified Email method', async () => {
+    (github.getOAuthUserInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 'github-user-1',
+      email: 'user@example.com',
+      emailVerified: true,
+      emailAuthoritative: true,
+      name: 'User',
+      avatarUrl: 'https://example.com/a.png',
+    });
+    userAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+      userId: 'imported-user',
+      provider: UserAuthenticationMethodProvider.Email,
+      isVerified: false,
+    });
+    const handler = createHandler();
+    const result = await handler.handleCallback(
+      UserAuthenticationMethodProvider.Github,
+      'code',
+      'csrf'
+    );
+    expect(result.existingUserByEmail).toEqual({
+      userId: 'imported-user',
+      email: 'user@example.com',
+      claim: true,
+    });
+  });
+
+  it('does not pass a claim on for an unverified social method, even when authoritative', async () => {
+    (github.getOAuthUserInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 'github-user-1',
+      email: 'user@example.com',
+      emailVerified: true,
+      emailAuthoritative: true,
+      name: 'User',
+      avatarUrl: 'https://example.com/a.png',
+    });
+    userAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+      userId: 'squatter',
+      provider: UserAuthenticationMethodProvider.Google,
+      isVerified: false,
+    });
+    const handler = createHandler();
+    await expect(
+      handler.handleCallback(UserAuthenticationMethodProvider.Github, 'code', 'csrf')
+    ).rejects.toThrow('Email is not verified');
+  });
+
   it('refuses to auto-link onto an unverified Google method with the same email', async () => {
     userAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
     userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({

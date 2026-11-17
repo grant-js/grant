@@ -11,6 +11,7 @@ export const googleUserInfoSchema = z.object({
   id: z.string().min(1, 'errors.validation.googleIdRequired'),
   email: z.string().email().nullable(),
   emailVerified: z.boolean(),
+  emailAuthoritative: z.boolean().optional(),
   name: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   username: z.string().nullable().optional(),

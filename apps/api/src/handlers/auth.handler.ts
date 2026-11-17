@@ -1,5 +1,6 @@
 import type {
   CredentialLockoutStatus,
+  EmailClaimProof,
   IAccountRoleService,
   IAccountService,
   IAuthService,
@@ -37,6 +38,7 @@ import {
   SortOrder,
   Tenant,
   UserAuthenticationEmailProviderAction,
+  UserAuthenticationMethod,
   UserAuthenticationMethodProvider,
   UserSessionSortableField,
   VerifyEmailResponse,
@@ -240,15 +242,163 @@ export class AuthHandler extends CacheHandler {
   }
 
   private async createPersonalAccountForUser(userId: string, tx: Transaction): Promise<void> {
-    const account = await this.accounts.createAccount(
-      { type: AccountType.Personal, ownerId: userId },
-      tx
-    );
+    await this.createAccountWithOwnerRole(AccountType.Personal, userId, tx);
+  }
+
+  /** Creates the account and gives its owner the one seeded owner role (Personal or Organization). */
+  private async createAccountWithOwnerRole(type: AccountType, userId: string, tx: Transaction) {
+    const account = await this.accounts.createAccount({ type, ownerId: userId }, tx);
     const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
     const accountOwnerRole = seededRoles[0];
     if (accountOwnerRole) {
       await this.userRoles.addUserRole({ userId, roleId: accountOwnerRole.role.id }, tx);
     }
+    return account;
+  }
+
+  /**
+   * The Email method for `email` when its identity may be claimed on a mailbox proof: the
+   * method is unverified, its address is exactly `email` (the lookup matches with `ILIKE`),
+   * and nothing else can sign in as that user: no other authentication method and no MFA
+   * factor. Anything else returns null, and the caller keeps refusing as before.
+   */
+  private async findClaimableEmailMethod(
+    email: string,
+    tx: Transaction
+  ): Promise<UserAuthenticationMethod | null> {
+    const method = await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(
+      email,
+      tx
+    );
+    if (
+      !method ||
+      method.provider !== UserAuthenticationMethodProvider.Email ||
+      method.isVerified ||
+      this.normalizeEmail(method.providerId) !== this.normalizeEmail(email)
+    ) {
+      return null;
+    }
+
+    const methods = await this.userAuthenticationMethods.getUserAuthenticationMethods(
+      { userId: method.userId },
+      tx
+    );
+    if (methods.some((other) => other.id !== method.id)) {
+      return null;
+    }
+
+    if (await this.userMfa.hasActiveMfaEnrollment(method.userId, tx)) {
+      return null;
+    }
+
+    return method;
+  }
+
+  private emailClaimProofOf(provider: UserAuthenticationMethodProvider): EmailClaimProof | null {
+    if (provider === UserAuthenticationMethodProvider.Google) return 'google';
+    if (provider === UserAuthenticationMethodProvider.Github) return 'github';
+    return null;
+  }
+
+  /**
+   * Claims the identity behind `email` for `userId` on an OAuth provider's authoritative
+   * address, or throws the same error an unverified auto-link always threw.
+   */
+  private async claimEmailIdentityByOAuth(
+    params: { userId: string; email: string; provider: UserAuthenticationMethodProvider },
+    tx: Transaction
+  ): Promise<void> {
+    const proof = this.emailClaimProofOf(params.provider);
+    const claimable = proof ? await this.findClaimableEmailMethod(params.email, tx) : null;
+    if (!proof || !claimable || claimable.userId !== params.userId) {
+      throw new BadRequestError('Email is not verified');
+    }
+    await this.userAuthenticationMethods.claimUnverifiedEmailMethod(
+      { methodId: claimable.id, proof },
+      tx
+    );
+  }
+
+  /**
+   * Register on an address whose identity already exists: with a valid invitation proof (an
+   * emailed token, so a mailbox proof) and a claimable identity, the person claims it, sets
+   * the platform password and is signed in. Returns null when that does not apply, so the
+   * caller refuses as before.
+   */
+  private async registerByClaimingWithInvitationProof(
+    params: RegisterInput,
+    existingAuthMethod: UserAuthenticationMethod,
+    session: { userAgent?: string | null; ipAddress?: string | null; requestBaseUrl?: string },
+    tx: Transaction
+  ): Promise<{ userId: string; result: CreateAccountResult } | null> {
+    const { type, provider, providerId, providerData, emailVerificationProof } = params;
+    if (provider !== UserAuthenticationMethodProvider.Email || !emailVerificationProof) {
+      return null;
+    }
+
+    const proofValid = await this.validatesInvitationEmailProof(
+      provider,
+      providerId,
+      emailVerificationProof,
+      tx
+    );
+    const claimable = proofValid ? await this.findClaimableEmailMethod(providerId, tx) : null;
+    if (!claimable || claimable.id !== existingAuthMethod.id) {
+      return null;
+    }
+
+    const { password } = await this.userAuthenticationMethods.processProvider(
+      provider,
+      providerId,
+      { ...providerData, action: UserAuthenticationEmailProviderAction.Register }
+    );
+
+    const userId = claimable.userId;
+    const claimed = await this.userAuthenticationMethods.claimUnverifiedEmailMethod(
+      { methodId: claimable.id, proof: 'organization-invitation' },
+      tx
+    );
+
+    if (password) {
+      await this.credentials.setPassword(
+        { scope: { scope: 'platform' }, userId, password, source: 'register' },
+        tx
+      );
+    }
+
+    const usersResult = await this.users.getUsers(
+      { ids: [userId], limit: 1, requestedFields: ['accounts'] },
+      tx
+    );
+    const accounts = usersResult.users?.[0]?.accounts ?? [];
+    const account =
+      accounts.find((existing) => existing.type === type) ??
+      accounts[0] ??
+      (await this.createAccountWithOwnerRole(type, userId, tx));
+
+    const created = await this.userSessions.createSession(
+      {
+        userId,
+        userAuthenticationMethodId: claimed.id,
+        userAgent: session.userAgent || null,
+        ipAddress: session.ipAddress || null,
+        isVerified: true,
+      },
+      tx,
+      session.requestBaseUrl
+    );
+
+    return {
+      userId,
+      result: {
+        account,
+        accessToken: created.accessToken,
+        refreshToken: created.refreshToken,
+        requiresEmailVerification: false,
+        verificationExpiry: null,
+        email: providerId,
+      },
+    };
   }
 
   constructor(
@@ -294,7 +444,17 @@ export class AuthHandler extends CacheHandler {
         );
 
       if (existingAuthMethod) {
-        throw new ConflictError('An account with this email already exists');
+        const claimed = await this.registerByClaimingWithInvitationProof(
+          params,
+          existingAuthMethod,
+          { userAgent, ipAddress, requestBaseUrl },
+          tx
+        );
+        if (!claimed) {
+          throw new ConflictError('An account with this email already exists');
+        }
+        registered.actorId = claimed.userId;
+        return claimed.result;
       }
 
       const isVerifiedByInvitationProof = await this.validatesInvitationEmailProof(
@@ -356,22 +516,7 @@ export class AuthHandler extends CacheHandler {
         await this.bindVerifiedOauthContactEmailFromProviderData(user.id, finalProviderData, tx);
       }
 
-      const account = await this.accounts.createAccount(
-        {
-          type,
-          ownerId: user.id,
-        },
-        tx
-      );
-
-      // Seed account roles (Personal Account Owner or Organization Account Owner based on account type)
-      const seededRoles = await this.accountRoles.seedAccountRoles(account.id, tx);
-
-      // Assign the seeded account owner role to the user
-      const accountOwnerRole = seededRoles[0]; // Only one role is seeded per account
-      if (accountOwnerRole) {
-        await this.userRoles.addUserRole({ userId: user.id, roleId: accountOwnerRole.role.id }, tx);
-      }
+      const account = await this.createAccountWithOwnerRole(type, user.id, tx);
 
       const session = await this.userSessions.createSession(
         {
@@ -980,13 +1125,22 @@ export class AuthHandler extends CacheHandler {
       provider: UserAuthenticationMethodProvider;
       providerId: string;
       providerData: Record<string, unknown>;
+      /**
+       * Auto-link onto an unverified Email method: claim the identity behind this address
+       * first, on the provider's authoritative address (`OAuthHandler.handleCallback`).
+       */
+      claimEmail?: string;
     },
     userAgent?: string | null,
     ipAddress?: string | null,
     requestBaseUrl?: string
   ): Promise<LoginResponse> {
     return await this.db.withTransaction(async (tx: Transaction) => {
-      const { userId, provider, providerId, providerData } = params;
+      const { userId, provider, providerId, providerData, claimEmail } = params;
+
+      if (claimEmail) {
+        await this.claimEmailIdentityByOAuth({ userId, email: claimEmail, provider }, tx);
+      }
 
       const { providerData: processedProviderData, isVerified } =
         await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
@@ -1096,6 +1250,8 @@ export class AuthHandler extends CacheHandler {
       providerId: string;
       email: string | null;
       emailVerified: boolean;
+      /** The provider is authoritative for `email` (`OAuthUserInfo.emailAuthoritative`). */
+      emailAuthoritative?: boolean;
       name: string;
       providerData: Record<string, unknown>;
     },
@@ -1124,10 +1280,19 @@ export class AuthHandler extends CacheHandler {
         const existingEmailAuthMethod =
           await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(params.email, tx);
         if (existingEmailAuthMethod) {
-          const cannotAutoLink =
-            !params.emailVerified || existingEmailAuthMethod.isVerified !== true;
-          if (cannotAutoLink) {
-            throw new BadRequestError('Email is not verified');
+          const bothVerified = params.emailVerified && existingEmailAuthMethod.isVerified === true;
+          if (!bothVerified) {
+            if (!params.emailVerified || params.emailAuthoritative !== true) {
+              throw new BadRequestError('Email is not verified');
+            }
+            await this.claimEmailIdentityByOAuth(
+              {
+                userId: existingEmailAuthMethod.userId,
+                email: params.email,
+                provider: params.provider,
+              },
+              tx
+            );
           }
           const { providerData: processedProviderData, isVerified } =
             await this.userAuthenticationMethods.processProvider(

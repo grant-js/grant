@@ -49,7 +49,12 @@ export interface HandleOAuthCallbackResult {
   accessToken: string;
   providerData: Record<string, unknown>;
   existingAuthMethod: boolean;
-  existingUserByEmail: { userId: string; email: string } | null;
+  /**
+   * The existing user the provider is auto-linked to by email. `claim` is set when that user's
+   * Email method is unverified and the provider is authoritative for the address: the link then
+   * claims the identity (`AuthHandler.linkOAuthAuthToExistingUser`), which re-checks it.
+   */
+  existingUserByEmail: { userId: string; email: string; claim?: true } | null;
   accountType: string | undefined;
   userId?: string;
   action?: UserAuthenticationEmailProviderAction;
@@ -142,22 +147,28 @@ export class OAuthHandler extends CacheHandler {
           tx
         );
 
-      let existingUserByEmail: { userId: string; email: string } | null = null;
+      let existingUserByEmail: HandleOAuthCallbackResult['existingUserByEmail'] = null;
 
       if (!existingAuthMethod && user.email && !storedState.userId) {
         const existingEmailAuthMethod =
           await this.userAuthenticationMethods.getUserAuthenticationMethodByEmail(user.email, tx);
 
         if (existingEmailAuthMethod) {
-          const cannotAutoLink = !user.emailVerified || existingEmailAuthMethod.isVerified !== true;
+          const bothVerified = user.emailVerified && existingEmailAuthMethod.isVerified === true;
+          const mayClaim =
+            user.emailVerified &&
+            user.emailAuthoritative === true &&
+            existingEmailAuthMethod.provider === UserAuthenticationMethodProvider.Email &&
+            existingEmailAuthMethod.isVerified !== true;
 
-          if (cannotAutoLink) {
+          if (!bothVerified && !mayClaim) {
             throw new BadRequestError('Email is not verified');
           }
 
           existingUserByEmail = {
             userId: existingEmailAuthMethod.userId,
             email: user.email,
+            ...(mayClaim ? { claim: true as const } : {}),
           };
         }
       }

@@ -91,9 +91,25 @@ describe('GoogleOAuthService', () => {
       id: 'google-sub-1',
       email: 'user@example.com',
       emailVerified: true,
+      emailAuthoritative: false,
       name: 'Ada',
       avatarUrl: 'https://lh3.googleusercontent.com/a/photo',
     });
+  });
+
+  it('marks the address authoritative when hd names its Workspace domain', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        sub: 'google-sub-1',
+        email: 'user@example.com',
+        email_verified: true,
+        hd: 'example.com',
+      }),
+    } as Response);
+
+    const user = await service.getOAuthUserInfo('ya29.token');
+    expect(user.emailAuthoritative).toBe(true);
   });
 
   it('normalizes a protocol-relative Google picture URL', async () => {

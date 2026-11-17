@@ -699,6 +699,7 @@ export class ProjectOAuthHandler {
         providerId,
         email: user.email,
         emailVerified: user.emailVerified,
+        emailAuthoritative: user.emailAuthoritative,
         name: user.name ?? user.username ?? 'User',
         providerData,
       },
