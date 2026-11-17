@@ -34,6 +34,12 @@ export interface OAuthUserInfo {
   id: string;
   email: string | null;
   emailVerified: boolean;
+  /**
+   * The provider is authoritative for `email`, strong enough to claim an unverified Grant
+   * identity with that address: Google for a Gmail address or its Workspace domain (`hd`),
+   * GitHub for a verified address. Absent means no.
+   */
+  emailAuthoritative?: boolean;
   name: string | null;
   avatarUrl: string | null;
   username?: string | null;

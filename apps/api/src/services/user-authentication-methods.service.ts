@@ -1,4 +1,5 @@
 import type {
+  EmailClaimProof,
   IAuditLogger,
   ICredentialService,
   IEventPublisher,
@@ -240,38 +241,10 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
         transaction
       );
 
-    const oldValues = {
-      id: oldUserAuthenticationMethod.id,
-      userId: oldUserAuthenticationMethod.userId,
-      provider: oldUserAuthenticationMethod.provider,
-      providerId: oldUserAuthenticationMethod.providerId,
-      isVerified: oldUserAuthenticationMethod.isVerified,
-      isPrimary: oldUserAuthenticationMethod.isPrimary,
-      createdAt: oldUserAuthenticationMethod.createdAt,
-      updatedAt: oldUserAuthenticationMethod.updatedAt,
-    };
-
-    const newValues = {
-      id: updatedUserAuthenticationMethod.id,
-      userId: updatedUserAuthenticationMethod.userId,
-      provider: updatedUserAuthenticationMethod.provider,
-      providerId: updatedUserAuthenticationMethod.providerId,
-      isVerified: updatedUserAuthenticationMethod.isVerified,
-      isPrimary: updatedUserAuthenticationMethod.isPrimary,
-      createdAt: updatedUserAuthenticationMethod.createdAt,
-      updatedAt: updatedUserAuthenticationMethod.updatedAt,
-    };
-
-    const metadata = {
-      context,
-      ...(auditOperation ? { operation: auditOperation } : {}),
-    };
-
-    await this.audit.logUpdate(
-      updatedUserAuthenticationMethod.id,
-      oldValues,
-      newValues,
-      metadata,
+    await this.logMethodUpdate(
+      oldUserAuthenticationMethod,
+      updatedUserAuthenticationMethod,
+      { context, ...(auditOperation ? { operation: auditOperation } : {}) },
       transaction
     );
 
@@ -279,6 +252,32 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       createDynamicSingleSchema(userAuthenticationMethodSchema),
       withHasPassword(updatedUserAuthenticationMethod),
       context
+    );
+  }
+
+  private async logMethodUpdate(
+    before: UserAuthenticationMethod,
+    after: UserAuthenticationMethod,
+    metadata: Record<string, unknown>,
+    transaction?: Transaction
+  ): Promise<void> {
+    const auditValues = (method: UserAuthenticationMethod) => ({
+      id: method.id,
+      userId: method.userId,
+      provider: method.provider,
+      providerId: method.providerId,
+      isVerified: method.isVerified,
+      isPrimary: method.isPrimary,
+      createdAt: method.createdAt,
+      updatedAt: method.updatedAt,
+    });
+
+    await this.audit.logUpdate(
+      after.id,
+      auditValues(before),
+      auditValues(after),
+      metadata,
+      transaction
     );
   }
 
@@ -781,6 +780,44 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
     );
 
     return targetUserId;
+  }
+
+  public async claimUnverifiedEmailMethod(
+    params: { methodId: string; proof: EmailClaimProof },
+    transaction?: Transaction
+  ): Promise<UserAuthenticationMethod> {
+    const context = 'UserAuthenticationMethodService.claimUnverifiedEmailMethod';
+    const method = await this.getUserAuthenticationMethod(params.methodId, transaction);
+
+    if (method.provider !== UserAuthenticationMethodProvider.Email || method.isVerified) {
+      throw new BadRequestError('Email method is not claimable');
+    }
+
+    const providerData = { ...((method.providerData as Record<string, unknown>) || {}) };
+    delete providerData.otp;
+
+    const claimed = await this.userAuthenticationMethodRepository.updateUserAuthenticationMethod(
+      method.id,
+      { isVerified: true, providerData },
+      transaction
+    );
+
+    await this.logMethodUpdate(
+      method,
+      claimed,
+      { context, operation: 'claim-unverified-email', proof: params.proof },
+      transaction
+    );
+
+    // A password or a session that predates the mailbox proof was not set by a proven owner.
+    await this.credentials.removeCredential({ scope: 'platform' }, method.userId, transaction);
+    await this.invalidateAllUserSessions(method.userId, transaction);
+
+    return validateOutput(
+      createDynamicSingleSchema(userAuthenticationMethodSchema),
+      withHasPassword(claimed),
+      context
+    );
   }
 
   public async invalidateAllUserSessions(userId: string, transaction?: Transaction): Promise<void> {

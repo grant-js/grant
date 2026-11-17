@@ -65,7 +65,10 @@ flowchart TD
   D -->|yes| E[Link provider to that user]
   D -->|no| F{Verified Email method matches IdP email?}
   F -->|yes| G[Auto-link provider to that user]
-  F -->|no| H[Create user + social method]
+  F -->|no| J{Claimable unverified Email method and IdP authoritative?}
+  J -->|yes| K[Claim the identity, then auto-link]
+  J -->|no| H[Create user + social method]
+  K --> I
   C --> I[Bind passwordless Email if IdP email is verified]
   E --> I
   G --> I
@@ -77,9 +80,21 @@ flowchart TD
 | **Login**     | The GitHub/Google identity is already linked                                                                                  | Issue a session for that user                                            |
 | **Connect**   | The user started OAuth from Settings (or another authenticated flow) with `userId` in OAuth state                             | Create the social method on that account                                 |
 | **Auto-link** | No social method yet, but a **verified** Email method exists for the same address **and** the IdP marked the mailbox verified | Create the social method on that existing user                           |
+| **Claim**     | The Email method for the address is **unverified** but claimable, and the IdP is **authoritative** for the address            | Claim the identity (below), then auto-link                               |
 | **Register**  | None of the above                                                                                                             | Create a user, the social method, and a personal or organization account |
 
-Auto-link requires **both** sides verified. If the IdP email is unverified, or Grant’s Email method for that address is unverified, the callback fails (`Email is not verified`) instead of creating a second account or linking silently.
+Auto-link requires **both** sides verified. Otherwise the callback fails (`Email is not verified`) instead of creating a second account or linking silently, unless the identity can be claimed.
+
+### Claiming an unverified identity
+
+An Email method can exist unverified without its owner ever signing up: a [CDM import](/core-concepts/cdm-import-export) or an operator who sets a project user's email creates one, with no platform password. Its owner claims it by proving the mailbox:
+
+- **OAuth** (console and project apps), when the IdP is **authoritative** for the address: Google for a Gmail address or an address in the Workspace domain it reports in `hd` (`email_verified` alone can describe an outside address verified long ago); GitHub for an address it lists as verified.
+- **Register from an organization invitation**: the invitation link carries an emailed proof token. Registering with it on an existing unverified address claims the identity and sets the platform password, instead of failing with `An account with this email already exists`.
+
+The identity is **claimable** only when its Email method is unverified, its address equals the proven address exactly, and nothing else can sign in as that user: no other authentication method and no enrolled MFA factor. Otherwise the request fails as before.
+
+A claim, in the request's transaction, marks the Email method verified and drops its pending OTP, **removes the platform credential** and **revokes every session** the user had. A password or a session set before the mailbox proof was not set by a proven owner, so none survives it: this is what keeps account pre-hijacking out (someone registers your address with their own password, then waits for you to sign in with Google). The user id, memberships, roles and **project** credentials stay. The authentication-method audit row records `operation: claim-unverified-email` and the proof (`google`, `github`, `organization-invitation`).
 
 ### Passwordless Email bind
 
@@ -128,7 +143,7 @@ For multi-tenant SaaS, plan BYO connections per customer project rather than rel
 
 ## References
 
-- Handlers: `OAuthHandler.listProviders` / `handleCallback`, `AuthHandler.createUserFromOAuth`, `linkOAuthAuthToExistingUser`, `resolveUserIdFromOAuthForProject`
-- Services: `UserAuthenticationMethodService.ensureVerifiedContactEmail`
-- Libs: `oauth-picture.lib.ts`, `oauth-contact-email.lib.ts`
+- Handlers: `OAuthHandler.listProviders` / `handleCallback`, `AuthHandler.createUserFromOAuth`, `linkOAuthAuthToExistingUser`, `resolveUserIdFromOAuthForProject`, `register` (invitation claim)
+- Services: `UserAuthenticationMethodService.ensureVerifiedContactEmail`, `claimUnverifiedEmailMethod`
+- Libs: `oauth-picture.lib.ts`, `oauth-contact-email.lib.ts` (`isGoogleEmailAuthoritative`)
 - Web: `OAuthProviderButtons`, `AvatarImage` (`referrerPolicy="no-referrer"`)

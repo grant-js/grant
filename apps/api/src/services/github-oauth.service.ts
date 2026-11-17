@@ -284,6 +284,8 @@ export class GitHubOAuthService implements IGitHubOAuthService {
       id: githubUser.id.toString(),
       email: githubUser.email,
       emailVerified: githubUser.emailVerified,
+      // The address is one GitHub lists as verified for this account (`/user/emails`).
+      emailAuthoritative: githubUser.emailVerified && Boolean(githubUser.email),
       name: githubUser.name,
       avatarUrl: githubUser.avatar_url,
       username: githubUser.login,

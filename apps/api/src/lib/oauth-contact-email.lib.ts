@@ -29,3 +29,27 @@ export function contactEmailFromOAuthProviderData(providerData: Record<string, u
     emailVerified: providerData.emailVerified === true,
   };
 }
+
+const GOOGLE_CONSUMER_DOMAINS = new Set(['gmail.com', 'googlemail.com']);
+
+/**
+ * Whether Google is authoritative for a verified address: a Gmail address, or an address in
+ * the Workspace domain Google names in `hd`. `email_verified` alone can describe an outside
+ * address a Google account verified once, possibly long ago, so it is not enough to claim an
+ * existing unverified identity.
+ */
+export function isGoogleEmailAuthoritative(
+  email: string | null | undefined,
+  emailVerified: boolean,
+  hostedDomain: string | null | undefined
+): boolean {
+  const emailNorm = normalizeVerifiedContactEmail(email, emailVerified);
+  if (!emailNorm) {
+    return false;
+  }
+  const domain = emailNorm.slice(emailNorm.lastIndexOf('@') + 1);
+  if (GOOGLE_CONSUMER_DOMAINS.has(domain)) {
+    return true;
+  }
+  return typeof hostedDomain === 'string' && hostedDomain.trim().toLowerCase() === domain;
+}

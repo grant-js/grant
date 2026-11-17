@@ -167,12 +167,14 @@ export async function handleOAuthCallbackAuth(
   }
 
   if (oauthResult.existingUserByEmail) {
+    const { userId, email, claim } = oauthResult.existingUserByEmail;
     const result = await context.handlers.auth.linkOAuthAuthToExistingUser(
       {
-        userId: oauthResult.existingUserByEmail.userId,
+        userId,
         provider: oauthResult.provider,
         providerId: oauthResult.providerId,
         providerData,
+        ...(claim ? { claimEmail: email } : {}),
       },
       context.userAgent,
       context.ipAddress,
