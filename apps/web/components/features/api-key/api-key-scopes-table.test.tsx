@@ -19,9 +19,15 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children }: { href: string; children: ReactNode }) => (
-    <a href={href}>{children}</a>
+  Link: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   ),
+}));
+
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ organizationId: 'org-1', projectId: 'project-1' }),
 }));
 
 const { ApiKeyScopesTable } = await import('./api-key-scopes-table');
@@ -230,5 +236,25 @@ describe('ApiKeyScopesTable', () => {
     expect(screen.getByRole('checkbox', { name: /scopes.table.select user query/ })).toBeDisabled();
     fireEvent.click(screen.getByRole('checkbox', { name: /scopes.table.select user read/ }));
     expect(onSelectionChange).toHaveBeenLastCalledWith(['u-query', 'u-read']);
+  });
+});
+
+describe('ApiKeyScopesTable go-to links', () => {
+  it('has no links unless asked', () => {
+    renderTable();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+  });
+
+  it('links each permission row, not the resource group rows, to the permission page', () => {
+    renderTable({ linkRows: true });
+
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(rows.length);
+    expect(
+      screen.getByRole('link', { name: 'common.openEntity.permission user read' })
+    ).toHaveAttribute(
+      'href',
+      '/dashboard/organizations/org-1/projects/project-1/permissions/u-read'
+    );
   });
 });
