@@ -11,6 +11,11 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const scope = { tenant: Tenant.OrganizationProject as Tenant, id: 'org-1:project-1' };
 const setApiKeyPermissions = vi.fn();
 const state = { canUpdate: true };
+let routeParams: Record<string, string | undefined> = {};
+
+vi.mock('next/navigation', () => ({
+  useParams: () => routeParams,
+}));
 
 vi.mock('next-intl', () => ({
   useTranslations: (namespace?: string) => {
@@ -24,8 +29,10 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({ href, children }: { href: string; children: ReactNode }) => (
-    <a href={href}>{children}</a>
+  Link: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   ),
 }));
 
@@ -107,6 +114,7 @@ beforeEach(() => {
   state.canUpdate = true;
   scope.tenant = Tenant.OrganizationProject;
   scope.id = 'org-1:project-1';
+  routeParams = { organizationId: 'org-1', projectId: 'project-1' };
   cohortPermissions.splice(0, cohortPermissions.length, ...defaultCohortPermissions);
 });
 
@@ -153,6 +161,7 @@ describe('ApiKeyScopes of a role key', () => {
       expect(checkbox).toBeDisabled();
     }
     expect(screen.queryByRole('switch')).toBeNull();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
   });
 
   it('asks for confirmation before converting and calls the mutation once, bounded by the caller', async () => {
@@ -277,6 +286,17 @@ describe('ApiKeyScopes of a scope key', () => {
     expect(within(grantCard).getByText('UserSession:Query')).toBeInTheDocument();
     expect(within(grantCard).queryByText('user-directory:Read')).toBeNull();
     expect(within(projectCard).getByText('user-directory:Read')).toBeInTheDocument();
+
+    // Only Project scopes rows lead to the project permission's own page.
+    expect(within(grantCard).queryAllByRole('link')).toHaveLength(0);
+    expect(
+      within(projectCard).getByRole('link', {
+        name: 'common.openEntity.permission user-directory Read',
+      })
+    ).toHaveAttribute(
+      'href',
+      '/dashboard/organizations/org-1/projects/project-1/permissions/custom-user'
+    );
   });
 
   it('omits the Project card when every row is Grant', () => {
@@ -289,6 +309,7 @@ describe('ApiKeyScopes of a scope key', () => {
   it('uses Grant vs Project titles on a personal-account project', () => {
     scope.tenant = Tenant.AccountProject;
     scope.id = 'account-1:project-1';
+    routeParams = { accountId: 'account-1', projectId: 'project-1' };
     cohortPermissions.splice(0, cohortPermissions.length, ...defaultCohortPermissions, {
       machineOnly: false,
       permission: permission('custom-user', 'Read', 'user-directory'),

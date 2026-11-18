@@ -12,9 +12,11 @@ import {
   DETAIL_CHECKBOX_COLUMN,
   DETAIL_CHECKBOX_SKELETON,
   DETAIL_CONTENT_COLUMN_CLASS,
+  DETAIL_ENTITY_LINK_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
+  detailEntityLinkColumn,
   DetailTableCheckboxCell,
   FeatureModuleCard,
   Pagination,
@@ -83,6 +85,8 @@ export interface ApiKeyScopesTableProps {
   footerActions?: ReactNode;
   emptyTitle?: string;
   emptyDescription?: string;
+  /** Rows end in a go-to link to the permission's detail page. */
+  linkRows?: boolean;
 }
 
 export function ApiKeyScopesTable({
@@ -105,6 +109,7 @@ export function ApiKeyScopesTable({
   footerActions,
   emptyTitle,
   emptyDescription,
+  linkRows = false,
 }: ApiKeyScopesTableProps) {
   const t = useTranslations('user.apiKeys.scopes');
   const tRoot = useTranslations();
@@ -385,6 +390,18 @@ export function ApiKeyScopesTable({
           </span>
         ) : null,
     },
+    ...(linkRows
+      ? [
+          detailEntityLinkColumn<ScopeTableItem>(
+            'permission',
+            (item) => (item.kind === 'row' ? item.row.permission.id : null),
+            (item) =>
+              item.kind === 'row'
+                ? translatePermissionField(translate, item.row.permission, 'name')
+                : ''
+          ),
+        ]
+      : []),
   ];
 
   const {
@@ -402,6 +419,7 @@ export function ApiKeyScopesTable({
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'permission', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...DETAIL_TEXT_COLUMN },
+      ...(linkRows ? [DETAIL_ENTITY_LINK_SKELETON] : []),
     ]),
     rowCount: 5,
   };

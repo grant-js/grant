@@ -34,7 +34,7 @@ No database, schema or API slice. Tests and i18n live in the slice they cover.
 
 ## Design notes
 
-- One column factory next to the other detail-table helpers (`components/common/detail-table-layout.tsx`): key `navigation`, empty header, `DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH`, rendering `EntityNavigationButton` with a per-row `aria-label`. An empty header already makes a column non-toggleable and non-movable, so it stays last.
+- One column factory, `detailEntityLinkColumn`, in its own module (`components/common/detail-entity-link-column.tsx`) so `detail-table-layout.tsx` keeps no dependency on Next navigation: key `navigation`, empty header, `DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH`, rendering `EntityNavigationButton` with a per-row `aria-label`. An empty header already makes a column non-toggleable and non-movable, so it stays last.
 - API key: `ApiKeyScopesTable` gets an opt-in prop; only the Project scopes card of a scope-based key passes it.
 - App scopes: `ScopeSlugOption` carries the permission ID when exactly one project permission matches the slug (the query already fetches `id`).
 - Permission → resource: render the link only when the route has a `projectId`.

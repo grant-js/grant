@@ -18,6 +18,8 @@ export interface ApiKeyScopeCardsProps extends SharedScopesTableProps {
   projectPage?: number;
   onGrantPageChange?: (page: number) => void;
   onProjectPageChange?: (page: number) => void;
+  /** Project scopes rows link to the project permission; Grant scopes rows never do. */
+  linkProjectRows?: boolean;
 }
 
 export function ApiKeyScopeCards({
@@ -30,6 +32,7 @@ export function ApiKeyScopeCards({
   projectPage,
   onGrantPageChange,
   onProjectPageChange,
+  linkProjectRows = false,
   notice,
   footerActions,
   ...shared
@@ -56,6 +59,7 @@ export function ApiKeyScopeCards({
           rows={project}
           page={projectPage}
           onPageChange={onProjectPageChange}
+          linkRows={linkProjectRows}
         />
       ) : null}
     </>

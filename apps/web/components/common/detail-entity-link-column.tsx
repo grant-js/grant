@@ -21,7 +21,7 @@ const DETAIL_LINKED_ENTITY_SEGMENT: Record<DetailLinkedEntity, EntitySegment> = 
 };
 
 /** A link to a related entity's detail page, labelled with its type and name. */
-function DetailEntityLink({
+export function DetailEntityLink({
   entity,
   entityId,
   name,
