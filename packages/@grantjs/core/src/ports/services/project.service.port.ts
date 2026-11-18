@@ -57,6 +57,7 @@ import type {
 
 import type { DeleteParams, OptionalListScope, SelectedFields } from '../repositories/common';
 import type { ProjectSyncJobPayloadReference } from '../repositories/project.repository.port';
+import type { ProjectUserIdentityLinkMoveCounts } from '../repositories/project-user-identity-link.repository.port';
 
 // ---------------------------------------------------------------------------
 // IProjectService
@@ -95,6 +96,34 @@ export interface IProjectService {
     params: Omit<MutationDeleteProjectArgs, 'scope'> & DeleteParams,
     transaction?: unknown
   ): Promise<Project>;
+}
+
+// ---------------------------------------------------------------------------
+// IProjectUserIdentityLinkService
+// ---------------------------------------------------------------------------
+
+export interface ProjectUserIdentityLinkResult {
+  /** False when the address is already the member's own: nothing was written. */
+  linked: boolean;
+  projectUserId: string | null;
+  fromUserId: string;
+  toUserId: string;
+  /** The member was soft-deleted because no other project membership was left. */
+  fromRetired: boolean;
+  counts: ProjectUserIdentityLinkMoveCounts | null;
+}
+
+export interface IProjectUserIdentityLinkService {
+  /**
+   * Replace a project member with the existing identity that holds `email`: that identity
+   * takes over the member's membership of the project and everything the project holds for
+   * it, and the member is retired. Organization projects only. Every precondition is checked
+   * before any write; the call publishes `project.user_identity_linked` and nothing else.
+   */
+  linkIdentity(
+    params: { organizationId: string; projectId: string; userId: string; email: string },
+    transaction?: unknown
+  ): Promise<ProjectUserIdentityLinkResult>;
 }
 
 // ---------------------------------------------------------------------------
