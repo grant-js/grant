@@ -77,6 +77,7 @@ import {
   ProjectUserCredentialLockoutRepository,
   UserCredentialLockoutRepository,
 } from '@/repositories/credential-lockouts.repository';
+import { ProjectUserIdentityLinkRepository } from '@/repositories/project-user-identity-link.repository';
 import { UserCredentialRepository } from '@/repositories/user-credentials.repository';
 
 import { AccountProjectApiKeyService } from './account-project-api-keys.service';
@@ -135,6 +136,7 @@ import { ProjectUserApiKeyService } from './project-user-api-keys.service';
 import { ProjectUserCredentialEventPublisher } from './project-user-credential-events.service';
 import { ProjectUserCredentialExportService } from './project-user-credential-exports.service';
 import { ProjectUserGroupService } from './project-user-groups.service';
+import { ProjectUserIdentityLinkService } from './project-user-identity-link.service';
 import { ProjectUserPermissionService } from './project-user-permissions.service';
 import { ProjectUserService } from './project-users.service';
 import { ProjectService } from './projects.service';
@@ -802,6 +804,17 @@ export function createServices(
       repositories.userRepository,
       servicesBase.credentials,
       repositories.cdmImportTombstoneRepository
+    ),
+    // The membership read runs on the base pool: the request's RLS hides other projects.
+    projectUserIdentityLink: new ProjectUserIdentityLinkService(
+      new ProjectUserIdentityLinkRepository(db, baseDb),
+      repositories.userAuthenticationMethodRepository,
+      servicesBase.credentials,
+      servicesBase.userMfa,
+      servicesBase.projectOAuthGrants,
+      audit(projectUserAuditLogs, 'projectUserId', user, db),
+      audit(userAuditLogs, 'userId', user, db),
+      events
     ),
     projectSyncJobs: new ProjectSyncJobService(
       repositories.projectSyncJobRepository,
