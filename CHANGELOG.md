@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.29.3
+
+### Platform
+
+**Docker images:** tagged `:1.29.3` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.29.3** (fixed group with apps).
+
+### Patch Changes
+
+- 368d8ec: GitHub sign-in now calls the API at `GITHUB_API_URL` (default `https://api.github.com`) for the user and email lookups. The setting was read but ignored, so a GitHub Enterprise Server or a stub IdP could not be used.
+
 ## 1.29.2
 
 ### Platform

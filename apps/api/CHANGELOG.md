@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.29.3
+
+### Patch Changes
+
+- 368d8ec: GitHub sign-in now calls the API at `GITHUB_API_URL` (default `https://api.github.com`) for the user and email lookups. The setting was read but ignored, so a GitHub Enterprise Server or a stub IdP could not be used.
+- @grantjs/schema@1.29.3
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.29.2
 
 ### Patch Changes
