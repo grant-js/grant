@@ -1,5 +1,9 @@
 # @grantjs/schema
 
+## 1.29.2
+
+No changes in this release.
+
 ## 1.29.1
 
 No changes in this release.
