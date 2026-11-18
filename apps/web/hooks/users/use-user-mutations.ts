@@ -7,6 +7,8 @@ import {
   CreateUserDocument,
   CreateUserInput,
   DeleteUserDocument,
+  LinkProjectUserIdentityDocument,
+  LinkProjectUserIdentityInput,
   MutationDeleteUserArgs,
   RequestUserPictureUploadUrlDocument,
   RequestUserPictureUploadUrlMutation,
@@ -25,6 +27,7 @@ import {
 import { toast } from 'sonner';
 
 import { type DirectUploadBody, runDirectUpload } from '@/lib/direct-upload';
+import { hasGraphQLErrorCode } from '@/lib/graphql-error-code';
 
 import { evictUsersCache } from './cache';
 
@@ -49,6 +52,13 @@ export function useUserMutations() {
 
   const [setProjectUserEmail] = useMutation<{ setProjectUserEmail: User }>(
     SetProjectUserEmailDocument,
+    {
+      update,
+    }
+  );
+
+  const [linkProjectUserIdentity] = useMutation<{ linkProjectUserIdentity: User }>(
+    LinkProjectUserIdentityDocument,
     {
       update,
     }
@@ -135,7 +145,15 @@ export function useUserMutations() {
     }
   };
 
-  const handleSetProjectUserEmail = async (input: SetProjectUserEmailInput) => {
+  /**
+   * `onConflict`: called instead of the error toast when another account holds the address,
+   * so a caller that can offer the identity link takes over. Without it, the conflict gets a
+   * toast that says what happened. The error is rethrown either way, so the form stays open.
+   */
+  const handleSetProjectUserEmail = async (
+    input: SetProjectUserEmailInput,
+    options?: { onConflict?: () => void }
+  ) => {
     try {
       const result = await setProjectUserEmail({
         variables: { input },
@@ -144,8 +162,34 @@ export function useUserMutations() {
       toast.success(t('notifications.setEmailSuccess'));
       return result.data?.setProjectUserEmail;
     } catch (error) {
+      const conflict = hasGraphQLErrorCode(error, 'CONFLICT');
+      if (conflict && options?.onConflict) {
+        options.onConflict();
+        throw error;
+      }
       console.error('Error setting project user email:', error);
       toast.error(t('notifications.setEmailError'), {
+        description: conflict
+          ? t('notifications.setEmailConflict')
+          : error instanceof Error
+            ? error.message
+            : 'An unknown error occurred',
+      });
+      throw error;
+    }
+  };
+
+  const handleLinkProjectUserIdentity = async (input: LinkProjectUserIdentityInput) => {
+    try {
+      const result = await linkProjectUserIdentity({
+        variables: { input },
+      });
+
+      toast.success(t('notifications.linkIdentitySuccess'));
+      return result.data?.linkProjectUserIdentity;
+    } catch (error) {
+      console.error('Error linking project user identity:', error);
+      toast.error(t('notifications.linkIdentityError'), {
         description: error instanceof Error ? error.message : 'An unknown error occurred',
       });
       throw error;
@@ -231,6 +275,7 @@ export function useUserMutations() {
     updateUser: handleUpdateUser,
     deleteUser: handleDeleteUser,
     setProjectUserEmail: handleSetProjectUserEmail,
+    linkProjectUserIdentity: handleLinkProjectUserIdentity,
     setProjectUserPassword: handleSetProjectUserPassword,
     uploadUserPicture: handleUploadUserPicture,
     uploadUserPictureDirect: handleUploadUserPictureDirect,
