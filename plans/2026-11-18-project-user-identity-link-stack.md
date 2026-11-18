@@ -34,9 +34,9 @@ Init `gh stack` with **slice 1 only**; `gh stack add` each next branch when it s
 | #     | Branch                                      | Base                              | Concern                                                     | Owner role | Review bar           | PR  |
 | ----- | ------------------------------------------- | --------------------------------- | ----------------------------------------------------------- | ---------- | -------------------- | --- |
 | 1     | `feat/project-user-identity-link-constants` | `feat/project-user-identity-link` | `LinkIdentity` action, seed mappings, RBAC docs             | Backend    | security-full        |     |
-| 2     | `feat/project-user-identity-link-schema`    | prior slice                       | GraphQL input/mutation, event type, codegen                 | Backend    | security-full        |     |
+| 2     | `feat/project-user-identity-link-schema`    | prior slice                       | Event type `project.user_identity_linked`, codegen          | Backend    | security-full        |     |
 | 3     | `feat/project-user-identity-link-service`   | prior slice                       | Link service + repository moves, port, Postgres integration | Backend    | security-full        |     |
-| 4     | `feat/project-user-identity-link-api`       | prior slice                       | Handler, GraphQL resolver, REST + OpenAPI, rate limit, e2e  | Backend    | security-full        |     |
+| 4     | `feat/project-user-identity-link-api`       | prior slice                       | Mutation + input, handler, resolver, REST + OpenAPI, e2e    | Backend    | security-full        |     |
 | 5     | `feat/project-user-identity-link-web`       | prior slice                       | Set-email dialog link step, clearer conflict message, i18n  | Frontend   | light                |     |
 | final | `feat/project-user-identity-link`           | `main`                            | integration                                                 | Principal  | deep + security-full |     |
 
@@ -83,10 +83,10 @@ Check positions before writing a slice: `git for-each-ref --format='%(refname:sh
 - Files: `packages/@grantjs/constants/src/permissions/resources.ts` (`ResourceAction.LinkIdentity`; add to `ProjectUser.actions`), `groups.ts` (`ProjectUserOwner` / `ProjectUserAdmin` += `LinkIdentity`), `permissions.ts`, `docs/architecture/rbac.md`, `docs/core-concepts/resources.md`. Seed characterization (`seed-permissions.test.ts`) stays green from constants. No changeset (`@grantjs/constants` is in the changeset ignore list).
 - Pattern: exactly how `SetEmail` was added (`plans/2026-10-28-operator-set-email-stack.md` slice 1). Existing deployments get it through `seedAll` (ADR 0001).
 
-### 2 — Schema / codegen (security-full)
+### 2 — Event type (security-full)
 
-- Files: `packages/@grantjs/schema/src/schema/users/` (mutation + `LinkProjectUserIdentityInput`), operation document for web, `packages/@grantjs/schema/src/events/event-catalog.ts` (`project.user_identity_linked` → `webhookOnly('membership')`), `pnpm --filter @grantjs/schema generate`. Lockstep: `apps/api/src/lib/notifications/notification-email-families.ts` and the `webhookOnly` list in `apps/api/tests/unit/lib/events/event-catalog-coverage.test.ts`. Minor changeset `@grantjs/schema`.
-- Descriptions: OrganizationProject only; moves this project's membership only; the event carries ids only.
+- Files: `packages/@grantjs/schema/src/events/event-catalog.ts` (`project.user_identity_linked` → `webhookOnly('membership')`), `pnpm --filter @grantjs/schema generate`. Lockstep: `apps/api/src/lib/notifications/notification-email-families.ts` and the `webhookOnly` list in `apps/api/tests/unit/lib/events/event-catalog-coverage.test.ts`. Minor changeset `@grantjs/schema`.
+- **Amended while implementing (2026-11-18):** the mutation, its input and its operation document moved to slice 4. `apps/api/tests/unit/lib/authorization/authorized-scope-coverage.test.ts` requires every GraphQL operation that names a scope to be wrapped in `authorizeGraphQLResolver`, so a mutation cannot land before its resolver without a stub or an allowlist entry. Later stories (`api-key-scopes`, `exportable-api-key-secret`) ship the SDL with its resolver for the same reason. Slice 3 needs only the event type.
 
 ### 3 — Link service + repository moves (security-full)
 
@@ -101,9 +101,9 @@ Check positions before writing a slice: `git for-each-ref --format='%(refname:sh
   - **CDM next import**: `findBy: key` with X's key → `reuse-keyed` to Y, no membership for X, no user created; `findBy: email` → Y, marker rewritten to the address; `replace` removes nothing; no row in `cdm_import_tombstones`;
   - permission cache: Y's project permissions resolve to X's former roles right after the link.
 
-### 4 — API transport (security-full)
+### 4 — Mutation and API transport (security-full)
 
-- Files: `apps/api/src/handlers/users.handler.ts` (`linkProjectUserIdentity`, scope check, post-commit notice to Y (Gate 1 decision 1)), `apps/api/src/graphql/resolvers/users/mutations/` + `mutations.ts` (`requireEmailThenMfaGraphQL`, `ProjectUser` + `LinkIdentity`), `apps/api/src/rest/routes/users.routes.ts` / `schemas` / `openapi` (`POST /api/users/:id/link-identity`), `apps/api/src/lib/graphql-auth-rate-limit.lib.ts` and `middleware/rate-limit.middleware.ts` (count in the set-email bucket), docs `events-webhooks-notifications.md`, `cdm-import-export.md`, `security.md` (rate-limit table). Patch `grant-api`.
+- Files: `packages/@grantjs/schema/src/schema/users/{inputs,mutations}/link-project-user-identity.graphql` (`LinkProjectUserIdentityInput`, `linkProjectUserIdentity`), `packages/@grantjs/schema/src/operations/users/linkProjectUserIdentity.graphql`, `pnpm --filter @grantjs/schema generate`, the SDL contract pin in `packages/@grantjs/schema/src/sdl-contract.test.ts` (144 → 145) and a minor `@grantjs/schema` changeset; `apps/api/src/handlers/users.handler.ts` (`linkProjectUserIdentity`, scope check, post-commit notice to Y (Gate 1 decision 1)), `apps/api/src/graphql/resolvers/users/mutations/` + `mutations.ts` (`requireEmailThenMfaGraphQL`, `ProjectUser` + `LinkIdentity`), `apps/api/src/rest/routes/users.routes.ts` / `schemas` / `openapi` (`POST /api/users/:id/link-identity`), `apps/api/src/lib/graphql-auth-rate-limit.lib.ts` and `middleware/rate-limit.middleware.ts` (count in the set-email bucket), docs `events-webhooks-notifications.md`, `cdm-import-export.md`, `security.md` (rate-limit table). Patch `grant-api`.
 - e2e (`pnpm test:e2e`): Owner/Admin allowed; Dev/Viewer denied; Dev allowed once granted; non-member target 404; out-of-organization holder gives the same conflict as set-email; REST and GraphQL parity; the 21st attempt in the window is 429.
 
 ### 5 — Web (light)
