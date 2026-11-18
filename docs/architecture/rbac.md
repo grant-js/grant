@@ -45,13 +45,13 @@ Actions that require authorization: **read** (single resource by ID), **query** 
 
 ### Relationship & Session Resources
 
-| Resource                       | Actions                                                        | Description                |
-| ------------------------------ | -------------------------------------------------------------- | -------------------------- |
-| **Organization Member**        | `read` `update` `remove` `query`                               | Users in an organization   |
-| **Organization Invitation**    | `create` `read` `query` `revoke` `resend-email` `renew`        | Join-org invitations       |
-| **Project User**               | `read` `query` `set-email` `set-password` `export-credentials` | Users in a project         |
-| **User Session**               | `read` `query`                                                 | Active sessions (own only) |
-| **User Authentication Method** | `read` `query`                                                 | Auth methods (own only)    |
+| Resource                       | Actions                                                                        | Description                |
+| ------------------------------ | ------------------------------------------------------------------------------ | -------------------------- |
+| **Organization Member**        | `read` `update` `remove` `query`                                               | Users in an organization   |
+| **Organization Invitation**    | `create` `read` `query` `revoke` `resend-email` `renew`                        | Join-org invitations       |
+| **Project User**               | `read` `query` `set-email` `set-password` `link-identity` `export-credentials` | Users in a project         |
+| **User Session**               | `read` `query`                                                                 | Active sessions (own only) |
+| **User Authentication Method** | `read` `query`                                                                 | Auth methods (own only)    |
 
 ## Roles
 
@@ -260,14 +260,16 @@ Project App (Apps) are OAuth/consent applications scoped to a project. Account o
 
 #### Project User Groups
 
-| Group Name            | Resource     | Permissions                   | Assigned To                                                            | Description                                                   |
-| --------------------- | ------------ | ----------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `Project User Owner`  | Project User | `set-email` `set-password`    | Organization Owner, Personal Account Owner, Organization Account Owner | Set a project user's Email authentication method and password |
-| `Project User Admin`  | Project User | `set-email` `set-password`    | Organization Admin                                                     | Set a project user's Email authentication method and password |
-| `Project User Dev`    | Project User | _(no additional permissions)_ | —                                                                      | Dev has same project user access as common groups             |
-| `Project User Viewer` | Project User | _(no additional permissions)_ | —                                                                      | Viewer has same project user access as common groups          |
+| Group Name            | Resource     | Permissions                                | Assigned To                                                            | Description                                                                                                    |
+| --------------------- | ------------ | ------------------------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `Project User Owner`  | Project User | `set-email` `set-password` `link-identity` | Organization Owner, Personal Account Owner, Organization Account Owner | Set a project user's Email authentication method and password, and link a project user to an existing identity |
+| `Project User Admin`  | Project User | `set-email` `set-password` `link-identity` | Organization Admin                                                     | Set a project user's Email authentication method and password, and link a project user to an existing identity |
+| `Project User Dev`    | Project User | _(no additional permissions)_              | —                                                                      | Dev has same project user access as common groups                                                              |
+| `Project User Viewer` | Project User | _(no additional permissions)_              | —                                                                      | Viewer has same project user access as common groups                                                           |
 
 `ProjectUser:SetEmail` stores the address **unverified** (`isVerified: false`), whether it adds the Email method or replaces the current one: an operator can type an address, not prove it belongs to the user. Only the platform (dashboard) sign-in enforces the flag. There the user can sign in with the address, but is held to the verification window and blocked from organization-context mutations until the address is verified. Project app sign-in and the project password-reset flow do not read it, so an operator-set address works there at once, and completing a project password reset (or an e-mail magic link) marks the method verified. The user clears the state with the dashboard's resend-verification action, which mails a code to the address; whoever cannot read that mailbox cannot clear it. The operation is recorded on the authentication-method audit log with `metadata.operation` set to `operator-set-email` (or `operator-create-user` when `createUser` supplied the address), and is rate-limited per operator and scope (`SECURITY_RATE_LIMIT_SET_EMAIL_*`, see [Security](/architecture/security#rate-limiting)).
+
+`ProjectUser:LinkIdentity` lets an operator who is refused on set-email, because another user of the organization already holds the address, make that existing identity take over the project user's membership of this project (roles, groups, permissions, API keys and the project password move with it), and retire the duplicate. It is separate from `SetEmail` because it puts an existing person into a project, which no other operator action does. Held by Owner and Admin by default, extensible like `SetEmail`.
 
 `ProjectUser:SetPassword` is an ordinary extensible action: it is held by Owner and Admin by default, and an organization can add it to any other role's group exactly like `SetEmail`, with no code change.
 
@@ -277,7 +279,7 @@ Project App (Apps) are OAuth/consent applications scoped to a project. Account o
 
 It gates two things. The `exportProjectUserCredentials` GraphQL query and `POST /api/users/credentials/export` return, for the requested project members, `{ algorithm: 'bcrypt', hash }` (kind `PASSWORD`; the one place a project password hash leaves Grant) and the plaintext secrets of their API keys (kind `API_KEY_SECRET`; the one place an API-key secret can be read back, and only for keys of a project that opted in to [exportable secrets](/core-concepts/api-keys#exportable-secrets-opt-in), see ADR 0013). Both kinds sit behind this one permission, because a later credential type is a new kind and not a second export. Every successful call writes one `export` row on the project credential audit log (the caller, the number of users and credentials, the kinds; never a hash or a secret) and one `export` row per exported API-key secret on the API-key audit log (the key; never the secret), and a request naming a user who is not a member of the project fails as a whole. The `User.passwordCredential` field, resolved in the request's project scope (`source`, `updatedAt` and a SHA-256 `fingerprint` of the stored hash, a change detector rather than a secret), resolves to `null`, not an error, for any caller without the permission. `ProjectUser:ExportCredentials` also gates `User.apiKeyCredentials`, resolved the same way in the request's project scope: per project-user API key, its `fingerprint` (the SHA-256 of the secret string as issued, `null` for a key created before it existed) and whether an encrypted [exportable copy](/core-concepts/api-keys#exportable-secrets-opt-in) exists, never a secret or a hash.
 
-New standard permissions such as `ProjectUser:SetEmail`, `ProjectUser:SetPassword` and `Project:SetExportableApiKeySecrets` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
+New standard permissions such as `ProjectUser:SetEmail`, `ProjectUser:SetPassword`, `ProjectUser:LinkIdentity` and `Project:SetExportableApiKeySecrets` reach organizations bootstrapped earlier through `seedAll` (instance-wide, idempotent). `bootstrapDatabase()` runs that seed when `DB_BOOTSTRAP_ON_BOOT` is true (ADR 0001, the default); serverless deployments must run the migrate/seed step together with the flag.
 
 #### User Session Groups
 
@@ -447,6 +449,7 @@ Organization `read` is enforced by scope (users can only read organizations they
 | `query`              | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |
 | `set-email`          | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
 | `set-password`       | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
+| `link-identity`      | `project-user` | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> | <span class="rbac-perm-icon"><IconFluentColorCheckmarkCircle20 /></span> |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
 | `export-credentials` | `project-user` |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |  <span class="rbac-perm-icon"><IconFluentColorDismissCircle20 /></span>  |
 
 `export-credentials` is denied to every standard role by default; an organization grants it explicitly (see Project User Groups above).

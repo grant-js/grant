@@ -17,6 +17,7 @@ export const ResourceAction = {
   Exchange: 'Exchange',
   SetEmail: 'SetEmail',
   SetPassword: 'SetPassword',
+  LinkIdentity: 'LinkIdentity',
   ExportCredentials: 'ExportCredentials',
   SetExportableApiKeySecrets: 'SetExportableApiKeySecrets',
 };
@@ -176,6 +177,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
       ResourceAction.Query,
       ResourceAction.SetEmail,
       ResourceAction.SetPassword,
+      ResourceAction.LinkIdentity,
       ResourceAction.ExportCredentials,
     ],
   },
