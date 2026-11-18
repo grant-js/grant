@@ -1,6 +1,7 @@
 'use client';
 
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { getTagBorderClasses, ResourceAction, ResourceSlug, TagColor } from '@grantjs/constants';
@@ -14,6 +15,7 @@ import { z } from 'zod';
 import {
   Avatar,
   CopyToClipboard,
+  DetailEntityLink,
   EntityDetailInfoTable,
   FeatureModuleCard,
   PrimaryTagSelector,
@@ -95,6 +97,9 @@ export function PermissionGeneralCard({
   const createdFormatted = formatLocalizedDateTime(permission.createdAt);
   const updatedFormatted = formatLocalizedDateTime(permission.updatedAt);
 
+  // Resources have detail pages only inside a project.
+  const hasProjectRoute = Boolean(useParams().projectId);
+
   const infoRows = useMemo(() => {
     const rows = [
       {
@@ -115,7 +120,18 @@ export function PermissionGeneralCard({
         id: 'resource',
         icon: detailInfoTableIcon(Package),
         label: t('resource'),
-        value: <Badge variant="outline">{permission.resource.name}</Badge>,
+        value: (
+          <div className="flex min-w-0 items-center gap-2">
+            <Badge variant="outline">{permission.resource.name}</Badge>
+            {hasProjectRoute ? (
+              <DetailEntityLink
+                entity="resource"
+                entityId={permission.resource.id}
+                name={permission.resource.name}
+              />
+            ) : null}
+          </div>
+        ),
       });
     }
 
@@ -141,7 +157,7 @@ export function PermissionGeneralCard({
     );
 
     return rows;
-  }, [permission, t, createdFormatted, updatedFormatted]);
+  }, [permission, t, createdFormatted, updatedFormatted, hasProjectRoute]);
 
   const handleSubmit = async (values: PermissionGeneralFormValues) => {
     if (!scope) return;

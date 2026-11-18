@@ -12,7 +12,9 @@ import {
   DataTable,
   type DataTableColumnConfig,
   DataTableColumnToggle,
+  DETAIL_ENTITY_LINK_SKELETON,
   DetailAttachmentFilterToggle,
+  detailEntityLinkColumn,
   FeatureModuleCard,
   FieldInfoPopover,
   Pagination,
@@ -292,6 +294,11 @@ export function UserGroups({ user }: UserGroupsProps) {
         );
       },
     },
+    detailEntityLinkColumn<Group>(
+      'group',
+      (group) => group.id,
+      (group) => group.name
+    ),
   ];
 
   const {
@@ -311,6 +318,7 @@ export function UserGroups({ user }: UserGroupsProps) {
       { key: 'description', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'source', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      DETAIL_ENTITY_LINK_SKELETON,
     ]),
     rowCount: 5,
   };

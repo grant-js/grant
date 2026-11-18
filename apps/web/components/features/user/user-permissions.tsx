@@ -12,7 +12,9 @@ import {
   DataTable,
   type DataTableColumnConfig,
   DataTableColumnToggle,
+  DETAIL_ENTITY_LINK_SKELETON,
   DetailAttachmentFilterToggle,
+  detailEntityLinkColumn,
   FeatureModuleCard,
   FieldInfoPopover,
   Pagination,
@@ -339,6 +341,11 @@ export function UserPermissions({ user }: UserPermissionsProps) {
         );
       },
     },
+    detailEntityLinkColumn<Permission>(
+      'permission',
+      (permission) => permission.id,
+      (permission) => permission.name
+    ),
   ];
 
   const {
@@ -358,6 +365,7 @@ export function UserPermissions({ user }: UserPermissionsProps) {
       { key: 'action', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'source', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      DETAIL_ENTITY_LINK_SKELETON,
     ]),
     rowCount: 5,
   };

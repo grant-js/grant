@@ -6,11 +6,9 @@ import {
   type Scope,
 } from '@grantjs/schema';
 
-export interface ScopeSlugOption {
-  slug: string;
-  name: string;
-  description: string | null;
-}
+import { type ScopeSlugOption, toScopeSlugOptions } from '@/lib/project-app-scope-slugs';
+
+export type { ScopeSlugOption };
 
 interface ProjectRoleOption {
   id: string;
@@ -59,25 +57,10 @@ export function useProjectAppFormData(
       }));
   }, [project]);
 
-  const scopeSlugs = useMemo((): ScopeSlugOption[] => {
-    if (!project?.permissions) return [];
-    const seen = new Set<string>();
-    return project.permissions
-      .filter(
-        (p): p is typeof p & { resource: { slug: string }; name: string } =>
-          !!p?.resource?.slug && !!p.name
-      )
-      .map((p) => ({
-        slug: `${p.resource.slug}:${p.action}`,
-        name: p.name,
-        description: p.description ?? null,
-      }))
-      .filter((s) => {
-        if (seen.has(s.slug)) return false;
-        seen.add(s.slug);
-        return true;
-      });
-  }, [project]);
+  const scopeSlugs = useMemo(
+    (): ScopeSlugOption[] => toScopeSlugOptions(project?.permissions ?? []),
+    [project]
+  );
 
   return {
     projectRoles,
