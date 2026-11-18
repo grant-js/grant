@@ -64,6 +64,7 @@ export function createHandlers(
     services.projectUserCredentialExports,
     services.email,
     services.projects,
+    services.projectUserIdentityLink,
     options?.scheduleAfterCommit
   );
   const authHandler = new AuthHandler(

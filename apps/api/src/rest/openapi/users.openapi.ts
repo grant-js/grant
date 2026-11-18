@@ -11,6 +11,8 @@ import {
   exportProjectUserCredentialsResponseSchema,
   getUsersQuerySchema,
   getUsersResponseSchema,
+  linkProjectUserIdentityRequestSchema,
+  linkProjectUserIdentityResponseSchema,
   notFoundErrorResponseSchema,
   setProjectUserEmailRequestSchema,
   setProjectUserEmailResponseSchema,
@@ -279,6 +281,92 @@ Requires \`ProjectUser:SetEmail\`. The address is stored unverified. Same normal
       },
       409: {
         description: 'This authentication method is already connected to another account',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+
+  /**
+   * POST /api/users/:id/link-identity
+   */
+  registry.registerPath({
+    method: 'post',
+    path: '/api/users/{id}/link-identity',
+    operationId: 'postApiUsersByIdLinkIdentity',
+    tags: ['Users'],
+    summary: 'Link a project user to the existing identity that holds an email',
+    description: `
+Replace a project member with the existing identity of the organization that holds \`email\`: that identity takes over the member's membership of the project (roles, groups, permissions, API keys and the project password), and the member is retired.
+
+Requires \`ProjectUser:LinkIdentity\`, in an organization project scope. The member must not be able to sign in (no authentication method, platform password or MFA factor); the identity must belong to the organization and must not already be a member of the project. Only this project changes. Publishes \`project.user_identity_linked\` (ids only), never a removal or deletion event. Returns the identity. When the member already holds the address, nothing changes.
+    `.trim(),
+    request: {
+      params: userParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: linkProjectUserIdentityRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Project user linked to the existing identity',
+        content: {
+          'application/json': {
+            schema: linkProjectUserIdentityResponseSchema,
+          },
+        },
+      },
+      400: {
+        description:
+          'Invalid request; not an organization project scope; no user holds the address; or the project user can sign in',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Unauthorized - Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Forbidden - ProjectUser:LinkIdentity required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'User is not a member of the project',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      409: {
+        description:
+          'The address is held by an account outside the organization, or its holder is already a member of the project',
         content: {
           'application/json': {
             schema: errorResponseSchema,

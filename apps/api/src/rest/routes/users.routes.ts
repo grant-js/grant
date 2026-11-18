@@ -12,6 +12,7 @@ import {
   deleteUserQuerySchema,
   exportProjectUserCredentialsRequestSchema,
   getUsersQuerySchema,
+  linkProjectUserIdentityRequestSchema,
   setProjectUserEmailRequestSchema,
   setProjectUserPasswordRequestSchema,
   updateUserRequestSchema,
@@ -197,6 +198,34 @@ export function createUserRoutes(fallback?: RequestContext) {
       const { email, scope } = req.body;
 
       const user = await requestContext(req, fallback).handlers.users.setProjectUserEmail({
+        input: { userId: id, email, scope },
+      });
+
+      sendSuccessResponse(res, user);
+    }
+  );
+
+  router.post(
+    '/:id/link-identity',
+    validate({ params: userParamsSchema, body: linkProjectUserIdentityRequestSchema }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: true }, { allowPersonalContext: true }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.ProjectUser,
+      action: ResourceAction.LinkIdentity,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof userParamsSchema;
+        body: typeof linkProjectUserIdentityRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { email, scope } = req.body;
+
+      const user = await requestContext(req, fallback).handlers.users.linkProjectUserIdentity({
         input: { userId: id, email, scope },
       });
 

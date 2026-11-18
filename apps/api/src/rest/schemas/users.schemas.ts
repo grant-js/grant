@@ -200,6 +200,20 @@ export const setProjectUserEmailResponseSchema = createSuccessResponseSchema(
   'Successfully set project user email'
 );
 
+export const linkProjectUserIdentityRequestSchema = z.object({
+  scope: scopeSchema,
+  email: z.string().email('errors.validation.invalidEmail').openapi({
+    description:
+      'The address held by the existing identity of the organization that takes over the membership. Organization project scope only. Requires ProjectUser:LinkIdentity.',
+    example: 'member@example.com',
+  }),
+});
+
+export const linkProjectUserIdentityResponseSchema = createSuccessResponseSchema(
+  userSchema,
+  'Successfully linked the project user to the existing identity'
+);
+
 /**
  * The password is shape-checked only (a string). The policy is applied by the handler with
  * `validateSecretInput`, so a rejection names the rules and never contains the value, and no

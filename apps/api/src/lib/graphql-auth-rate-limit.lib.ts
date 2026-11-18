@@ -238,7 +238,11 @@ function countSetEmailInBody(
 
   // Cheap prefilter: every authenticated GraphQL request passes through here, and a field
   // name cannot be spelled any other way in a document, so no parse is needed without it.
-  if (!body.query.includes('setProjectUserEmail') && !body.query.includes('createUser')) {
+  if (
+    !body.query.includes('setProjectUserEmail') &&
+    !body.query.includes('linkProjectUserIdentity') &&
+    !body.query.includes('createUser')
+  ) {
     return 0;
   }
 
@@ -269,7 +273,10 @@ function countSetEmailInBody(
   const variables = asVariableRecord(body.variables);
   let count = 0;
   for (const field of roots) {
-    if (field.name.value === 'setProjectUserEmail') {
+    if (
+      field.name.value === 'setProjectUserEmail' ||
+      field.name.value === 'linkProjectUserIdentity'
+    ) {
       count += 1;
     } else if (field.name.value === 'createUser') {
       const input = field.arguments?.find((arg) => arg.name.value === 'input');
@@ -282,8 +289,8 @@ function countSetEmailInBody(
 }
 
 /**
- * How many set-email operations this HTTP request runs: `setProjectUserEmail`, and
- * `createUser` with an `email`, read from the root fields of the selected operation
+ * How many set-email operations this HTTP request runs: `setProjectUserEmail`,
+ * `linkProjectUserIdentity`, and `createUser` with an `email`, read from the root fields of the selected operation
  * (named, unnamed, through fragments, with the input inline or in variables), plus
  * every item of a batched body. Fails closed: a classification error counts as one.
  */

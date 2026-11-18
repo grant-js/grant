@@ -1083,6 +1083,15 @@ export type IsAuthorizedPermissionInput = {
   resource: Scalars['String']['input'];
 };
 
+export type LinkProjectUserIdentityInput = {
+  /** The address held by the existing identity. That identity must belong to the project's organization and must not already be a member of the project. */
+  email: Scalars['String']['input'];
+  /** OrganizationProject scope only. */
+  scope: Scope;
+  /** The project member to replace: an identity with no way to sign in (no authentication method, platform password, MFA factor or session). */
+  userId: Scalars['ID']['input'];
+};
+
 export type LoginInput = {
   emailVerificationProof?: InputMaybe<EmailVerificationProofInput>;
   provider: UserAuthenticationMethodProvider;
@@ -1268,6 +1277,11 @@ export type Mutation = {
   exchangeApiKey: ExchangeApiKeyResult;
   generateMyMfaRecoveryCodes: Array<Scalars['String']['output']>;
   inviteMember: OrganizationInvitation;
+  /**
+   * Link a project member to the existing identity that holds an email address: that identity takes over the member's membership of this project (roles, groups, permissions, API keys and the project password), and the member is retired.
+   * Only this project changes. No removal or deletion event is published; `project.user_identity_linked` carries ids only, never the address.
+   */
+  linkProjectUserIdentity: User;
   login: LoginResponse;
   logoutMyUser: LogoutMyUserResponse;
   markAllMyNotificationsRead: MarkAllNotificationsReadResult;
@@ -1638,6 +1652,10 @@ export type MutationGenerateMyMfaRecoveryCodesArgs = {
 
 export type MutationInviteMemberArgs = {
   input: InviteMemberInput;
+};
+
+export type MutationLinkProjectUserIdentityArgs = {
+  input: LinkProjectUserIdentityInput;
 };
 
 export type MutationLoginArgs = {

@@ -57,6 +57,12 @@
     "message": "An administrator changed the email address used to sign in to {{appName}}. This address is no longer the sign-in email for that account.",
     "warning": "If you did not expect this change, contact the administrator of {{appName}}."
   },
+  "projectIdentityLinked": {
+    "subject": "You can now sign in to {{appName}} with this email",
+    "defaultAppName": "the app",
+    "message": "An administrator of {{appName}} linked an existing account in that app to this email address. You can now sign in to {{appName}} with this address.",
+    "warning": "If you did not expect this, contact the administrator of {{appName}}."
+  },
   "notification": {
     "common": {
       "greeting": "Hi there,",
