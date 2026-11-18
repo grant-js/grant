@@ -231,6 +231,16 @@ The global `name` above is not the name a project shows. Every provisioned user 
 - **A replace import overwrites edits.** An operator's or a person's own edit of the project display name is replaced by the document's name on the next import that lists them with a different name.
 - **Length.** The column holds 255 characters. A longer `name` fails the whole import (naming the position in `users[]`), as for the global name; it is never truncated.
 
+### Linking an imported user to an existing identity {#identity-link}
+
+An import with `findBy: key` creates a user with no address for a person whose source address it could not send (invalid, or shared by two people of one environment), and earlier imports keyed every user. When the same person already exists in Grant with an address, an operator's set-email on the keyed user is refused: the address belongs to another account. `linkProjectUserIdentity` (`ProjectUser:LinkIdentity`, organization projects) resolves it without a second identity:
+
+- **The membership row moves, not the person's identity.** The keyed user's membership row of this project is re-pointed to the identity that holds the address, with its `metadata.cdmImport` marker and `cdmSource`, its display name, its roles, groups, permissions and tags of this project, its API keys and its project password. Nothing changes in other projects.
+- **The keyed user is retired.** Its global marker for this project is removed, because the key lookup reads the global marker first and would otherwise resolve the key to it and add it back. It is soft-deleted when no other project membership is left. Operator deletions write no [deletion tombstone](#deletion-tombstones).
+- **The next import.** With `findBy: key`, the key resolves to the identity through the moved membership marker (`reuse-keyed`): nobody is created and the keyed user does not come back. With `findBy: email` for the same person, the address resolves to the identity, as for any reused identity, and the membership marker is rewritten to the address.
+- **A `grantUserId` hint cannot do this:** once the key resolves to the keyed user, naming another user is refused. The hint prevents new duplicates; the link repairs existing ones.
+- **No removal event.** See [`project.user_identity_linked`](./events-webhooks-notifications.md) for what a mirror reads.
+
 ### Deletion tombstones {#deletion-tombstones}
 
 A person who deletes an identity that an import created or marked stays deleted: the next import of the project does not create it again. (This is not the soft-delete a `replace` import applies to CDM-managed rows; see the contributor README for the two meanings of the word.)

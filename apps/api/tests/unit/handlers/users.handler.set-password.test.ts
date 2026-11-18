@@ -76,6 +76,7 @@ function createHandler(overrides: { getProjectUsers?: ReturnType<typeof vi.fn> }
     { revokeAllForUserInProject } as never,
     {} as never,
     {} as never,
+    {} as never,
     {} as never
   );
 

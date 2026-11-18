@@ -127,6 +127,14 @@ export const Mutation = {
       userMutations.setProjectUserEmail!
     )
   ),
+  linkProjectUserIdentity: requireEmailThenMfaGraphQL(
+    ALLOW_PERSONAL_EMAIL,
+    ALLOW_PERSONAL_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.ProjectUser, action: ResourceAction.LinkIdentity },
+      userMutations.linkProjectUserIdentity!
+    )
+  ),
   setProjectUserPassword: requireEmailThenMfaGraphQL(
     ALLOW_PERSONAL_EMAIL,
     ALLOW_PERSONAL_MFA,

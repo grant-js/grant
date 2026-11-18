@@ -1,0 +1,14 @@
+input LinkProjectUserIdentityInput {
+  """
+  The project member to replace: an identity with no way to sign in (no authentication method, platform password, MFA factor or session).
+  """
+  userId: ID!
+  """
+  The address held by the existing identity. That identity must belong to the project's organization and must not already be a member of the project.
+  """
+  email: String!
+  """
+  OrganizationProject scope only.
+  """
+  scope: Scope!
+}

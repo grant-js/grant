@@ -168,6 +168,14 @@ describe('countSetEmailGraphqlOperations', () => {
     );
   });
 
+  it('counts linkProjectUserIdentity like setProjectUserEmail', () => {
+    const link =
+      'linkProjectUserIdentity(input: { userId: "u", email: "a@b.c", scope: { tenant: project, id: "p" } }) { id }';
+    expect(count({ query: `mutation { ${link} }` })).toBe(1);
+    expect(count({ query: `mutation { harmless: ${link} }` })).toBe(1);
+    expect(count({ query: `mutation { a: ${link} b: ${setEmail} }` })).toBe(2);
+  });
+
   it('counts the operation reached through a fragment, an inline fragment or an alias', () => {
     expect(count({ query: `fragment F on Mutation { ${setEmail} } mutation { ...F }` })).toBe(1);
     expect(count({ query: `mutation { ... on Mutation { ${setEmail} } }` })).toBe(1);

@@ -45,6 +45,7 @@ const AUTH_RATE_LIMIT_PATHS = new Set<string>(AUTH_SENSITIVE_RATE_LIMIT_METHOD_P
 
 /** `PUT /api/users/:id/email`. Express matches case-insensitively and ignores a trailing slash. */
 const SET_EMAIL_REST_PATH = /^\/api\/users\/[^/]+\/email$/;
+const LINK_IDENTITY_REST_PATH = /^\/api\/users\/[^/]+\/link-identity$/;
 const CREATE_USER_REST_PATH = '/api/users';
 
 interface WindowState {
@@ -88,14 +89,17 @@ async function checkLimit(
 
 /**
  * How many set-email operations a request runs: `PUT /api/users/:id/email`,
- * `POST /api/users` with an `email`, and the GraphQL `setProjectUserEmail` and
- * `createUser` (with an `email`) mutations. The conflict error of these operations
- * says whether an address is held by any account in the instance, so they are bounded
- * per scope (`tenantRateLimitMiddleware`).
+ * `POST /api/users` with an `email`, `POST /api/users/:id/link-identity`, and the GraphQL
+ * `setProjectUserEmail`, `linkProjectUserIdentity` and `createUser` (with an `email`)
+ * mutations. The answers of these operations say whether an address is held by an account,
+ * so they are bounded per scope (`tenantRateLimitMiddleware`).
  */
 function countSetEmailOperations(req: Request): number {
   const path = req.path.toLowerCase().replace(/\/+$/, '');
   if (req.method === 'PUT' && SET_EMAIL_REST_PATH.test(path)) {
+    return 1;
+  }
+  if (req.method === 'POST' && LINK_IDENTITY_REST_PATH.test(path)) {
     return 1;
   }
   if (req.method === 'POST' && path === CREATE_USER_REST_PATH) {

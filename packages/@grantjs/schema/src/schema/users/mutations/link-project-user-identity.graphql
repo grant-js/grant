@@ -1,0 +1,7 @@
+extend type Mutation {
+  """
+  Link a project member to the existing identity that holds an email address: that identity takes over the member's membership of this project (roles, groups, permissions, API keys and the project password), and the member is retired.
+  Only this project changes. No removal or deletion event is published; `project.user_identity_linked` carries ids only, never the address.
+  """
+  linkProjectUserIdentity(input: LinkProjectUserIdentityInput!): User!
+}

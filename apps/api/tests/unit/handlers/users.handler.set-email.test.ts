@@ -96,6 +96,7 @@ function createHandler(
     {} as never,
     { sendProjectEmailChanged } as never,
     { getProjects } as never,
+    {} as never,
     overrides.withAfterCommit === false ? undefined : scheduleAfterCommit
   );
 
