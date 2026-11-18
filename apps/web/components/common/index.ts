@@ -17,6 +17,7 @@ export * from './data-table-column-toggle';
 export * from './delete-dialog';
 export * from './demo-mode-dialog';
 export * from './detail-attachment-filter-toggle';
+export * from './detail-entity-link-column';
 export * from './detail-table-layout';
 export * from './edit-dialog';
 export * from './email-verification-banner';

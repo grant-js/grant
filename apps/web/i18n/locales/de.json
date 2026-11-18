@@ -170,6 +170,12 @@
     "view": {
       "card": "Kartenansicht",
       "table": "Tabellenansicht"
+    },
+    "openEntity": {
+      "role": "Rolle {name} öffnen",
+      "group": "Gruppe {name} öffnen",
+      "permission": "Berechtigung {name} öffnen",
+      "resource": "Ressource {name} öffnen"
     }
   },
   "demo": {

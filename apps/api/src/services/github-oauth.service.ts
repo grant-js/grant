@@ -225,6 +225,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
     try {
       const userOctokit = new Octokit({
         auth: validatedAccessToken,
+        baseUrl: config.githubOAuth.apiUrl,
       });
 
       const { data: user } = await userOctokit.rest.users.getAuthenticated();
@@ -317,6 +318,7 @@ export class GitHubOAuthService implements IGitHubOAuthService {
     try {
       const userOctokit = new Octokit({
         auth: accessToken,
+        baseUrl: config.githubOAuth.apiUrl,
       });
 
       await userOctokit.rest.users.getAuthenticated();

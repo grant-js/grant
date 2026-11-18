@@ -108,6 +108,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      stub-idp:
+        condition: service_healthy
     environment:
       NODE_ENV: test
       API_PORT: 4000
@@ -186,6 +188,20 @@ services:
       # Job scheduling – node-cron runs workers inline on enqueue (sync job E2E)
       JOBS_ENABLED: 'true'
       JOB_PROVIDER: node-cron
+
+      # Social sign-in against the stub IdP (tests/e2e/stub-idp; test-only client values).
+      # The authorize URLs keep their real defaults and are never followed: tests read
+      # `state` from the redirect and call the callback with the stub's code.
+      GOOGLE_CLIENT_ID: e2e-google-client
+      GOOGLE_CLIENT_SECRET: e2e-google-client-secret
+      GOOGLE_CALLBACK_URL: http://localhost:4001/api/auth/google/callback
+      GOOGLE_TOKEN_URL: http://stub-idp:8080/google/token
+      GOOGLE_USERINFO_URL: http://stub-idp:8080/google/userinfo
+      GITHUB_CLIENT_ID: e2e-github-client
+      GITHUB_CLIENT_SECRET: e2e-github-client-secret
+      GITHUB_CALLBACK_URL: http://localhost:4001/api/auth/github/callback
+      GITHUB_TOKEN_URL: http://stub-idp:8080/github/token
+      GITHUB_API_URL: http://stub-idp:8080/github-api
     ports:
       - '4001:4000'
     healthcheck:
@@ -194,6 +210,20 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+    networks:
+      - e2e-network
+
+  stub-idp:
+    image: node:22-alpine
+    container_name: grant-e2e-stub-idp
+    command: ['node', '/stub-idp/server.mjs']
+    volumes:
+      - ./apps/api/tests/e2e/stub-idp:/stub-idp:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8080/health || exit 1']
+      interval: 2s
+      timeout: 3s
+      retries: 15
     networks:
       - e2e-network
 

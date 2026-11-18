@@ -224,6 +224,7 @@ export function ApiKeyScopes({ apiKey, onAfterChange }: ApiKeyScopesProps) {
       projectTitle={t('scopes.project.title')}
       projectDescription={t('detail.scopes.projectDescription')}
       rows={scopeRows}
+      linkProjectRows
       selectedIds={optimisticIds}
       onSelectionChange={handleSelectionChange}
       readOnly={!canEdit}

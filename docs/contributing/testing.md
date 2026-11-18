@@ -64,6 +64,7 @@ apps/api/tests/
     │   ├── negative-auth.e2e.test.ts    # Authentication rejection
     │   ├── project-apps.e2e.test.ts     # Project app CRUD (create, list, update, delete) via GraphQL
     │   ├── project-oauth.e2e.test.ts   # Project OAuth authorize, email request, email callback
+    │   ├── imported-identity-claim.e2e.test.ts # Claim a CDM-imported identity: invitation Register, Google, GitHub
     │   ├── mfa.e2e.test.ts             # TOTP enroll/verify, org MFA policy, recovery step-up
     │   ├── mfa-aal2-login.e2e.test.ts  # Login requiresMfaStepUp when API uses aal2 (opt-in env)
     │   ├── project-sync-jobs.e2e.test.ts # CDM import/export jobs (REST + GraphQL, RBAC)
@@ -115,6 +116,10 @@ pnpm --filter grant-api test:e2e -- tests/e2e/scenarios/multi-tenant.e2e.test.ts
 pnpm --filter grant-api test:e2e -- tests/e2e/compliance/
 pnpm test:e2e:down
 ```
+
+## Social sign-in in E2E
+
+The E2E stack runs a stub identity provider (`apps/api/tests/e2e/stub-idp/server.mjs`, service `stub-idp` in `docker-compose.e2e.yml`) behind the API's `GOOGLE_*_URL` and `GITHUB_*_URL` settings, so the Google and GitHub callbacks run end to end without a real IdP. It is stateless: the authorization code a test sends to `/api/auth/{google,github}/callback` is the base64url JSON profile the IdP should assert (Google `{ sub, email, email_verified, hd? }`, GitHub `{ id, login, emails: [{ email, primary, verified }] }`). Start the flow with `GET /api/auth/{provider}` for its `state`, then call the callback with that `state` and the encoded profile; `socialSignIn` in `imported-identity-claim.e2e.test.ts` does both.
 
 ## MFA testing
 

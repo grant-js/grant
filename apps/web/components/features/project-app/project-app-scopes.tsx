@@ -15,11 +15,13 @@ import {
   DETAIL_CHECKBOX_COLUMN,
   DETAIL_CHECKBOX_SKELETON,
   DETAIL_CONTENT_COLUMN_CLASS,
+  DETAIL_ENTITY_LINK_SKELETON,
   DETAIL_ICON_COLUMN,
   DETAIL_ICON_SKELETON,
   DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
   DETAIL_TEXT_COLUMN,
   DetailAttachmentFilterToggle,
+  detailEntityLinkColumn,
   DetailTableCheckboxCell,
   DetailTableIconCell,
   FeatureModuleCard,
@@ -238,6 +240,11 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
         <span className="text-sm text-muted-foreground">{scopeSlug.description ?? '—'}</span>
       ),
     },
+    detailEntityLinkColumn<ScopeSlugOption>(
+      'permission',
+      (scopeSlug) => scopeSlug.permissionId,
+      (scopeSlug) => scopeSlug.name
+    ),
   ];
 
   const {
@@ -256,6 +263,7 @@ export function ProjectAppScopes({ projectApp }: ProjectAppScopesProps) {
       { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'scope', type: 'text', ...DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...DETAIL_TEXT_COLUMN },
+      DETAIL_ENTITY_LINK_SKELETON,
     ]),
     rowCount: 5,
   };
