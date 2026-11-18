@@ -11,7 +11,7 @@ Grounded on `main` at `94faabf6` (package version **v1.29.1**, after #733 "claim
 - **Slug**: `project-user-identity-link`
 - **Date**: 2026-11-18
 - **Author** (human / PM agent): PM agent, from an investigation with Alejandro
-- **Status**: approved
+- **Status**: ready-for-main
 
 ## Problem
 

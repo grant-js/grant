@@ -10,7 +10,7 @@ Grounded on `main` `94faabf6` (v1.29.1). Open-source language only — do not na
 
 - **Slug**: `project-user-identity-link`
 - **Story brief**: `plans/2026-11-18-project-user-identity-link-brief.md`
-- **Status**: approved
+- **Status**: integrated
 - **Story trunk**: `feat/project-user-identity-link` from `main`
 - **worktree_path**: one worktree for the story; never two writers in it
 
@@ -123,7 +123,7 @@ Check positions before writing a slice: `git for-each-ref --format='%(refname:sh
 ## Human gates
 
 - [x] Gate 2: Stack plan approved — Alejandro 2026-11-18.
-- [ ] Gate 3: Stack PRs merged into trunk (light / security-full as listed).
+- [x] Gate 3: Stack PRs merged into trunk 2026-11-18 (grant-js/grant#742, #744, #746, #748, #749).
 - [ ] Gate 4: Story → `main` deep review complete.
 
 ## Cleanup
