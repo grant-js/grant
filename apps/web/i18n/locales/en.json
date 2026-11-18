@@ -172,6 +172,12 @@
     "view": {
       "card": "Card View",
       "table": "Table View"
+    },
+    "openEntity": {
+      "role": "Open role {name}",
+      "group": "Open group {name}",
+      "permission": "Open permission {name}",
+      "resource": "Open resource {name}"
     }
   },
   "demo": {

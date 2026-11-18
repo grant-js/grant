@@ -13,7 +13,9 @@ import {
   DataTable,
   type DataTableColumnConfig,
   DataTableColumnToggle,
+  DETAIL_ENTITY_LINK_SKELETON,
   DetailAttachmentFilterToggle,
+  detailEntityLinkColumn,
   FeatureModuleCard,
   FieldInfoPopover,
   Pagination,
@@ -227,6 +229,11 @@ export function UserRoles({ user }: UserRolesProps) {
       className: USER_DETAIL_CONTENT_COLUMN_CLASS,
       render: (role: Role) => <ScrollBadges items={transformTagsToBadges(role.tags)} height={60} />,
     },
+    detailEntityLinkColumn<Role>(
+      'role',
+      (role) => role.id,
+      (role) => role.name
+    ),
   ];
 
   const {
@@ -245,6 +252,7 @@ export function UserRoles({ user }: UserRolesProps) {
       { key: 'name', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'description', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
       { key: 'tags', type: 'text', ...USER_DETAIL_TEXT_COLUMN },
+      DETAIL_ENTITY_LINK_SKELETON,
     ]),
     rowCount: 5,
   };
