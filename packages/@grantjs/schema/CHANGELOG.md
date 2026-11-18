@@ -1,5 +1,12 @@
 # @grantjs/schema
 
+## 1.30.0
+
+### Minor Changes
+
+- 8e93d56: Add the `linkProjectUserIdentity` mutation and its `LinkProjectUserIdentityInput` (organization project scope only): link a project member that cannot sign in to the existing identity of the organization that holds an email address. That identity takes over the member's membership of the project, and the member is retired. Publishes `project.user_identity_linked`, never a removal or deletion event.
+- 8e93d56: Add the webhook-only `project.user_identity_linked` event: a project member was replaced by the existing identity that holds an email address. `data.after` carries `projectId`, `fromUserId` and `toUserId` only, never the address or an import key; it is not a removal.
+
 ## 1.29.3
 
 No changes in this release.
