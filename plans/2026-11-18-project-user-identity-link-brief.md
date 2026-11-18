@@ -11,7 +11,7 @@ Grounded on `main` at `94faabf6` (package version **v1.29.1**, after #733 "claim
 - **Slug**: `project-user-identity-link`
 - **Date**: 2026-11-18
 - **Author** (human / PM agent): PM agent, from an investigation with Alejandro
-- **Status**: draft
+- **Status**: approved
 
 ## Problem
 
@@ -64,11 +64,11 @@ Every table involved exists; the link re-points `user_id` on existing rows. If a
 - **Legacy mirror** (importer repository): handle `project.user_identity_linked` as a re-pairing (`fromUserId` → `toUserId`), not an offboarding. Until it does, ignoring the event is safe: the next state read pairs Y with the key through the moved membership marker and `cdmSource.legacy.id`. Separate PR, after this story's API slice.
 - **Importer prevention:** keyed duplicates keep being created for sources whose address is invalid or shared within one environment. A `grantUserId` hint cannot repair an existing duplicate (the key already resolves to X → "names another user than the one already imported under this key"); it only prevents new ones. Separate story.
 
-## Open questions for Gate 1
+## Gate 1 decisions (Alejandro, 2026-11-18)
 
-1. **Notify Y?** Send the person a notice (no link) that they were added to the project, like the previous-address notice of set-email. Recommended: yes, post-commit, failure logged only.
-2. **Soft-delete X, or keep X as an orphan without the marker?** Recommended: soft-delete when no membership is left, so the duplicate stops showing in organization lists. Needs the slice to confirm organization lists filter deleted users.
-3. **AccountProject scope.** Recommended: out (no organization to confine Y to). Revisit if asked.
+1. **Notify Y: yes.** A notice (no link) that they were added to the project, like the previous-address notice of set-email: sent after commit, a failed send is logged and never fails the mutation.
+2. **Soft-delete X: yes**, when no live project membership is left, so the duplicate stops showing in organization lists. Slice 3 confirms organization lists filter deleted users.
+3. **AccountProject scope: out** (no organization to confine Y to). Revisit if asked.
 
 ## Non-goals
 
@@ -97,4 +97,5 @@ Project Manager, Principal Engineer, Senior Backend, Senior Frontend, Senior QA,
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until a human confirms before stack planning.
+- [x] Gate 1: Story brief approved — Alejandro 2026-11-18, with the recommended decisions above. Gates 1–2 approved together.
+- [ ] Gate 4: Story → `main` — not opened; agents do not merge.

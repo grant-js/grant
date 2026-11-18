@@ -2,7 +2,7 @@
 
 Copy of Grant template `docs/contributing/templates/stack-plan.md`. Principal Engineer owns this artifact. Requires an approved story brief.
 
-Story brief: [2026-11-18-project-user-identity-link-brief.md](./2026-11-18-project-user-identity-link-brief.md). Draft, presented with the brief; Gate 2 is not passed until Alejandro approves both.
+Story brief: [2026-11-18-project-user-identity-link-brief.md](./2026-11-18-project-user-identity-link-brief.md). Gates 1–2 approved by Alejandro 2026-11-18.
 
 Grounded on `main` `94faabf6` (v1.29.1). Open-source language only — do not name customer tenants.
 
@@ -10,7 +10,7 @@ Grounded on `main` `94faabf6` (v1.29.1). Open-source language only — do not na
 
 - **Slug**: `project-user-identity-link`
 - **Story brief**: `plans/2026-11-18-project-user-identity-link-brief.md`
-- **Status**: draft
+- **Status**: approved
 - **Story trunk**: `feat/project-user-identity-link` from `main`
 - **worktree_path**: one worktree for the story; never two writers in it
 
@@ -103,7 +103,7 @@ Check positions before writing a slice: `git for-each-ref --format='%(refname:sh
 
 ### 4 — API transport (security-full)
 
-- Files: `apps/api/src/handlers/users.handler.ts` (`linkProjectUserIdentity`, scope check, post-commit notice to Y if Gate 1 says yes), `apps/api/src/graphql/resolvers/users/mutations/` + `mutations.ts` (`requireEmailThenMfaGraphQL`, `ProjectUser` + `LinkIdentity`), `apps/api/src/rest/routes/users.routes.ts` / `schemas` / `openapi` (`POST /api/users/:id/link-identity`), `apps/api/src/lib/graphql-auth-rate-limit.lib.ts` and `middleware/rate-limit.middleware.ts` (count in the set-email bucket), docs `events-webhooks-notifications.md`, `cdm-import-export.md`, `security.md` (rate-limit table). Patch `grant-api`.
+- Files: `apps/api/src/handlers/users.handler.ts` (`linkProjectUserIdentity`, scope check, post-commit notice to Y (Gate 1 decision 1)), `apps/api/src/graphql/resolvers/users/mutations/` + `mutations.ts` (`requireEmailThenMfaGraphQL`, `ProjectUser` + `LinkIdentity`), `apps/api/src/rest/routes/users.routes.ts` / `schemas` / `openapi` (`POST /api/users/:id/link-identity`), `apps/api/src/lib/graphql-auth-rate-limit.lib.ts` and `middleware/rate-limit.middleware.ts` (count in the set-email bucket), docs `events-webhooks-notifications.md`, `cdm-import-export.md`, `security.md` (rate-limit table). Patch `grant-api`.
 - e2e (`pnpm test:e2e`): Owner/Admin allowed; Dev/Viewer denied; Dev allowed once granted; non-member target 404; out-of-organization holder gives the same conflict as set-email; REST and GraphQL parity; the 21st attempt in the window is 429.
 
 ### 5 — Web (light)
@@ -119,7 +119,7 @@ Check positions before writing a slice: `git for-each-ref --format='%(refname:sh
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approved — no implementation until a human confirms.
+- [x] Gate 2: Stack plan approved — Alejandro 2026-11-18.
 - [ ] Gate 3: Stack PRs merged into trunk (light / security-full as listed).
 - [ ] Gate 4: Story → `main` deep review complete.
 
