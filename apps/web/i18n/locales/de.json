@@ -959,6 +959,14 @@
       "cancel": "Abbrechen",
       "updating": "Wird gespeichert..."
     },
+    "linkIdentityDialog": {
+      "title": "Mit dem bestehenden Benutzer verknüpfen?",
+      "description": "Die Adresse {email} gehört einem bestehenden Benutzer Ihrer Organisation, der nicht in diesem Projekt ist.",
+      "consequences": "Dieser Benutzer übernimmt den Platz dieses Projektbenutzers: Rollen, Gruppen, Berechtigungen, API-Schlüssel und das Projektpasswort gehen auf ihn über, und dieser Projektbenutzer wird entfernt. Nur dieses Projekt ändert sich, und er erhält eine E-Mail darüber.",
+      "confirm": "Benutzer verknüpfen",
+      "cancel": "Abbrechen",
+      "linking": "Wird verknüpft..."
+    },
     "setPasswordDialog": {
       "title": "Benutzerpasswort festlegen",
       "description": "Wählen Sie ein neues Passwort für diesen Benutzer. Es ersetzt das bisherige Passwort und meldet den Benutzer in den Apps dieses Projekts ab. Teilen Sie es ihm über einen sicheren Kanal mit.",
@@ -977,6 +985,9 @@
       "deleteError": "Benutzer konnte nicht gelöscht werden",
       "setEmailSuccess": "E-Mail festgelegt",
       "setEmailError": "E-Mail konnte nicht festgelegt werden",
+      "setEmailConflict": "Ein anderer Benutzer hat diese E-Mail-Adresse bereits.",
+      "linkIdentitySuccess": "Projektbenutzer mit dem bestehenden Benutzer verknüpft",
+      "linkIdentityError": "Projektbenutzer konnte nicht verknüpft werden",
       "setPasswordSuccess": "Passwort festgelegt",
       "setPasswordError": "Passwort konnte nicht festgelegt werden",
       "uploadPictureSuccess": "Profilbild hochgeladen",
@@ -2424,6 +2435,7 @@
         "query": "Projektbenutzer abfragen",
         "setEmail": "Projektbenutzer-E-Mail festlegen",
         "setPassword": "Projektbenutzer-Passwort festlegen",
+        "linkIdentity": "Identität von Projektbenutzer verknüpfen",
         "exportCredentials": "Projektbenutzer-Zugangsdaten exportieren"
       },
       "userSession": {
@@ -2542,6 +2554,7 @@
         "query": "Berechtigung zum Abfragen von Projektbenutzern",
         "setEmail": "Berechtigung zum Festlegen der E-Mail eines Projektbenutzers",
         "setPassword": "Berechtigung zum Festlegen des Passworts eines Projektbenutzers",
+        "linkIdentity": "Berechtigung, einen Projektbenutzer mit dem bestehenden Benutzer zu verknüpfen, dem eine E-Mail-Adresse gehört",
         "exportCredentials": "Berechtigung zum Exportieren des Passwort-Hashs eines Projektbenutzers zur Migration in ein anderes System"
       },
       "userSession": {
@@ -4027,6 +4040,7 @@
         "project": {
           "user_added": "Projektmitglied hinzugefügt",
           "user_password_set": "Passwort des Projektmitglieds gesetzt",
+          "user_identity_linked": "Projektmitglied mit bestehendem Benutzer verknüpft",
           "user_removed": "Projektmitglied entfernt",
           "user_profile_updated": "Projektmitgliedsprofil aktualisiert",
           "user_updated": "Projektmitglied aktualisiert",

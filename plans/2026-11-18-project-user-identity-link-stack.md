@@ -112,6 +112,7 @@ Check positions before writing a slice: `git for-each-ref --format='%(refname:sh
 
 - Files: `apps/web/hooks/users/use-user-mutations.ts` (`linkProjectUserIdentity`), `apps/web/components/features/users/user-set-email-dialog.tsx` (on `CONFLICT`, a confirm step gated by `useGrant(ProjectUser, LinkIdentity)`; otherwise a clearer message), i18n `en` + `de` (`users` namespace and the permission picker label). Hooks only; components never call Apollo directly.
 - Check in the running app (`run` skill): conflict → link → the project list shows one row, with the address, roles and display name of the former row.
+- **Implemented (2026-11-18):** the in-browser check was not run (the dashboard would need the e2e stack's API, CORS and cookies wired up for one check). Covered instead by a component test of the dialog (conflict opens the confirm step, confirm links with the typed address, cancel links nothing, no offer without the permission or outside an organization project) and by the API e2e scenario of slice 4.
 
 ## Dependencies / notes
 
