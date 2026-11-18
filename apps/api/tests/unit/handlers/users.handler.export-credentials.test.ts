@@ -61,6 +61,7 @@ function createHandler(
     {} as never,
     { exportCredentials, getPasswordCredentialSummaries, getApiKeyCredentialSummaries } as never,
     {} as never,
+    {} as never,
     {} as never
   );
   return {

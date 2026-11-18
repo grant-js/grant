@@ -57,6 +57,12 @@
     "message": "Ein Administrator hat die E-Mail-Adresse geändert, mit der Sie sich bei {{appName}} anmelden. Diese Adresse ist nicht mehr die Anmelde-E-Mail für dieses Konto.",
     "warning": "Wenn Sie diese Änderung nicht erwartet haben, wenden Sie sich an den Administrator von {{appName}}."
   },
+  "projectIdentityLinked": {
+    "subject": "Sie können sich jetzt mit dieser E-Mail bei {{appName}} anmelden",
+    "defaultAppName": "die App",
+    "message": "Ein Administrator von {{appName}} hat ein bestehendes Konto in dieser App mit dieser E-Mail-Adresse verknüpft. Sie können sich jetzt mit dieser Adresse bei {{appName}} anmelden.",
+    "warning": "Wenn Sie dies nicht erwartet haben, wenden Sie sich an den Administrator von {{appName}}."
+  },
   "notification": {
     "common": {
       "greeting": "Hallo,",

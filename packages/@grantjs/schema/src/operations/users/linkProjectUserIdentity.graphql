@@ -1,0 +1,9 @@
+mutation LinkProjectUserIdentity($input: LinkProjectUserIdentityInput!) {
+  linkProjectUserIdentity(input: $input) {
+    id
+    name
+    metadata
+    createdAt
+    updatedAt
+  }
+}

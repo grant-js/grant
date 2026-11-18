@@ -65,6 +65,7 @@ function createHandler(pageUsers: User[]) {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     {} as never
   );
 

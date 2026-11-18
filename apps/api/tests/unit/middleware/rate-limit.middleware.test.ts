@@ -669,6 +669,34 @@ describe('rateLimitMiddleware', () => {
       expect(res.status).toHaveBeenCalledWith(429);
     });
 
+    it('counts identity links, REST and GraphQL, in the same set-email bucket', async () => {
+      mockSecurity.rateLimitSetEmailMax = 3;
+      const res = createMockRes();
+      const linkRest = scopedReq(orgA, {
+        method: 'POST',
+        path: '/api/users/u1/link-identity',
+        body: { email: 'a@b.c' },
+      });
+      const linkGraphql = scopedReq(orgA, {
+        method: 'POST',
+        path: '/graphql',
+        body: {
+          query:
+            'mutation L($i: LinkProjectUserIdentityInput!) { linkProjectUserIdentity(input: $i) { id } }',
+          variables: { i: { userId: 'u', email: 'a@b.c', scope: { tenant: 'project', id: 'p' } } },
+        },
+      });
+
+      await tenantMiddleware(scopedReq(orgA), res, next);
+      await tenantMiddleware(linkRest, res, next);
+      await tenantMiddleware(linkGraphql, res, next);
+      expect(next).toHaveBeenCalledTimes(3);
+
+      await tenantMiddleware(linkRest, res, next);
+      expect(next).toHaveBeenCalledTimes(3);
+      expect(res.status).toHaveBeenCalledWith(429);
+    });
+
     it('does not count a GraphQL createUser without an email, or an unrelated mutation', async () => {
       mockSecurity.rateLimitSetEmailMax = 1;
       const res = createMockRes();

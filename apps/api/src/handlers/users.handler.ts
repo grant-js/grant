@@ -11,6 +11,7 @@ import type {
   IProjectService,
   IProjectUserCredentialExportService,
   IProjectUserGroupService,
+  IProjectUserIdentityLinkService,
   IProjectUserPermissionService,
   IProjectUserService,
   ITransactionalConnection,
@@ -27,6 +28,7 @@ import {
   CredentialKind,
   MutationCreateUserArgs,
   MutationDeleteUserArgs,
+  MutationLinkProjectUserIdentityArgs,
   MutationSetProjectUserEmailArgs,
   MutationSetProjectUserPasswordArgs,
   MutationUpdateUserArgs,
@@ -62,6 +64,11 @@ import {
   mergeEffectiveUserProfileForProject,
   toMetadataRecord,
 } from '@/lib/effective-project-user-metadata.lib';
+import {
+  getProjectIdentityLinkedEmailHtml,
+  getProjectIdentityLinkedEmailSubject,
+  getProjectIdentityLinkedEmailText,
+} from '@/lib/email/templates/project-identity-linked.template';
 import {
   AuthenticationError,
   AuthorizationError,
@@ -118,6 +125,7 @@ export class UserHandler extends CacheHandler {
     private readonly credentialExports: IProjectUserCredentialExportService,
     private readonly email: IEmailService,
     private readonly projects: IProjectService,
+    private readonly identityLinks: IProjectUserIdentityLinkService,
     private readonly scheduleAfterCommit?: ScheduleAfterCommit
   ) {
     super(cache, scopeServices);
@@ -531,6 +539,102 @@ export class UserHandler extends CacheHandler {
       await this.sendPreviousEmailNotice({ previousEmail, projectId, userId });
     }
     return user;
+  }
+
+  /**
+   * `linkProjectUserIdentity` (`ProjectUser:LinkIdentity`, enforced by the transport, which
+   * also refuses an input scope that differs from the authorized one). Organization projects
+   * only. The service checks every precondition before any write and runs the moves, the
+   * retirement and the one event in this transaction (`ProjectUserIdentityLinkService`).
+   * Afterwards: the caches of both users, and a notice to the identity's address (queued until
+   * commit, best-effort). Returns the identity that now holds the membership.
+   */
+  public async linkProjectUserIdentity(params: MutationLinkProjectUserIdentityArgs): Promise<User> {
+    const { userId, email, scope } = params.input;
+    if (scope.tenant !== Tenant.OrganizationProject) {
+      throw new ValidationError('An identity can only be linked in an organization project scope');
+    }
+    const { organizationId, projectId } = this.extractOrganizationProjectFromScope(scope);
+
+    const { result, user } = await this.db.withTransaction(async (tx: Transaction) => {
+      const result = await this.identityLinks.linkIdentity(
+        { organizationId, projectId, userId, email },
+        tx
+      );
+      const page = await this.users.getUsers({ ids: [result.toUserId], limit: 1 }, tx);
+      const user = page.users[0];
+      if (!user) {
+        throw new NotFoundError('User');
+      }
+      return { result, user };
+    });
+
+    if (result.linked) {
+      await this.removeUserIdFromScopeCache(scope, result.fromUserId);
+      await this.addUserIdToScopeCache(scope, result.toUserId);
+      await this.invalidateAuthorizationResultsForUser(result.fromUserId);
+      await this.invalidateAuthorizationResultsForUser(result.toUserId);
+      await this.invalidatePermissionsCacheForAllScopes(scope);
+      await this.invalidateRolesCacheForScope({
+        tenant: Tenant.ProjectUser,
+        id: `${projectId}:${result.toUserId}`,
+      });
+      await this.sendLinkedIdentityNotice({ email, projectId, userId: result.toUserId });
+    }
+    return user;
+  }
+
+  /**
+   * Tell the identity's address that an operator linked a project member to it. Same shape as
+   * the previous-address notice: queued until commit, the app name read now (the request
+   * transaction is gone when the callback runs), a failure logged with ids only.
+   */
+  private async sendLinkedIdentityNotice(params: {
+    email: string;
+    projectId: string;
+    userId: string;
+  }): Promise<void> {
+    const { projectId, userId } = params;
+    const to = params.email.trim().toLowerCase();
+    const logFailure = (error: unknown, what: string): void => {
+      this.logger.warn(
+        {
+          projectId,
+          userId,
+          errorName: error instanceof Error ? error.name : typeof error,
+          errorCode: (error as { code?: unknown } | null)?.code,
+        },
+        what
+      );
+    };
+
+    const appName = await this.projects
+      .getProjects({ ids: [projectId], limit: 1 })
+      .then((page) => page.projects[0]?.name || undefined)
+      .catch((error: unknown) => {
+        logFailure(error, 'Could not read the project name for the linked-identity notice');
+        return undefined;
+      });
+
+    const send = async (): Promise<void> => {
+      try {
+        const notice = appName ? { appName } : {};
+        await this.email.sendNotification({
+          to,
+          subject: getProjectIdentityLinkedEmailSubject(notice),
+          text: getProjectIdentityLinkedEmailText(notice),
+          html: await getProjectIdentityLinkedEmailHtml(notice),
+        });
+      } catch (error) {
+        logFailure(error, 'Failed to send the linked-identity notice');
+      }
+    };
+
+    if (this.scheduleAfterCommit) {
+      this.scheduleAfterCommit(send, 'project-identity-linked-notice');
+    } else {
+      await send();
+    }
   }
 
   /**

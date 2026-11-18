@@ -306,6 +306,7 @@ export type ResolversTypes = ResolversObject<{
   IsAuthorizedInput: Types.IsAuthorizedInput;
   IsAuthorizedPermissionInput: Types.IsAuthorizedPermissionInput;
   JSON: ResolverTypeWrapper<Types.Scalars['JSON']['output']>;
+  LinkProjectUserIdentityInput: Types.LinkProjectUserIdentityInput;
   LoginInput: Types.LoginInput;
   LoginResponse: ResolverTypeWrapper<Types.LoginResponse>;
   LogoutMyUserResponse: ResolverTypeWrapper<Types.LogoutMyUserResponse>;
@@ -727,6 +728,7 @@ export type ResolversParentTypes = ResolversObject<{
   IsAuthorizedInput: Types.IsAuthorizedInput;
   IsAuthorizedPermissionInput: Types.IsAuthorizedPermissionInput;
   JSON: Types.Scalars['JSON']['output'];
+  LinkProjectUserIdentityInput: Types.LinkProjectUserIdentityInput;
   LoginInput: Types.LoginInput;
   LoginResponse: Types.LoginResponse;
   LogoutMyUserResponse: Types.LogoutMyUserResponse;
@@ -1866,6 +1868,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<Types.MutationInviteMemberArgs, 'input'>
+  >;
+  linkProjectUserIdentity?: Resolver<
+    ResolversTypes['User'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationLinkProjectUserIdentityArgs, 'input'>
   >;
   login?: Resolver<
     ResolversTypes['LoginResponse'],
