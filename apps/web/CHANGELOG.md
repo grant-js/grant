@@ -1,5 +1,16 @@
 # grant-web
 
+## 1.29.2
+
+### Patch Changes
+
+- 1148303: Extend the detail-page go-to links to the remaining relationships that have a detail page. A permission's resource now has an open button next to it inside a project (resources have no organization-level page, so none shows there). On a scope-based API key, rows in the Project scopes card link to that project permission; the Grant scopes card and the permissions of a role-based key stay without links. On an app, a scope row links to its project permission when exactly one permission has that resource and action; when several share it, the row shows no link rather than guess.
+- 1148303: Add a go-to link to the relationship tables of the dashboard detail pages. The roles, groups and permissions tables on a user, the groups and permissions tables on a role, and the permissions table on a group now end in the same open button the list pages use, which leads to that role, group or permission's own detail page. It is a regular link, so Cmd/Ctrl-click or middle-click opens it in a new tab, and each one is labelled with the entity type and name for screen readers. The column always stays last and is not offered in the column picker.
+- @grantjs/client@1.29.2
+  - @grantjs/schema@1.29.2
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.29.1
 
 ### Patch Changes
