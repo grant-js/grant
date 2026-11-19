@@ -18,6 +18,7 @@ import {
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
 } from '@/lib/entity-list';
+import { getUserEmail } from '@/lib/user-email';
 import { getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -80,6 +81,7 @@ export function UserCards() {
               size: 'lg',
             }}
             title={user.name}
+            description={getUserEmail(user)}
             color={primaryTag?.color as TagColor | undefined}
             actions={<UserActions user={user} />}
           />
