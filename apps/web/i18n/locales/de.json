@@ -142,6 +142,7 @@
     "emptyElements": "Keine {title} zum Anzeigen",
     "loading": "Wird geladen...",
     "noItemsAvailable": "Keine Einträge verfügbar",
+    "noActionsAvailable": "Keine Aktionen verfügbar",
     "noTagsAvailable": "Keine Tags verfügbar",
     "tagCount": "{count, plural, =0 {Keine Tags} one {# Tag} other {# Tags}}",
     "yes": "Ja",

@@ -65,7 +65,6 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
   if (requiresEmailVerification) return null;
 
   const permissionsResolved = hasBeenOpened && !isRevokeLoading && !isDeleteLoading;
-  if (permissionsResolved && !canRevoke && !canDelete) return null;
 
   const handleRevokeClick = () => {
     if (apiKey.isRevoked) return;
@@ -109,9 +108,7 @@ export function ApiKeyActions({ apiKey, scope }: ApiKeyActionsProps) {
     });
   }
 
-  const isLoading =
-    hasBeenOpened &&
-    (isRevokeLoading || isDeleteLoading || (isProjectKey && isCohortLoading && !cohort));
+  const isLoading = !permissionsResolved || (isProjectKey && isCohortLoading && !cohort);
 
   return (
     <>

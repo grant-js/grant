@@ -15,7 +15,7 @@ Grounded on `main` at `a8d7ed3b` (v1.30.0). Open-source language only. One patch
 
 ## Objective
 
-Five dashboard improvements to the entity lists (cards and table), shipped together as one patch release: the identity-link offer appears only where it can succeed, entity menus never vanish or spin, a user's email is visible at a glance, card body fields can be shown, hidden and reordered like table columns, and relationship count chips preview what they count.
+Six dashboard improvements to the entity lists (cards and table), shipped together as one patch release: the identity-link offer appears only where it can succeed, entity menus never vanish or spin, a user's email is visible at a glance, card body fields can be shown, hidden and reordered like table columns, and relationship count chips preview what they count.
 
 ## Acceptance criteria
 
@@ -24,6 +24,7 @@ Five dashboard improvements to the entity lists (cards and table), shipped toget
 - [ ] **C. User email visible.** Users cards show the Email method's address as the card header's second line (`CardHeader.description`), when the user has one. The users table gains an **Email** column (togglable and orderable like the others, after Name by default). Users with only GitHub/Google show nothing there; the auth-method badges stay as they are.
 - [ ] **D. Card body fields: show, hide, reorder.** In card view, the toolbar's column button manages the **body** fields of the cards: same menu, same persistence (per list, per browser, `localStorage`), same reset. Header (avatar, title, subtitle, actions) and footer (audit, navigation) are fixed and not listed. `CardBody` items get a stable `key`. All 14 card grids adopt it.
 - [ ] **E. Relationship previews on count chips.** Hovering (after a short delay) or focusing a relationship count chip (e.g. "3 roles") fetches that one entity's relationship and shows it in a popover: up to 10 names, each a link to its detail page, and "View all" to the entity's detail page when there are more. Lazy: nothing is fetched until hover or focus; a result is cached for the session (Apollo cache). Tap opens it on touch devices. A permission or network failure shows a short "Not available" line, never an error toast. Scope: the counts on users (roles, groups, permissions, tags), roles (groups, permissions, tags), groups (permissions, tags), permissions (tags).
+- [ ] **F. Breadcrumbs show the full path on every dashboard page** (added by Alejandro 2026-11-19, during slice 2). `components/common/breadcrumb.tsx` drops any segment it has no rule for. Found by comparing the route tree with the rules: the API key detail (`api-keys/[apiKeyId]`, organization and account projects) has no crumb for the key, so the path ends at "API Keys"; `apps/[appId]/test` drops "Test"; `branding`, `oauth-connections` and `project-apps` have no label; account-scoped project paths have no crumb for the account. Fix the rules, and add a test that walks every `page.tsx` under `app/[locale]/dashboard` and fails when a segment yields no crumb, so a new route cannot regress silently. en + de.
 - [ ] **Tests + docs + changesets.** Component tests per slice; no API change except A's message. Changesets: patch `grant-web`, patch `grant-api` (A's message), patch `@grantjs/schema` if E adds operation documents (no SDL change).
 
 ## Non-goals

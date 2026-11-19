@@ -261,13 +261,13 @@ export function MemberActions({ member }: MemberActionsProps) {
   // Block all member actions if email not verified or current user
   if (isCurrentUser || !canManageMember || !isEmailVerified) return null;
 
-  // Once all permission checks have resolved, hide if no actions are available
+  // Until the permission checks resolve, the open menu shows a loading row; with none
+  // allowed it says "No actions available" (`Actions`), it is never hidden.
   const allGrantsLoading =
     isUpdateLoading || isRemoveLoading || isRevokeLoading || isResendLoading || isRenewLoading;
   const permissionsResolved = hasBeenOpened && !allGrantsLoading;
-  if (permissionsResolved && actions.length === 0) return null;
 
-  const isLoading = hasBeenOpened && allGrantsLoading;
+  const isLoading = !permissionsResolved;
 
   return (
     <>
