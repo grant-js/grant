@@ -14,6 +14,8 @@ import type {
 interface DataTableColumnsState {
   columnToggleItems: DataTableColumnToggleItem[];
   kind: DataTableColumnToggleKind;
+  /** Who published the current picker, so a list that stops publishing clears only its own. */
+  owner: string | null;
   toggleColumnVisibility: ((key: string, visible: boolean) => void) | null;
   moveColumn: ((key: string, toIndex: number) => void) | null;
   resetColumns: (() => void) | null;
@@ -23,9 +25,11 @@ interface DataTableColumnsState {
     toggle: (key: string, visible: boolean) => void,
     reset: () => void,
     move: (key: string, toIndex: number) => void,
-    kind?: DataTableColumnToggleKind
+    kind?: DataTableColumnToggleKind,
+    owner?: string
   ) => void;
-  clearColumnToggle: () => void;
+  /** Clears the picker; with `owner`, only when that publisher still owns it. */
+  clearColumnToggle: (owner?: string) => void;
 }
 
 export const useDataTableColumnsStore = create<DataTableColumnsState>()(
@@ -33,26 +37,33 @@ export const useDataTableColumnsStore = create<DataTableColumnsState>()(
     (set) => ({
       columnToggleItems: [],
       kind: 'columns',
+      owner: null,
       toggleColumnVisibility: null,
       moveColumn: null,
       resetColumns: null,
 
-      setColumnToggle: (items, toggle, reset, move, kind = 'columns') =>
+      setColumnToggle: (items, toggle, reset, move, kind = 'columns', owner) =>
         set({
           columnToggleItems: items,
           kind,
+          owner: owner ?? null,
           toggleColumnVisibility: toggle,
           resetColumns: reset,
           moveColumn: move,
         }),
-      clearColumnToggle: () =>
-        set({
-          columnToggleItems: [],
-          kind: 'columns',
-          toggleColumnVisibility: null,
-          resetColumns: null,
-          moveColumn: null,
-        }),
+      clearColumnToggle: (owner) =>
+        set((state) =>
+          owner !== undefined && state.owner !== owner
+            ? state
+            : {
+                columnToggleItems: [],
+                kind: 'columns',
+                owner: null,
+                toggleColumnVisibility: null,
+                resetColumns: null,
+                moveColumn: null,
+              }
+        ),
     }),
     { name: 'grant-data-table-columns-store' }
   )

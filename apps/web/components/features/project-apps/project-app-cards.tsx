@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import type { ProjectApp, Tag } from '@grantjs/schema';
@@ -15,7 +16,7 @@ import {
   ScrollBadges,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
-import { useScopeFromParams } from '@/hooks/common';
+import { usePageCardFields, useScopeFromParams } from '@/hooks/common';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
@@ -27,6 +28,17 @@ import { ProjectAppSignUpStatusLabel } from './project-app-sign-up-status-label'
 export function ProjectAppCards() {
   const t = useTranslations('projectApps');
   const tCommon = useTranslations('common');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'clientId', label: t('table.clientId') },
+      { key: 'signUp', label: t('table.signUp') },
+      { key: 'enabledProviders', label: t('table.enabledProviders') },
+      { key: 'tags', label: t('table.tags') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'projectApps.list' });
   const scope = useScopeFromParams();
   const projectApps = useProjectAppsStore((state) => state.projectApps);
   const loading = useProjectAppsStore((state) => state.loading);
@@ -77,8 +89,9 @@ export function ProjectAppCards() {
       }}
       renderBody={(app: ProjectApp) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'clientId',
               label: {
                 icon: <Fingerprint className="h-3 w-3" />,
                 text: t('table.clientId'),
@@ -93,6 +106,7 @@ export function ProjectAppCards() {
               ),
             },
             {
+              key: 'signUp',
               label: {
                 icon: <UserPlus className="h-3 w-3" />,
                 text: t('table.signUp'),
@@ -100,6 +114,7 @@ export function ProjectAppCards() {
               value: <ProjectAppSignUpStatusLabel allowSignUp={app.allowSignUp} />,
             },
             {
+              key: 'enabledProviders',
               label: {
                 icon: <LogIn className="h-3 w-3" />,
                 text: t('table.enabledProviders'),
@@ -117,6 +132,7 @@ export function ProjectAppCards() {
               ),
             },
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
@@ -127,7 +143,7 @@ export function ProjectAppCards() {
                 </Badge>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(app: ProjectApp) => (

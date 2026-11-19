@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ApiKey } from '@grantjs/schema';
 import { Calendar, KeyRound, Shield } from 'lucide-react';
@@ -11,7 +12,7 @@ import {
   CopyToClipboard,
   EntityNavigationButton,
 } from '@/components/common';
-import { useScopeFromParams } from '@/hooks/common';
+import { usePageCardFields, useScopeFromParams } from '@/hooks/common';
 import { isProjectApiKeyScope } from '@/lib/api-key-grants';
 import { useApiKeysStore } from '@/stores/api-keys.store';
 
@@ -56,6 +57,19 @@ export function ApiKeyCards() {
 
   const showRole = isProjectApiKeyScope(scope);
 
+  // Role is a field only where keys carry a grant (project scopes).
+  const cardFields = useMemo(
+    () => [
+      { key: 'clientId', label: t('table.clientId') },
+      ...(showRole ? [{ key: 'role', label: t('table.role') }] : []),
+      { key: 'status', label: t('table.status') },
+      { key: 'expiresAt', label: t('table.expiresAt') },
+      { key: 'lastUsedAt', label: t('table.lastUsedAt') },
+    ],
+    [t, showRole]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'apiKeys.list' });
+
   if (!scope) return null;
 
   return (
@@ -88,8 +102,9 @@ export function ApiKeyCards() {
       )}
       renderBody={(apiKey: ApiKey) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'clientId',
               label: {
                 icon: <KeyRound className="h-3 w-3" />,
                 text: t('table.clientId'),
@@ -106,6 +121,7 @@ export function ApiKeyCards() {
             ...(showRole && (apiKey.role || apiKey.permissions)
               ? [
                   {
+                    key: 'role',
                     label: {
                       icon: <Shield className="h-3 w-3" />,
                       text: t('table.role'),
@@ -117,6 +133,7 @@ export function ApiKeyCards() {
                 ]
               : []),
             {
+              key: 'status',
               label: {
                 icon: <Calendar className="h-3 w-3" />,
                 text: t('table.status'),
@@ -136,6 +153,7 @@ export function ApiKeyCards() {
               ),
             },
             {
+              key: 'expiresAt',
               label: {
                 icon: <Calendar className="h-3 w-3" />,
                 text: t('table.expiresAt'),
@@ -147,6 +165,7 @@ export function ApiKeyCards() {
               ),
             },
             {
+              key: 'lastUsedAt',
               label: {
                 icon: <Calendar className="h-3 w-3" />,
                 text: t('table.lastUsedAt'),
@@ -157,7 +176,7 @@ export function ApiKeyCards() {
                 </span>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(apiKey: ApiKey) =>
