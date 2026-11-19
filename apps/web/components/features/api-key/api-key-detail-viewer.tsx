@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -7,6 +8,7 @@ import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout'
 import { useApiKey } from '@/hooks/api-keys';
 import { useScopeFromParams } from '@/hooks/common';
 import { isProjectApiKeyScope } from '@/lib/api-key-grants';
+import { useApiKeyStore } from '@/stores/api-key.store';
 
 import { ApiKeyGeneralCard } from './api-key-general-card';
 import { ApiKeyScopes } from './api-key-scopes';
@@ -18,6 +20,18 @@ export function ApiKeyDetailViewer() {
   const scope = useScopeFromParams();
 
   const { apiKey, loading, error, refetch } = useApiKey(scope, apiKeyId);
+
+  // The breadcrumb names the key once it is loaded (name, else client id).
+  const setCurrentApiKey = useApiKeyStore((state) => state.setCurrentApiKey);
+  const currentKey = apiKey
+    ? { id: apiKey.id, name: apiKey.name ?? null, clientId: apiKey.clientId }
+    : null;
+  useEffect(() => {
+    setCurrentApiKey(currentKey);
+    // currentKey is rebuilt every render; its fields are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setCurrentApiKey, currentKey?.id, currentKey?.name, currentKey?.clientId]);
+  useEffect(() => () => setCurrentApiKey(null), [setCurrentApiKey]);
 
   if (loading && !apiKey) {
     return (
