@@ -255,9 +255,9 @@ export interface LoadedCountChipProps {
 }
 
 /**
- * A count chip for a relationship the list already loads with each entity (the tags of
- * organizations, projects, resources and apps; an API key's permissions): the preview lists
- * those items, all of them, with nothing to fetch.
+ * A count chip for items the list already loads with each entity (the tags of organizations,
+ * projects, resources and apps; an API key's permissions; a resource's actions): the preview
+ * lists those items, all of them, with nothing to fetch.
  */
 export function LoadedCountChip({ items, count, linkTo, children }: LoadedCountChipProps) {
   const detailUrl = useDetailUrl();

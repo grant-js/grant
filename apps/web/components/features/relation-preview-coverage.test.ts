@@ -4,13 +4,20 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Every relationship count a list shows ("3 roles", "2 tags") previews what it counts on
- * hover. A count rendered in a plain badge looks the same but opens nothing, so each one is
+ * Every count a list shows of what an entity has ("3 roles", "2 tags", a resource's "6
+ * actions") previews what it counts on hover. A count rendered in a plain badge looks the same but opens nothing, so each one is
  * checked here, from the source: the element that wraps it must be a count chip.
  */
 
 const FEATURES = join(__dirname);
-const COUNT_KEYS = ['tagCount', 'roleCount', 'groupCount', 'permissionCount', 'permissionsCount'];
+const COUNT_KEYS = [
+  'tagCount',
+  'roleCount',
+  'groupCount',
+  'permissionCount',
+  'permissionsCount',
+  'actionCount',
+];
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

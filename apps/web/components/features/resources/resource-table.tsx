@@ -14,7 +14,6 @@ import {
   LoadedCountChip,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
   DATA_TABLE_AVATAR_COLUMN_WIDTH,
@@ -95,9 +94,12 @@ export function ResourceTable() {
       header: t('form.actions'),
       width: '120px',
       render: (resource: Resource) => (
-        <Badge variant="secondary">
+        <LoadedCountChip
+          items={resource.actions?.map((action) => ({ id: action, name: action }))}
+          count={resource.actions?.length ?? 0}
+        >
           {t('actionCount', { count: resource.actions?.length ?? 0 })}
-        </Badge>
+        </LoadedCountChip>
       ),
     },
     {

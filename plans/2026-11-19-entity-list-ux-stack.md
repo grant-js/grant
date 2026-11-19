@@ -75,7 +75,7 @@ Order: A first (smallest, closes the v1.30.0 gap); B before C–E because every 
 
 ### 8 — Previews everywhere (E, widened)
 
-- Added 2026-11-19 at Alejandro's request, after testing: slice 6 covered users, roles, groups and permissions only. The tag counts on organizations, projects, resources and project apps, and an API key's permissions, get a `LoadedCountChip` that previews items the list already loaded (no fetch). Preview names go through `translateNameKey`, so a key sent as `permissions.names.Group.Read` matches the catalogue's `group.read`. `relation-preview-coverage.test.ts` fails when a list renders a relationship count outside a chip.
+- Added 2026-11-19 at Alejandro's request, after testing: slice 6 covered users, roles, groups and permissions only. The tag counts on organizations, projects, resources and project apps, an API key's permissions and (not a relationship, a flat array on the entity) a resource's actions, get a `LoadedCountChip` that previews items the list already loaded (no fetch). Preview names go through `translateNameKey`, so a key sent as `permissions.names.Group.Read` matches the catalogue's `group.read`. `relation-preview-coverage.test.ts` fails when a list renders a relationship count outside a chip.
 
 ## Stack setup
 
