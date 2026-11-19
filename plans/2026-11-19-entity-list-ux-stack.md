@@ -37,6 +37,7 @@ Init `gh stack` with slice 1 only; `gh stack add` each next branch when it start
 | 4     | `feat/entity-list-ux-card-fields`      | prior slice           | D: card body field preferences (infra + users cards)       | Frontend   | light      |     |
 | 5     | `feat/entity-list-ux-card-fields-all`  | prior slice           | D: the other 13 card grids adopt it                        | Frontend   | light      |     |
 | 6     | `feat/entity-list-ux-relation-preview` | prior slice           | E: hover/focus previews on relationship count chips, links | Frontend   | light      |     |
+| 7     | `feat/entity-list-ux-breadcrumbs`      | prior slice           | F: breadcrumbs on every route, route-tree test             | Frontend   | light      |     |
 | final | `feat/entity-list-ux`                  | `main`                | integration                                                | Principal  | deep       |     |
 
 Order: A first (smallest, closes the v1.30.0 gap); B before C–E because every card header renders a menu; D's infra before its rollout; E last (largest, independent of D). **Collapse rules:** do not fold 4 into 5 (infra reviewable apart from 13 mechanical adoptions); do not fold E into D.
@@ -66,6 +67,10 @@ Order: A first (smallest, closes the v1.30.0 gap); B before C–E because every 
 ### 6 — Relationship previews (E)
 
 - `@grantjs/schema` operation documents, one per relationship (users: roles, groups, permissions, tags; roles: groups, permissions, tags; groups: permissions, tags; permissions: tags), each the existing list query with `ids: [id]`, `limit: 1` and the relationship's `id name` only. Hooks in `apps/web/hooks/` (`useLazyQuery`), one `RelationshipCountChip` component in `components/common` (HoverCard/Popover, 300 ms open delay, focus and tap, loading row, "Not available" on error, up to 10 links via `getEntityDetailUrl`, "View all"). Replace the count badges at the 21 sites. Tests: chip (no fetch before hover, fetch once, links, overflow, error). Changeset: patch `@grantjs/schema` (documents only).
+
+### 7 — Breadcrumbs (F)
+
+- Added 2026-11-19 at Alejandro's request, after Gate 2; independent of slices 1–6, placed last so earlier branches do not move. `components/common/breadcrumb.tsx`: an `apiKeyId` rule (label from the API key store's current key: name, else client id, else the id), a `test` segment label, `branding` / `oauth-connections` / `project-apps` labels, and an account crumb for `/dashboard/accounts/[accountId]`. Prefer turning the per-id branches into one table (param, list segment, store selector, label) over adding more copies. Test: enumerate the route tree, render the generator with stub params for each path, assert every segment after `dashboard` yields a crumb with a label that is not a raw id once the entity is in its store.
 
 ## Stack setup
 
