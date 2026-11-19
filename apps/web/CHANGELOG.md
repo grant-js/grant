@@ -1,5 +1,23 @@
 # grant-web
 
+## 1.30.1
+
+### Patch Changes
+
+- ed47089: Entity context menus no longer disappear or spin: the menu button is always there and enabled, the open menu shows a loading row while the user's permissions are checked, then the allowed actions, or "No actions available" when there are none. Applies to every entity list (API keys, groups, members, organizations, permissions, project apps, project sync jobs, projects, resources, roles, tags, users, webhooks).
+- ed47089: Breadcrumbs show the full path on every dashboard page: the API key detail page now ends with the key's name (it stopped at "API Keys"), projects under a personal account have a crumb for the account, and Notifications, Branding, OAuth connections and the settings sub-pages (Profile, Security, Preferences, Privacy) have their crumb. A crumb names the loaded entity only when it is the one in the path, so a previously opened entity's name no longer shows on another one's page.
+- ed47089: Every card view with body fields now lets you show, hide and reorder them from the toolbar's "Fields" picker: API keys, groups, members, permissions, project apps, project sync jobs, projects, resources, roles, signing keys and webhooks (organizations and tags cards have no body fields). The Project Apps and Signing Keys toolbars gain the picker. On the API keys page, switching between table and cards no longer leaves the picker empty.
+- ed47089: Card views can show, hide and reorder their cards' body fields, like table columns: in card view the toolbar's picker lists the fields (labelled "Fields"), and the choice is saved per list and browser, with a reset. The card header and footer stay fixed. Users cards first; the other lists follow.
+- ed47089: The set-email dialog offers to link a project user to the existing identity only when the user has no sign-in method of its own, the only case the link accepts. For a user with its own sign-in, the conflict now says that another user has the address and this user cannot be linked to them. The API's refusal for that case is reworded ("has its own sign-in, so it cannot be replaced by another identity").
+- ed47089: Every relationship count in the dashboard lists previews what it counts. The tag counts on organizations, projects, resources and project apps open on hover, focus or tap and list those tags, and an API key granted permissions shows "Permissions (n)" as a chip listing them, each linking to its page (cards, table and the key's detail page). A resource's "6 actions" lists its actions the same way. These lists already load the items, so nothing is fetched. Role and permission names in every preview are translated even when the API sends their key in a different casing (`permissions.names.Group.Read`). A test fails when a list shows a relationship count without a preview.
+- ed47089: Relationship count chips preview what they count. Hovering (after a short delay), focusing or tapping "3 roles" on a user, "2 groups" on a role, "6 permissions" on a group, or a tag count on users, roles, groups and permissions fetches that one entity's relationship and lists up to ten items, each linking to its detail page (tags as chips), with "View all" to the entity's page when there are more. Nothing is fetched before that. `@grantjs/schema` adds the four operation documents behind it (`GetUserRelationsPreview`, `GetRoleRelationsPreview`, `GetGroupRelationsPreview`, `GetPermissionRelationsPreview`); the GraphQL schema itself is unchanged.
+- ed47089: The users list shows a user's email at a glance: the address of their Email sign-in method is the second line of the user card header, and the users table has an Email column (after Name, and like any column it can be hidden or moved; someone with a saved column order finds it at the end). Users who sign in only with GitHub or Google show nothing there; the sign-in method badges are unchanged.
+- Updated dependencies [ed47089]
+  - @grantjs/schema@1.30.1
+  - @grantjs/client@1.30.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.30.0
 
 ### Patch Changes
