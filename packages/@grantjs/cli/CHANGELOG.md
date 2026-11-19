@@ -1,5 +1,9 @@
 # @grantjs/cli
 
+## 1.30.0
+
+No changes in this release.
+
 ## 1.29.3
 
 No changes in this release.

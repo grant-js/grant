@@ -3,6 +3,26 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.30.0
+
+### Platform
+
+**Docker images:** tagged `:1.30.0` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.30.0** (fixed group with apps).
+
+### Patch Changes
+
+- 8e93d56: Link a project user to the existing identity that holds an email address: `linkProjectUserIdentity` (GraphQL) and `POST /api/users/:id/link-identity` (REST), under the new `ProjectUser:LinkIdentity` permission (Owner and Admin by default), in organization projects. When set-email is refused because another member of the organization holds the address, the operator can make that identity take over the project user's membership of the project: roles, groups, permissions, tags, API keys, the project password and the CDM import marker move with the membership row, and the project user, which must not be able to sign in, is retired. The next CDM import resolves the same key or address to the identity and creates nobody. Publishes `project.user_identity_linked` (ids only) and no removal or deletion event; the identity's address gets a notice. Counts against the set-email rate-limit bucket.
+
+- 8e93d56: The project user set-email dialog offers to link the user to the existing identity when another member of the organization already holds the address (`ProjectUser:LinkIdentity`, organization projects): a confirm step explains what moves and that the project user is removed. Without the permission, the conflict now says that another user has the address. Labels for the `LinkIdentity` permission and the `project.user_identity_linked` webhook event, in English and German.
+
+### Minor Changes
+
+- 8e93d56: Add the `linkProjectUserIdentity` mutation and its `LinkProjectUserIdentityInput` (organization project scope only): link a project member that cannot sign in to the existing identity of the organization that holds an email address. That identity takes over the member's membership of the project, and the member is retired. Publishes `project.user_identity_linked`, never a removal or deletion event.
+
+- 8e93d56: Add the webhook-only `project.user_identity_linked` event: a project member was replaced by the existing identity that holds an email address. `data.after` carries `projectId`, `fromUserId` and `toUserId` only, never the address or an import key; it is not a removal.
+
 ## 1.29.3
 
 ### Platform
