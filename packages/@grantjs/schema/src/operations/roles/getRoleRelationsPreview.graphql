@@ -1,0 +1,21 @@
+query GetRoleRelationsPreview(
+  $scope: Scope!
+  $id: ID!
+  $withGroups: Boolean!
+  $withTags: Boolean!
+) {
+  roles(scope: $scope, ids: [$id], limit: 1) {
+    roles {
+      id
+      groups @include(if: $withGroups) {
+        id
+        name
+      }
+      tags @include(if: $withTags) {
+        id
+        name
+        color
+      }
+    }
+  }
+}

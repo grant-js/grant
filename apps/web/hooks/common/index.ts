@@ -11,4 +11,5 @@ export * from './use-project-grant-context';
 export * from './use-project-scope';
 export * from './use-project-tags';
 export * from './use-project-user-scope';
+export * from './use-relation-preview';
 export * from './use-scope-from-params';

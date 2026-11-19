@@ -1,0 +1,16 @@
+query GetUserRelationsPreview($scope: Scope!, $id: ID!, $withRoles: Boolean!, $withTags: Boolean!) {
+  users(scope: $scope, ids: [$id], limit: 1) {
+    users {
+      id
+      roles @include(if: $withRoles) {
+        id
+        name
+      }
+      tags @include(if: $withTags) {
+        id
+        name
+        color
+      }
+    }
+  }
+}

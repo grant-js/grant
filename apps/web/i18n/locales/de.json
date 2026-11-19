@@ -180,6 +180,11 @@
       "group": "Gruppe {name} öffnen",
       "permission": "Berechtigung {name} öffnen",
       "resource": "Ressource {name} öffnen"
+    },
+    "relationPreview": {
+      "notAvailable": "Nicht verfügbar",
+      "none": "Keine",
+      "viewAll": "Alle anzeigen ({count})"
     }
   },
   "demo": {

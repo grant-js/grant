@@ -11,6 +11,7 @@ import {
   CardGrid,
   CardHeader,
   EntityCreateNavigateButton,
+  RelationCountChip,
   ScrollBadges,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
@@ -110,7 +111,14 @@ export function UserCards() {
                 text: t('form.roles'),
               },
               value: (
-                <Badge variant="secondary">{t('roleCount', { count: user.roleCount ?? 0 })}</Badge>
+                <RelationCountChip
+                  entity="user"
+                  relation="roles"
+                  entityId={user.id}
+                  count={user.roleCount ?? 0}
+                >
+                  {t('roleCount', { count: user.roleCount ?? 0 })}
+                </RelationCountChip>
               ),
             },
             {
@@ -140,9 +148,14 @@ export function UserCards() {
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="user"
+                  relation="tags"
+                  entityId={user.id}
+                  count={getEntityTagCount(user)}
+                >
                   {tCommon('tagCount', { count: getEntityTagCount(user) })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
           ])}

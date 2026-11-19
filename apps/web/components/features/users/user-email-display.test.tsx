@@ -89,6 +89,13 @@ vi.mock('@/components/common', async () => {
 });
 
 vi.mock('@/hooks/common', () => ({
+  useRelationPreview: () => ({
+    load: vi.fn(),
+    items: undefined,
+    loading: false,
+    error: false,
+    called: false,
+  }),
   usePageCardFields: () => ({ arrange: <T,>(items: T[]) => items }),
   usePageTableColumnVisibility: (columns: unknown[]) => ({
     visibleColumns: columns,
