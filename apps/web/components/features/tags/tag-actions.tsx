@@ -58,7 +58,6 @@ export function TagActions({ tag }: TagActionsProps) {
   if (!scope || requiresEmailVerification) return null;
 
   const permissionsResolved = hasBeenOpened && !isUpdateLoading && !isDeleteLoading;
-  if (permissionsResolved && !canUpdate && !canDelete) return null;
 
   // Build actions array based on permissions
   const actions: ActionItem<Tag>[] = [];
@@ -82,7 +81,7 @@ export function TagActions({ tag }: TagActionsProps) {
     });
   }
 
-  const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading);
+  const isLoading = !permissionsResolved;
 
   return (
     <Actions entity={tag} actions={actions} onOpenChange={handleOpenChange} isLoading={isLoading} />

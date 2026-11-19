@@ -73,9 +73,6 @@ export function UserActions({ user }: UserActionsProps) {
     !isDeleteLoading &&
     !isSetEmailLoading &&
     !isSetPasswordLoading;
-  if (permissionsResolved && !canUpdate && !canDelete && !canSetEmail && !canSetPassword) {
-    return null;
-  }
 
   const handleEditClick = () => {
     setUserToEdit(user);
@@ -132,9 +129,7 @@ export function UserActions({ user }: UserActionsProps) {
     });
   }
 
-  const isLoading =
-    hasBeenOpened &&
-    (isUpdateLoading || isDeleteLoading || isSetEmailLoading || isSetPasswordLoading);
+  const isLoading = !permissionsResolved;
 
   return (
     <Actions

@@ -144,6 +144,7 @@
     "emptyElements": "No {title} to display",
     "loading": "Loading...",
     "noItemsAvailable": "No items available",
+    "noActionsAvailable": "No actions available",
     "noTagsAvailable": "No tags available",
     "tagCount": "{count, plural, =0 {No tags} one {# tag} other {# tags}}",
     "yes": "Yes",

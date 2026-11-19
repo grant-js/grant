@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 /**
@@ -81,5 +81,16 @@ describe('WebhookSubscriptionActions', () => {
 
     expect(trigger).toBeDefined();
     expect(trigger.hasAttribute('disabled')).toBe(false);
+  });
+
+  it('keeps the trigger once opened with nothing granted, and says no actions are available', () => {
+    render(<WebhookSubscriptionActions subscription={subscription} scope={scope} />);
+    fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' });
+
+    // Opened: the permissions are resolved (the mock answers at once) and grant nothing.
+    expect(screen.getByTestId('actions-empty')).toBeDefined();
+    expect(screen.queryByTestId('actions-loading')).toBeNull();
+    // Radix hides the page from assistive tech while the menu is open; the trigger is still there.
+    expect(screen.getAllByRole('button', { hidden: true }).length).toBeGreaterThan(0);
   });
 });
