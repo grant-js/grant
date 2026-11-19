@@ -2,7 +2,7 @@
 
 Copy of Grant template `docs/contributing/templates/stack-plan.md`. Principal Engineer owns this artifact. Requires an approved story brief.
 
-Story brief: [2026-11-19-entity-list-ux-brief.md](./2026-11-19-entity-list-ux-brief.md). Draft, presented with the brief.
+Story brief: [2026-11-19-entity-list-ux-brief.md](./2026-11-19-entity-list-ux-brief.md). Gates 1–2 approved by Alejandro 2026-11-19.
 
 Grounded on `main` `a8d7ed3b` (v1.30.0).
 
@@ -10,7 +10,7 @@ Grounded on `main` `a8d7ed3b` (v1.30.0).
 
 - **Slug**: `entity-list-ux`
 - **Story brief**: `plans/2026-11-19-entity-list-ux-brief.md`
-- **Status**: draft
+- **Status**: approved
 - **Story trunk**: `feat/entity-list-ux` from `main`
 - **worktree_path**: this session's worktree; one writer
 
@@ -73,7 +73,7 @@ As the template: trunk `feat/entity-list-ux` from `main`, `gh stack init --base 
 
 ## Human gates
 
-- [ ] Gate 2: Stack plan approved — no implementation until a human confirms.
+- [x] Gate 2: Stack plan approved — Alejandro 2026-11-19.
 - [ ] Gate 3: Stack PRs merged into trunk.
 - [ ] Gate 4: Story → `main` deep review complete.
 

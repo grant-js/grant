@@ -11,7 +11,7 @@ Grounded on `main` at `a8d7ed3b` (v1.30.0). Open-source language only. One patch
 - **Slug**: `entity-list-ux`
 - **Date**: 2026-11-19
 - **Author** (human / PM agent): PM agent, from Alejandro's feedback on v1.30.0
-- **Status**: draft
+- **Status**: approved
 
 ## Objective
 
@@ -49,14 +49,15 @@ Five dashboard improvements to the entity lists (cards and table), shipped toget
 
 Project Manager, Principal Engineer, Senior Frontend, Senior Backend (A's message, E's operation documents), Senior QA, Verifier.
 
-## Open questions for Gate 1
+## Gate 1 decisions (Alejandro, 2026-11-19)
 
-1. **A:** you wrote that _set password_ should not be offered for users with an Email method; we read it as the **link offer** (set-email does change an existing address). Confirm, or say if you meant hiding _Set email_ / _Set password_ too.
-2. **B:** hidden forbidden actions plus "No actions available" (recommended), rather than disabled items.
-3. **D:** all 14 card grids in this bundle (recommended, mechanical once the infra exists), or users first.
-4. **E:** the relationship list in E's scope, hover with delay plus focus and tap (recommended), and 10 items before "View all".
-5. **Release:** E's new operation documents are additive exports of `@grantjs/schema`; we propose a **patch** changeset (no SDL change) to keep the bundle one patch release. Say if you want **minor**.
+1. **A:** the link offer is what goes; `Set email` and `Set password` stay for users with an Email method.
+2. **B:** forbidden actions hidden, "No actions available" when none remain.
+3. **D:** all 14 card grids in this bundle.
+4. **E:** the relationship list above; hover with delay, focus and tap; 10 items before "View all".
+5. **Release:** patch changeset on `@grantjs/schema` for E's operation documents (no SDL change).
 
 ## Human gate
 
-- [ ] Gate 1: Story brief approved — stop here until a human confirms before stack planning.
+- [x] Gate 1: Story brief approved — Alejandro 2026-11-19, with the recommended answers. Gates 1–2 approved together.
+- [ ] Gate 4: Story → `main` — not opened; agents do not merge.
