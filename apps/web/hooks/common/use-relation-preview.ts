@@ -55,16 +55,18 @@ function flagsFor(target: RelationPreviewTarget): Record<string, boolean> {
 
 /**
  * One entity's relationship, fetched on demand for a count chip's preview (`load`). Nothing
- * is fetched until `load` is called. Always from the network: the same user, role or group
- * carries different relationships in different scopes, and the normalized cache keys on the
- * id alone, so a cached answer could be another scope's.
+ * is fetched until `load` is called, and the result stays with the chip: `no-cache` keeps it
+ * out of the normalized cache. Written there, it would add the relationship to the cached
+ * User/Role/Group, every list query watching that entity would re-emit, and the whole list
+ * would re-render on each hover. It also keeps one scope's answer from showing in another
+ * (the cache keys an entity by id alone).
  */
 export function useRelationPreview(target: RelationPreviewTarget, entityId: string) {
   const scope = useScopeFromParams();
   const { document, list } = DOCUMENTS[target.entity];
   const [run, { data, loading, error, called }] = useLazyQuery<
     Record<string, Record<string, Row[]>>
-  >(document as never, { fetchPolicy: 'network-only' });
+  >(document as never, { fetchPolicy: 'no-cache' });
 
   const load = useCallback(() => {
     if (!scope) return;

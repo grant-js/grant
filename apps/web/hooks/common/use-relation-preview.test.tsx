@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useApolloClient } from '@apollo/client/react';
 import { MockedProvider } from '@apollo/client/testing/react';
 import { GetRoleRelationsPreviewDocument, Tenant } from '@grantjs/schema';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -54,5 +55,21 @@ describe('useRelationPreview', () => {
       ])
     );
     expect(result.current.error).toBe(false);
+  });
+
+  it('keeps the result out of the shared cache, so list queries watching the entity do not re-render', async () => {
+    const { result } = renderHook(
+      () => ({
+        preview: useRelationPreview({ entity: 'role', relation: 'groups' }, 'role-1'),
+        client: useApolloClient(),
+      }),
+      { wrapper }
+    );
+
+    act(() => result.current.preview.load());
+    await waitFor(() => expect(result.current.preview.items).toHaveLength(1));
+
+    const cached = result.current.client.cache.extract() as Record<string, unknown>;
+    expect(Object.keys(cached).filter((key) => key !== 'ROOT_QUERY')).toEqual([]);
   });
 });
