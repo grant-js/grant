@@ -3,7 +3,16 @@ import { devtools } from 'zustand/middleware';
 
 import { API_KEY_SCOPES_PAGE_LIMIT } from '@/lib/api-key-scope-groups';
 
+/** The API key a detail page has loaded: what the breadcrumb names it. */
+interface CurrentApiKey {
+  id: string;
+  name?: string | null;
+  clientId: string;
+}
+
 interface ApiKeyState {
+  currentApiKey: CurrentApiKey | null;
+  setCurrentApiKey: (apiKey: CurrentApiKey | null) => void;
   grantScopesPage: number;
   projectScopesPage: number;
   scopesLimit: number;
@@ -25,6 +34,8 @@ export const useApiKeyStore = create<ApiKeyState>()(
   devtools(
     (set) => ({
       ...initialState,
+      currentApiKey: null,
+      setCurrentApiKey: (currentApiKey) => set({ currentApiKey }),
 
       setGrantScopesPage: (grantScopesPage) => set({ grantScopesPage }),
       setProjectScopesPage: (projectScopesPage) => set({ projectScopesPage }),
