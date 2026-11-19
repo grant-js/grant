@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 
 import type { DataTableColumnConfig } from '@/components/common/data-table';
+import type { DataTableColumnToggleKind } from '@/components/common/data-table-column-toggle';
 import { NO_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
 import { useDataTableColumnsStore } from '@/stores/data-table-columns.store';
 
@@ -14,6 +15,8 @@ import {
 export interface UsePageTableColumnVisibilityOptions extends UseDataTableColumnStateOptions {
   /** When false, the table does not publish its column picker (e.g. card view is active). */
   enabled?: boolean;
+  /** What the toolbar picker is labelled as managing; `fields` for a card view's body fields. */
+  kind?: DataTableColumnToggleKind;
 }
 
 /**
@@ -25,6 +28,7 @@ export function usePageTableColumnVisibility<T>(
   options: UsePageTableColumnVisibilityOptions
 ) {
   const enabled = options.enabled ?? true;
+  const kind = options.kind ?? 'columns';
   const visibility = useDataTableColumnState(columns, {
     tableId: options.tableId,
     defaultHiddenKeys: options.defaultHiddenKeys ?? NO_DEFAULT_HIDDEN_COLUMN_KEYS,
@@ -44,12 +48,13 @@ export function usePageTableColumnVisibility<T>(
       return;
     }
 
-    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn);
+    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn, kind);
     // columnToggleItems is rebuilt whenever the caller rebuilds its columns; itemsSignature
     // tracks the values the picker actually shows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     enabled,
+    kind,
     itemsSignature,
     toggleColumn,
     resetColumns,

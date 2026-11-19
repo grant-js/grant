@@ -85,7 +85,10 @@
       "resizeColumn": "Spalte {column} anpassen",
       "moveColumnUp": "{column} nach oben verschieben",
       "moveColumnDown": "{column} nach unten verschieben",
-      "columnMoved": "{column} an Position {position} von {total} verschoben"
+      "columnMoved": "{column} an Position {position} von {total} verschoben",
+      "fields": "Felder",
+      "toggleFields": "Felder ein-/ausblenden",
+      "resetFields": "Felder zurücksetzen"
     },
     "detailAttachmentFilter": {
       "label": "Anzeigen",

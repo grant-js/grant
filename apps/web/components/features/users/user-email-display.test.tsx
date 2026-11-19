@@ -89,6 +89,7 @@ vi.mock('@/components/common', async () => {
 });
 
 vi.mock('@/hooks/common', () => ({
+  usePageCardFields: () => ({ arrange: <T,>(items: T[]) => items }),
   usePageTableColumnVisibility: (columns: unknown[]) => ({
     visibleColumns: columns,
     filterSkeletonColumns: (c: unknown[]) => c,
