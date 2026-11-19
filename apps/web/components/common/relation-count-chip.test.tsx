@@ -2,7 +2,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RelationCountChip } from './relation-count-chip';
+import { LoadedCountChip, RelationCountChip } from './relation-count-chip';
 
 const preview = {
   load: vi.fn(),
@@ -129,5 +129,62 @@ describe('RelationCountChip', () => {
     );
     fireEvent.focus(chip());
     expect(screen.getByText('common.relationPreview.notAvailable')).toBeDefined();
+  });
+});
+
+describe('LoadedCountChip', () => {
+  const tags = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ id: `t-${i + 1}`, name: `Tag ${i + 1}` }));
+
+  it('lists the tags the list already loaded, at once and without fetching', () => {
+    render(
+      <LoadedCountChip items={tags(2)} count={2}>
+        2 tags
+      </LoadedCountChip>
+    );
+    fireEvent.mouseEnter(screen.getByRole('button', { name: '2 tags' }));
+    act(() => vi.advanceTimersByTime(300));
+    expect(preview.load).not.toHaveBeenCalled();
+    expect(screen.getByText('Tag 2').closest('a')).toBeNull();
+    expect(screen.queryByTestId('relation-loading')).toBeNull();
+  });
+
+  it('lists every tag, with no "View all" to fetch the rest from', () => {
+    render(
+      <LoadedCountChip items={tags(12)} count={12}>
+        12 tags
+      </LoadedCountChip>
+    );
+    fireEvent.focus(screen.getByRole('button', { name: '12 tags' }));
+    expect(screen.getAllByRole('listitem')).toHaveLength(12);
+    expect(screen.queryByText(/viewAll/)).toBeNull();
+  });
+
+  it('is a plain badge when there are no tags', () => {
+    render(
+      <LoadedCountChip items={[]} count={0}>
+        0 tags
+      </LoadedCountChip>
+    );
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+describe('LoadedCountChip with linked items', () => {
+  it('links each item to its detail page (an API key’s permissions)', () => {
+    render(
+      <LoadedCountChip
+        items={[{ id: 'p-1', name: 'Read invoices' }]}
+        count={1}
+        linkTo="permissions"
+      >
+        Permissions (1)
+      </LoadedCountChip>
+    );
+    fireEvent.focus(screen.getByRole('button', { name: 'Permissions (1)' }));
+    expect(screen.getByText('Read invoices').closest('a')?.getAttribute('href')).toBe(
+      `${BASE}/permissions/p-1`
+    );
+    expect(preview.load).not.toHaveBeenCalled();
   });
 });

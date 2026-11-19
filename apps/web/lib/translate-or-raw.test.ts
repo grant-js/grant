@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { type KeyTranslator, translatePermissionField } from '@/lib/translate-or-raw';
+import {
+  type KeyTranslator,
+  translateNameKey,
+  translatePermissionField,
+} from '@/lib/translate-or-raw';
 
 function translator(messages: Record<string, string>): KeyTranslator {
   const t = ((key: string) => messages[key] ?? key) as KeyTranslator;
@@ -62,6 +66,28 @@ describe('translatePermissionField', () => {
     );
     expect(translatePermissionField(t, { ...apiKeyCreate, description: null }, 'description')).toBe(
       ''
+    );
+  });
+});
+
+describe('translateNameKey', () => {
+  const t = translator({
+    'permissions.names.group.read': 'Read Group',
+    'roles.names.admin': 'Admin',
+  });
+
+  it('translates a key whose casing differs from the catalogue', () => {
+    expect(translateNameKey(t, 'permissions.names.Group.Read')).toBe('Read Group');
+  });
+
+  it('translates a key the catalogue has as sent', () => {
+    expect(translateNameKey(t, 'roles.names.admin')).toBe('Admin');
+  });
+
+  it('keeps a plain name, and a key no catalogue knows, as they are', () => {
+    expect(translateNameKey(t, 'Billing reader')).toBe('Billing reader');
+    expect(translateNameKey(t, 'permissions.names.Invoice.Read')).toBe(
+      'permissions.names.Invoice.Read'
     );
   });
 });

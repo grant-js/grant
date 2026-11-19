@@ -11,6 +11,7 @@ import {
   type DataTableColumnConfig,
   EntityCreateNavigateButton,
   EntityNavigationButton,
+  LoadedCountChip,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
@@ -104,9 +105,9 @@ export function ResourceTable() {
       header: t('table.tags'),
       width: '120px',
       render: (resource: Resource) => (
-        <Badge variant="secondary">
+        <LoadedCountChip items={resource.tags} count={getEntityTagCount(resource)}>
           {tCommon('tagCount', { count: getEntityTagCount(resource) })}
-        </Badge>
+        </LoadedCountChip>
       ),
     },
     {

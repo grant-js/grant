@@ -8,9 +8,9 @@ import { Building2 } from 'lucide-react';
 import {
   DataTable,
   type DataTableColumnConfig,
+  LoadedCountChip,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
   DATA_TABLE_AVATAR_COLUMN_WIDTH,
@@ -75,9 +75,9 @@ export function OrganizationTable() {
       header: t('table.tags'),
       width: '120px',
       render: (organization: Organization) => (
-        <Badge variant="secondary">
+        <LoadedCountChip items={organization.tags} count={getEntityTagCount(organization)}>
           {tCommon('tagCount', { count: getEntityTagCount(organization) })}
-        </Badge>
+        </LoadedCountChip>
       ),
     },
     {

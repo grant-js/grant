@@ -12,6 +12,7 @@ import {
   CardHeader,
   EntityCreateNavigateButton,
   EntityNavigationButton,
+  LoadedCountChip,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageCardFields } from '@/hooks/common';
@@ -108,9 +109,9 @@ export function ResourceCards() {
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <LoadedCountChip items={resource.tags} count={getEntityTagCount(resource)}>
                   {tCommon('tagCount', { count: getEntityTagCount(resource) })}
-                </Badge>
+                </LoadedCountChip>
               ),
             },
           ])}
