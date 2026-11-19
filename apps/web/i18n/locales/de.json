@@ -992,6 +992,7 @@
       "setEmailSuccess": "E-Mail festgelegt",
       "setEmailError": "E-Mail konnte nicht festgelegt werden",
       "setEmailConflict": "Ein anderer Benutzer hat diese E-Mail-Adresse bereits.",
+      "setEmailConflictHasSignIn": "Ein anderer Benutzer hat diese E-Mail-Adresse bereits. Dieser Benutzer hat bereits eine eigene Anmeldung und kann daher nicht mit diesem Benutzer verknüpft werden.",
       "linkIdentitySuccess": "Projektbenutzer mit dem bestehenden Benutzer verknüpft",
       "linkIdentityError": "Projektbenutzer konnte nicht verknüpft werden",
       "setPasswordSuccess": "Passwort festgelegt",
