@@ -5,7 +5,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { LayoutGrid } from 'lucide-react';
 
-import { EntityCreateNavigateButton, RefreshButton, Toolbar } from '@/components/common';
+import {
+  EntityCreateNavigateButton,
+  PageTableColumnToggle,
+  RefreshButton,
+  Toolbar,
+} from '@/components/common';
 import { useScopeFromParams } from '@/hooks/common';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
 
@@ -31,6 +36,7 @@ export function ProjectAppToolbar() {
     <ProjectAppSorter key="sorter" />,
     <ProjectAppTagSelector key="tags" />,
     <ProjectAppLimit key="limit" />,
+    <PageTableColumnToggle key="columns" />,
     <ProjectAppViewSwitcher key="view" />,
     ...(canCreate
       ? [

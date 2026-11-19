@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 
 import type { DataTableColumnConfig } from '@/components/common/data-table';
 import type { DataTableColumnToggleKind } from '@/components/common/data-table-column-toggle';
@@ -29,6 +29,9 @@ export function usePageTableColumnVisibility<T>(
 ) {
   const enabled = options.enabled ?? true;
   const kind = options.kind ?? 'columns';
+  // A page can mount a disabled table hook beside a card view that publishes its fields;
+  // clearing by owner keeps the disabled one from wiping the other's picker.
+  const owner = useId();
   const visibility = useDataTableColumnState(columns, {
     tableId: options.tableId,
     defaultHiddenKeys: options.defaultHiddenKeys ?? NO_DEFAULT_HIDDEN_COLUMN_KEYS,
@@ -44,17 +47,18 @@ export function usePageTableColumnVisibility<T>(
 
   useEffect(() => {
     if (!enabled) {
-      clearColumnToggle();
+      clearColumnToggle(owner);
       return;
     }
 
-    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn, kind);
+    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn, kind, owner);
     // columnToggleItems is rebuilt whenever the caller rebuilds its columns; itemsSignature
     // tracks the values the picker actually shows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     enabled,
     kind,
+    owner,
     itemsSignature,
     toggleColumn,
     resetColumns,
@@ -63,7 +67,7 @@ export function usePageTableColumnVisibility<T>(
     clearColumnToggle,
   ]);
 
-  useEffect(() => () => clearColumnToggle(), [clearColumnToggle]);
+  useEffect(() => () => clearColumnToggle(owner), [clearColumnToggle, owner]);
 
   return visibility;
 }

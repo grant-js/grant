@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import type { WebhookSubscription } from '@grantjs/schema';
 import { Activity, Link2, Plus, Webhook, Zap } from 'lucide-react';
@@ -12,7 +13,7 @@ import {
   EntityCreateNavigateButton,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
-import { useScopeFromParams } from '@/hooks/common';
+import { usePageCardFields, useScopeFromParams } from '@/hooks/common';
 import { useWebhooksStore } from '@/stores/webhooks.store';
 
 import { WebhookActiveStatusLabel } from './webhook-active-status-label';
@@ -24,6 +25,16 @@ import { WebhookSubscriptionActions } from './webhook-subscription-actions';
 export function WebhookCards() {
   const t = useTranslations('webhooks');
   const tCreate = useTranslations('webhooks.createDialog');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'url', label: t('subscriptions.columns.url') },
+      { key: 'status', label: t('table.status') },
+      { key: 'events', label: t('subscriptions.columns.events') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'webhooks.list' });
   const scope = useScopeFromParams();
   const subscriptions = useWebhooksStore((state) => state.subscriptions);
   const loading = useWebhooksStore((state) => state.loading);
@@ -70,8 +81,9 @@ export function WebhookCards() {
       )}
       renderBody={(subscription) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'url',
               label: {
                 icon: <Link2 className="h-3 w-3" />,
                 text: t('subscriptions.columns.url'),
@@ -86,6 +98,7 @@ export function WebhookCards() {
               ),
             },
             {
+              key: 'status',
               label: {
                 icon: <Activity className="h-3 w-3" />,
                 text: t('table.status'),
@@ -93,6 +106,7 @@ export function WebhookCards() {
               value: <WebhookActiveStatusLabel active={subscription.active} />,
             },
             {
+              key: 'events',
               label: {
                 icon: <Zap className="h-3 w-3" />,
                 text: t('subscriptions.columns.events'),
@@ -103,7 +117,7 @@ export function WebhookCards() {
                 </Badge>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(subscription) => (

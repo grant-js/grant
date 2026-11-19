@@ -7,7 +7,7 @@ import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Scope, Tenant } from '@grantjs/schema';
 import { Plus, RotateCw } from 'lucide-react';
 
-import { RefreshButton, Toolbar } from '@/components/common';
+import { PageTableColumnToggle, RefreshButton, Toolbar } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useScopeFromParams } from '@/hooks/common';
@@ -65,6 +65,7 @@ export function SigningKeyToolbar() {
 
   const toolbarItems = [
     <RefreshButton key="refresh" onRefresh={refetch ?? undefined} loading={loading} />,
+    <PageTableColumnToggle key="columns" />,
     <SigningKeyViewSwitcher key="view" />,
     hasKeys ? (
       <Tooltip key="rotate">

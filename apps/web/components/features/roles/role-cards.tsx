@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Role } from '@grantjs/schema';
@@ -7,6 +8,7 @@ import { Shield, Tags } from 'lucide-react';
 
 import { CardBody, CardGrid, CardHeader, EntityCreateNavigateButton } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageCardFields } from '@/hooks/common';
 import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
@@ -22,6 +24,15 @@ import { RoleNavigationButton } from './role-navigation-button';
 export function RoleCards() {
   const t = useTranslations('roles');
   const tCommon = useTranslations('common');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'groups', label: t('form.groups') },
+      { key: 'tags', label: t('table.tags') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'roles.list' });
 
   const limit = useRolesStore((state) => state.limit);
   const search = useRolesStore((state) => state.search);
@@ -71,8 +82,9 @@ export function RoleCards() {
       }}
       renderBody={(role: Role) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'groups',
               label: {
                 icon: <Shield className="h-3 w-3" />,
                 text: t('form.groups'),
@@ -84,6 +96,7 @@ export function RoleCards() {
               ),
             },
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
@@ -94,7 +107,7 @@ export function RoleCards() {
                 </Badge>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(role: Role) => (

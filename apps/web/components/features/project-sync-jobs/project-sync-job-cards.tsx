@@ -1,10 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ProjectSyncJob } from '@grantjs/schema';
 import { Activity, FileJson } from 'lucide-react';
 
 import { CardBody, CardGrid, CardHeader } from '@/components/common';
+import { usePageCardFields } from '@/hooks/common';
 import { useProjectSyncJobsStore } from '@/stores/project-sync-jobs.store';
 
 import { ProjectSyncJobActions } from './project-sync-job-actions';
@@ -23,6 +25,16 @@ import {
 
 export function ProjectSyncJobCards() {
   const t = useTranslations('projectSyncJobs');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'status', label: t('table.status') },
+      { key: 'mode', label: t('table.mode') },
+      { key: 'cdmVersion', label: t('table.cdmVersion') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'projectSyncJobs.list' });
   const limit = useProjectSyncJobsStore((state) => state.limit);
   const search = useProjectSyncJobsStore((state) => state.search);
   const status = useProjectSyncJobsStore((state) => state.status);
@@ -59,8 +71,9 @@ export function ProjectSyncJobCards() {
       )}
       renderBody={(job) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'status',
               label: {
                 icon: <Activity className="h-3 w-3" />,
                 text: t('table.status'),
@@ -68,6 +81,7 @@ export function ProjectSyncJobCards() {
               value: <ProjectSyncJobStatusBadge status={job.status} />,
             },
             {
+              key: 'mode',
               label: {
                 icon: <ProjectSyncJobsModuleIcon className="h-3 w-3" />,
                 text: t('table.mode'),
@@ -75,13 +89,14 @@ export function ProjectSyncJobCards() {
               value: <ProjectSyncJobModeBadge job={job} />,
             },
             {
+              key: 'cdmVersion',
               label: {
                 icon: <FileJson className="h-3 w-3" />,
                 text: t('table.cdmVersion'),
               },
               value: <span className="text-sm">v{job.cdmVersion}</span>,
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(job) => (
