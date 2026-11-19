@@ -6,8 +6,13 @@ import { TagColor } from '@grantjs/constants';
 import { Role } from '@grantjs/schema';
 import { Shield, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, EntityCreateNavigateButton } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  EntityCreateNavigateButton,
+  RelationCountChip,
+} from '@/components/common';
 import { usePageCardFields } from '@/hooks/common';
 import {
   getEntityTagCount,
@@ -90,9 +95,14 @@ export function RoleCards() {
                 text: t('form.groups'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="role"
+                  relation="groups"
+                  entityId={role.id}
+                  count={role.groupCount ?? 0}
+                >
                   {t('groupCount', { count: role.groupCount ?? 0 })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
             {
@@ -102,9 +112,14 @@ export function RoleCards() {
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="role"
+                  relation="tags"
+                  entityId={role.id}
+                  count={getEntityTagCount(role)}
+                >
                   {tCommon('tagCount', { count: getEntityTagCount(role) })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
           ])}

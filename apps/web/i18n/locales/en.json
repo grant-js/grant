@@ -182,6 +182,11 @@
       "group": "Open group {name}",
       "permission": "Open permission {name}",
       "resource": "Open resource {name}"
+    },
+    "relationPreview": {
+      "notAvailable": "Not available",
+      "none": "None",
+      "viewAll": "View all ({count})"
     }
   },
   "demo": {

@@ -1,0 +1,12 @@
+query GetPermissionRelationsPreview($scope: Scope!, $id: ID!) {
+  permissions(scope: $scope, ids: [$id], limit: 1) {
+    permissions {
+      id
+      tags {
+        id
+        name
+        color
+      }
+    }
+  }
+}

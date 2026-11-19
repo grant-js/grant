@@ -10,6 +10,7 @@ import {
   DataTable,
   type DataTableColumnConfig,
   EntityCreateNavigateButton,
+  RelationCountChip,
   ScrollBadges,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
@@ -103,7 +104,14 @@ export function UserTable() {
       header: t('table.roles'),
       width: '120px',
       render: (user: User) => (
-        <Badge variant="secondary">{t('roleCount', { count: user.roleCount ?? 0 })}</Badge>
+        <RelationCountChip
+          entity="user"
+          relation="roles"
+          entityId={user.id}
+          count={user.roleCount ?? 0}
+        >
+          {t('roleCount', { count: user.roleCount ?? 0 })}
+        </RelationCountChip>
       ),
     },
     {
@@ -129,7 +137,14 @@ export function UserTable() {
       header: t('table.tags'),
       width: '120px',
       render: (user: User) => (
-        <Badge variant="secondary">{tCommon('tagCount', { count: getEntityTagCount(user) })}</Badge>
+        <RelationCountChip
+          entity="user"
+          relation="tags"
+          entityId={user.id}
+          count={getEntityTagCount(user)}
+        >
+          {tCommon('tagCount', { count: getEntityTagCount(user) })}
+        </RelationCountChip>
       ),
     },
     {

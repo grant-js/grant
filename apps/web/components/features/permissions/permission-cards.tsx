@@ -6,7 +6,13 @@ import { TagColor } from '@grantjs/constants';
 import { Permission } from '@grantjs/schema';
 import { CopyCheck, Package, Play, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, EntityCreateNavigateButton } from '@/components/common';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  EntityCreateNavigateButton,
+  RelationCountChip,
+} from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import { usePageCardFields } from '@/hooks/common';
 import {
@@ -113,9 +119,14 @@ export function PermissionCards() {
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="permission"
+                  relation="tags"
+                  entityId={permission.id}
+                  count={getEntityTagCount(permission)}
+                >
                   {tCommon('tagCount', { count: getEntityTagCount(permission) })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
           ])}
