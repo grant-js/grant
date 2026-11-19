@@ -158,7 +158,7 @@ export class ProjectUserIdentityLinkService implements IProjectUserIdentityLinkS
     ]);
     if (methods.length > 0 || hasPassword || hasMfa) {
       throw new BadRequestError(
-        'This project user can sign in, so it cannot be replaced: remove it instead'
+        'This project user has its own sign-in, so it cannot be replaced by another identity'
       );
     }
   }

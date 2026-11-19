@@ -7,7 +7,11 @@ const ADDRESS = 'holder@example.test';
 const state = {
   scope: { tenant: Tenant.OrganizationProject as Tenant, id: 'org-1:project-1' },
   grants: { SetEmail: true, LinkIdentity: true } as Record<string, boolean>,
-  userToSetEmail: { id: 'user-1', name: 'Shell' } as { id: string; name: string } | null,
+  userToSetEmail: { id: 'user-1', name: 'Shell', authenticationMethods: [] } as {
+    id: string;
+    name: string;
+    authenticationMethods?: Array<{ provider: string; providerId: string }>;
+  } | null,
 };
 const setUserToSetEmail = vi.fn((user: null) => {
   state.userToSetEmail = user;
@@ -73,7 +77,7 @@ describe('UserSetEmailDialog identity link step', () => {
     vi.clearAllMocks();
     state.scope = { tenant: Tenant.OrganizationProject, id: 'org-1:project-1' };
     state.grants = { SetEmail: true, LinkIdentity: true };
-    state.userToSetEmail = { id: 'user-1', name: 'Shell' };
+    state.userToSetEmail = { id: 'user-1', name: 'Shell', authenticationMethods: [] };
   });
 
   it('offers the link on a conflict and links on confirm', async () => {
@@ -117,6 +121,24 @@ describe('UserSetEmailDialog identity link step', () => {
     await waitFor(() => expect(setProjectUserEmail).toHaveBeenCalled());
 
     expect(setProjectUserEmail.mock.calls[0][1]).toBeUndefined();
+    expect(screen.queryByText('users.linkIdentityDialog.title')).toBeNull();
+  });
+
+  it('does not offer the link to a user with its own sign-in, and says why in the toast', async () => {
+    state.userToSetEmail = {
+      id: 'user-1',
+      name: 'Member',
+      authenticationMethods: [{ provider: 'email', providerId: 'member@example.test' }],
+    };
+    setProjectUserEmail.mockRejectedValue(new Error('conflict'));
+    render(<UserSetEmailDialog />);
+
+    fireEvent.click(screen.getByText('submit-email'));
+    await waitFor(() => expect(setProjectUserEmail).toHaveBeenCalled());
+
+    expect(setProjectUserEmail.mock.calls[0][1]).toEqual({
+      conflictDescription: 'users.notifications.setEmailConflictHasSignIn',
+    });
     expect(screen.queryByText('users.linkIdentityDialog.title')).toBeNull();
   });
 

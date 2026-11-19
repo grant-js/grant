@@ -333,7 +333,7 @@ Requires \`ProjectUser:LinkIdentity\`, in an organization project scope. The mem
       },
       400: {
         description:
-          'Invalid request; not an organization project scope; no user holds the address; or the project user can sign in',
+          'Invalid request; not an organization project scope; no user holds the address; or the project user has its own sign-in',
         content: {
           'application/json': {
             schema: validationErrorResponseSchema,

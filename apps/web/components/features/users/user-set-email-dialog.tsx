@@ -41,6 +41,7 @@ interface PendingLink {
 
 export function UserSetEmailDialog() {
   const t = useTranslations('users.linkIdentityDialog');
+  const tNotifications = useTranslations('users.notifications');
   const scope = useScopeFromParams();
   const { setProjectUserEmail, linkProjectUserIdentity } = useUserMutations();
   const userToSetEmail = useUsersStore((state) => state.userToSetEmail);
@@ -63,7 +64,11 @@ export function UserSetEmailDialog() {
   if (!scope || requiresEmailVerification) return null;
   if (!isSetEmailLoading && !canSetEmail) return null;
 
-  const offerLink = canLinkIdentity && scope.tenant === Tenant.OrganizationProject;
+  // The link replaces a member that cannot sign in (`ProjectUserIdentityLinkService`); a member
+  // with its own sign-in method would be refused, so it is not offered one.
+  const linkable = canLinkIdentity && scope.tenant === Tenant.OrganizationProject;
+  const targetHasSignIn = (userToSetEmail?.authenticationMethods?.length ?? 0) > 0;
+  const offerLink = linkable && !targetHasSignIn;
 
   const fields: DialogField[] = [
     {
@@ -82,7 +87,11 @@ export function UserSetEmailDialog() {
         email: values.email,
         scope,
       },
-      offerLink ? { onConflict: () => setPendingLink({ userId, email: values.email }) } : undefined
+      offerLink
+        ? { onConflict: () => setPendingLink({ userId, email: values.email }) }
+        : linkable
+          ? { conflictDescription: tNotifications('setEmailConflictHasSignIn') }
+          : undefined
     );
   };
 

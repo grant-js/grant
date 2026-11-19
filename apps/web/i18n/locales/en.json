@@ -1007,6 +1007,7 @@
       "setEmailSuccess": "Email set",
       "setEmailError": "Failed to set email",
       "setEmailConflict": "Another user already has this email address.",
+      "setEmailConflictHasSignIn": "Another user already has this email address. This user already has its own sign-in, so it can't be linked to that user.",
       "linkIdentitySuccess": "Project user linked to the existing user",
       "linkIdentityError": "Failed to link the project user",
       "setPasswordSuccess": "Password set",
