@@ -9,6 +9,18 @@ export function translateOrRaw(t: KeyTranslator, key: string | null | undefined)
   return t.has(key) ? t(key) : key;
 }
 
+/**
+ * A role or permission name, which may arrive as an i18n key whose casing does not match the
+ * catalogue (`permissions.names.Group.Read` against `permissions.names.group.read`): the key as
+ * sent, then with each segment lower-cased first, else the name as it is.
+ */
+export function translateNameKey(t: KeyTranslator, name: string): string {
+  if (!isKeyLike(name)) return name;
+  if (t.has(name)) return t(name);
+  const lowered = name.split('.').map(lowerFirst).join('.');
+  return t.has(lowered) ? t(lowered) : name;
+}
+
 export function toCamelCaseSlug(slug: string): string {
   return slug
     .split('-')

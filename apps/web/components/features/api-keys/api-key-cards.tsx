@@ -20,11 +20,10 @@ import { ApiKeyActions } from './api-key-actions';
 import { ApiKeyAudit } from './api-key-audit';
 import { ApiKeyCardSkeleton } from './api-key-card-skeleton';
 import { ApiKeyCreateAction } from './api-key-create-action';
-import { useApiKeyGrantLabel } from './use-api-key-grant-label';
+import { ApiKeyGrant } from './api-key-grant';
 
 export function ApiKeyCards() {
   const t = useTranslations('user.apiKeys');
-  const grantLabel = useApiKeyGrantLabel();
   const scope = useScopeFromParams();
   const apiKeys = useApiKeysStore((state) => state.apiKeys);
   const loading = useApiKeysStore((state) => state.loading);
@@ -127,7 +126,7 @@ export function ApiKeyCards() {
                       text: t('table.role'),
                     },
                     value: (
-                      <span className="text-sm text-muted-foreground">{grantLabel(apiKey)}</span>
+                      <ApiKeyGrant apiKey={apiKey} className="text-sm text-muted-foreground" />
                     ),
                   },
                 ]

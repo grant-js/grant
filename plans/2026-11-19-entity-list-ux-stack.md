@@ -38,6 +38,7 @@ Init `gh stack` with slice 1 only; `gh stack add` each next branch when it start
 | 5     | `feat/entity-list-ux-card-fields-all`  | prior slice           | D: the other 13 card grids adopt it                        | Frontend   | light      |     |
 | 6     | `feat/entity-list-ux-relation-preview` | prior slice           | E: hover/focus previews on relationship count chips, links | Frontend   | light      |     |
 | 7     | `feat/entity-list-ux-breadcrumbs`      | prior slice           | F: breadcrumbs on every route, route-tree test             | Frontend   | light      |     |
+| 8     | `feat/entity-list-ux-tag-previews`     | prior slice           | E, widened: previews on every list count, API key grants   | Frontend   | light      |     |
 | final | `feat/entity-list-ux`                  | `main`                | integration                                                | Principal  | deep       |     |
 
 Order: A first (smallest, closes the v1.30.0 gap); B before C–E because every card header renders a menu; D's infra before its rollout; E last (largest, independent of D). **Collapse rules:** do not fold 4 into 5 (infra reviewable apart from 13 mechanical adoptions); do not fold E into D.
@@ -71,6 +72,10 @@ Order: A first (smallest, closes the v1.30.0 gap); B before C–E because every 
 ### 7 — Breadcrumbs (F)
 
 - Added 2026-11-19 at Alejandro's request, after Gate 2; independent of slices 1–6, placed last so earlier branches do not move. `components/common/breadcrumb.tsx`: an `apiKeyId` rule (label from the API key store's current key: name, else client id, else the id), a `test` segment label, `branding` / `oauth-connections` / `project-apps` labels, and an account crumb for `/dashboard/accounts/[accountId]`. Prefer turning the per-id branches into one table (param, list segment, store selector, label) over adding more copies. Test: enumerate the route tree, render the generator with stub params for each path, assert every segment after `dashboard` yields a crumb with a label that is not a raw id once the entity is in its store.
+
+### 8 — Previews everywhere (E, widened)
+
+- Added 2026-11-19 at Alejandro's request, after testing: slice 6 covered users, roles, groups and permissions only. The tag counts on organizations, projects, resources and project apps, an API key's permissions and (not a relationship, a flat array on the entity) a resource's actions, get a `LoadedCountChip` that previews items the list already loaded (no fetch). Preview names go through `translateNameKey`, so a key sent as `permissions.names.Group.Read` matches the catalogue's `group.read`. `relation-preview-coverage.test.ts` fails when a list renders a relationship count outside a chip.
 
 ## Stack setup
 

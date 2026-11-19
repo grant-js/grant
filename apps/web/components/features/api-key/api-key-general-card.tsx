@@ -7,7 +7,7 @@ import { Calendar, Fingerprint, KeyRound, Shield, User } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { CopyToClipboard, EntityDetailInfoTable, FeatureModuleCard } from '@/components/common';
-import { useApiKeyGrantLabel } from '@/components/features/api-keys/use-api-key-grant-label';
+import { ApiKeyGrant } from '@/components/features/api-keys/api-key-grant';
 import { formatLocalizedDateTime } from '@/lib/utils';
 
 function infoIcon(Icon: LucideIcon): ReactNode {
@@ -21,7 +21,6 @@ interface ApiKeyGeneralCardProps {
 export function ApiKeyGeneralCard({ apiKey }: ApiKeyGeneralCardProps) {
   const t = useTranslations('user.apiKeys');
   const tDetail = useTranslations('user.apiKeys.detail');
-  const grantLabel = useApiKeyGrantLabel();
 
   const isExpired = Boolean(apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date());
   const status = apiKey.isRevoked
@@ -53,7 +52,7 @@ export function ApiKeyGeneralCard({ apiKey }: ApiKeyGeneralCardProps) {
       id: 'grant',
       icon: infoIcon(Shield),
       label: tDetail('authorization'),
-      value: <span className="font-semibold">{grantLabel(apiKey)}</span>,
+      value: <ApiKeyGrant apiKey={apiKey} className="font-semibold" />,
     },
     {
       id: 'expiresAt',

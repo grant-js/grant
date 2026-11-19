@@ -13,9 +13,9 @@ import {
   CopyToClipboard,
   EntityCreateNavigateButton,
   EntityNavigationButton,
+  LoadedCountChip,
   ScrollBadges,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { usePageCardFields, useScopeFromParams } from '@/hooks/common';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectAppsStore } from '@/stores/project-apps.store';
@@ -138,9 +138,9 @@ export function ProjectAppCards() {
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <LoadedCountChip items={app.tags} count={getEntityTagCount(app)}>
                   {tCommon('tagCount', { count: getEntityTagCount(app) })}
-                </Badge>
+                </LoadedCountChip>
               ),
             },
           ])}

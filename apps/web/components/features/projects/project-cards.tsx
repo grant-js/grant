@@ -5,8 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Project } from '@grantjs/schema';
 import { FolderOpen, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import { CardBody, CardGrid, LoadedCountChip } from '@/components/common';
 import { usePageCardFields, useProjectTags } from '@/hooks/common';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectsStore } from '@/stores/projects.store';
@@ -60,11 +59,14 @@ export function ProjectCards() {
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <LoadedCountChip
+                  items={getProjectTags(project)}
+                  count={getEntityTagCount({ tags: getProjectTags(project) })}
+                >
                   {tCommon('tagCount', {
                     count: getEntityTagCount({ tags: getProjectTags(project) }),
                   })}
-                </Badge>
+                </LoadedCountChip>
               ),
             },
           ])}
