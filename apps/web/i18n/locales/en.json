@@ -85,7 +85,10 @@
       "resizeColumn": "Resize {column}",
       "moveColumnUp": "Move {column} up",
       "moveColumnDown": "Move {column} down",
-      "columnMoved": "{column} moved to position {position} of {total}"
+      "columnMoved": "{column} moved to position {position} of {total}",
+      "fields": "Fields",
+      "toggleFields": "Toggle fields",
+      "resetFields": "Reset fields"
     },
     "detailAttachmentFilter": {
       "label": "Show",
@@ -144,6 +147,7 @@
     "emptyElements": "No {title} to display",
     "loading": "Loading...",
     "noItemsAvailable": "No items available",
+    "noActionsAvailable": "No actions available",
     "noTagsAvailable": "No tags available",
     "tagCount": "{count, plural, =0 {No tags} one {# tag} other {# tags}}",
     "yes": "Yes",
@@ -178,6 +182,11 @@
       "group": "Open group {name}",
       "permission": "Open permission {name}",
       "resource": "Open resource {name}"
+    },
+    "relationPreview": {
+      "notAvailable": "Not available",
+      "none": "None",
+      "viewAll": "View all ({count})"
     }
   },
   "demo": {
@@ -1007,6 +1016,7 @@
       "setEmailSuccess": "Email set",
       "setEmailError": "Failed to set email",
       "setEmailConflict": "Another user already has this email address.",
+      "setEmailConflictHasSignIn": "Another user already has this email address. This user already has its own sign-in, so it can't be linked to that user.",
       "linkIdentitySuccess": "Project user linked to the existing user",
       "linkIdentityError": "Failed to link the project user",
       "setPasswordSuccess": "Password set",

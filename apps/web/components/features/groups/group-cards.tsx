@@ -1,12 +1,19 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Group } from '@grantjs/schema';
 import { Group as GroupIcon, Shield, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, EntityCreateNavigateButton } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  EntityCreateNavigateButton,
+  RelationCountChip,
+} from '@/components/common';
+import { usePageCardFields } from '@/hooks/common';
 import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
@@ -22,6 +29,15 @@ import { GroupNavigationButton } from './group-navigation-button';
 export function GroupCards() {
   const t = useTranslations('groups');
   const tCommon = useTranslations('common');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'permissions', label: t('form.permissions') },
+      { key: 'tags', label: t('table.tags') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'groups.list' });
 
   const limit = useGroupsStore((state) => state.limit);
   const search = useGroupsStore((state) => state.search);
@@ -71,30 +87,42 @@ export function GroupCards() {
       }}
       renderBody={(group: Group) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'permissions',
               label: {
                 icon: <Shield className="h-3 w-3" />,
                 text: t('form.permissions'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="group"
+                  relation="permissions"
+                  entityId={group.id}
+                  count={group.permissionCount ?? 0}
+                >
                   {t('permissionCount', { count: group.permissionCount ?? 0 })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="group"
+                  relation="tags"
+                  entityId={group.id}
+                  count={getEntityTagCount(group)}
+                >
                   {tCommon('tagCount', { count: getEntityTagCount(group) })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(group: Group) => (

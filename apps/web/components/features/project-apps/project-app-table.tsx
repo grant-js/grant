@@ -10,10 +10,10 @@ import {
   type DataTableColumnConfig,
   EntityCreateNavigateButton,
   EntityNavigationButton,
+  LoadedCountChip,
   ScrollBadges,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { useScopeFromParams } from '@/hooks/common';
 import { DATA_TABLE_OPEN_BUTTON_COLUMN_WIDTH } from '@/lib/detail-table-column-width';
 import { getEntityTagCount } from '@/lib/entity-list';
@@ -79,7 +79,9 @@ export function ProjectAppTable() {
       header: t('table.tags'),
       width: '120px',
       render: (app: ProjectApp) => (
-        <Badge variant="secondary">{tCommon('tagCount', { count: getEntityTagCount(app) })}</Badge>
+        <LoadedCountChip items={app.tags} count={getEntityTagCount(app)}>
+          {tCommon('tagCount', { count: getEntityTagCount(app) })}
+        </LoadedCountChip>
       ),
     },
     {

@@ -47,6 +47,7 @@ export * from './password-input';
 export * from './password-strength-indicator';
 export * from './primary-tag-selector';
 export * from './refresh-button';
+export * from './relation-count-chip';
 export * from './scroll-badges';
 export * from './search';
 export * from './sidebar-account-dropdown';

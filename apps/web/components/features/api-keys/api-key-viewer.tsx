@@ -37,8 +37,8 @@ import { ApiKeyActions } from './api-key-actions';
 import { ApiKeyAudit } from './api-key-audit';
 import { ApiKeyCards } from './api-key-cards';
 import { ApiKeyCreateAction } from './api-key-create-action';
+import { ApiKeyGrant } from './api-key-grant';
 import { ApiKeySecretDialog } from './api-key-secret-dialog';
-import { useApiKeyGrantLabel } from './use-api-key-grant-label';
 
 const TABLE_ID = 'apiKeys.list';
 
@@ -60,7 +60,6 @@ export function ApiKeyViewer({
   const scope = scopeProp ?? scopeFromParams;
 
   const t = useTranslations('user.apiKeys');
-  const grantLabel = useApiKeyGrantLabel();
   const page = useApiKeysStore((state) => state.page);
   const limit = useApiKeysStore((state) => state.limit);
   const search = useApiKeysStore((state) => state.search);
@@ -196,7 +195,7 @@ export function ApiKeyViewer({
               width: '150px',
               ...USER_DETAIL_TEXT_COLUMN,
               render: (apiKey: ApiKey) => (
-                <span className="text-sm text-muted-foreground">{grantLabel(apiKey)}</span>
+                <ApiKeyGrant apiKey={apiKey} className="text-sm text-muted-foreground" />
               ),
             },
           ]
@@ -263,7 +262,7 @@ export function ApiKeyViewer({
           ]
         : []),
     ],
-    [embedded, formatDate, grantLabel, showRoleColumn, t]
+    [embedded, formatDate, showRoleColumn, t]
   );
 
   const { visibleColumns, filterSkeletonColumns } = usePageTableColumnVisibility(columns, {

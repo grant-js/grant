@@ -57,8 +57,8 @@ export function ProjectAppActions({ projectApp, scope }: ProjectAppActionsProps)
   if (!scope || requiresEmailVerification) return null;
 
   const canTest = canQuery && (projectApp.redirectUris?.length ?? 0) > 0;
-  const permissionsResolved = hasBeenOpened && !isUpdateLoading && !isDeleteLoading;
-  if (permissionsResolved && !canUpdate && !canDelete && !canTest) return null;
+  const permissionsResolved =
+    hasBeenOpened && !isUpdateLoading && !isDeleteLoading && !isTestLoading;
 
   // Build actions array based on permissions
   const actions: ActionItem<ProjectApp>[] = [];
@@ -99,7 +99,7 @@ export function ProjectAppActions({ projectApp, scope }: ProjectAppActionsProps)
     });
   }
 
-  const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading || isTestLoading);
+  const isLoading = !permissionsResolved;
 
   return (
     <Actions

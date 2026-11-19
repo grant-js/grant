@@ -333,6 +333,23 @@ export type DeleteGroupMutation = {
   };
 };
 
+export type GetGroupRelationsPreviewQueryVariables = Exact<{
+  scope: Types.Scope;
+  id: string | number;
+  withPermissions: boolean;
+  withTags: boolean;
+}>;
+
+export type GetGroupRelationsPreviewQuery = {
+  groups: {
+    groups: Array<{
+      id: string;
+      permissions?: Array<{ id: string; name: string }> | null;
+      tags?: Array<{ id: string; name: string; color: string }> | null;
+    }>;
+  };
+};
+
 export type GetGroupsQueryVariables = Exact<{
   scope: Types.Scope;
   page?: number | null | undefined;
@@ -1141,6 +1158,20 @@ export type DeletePermissionMutation = {
   };
 };
 
+export type GetPermissionRelationsPreviewQueryVariables = Exact<{
+  scope: Types.Scope;
+  id: string | number;
+}>;
+
+export type GetPermissionRelationsPreviewQuery = {
+  permissions: {
+    permissions: Array<{
+      id: string;
+      tags: Array<{ id: string; name: string; color: string }> | null;
+    }>;
+  };
+};
+
 export type GetPermissionsQueryVariables = Exact<{
   scope: Types.Scope;
   page?: number | null | undefined;
@@ -1870,6 +1901,23 @@ export type DeleteRoleMutation = {
   };
 };
 
+export type GetRoleRelationsPreviewQueryVariables = Exact<{
+  scope: Types.Scope;
+  id: string | number;
+  withGroups: boolean;
+  withTags: boolean;
+}>;
+
+export type GetRoleRelationsPreviewQuery = {
+  roles: {
+    roles: Array<{
+      id: string;
+      groups?: Array<{ id: string; name: string }> | null;
+      tags?: Array<{ id: string; name: string; color: string }> | null;
+    }>;
+  };
+};
+
 export type GetRolesQueryVariables = Exact<{
   scope: Types.Scope;
   page?: number | null | undefined;
@@ -2191,6 +2239,23 @@ export type DeleteUserMutationVariables = Exact<{
 
 export type DeleteUserMutation = {
   deleteUser: { id: string; name: string; createdAt: Date; updatedAt: Date };
+};
+
+export type GetUserRelationsPreviewQueryVariables = Exact<{
+  scope: Types.Scope;
+  id: string | number;
+  withRoles: boolean;
+  withTags: boolean;
+}>;
+
+export type GetUserRelationsPreviewQuery = {
+  users: {
+    users: Array<{
+      id: string;
+      roles?: Array<{ id: string; name: string }> | null;
+      tags?: Array<{ id: string; name: string; color: string }> | null;
+    }>;
+  };
 };
 
 export type GetUsersQueryVariables = Exact<{
@@ -3798,6 +3863,149 @@ export const DeleteGroupDocument = {
     },
   ],
 } as unknown as DocumentNode<DeleteGroupMutation, DeleteGroupMutationVariables>;
+export const GetGroupRelationsPreviewDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetGroupRelationsPreview' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withPermissions' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withTags' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'groups' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: {
+                  kind: 'ListValue',
+                  values: [{ kind: 'Variable', name: { kind: 'Name', value: 'id' } }],
+                },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'groups' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'permissions' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withPermissions' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'tags' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withTags' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetGroupRelationsPreviewQuery, GetGroupRelationsPreviewQueryVariables>;
 export const GetGroupsDocument = {
   kind: 'Document',
   definitions: [
@@ -6909,6 +7117,93 @@ export const DeletePermissionDocument = {
     },
   ],
 } as unknown as DocumentNode<DeletePermissionMutation, DeletePermissionMutationVariables>;
+export const GetPermissionRelationsPreviewDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetPermissionRelationsPreview' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'permissions' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: {
+                  kind: 'ListValue',
+                  values: [{ kind: 'Variable', name: { kind: 'Name', value: 'id' } }],
+                },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'permissions' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'tags' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  GetPermissionRelationsPreviewQuery,
+  GetPermissionRelationsPreviewQueryVariables
+>;
 export const GetPermissionsDocument = {
   kind: 'Document',
   definitions: [
@@ -9734,6 +10029,149 @@ export const DeleteRoleDocument = {
     },
   ],
 } as unknown as DocumentNode<DeleteRoleMutation, DeleteRoleMutationVariables>;
+export const GetRoleRelationsPreviewDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetRoleRelationsPreview' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withGroups' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withTags' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'roles' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: {
+                  kind: 'ListValue',
+                  values: [{ kind: 'Variable', name: { kind: 'Name', value: 'id' } }],
+                },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'roles' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'groups' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withGroups' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'tags' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withTags' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetRoleRelationsPreviewQuery, GetRoleRelationsPreviewQueryVariables>;
 export const GetRolesDocument = {
   kind: 'Document',
   definitions: [
@@ -11344,6 +11782,149 @@ export const DeleteUserDocument = {
     },
   ],
 } as unknown as DocumentNode<DeleteUserMutation, DeleteUserMutationVariables>;
+export const GetUserRelationsPreviewDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'GetUserRelationsPreview' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Scope' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withRoles' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withTags' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'users' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'scope' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'scope' } },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'ids' },
+                value: {
+                  kind: 'ListValue',
+                  values: [{ kind: 'Variable', name: { kind: 'Name', value: 'id' } }],
+                },
+              },
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: { kind: 'IntValue', value: '1' },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'users' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'roles' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withRoles' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'tags' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withTags' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<GetUserRelationsPreviewQuery, GetUserRelationsPreviewQueryVariables>;
 export const GetUsersDocument = {
   kind: 'Document',
   definitions: [

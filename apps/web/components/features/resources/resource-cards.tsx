@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Resource } from '@grantjs/schema';
@@ -11,8 +12,9 @@ import {
   CardHeader,
   EntityCreateNavigateButton,
   EntityNavigationButton,
+  LoadedCountChip,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import { usePageCardFields } from '@/hooks/common';
 import { getEntityTagCount, getPrimaryTagFromEntity } from '@/lib/entity-list';
 import { useResourcesStore } from '@/stores/resources.store';
 
@@ -24,6 +26,16 @@ import { ResourceCardSkeleton } from './resource-card-skeleton';
 export function ResourceCards() {
   const t = useTranslations('resources');
   const tCommon = useTranslations('common');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'isActive', label: t('table.isActive') },
+      { key: 'actions', label: t('form.actions') },
+      { key: 'tags', label: t('table.tags') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'resources.list' });
 
   const limit = useResourcesStore((state) => state.limit);
   const search = useResourcesStore((state) => state.search);
@@ -68,8 +80,9 @@ export function ResourceCards() {
       }}
       renderBody={(resource: Resource) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'isActive',
               label: {
                 icon: <Activity className="h-3 w-3" />,
                 text: t('table.isActive'),
@@ -77,28 +90,33 @@ export function ResourceCards() {
               value: <ResourceActiveStatusLabel isActive={resource.isActive} />,
             },
             {
+              key: 'actions',
               label: {
                 icon: <Zap className="h-3 w-3" />,
                 text: t('form.actions'),
               },
               value: (
-                <Badge variant="secondary">
+                <LoadedCountChip
+                  items={resource.actions?.map((action) => ({ id: action, name: action }))}
+                  count={resource.actions?.length ?? 0}
+                >
                   {t('actionCount', { count: resource.actions?.length ?? 0 })}
-                </Badge>
+                </LoadedCountChip>
               ),
             },
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <LoadedCountChip items={resource.tags} count={getEntityTagCount(resource)}>
                   {tCommon('tagCount', { count: getEntityTagCount(resource) })}
-                </Badge>
+                </LoadedCountChip>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(resource: Resource) => (

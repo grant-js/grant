@@ -49,7 +49,6 @@ export function PermissionActions({ permission }: PermissionActionsProps) {
   if (!scope || requiresEmailVerification) return null;
 
   const permissionsResolved = hasBeenOpened && !isUpdateLoading && !isDeleteLoading;
-  if (permissionsResolved && !canUpdate && !canDelete) return null;
 
   // Build actions array based on permissions
   const actions: ActionItem<Permission>[] = [];
@@ -73,7 +72,7 @@ export function PermissionActions({ permission }: PermissionActionsProps) {
     });
   }
 
-  const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading);
+  const isLoading = !permissionsResolved;
 
   return (
     <Actions

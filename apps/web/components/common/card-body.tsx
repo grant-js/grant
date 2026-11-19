@@ -5,6 +5,8 @@ import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CardBodyItem {
+  /** Stable key: what a card view's field picker shows, hides and orders (`usePageCardFields`). */
+  key?: string;
   label: {
     icon?: ReactNode;
     text: string;
@@ -29,7 +31,7 @@ export function CardBody({ items, className, itemSpacing = 'md' }: CardBodyProps
   return (
     <div className={cn(spacingClass, className)}>
       {items.map((item, index) => (
-        <div key={index} className={cn('space-y-2', item.className)}>
+        <div key={item.key ?? index} className={cn('space-y-2', item.className)}>
           <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
             {item.label.icon && <span className="flex-shrink-0">{item.label.icon}</span>}
             {item.label.text}

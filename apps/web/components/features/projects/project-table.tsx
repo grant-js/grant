@@ -8,9 +8,9 @@ import { FolderOpen } from 'lucide-react';
 import {
   DataTable,
   type DataTableColumnConfig,
+  LoadedCountChip,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility, useProjectTags } from '@/hooks/common';
 import {
   DATA_TABLE_AVATAR_COLUMN_WIDTH,
@@ -112,11 +112,12 @@ export function ProjectTable() {
       header: t('table.tags'),
       width: '120px',
       render: (project: Project) => (
-        <Badge variant="secondary">
-          {tCommon('tagCount', {
-            count: getEntityTagCount({ tags: getProjectTags(project) }),
-          })}
-        </Badge>
+        <LoadedCountChip
+          items={getProjectTags(project)}
+          count={getEntityTagCount({ tags: getProjectTags(project) })}
+        >
+          {tCommon('tagCount', { count: getEntityTagCount({ tags: getProjectTags(project) }) })}
+        </LoadedCountChip>
       ),
     },
     {

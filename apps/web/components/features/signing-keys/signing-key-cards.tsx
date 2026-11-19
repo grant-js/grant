@@ -1,11 +1,13 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { GetSigningKeysQuery } from '@grantjs/schema';
 import { Calendar, Fingerprint } from 'lucide-react';
 
 import { CardBody, CardGrid, CardHeader, CopyToClipboard } from '@/components/common';
 import { Button } from '@/components/ui/button';
+import { usePageCardFields } from '@/hooks/common';
 import { useSigningKeysStore } from '@/stores/signing-keys.store';
 
 import { SigningKeyAudit } from './signing-key-audit';
@@ -15,6 +17,15 @@ type SigningKeyRow = GetSigningKeysQuery['signingKeys'][number];
 
 export function SigningKeyCards() {
   const t = useTranslations('signingKeys.viewer');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'rotatedAt', label: t('rotatedAt') },
+      { key: 'publicKey', label: t('publicKey') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'signingKeys.list' });
   const signingKeys = useSigningKeysStore((state) => state.signingKeys);
   const loading = useSigningKeysStore((state) => state.loading);
   const setRotateDialogOpen = useSigningKeysStore((state) => state.setRotateDialogOpen);
@@ -69,8 +80,9 @@ export function SigningKeyCards() {
       )}
       renderBody={(row: SigningKeyRow) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'rotatedAt',
               label: {
                 icon: <Calendar className="h-3 w-3" />,
                 text: t('rotatedAt'),
@@ -82,6 +94,7 @@ export function SigningKeyCards() {
               ),
             },
             {
+              key: 'publicKey',
               label: {
                 icon: <Fingerprint className="h-3 w-3" />,
                 text: t('publicKey'),
@@ -97,7 +110,7 @@ export function SigningKeyCards() {
                 <span className="text-muted-foreground">—</span>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(row: SigningKeyRow) => <SigningKeyAudit signingKey={row} />}

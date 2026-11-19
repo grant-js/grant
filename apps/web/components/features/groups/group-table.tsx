@@ -10,9 +10,9 @@ import {
   DataTable,
   type DataTableColumnConfig,
   EntityCreateNavigateButton,
+  RelationCountChip,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
 import { usePageTableColumnVisibility } from '@/hooks/common';
 import {
   DATA_TABLE_AVATAR_COLUMN_WIDTH,
@@ -88,9 +88,14 @@ export function GroupTable() {
       header: t('form.permissions'),
       width: '120px',
       render: (group: Group) => (
-        <Badge variant="secondary">
+        <RelationCountChip
+          entity="group"
+          relation="permissions"
+          entityId={group.id}
+          count={group.permissionCount ?? 0}
+        >
           {t('permissionCount', { count: group.permissionCount ?? 0 })}
-        </Badge>
+        </RelationCountChip>
       ),
     },
     {
@@ -98,9 +103,14 @@ export function GroupTable() {
       header: t('table.tags'),
       width: '120px',
       render: (group: Group) => (
-        <Badge variant="secondary">
+        <RelationCountChip
+          entity="group"
+          relation="tags"
+          entityId={group.id}
+          count={getEntityTagCount(group)}
+        >
           {tCommon('tagCount', { count: getEntityTagCount(group) })}
-        </Badge>
+        </RelationCountChip>
       ),
     },
     {

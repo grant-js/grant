@@ -85,7 +85,10 @@
       "resizeColumn": "Spalte {column} anpassen",
       "moveColumnUp": "{column} nach oben verschieben",
       "moveColumnDown": "{column} nach unten verschieben",
-      "columnMoved": "{column} an Position {position} von {total} verschoben"
+      "columnMoved": "{column} an Position {position} von {total} verschoben",
+      "fields": "Felder",
+      "toggleFields": "Felder ein-/ausblenden",
+      "resetFields": "Felder zurücksetzen"
     },
     "detailAttachmentFilter": {
       "label": "Anzeigen",
@@ -142,6 +145,7 @@
     "emptyElements": "Keine {title} zum Anzeigen",
     "loading": "Wird geladen...",
     "noItemsAvailable": "Keine Einträge verfügbar",
+    "noActionsAvailable": "Keine Aktionen verfügbar",
     "noTagsAvailable": "Keine Tags verfügbar",
     "tagCount": "{count, plural, =0 {Keine Tags} one {# Tag} other {# Tags}}",
     "yes": "Ja",
@@ -176,6 +180,11 @@
       "group": "Gruppe {name} öffnen",
       "permission": "Berechtigung {name} öffnen",
       "resource": "Ressource {name} öffnen"
+    },
+    "relationPreview": {
+      "notAvailable": "Nicht verfügbar",
+      "none": "Keine",
+      "viewAll": "Alle anzeigen ({count})"
     }
   },
   "demo": {
@@ -992,6 +1001,7 @@
       "setEmailSuccess": "E-Mail festgelegt",
       "setEmailError": "E-Mail konnte nicht festgelegt werden",
       "setEmailConflict": "Ein anderer Benutzer hat diese E-Mail-Adresse bereits.",
+      "setEmailConflictHasSignIn": "Ein anderer Benutzer hat diese E-Mail-Adresse bereits. Dieser Benutzer hat bereits eine eigene Anmeldung und kann daher nicht mit diesem Benutzer verknüpft werden.",
       "linkIdentitySuccess": "Projektbenutzer mit dem bestehenden Benutzer verknüpft",
       "linkIdentityError": "Projektbenutzer konnte nicht verknüpft werden",
       "setPasswordSuccess": "Passwort festgelegt",

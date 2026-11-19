@@ -1,0 +1,21 @@
+query GetGroupRelationsPreview(
+  $scope: Scope!
+  $id: ID!
+  $withPermissions: Boolean!
+  $withTags: Boolean!
+) {
+  groups(scope: $scope, ids: [$id], limit: 1) {
+    groups {
+      id
+      permissions @include(if: $withPermissions) {
+        id
+        name
+      }
+      tags @include(if: $withTags) {
+        id
+        name
+        color
+      }
+    }
+  }
+}

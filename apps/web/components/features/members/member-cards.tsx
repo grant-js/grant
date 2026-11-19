@@ -1,11 +1,13 @@
 'use client';
 
+import { type ComponentProps, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { OrganizationInvitationStatus } from '@grantjs/schema';
 import { Shield, UserCheck, UserCircle } from 'lucide-react';
 
 import { CardBody, CardGrid, CardHeader } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageCardFields } from '@/hooks/common';
 import { MemberWithInvitation } from '@/hooks/members';
 import { useMembersStore } from '@/stores/members.store';
 
@@ -16,6 +18,15 @@ import { MemberCardSkeleton } from './member-card-skeleton';
 export function MemberCards() {
   const t = useTranslations('members');
   const tRoot = useTranslations();
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'role', label: t('table.role') },
+      { key: 'status', label: t('table.status') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'members.list' });
   const limit = useMembersStore((state) => state.limit);
   const search = useMembersStore((state) => state.search);
   const members = useMembersStore((state) => state.members);
@@ -91,10 +102,11 @@ export function MemberCards() {
         />
       )}
       renderBody={(member: MemberWithInvitation) => {
-        const items = [];
+        const items: ComponentProps<typeof CardBody>['items'] = [];
 
         if (member.role) {
           items.push({
+            key: 'role',
             label: {
               icon: <Shield className="h-3 w-3" />,
               text: t('table.role'),
@@ -104,6 +116,7 @@ export function MemberCards() {
         }
 
         items.push({
+          key: 'status',
           label: {
             icon: <UserCircle className="h-3 w-3" />,
             text: t('table.status'),
@@ -116,7 +129,7 @@ export function MemberCards() {
             ),
         });
 
-        return <CardBody items={items} />;
+        return <CardBody items={arrange(items)} />;
       }}
       renderFooter={(member: MemberWithInvitation) => <MemberAudit member={member} />}
     />

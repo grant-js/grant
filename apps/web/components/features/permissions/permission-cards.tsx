@@ -1,12 +1,20 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Permission } from '@grantjs/schema';
 import { CopyCheck, Package, Play, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid, CardHeader, EntityCreateNavigateButton } from '@/components/common';
+import {
+  CardBody,
+  CardGrid,
+  CardHeader,
+  EntityCreateNavigateButton,
+  RelationCountChip,
+} from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageCardFields } from '@/hooks/common';
 import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
@@ -22,6 +30,16 @@ import { PermissionNavigationButton } from './permission-navigation-button';
 export function PermissionCards() {
   const t = useTranslations('permissions');
   const tCommon = useTranslations('common');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'resource', label: t('form.resource') },
+      { key: 'action', label: t('form.action') },
+      { key: 'tags', label: t('table.tags') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'permissions.list' });
 
   const limit = usePermissionsStore((state) => state.limit);
   const search = usePermissionsStore((state) => state.search);
@@ -73,8 +91,9 @@ export function PermissionCards() {
       }}
       renderBody={(permission: Permission) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'resource',
               label: {
                 icon: <Package className="h-3 w-3" />,
                 text: t('form.resource'),
@@ -86,6 +105,7 @@ export function PermissionCards() {
               ),
             },
             {
+              key: 'action',
               label: {
                 icon: <Play className="h-3 w-3" />,
                 text: t('form.action'),
@@ -93,17 +113,23 @@ export function PermissionCards() {
               value: <Badge variant="secondary">{permission.action}</Badge>,
             },
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="permission"
+                  relation="tags"
+                  entityId={permission.id}
+                  count={getEntityTagCount(permission)}
+                >
                   {tCommon('tagCount', { count: getEntityTagCount(permission) })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(permission: Permission) => (

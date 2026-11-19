@@ -10,6 +10,7 @@ import {
   DataTable,
   type DataTableColumnConfig,
   EntityCreateNavigateButton,
+  RelationCountChip,
   ScrollBadges,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
@@ -24,6 +25,7 @@ import {
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
 } from '@/lib/entity-list';
+import { getUserEmail } from '@/lib/user-email';
 import { cn, getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -85,11 +87,31 @@ export function UserTable() {
       render: (user: User) => <span className="text-sm font-medium">{user.name}</span>,
     },
     {
+      key: 'email',
+      header: t('table.email'),
+      width: '240px',
+      render: (user: User) => {
+        const email = getUserEmail(user);
+        return email ? (
+          <span className="block truncate text-sm text-muted-foreground" title={email}>
+            {email}
+          </span>
+        ) : null;
+      },
+    },
+    {
       key: 'roles',
       header: t('table.roles'),
       width: '120px',
       render: (user: User) => (
-        <Badge variant="secondary">{t('roleCount', { count: user.roleCount ?? 0 })}</Badge>
+        <RelationCountChip
+          entity="user"
+          relation="roles"
+          entityId={user.id}
+          count={user.roleCount ?? 0}
+        >
+          {t('roleCount', { count: user.roleCount ?? 0 })}
+        </RelationCountChip>
       ),
     },
     {
@@ -115,7 +137,14 @@ export function UserTable() {
       header: t('table.tags'),
       width: '120px',
       render: (user: User) => (
-        <Badge variant="secondary">{tCommon('tagCount', { count: getEntityTagCount(user) })}</Badge>
+        <RelationCountChip
+          entity="user"
+          relation="tags"
+          entityId={user.id}
+          count={getEntityTagCount(user)}
+        >
+          {tCommon('tagCount', { count: getEntityTagCount(user) })}
+        </RelationCountChip>
       ),
     },
     {
@@ -140,6 +169,7 @@ export function UserTable() {
     columns: filterSkeletonColumns([
       { key: 'avatar', type: 'avatar-only' },
       { key: 'name', type: 'text' },
+      { key: 'email', type: 'text' },
       { key: 'roles', type: 'text' },
       { key: 'apiKeys', type: 'text' },
       { key: 'authMethods', type: 'list' },

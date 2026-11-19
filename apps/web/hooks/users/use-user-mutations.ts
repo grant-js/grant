@@ -148,11 +148,12 @@ export function useUserMutations() {
   /**
    * `onConflict`: called instead of the error toast when another account holds the address,
    * so a caller that can offer the identity link takes over. Without it, the conflict gets a
-   * toast that says what happened. The error is rethrown either way, so the form stays open.
+   * toast that says what happened (`conflictDescription` when the caller knows more). The
+   * error is rethrown either way, so the form stays open.
    */
   const handleSetProjectUserEmail = async (
     input: SetProjectUserEmailInput,
-    options?: { onConflict?: () => void }
+    options?: { onConflict?: () => void; conflictDescription?: string }
   ) => {
     try {
       const result = await setProjectUserEmail({
@@ -170,7 +171,7 @@ export function useUserMutations() {
       console.error('Error setting project user email:', error);
       toast.error(t('notifications.setEmailError'), {
         description: conflict
-          ? t('notifications.setEmailConflict')
+          ? (options?.conflictDescription ?? t('notifications.setEmailConflict'))
           : error instanceof Error
             ? error.message
             : 'An unknown error occurred',

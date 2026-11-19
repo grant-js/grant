@@ -49,7 +49,6 @@ export function OrganizationActions({ organization }: OrganizationActionsProps) 
   if (!isEmailVerified) return null;
 
   const permissionsResolved = hasBeenOpened && !isUpdateLoading && !isDeleteLoading;
-  if (permissionsResolved && !canUpdate && !canDelete) return null;
 
   // Build actions array based on permissions
   const actions: ActionItem<Organization>[] = [];
@@ -73,7 +72,7 @@ export function OrganizationActions({ organization }: OrganizationActionsProps) 
     });
   }
 
-  const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading);
+  const isLoading = !permissionsResolved;
 
   return (
     <Actions

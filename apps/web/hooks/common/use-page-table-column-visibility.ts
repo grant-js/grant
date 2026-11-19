@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 
 import type { DataTableColumnConfig } from '@/components/common/data-table';
+import type { DataTableColumnToggleKind } from '@/components/common/data-table-column-toggle';
 import { NO_DEFAULT_HIDDEN_COLUMN_KEYS } from '@/lib/detail-table-column-visibility';
 import { useDataTableColumnsStore } from '@/stores/data-table-columns.store';
 
@@ -14,6 +15,8 @@ import {
 export interface UsePageTableColumnVisibilityOptions extends UseDataTableColumnStateOptions {
   /** When false, the table does not publish its column picker (e.g. card view is active). */
   enabled?: boolean;
+  /** What the toolbar picker is labelled as managing; `fields` for a card view's body fields. */
+  kind?: DataTableColumnToggleKind;
 }
 
 /**
@@ -25,6 +28,10 @@ export function usePageTableColumnVisibility<T>(
   options: UsePageTableColumnVisibilityOptions
 ) {
   const enabled = options.enabled ?? true;
+  const kind = options.kind ?? 'columns';
+  // A page can mount a disabled table hook beside a card view that publishes its fields;
+  // clearing by owner keeps the disabled one from wiping the other's picker.
+  const owner = useId();
   const visibility = useDataTableColumnState(columns, {
     tableId: options.tableId,
     defaultHiddenKeys: options.defaultHiddenKeys ?? NO_DEFAULT_HIDDEN_COLUMN_KEYS,
@@ -40,16 +47,18 @@ export function usePageTableColumnVisibility<T>(
 
   useEffect(() => {
     if (!enabled) {
-      clearColumnToggle();
+      clearColumnToggle(owner);
       return;
     }
 
-    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn);
+    setColumnToggle(columnToggleItems, toggleColumn, resetColumns, moveColumn, kind, owner);
     // columnToggleItems is rebuilt whenever the caller rebuilds its columns; itemsSignature
     // tracks the values the picker actually shows.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     enabled,
+    kind,
+    owner,
     itemsSignature,
     toggleColumn,
     resetColumns,
@@ -58,7 +67,7 @@ export function usePageTableColumnVisibility<T>(
     clearColumnToggle,
   ]);
 
-  useEffect(() => () => clearColumnToggle(), [clearColumnToggle]);
+  useEffect(() => () => clearColumnToggle(owner), [clearColumnToggle, owner]);
 
   return visibility;
 }

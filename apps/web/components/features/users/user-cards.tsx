@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { User } from '@grantjs/schema';
@@ -10,14 +11,17 @@ import {
   CardGrid,
   CardHeader,
   EntityCreateNavigateButton,
+  RelationCountChip,
   ScrollBadges,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
+import { usePageCardFields } from '@/hooks/common';
 import {
   getEntityTagCount,
   getPrimaryTagFromEntity,
   isSyntheticCdmEntity,
 } from '@/lib/entity-list';
+import { getUserEmail } from '@/lib/user-email';
 import { getInitials } from '@/lib/utils';
 import { useUsersStore } from '@/stores/users.store';
 
@@ -37,6 +41,17 @@ export function UserCards() {
   const hideSynthetic = useUsersStore((state) => state.hideSyntheticEntities);
 
   const tProjectApps = useTranslations('projectApps');
+
+  const cardFields = useMemo(
+    () => [
+      { key: 'roles', label: t('form.roles') },
+      { key: 'apiKeys', label: t('form.apiKeys') },
+      { key: 'authMethods', label: t('form.authMethods') },
+      { key: 'tags', label: t('table.tags') },
+    ],
+    [t]
+  );
+  const { arrange } = usePageCardFields(cardFields, { listId: 'users.list' });
   const transformAuthMethodsToBadges = (user: User) =>
     (user.authenticationMethods ?? []).map((m) => ({
       id: `${m.provider}:${m.providerId}`,
@@ -80,6 +95,7 @@ export function UserCards() {
               size: 'lg',
             }}
             title={user.name}
+            description={getUserEmail(user)}
             color={primaryTag?.color as TagColor | undefined}
             actions={<UserActions user={user} />}
           />
@@ -87,17 +103,26 @@ export function UserCards() {
       }}
       renderBody={(user: User) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'roles',
               label: {
                 icon: <Shield className="h-3 w-3" />,
                 text: t('form.roles'),
               },
               value: (
-                <Badge variant="secondary">{t('roleCount', { count: user.roleCount ?? 0 })}</Badge>
+                <RelationCountChip
+                  entity="user"
+                  relation="roles"
+                  entityId={user.id}
+                  count={user.roleCount ?? 0}
+                >
+                  {t('roleCount', { count: user.roleCount ?? 0 })}
+                </RelationCountChip>
               ),
             },
             {
+              key: 'apiKeys',
               label: {
                 icon: <KeyRound className="h-3 w-3" />,
                 text: t('form.apiKeys'),
@@ -109,6 +134,7 @@ export function UserCards() {
               ),
             },
             {
+              key: 'authMethods',
               label: {
                 icon: <LogIn className="h-3 w-3" />,
                 text: t('form.authMethods'),
@@ -116,17 +142,23 @@ export function UserCards() {
               value: <ScrollBadges items={transformAuthMethodsToBadges(user)} height={60} />,
             },
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <RelationCountChip
+                  entity="user"
+                  relation="tags"
+                  entityId={user.id}
+                  count={getEntityTagCount(user)}
+                >
                   {tCommon('tagCount', { count: getEntityTagCount(user) })}
-                </Badge>
+                </RelationCountChip>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(user: User) => (

@@ -49,7 +49,6 @@ export function RoleActions({ role }: RoleActionsProps) {
   if (!scope || requiresEmailVerification) return null;
 
   const permissionsResolved = hasBeenOpened && !isUpdateLoading && !isDeleteLoading;
-  if (permissionsResolved && !canUpdate && !canDelete) return null;
 
   // Build actions array based on permissions
   const actions: ActionItem<Role>[] = [];
@@ -73,7 +72,7 @@ export function RoleActions({ role }: RoleActionsProps) {
     });
   }
 
-  const isLoading = hasBeenOpened && (isUpdateLoading || isDeleteLoading);
+  const isLoading = !permissionsResolved;
 
   return (
     <Actions

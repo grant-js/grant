@@ -122,10 +122,8 @@ export function ProjectSyncJobActions({ job }: ProjectSyncJobActionsProps) {
     });
   }
 
-  const isLoading =
-    (hasBeenOpened && (isQueryLoading || isUpdateLoading)) ||
-    downloadingPayload ||
-    downloadingExport;
+  const permissionsResolved = hasBeenOpened && !isQueryLoading && !isUpdateLoading;
+  const isLoading = !permissionsResolved || downloadingPayload || downloadingExport;
 
   return (
     <Actions entity={job} actions={actions} onOpenChange={handleOpenChange} isLoading={isLoading} />

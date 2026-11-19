@@ -1,12 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Project } from '@grantjs/schema';
 import { FolderOpen, Tags } from 'lucide-react';
 
-import { CardBody, CardGrid } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
-import { useProjectTags } from '@/hooks/common';
+import { CardBody, CardGrid, LoadedCountChip } from '@/components/common';
+import { usePageCardFields, useProjectTags } from '@/hooks/common';
 import { getEntityTagCount } from '@/lib/entity-list';
 import { useProjectsStore } from '@/stores/projects.store';
 
@@ -19,6 +19,9 @@ import { ProjectNavigationButton } from './project-navigation-button';
 export function ProjectCards() {
   const t = useTranslations('projects');
   const tCommon = useTranslations('common');
+
+  const cardFields = useMemo(() => [{ key: 'tags', label: t('table.tags') }], [t]);
+  const { arrange } = usePageCardFields(cardFields, { listId: 'projects.list' });
   const getProjectTags = useProjectTags();
 
   const limit = useProjectsStore((state) => state.limit);
@@ -48,21 +51,25 @@ export function ProjectCards() {
       )}
       renderBody={(project: Project) => (
         <CardBody
-          items={[
+          items={arrange([
             {
+              key: 'tags',
               label: {
                 icon: <Tags className="h-3 w-3" />,
                 text: t('table.tags'),
               },
               value: (
-                <Badge variant="secondary">
+                <LoadedCountChip
+                  items={getProjectTags(project)}
+                  count={getEntityTagCount({ tags: getProjectTags(project) })}
+                >
                   {tCommon('tagCount', {
                     count: getEntityTagCount({ tags: getProjectTags(project) }),
                   })}
-                </Badge>
+                </LoadedCountChip>
               ),
             },
-          ]}
+          ])}
         />
       )}
       renderFooter={(project: Project) => (

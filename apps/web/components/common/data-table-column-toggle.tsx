@@ -29,7 +29,16 @@ export interface DataTableColumnToggleProps {
   /** Restores visibility, order and widths to the defaults; the button is hidden without it. */
   onReset?: () => void;
   iconOnly?: boolean;
+  /** What the picker manages: a table's columns, or the body fields of a card view. */
+  kind?: DataTableColumnToggleKind;
 }
+
+export type DataTableColumnToggleKind = 'columns' | 'fields';
+
+const TOGGLE_LABEL_KEYS = {
+  columns: { title: 'columns', toggle: 'toggleColumns', reset: 'resetColumns' },
+  fields: { title: 'fields', toggle: 'toggleFields', reset: 'resetFields' },
+} as const;
 
 interface DragState {
   key: string;
@@ -45,8 +54,10 @@ export function DataTableColumnToggle({
   onMove,
   onReset,
   iconOnly = true,
+  kind = 'columns',
 }: DataTableColumnToggleProps) {
   const t = useTranslations('common.dataTable');
+  const labels = TOGGLE_LABEL_KEYS[kind];
 
   const [announcement, setAnnouncement] = useState('');
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -135,10 +146,10 @@ export function DataTableColumnToggle({
       variant="outline"
       size={iconOnly ? 'default' : 'sm'}
       className={iconOnly ? 'size-9 min-w-9 max-w-9 p-2' : 'h-8'}
-      aria-label={t('columns')}
+      aria-label={t(labels.title)}
     >
       <Settings2 className={iconOnly ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
-      {!iconOnly && t('columns')}
+      {!iconOnly && t(labels.title)}
     </Button>
   );
 
@@ -149,16 +160,16 @@ export function DataTableColumnToggle({
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>{trigger}</PopoverTrigger>
           </TooltipTrigger>
-          <TooltipContent>{t('columns')}</TooltipContent>
+          <TooltipContent>{t(labels.title)}</TooltipContent>
         </Tooltip>
       ) : (
         <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       )}
       <PopoverContent align="end" className="w-[260px] p-1">
         <div className="text-muted-foreground px-2 py-1.5 text-sm font-medium">
-          {t('toggleColumns')}
+          {t(labels.toggle)}
         </div>
-        <ul className="max-h-80 overflow-y-auto" aria-label={t('toggleColumns')}>
+        <ul className="max-h-80 overflow-y-auto" aria-label={t(labels.toggle)}>
           {columns.map((column) => {
             const movableIndex = movableKeys.indexOf(column.key);
             const checkboxId = `column-toggle-${column.key}`;
@@ -251,7 +262,7 @@ export function DataTableColumnToggle({
               className="w-full justify-start"
               onClick={onReset}
             >
-              {t('resetColumns')}
+              {t(labels.reset)}
             </Button>
           </div>
         )}
@@ -269,6 +280,7 @@ export function PageTableColumnToggle({ iconOnly }: Pick<DataTableColumnTogglePr
   const onToggle = useDataTableColumnsStore((state) => state.toggleColumnVisibility);
   const onMove = useDataTableColumnsStore((state) => state.moveColumn);
   const onReset = useDataTableColumnsStore((state) => state.resetColumns);
+  const kind = useDataTableColumnsStore((state) => state.kind);
 
   if (!onToggle) {
     return null;
@@ -281,6 +293,7 @@ export function PageTableColumnToggle({ iconOnly }: Pick<DataTableColumnTogglePr
       onMove={onMove ?? undefined}
       onReset={onReset ?? undefined}
       iconOnly={iconOnly}
+      kind={kind}
     />
   );
 }

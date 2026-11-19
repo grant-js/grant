@@ -10,6 +10,7 @@ import {
   DataTable,
   type DataTableColumnConfig,
   EntityCreateNavigateButton,
+  RelationCountChip,
   type TableSkeletonColumnConfig,
 } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
@@ -107,9 +108,14 @@ export function PermissionTable() {
       header: t('table.tags'),
       width: '120px',
       render: (permission: Permission) => (
-        <Badge variant="secondary">
+        <RelationCountChip
+          entity="permission"
+          relation="tags"
+          entityId={permission.id}
+          count={getEntityTagCount(permission)}
+        >
           {tCommon('tagCount', { count: getEntityTagCount(permission) })}
-        </Badge>
+        </RelationCountChip>
       ),
     },
     {
