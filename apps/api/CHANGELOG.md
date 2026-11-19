@@ -1,5 +1,26 @@
 # grant-api
 
+## 1.30.1
+
+### Patch Changes
+
+- ed47089: The set-email dialog offers to link a project user to the existing identity only when the user has no sign-in method of its own, the only case the link accepts. For a user with its own sign-in, the conflict now says that another user has the address and this user cannot be linked to them. The API's refusal for that case is reworded ("has its own sign-in, so it cannot be replaced by another identity").
+- Updated dependencies [ed47089]
+  - @grantjs/schema@1.30.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.30.0
 
 ### Patch Changes
