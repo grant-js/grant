@@ -527,8 +527,8 @@ describe('UserProvisionCdmEntity key.grantUserId match', () => {
 
     await createEntity().apply(ctx, [row]);
 
-    // One read, of the keyed user (for the name rule), never a second one for the hint.
-    expect(userRepository.findLiveUserCdmMarkers).toHaveBeenCalledTimes(1);
+    // The key already names the user: no read of the hinted one, and no name rule to read for.
+    expect(userRepository.findLiveUserCdmMarkers).not.toHaveBeenCalled();
     expect(users.createUser).not.toHaveBeenCalled();
     expect(ctx.produced.userIds.get(externalKey)).toBe(grantUserId);
   });
@@ -655,14 +655,16 @@ describe('UserProvisionCdmEntity key.grantUserId match', () => {
   });
 });
 
-describe('UserProvisionCdmEntity names follow the document', () => {
+/**
+ * The global `users.name` belongs to the person. An import seeds it when it creates the user
+ * and never changes it afterwards, even for a user an earlier import of this project created
+ * (its global user carries this project's marker): that person may since have signed up,
+ * been invited or renamed themselves. The document's name goes to this project's
+ * `display_name` instead (`userNamesByKey`, written by the assignment step).
+ */
+describe('UserProvisionCdmEntity never renames the global user', () => {
   const userId = '30000000-0000-4000-8000-000000000003';
-  const importMarker = (externalKey: string, overrides: Record<string, unknown> = {}) => ({
-    projectId,
-    kind: 'user',
-    externalKey,
-    ...overrides,
-  });
+  const importMarker = (externalKey: string) => ({ projectId, kind: 'user', externalKey });
   const keyRow = (name: string, extra: Record<string, unknown> = {}) => ({
     externalKey: 'legacy-user-17',
     findBy: 'key' as const,
@@ -670,20 +672,15 @@ describe('UserProvisionCdmEntity names follow the document', () => {
     metadata: null,
     ...extra,
   });
-  const emailRow = (name: string, extra: Record<string, unknown> = {}) => ({
+  const emailRow = (name: string) => ({
     externalKey: 'ada@example.com',
     findBy: 'email' as const,
     name,
     metadata: null,
-    ...extra,
   });
-  /** The live read: who the user is, as an earlier import left them. */
-  const live = (name: string, globalMarker: unknown, membershipMarker: unknown = null) =>
-    userRepository.findLiveUserCdmMarkers.mockResolvedValue({
-      globalMarker,
-      membershipMarker,
-      name,
-    });
+  /** The live read: the markers an earlier import of this project left on the user. */
+  const live = (globalMarker: unknown, membershipMarker: unknown = null) =>
+    userRepository.findLiveUserCdmMarkers.mockResolvedValue({ globalMarker, membershipMarker });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -691,187 +688,118 @@ describe('UserProvisionCdmEntity names follow the document', () => {
     userAuthenticationMethods.createUserAuthenticationMethod.mockResolvedValue({});
     userRepository.findUserIdByCdmImport.mockResolvedValue(null);
     users.createUser.mockResolvedValue({ id: 'new-user-id' });
-    users.updateUser.mockResolvedValue({ id: userId });
   });
 
-  describe('findBy: key', () => {
-    it('renames a keyed reuse of a user the import created, and counts it', async () => {
-      userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
-      live('Old Name', importMarker('legacy-user-17'));
-      const ctx = createCtx();
+  function expectKeptGlobalName(ctx: CdmApplyContext, externalKey: string, name: string) {
+    expect(users.updateUser).not.toHaveBeenCalled();
+    expect(users.createUser).not.toHaveBeenCalled();
+    expect(ctx.result.usersRenamed).toBe(0);
+    expect(ctx.produced.userIds.get(externalKey)).toBe(userId);
+    // The project still gets the document's name, as its display name.
+    expect(ctx.produced.userNamesByKey.get(externalKey)).toBe(name);
+  }
 
-      await createEntity().apply(ctx, [keyRow('  New Name ')]);
+  it('seeds the trimmed document name on a user the import creates (findBy: key)', async () => {
+    const ctx = createCtx();
 
-      expect(users.updateUser).toHaveBeenCalledTimes(1);
-      expect(users.updateUser).toHaveBeenCalledWith(userId, { name: 'New Name' }, tx);
-      expect(ctx.result.usersRenamed).toBe(1);
-      expect(users.createUser).not.toHaveBeenCalled();
-      expect(ctx.produced.userIds.get('legacy-user-17')).toBe(userId);
-    });
+    await createEntity().apply(ctx, [keyRow('  Brand New ')]);
 
-    it('does not touch a user whose name already equals the document name', async () => {
-      userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
-      live('Ada Lovelace', importMarker('legacy-user-17'));
-      const ctx = createCtx();
-
-      await createEntity().apply(ctx, [keyRow(' Ada Lovelace ')]);
-
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(ctx.result.usersRenamed).toBe(0);
-    });
-
-    it('does not rename a user the import only reused: the marker is on the membership row, not the global user', async () => {
-      userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
-      live('Own Name', null, importMarker('legacy-user-17'));
-      const ctx = createCtx();
-
-      await createEntity().apply(ctx, [keyRow('Document Name')]);
-
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(ctx.result.usersRenamed).toBe(0);
-    });
-
-    it("does not rename a user whose global marker is another project's or another key's", async () => {
-      userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
-      const ctx = createCtx();
-
-      live('Own Name', importMarker('legacy-user-17', { projectId: 'other-project' }));
-      await createEntity().apply(ctx, [keyRow('Document Name')]);
-      live('Own Name', importMarker('another-key'));
-      await createEntity().apply(ctx, [keyRow('Document Name')]);
-
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(ctx.result.usersRenamed).toBe(0);
-    });
-
-    it('never renames a user matched by a grantUserId hint, on the first import or a later one', async () => {
-      const grantUserId = '30000000-0000-4000-8000-000000000001';
-      live('Own Name', null);
-      const first = createCtx();
-      await createEntity().apply(first, [keyRow('Document Name', { grantUserId })]);
-
-      // Later import: the assignment wrote the marker on the membership row, so the key resolves.
-      userRepository.findUserIdByCdmImport.mockResolvedValue(grantUserId);
-      live('Own Name', null, importMarker('legacy-user-17'));
-      const later = createCtx();
-      await createEntity().apply(later, [keyRow('Document Name', { grantUserId })]);
-
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(first.result.usersRenamed + later.result.usersRenamed).toBe(0);
-    });
-
-    it('does not rename a user it just created, and counts creation only', async () => {
-      const ctx = createCtx();
-
-      await createEntity().apply(ctx, [keyRow('Brand New')]);
-
-      expect(users.createUser).toHaveBeenCalledTimes(1);
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(ctx.result.usersCreated).toBe(1);
-      expect(ctx.result.usersRenamed).toBe(0);
-    });
-
-    it('counts each rename once across a document', async () => {
-      userRepository.findUserIdByCdmImport.mockImplementation(
-        async ({ externalKey }: { externalKey: string }) => `id-of-${externalKey}`
-      );
-      userRepository.findLiveUserCdmMarkers.mockImplementation(
-        async ({ userId: id }: { userId: string }) => ({
-          globalMarker: importMarker(id.replace('id-of-', '')),
-          membershipMarker: null,
-          name: id === 'id-of-k2' ? 'Same' : 'Old',
-        })
-      );
-      const ctx = createCtx();
-
-      await createEntity().apply(ctx, [
-        keyRow('Same', { externalKey: 'k2' }),
-        keyRow('Renamed 1', { externalKey: 'k1' }),
-        keyRow('Renamed 3', { externalKey: 'k3' }),
-      ]);
-
-      expect(users.updateUser).toHaveBeenCalledTimes(2);
-      expect(ctx.result.usersRenamed).toBe(2);
-    });
+    expect(users.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Brand New' }),
+      tx
+    );
+    expect(users.updateUser).not.toHaveBeenCalled();
+    expect(ctx.result.usersCreated).toBe(1);
+    expect(ctx.result.usersRenamed).toBe(0);
+    expect(ctx.produced.userNamesByKey.get('legacy-user-17')).toBe('Brand New');
   });
 
-  describe('findBy: email', () => {
-    it('renames the owner of a live e-mail identity that carries this project key on the global user', async () => {
-      userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
-        userId,
-        provider: UserAuthenticationMethodProvider.Email,
-      });
-      live('Old Name', importMarker('ada@example.com'));
-      const ctx = createCtx();
+  it('seeds the trimmed document name on a user the import creates (findBy: email)', async () => {
+    const ctx = createCtx();
 
-      await createEntity().apply(ctx, [emailRow('Ada Lovelace')]);
+    await createEntity().apply(ctx, [emailRow(' Ada Lovelace ')]);
 
-      expect(users.updateUser).toHaveBeenCalledWith(userId, { name: 'Ada Lovelace' }, tx);
-      expect(ctx.result.usersRenamed).toBe(1);
-      // The liveness read already has the markers and the name: no second read.
-      expect(userRepository.findLiveUserCdmMarkers).toHaveBeenCalledTimes(1);
+    expect(users.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Ada Lovelace' }),
+      tx
+    );
+    expect(users.updateUser).not.toHaveBeenCalled();
+    expect(ctx.produced.userNamesByKey.get('ada@example.com')).toBe('Ada Lovelace');
+  });
+
+  it('keeps the name of a keyed user an earlier import of this project created', async () => {
+    userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
+    live(importMarker('legacy-user-17'));
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [keyRow('  Document Name ')]);
+
+    expectKeptGlobalName(ctx, 'legacy-user-17', 'Document Name');
+  });
+
+  it('keeps the name of a keyed user that only carries the membership-row marker', async () => {
+    userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
+    live(null, importMarker('legacy-user-17'));
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [keyRow('Document Name')]);
+
+    expectKeptGlobalName(ctx, 'legacy-user-17', 'Document Name');
+  });
+
+  it('keeps the name of a user matched by a grantUserId hint', async () => {
+    live(null);
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [keyRow('Document Name', { grantUserId: userId })]);
+
+    expectKeptGlobalName(ctx, 'legacy-user-17', 'Document Name');
+  });
+
+  it('keeps the name of the owner of a live e-mail identity, created by this import or not', async () => {
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+      userId,
+      provider: UserAuthenticationMethodProvider.Email,
     });
-
-    it('keeps the name of a pre-existing account matched by e-mail (no marker)', async () => {
-      userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
-        userId,
-        provider: UserAuthenticationMethodProvider.Email,
-      });
-      live('Own Name', null);
+    for (const globalMarker of [importMarker('ada@example.com'), null]) {
+      vi.mocked(users.updateUser).mockClear();
+      live(globalMarker);
       const ctx = createCtx();
 
       await createEntity().apply(ctx, [emailRow('Document Name')]);
 
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(ctx.result.usersRenamed).toBe(0);
-      expect(ctx.produced.userIds.get('ada@example.com')).toBe(userId);
+      expectKeptGlobalName(ctx, 'ada@example.com', 'Document Name');
+    }
+  });
+
+  it('keeps the name of a user found by the key when the e-mail method is missing', async () => {
+    userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
+    live(importMarker('ada@example.com'));
+    const ctx = createCtx();
+
+    await createEntity().apply(ctx, [emailRow('Document Name')]);
+
+    expect(userAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalled();
+    expectKeptGlobalName(ctx, 'ada@example.com', 'Document Name');
+  });
+
+  it('keeps the name of a live keyed user when the address is also held by a deleted account', async () => {
+    userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
+      userId: 'deleted-user-id',
+      provider: UserAuthenticationMethodProvider.Email,
     });
+    userRepository.findLiveUserCdmMarkers.mockImplementation(
+      async ({ userId: id }: { userId: string }) =>
+        id === 'deleted-user-id'
+          ? null
+          : { globalMarker: importMarker('ada@example.com'), membershipMarker: null }
+    );
+    userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
+    const ctx = createCtx();
 
-    it('keeps the name of an e-mail match that only carries the membership-row marker', async () => {
-      userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
-        userId,
-        provider: UserAuthenticationMethodProvider.Email,
-      });
-      live('Own Name', null, importMarker('ada@example.com'));
+    await createEntity().apply(ctx, [emailRow('Document Name')]);
 
-      const ctx = createCtx();
-      await createEntity().apply(ctx, [emailRow('Document Name')]);
-
-      expect(users.updateUser).not.toHaveBeenCalled();
-      expect(ctx.result.usersRenamed).toBe(0);
-    });
-
-    it('renames a marker-carrying user found by the key when the e-mail method is missing', async () => {
-      userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
-      live('Old Name', importMarker('ada@example.com'));
-      const ctx = createCtx();
-
-      await createEntity().apply(ctx, [emailRow('Ada Lovelace')]);
-
-      expect(userAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalled();
-      expect(users.updateUser).toHaveBeenCalledWith(userId, { name: 'Ada Lovelace' }, tx);
-      expect(ctx.result.usersRenamed).toBe(1);
-    });
-
-    it('renames a live marker-carrying user when the address is also held by a deleted account', async () => {
-      userAuthenticationMethods.getUserAuthenticationMethodByEmail.mockResolvedValue({
-        userId: 'deleted-user-id',
-        provider: UserAuthenticationMethodProvider.Email,
-      });
-      userRepository.findLiveUserCdmMarkers.mockImplementation(
-        async ({ userId: id }: { userId: string }) =>
-          id === 'deleted-user-id'
-            ? null
-            : { globalMarker: importMarker('ada@example.com'), membershipMarker: null, name: 'Old' }
-      );
-      userRepository.findUserIdByCdmImport.mockResolvedValue(userId);
-      const ctx = createCtx();
-
-      await createEntity().apply(ctx, [emailRow('Ada Lovelace')]);
-
-      expect(users.updateUser).toHaveBeenCalledWith(userId, { name: 'Ada Lovelace' }, tx);
-      expect(ctx.result.usersRenamed).toBe(1);
-    });
+    expectKeptGlobalName(ctx, 'ada@example.com', 'Document Name');
   });
 });
 

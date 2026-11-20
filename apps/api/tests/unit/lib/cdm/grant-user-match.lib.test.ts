@@ -9,7 +9,6 @@ import {
   type GrantUserMatchCandidate,
   grantUserMatchRefusalMessage,
   markerNamesAnotherKey,
-  markerOwnsKey,
 } from '@/lib/cdm/grant-user-match.lib';
 
 const projectId = '10000000-0000-4000-8000-000000000011';
@@ -172,22 +171,4 @@ describe('grantUserMatchRefusalMessage', () => {
       expect(message).not.toContain(projectId);
     }
   );
-});
-
-describe('markerOwnsKey', () => {
-  it('is true for this project, kind user and exactly this key', () => {
-    expect(markerOwnsKey(marker(), projectId, externalKey)).toBe(true);
-  });
-
-  it.each([
-    ['another project', marker({ projectId: otherProjectId })],
-    ['another kind', marker({ kind: 'role' })],
-    ['another key', marker({ externalKey: 'x' })],
-    ['no key', marker({ externalKey: undefined })],
-    ['null', null],
-    ['an array', []],
-    ['a string', 'cdmImport'],
-  ])('is false for %s', (_label, value) => {
-    expect(markerOwnsKey(value, projectId, externalKey)).toBe(false);
-  });
 });

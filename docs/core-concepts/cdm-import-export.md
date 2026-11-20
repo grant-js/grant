@@ -215,12 +215,12 @@ A `findBy: key` user may also carry `key.grantUserId`, the id of an existing Gra
 
 For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
 
-### Names follow the document {#user-names}
+### An import never renames a user {#user-names}
 
-A user's `name` is written when the import creates the user, and a later import brings it back in line: when the document's trimmed `name` differs from the stored one, the import renames the user, for `findBy: key` and `findBy: email` alike. This applies only to a user **this project's import created** (the global user carries this project's `cdmImport` marker under the same key). An account that existed before the import, matched by e-mail or by [`grantUserId`](#grant-user-id), keeps its own name, and keeps it on later imports even though its membership row then carries the key. Another project's marker does not count.
+A user's global `name` belongs to the person. The import writes it only when it **creates** the user, from the document's trimmed `name` (the column cannot be empty). It never changes it afterwards, for `findBy: key` and `findBy: email` alike, whether the user is an account that existed before the import, one matched by [`grantUserId`](#grant-user-id), or one an earlier import created. A person an import created may later be invited, sign up, claim the identity or change their own name; a later import must not put the document's name back on their account, which they would see on their first sign-in.
 
-- **One write path.** The rename is the ordinary user update and writes an audit row. Events are suppressed during an import, so no `user.updated` is published. An unchanged name writes nothing.
-- **The counter.** The import result reports `usersRenamed`, a number only.
+- **The document's name goes to the project.** It becomes this project's display name for the person (next section), which is what the project shows.
+- **The counter.** `usersRenamed` is deprecated and always 0. Before this change, a later import renamed a user this project's import had created when the document's name differed.
 
 ### Each project keeps its own name {#project-display-names}
 

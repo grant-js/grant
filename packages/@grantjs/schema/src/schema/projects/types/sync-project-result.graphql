@@ -57,11 +57,12 @@ type SyncProjectResult {
   """
   usersSkippedTombstoned: Int!
   """
-  Users created by an earlier import of this project whose name was updated to the
-  document's name. A user the import only matched (a `grantUserId` hint) keeps its own name
-  and is not counted.
+  Always 0. An import no longer changes a user's global name: it seeds the name only when it
+  creates the user, and the document's name goes to the project display name
+  (`projectDisplayNamesUpdated`).
   """
   usersRenamed: Int!
+    @deprecated(reason: "Always 0: an import never renames a user. See projectDisplayNamesUpdated.")
   """
   Project memberships whose display name (this project's name for the person) was set to the
   document's `name` because it differed from the stored one. Counted for every provisioned
