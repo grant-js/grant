@@ -1,5 +1,11 @@
 # @grantjs/server
 
+## 1.30.4
+
+### Patch Changes
+
+- @grantjs/schema@1.30.4
+
 ## 1.30.3
 
 ### Patch Changes
