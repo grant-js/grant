@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ProjectAppPublicInfo } from './project-oauth.types';
-import { isProjectOAuthThemeMode } from './project-oauth.types';
+import type { ProjectAppPublicInfo } from './project-oauth.types.js';
+import { isProjectOAuthThemeMode } from './project-oauth.types.js';
 
 describe('isProjectOAuthThemeMode', () => {
   it('accepts the hosted OAuth appearance values', () => {

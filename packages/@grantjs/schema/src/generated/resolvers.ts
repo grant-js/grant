@@ -1,4 +1,4 @@
-import type * as Types from './schema-types';
+import type * as Types from './schema-types.js';
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
 export type RequireFields<T, K extends keyof T> = Omit<T, K> & { [P in K]-?: NonNullable<T[P]> };
 export type WithIndex<TObject> = TObject & Record<string, any>;

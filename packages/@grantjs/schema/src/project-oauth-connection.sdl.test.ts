@@ -1,7 +1,7 @@
 import { parse, validate } from 'graphql';
 import { describe, expect, it } from 'vitest';
 
-import { buildMergedSchema, operationFiles, readAll } from './test-support/sdl-fixture';
+import { buildMergedSchema, operationFiles, readAll } from './test-support/sdl-fixture.js';
 
 const SECRET_FIELD = /secret|encrypted|ciphertext|^iv$/i;
 
