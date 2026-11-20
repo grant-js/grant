@@ -511,8 +511,9 @@ const syncProjectResultSchema = z.object({
       'Document users not created because the person deleted this imported identity; their membership, credential and API keys were not written either.',
   }),
   usersRenamed: z.number().openapi({
+    deprecated: true,
     description:
-      "Users created by an earlier import of this project whose name was updated to the document's name. A user the import only matched keeps its own name and is not counted.",
+      "Deprecated, always 0. An import no longer changes a user's global name: it seeds the name only when it creates the user, and the document's name goes to the project display name (projectDisplayNamesUpdated).",
   }),
   projectDisplayNamesUpdated: z.number().openapi({
     description:

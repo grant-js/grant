@@ -151,13 +151,12 @@ self-service edit of the project display name is overwritten by the next replace
 
 ## User names on re-import
 
-`UserProvisionCdmEntity.renameIfImportCreated` updates a reused user's name to the document's
-trimmed `name` when it differs, **only** for a user whose global `metadata.cdmImport` marker names
-this project and key (`markerOwnsKey`): the marker an import's `createUser` writes. A reused or
-matched identity carries the marker on its membership row only, so a pre-existing account (e-mail
-match, `grantUserId` match) keeps its name. The write is `IUserService.updateUser` (an audit row; events are
-suppressed during an import, so no `user.updated` is published); the count is `usersRenamed`. The name is
-read in the same query as the markers (`findLiveUserCdmMarkers`), so a reused user costs no extra read.
+The import writes the global `users.name` only in `createUser`, seeded from the document's trimmed
+`name` (the column is `NOT NULL`). A reused or matched user is never renamed, including one an
+earlier import of this project created: the person may since have been invited, signed up,
+claimed the identity or renamed themselves, and the name is theirs. The document's name reaches
+the project through `display_name` (above). `SyncProjectResult.usersRenamed` is deprecated and
+always 0.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

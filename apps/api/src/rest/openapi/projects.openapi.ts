@@ -335,11 +335,11 @@ from the stored job payload when the job ends, and is replaced by \`[redacted]\`
 
 ### User names
 
-On a later import a user this project's import created takes the document's \`name\` when it differs
-(\`usersRenamed\` counts them; an audit row each, no event, since events are suppressed during an
-import). A user the import only matched, by e-mail or by \`grantUserId\`, keeps their own name.
+An import writes a user's global \`name\` only when it creates the user. It never renames a user
+afterwards, including one an earlier import created: that person may since have signed up, been
+invited or changed their name, and owns it. \`usersRenamed\` is deprecated and always 0.
 
-Each project also keeps its own name for a person: for every provisioned user (created, reused or
+Each project keeps its own name for a person: for every provisioned user (created, reused or
 matched) the import sets the membership's display name to the document's \`name\` when it differs
 (\`projectDisplayNamesUpdated\` counts them; the global name is not touched). A later replace import
 overwrites an operator's or self-service edit of the project display name. A \`name\` longer than 255

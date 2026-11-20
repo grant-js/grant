@@ -3955,9 +3955,10 @@ export type SyncProjectResult = {
   userTagsLinked: Scalars['Int']['output'];
   usersCreated: Scalars['Int']['output'];
   /**
-   * Users created by an earlier import of this project whose name was updated to the
-   * document's name. A user the import only matched (a `grantUserId` hint) keeps its own name
-   * and is not counted.
+   * Always 0. An import no longer changes a user's global name: it seeds the name only when it
+   * creates the user, and the document's name goes to the project display name
+   * (`projectDisplayNamesUpdated`).
+   * @deprecated Always 0: an import never renames a user. See projectDisplayNamesUpdated.
    */
   usersRenamed: Scalars['Int']['output'];
   /**
