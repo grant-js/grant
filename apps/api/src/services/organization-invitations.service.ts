@@ -35,6 +35,7 @@ import {
 import {
   checkPendingInvitationParamsSchema,
   createInvitationParamsSchema,
+  findPendingInvitationByEmailParamsSchema,
   getInvitationByTokenParamsSchema,
   getInvitationsByOrganizationParamsSchema,
   organizationInvitationSchema,
@@ -251,6 +252,33 @@ export class OrganizationInvitationService implements IOrganizationInvitationSer
     const invitation = await this.organizationInvitationRepository.checkPendingInvitation(
       validatedParams.email,
       validatedParams.organizationId,
+      transaction
+    );
+
+    if (!invitation) {
+      return null;
+    }
+
+    return validateOutput(
+      createDynamicSingleSchema(organizationInvitationSchema),
+      invitation,
+      context
+    );
+  }
+
+  public async findPendingInvitationByEmail(
+    email: string,
+    transaction?: Transaction
+  ): Promise<OrganizationInvitation | null> {
+    const context = 'OrganizationInvitationService.findPendingInvitationByEmail';
+    const validatedParams = validateInput(
+      findPendingInvitationByEmailParamsSchema,
+      { email },
+      context
+    );
+
+    const invitation = await this.organizationInvitationRepository.findPendingInvitationByEmail(
+      validatedParams.email.toLowerCase(),
       transaction
     );
 

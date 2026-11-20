@@ -16,7 +16,7 @@ import {
   QueryOrganizationInvitationsArgs,
   UpdateOrganizationInvitationInput,
 } from '@grantjs/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -176,6 +176,34 @@ export class OrganizationInvitationRepository
     );
 
     return result.items[0] || null;
+  }
+
+  /**
+   * A pending, unexpired invitation for `email` in any organization. `email` must already be
+   * normalised (trimmed, lower-case). Compared with `lower(email) = $1`, never `ILIKE`, so `%`
+   * and `_` in an address are literal characters.
+   */
+  public async findPendingInvitationByEmail(
+    email: string,
+    transaction?: Transaction
+  ): Promise<OrganizationInvitation | null> {
+    const dbInstance = transaction ?? this.db;
+
+    const [invitation] = await dbInstance
+      .select()
+      .from(organizationInvitations)
+      .where(
+        and(
+          sql`lower(${organizationInvitations.email}) = ${email}`,
+          eq(organizationInvitations.status, OrganizationInvitationStatus.Pending),
+          gt(organizationInvitations.expiresAt, new Date()),
+          isNull(organizationInvitations.deletedAt)
+        )
+      )
+      .orderBy(organizationInvitations.createdAt)
+      .limit(1);
+
+    return (invitation as unknown as OrganizationInvitation | undefined) ?? null;
   }
 
   public async updateInvitation(

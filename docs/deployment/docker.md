@@ -106,11 +106,11 @@ For a single canonical APP_URL (e.g. `https://demo.grantjs.org`) that routes to 
 
 A company can run this stack on the public internet without a VPN. Two independent controls (full reference: [Configuration](/getting-started/configuration#closed-install-public-signup-and-origin-verify)):
 
-| Variable                          | Closed-install value | Role                                                                                                                                                      |
-| --------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AUTH_PUBLIC_SIGNUP_ENABLED`      | `false`              | First human may self-register; after that, platform register and GitHub/Google **new** users are refused. Invitations and Project App `allowSignUp` stay. |
-| `ORIGIN_VERIFY_SECRET`            | a long random secret | Shared by API and the **Next.js server**. Never `NEXT_PUBLIC_*`.                                                                                          |
-| `SECURITY_ORIGIN_VERIFY_REQUIRED` | `true`               | Missing secret refuses every API request (fail closed).                                                                                                   |
+| Variable                          | Closed-install value | Role                                                                                                                                                                                                                                                  |
+| --------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_PUBLIC_SIGNUP_ENABLED`      | `false`              | First human may self-register; after that, platform register and GitHub/Google **new** users are refused. Invitations (including a GitHub/Google sign-up on an invited address the provider is authoritative for) and Project App `allowSignUp` stay. |
+| `ORIGIN_VERIFY_SECRET`            | a long random secret | Shared by API and the **Next.js server**. Never `NEXT_PUBLIC_*`.                                                                                                                                                                                      |
+| `SECURITY_ORIGIN_VERIFY_REQUIRED` | `true`               | Missing secret refuses every API request (fail closed).                                                                                                                                                                                               |
 
 `SECURITY_API_KEY` is unused and is **not** this gate.
 

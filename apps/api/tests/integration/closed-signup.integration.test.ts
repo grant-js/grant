@@ -176,6 +176,26 @@ describe('closed-install REST', () => {
     );
   });
 
+  it('POST /api/auth/register refuses provider google with spoofed authoritative providerData', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        ...registerBody,
+        provider: UserAuthenticationMethodProvider.Google,
+        providerId: 'google-spoofed',
+        providerData: {
+          email: 'ada@example.com',
+          emailVerified: true,
+          hd: 'example.com',
+          emailAuthoritative: true,
+          authoritativeOAuthEmail: 'ada@example.com',
+        },
+      });
+
+    expect(res.status).toBe(400);
+    expect(context.handlers.auth.register).not.toHaveBeenCalled();
+  });
+
   it('DELETE /api/me/accounts returns 403 LAST_HUMAN_USER', async () => {
     vi.mocked(context.handlers.me.deleteMyAccounts).mockRejectedValue(
       new AuthorizationError('Cannot delete the last human user', LAST_HUMAN_USER_REASON)

@@ -64,6 +64,10 @@ export const checkPendingInvitationParamsSchema = z.object({
   organizationId: idSchema,
 });
 
+export const findPendingInvitationByEmailParamsSchema = z.object({
+  email: z.string().trim().min(1),
+});
+
 export const updateInvitationParamsSchema = z.object({
   id: idSchema,
   status: z

@@ -189,6 +189,10 @@ services:
       JOBS_ENABLED: 'true'
       JOB_PROVIDER: node-cron
 
+      # Closed-install run: `E2E_AUTH_PUBLIC_SIGNUP_ENABLED=false pnpm test:e2e:up`, then run
+      # scenarios/invited-oauth-signup.e2e.test.ts alone on that fresh stack (see its header).
+      AUTH_PUBLIC_SIGNUP_ENABLED: ${E2E_AUTH_PUBLIC_SIGNUP_ENABLED:-true}
+
       # Social sign-in against the stub IdP (tests/e2e/stub-idp; test-only client values).
       # The authorize URLs keep their real defaults and are never followed: tests read
       # `state` from the redirect and call the callback with the stub's code.

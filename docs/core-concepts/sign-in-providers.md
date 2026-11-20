@@ -96,6 +96,15 @@ The identity is **claimable** only when its Email method is unverified, its addr
 
 A claim, in the request's transaction, marks the Email method verified and drops its pending OTP, **removes the platform credential** and **revokes every session** the user had. A password or a session set before the mailbox proof was not set by a proven owner, so none survives it: this is what keeps account pre-hijacking out (someone registers your address with their own password, then waits for you to sign in with Google). The user id, memberships, roles and **project** credentials stay. The authentication-method audit row records `operation: claim-unverified-email` and the proof (`google`, `github`, `organization-invitation`).
 
+### Invited sign-up on a closed install
+
+With `AUTH_PUBLIC_SIGNUP_ENABLED=false`, a first-time Google or GitHub sign-up is refused (`PUBLIC_SIGNUP_DISABLED`) unless the person is invited. It is admitted when **both** hold:
+
+- The provider is **authoritative** for the address, by the same rule as a claim above: Google for a Gmail address or an address in the Workspace domain it reports in `hd`; GitHub for an address it lists as verified.
+- A **pending, unexpired** organization invitation exists for that address in any organization. The address is compared exactly and case-insensitively; a revoked, accepted or expired invitation does not count.
+
+The provider's verified address is the mailbox proof, so no emailed proof token is needed and the person may start from the sign-in page as well as the invitation link. The OAuth callback passes the address to `AuthHandler.register` as a trusted argument. It is never read from `RegisterInput` or `providerData`, so REST `/api/auth/register` and the GraphQL `register` mutation (email-only) cannot set it. Sign-up creates the account only; the invitation page accepts the invitation afterwards, as for any invited user. The API logs `Invited OAuth sign-up allowed` with the provider and the invitation and organization ids.
+
 ### Passwordless Email bind
 
 After signup, connect, auto-link, later social login, and project OAuth, Grant also tries to attach a **passwordless** Email method when the IdP reports a verified mailbox:
