@@ -109,12 +109,22 @@ describe('i18n helpers', () => {
   });
 
   describe('t', () => {
-    it('returns req.i18n.t(key, params) when i18n exists', async () => {
+    it('returns req.i18n.t(key) when i18n exists and params are omitted', async () => {
       const { t } = await import('@/i18n/helpers');
-      const req = {
-        i18n: { t: vi.fn((key: string) => `T:${key}`) },
-      } as unknown as Request;
+      const i18nT = vi.fn((key: string) => `T:${key}`);
+      const req = { i18n: { t: i18nT } } as unknown as Request;
       expect(t(req, 'common.welcome')).toBe('T:common.welcome');
+      expect(i18nT).toHaveBeenCalledWith('common.welcome');
+    });
+
+    it('passes interpolation params when provided', async () => {
+      const { t } = await import('@/i18n/helpers');
+      const i18nT = vi.fn((key: string, params?: Record<string, unknown>) =>
+        params ? `T:${key}:${JSON.stringify(params)}` : `T:${key}`
+      );
+      const req = { i18n: { t: i18nT } } as unknown as Request;
+      expect(t(req, 'common.welcome', { name: 'Ada' })).toBe('T:common.welcome:{"name":"Ada"}');
+      expect(i18nT).toHaveBeenCalledWith('common.welcome', { name: 'Ada' });
     });
 
     it('returns key when req.i18n is missing', async () => {
@@ -151,6 +161,20 @@ describe('i18n helpers', () => {
       const { translateStatic } = await import('@/i18n/helpers');
       translateStatic('common.save');
       expect(mockGetFixedT).toHaveBeenCalledWith('en');
+    });
+
+    it('passes interpolation params when provided', async () => {
+      const { translateStatic } = await import('@/i18n/helpers');
+      const fixedT = vi.fn((key: string, params?: Record<string, unknown>) =>
+        params ? `translated:${key}:${JSON.stringify(params)}` : `translated:${key}`
+      );
+      mockGetFixedT.mockReturnValue(fixedT);
+      expect(translateStatic('email.invitation.subject', 'de', { organizationName: 'Acme' })).toBe(
+        'translated:email.invitation.subject:{"organizationName":"Acme"}'
+      );
+      expect(fixedT).toHaveBeenCalledWith('email.invitation.subject', {
+        organizationName: 'Acme',
+      });
     });
   });
 });

@@ -55,7 +55,9 @@ export function translateError(req: Request, error: HttpException): string {
 }
 
 export function t(req: Request, key: string, params?: Record<string, unknown>): string {
-  return (req.i18n?.t(key, params) as string) || key;
+  if (!req.i18n) return key;
+  const translated = params === undefined ? req.i18n.t(key) : req.i18n.t(key, params);
+  return (translated as string) || key;
 }
 
 export function getLocale(req: Request): SupportedLocale {
@@ -68,7 +70,7 @@ export function translateStatic(
   params?: Record<string, unknown>
 ): string {
   const fixedT = getFixedT(locale);
-  return fixedT(key, params);
+  return params === undefined ? fixedT(key) : fixedT(key, params);
 }
 
 export { isTranslationKey };
