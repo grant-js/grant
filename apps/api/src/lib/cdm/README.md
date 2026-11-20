@@ -151,12 +151,15 @@ self-service edit of the project display name is overwritten by the next replace
 
 ## User names on re-import
 
-The import writes the global `users.name` only in `createUser`, seeded from the document's trimmed
-`name` (the column is `NOT NULL`). A reused or matched user is never renamed, including one an
-earlier import of this project created: the person may since have been invited, signed up,
-claimed the identity or renamed themselves, and the name is theirs. The document's name reaches
-the project through `display_name` (above). `SyncProjectResult.usersRenamed` is deprecated and
-always 0.
+The document's `name` never reaches the global `users.name`. `createUser` gets the name a
+first-time sign-up would (`lib/sign-up-name.lib.ts`: the address before `@` for `findBy: email`,
+`User` for `findBy: key`; the column is `NOT NULL`). A reused or matched user is never renamed,
+including one an earlier import of this project created: the person may since have been invited,
+signed up, claimed the identity or renamed themselves, and the name is theirs. The document's name
+reaches the project through `display_name` (above), and `ProjectExportRepository.getProjectCdmProvisionedUsers`
+exports `coalesce(display_name, users.name)`, so an export gives it back. A claim gives the person
+the sign-up name of the path they claim through (`AuthHandler.takeSignUpNameOnClaim`).
+`SyncProjectResult.usersRenamed` is deprecated and always 0.
 
 Synthetic per-user roles are **not** generated. Legacy `synthetic:role:user:*` keys in
 `users.roles` are stripped during expand with a warning on the import result.

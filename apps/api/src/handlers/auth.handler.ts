@@ -61,6 +61,7 @@ import {
   normalizeVerifiedContactEmail,
 } from '@/lib/oauth-contact-email.lib';
 import { oauthPictureUrlFromProviderData, userPictureUrlIsEmpty } from '@/lib/oauth-picture.lib';
+import { signUpNameFromEmail } from '@/lib/sign-up-name.lib';
 import {
   assertPlatformSelfSignupAllowed,
   isPlatformSelfSignupAllowed,
@@ -348,10 +349,16 @@ export class AuthHandler extends CacheHandler {
 
   /**
    * Claims the identity behind `email` for `userId` on an OAuth provider's authoritative
-   * address, or throws the same error an unverified auto-link always threw.
+   * address, or throws the same error an unverified auto-link always threw. `name` is the name
+   * a first-time sign-up through the same path would get; the claimed user takes it.
    */
   private async claimEmailIdentityByOAuth(
-    params: { userId: string; email: string; provider: UserAuthenticationMethodProvider },
+    params: {
+      userId: string;
+      email: string;
+      provider: UserAuthenticationMethodProvider;
+      name: string;
+    },
     tx: Transaction
   ): Promise<void> {
     const proof = this.emailClaimProofOf(params.provider);
@@ -363,6 +370,26 @@ export class AuthHandler extends CacheHandler {
       { methodId: claimable.id, proof },
       tx
     );
+    await this.takeSignUpNameOnClaim(params.userId, params.name, tx);
+  }
+
+  /**
+   * A claim hands an identity that Grant created without its owner (a CDM import, an operator
+   * setting a project user's email) to the person who proved the mailbox. From then on the
+   * person is a user like any other, so their global name becomes the one a first-time
+   * sign-up through the same path would have got: the provider's profile name for Google or
+   * GitHub, the part of the address before `@` for e-mail (`signUpNameFromEmail`). Whatever the
+   * import or the operator called them stays where it belongs, in each project's display name.
+   * Through `UserService.updateUser` (audit row with the old name), only when it differs.
+   */
+  private async takeSignUpNameOnClaim(
+    userId: string,
+    name: string,
+    tx: Transaction
+  ): Promise<void> {
+    const current = await this.users.getUsers({ ids: [userId], limit: 1 }, tx);
+    if (current.users?.[0]?.name === name) return;
+    await this.users.updateUser(userId, { name }, tx);
   }
 
   /**
@@ -393,7 +420,7 @@ export class AuthHandler extends CacheHandler {
       return null;
     }
 
-    const { password } = await this.userAuthenticationMethods.processProvider(
+    const { password, name } = await this.userAuthenticationMethods.processProvider(
       provider,
       providerId,
       { ...providerData, action: UserAuthenticationEmailProviderAction.Register }
@@ -404,6 +431,7 @@ export class AuthHandler extends CacheHandler {
       { methodId: claimable.id, proof: 'organization-invitation' },
       tx
     );
+    await this.takeSignUpNameOnClaim(userId, name, tx);
 
     if (password) {
       await this.credentials.setPassword(
@@ -1204,12 +1232,16 @@ export class AuthHandler extends CacheHandler {
     return await this.db.withTransaction(async (tx: Transaction) => {
       const { userId, provider, providerId, providerData, claimEmail } = params;
 
-      if (claimEmail) {
-        await this.claimEmailIdentityByOAuth({ userId, email: claimEmail, provider }, tx);
-      }
+      // Validated first: a claim takes the name a console sign-up through this provider gets.
+      const {
+        providerData: processedProviderData,
+        isVerified,
+        name,
+      } = await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
 
-      const { providerData: processedProviderData, isVerified } =
-        await this.userAuthenticationMethods.processProvider(provider, providerId, providerData);
+      if (claimEmail) {
+        await this.claimEmailIdentityByOAuth({ userId, email: claimEmail, provider, name }, tx);
+      }
 
       const userAuthenticationMethod =
         await this.userAuthenticationMethods.createUserAuthenticationMethod(
@@ -1356,6 +1388,8 @@ export class AuthHandler extends CacheHandler {
                 userId: existingEmailAuthMethod.userId,
                 email: params.email,
                 provider: params.provider,
+                // The name a first-time project sign-up gets (`createUserFromOAuth` below).
+                name: params.name,
               },
               tx
             );
@@ -1501,8 +1535,7 @@ export class AuthHandler extends CacheHandler {
         throw new BadRequestError('Sign-up is disabled for this app');
       }
 
-      const name = emailNorm.split('@')[0] || 'User';
-      const user = await this.users.createUser({ name }, tx);
+      const user = await this.users.createUser({ name: signUpNameFromEmail(emailNorm) }, tx);
       await this.userAuthenticationMethods.createUserAuthenticationMethod(
         {
           userId: user.id,

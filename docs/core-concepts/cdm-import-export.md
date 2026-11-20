@@ -215,12 +215,14 @@ A `findBy: key` user may also carry `key.grantUserId`, the id of an existing Gra
 
 For `findBy: email`, import treats the address as an identity claim, not proof of mailbox ownership. The email method reserves/links the global identity but remains unverified until Grant sees a later inbox-proof flow, such as project OAuth email magic link.
 
-### An import never renames a user {#user-names}
+### An import never names the person {#user-names}
 
-A user's global `name` belongs to the person. The import writes it only when it **creates** the user, from the document's trimmed `name` (the column cannot be empty). It never changes it afterwards, for `findBy: key` and `findBy: email` alike, whether the user is an account that existed before the import, one matched by [`grantUserId`](#grant-user-id), or one an earlier import created. A person an import created may later be invited, sign up, claim the identity or change their own name; a later import must not put the document's name back on their account, which they would see on their first sign-in.
+A user's global `name` belongs to the person: it is what they see in their own account and what Grant shows wherever no project is in view. The document's `name` never goes there. A user the import **creates** gets the name a first-time sign-up would get, as if Grant had never known them: the part of the address before `@` for `findBy: email`, and `User` for `findBy: key` (the key is never used, since it can be an address or a source id). The import never changes the global name afterwards, for `findBy: key` and `findBy: email` alike, whether the user is an account that existed before the import, one matched by [`grantUserId`](#grant-user-id), or one an earlier import created.
 
-- **The document's name goes to the project.** It becomes this project's display name for the person (next section), which is what the project shows.
-- **The counter.** `usersRenamed` is deprecated and always 0. Before this change, a later import renamed a user this project's import had created when the document's name differed.
+- **The document's name goes to the project.** It becomes this project's display name for the person (next section), which is what the project shows, and what an export gives back.
+- **Claiming the identity names the person.** When the person proves the mailbox and claims the identity (Google or GitHub sign-in, or registering from an organization invitation), they take the name that sign-up path gives a new user: the provider's profile name, or the address before `@`. See [Claiming an unverified identity](/core-concepts/sign-in-providers#claiming-an-unverified-identity).
+- **The counter.** `usersRenamed` is deprecated and always 0.
+- **Users imported by earlier releases** keep the document's name as their global name until they claim the identity.
 
 ### Each project keeps its own name {#project-display-names}
 
@@ -229,7 +231,8 @@ The global `name` above is not the name a project shows. Every provisioned user 
 - **One write path.** The ordinary project-user profile update: an audit row, and no `project.user_profile_updated` event (events are suppressed during an import). An unchanged name writes nothing and is not counted.
 - **The counter.** `projectDisplayNamesUpdated`, a number only.
 - **A replace import overwrites edits.** An operator's or a person's own edit of the project display name is replaced by the document's name on the next import that lists them with a different name.
-- **Length.** The column holds 255 characters. A longer `name` fails the whole import (naming the position in `users[]`), as for the global name; it is never truncated.
+- **Length.** The column holds 255 characters. A longer `name` fails the whole import (naming the position in `users[]`); it is never truncated.
+- **Export.** `users[].name` of an exported user is this project's display name, or the global name when the project has none, so an import followed by an export gives the document's names back.
 
 ### Linking an imported user to an existing identity {#identity-link}
 

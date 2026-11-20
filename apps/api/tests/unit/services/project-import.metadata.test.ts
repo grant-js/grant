@@ -495,8 +495,10 @@ describe('ProjectImportService CDM metadata', () => {
     const svc = createService();
     const result = await svc.importProjectCdm({ projectId, scope, input }, {});
 
+    // The global name is the one an e-mail sign-up gets, from the normalized address; the
+    // document's name is the project's display name.
     expect(users.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Imported Member' }),
+      expect.objectContaining({ name: 'imported' }),
       {}
     );
     expect(userAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalledWith(

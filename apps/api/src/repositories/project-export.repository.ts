@@ -793,6 +793,10 @@ export class ProjectExportRepository {
 
   /**
    * Grant users created under CDM for this project (`metadata.cdmImport.kind === 'user'`).
+   * `name` is this project's name for the person, the membership's `display_name`, which is
+   * where the import writes the document's name; the global name only when the project has
+   * none. The global name belongs to the person (a sign-up-style name until they claim the
+   * identity, then theirs), so an export gives back what the import wrote.
    */
   public async getProjectCdmProvisionedUsers(
     projectId: string,
@@ -802,10 +806,18 @@ export class ProjectExportRepository {
     const rows = await dbInstance
       .select({
         userId: users.id,
-        name: users.name,
+        name: sql<string>`coalesce(${projectUsers.displayName}, ${users.name})`,
         metadata: users.metadata,
       })
       .from(users)
+      .leftJoin(
+        projectUsers,
+        and(
+          eq(projectUsers.userId, users.id),
+          eq(projectUsers.projectId, projectId),
+          isNull(projectUsers.deletedAt)
+        )
+      )
       .where(
         and(
           isNull(users.deletedAt),

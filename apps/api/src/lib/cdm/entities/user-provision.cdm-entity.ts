@@ -21,6 +21,7 @@ import {
   mergeCdmImporterMetadata,
 } from '@/constants/cdm-import.constants';
 import { ValidationError } from '@/lib/errors';
+import { DEFAULT_USER_NAME, signUpNameFromEmail } from '@/lib/sign-up-name.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { ProjectExportRepository } from '@/repositories/project-export.repository';
 
@@ -208,9 +209,10 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
    * created and its global metadata is not touched: the assignment step writes the marker on
    * the membership row, as it does for every provisioned user.
    *
-   * The document's `name` seeds the global user only when this creates it. A reused or matched
-   * user keeps its own name: the import writes the document's name to this project's
-   * `display_name` instead (`recordProducedUser`, then the assignment step).
+   * The document's `name` never reaches the global user: a created user gets the name a
+   * first-time sign-up would (`sign-up-name.lib.ts`), and every user, created, reused or
+   * matched, gets the document's name as this project's `display_name` (`recordProducedUser`,
+   * then the assignment step).
    */
   private async applyKeyIdentity(
     ctx: CdmApplyContext,
@@ -262,7 +264,8 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
           buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
           row.metadata
         );
-        const user = await this.users.createUser({ name: row.name.trim(), metadata }, tx);
+        // No address to derive a name from: the placeholder (see `recordProducedUser`).
+        const user = await this.users.createUser({ name: DEFAULT_USER_NAME, metadata }, tx);
         this.recordProducedUser(ctx, row, user.id);
         ctx.result.usersCreated += 1;
         return;
@@ -399,7 +402,10 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
       buildCdmImportMetadata(ctx.projectId, 'user', row.externalKey),
       row.metadata
     );
-    const user = await this.users.createUser({ name: row.name.trim(), metadata }, tx);
+    const user = await this.users.createUser(
+      { name: signUpNameFromEmail(row.externalKey), metadata },
+      tx
+    );
     await this.userAuthenticationMethods.createUserAuthenticationMethod(
       {
         userId: user.id,
@@ -451,7 +457,9 @@ export class UserProvisionCdmEntity implements ICdmEntityHandler<
     ctx.produced.userIds.set(row.externalKey, userId);
     // The document's name for this person in this project, written to the membership's
     // `display_name` by the assignment step (blank is written as null there). The global
-    // `users.name` belongs to the person: an import seeds it on create and never changes it.
+    // `users.name` belongs to the person: an import creates a user with the name a first-time
+    // sign-up would get (`sign-up-name.lib.ts`) and never changes it; a claim later gives them
+    // the name of the path they claim through (`AuthHandler.takeSignUpNameOnClaim`).
     ctx.produced.userNamesByKey.set(row.externalKey, row.name.trim());
     ctx.assignmentUserIds.add(userId);
   }

@@ -335,9 +335,11 @@ from the stored job payload when the job ends, and is replaced by \`[redacted]\`
 
 ### User names
 
-An import writes a user's global \`name\` only when it creates the user. It never renames a user
-afterwards, including one an earlier import created: that person may since have signed up, been
-invited or changed their name, and owns it. \`usersRenamed\` is deprecated and always 0.
+The document's \`name\` never becomes a user's global \`name\`, which belongs to the person. A user
+the import creates gets the name a first-time sign-up would: the address before \`@\` for
+\`findBy: email\`, \`User\` for \`findBy: key\`. The import never changes it afterwards; claiming the
+identity (Google, GitHub, invitation register) gives the person that sign-up path's name.
+\`usersRenamed\` is deprecated and always 0.
 
 Each project keeps its own name for a person: for every provisioned user (created, reused or
 matched) the import sets the membership's display name to the document's \`name\` when it differs
