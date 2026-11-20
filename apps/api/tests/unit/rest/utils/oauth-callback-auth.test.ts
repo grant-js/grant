@@ -54,6 +54,65 @@ describe('handleOAuthCallbackAuth', () => {
     expect(result.accessToken).toBe('access');
   });
 
+  it.each([UserAuthenticationMethodProvider.Google, UserAuthenticationMethodProvider.Github])(
+    'passes the normalised %s email to register as the trusted option',
+    async (provider) => {
+      const register = vi.fn().mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        account: { id: 'account-1', type: AccountType.Personal },
+      });
+      const context = {
+        handlers: { auth: { register } },
+        locale: 'en',
+        userAgent: null,
+        ipAddress: null,
+        requestLogger: { info: vi.fn() },
+        requestBaseUrl: 'https://api.example.com',
+      } as unknown as RequestContext;
+
+      await handleOAuthCallbackAuth(context, {
+        ...oauthNewUser,
+        provider,
+        user: {
+          id: 'idp-1',
+          email: ' Ada@Example.COM ',
+          emailVerified: true,
+          emailAuthoritative: true,
+        },
+      } as never);
+
+      expect(register.mock.calls[0]![6]).toEqual({ authoritativeOAuthEmail: 'ada@example.com' });
+    }
+  );
+
+  it.each([
+    ['not authoritative', { emailVerified: true, emailAuthoritative: false }],
+    ['authoritative flag absent', { emailVerified: true }],
+    ['not verified', { emailVerified: false, emailAuthoritative: true }],
+  ])('passes no trusted option when the email is %s', async (_label, flags) => {
+    const register = vi.fn().mockResolvedValue({
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      account: { id: 'account-1', type: AccountType.Personal },
+    });
+    const context = {
+      handlers: { auth: { register } },
+      locale: 'en',
+      userAgent: null,
+      ipAddress: null,
+      requestLogger: { info: vi.fn() },
+      requestBaseUrl: 'https://api.example.com',
+    } as unknown as RequestContext;
+
+    await handleOAuthCallbackAuth(context, {
+      ...oauthNewUser,
+      user: { id: 'idp-1', email: 'ada@example.com', ...flags },
+    } as never);
+
+    expect(register.mock.calls[0]![6]).toBeUndefined();
+  });
+
   it('propagates PUBLIC_SIGNUP_DISABLED from register for a new OAuth user', async () => {
     const register = vi
       .fn()

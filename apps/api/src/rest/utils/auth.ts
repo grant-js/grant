@@ -8,6 +8,7 @@ import { Response } from 'express';
 
 import { config } from '@/config';
 import { HandleOAuthCallbackResult } from '@/handlers/oauth.handler';
+import { normalizeVerifiedContactEmail } from '@/lib/oauth-contact-email.lib';
 import { RequestContext } from '@/types';
 
 /**
@@ -193,6 +194,13 @@ export async function handleOAuthCallbackAuth(
       ? AccountType.Organization
       : AccountType.Personal;
 
+  // The IdP's verified, authoritative mailbox, from the server-side callback only; lets an
+  // invited person past the closed-install gate (`AuthHandler.register`).
+  const authoritativeOAuthEmail =
+    oauthResult.user.emailAuthoritative === true
+      ? normalizeVerifiedContactEmail(oauthResult.user.email, oauthResult.user.emailVerified)
+      : null;
+
   const result = await context.handlers.auth.register(
     {
       type: accountType,
@@ -204,7 +212,8 @@ export async function handleOAuthCallbackAuth(
     context.userAgent,
     context.ipAddress,
     context.requestLogger,
-    context.requestBaseUrl
+    context.requestBaseUrl,
+    ...(authoritativeOAuthEmail ? [{ authoritativeOAuthEmail }] : [])
   );
   return {
     accessToken: result.accessToken,

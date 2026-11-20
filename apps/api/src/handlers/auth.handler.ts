@@ -56,7 +56,10 @@ import { IEntityCacheAdapter } from '@/lib/cache';
 import { verifyCredentialPassword } from '@/lib/credential-verifier.lib';
 import { AuthenticationError, BadRequestError, ConflictError } from '@/lib/errors';
 import { createLogger } from '@/lib/logger';
-import { contactEmailFromOAuthProviderData } from '@/lib/oauth-contact-email.lib';
+import {
+  contactEmailFromOAuthProviderData,
+  normalizeVerifiedContactEmail,
+} from '@/lib/oauth-contact-email.lib';
 import { oauthPictureUrlFromProviderData, userPictureUrlIsEmpty } from '@/lib/oauth-picture.lib';
 import {
   assertPlatformSelfSignupAllowed,
@@ -68,6 +71,19 @@ import { getVerificationExpirationMs, getVerificationExpiryDate } from '@/lib/ve
 import { Otp } from '@/types';
 
 import { CacheHandler, type ScopeServices } from './base/cache-handler';
+
+/**
+ * Server-derived facts about a registration, passed by trusted callers only. It is never part of
+ * `RegisterInput`: REST `/api/auth/register` and the GraphQL `register` mutation take arbitrary
+ * client `provider`/`providerData` and must not be able to set it.
+ */
+export interface RegisterTrustedOptions {
+  /**
+   * The normalised mailbox an identity provider vouched for in the OAuth callback (verified and
+   * authoritative for the address). Set only from `OAuthHandler.handleCallback`'s result.
+   */
+  authoritativeOAuthEmail?: string;
+}
 
 export class AuthHandler extends CacheHandler {
   protected readonly logger = createLogger('AuthHandler');
@@ -160,6 +176,36 @@ export class AuthHandler extends CacheHandler {
   ): Promise<void> {
     const { email, emailVerified } = contactEmailFromOAuthProviderData(providerData);
     await this.bindVerifiedOauthContactEmail(userId, email || null, emailVerified, tx);
+  }
+
+  /**
+   * Closed-install exemption for a first-time Google/GitHub sign-up: the identity provider
+   * vouched for the mailbox (`trustedEmail`, set only by the OAuth callback) and a pending,
+   * unexpired invitation exists for it. Returns null whenever any condition fails.
+   */
+  private async findInvitationForTrustedOAuthSignup(
+    provider: UserAuthenticationMethodProvider,
+    providerData: Record<string, unknown>,
+    trustedEmail: string | undefined,
+    tx: Transaction
+  ): Promise<{ id: string; organizationId: string } | null> {
+    if (!trustedEmail || !this.isSocialOAuthProvider(provider)) {
+      return null;
+    }
+
+    const { email, emailVerified } = contactEmailFromOAuthProviderData(providerData);
+    const providerEmail = normalizeVerifiedContactEmail(email, emailVerified);
+    const trusted = normalizeVerifiedContactEmail(trustedEmail, true);
+    if (!trusted || providerEmail !== trusted) {
+      return null;
+    }
+
+    const invitation = await this.organizationInvitations.findPendingInvitationByEmail(trusted, tx);
+    if (!invitation) {
+      return null;
+    }
+
+    return { id: invitation.id, organizationId: invitation.organizationId };
   }
 
   private async validatesInvitationEmailProof(
@@ -429,7 +475,8 @@ export class AuthHandler extends CacheHandler {
     userAgent?: string | null,
     ipAddress?: string | null,
     requestLogger?: ILogger,
-    requestBaseUrl?: string
+    requestBaseUrl?: string,
+    trusted?: RegisterTrustedOptions
   ): Promise<CreateAccountResult> {
     const { type, provider, providerId, providerData, emailVerificationProof } = params;
     const registered: { actorId: string } = { actorId: '' };
@@ -468,8 +515,27 @@ export class AuthHandler extends CacheHandler {
         const humanUserCount = config.auth.publicSignupEnabled
           ? 0
           : await this.users.countHumanUsers(tx);
-        assertPlatformSelfSignupAllowed({
+        const invitedOAuthSignup = isPlatformSelfSignupAllowed({
           invitationProofValid: false,
+          humanUserCount,
+        })
+          ? null
+          : await this.findInvitationForTrustedOAuthSignup(
+              provider,
+              providerData,
+              trusted?.authoritativeOAuthEmail,
+              tx
+            );
+        if (invitedOAuthSignup) {
+          (requestLogger ?? this.logger).info({
+            msg: 'Invited OAuth sign-up allowed',
+            provider,
+            invitationId: invitedOAuthSignup.id,
+            organizationId: invitedOAuthSignup.organizationId,
+          });
+        }
+        assertPlatformSelfSignupAllowed({
+          invitationProofValid: invitedOAuthSignup !== null,
           humanUserCount,
         });
       }

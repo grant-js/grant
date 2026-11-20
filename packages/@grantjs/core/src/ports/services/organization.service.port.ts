@@ -363,6 +363,12 @@ export interface IOrganizationInvitationService {
     transaction?: unknown
   ): Promise<OrganizationInvitation | null>;
 
+  /** A pending, unexpired invitation for a normalised (lower-case) email in any organization. */
+  findPendingInvitationByEmail(
+    email: string,
+    transaction?: unknown
+  ): Promise<OrganizationInvitation | null>;
+
   updateInvitation(
     id: string,
     input: UpdateOrganizationInvitationInput,
