@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.30.2
+
+### Patch Changes
+
+- 2a4b66a: Invited people can sign up with Google or GitHub on a closed install (`AUTH_PUBLIC_SIGNUP_ENABLED=false`). A first-time sign-up is admitted when the provider is authoritative for the address and a pending, unexpired organization invitation exists for it in any organization; the verified address is the mailbox proof. The OAuth callback passes it to `register` as a trusted argument that REST and GraphQL callers cannot set. Previously the sign-up failed with `PUBLIC_SIGNUP_DISABLED`.
+- @grantjs/schema@1.30.2
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.30.1
 
 ### Patch Changes
