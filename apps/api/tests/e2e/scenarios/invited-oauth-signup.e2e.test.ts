@@ -19,10 +19,16 @@
  *     pnpm --filter grant-api test:e2e -- tests/e2e/scenarios/invited-oauth-signup.e2e.test.ts
  *     pnpm test:e2e:down
  */
+import { CdmFindBy, CdmPasswordAlgorithm, ProjectSyncJobStatus } from '@grantjs/schema';
+import { genSaltSync, hashSync } from 'bcrypt';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
+
+import { cdmWithRoleTemplate } from '../../helpers/cdm-sync-fixtures';
 import { apiClient } from '../helpers/api-client';
 import { closeDbHelper, query } from '../helpers/db-tokens';
+import { postImport, resolveJob, scopeForAccountProject } from '../helpers/sync-job';
 import { TestUser } from '../helpers/test-user';
 
 const DOMAIN = 'test.grant.dev';
@@ -220,5 +226,138 @@ describe('Closed install: sign-up is refused without a qualifying invitation', (
 
     expect(res.status).toBe(400);
     expect(await userExists(email)).toBe(false);
+  });
+});
+
+const IMPORTED_HASH = hashSync('Imported-Passw0rd-1', genSaltSync(4, 'a'));
+
+type IdentityRow = Record<string, unknown> & {
+  method_id: string;
+  user_id: string;
+  is_verified: boolean;
+  providers: string[];
+  project_credentials: string;
+  accounts: string;
+  organization_accounts: string;
+};
+
+/** The person behind an Email method: methods, project credentials and accounts, by count. */
+async function identityOf(email: string): Promise<IdentityRow> {
+  const rows = await query<IdentityRow>`
+    SELECT
+      m.id::text AS method_id,
+      m.user_id::text AS user_id,
+      m.is_verified,
+      (SELECT ARRAY_AGG(o.provider ORDER BY o.provider) FROM user_authentication_methods o
+        WHERE o.user_id = m.user_id AND o.deleted_at IS NULL) AS providers,
+      (SELECT COUNT(*) FROM project_user_credentials p
+        WHERE p.user_id = m.user_id AND p.deleted_at IS NULL)::text AS project_credentials,
+      (SELECT COUNT(*) FROM accounts a
+        WHERE a.owner_id = m.user_id AND a.deleted_at IS NULL)::text AS accounts,
+      (SELECT COUNT(*) FROM accounts a
+        WHERE a.owner_id = m.user_id AND a.type = 'organization'
+          AND a.deleted_at IS NULL)::text AS organization_accounts
+    FROM user_authentication_methods m
+    WHERE m.provider = 'email' AND m.provider_id = ${email} AND m.deleted_at IS NULL
+  `;
+  expect(rows).toHaveLength(1);
+  return rows[0]!;
+}
+
+/** Imports `email` (CDM, findBy email, with a project password) into a new project of the owner. */
+async function importIdentity(email: string): Promise<IdentityRow> {
+  const projectRes = await apiClient()
+    .post('/api/projects')
+    .set('Authorization', owner.authHeader)
+    .send({
+      name: `E2E Invited Import ${uid()}`,
+      scope: { id: owner.accountId, tenant: 'account' },
+    })
+    .expect(201);
+  const projectId = projectRes.body.data.id as string;
+  const scope = scopeForAccountProject(owner.accountId, projectId);
+  const roleKey = `invited-import-${uid()}`;
+  const cdm: CdmDocumentInput = cdmWithRoleTemplate(roleKey, {
+    users: [
+      {
+        key: { value: email, findBy: CdmFindBy.Email },
+        name: 'Imported Person',
+        roles: [roleKey],
+        groups: [],
+        permissions: [],
+        tags: [],
+        primaryTag: null,
+        apiKeys: [],
+        metadata: null,
+        password: { algorithm: CdmPasswordAlgorithm.Bcrypt, hash: IMPORTED_HASH },
+      },
+    ],
+  });
+
+  const imported = await postImport(owner.authHeader, projectId, scope, cdm);
+  expect(imported.status).toBe(202);
+  await resolveJob(
+    owner.authHeader,
+    projectId,
+    scope,
+    imported.job,
+    ProjectSyncJobStatus.Completed
+  );
+
+  const identity = await identityOf(email);
+  expect(identity).toMatchObject({
+    is_verified: false,
+    providers: ['email'],
+    project_credentials: '1',
+  });
+  return identity;
+}
+
+describe('Invited sign-up for an address a CDM import created (claim path)', () => {
+  it.each(['google', 'github'] as const)(
+    '%s: claims the imported identity, has no account before accept, then accept creates the organization account and membership',
+    async (provider) => {
+      const email = `e2e-invited-import-${provider}-${uid()}@${DOMAIN}`;
+      const before = await importIdentity(email);
+      await owner.inviteMember(organizationId, email);
+
+      const result = await socialSignIn(
+        provider,
+        provider === 'google' ? googleProfile(email) : githubProfile(email)
+      );
+
+      expect(result.signedIn).toBe(true);
+      const claimed = await identityOf(email);
+      expect(claimed).toMatchObject({
+        user_id: before.user_id,
+        method_id: before.method_id,
+        is_verified: true,
+        providers: ['email', provider],
+        project_credentials: '1',
+      });
+      // On a closed install the claimed identity has no membership yet, so no account.
+      if (!publicSignupEnabled) expect(claimed.accounts).toBe('0');
+
+      const accepted = await acceptAsSignedInUser(email, result.refreshToken!);
+      expect(accepted.status).toBe(200);
+      expect(await isMember(email)).toBe(true);
+      const after = await identityOf(email);
+      expect(after.user_id).toBe(before.user_id);
+      expect(after.organization_accounts).toBe('1');
+      expect(after.project_credentials).toBe('1');
+    }
+  );
+
+  it('Google without `hd` on a company address is refused (Email is not verified) and changes nothing', async () => {
+    const email = `e2e-invited-import-nohd-${uid()}@${DOMAIN}`;
+    const before = await importIdentity(email);
+    await owner.inviteMember(organizationId, email);
+
+    const result = await socialSignIn('google', googleProfile(email, ''));
+
+    expect(result.signedIn).toBe(false);
+    expect(result.location).toContain('error=emailUnverified');
+    expect(await identityOf(email)).toEqual(before);
+    expect(await isMember(email)).toBe(false);
   });
 });
