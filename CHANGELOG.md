@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.30.2
+
+### Platform
+
+**Docker images:** tagged `:1.30.2` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.30.2** (fixed group with apps).
+
+### Patch Changes
+
+- 2a4b66a: Invited people can sign up with Google or GitHub on a closed install (`AUTH_PUBLIC_SIGNUP_ENABLED=false`). A first-time sign-up is admitted when the provider is authoritative for the address and a pending, unexpired organization invitation exists for it in any organization; the verified address is the mailbox proof. The OAuth callback passes it to `register` as a trusted argument that REST and GraphQL callers cannot set. Previously the sign-up failed with `PUBLIC_SIGNUP_DISABLED`.
+
 ## 1.30.1
 
 ### Platform
