@@ -100,6 +100,8 @@ export default defineConfig(
       '**/coverage/**',
       '**/generated/**',
       '**/next-env.d.ts',
+      // Compiled in a packed throwaway project, not the monorepo graph (issue #731).
+      'scripts/published-nodenext-fixture/**',
     ],
   },
 
