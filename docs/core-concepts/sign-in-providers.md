@@ -96,6 +96,8 @@ The identity is **claimable** only when its Email method is unverified, its addr
 
 A claim, in the request's transaction, marks the Email method verified and drops its pending OTP, **removes the platform credential** and **revokes every session** the user had. A password or a session set before the mailbox proof was not set by a proven owner, so none survives it: this is what keeps account pre-hijacking out (someone registers your address with their own password, then waits for you to sign in with Google). The user id, memberships, roles and **project** credentials stay. The authentication-method audit row records `operation: claim-unverified-email` and the proof (`google`, `github`, `organization-invitation`).
 
+A claim also **names the person** as a first-time sign-up through the same path would: Google's or GitHub's profile name for an OAuth claim (console or project app), the part of the address before `@` for registering from an invitation. Whatever an import or an operator called them stays in each project's display name, so projects keep showing their own name for the person. The rename is an ordinary user update (audit row with the old name) and writes nothing when the name is already that one. Only the claim renames: a later sign-in, connecting another provider, or accepting an invitation on an account the person already owns never does.
+
 ### Invited sign-up on a closed install
 
 With `AUTH_PUBLIC_SIGNUP_ENABLED=false`, a first-time Google or GitHub sign-up is refused (`PUBLIC_SIGNUP_DISABLED`) unless the person is invited. It is admitted when **both** hold:

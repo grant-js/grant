@@ -29,6 +29,7 @@ import {
 import { createLogger } from '@/lib/logger';
 import { normalizeVerifiedContactEmail } from '@/lib/oauth-contact-email.lib';
 import { unboundedList } from '@/lib/pagination.lib';
+import { DEFAULT_USER_NAME, signUpNameFromEmail } from '@/lib/sign-up-name.lib';
 import { generateSecureToken, hashToken, isTokenValid, tokenHashesEqual } from '@/lib/token.lib';
 import { Transaction } from '@/lib/transaction-manager.lib';
 import type { Otp } from '@/types';
@@ -398,7 +399,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
   ): ProcessedProvider {
     validateInput(emailSchema, email, context);
 
-    const emailName = email.split('@')[0] || 'User';
+    const emailName = signUpNameFromEmail(email);
 
     // A password is in this object: `validateSecretInput` never echoes its input.
     const validatedProviderData = validateSecretInput(
@@ -450,7 +451,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       throw new ValidationError('Provider ID must match GitHub user ID');
     }
 
-    const name = validatedProviderData.name || providerId || 'User';
+    const name = validatedProviderData.name || providerId || DEFAULT_USER_NAME;
     const emailVerified = validatedProviderData.emailVerified === true;
 
     return {
@@ -479,7 +480,7 @@ export class UserAuthenticationMethodService implements IUserAuthenticationMetho
       throw new ValidationError('Provider ID must match Google user ID');
     }
 
-    const name = validatedProviderData.name || providerId || 'User';
+    const name = validatedProviderData.name || providerId || DEFAULT_USER_NAME;
     const emailVerified = validatedProviderData.emailVerified === true;
 
     return {

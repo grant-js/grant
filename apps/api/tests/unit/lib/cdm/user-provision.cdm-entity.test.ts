@@ -126,10 +126,7 @@ describe('UserProvisionCdmEntity email identities', () => {
       },
     ]);
 
-    expect(users.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'New User' }),
-      tx
-    );
+    expect(users.createUser).toHaveBeenCalledWith(expect.objectContaining({ name: 'new' }), tx);
     expect(userAuthenticationMethods.createUserAuthenticationMethod).toHaveBeenCalledWith(
       {
         userId: 'new-user-id',
@@ -550,7 +547,7 @@ describe('UserProvisionCdmEntity key.grantUserId match', () => {
     expect(userRepository.findLiveUserCdmMarkers).not.toHaveBeenCalled();
     expect(users.createUser).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: 'Matched User',
+        name: 'User',
         metadata: { cdmImport: { projectId, kind: 'user', externalKey } },
       }),
       tx
@@ -656,13 +653,14 @@ describe('UserProvisionCdmEntity key.grantUserId match', () => {
 });
 
 /**
- * The global `users.name` belongs to the person. An import seeds it when it creates the user
- * and never changes it afterwards, even for a user an earlier import of this project created
- * (its global user carries this project's marker): that person may since have signed up,
- * been invited or renamed themselves. The document's name goes to this project's
- * `display_name` instead (`userNamesByKey`, written by the assignment step).
+ * The global `users.name` belongs to the person. An import never writes the document's name
+ * there: a user it creates gets the name a first-time sign-up would (the address before `@`,
+ * else `User`), and it never changes the name afterwards, even for a user an earlier import of
+ * this project created (its global user carries this project's marker): that person may since
+ * have signed up, been invited or renamed themselves. The document's name goes to this
+ * project's `display_name` instead (`userNamesByKey`, written by the assignment step).
  */
-describe('UserProvisionCdmEntity never renames the global user', () => {
+describe('UserProvisionCdmEntity never writes the document name to the global user', () => {
   const userId = '30000000-0000-4000-8000-000000000003';
   const importMarker = (externalKey: string) => ({ projectId, kind: 'user', externalKey });
   const keyRow = (name: string, extra: Record<string, unknown> = {}) => ({
@@ -699,30 +697,24 @@ describe('UserProvisionCdmEntity never renames the global user', () => {
     expect(ctx.produced.userNamesByKey.get(externalKey)).toBe(name);
   }
 
-  it('seeds the trimmed document name on a user the import creates (findBy: key)', async () => {
+  it('creates a keyed user under the placeholder name; the document name is the project display name', async () => {
     const ctx = createCtx();
 
     await createEntity().apply(ctx, [keyRow('  Brand New ')]);
 
-    expect(users.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Brand New' }),
-      tx
-    );
+    expect(users.createUser).toHaveBeenCalledWith(expect.objectContaining({ name: 'User' }), tx);
     expect(users.updateUser).not.toHaveBeenCalled();
     expect(ctx.result.usersCreated).toBe(1);
     expect(ctx.result.usersRenamed).toBe(0);
     expect(ctx.produced.userNamesByKey.get('legacy-user-17')).toBe('Brand New');
   });
 
-  it('seeds the trimmed document name on a user the import creates (findBy: email)', async () => {
+  it('creates an e-mail user under the name an e-mail sign-up gets; the document name is the project display name', async () => {
     const ctx = createCtx();
 
     await createEntity().apply(ctx, [emailRow(' Ada Lovelace ')]);
 
-    expect(users.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Ada Lovelace' }),
-      tx
-    );
+    expect(users.createUser).toHaveBeenCalledWith(expect.objectContaining({ name: 'ada' }), tx);
     expect(users.updateUser).not.toHaveBeenCalled();
     expect(ctx.produced.userNamesByKey.get('ada@example.com')).toBe('Ada Lovelace');
   });

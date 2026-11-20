@@ -367,4 +367,117 @@ describe('AuthHandler: claiming an unverified Email identity', () => {
       expect(mockUserAuthenticationMethods.claimUnverifiedEmailMethod).not.toHaveBeenCalled();
     });
   });
+
+  /**
+   * A claim hands the identity to the person, so they take the name a first-time sign-up
+   * through the same path gets: the provider's profile name for Google or GitHub, the address
+   * before `@` for an e-mail registration. The name an import gave them stays in each project's
+   * display name and is not touched here.
+   */
+  describe('the claimed user takes the name a first-time sign-up would get', () => {
+    function givenGlobalName(name: string) {
+      mockUsers.getUsers.mockResolvedValue({
+        totalCount: 1,
+        users: [
+          { id: USER_ID, name, accounts: [{ id: 'account-1', type: AccountType.Organization }] },
+        ],
+      });
+    }
+    function givenSignUpName(name: string) {
+      mockUserAuthenticationMethods.processProvider.mockResolvedValue({
+        providerData: { githubId: '42' },
+        isVerified: true,
+        name,
+        password: PASSWORD,
+      });
+    }
+    function consoleLink(claimEmail: string | null = EMAIL) {
+      return createHandler().linkOAuthAuthToExistingUser({
+        userId: USER_ID,
+        provider: UserAuthenticationMethodProvider.Github,
+        providerId: '42',
+        providerData: { githubId: '42' },
+        ...(claimEmail ? { claimEmail } : {}),
+      });
+    }
+
+    it('console GitHub/Google claim: the provider profile name, after the claim', async () => {
+      givenGlobalName('Name From The Import');
+      givenSignUpName('Ada From GitHub');
+
+      await consoleLink();
+
+      expect(mockUsers.updateUser).toHaveBeenCalledTimes(1);
+      expect(mockUsers.updateUser).toHaveBeenCalledWith(USER_ID, { name: 'Ada From GitHub' }, tx);
+      expect(
+        mockUserAuthenticationMethods.claimUnverifiedEmailMethod.mock.invocationCallOrder[0]
+      ).toBeLessThan(mockUsers.updateUser.mock.invocationCallOrder[0]!);
+    });
+
+    it('project-app OAuth claim: the name a first-time project sign-up gets', async () => {
+      givenGlobalName('Name From The Import');
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(null);
+
+      await createHandler().resolveUserIdFromOAuthForProject(
+        {
+          provider: UserAuthenticationMethodProvider.Google,
+          providerId: 'google-sub-1',
+          email: EMAIL,
+          emailVerified: true,
+          emailAuthoritative: true,
+          name: 'Ada From Google',
+          providerData: { googleId: 'google-sub-1' },
+        },
+        tx as never
+      );
+
+      expect(mockUsers.updateUser).toHaveBeenCalledWith(USER_ID, { name: 'Ada From Google' }, tx);
+    });
+
+    it('register with an invitation proof: the name an e-mail registration gets', async () => {
+      givenGlobalName('Name From The Import');
+      givenSignUpName('imported');
+      mockUserAuthenticationMethods.getUserAuthenticationMethodByProvider.mockResolvedValue(
+        importedEmailMethod()
+      );
+
+      await createHandler().register({
+        type: AccountType.Organization,
+        provider: UserAuthenticationMethodProvider.Email,
+        providerId: EMAIL,
+        providerData: { password: PASSWORD },
+        emailVerificationProof: invitationProof(),
+      });
+
+      expect(mockUsers.updateUser).toHaveBeenCalledWith(USER_ID, { name: 'imported' }, tx);
+    });
+
+    it('writes nothing when the user already has that name', async () => {
+      givenGlobalName('Ada From GitHub');
+      givenSignUpName('Ada From GitHub');
+
+      await consoleLink();
+
+      expect(mockUserAuthenticationMethods.claimUnverifiedEmailMethod).toHaveBeenCalled();
+      expect(mockUsers.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('never renames on a plain link, a later sign-in or connect (no claim)', async () => {
+      givenGlobalName('Their Own Name');
+      givenSignUpName('Ada From GitHub');
+
+      await consoleLink(null);
+
+      expect(mockUsers.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('never renames when the claim is refused', async () => {
+      givenGlobalName('Their Own Name');
+      givenSignUpName('Ada From GitHub');
+      givenIdentity([importedEmailMethod(), githubMethod()]);
+
+      await expect(consoleLink()).rejects.toThrow('Email is not verified');
+      expect(mockUsers.updateUser).not.toHaveBeenCalled();
+    });
+  });
 });
