@@ -29,12 +29,12 @@ Grounded on `main` `20b4e87a`. Issue: [#731](https://github.com/grant-js/grant/i
 
 Init `gh stack` with slice 1 only; `gh stack add` each next branch when it starts. Do not PR slices to `main`.
 
-| #     | Branch                             | Base                       | Concern                                                                                    | Owner role | Review bar | PR  |
-| ----- | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------ | ---------- | ---------- | --- |
-| 1     | `feat/published-esm-types-dts`     | `feat/published-esm-types` | A: client + server dts emit — `.js` relative specifiers, no `@grantjs/schema` path rewrite | Backend    | light      |     |
-| 2     | `feat/published-esm-types-schema`  | prior slice                | B: schema ESM specifiers including codegen                                                 | Backend    | light      |     |
-| 3     | `feat/published-esm-types-fixture` | prior slice                | C: packed-install nodenext fixture the current `test-install.sh` cannot catch              | QA         | light      |     |
-| final | `feat/published-esm-types`         | `main`                     | integration                                                                                | Principal  | deep       |     |
+| #     | Branch                             | Base                       | Concern                                                                                    | Owner role | Review bar | PR                                                 |
+| ----- | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------ | ---------- | ---------- | -------------------------------------------------- |
+| 1     | `feat/published-esm-types-dts`     | `feat/published-esm-types` | A: client + server dts emit — `.js` relative specifiers, no `@grantjs/schema` path rewrite | Backend    | light      | [#770](https://github.com/grant-js/grant/pull/770) |
+| 2     | `feat/published-esm-types-schema`  | prior slice                | B: schema ESM specifiers including codegen                                                 | Backend    | light      |                                                    |
+| 3     | `feat/published-esm-types-fixture` | prior slice                | C: packed-install nodenext fixture the current `test-install.sh` cannot catch              | QA         | light      |                                                    |
+| final | `feat/published-esm-types`         | `main`                     | integration                                                                                | Principal  | deep       |                                                    |
 
 **Collapse rules:** do not fold 1 into 2 (SDK emit is reviewable apart from schema source/codegen). Do not fold 3 into 1 (the packed nodenext fixture is the regression the current install script misses). Dual TypeScript unchanged (ADR 0006). Prefer specifier hygiene over `rollupTypes: true`.
 
@@ -53,6 +53,7 @@ Init `gh stack` with slice 1 only; `gh stack add` each next branch when it start
 - Hand-written barrels in `@grantjs/schema` (`src/index.ts`, `src/events/index.ts`, and any other relative re-exports): add `.js` extensions. Directory barrels must be `./name/index.js`, not `./name.js`.
 - Codegen (`codegen.ts` + generated files): `importSchemaTypesFrom` / `add` plugin import lines use `./schema-types.js`.
 - Revert the Nest example to `module` / `moduleResolution` `Node16`.
+- In-repo Next apps that `transpilePackages` schema (`grant-web`, `grant-config`) need webpack `resolve.extensionAlias` for `.js` → `.ts` (Turbopack has no equivalent). `next build --webpack`.
 - Patch changeset for `@grantjs/schema`.
 
 ### 3 — Packed nodenext fixture (C) — GP-185
