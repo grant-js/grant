@@ -58,10 +58,11 @@ Init `gh stack` with slice 1 only; `gh stack add` each next branch when it start
 
 ### 3 — Packed nodenext fixture (C) — GP-185
 
-- Packed-install type-check with `moduleResolution: "nodenext"` and `skipLibCheck: true`.
-- Assert `const probe: symbol = GrantClient` is `TS2322`, plus `Scope` / `GrantModule` probes so schema re-exports cannot silently stay `any`.
+- Packed-install type-check with `moduleResolution: "nodenext"` and `skipLibCheck: true` (`scripts/test-published-nodenext.sh`, `pnpm run test:published-nodenext`).
+- Assert `const probe: symbol = GrantClient` is `TS2322`, plus `Scope` / `EventData` / `GrantModule` probes so schema re-exports and directory barrels cannot silently stay `any`. Fail on `TS2834`/`TS2835` in published `@grantjs` sources.
 - Point the Nest example at the same bar (already `Node16`).
-- The current `test-install.sh` only `require()`s JS and cannot catch this.
+- Wired after `build` in `.husky/pre-push` and after type-check in CI. The current `test-install.sh` only `require()`s JS and cannot catch this.
+- No changeset: test/CI gate only. Patch changesets for the published packages landed in slices 1–2.
 
 ## Stack setup
 

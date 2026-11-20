@@ -186,6 +186,11 @@ jobs:
       - name: Type check
         run: pnpm run type-check
 
+      # Packed tarballs under nodenext + skipLibCheck. test-install.sh only
+      # require()s JS and cannot see published types collapsing to `any` (#731).
+      - name: Packed-install nodenext types
+        run: pnpm run test:published-nodenext
+
       # grant-web's Playwright Firefox project is `test:browser`, not `pnpm test`.
       # This runner cannot sudo `playwright install-deps`, so default tests stay in jsdom.
       - name: Test

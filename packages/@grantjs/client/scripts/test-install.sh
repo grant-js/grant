@@ -1,6 +1,10 @@
 #!/bin/bash
 # Test script to verify package can be installed and basic imports work
-# This simulates a fresh installation in a clean environment
+# This simulates a fresh installation in a clean environment.
+#
+# This only require()s JS. It cannot catch published .d.ts that collapse to
+# `any` under moduleResolution nodenext + skipLibCheck (issue #731). That
+# gate is scripts/test-published-nodenext.sh.
 
 set -e
 
