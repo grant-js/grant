@@ -8,6 +8,17 @@ const nextConfig: NextConfig = {
   experimental: {
     useTypeScriptCli: false,
   },
+  // Schema (and other TS sources) use ESM `.js` specifiers that map to `.ts`
+  // files. Webpack needs this alias; `next build` here uses webpack (see
+  // package.json) so Turbopack does not have to implement extensionAlias.
+  webpack: (config) => {
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs'],
+    };
+    return config;
+  },
 };
 
 export default nextConfig;

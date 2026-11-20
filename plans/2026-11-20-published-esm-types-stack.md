@@ -53,6 +53,7 @@ Init `gh stack` with slice 1 only; `gh stack add` each next branch when it start
 - Hand-written barrels in `@grantjs/schema` (`src/index.ts`, `src/events/index.ts`, and any other relative re-exports): add `.js` extensions. Directory barrels must be `./name/index.js`, not `./name.js`.
 - Codegen (`codegen.ts` + generated files): `importSchemaTypesFrom` / `add` plugin import lines use `./schema-types.js`.
 - Revert the Nest example to `module` / `moduleResolution` `Node16`.
+- In-repo Next apps that `transpilePackages` schema (`grant-web`, `grant-config`) need webpack `resolve.extensionAlias` for `.js` → `.ts` (Turbopack has no equivalent). `next build --webpack`.
 - Patch changeset for `@grantjs/schema`.
 
 ### 3 — Packed nodenext fixture (C) — GP-185
