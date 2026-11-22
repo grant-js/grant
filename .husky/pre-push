@@ -9,4 +9,4 @@
 TEST_CONCURRENCY="${GRANT_PREPUSH_CONCURRENCY:-4}"
 TEST_WORKERS="${GRANT_PREPUSH_VITEST_WORKERS:-3}"
 
-pnpm run format:check && pnpm run lint && pnpm run dead-code:api && pnpm run dead-code:web && pnpm run dead-code:core && pnpm run dead-code:database && pnpm run dead-code:schema && pnpm run dead-code:packages && pnpm run dead-code:deploy && pnpm run codegen:check && pnpm run type-check && pnpm run build && pnpm run synth:check && CI=1 pnpm test -- --concurrency="$TEST_CONCURRENCY" -- --maxWorkers="$TEST_WORKERS" && pnpm run secret-scan:protect
+pnpm run format:check && pnpm run lint && pnpm run dead-code:api && pnpm run dead-code:web && pnpm run dead-code:core && pnpm run dead-code:database && pnpm run dead-code:schema && pnpm run dead-code:packages && pnpm run dead-code:deploy && pnpm run codegen:check && pnpm run type-check && pnpm run build && pnpm run test:published-nodenext && pnpm run synth:check && CI=1 pnpm test -- --concurrency="$TEST_CONCURRENCY" -- --maxWorkers="$TEST_WORKERS" && pnpm run secret-scan:protect

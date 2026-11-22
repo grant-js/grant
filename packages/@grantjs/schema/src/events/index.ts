@@ -1,2 +1,2 @@
-export * from './event-catalog';
-export * from './event-envelope';
+export * from './event-catalog.js';
+export * from './event-envelope.js';

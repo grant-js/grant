@@ -22,6 +22,14 @@ const nextConfig: NextConfig = {
     '/*': ['./node_modules/@swc/helpers/esm/**/*'],
   },
   webpack: (config, { isServer }) => {
+    // Schema (and other TS sources) use ESM `.js` specifiers that map to `.ts`
+    // files. Webpack needs this alias; `next build --webpack` (see package.json)
+    // so Turbopack does not have to implement extensionAlias. Issue #731.
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs'],
+    };
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

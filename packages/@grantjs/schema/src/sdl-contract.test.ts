@@ -10,7 +10,7 @@ import {
   operationFiles,
   reachableTypeNames,
   sdlFiles,
-} from './test-support/sdl-fixture';
+} from './test-support/sdl-fixture.js';
 
 /**
  * The schema is the package's real deliverable, and until now nothing executed it:

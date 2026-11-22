@@ -1,5 +1,5 @@
-import type { Scope } from '../generated/schema-types';
-import type { EventCategory, EventType } from './event-catalog';
+import type { Scope } from '../generated/schema-types.js';
+import type { EventCategory, EventType } from './event-catalog.js';
 
 /**
  * Payload carried inside an event. The internal model can be rich; the external

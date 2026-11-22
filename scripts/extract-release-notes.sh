@@ -21,6 +21,11 @@ fi
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# GNU `tac` is not on the macOS self-hosted runner. Reverse stdin portably.
+reverse_lines() {
+  awk '{ lines[NR] = $0 } END { for (i = NR; i > 0; i--) print lines[i] }'
+}
+
 extract_section() {
   local file="$1"
   local ver="$2"
@@ -126,7 +131,7 @@ else
   fi
 fi
 
-NOTES="$(printf '%s\n' "$NOTES" | sed -e '/./,$!d' | awk 'NF{p=1} p' | tac | sed -e '/./,$!d' | tac)"
+NOTES="$(printf '%s\n' "$NOTES" | sed -e '/./,$!d' | awk 'NF{p=1} p' | reverse_lines | sed -e '/./,$!d' | reverse_lines)"
 
 BODY="$(cat <<EOF
 Platform release **v${VERSION}** — apps, Docker images (\`:${VERSION}\`, \`:latest\`), and npm packages in the fixed version group.
