@@ -1,5 +1,13 @@
 # @grantjs/client
 
+## 1.30.5
+
+### Patch Changes
+
+- db36e20: Published `@grantjs/client` and `@grantjs/server` type declarations now use explicit `.js` relative specifiers and keep `@grantjs/schema` as a package import, so `moduleResolution: "nodenext"` / `"node16"` consumers type-check against real types instead of `any`.
+- Updated dependencies [db36e20]
+  - @grantjs/schema@1.30.5
+
 ## 1.30.4
 
 ### Patch Changes

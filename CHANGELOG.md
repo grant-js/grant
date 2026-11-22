@@ -3,6 +3,20 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.30.5
+
+### Platform
+
+**Docker images:** tagged `:1.30.5` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.30.5** (fixed group with apps).
+
+### Patch Changes
+
+- db36e20: Published `@grantjs/schema` type entry points now use explicit `.js` relative specifiers (directory barrels as `./name/index.js`), including graphql-codegen output, so `moduleResolution: "nodenext"` / `"node16"` consumers resolve schema re-exports instead of `any`.
+
+- db36e20: Published `@grantjs/client` and `@grantjs/server` type declarations now use explicit `.js` relative specifiers and keep `@grantjs/schema` as a package import, so `moduleResolution: "nodenext"` / `"node16"` consumers type-check against real types instead of `any`.
+
 ## 1.30.4
 
 ### Platform
