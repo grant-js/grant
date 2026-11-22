@@ -223,6 +223,7 @@ export async function createApp(): Promise<CreatedApp> {
   app.use(requestLoggingMiddleware);
   // IP `auth:` / `global:` before context so a 429 does not pay JWT or the handler
   // toolbox. Optional `tenant:` stays after authenticate — it keys on scope.
+  // codeql[js/missing-rate-limiting]: This is the global rate limiter. CodeQL treats isAuthSensitiveGraphqlRequest as authorization.
   app.use(rateLimitMiddleware(cache.rateLimit));
   app.use(contextMiddleware(db, cache));
   app.use(tenantRateLimitMiddleware(cache.rateLimit));

@@ -30,11 +30,13 @@ import {
 export function createMeRouter(fallback?: RequestContext): Router {
   const router = Router();
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/', authenticateRestRoute, async (req, res) => {
     const me = await requestContext(req, fallback).handlers.me.getMe();
     sendSuccessResponse(res, me);
   });
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.post('/accounts', authenticateRestRoute, async (req, res) => {
     const result = await requestContext(req, fallback).handlers.me.createMySecondaryAccount();
     sendSuccessResponse(res, result, 201);
@@ -52,6 +54,7 @@ export function createMeRouter(fallback?: RequestContext): Router {
     }
   );
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/export', authenticateRestRoute, async (req, res) => {
     const { data, filename } = await requestContext(req, fallback).handlers.me.myUserDataExport();
     res.setHeader('Content-Type', 'application/json');
@@ -107,11 +110,13 @@ export function createMeRouter(fallback?: RequestContext): Router {
     }
   );
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/authentication-methods', authenticateRestRoute, async (req, res) => {
     const methods = await requestContext(req, fallback).handlers.me.myUserAuthenticationMethods();
     sendSuccessResponse(res, methods);
   });
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/mfa/recovery-codes/status', authenticateRestRoute, async (req, res) => {
     const status = await requestContext(req, fallback).handlers.me.myMfaRecoveryCodeStatus();
     sendSuccessResponse(res, status);
@@ -209,11 +214,13 @@ export function createMeRouter(fallback?: RequestContext): Router {
     }
   );
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.get('/notifications/unread-count', authenticateRestRoute, async (req, res) => {
     const result = await requestContext(req, fallback).handlers.me.myUnreadNotificationCount();
     sendSuccessResponse(res, result);
   });
 
+  // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
   router.post('/notifications/read-all', authenticateRestRoute, async (req, res) => {
     const result = await requestContext(req, fallback).handlers.me.markAllMyNotificationsRead();
     sendSuccessResponse(res, result);

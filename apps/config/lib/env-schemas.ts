@@ -5,6 +5,8 @@
 
 import { z } from 'zod';
 
+const APP_URL_MAX_LENGTH = 2048;
+
 /** Non-empty string (trimmed); empty string allowed for optional vars */
 const optionalString = z.string().transform((s) => s.trim());
 /** URL (http or https) */
@@ -104,6 +106,7 @@ export const appUrlRequiredSchema = z
   .string()
   .trim()
   .min(1, 'APP_URL is required')
+  .max(APP_URL_MAX_LENGTH, 'APP_URL is too long')
   .refine((v) => /^https?:\/\/[^\s]+$/.test(v), 'Must be a valid http(s) URL');
 
 /** Redis connection params for test-redis endpoint */

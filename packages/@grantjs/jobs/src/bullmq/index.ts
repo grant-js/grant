@@ -106,6 +106,7 @@ export class BullMQJobAdapter implements IJobAdapter {
             ...(data.payload !== undefined && { payload: data.payload }),
           };
 
+          // codeql[js/unvalidated-dynamic-method-call]: handler is a Map lookup of a function registered by schedule(), not obj[userInput]().
           return await handler(context);
         },
         {
@@ -185,6 +186,7 @@ export class BullMQJobAdapter implements IJobAdapter {
       startedAt: new Date(),
     };
 
+    // codeql[js/unvalidated-dynamic-method-call]: handler is a Map lookup of a function registered by schedule(), not obj[userInput]().
     return await handler(context);
   }
 

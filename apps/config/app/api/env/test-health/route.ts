@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { assertUrlAllowed, SsrfBlockedError } from '@grantjs/webhooks';
 
 import { appUrlRequiredSchema } from '@/lib/env-schemas';
+import { LOCAL_HEALTH_CHECK_HOSTS, toHealthCheckUrl } from '@/lib/health-check-url';
 
 const REQUEST_TIMEOUT_MS = 5000;
 
@@ -15,16 +17,32 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const baseUrl = parsed.data.replace(/\/+$/, '');
-    const healthUrl = `${baseUrl}/health`;
+    const healthUrl = toHealthCheckUrl(parsed.data);
+
+    try {
+      await assertUrlAllowed(healthUrl, {
+        allowedProtocols: ['http:', 'https:'],
+        allowlist: [...LOCAL_HEALTH_CHECK_HOSTS],
+      });
+    } catch (err) {
+      if (err instanceof SsrfBlockedError) {
+        return NextResponse.json(
+          { ok: false, error: 'APP_URL is not an allowed health target' },
+          { status: 400 }
+        );
+      }
+      throw err;
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
+      // codeql[js/request-forgery]: URL passed through assertUrlAllowed (http/https, localhost allowlist, no private targets).
       const res = await fetch(healthUrl, {
         method: 'GET',
         signal: controller.signal,
         headers: { Accept: 'application/json' },
+        redirect: 'manual',
       });
       clearTimeout(timeoutId);
       if (!res.ok) {

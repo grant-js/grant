@@ -84,6 +84,7 @@ export function createAuthRoutes(fallback?: RequestContext) {
 
   router.post(
     '/mfa/setup',
+    // codeql[js/missing-rate-limiting]: AUTH_SENSITIVE_RATE_LIMIT_METHOD_PATHS + global rateLimitMiddleware in create-app; CodeQL cannot see app-level middleware from this route factory.
     authenticateRestRoute,
     async (req: TypedRequest<Record<string, never>>, res: Response) => {
       const user = requestContext(req, fallback).user;

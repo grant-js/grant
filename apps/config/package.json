@@ -15,6 +15,7 @@
     "@grantjs/core": "workspace:*",
     "@grantjs/env": "workspace:*",
     "@grantjs/email": "workspace:*",
+    "@grantjs/webhooks": "workspace:*",
     "@aws-sdk/client-ses": "^3",
     "form-data": "^4",
     "ioredis": "^6.0.0",

@@ -416,6 +416,9 @@ importers:
       '@grantjs/env':
         specifier: workspace:*
         version: link:../../packages/@grantjs/env
+      '@grantjs/webhooks':
+        specifier: workspace:*
+        version: link:../../packages/@grantjs/webhooks
       form-data:
         specifier: ^4
         version: 4.0.6
