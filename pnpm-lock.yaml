@@ -8,7 +8,7 @@ overrides:
   fast-xml-parser: ^5.5.6
   path-to-regexp: 8.4.0
   picomatch: 4.0.4
-  brace-expansion@1: 1.1.18
+  brace-expansion@1: 1.1.21
   brace-expansion@5: 5.0.12
   '@isaacs/brace-expansion': 5.0.9
   yaml: ^2.8.3
@@ -32,7 +32,7 @@ overrides:
   fast-uri@4: 4.2.3
   find-my-way: 9.7.0
   shell-quote: 1.11.0
-  qs: 6.16.0
+  qs: 6.16.1
   body-parser: 2.4.0
   '@babel/core': 7.29.7
   undici@6: 6.29.1
@@ -53,8 +53,9 @@ overrides:
   sharp: 0.35.5
   browserslist: 4.28.7
   uuid@8: 11.1.1
-  vite@5: 6.4.4
+  vite@5: 6.4.5
   launch-editor: 2.14.2
+  '@graphql-tools/utils@12.0.1': 12.0.2
 
 importers:
 
@@ -396,10 +397,10 @@ importers:
         version: /@typescript/typescript6@6.0.2
       vite-tsconfig-paths:
         specifier: ^6.1.1
-        version: 6.1.1(@typescript/typescript6@6.0.2)(vite@6.4.4)
+        version: 6.1.1(@typescript/typescript6@6.0.2)(vite@6.4.5)
       vitest:
         specifier: ^5.1.0
-        version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@6.4.4)
+        version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@6.4.5)
 
   apps/config:
     dependencies:
@@ -778,7 +779,7 @@ importers:
         version: /@typescript/typescript6@6.0.2
       unplugin-icons:
         specifier: ^24.0.0
-        version: 24.0.0(esbuild@0.28.2)(vite@6.4.4)
+        version: 24.0.0(esbuild@0.28.2)(vite@6.4.5)
       unplugin-vue-components:
         specifier: ^32.1.0
         version: 32.1.0(vue@3.5.45)
@@ -1890,7 +1891,7 @@ packages:
       '@apollo/utils.withrequired': 3.0.0
       '@graphql-tools/merge': 9.2.4(graphql@16.14.2)
       '@graphql-tools/schema': 10.1.1(graphql@16.14.2)
-      '@graphql-tools/utils': 12.0.1(graphql@16.14.2)
+      '@graphql-tools/utils': 12.0.2(graphql@16.14.2)
       async-retry: 1.3.3
       body-parser: 2.4.0
       content-type: 1.0.5
@@ -4138,7 +4139,7 @@ packages:
     peerDependencies:
       graphql: 16.14.2
     dependencies:
-      '@graphql-tools/utils': 12.1.0(graphql@16.14.2)
+      '@graphql-tools/utils': 12.0.2(graphql@16.14.2)
       graphql: 16.14.2
       tslib: 2.9.1
     dev: false
@@ -4182,7 +4183,7 @@ packages:
       graphql: 16.14.2
     dependencies:
       '@graphql-tools/merge': 9.2.8(graphql@16.14.2)
-      '@graphql-tools/utils': 12.1.0(graphql@16.14.2)
+      '@graphql-tools/utils': 12.0.2(graphql@16.14.2)
       graphql: 16.14.2
       tslib: 2.9.1
     dev: false
@@ -4237,14 +4238,14 @@ packages:
       - utf-8-validate
     dev: true
 
-  /@graphql-tools/utils@12.0.1(graphql@16.14.2):
-    resolution: {integrity: sha512-8YC6jn4xYDS6YTY6xDAgQAs/nGgvzRaIGHS8GeSfVItQzNK7Ms24CQtE3EJY+amvR+tBnhRSX0N83aGj+V/RIg==}
+  /@graphql-tools/utils@12.0.2(graphql@16.14.2):
+    resolution: {integrity: sha512-N1j6fG12Cq5HN4826NGNtGu8O65eLCO6nHbTTboa0GEB7c2Ym2kLGU3ewHrG9DR/coL09GQjREChSG0SjUuAGA==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       graphql: 16.14.2
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.14.2)
-      '@whatwg-node/promise-helpers': 1.3.2
+      '@whatwg-node/promise-helpers': 2.0.2
       cross-inspect: 1.0.1
       graphql: 16.14.2
       tslib: 2.9.1
@@ -10137,14 +10138,14 @@ packages:
       vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15)
     dev: true
 
-  /@vitejs/plugin-vue@5.2.4(vite@6.4.4)(vue@3.5.45):
+  /@vitejs/plugin-vue@5.2.4(vite@6.4.5)(vue@3.5.45):
     resolution: {integrity: sha512-7Yx/SXSOcQq5HiiV3orevHUFn+pmMB4cgbEkDYgnkUWb0WfeQ/wa2yFv6D5ICiCQOVpjA7vYDXrC7AGO8yjDHA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     peerDependencies:
-      vite: 6.4.4
+      vite: 6.4.5
       vue: ^3.2.25
     dependencies:
-      vite: 6.4.4(@types/node@26.6.6)(tsx@4.23.15)
+      vite: 6.4.5(@types/node@26.6.6)(tsx@4.23.15)
       vue: 3.5.45(@typescript/typescript6@6.0.2)
     dev: true
 
@@ -10220,7 +10221,7 @@ packages:
       '@vitest/istanbul-lib-coverage': 2.1.0
     dev: true
 
-  /@vitest/mocker@5.1.0(vite@6.4.4):
+  /@vitest/mocker@5.1.0(vite@6.4.5):
     resolution: {integrity: sha512-5umB9/jlWcqVS6fsrFmv5Gdnpu6wAUio/lEOwAmvB7v+lFo/IW2B9FhAD0p19GCULTgMzLCdUmuCDCnAzWgppQ==}
     peerDependencies:
       msw: ^2.4.9 || ^3.0.0
@@ -10235,7 +10236,7 @@ packages:
       '@vitest/spy': 5.1.0
       estree-walker: 3.0.3
       magic-string: 1.4.5
-      vite: 6.4.4(@types/node@26.6.6)(tsx@4.23.15)
+      vite: 6.4.5(@types/node@26.6.6)(tsx@4.23.15)
     dev: true
 
   /@vitest/mocker@5.1.0(vite@8.3.8):
@@ -10641,6 +10642,7 @@ packages:
     engines: {node: '>=16.0.0'}
     dependencies:
       tslib: 2.9.1
+    dev: true
 
   /@whatwg-node/promise-helpers@2.0.2:
     resolution: {integrity: sha512-RKVGTBAuYfObHxUFjlTFmlDndmuXBxkN56yj3z6EQpNpT55R/xaMhTi4+9yXZ5UoDXbKLAsZHCP8ycoWHM/Vdg==}
@@ -11199,7 +11201,7 @@ packages:
       http-errors: 2.0.1
       iconv-lite: 0.7.3
       on-finished: 2.4.2
-      qs: 6.16.0
+      qs: 6.16.1
       raw-body: 3.0.2
       type-is: 2.1.0
     transitivePeerDependencies:
@@ -11212,8 +11214,8 @@ packages:
   /bowser@2.15.0:
     resolution: {integrity: sha512-xic6KSZglg/I4ymp45fdM4GWfYpBK79Fxd/TOvJktlaPgQqqDxvmGwOPZl2V0dyeS3Lj5c180bLhXF43iyAjZQ==}
 
-  /brace-expansion@1.1.18:
-    resolution: {integrity: sha512-Edep/X9fGqVNmzKBVsDYIOtD+z1tuezV70LBjdCst9Tqu76lsnvRiZ6oTic1n+/BIwX6QDGAO94PN4N2SADvtw==}
+  /brace-expansion@1.1.21:
+    resolution: {integrity: sha512-9zeA+KLZNNzglF2TPKRQEDyx6Yby7daAkuy8MiPzpXPsYDWi/DRM8jmwUDxokQjYqBpv5DgPiwD4h4ZZSy1Ujw==}
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
@@ -13726,7 +13728,7 @@ packages:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.8
-      qs: 6.16.0
+      qs: 6.16.1
       range-parser: 1.3.0
       router: 2.2.0
       send: 1.2.1
@@ -15897,13 +15899,13 @@ packages:
   /minimatch@3.1.4:
     resolution: {integrity: sha512-twmL+S8+7yIsE9wsqgzU3E8/LumN3M3QELrBZ20OdmQ9jB2JvW5oZtBEmft84k/Gs5CG9mqtWc6Y9vW+JEzGxw==}
     dependencies:
-      brace-expansion: 1.1.18
+      brace-expansion: 1.1.21
     dev: true
 
   /minimatch@3.1.5:
     resolution: {integrity: sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==}
     dependencies:
-      brace-expansion: 1.1.18
+      brace-expansion: 1.1.21
     dev: true
 
   /minimatch@9.0.7:
@@ -16740,10 +16742,6 @@ packages:
   /object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
-
-  /object-inspect@1.13.4:
-    resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
-    engines: {node: '>= 0.4'}
 
   /object-inspect@1.14.0:
     resolution: {integrity: sha512-IVgHNlp/jwQX271+Xzoq9LZNTWXxZK+cEOrGBOBxXNbn7fapnZ+Ts6TVMgNOuAezwG2wdtnMX97tTPK6VEnuOQ==}
@@ -17751,8 +17749,8 @@ packages:
       yargs: 15.4.1
     dev: false
 
-  /qs@6.16.0:
-    resolution: {integrity: sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==}
+  /qs@6.16.1:
+    resolution: {integrity: sha512-5Px6J7rfHBAGUhNQ3es4YzcOdBBw0SDcVtThJml4RdnKw4tKs2epA0kPZ+K8X+WiHktT93RHVcQ/3ym5aTCgtg==}
     engines: {node: '>=0.6'}
     dependencies:
       es-define-property: 1.0.1
@@ -18461,7 +18459,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       es-errors: 1.3.0
-      object-inspect: 1.13.4
+      object-inspect: 1.14.0
       side-channel-list: 1.0.1
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
@@ -18826,7 +18824,7 @@ packages:
       formidable: 3.5.4
       methods: 1.1.2
       mime: 2.6.0
-      qs: 6.16.0
+      qs: 6.16.1
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -19448,7 +19446,7 @@ packages:
       rolldown: '*'
       rollup: 4.59.0
       typescript: npm:@typescript/typescript6@6.0.2
-      vite: 6.4.4
+      vite: 6.4.5
       webpack: ^4 || ^5
     peerDependenciesMeta:
       '@microsoft/api-extractor':
@@ -19484,7 +19482,7 @@ packages:
       - supports-color
     dev: true
 
-  /unplugin-icons@24.0.0(esbuild@0.28.2)(vite@6.4.4):
+  /unplugin-icons@24.0.0(esbuild@0.28.2)(vite@6.4.5):
     resolution: {integrity: sha512-wV6c7I0PtiIP8KIU7Z1Ukyc2uzgY9ind3RXNu7j63L9qTWDn7CzLnW9FD57DKbfGpWKQv3qyV2PCtBG8Y5Llcg==}
     peerDependencies:
       '@svgr/core': '>=7.0.0'
@@ -19508,7 +19506,7 @@ packages:
       '@iconify/utils': 3.1.7
       local-pkg: 1.2.1
       obug: 2.2.1
-      unplugin: 3.4.0(esbuild@0.28.2)(vite@6.4.4)
+      unplugin: 3.4.0(esbuild@0.28.2)(vite@6.4.5)
     transitivePeerDependencies:
       - '@farmfe/core'
       - '@rsbuild/core'
@@ -19571,7 +19569,7 @@ packages:
       webpack-virtual-modules: 0.6.2
     dev: true
 
-  /unplugin@3.4.0(esbuild@0.28.2)(vite@6.4.4):
+  /unplugin@3.4.0(esbuild@0.28.2)(vite@6.4.5):
     resolution: {integrity: sha512-9skdIFlCsPdFV7wUfZxNsFInlW+7nJmGu2gkTu0OUhF56aXGsHab9x52/QhdJ4lC7ZDPWTxbiC4ANqVlsuaW3w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
@@ -19583,7 +19581,7 @@ packages:
       rolldown: '*'
       rollup: 4.59.0
       unloader: '*'
-      vite: 6.4.4
+      vite: 6.4.5
       webpack: '*'
     peerDependenciesMeta:
       '@farmfe/core':
@@ -19610,7 +19608,7 @@ packages:
       '@jridgewell/remapping': 2.3.5
       esbuild: 0.28.2
       picomatch: 4.0.4
-      vite: 6.4.4(@types/node@26.6.6)(tsx@4.23.15)
+      vite: 6.4.5(@types/node@26.6.6)(tsx@4.23.15)
       webpack-virtual-modules: 0.6.2
     dev: true
 
@@ -19794,7 +19792,7 @@ packages:
     peerDependencies:
       '@microsoft/api-extractor': '>=7'
       rollup: 4.59.0
-      vite: 6.4.4
+      vite: 6.4.5
     peerDependenciesMeta:
       '@microsoft/api-extractor':
         optional: true
@@ -19815,22 +19813,22 @@ packages:
       - webpack
     dev: true
 
-  /vite-tsconfig-paths@6.1.1(@typescript/typescript6@6.0.2)(vite@6.4.4):
+  /vite-tsconfig-paths@6.1.1(@typescript/typescript6@6.0.2)(vite@6.4.5):
     resolution: {integrity: sha512-2cihq7zliibCCZ8P9cKJrQBkfgdvcFkOOc3Y02o3GWUDLgqjWsZudaoiuOwO/gzTzy17cS5F7ZPo4bsnS4DGkg==}
     peerDependencies:
-      vite: 6.4.4
+      vite: 6.4.5
     dependencies:
       debug: 4.4.3
       globrex: 0.1.2
       tsconfck: 3.1.6(@typescript/typescript6@6.0.2)
-      vite: 6.4.4(@types/node@26.6.6)(tsx@4.23.15)
+      vite: 6.4.5(@types/node@26.6.6)(tsx@4.23.15)
     transitivePeerDependencies:
       - supports-color
       - typescript
     dev: true
 
-  /vite@6.4.4(@types/node@26.6.6)(tsx@4.23.15):
-    resolution: {integrity: sha512-xGjU/SyjeNyb0E4KxXBvYz/1C+3JXuujvf2hXNOtnlcE+58o5ajd9N2/n2VhkiJvpCP2qQasnUpx5PXNeI+p1Q==}
+  /vite@6.4.5(@types/node@26.6.6)(tsx@4.23.15):
+    resolution: {integrity: sha512-4enwjFfi4IwtEh0w+jPzpLVOFQiPHmmzPxcHXQOyEur47o6u0jE573DmGpjA+7irXoMLYRZD5ZaFUEneS3abPg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
     peerDependencies:
@@ -19971,7 +19969,7 @@ packages:
       '@shikijs/transformers': 2.5.0
       '@shikijs/types': 2.5.0
       '@types/markdown-it': 14.1.2
-      '@vitejs/plugin-vue': 5.2.4(vite@6.4.4)(vue@3.5.45)
+      '@vitejs/plugin-vue': 5.2.4(vite@6.4.5)(vue@3.5.45)
       '@vue/devtools-api': 7.7.9
       '@vue/shared': 3.5.30
       '@vueuse/core': 12.8.2(@typescript/typescript6@6.0.2)
@@ -19980,7 +19978,7 @@ packages:
       mark.js: 8.11.1
       minisearch: 7.2.0
       shiki: 2.5.0
-      vite: 6.4.4(@types/node@26.6.6)(tsx@4.23.15)
+      vite: 6.4.5(@types/node@26.6.6)(tsx@4.23.15)
       vue: 3.5.45(@typescript/typescript6@6.0.2)
     transitivePeerDependencies:
       - '@algolia/client-search'
@@ -20013,7 +20011,7 @@ packages:
       - yaml
     dev: true
 
-  /vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@6.4.4):
+  /vitest@5.1.0(@opentelemetry/api@1.10.0)(@types/node@26.6.6)(vite@6.4.5):
     resolution: {integrity: sha512-MzmNFnrwa8v8lF1bLxw3UJ4EREwVOVb75VqJZmUDRjJ6EluK/x9th7qTbaeDk41WxE1GxWqmTXcdsfobfH5sOA==}
     engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
     hasBin: true
@@ -20057,7 +20055,7 @@ packages:
       '@opentelemetry/api': 1.10.0
       '@types/chai': 5.2.3
       '@types/node': 26.6.6
-      '@vitest/mocker': 5.1.0(vite@6.4.4)
+      '@vitest/mocker': 5.1.0(vite@6.4.5)
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -20068,7 +20066,7 @@ packages:
       tinybench: 6.2.3
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      vite: 6.4.4(@types/node@26.6.6)(tsx@4.23.15)
+      vite: 6.4.5(@types/node@26.6.6)(tsx@4.23.15)
       why-is-node-running: 3.2.1
     transitivePeerDependencies:
       - msw
