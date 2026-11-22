@@ -37,6 +37,7 @@
     "test:integration": "turbo test:integration",
     "test:ui": "turbo test:ui",
     "test:coverage": "turbo test:coverage",
+    "test:published-nodenext": "./scripts/test-published-nodenext.sh",
     "test:e2e": "./scripts/e2e.sh",
     "test:e2e:up": "./scripts/e2e.sh --up",
     "test:e2e:down": "./scripts/e2e.sh --down",
