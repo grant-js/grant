@@ -106,6 +106,7 @@ export class NodeCronJobAdapter implements IJobAdapter {
       startedAt: new Date(),
     };
 
+    // codeql[js/unvalidated-dynamic-method-call]: handler is a Map lookup of a function registered by schedule(), not obj[userInput]().
     return await handler(context);
   }
 
