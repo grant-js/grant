@@ -46,11 +46,13 @@ Init `gh stack` with slice 1 only; `gh stack add` each next branch when it start
 - Emit explicit `.js` extensions on relative dts specifiers (`beforeWriteFile`). Do not add `.js` in `src/` in this slice — that is emit hygiene, not a source rewrite.
 - Patch changeset for `@grantjs/client` and `@grantjs/server`.
 - Update the published-packages open item that records the schema path rewrite.
+- In-repo coupling: the Nest example is `Node16` + `skipLibCheck: true`. After dts emit, it follows real SDK types into schema's published `.ts` barrels and fails `TS2834` until slice 2. Slice 1 temporarily uses `moduleResolution: "bundler"` on that example so the slice is husky/CI green; slice 2 reverts it to `Node16`.
 
 ### 2 — Schema ESM specifiers (B) — GP-184
 
 - Hand-written barrels in `@grantjs/schema` (`src/index.ts`, `src/events/index.ts`, and any other relative re-exports): add `.js` extensions. Directory barrels must be `./name/index.js`, not `./name.js`.
 - Codegen (`codegen.ts` + generated files): `importSchemaTypesFrom` / `add` plugin import lines use `./schema-types.js`.
+- Revert the Nest example to `module` / `moduleResolution` `Node16`.
 - Patch changeset for `@grantjs/schema`.
 
 ### 3 — Packed nodenext fixture (C) — GP-185

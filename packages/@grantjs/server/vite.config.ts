@@ -1,5 +1,4 @@
 import { resolve } from 'path';
-
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -18,6 +17,16 @@ export default defineConfig({
       include: ['src/**/*'],
       exclude: ['src/**/*.test.ts', 'src/__tests__/**'],
       tsconfigPath: './tsconfig.build.json',
+      // Keep `@grantjs/schema` as a package specifier in published .d.ts. Without
+      // this, vite-plugin-dts rewrites it to `../../schema/src/index.ts` via the
+      // resolve.alias below (issue #731).
+      aliasesExclude: ['@grantjs/schema'],
+      beforeWriteFile: (filePath, content) => {
+        if (!filePath.endsWith('.d.ts')) {
+          return;
+        }
+        return { content: rewritePublishedDts(content) };
+      },
     }),
   ],
   build: {
@@ -90,3 +99,25 @@ export default defineConfig({
     },
   },
 });
+
+/**
+ * Published ESM `.d.ts` must use explicit `.js` relative specifiers under
+ * `moduleResolution: "nodenext"` / `"node16"`. Also replace any leftover
+ * vite-alias rewrite of `@grantjs/schema` to the workspace source path.
+ * See issue #731.
+ */
+function rewritePublishedDts(content: string): string {
+  const withPackageSpecifier = content.replace(
+    /(?:\.\.\/)+schema\/src\/index\.(?:ts|js)/g,
+    '@grantjs/schema'
+  );
+  return withPackageSpecifier.replace(
+    /(?<=(?:from\s+|import\s*\(\s*|import\s+)['"])(\.\.?\/[^'"]+)(?=['"])/g,
+    (specifier) => (hasExplicitExtension(specifier) ? specifier : `${specifier}.js`)
+  );
+}
+
+function hasExplicitExtension(specifier: string): boolean {
+  // Only real module extensions. `./grant.decorator` is a source file, not a suffix.
+  return /\.(?:[cm]?js|json)$/.test(specifier);
+}
