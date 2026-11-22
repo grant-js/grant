@@ -1,4 +1,4 @@
-import type { EventCategory } from '../events/event-catalog';
+import type { EventCategory } from '../events/event-catalog.js';
 
 export const NOTIFICATION_CHANNELS = ['in_app', 'email'] as const;
 

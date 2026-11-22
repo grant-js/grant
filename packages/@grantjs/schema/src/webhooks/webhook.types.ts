@@ -1,4 +1,4 @@
-import type { EventType } from '../events/event-catalog';
+import type { EventType } from '../events/event-catalog.js';
 
 /** Service-layer create payload (scope is passed separately). */
 export interface CreateWebhookSubscriptionInput {

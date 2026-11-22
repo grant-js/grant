@@ -3,6 +3,10 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 const schemaTypesConfig = {
   useIndexSignature: true,
   enumsAsTypes: false,
+  // Published ESM (issue #731): relative specifiers in generated files need .js
+  // so nodenext/node16 consumers resolve them. Codegen strips extensions and
+  // re-appends `importExtension`.
+  importExtension: '.js',
   scalars: {
     Date: 'Date',
     JSON: 'Record<string, unknown>',
@@ -38,7 +42,7 @@ const config: CodegenConfig = {
     // `namespacedImportName` plus an `add` plugin supplying the import line.
     './src/generated/resolvers.ts': {
       plugins: [
-        { add: { content: "import type * as Types from './schema-types';" } },
+        { add: { content: "import type * as Types from './schema-types.js';" } },
         'typescript-resolvers',
       ],
       config: {
