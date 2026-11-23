@@ -88,7 +88,7 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^26.6.6",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/coverage-v8": "^5.1.1",
     "eslint": "^10.15.0",
     "express": "^5.3.0",
     "fastify": "^5.12.8",
@@ -99,7 +99,7 @@
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.8",
     "vite-plugin-dts": "^5.1.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "peerDependencies": {
     "express": "^4 || ^5",
