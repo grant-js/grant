@@ -37,3 +37,4 @@ record _why_ it became that way.
 | [0012](./0012-webhook-delivery-whatever-the-request-scope.md)     | Accepted | Webhook events reach a project whatever scope the request ran in: linked projects recorded at publish            |
 | [0013](./0013-exportable-api-key-secrets.md)                      | Proposed | Project-user API-key secrets may be kept encrypted behind a per-project opt-in and exported as a credential kind |
 | [0014](./0014-api-key-scopes.md)                                  | Proposed | Project API keys carry one standard role or an explicit permission set, never more than their creator holds      |
+| [0015](./0015-deployment-branding-as-token-overrides.md)          | Proposed | Deployment branding is design-token overrides per theme mode, validated by the API and applied at runtime        |

@@ -2,6 +2,50 @@ import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 
 import { z } from '@/lib/zod-openapi.lib';
 
+const brandingColor = z
+  .string()
+  .regex(/^#[0-9a-f]{6}$/)
+  .openapi({ description: 'Lowercase #rrggbb colour', example: '#1e3a5f' });
+
+const headerTokenOverridesSchema = z
+  .object({
+    header: brandingColor.optional(),
+    'header-foreground': brandingColor.optional(),
+  })
+  .openapi({
+    description:
+      'Design-token overrides for one theme mode, keyed by token name without the leading `--`. ' +
+      'A missing key keeps the default. When `header` is present, `header-foreground` is too, ' +
+      'chosen to meet WCAG AA (4.5:1) against it.',
+  });
+
+const brandingSchema = z
+  .object({
+    logo: z
+      .object({
+        lightUrl: z
+          .string()
+          .url()
+          .openapi({ description: 'https URL (`BRANDING_LOGO_URL_LIGHT`)' }),
+        darkUrl: z.string().url().nullable().openapi({
+          description: 'https URL for dark mode (`BRANDING_LOGO_URL_DARK`); null uses lightUrl',
+        }),
+        alt: z.string().nullable().openapi({
+          description: 'Logo alt text (`BRANDING_LOGO_ALT`); null lets the frontend localise one',
+        }),
+      })
+      .nullable(),
+    theme: z.object({
+      light: headerTokenOverridesSchema,
+      dark: headerTokenOverridesSchema,
+    }),
+  })
+  .openapi({
+    description:
+      'Deployment branding from `BRANDING_*`, validated at startup (invalid values are dropped). ' +
+      'Empty overrides and a null logo mean the default look.',
+  });
+
 const runtimeConfigResponseSchema = z.object({
   demoModeEnabled: z.boolean().openapi({ description: 'Whether demo mode is enabled' }),
   demoModeDbRefreshSchedule: z
@@ -26,6 +70,7 @@ const runtimeConfigResponseSchema = z.object({
   graphqlPlaygroundEnabled: z.boolean().openapi({
     description: 'Whether the API serves the Apollo Sandbox at /graphql (`APOLLO_PLAYGROUND`)',
   }),
+  branding: brandingSchema,
 });
 
 export function registerRuntimeConfigOpenApi(registry: OpenAPIRegistry) {
@@ -42,8 +87,9 @@ export function registerRuntimeConfigOpenApi(registry: OpenAPIRegistry) {
     summary: 'Get runtime config',
     description:
       'Returns runtime configuration for frontend apps (demo mode, privacy, app version, CDM upload limit, docs site URL, ' +
-      'and whether the API reference and GraphQL sandbox are enabled). No authentication required. ' +
-      'Frontends reach the API by relative path; the only URL returned is the docs site base URL.',
+      'whether the API reference and GraphQL sandbox are enabled, and the deployment branding). ' +
+      'No authentication required. Frontends reach the API by relative path; the URLs returned are ' +
+      'the docs site base URL and the branding logos.',
     security: [],
     responses: {
       200: {

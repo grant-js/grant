@@ -8,6 +8,13 @@ import { z } from 'zod';
 
 const optionalString = (defaultValue = '') => z.string().optional().default(defaultValue);
 
+/** Optional string, trimmed; unset and blank both become undefined. */
+const optionalTrimmed = () =>
+  z
+    .string()
+    .optional()
+    .transform((s) => (s?.trim() ? s.trim() : undefined));
+
 const optionalNumber = (defaultValue: number) => z.coerce.number().optional().default(defaultValue);
 
 const optionalBoolean = (defaultValue: boolean) =>
@@ -34,6 +41,20 @@ export const envSchema = z.object({
     .optional()
     .transform((s) => (s?.trim() ? s.trim() : undefined)),
   API_PORT: optionalNumber(4000),
+
+  /**
+   * Deployment branding for the web app's header, sent by `GET /api/config` (see
+   * `docs/deployment/branding.md`). All optional; blank counts as unset. Colours are `#rrggbb`,
+   * `#rgb`, `rgb()` or `hsl()`; logos are absolute `https://` URLs. The API validates them at
+   * startup and drops an invalid value with a warning instead of refusing to boot.
+   */
+  BRANDING_HEADER_BACKGROUND_LIGHT: optionalTrimmed(),
+  BRANDING_HEADER_BACKGROUND_DARK: optionalTrimmed(),
+  BRANDING_HEADER_FOREGROUND_LIGHT: optionalTrimmed(),
+  BRANDING_HEADER_FOREGROUND_DARK: optionalTrimmed(),
+  BRANDING_LOGO_URL_LIGHT: optionalTrimmed(),
+  BRANDING_LOGO_URL_DARK: optionalTrimmed(),
+  BRANDING_LOGO_ALT: optionalTrimmed(),
   /** Max JSON request body size for Express (bytes). Default 10 MiB; raise for large CDM sync imports. */
   API_JSON_BODY_LIMIT_BYTES: optionalNumber(10 * 1024 * 1024),
   /** SIGTERM/SIGINT: max ms for Apollo/HTTP/jobs/cache/DB shutdown before forced exit. Keep below K8s terminationGracePeriodSeconds. */

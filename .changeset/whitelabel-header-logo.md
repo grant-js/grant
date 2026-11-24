@@ -1,0 +1,6 @@
+---
+'grant-api': minor
+'grant-web': minor
+---
+
+A deployment can brand the web app's header with its own colours and logo, in light and dark mode, through seven optional API environment variables: `BRANDING_HEADER_BACKGROUND_LIGHT`, `BRANDING_HEADER_BACKGROUND_DARK`, `BRANDING_HEADER_FOREGROUND_LIGHT`, `BRANDING_HEADER_FOREGROUND_DARK`, `BRANDING_LOGO_URL_LIGHT`, `BRANDING_LOGO_URL_DARK` and `BRANDING_LOGO_ALT`. The API validates them at startup and returns them as `branding` in `GET /api/config`. Colours are opaque `#rrggbb`, `#rgb`, `rgb()` or `hsl()`, and logos are `https://` URLs. An invalid value is ignored with a warning in the server log, and a text colour that misses WCAG AA contrast (4.5:1) against its background is replaced by the default text colour, or by black or white, also with a warning. With a logo set, it takes the header's logo position and Grant's logo moves next to the version number. The web app applies the colours as overrides of new header design tokens (`--header`, `--header-foreground`), so theme switching and the system preference work with no flash. It now waits for `/api/config` (at most 3 seconds) before first paint. With nothing set, the app looks as before. See `docs/deployment/branding.md` and ADR 0015.

@@ -73,4 +73,73 @@ describe('RuntimeConfigProvider', () => {
       graphqlPlaygroundEnabled: false,
     });
   });
+
+  it('applies the branding overrides as a stylesheet scoped per mode', async () => {
+    renderWithConfig({
+      appVersion: '1.31.0',
+      branding: {
+        logo: null,
+        theme: {
+          light: { header: '#1e3a5f', 'header-foreground': '#ffffff' },
+          dark: { header: '#0f172a', 'header-foreground': '#e2e8f0' },
+        },
+      },
+    });
+
+    await waitFor(() =>
+      expect(document.querySelector('style[data-grant-branding]')).not.toBeNull()
+    );
+    const css = document.querySelector('style[data-grant-branding]')?.textContent ?? '';
+    expect(css).toContain(':root:not(.dark){--header:#1e3a5f;--header-foreground:#ffffff;');
+    expect(css).toContain(':root.dark{--header:#0f172a;--header-foreground:#e2e8f0;');
+  });
+
+  it('adds no stylesheet for an unbranded install', async () => {
+    renderWithConfig({
+      appVersion: '1.31.0',
+      branding: { logo: null, theme: { light: {}, dark: {} } },
+    });
+
+    await waitFor(() => expect(read().appVersion).toBe('1.31.0'));
+    expect(document.querySelector('style[data-grant-branding]')).toBeNull();
+  });
+
+  it('shows the fallback until /api/config answers, then the children', async () => {
+    let answer: (value: unknown) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          answer = resolve;
+        })
+      )
+    );
+    render(
+      createElement(RuntimeConfigProvider, {
+        fallback: createElement('p', null, 'loading'),
+        children: createElement(Probe),
+      })
+    );
+
+    expect(screen.getByText('loading')).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+
+    answer({ ok: true, json: () => Promise.resolve({ appVersion: '1.31.0' }) });
+
+    await waitFor(() => expect(read().appVersion).toBe('1.31.0'));
+    expect(screen.queryByText('loading')).toBeNull();
+  });
+
+  it('stops waiting with the defaults when /api/config fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    render(
+      createElement(RuntimeConfigProvider, {
+        fallback: createElement('p', null, 'loading'),
+        children: createElement(Probe),
+      })
+    );
+
+    await waitFor(() => expect(read().appVersion).toBe('dev'));
+    expect(screen.queryByText('loading')).toBeNull();
+  });
 });

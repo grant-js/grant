@@ -7,12 +7,14 @@ import { BookOpen, FileJson, Globe, Menu, Moon, Network, Sun, X } from 'lucide-r
 import { DemoModeDialogProvider, DemoModeDialogTrigger, Logo } from '@/components/common';
 import { NotificationBell } from '@/components/features/notifications';
 import { LanguageSwitcher, ThemeToggle } from '@/components/features/settings';
+import { HeaderBrandLogo } from '@/components/layout/header-brand-logo';
 import { useOAuthBrandingTheme } from '@/components/layout/oauth-branding-context';
 import { useRuntimeConfig } from '@/components/providers/runtime-config-provider';
 import { Button } from '@/components/ui/button';
 import { Link, usePathname } from '@/i18n/navigation';
 import { shouldShowNotificationBell } from '@/lib/auth';
 import { getApiDocsUrl, getAppVersion, getDocsUrl, getGraphqlPlaygroundUrl } from '@/lib/constants';
+import { hasHeaderBackground } from '@/lib/deployment-branding';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -25,11 +27,26 @@ export function Header() {
   const hideThemeToggle = useOAuthBrandingTheme()?.themeMode != null;
   // An adopter can turn off the Swagger UI or the Apollo Sandbox; their links render only while
   // `/api/config` reports the surface on, so the header never points at a page the API won't serve.
-  const { docsUrl, apiReferenceEnabled, graphqlPlaygroundEnabled } = useRuntimeConfig();
+  const { docsUrl, apiReferenceEnabled, graphqlPlaygroundEnabled, branding } = useRuntimeConfig();
+  // A deployment's own logo takes the main slot; Grant's moves next to the version, small.
+  const brandLogo = branding.logo;
+  // A branded header background is opaque: the contrast checked at API startup is against that
+  // colour, not against whatever scrolls underneath a translucent header.
+  const opaqueHeader = hasHeaderBackground(branding);
   const docsHref = `${getDocsUrl(docsUrl)}/`;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const languageSwitcherRef = useRef<HTMLButtonElement>(null);
   const themeToggleRef = useRef<HTMLButtonElement>(null);
+
+  const poweredByGrant = (
+    <Logo
+      size={44}
+      color="currentColor"
+      role="img"
+      aria-label={t('app.poweredBy')}
+      data-powered-by-grant=""
+    />
+  );
 
   const mobileThemeTrigger = (
     <div className="flex w-full items-center justify-between py-2 hover:bg-accent rounded-md px-2 -mx-2 cursor-pointer">
@@ -67,13 +84,25 @@ export function Header() {
 
   return (
     <DemoModeDialogProvider>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header
+        className={cn(
+          'app-header sticky top-0 z-50 w-full border-b text-header-foreground',
+          opaqueHeader
+            ? 'bg-header'
+            : 'bg-header/95 backdrop-blur supports-[backdrop-filter]:bg-header/60'
+        )}
+        data-branded={brandLogo || opaqueHeader ? '' : undefined}
+      >
         <div className="flex h-14 items-center justify-between px-4">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <div className="flex items-center justify-center">
-                <Logo size={75} className="mt-2" />
+                {brandLogo ? (
+                  <HeaderBrandLogo logo={brandLogo} fallbackAlt={t('navigation.home')} />
+                ) : (
+                  <Logo size={75} className="mt-2" />
+                )}
               </div>
             </Link>
           </div>
@@ -90,8 +119,11 @@ export function Header() {
           {/* Desktop Navigation and Controls */}
           <div className="hidden md:flex md:items-center md:space-x-3">
             <div className="flex items-center gap-4">
-              <span className="text-muted-foreground text-xs" title="App version">
-                v{getAppVersion()}
+              <span
+                className="flex items-center gap-1.5 text-muted-foreground text-xs"
+                title="App version"
+              >
+                {brandLogo ? poweredByGrant : null}v{getAppVersion()}
               </span>
               <DemoModeDialogTrigger />
               <a
@@ -147,8 +179,11 @@ export function Header() {
                 {/* Dashboard link removed - breadcrumb provides better navigation */}
               </nav>
               <div className="flex flex-col space-y-2">
-                <div className="py-2 -mx-2 text-muted-foreground text-xs" title="App version">
-                  v{getAppVersion()}
+                <div
+                  className="flex items-center gap-1.5 py-2 -mx-2 text-muted-foreground text-xs"
+                  title="App version"
+                >
+                  {brandLogo ? poweredByGrant : null}v{getAppVersion()}
                 </div>
                 <div className="py-2 -mx-2">
                   <DemoModeDialogTrigger />

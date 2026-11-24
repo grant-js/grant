@@ -1,8 +1,10 @@
 'use client';
 
+import { DEPLOYMENT_BRANDING_DEFAULTS, type DeploymentBranding } from './deployment-branding';
+
 /**
- * Runtime config: demo mode, privacy retention, app version, CDM upload limit, docs site URL and
- * which API surfaces (Swagger UI, Apollo Sandbox) are enabled.
+ * Runtime config: demo mode, privacy retention, app version, CDM upload limit, docs site URL,
+ * which API surfaces (Swagger UI, Apollo Sandbox) are enabled, and the deployment branding.
  * Client loads from GET /api/config; server fallback from env (SSR/build).
  */
 
@@ -19,6 +21,8 @@ export interface RuntimeConfig {
   apiReferenceEnabled: boolean;
   /** Whether the API serves the Apollo Sandbox at /graphql (`APOLLO_PLAYGROUND`). */
   graphqlPlaygroundEnabled: boolean;
+  /** Header colours and logo for this deployment (`BRANDING_*`); see `lib/deployment-branding`. */
+  branding: DeploymentBranding;
 }
 
 export const RUNTIME_CONFIG_DEFAULTS: RuntimeConfig = {
@@ -34,6 +38,7 @@ export const RUNTIME_CONFIG_DEFAULTS: RuntimeConfig = {
   // API does not serve, not even for the moment before the config arrives.
   apiReferenceEnabled: false,
   graphqlPlaygroundEnabled: false,
+  branding: DEPLOYMENT_BRANDING_DEFAULTS,
 };
 
 let runtimeConfig: RuntimeConfig = RUNTIME_CONFIG_DEFAULTS;
