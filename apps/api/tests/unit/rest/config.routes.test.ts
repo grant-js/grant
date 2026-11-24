@@ -9,6 +9,10 @@ const mockConfig = vi.hoisted(() => ({
   storage: { cdmImport: { maxBytes: 33554432 } },
   swagger: { enabled: true },
   apollo: { playground: true },
+  branding: {
+    logo: null as null | { lightUrl: string; darkUrl: string | null; alt: string | null },
+    theme: { light: {} as Record<string, string>, dark: {} as Record<string, string> },
+  },
 }));
 
 vi.mock('@/config', () => ({ config: mockConfig }));
@@ -23,6 +27,7 @@ describe('GET /api/config', () => {
     mockConfig.app.docsUrl = undefined;
     mockConfig.swagger.enabled = true;
     mockConfig.apollo.playground = true;
+    mockConfig.branding = { logo: null, theme: { light: {}, dark: {} } };
   });
 
   it('tells the web app the largest CDM import it can upload by reference (ADR 0009)', async () => {
@@ -38,6 +43,7 @@ describe('GET /api/config', () => {
       docsUrl: null,
       apiReferenceEnabled: true,
       graphqlPlaygroundEnabled: true,
+      branding: { logo: null, theme: { light: {}, dark: {} } },
     });
   });
 
@@ -66,5 +72,19 @@ describe('GET /api/config', () => {
 
     expect(response.body.apiReferenceEnabled).toBe(false);
     expect(response.body.graphqlPlaygroundEnabled).toBe(true);
+  });
+
+  it('returns the deployment branding validated at startup', async () => {
+    mockConfig.branding = {
+      logo: { lightUrl: 'https://cdn.example.com/logo.svg', darkUrl: null, alt: 'Example Co' },
+      theme: {
+        light: { header: '#1e3a5f', 'header-foreground': '#ffffff' },
+        dark: {},
+      },
+    };
+
+    const response = await request(app).get('/api/config');
+
+    expect(response.body.branding).toEqual(mockConfig.branding);
   });
 });

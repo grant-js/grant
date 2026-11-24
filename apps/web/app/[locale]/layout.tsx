@@ -62,24 +62,26 @@ export default function LocaleLayout({ children }: LocaleLayoutProps) {
     loadMessages();
   }, [locale]);
 
-  if (loading || !messages) {
-    return <FullPageLoader />;
-  }
-
+  // The runtime config loads alongside the messages, and the loader stays up until both are in,
+  // so a deployment's header colours and logo are there on first paint, not swapped in after.
   return (
-    <MessageProvider messages={messages} locale={locale}>
-      <RuntimeConfigProvider>
-        <ApolloProvider>
-          <GrantProvider>
-            <SessionRestoreGate>
-              <div className="relative flex min-h-screen flex-col">
-                <Header />
-                <main className="min-w-0 flex-1">{children}</main>
-              </div>
-            </SessionRestoreGate>
-          </GrantProvider>
-        </ApolloProvider>
-      </RuntimeConfigProvider>
-    </MessageProvider>
+    <RuntimeConfigProvider fallback={<FullPageLoader />}>
+      {loading || !messages ? (
+        <FullPageLoader />
+      ) : (
+        <MessageProvider messages={messages} locale={locale}>
+          <ApolloProvider>
+            <GrantProvider>
+              <SessionRestoreGate>
+                <div className="relative flex min-h-screen flex-col">
+                  <Header />
+                  <main className="min-w-0 flex-1">{children}</main>
+                </div>
+              </SessionRestoreGate>
+            </GrantProvider>
+          </ApolloProvider>
+        </MessageProvider>
+      )}
+    </RuntimeConfigProvider>
   );
 }

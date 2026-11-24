@@ -51,7 +51,7 @@ SECURITY_ADDITIONAL_ORIGINS=https://docs.yourdomain.com
 
 **How frontends get these values:**
 
-- **Web (Next.js)** — Client fetches `GET /api/config` (proxied to the API) and uses the JSON (demo mode, app version, `docsUrl`, and whether the API reference and GraphQL sandbox are enabled). It reaches the API by relative path.
+- **Web (Next.js)** — Client fetches `GET /api/config` (proxied to the API) and uses the JSON (demo mode, app version, `docsUrl`, whether the API reference and GraphQL sandbox are enabled, and the [branding](/deployment/branding)). It reaches the API by relative path.
 
 **Docs links and API surfaces in the web header:**
 
@@ -66,6 +66,8 @@ APOLLO_PLAYGROUND=false                   # Apollo Sandbox at /graphql; default 
 - **Docs (VitePress)** — Entrypoint writes minimal `/config.json` with only `{ "appUrl": "${APP_URL}" }`; the docs app then fetches `${appUrl}/api/config` for the full config.
 
 No build-time URL injection; the same image works for any deployment.
+
+**Header colours and logo (optional):** `BRANDING_HEADER_BACKGROUND_LIGHT`, `BRANDING_HEADER_BACKGROUND_DARK`, `BRANDING_HEADER_FOREGROUND_LIGHT`, `BRANDING_HEADER_FOREGROUND_DARK`, `BRANDING_LOGO_URL_LIGHT`, `BRANDING_LOGO_URL_DARK` and `BRANDING_LOGO_ALT` brand the web app's header per deployment, through `GET /api/config`. See [Branding](/deployment/branding).
 
 ## 4. Demo mode (optional)
 

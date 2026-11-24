@@ -1638,6 +1638,68 @@ const META: EnvVarMeta[] = [
     section: 'Demo mode',
   },
   {
+    key: 'BRANDING_HEADER_BACKGROUND_LIGHT',
+    category: 'optional',
+    label: 'Header background (light)',
+    description:
+      'Web app header background in light mode: #rrggbb, #rgb, rgb() or hsl(). Unset keeps the default. See docs/deployment/branding.md.',
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
+    key: 'BRANDING_HEADER_BACKGROUND_DARK',
+    category: 'optional',
+    label: 'Header background (dark)',
+    description:
+      'Web app header background in dark mode: #rrggbb, #rgb, rgb() or hsl(). Unset keeps the default.',
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
+    key: 'BRANDING_HEADER_FOREGROUND_LIGHT',
+    category: 'optional',
+    label: 'Header text (light)',
+    description:
+      'Header text and icon colour in light mode. Must reach WCAG AA (4.5:1) against the background, or the API ignores it with a startup warning.',
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
+    key: 'BRANDING_HEADER_FOREGROUND_DARK',
+    category: 'optional',
+    label: 'Header text (dark)',
+    description:
+      'Header text and icon colour in dark mode. Must reach WCAG AA (4.5:1) against the background, or the API ignores it with a startup warning.',
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
+    key: 'BRANDING_LOGO_URL_LIGHT',
+    category: 'optional',
+    label: 'Logo URL (light)',
+    description:
+      "Absolute https:// URL of the logo shown in the header's logo slot; also used in dark mode when no dark logo is set. Grant's logo moves next to the version.",
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
+    key: 'BRANDING_LOGO_URL_DARK',
+    category: 'optional',
+    label: 'Logo URL (dark)',
+    description: 'Absolute https:// URL of the logo for dark mode. Needs the light logo.',
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
+    key: 'BRANDING_LOGO_ALT',
+    category: 'optional',
+    label: 'Logo alt text',
+    description:
+      'Alt text of the custom logo (up to 120 characters). Unset: the localised "Home" label.',
+    envFiles: ['.env'],
+    section: 'Branding',
+  },
+  {
     key: 'JOBS_ENABLED',
     category: 'main',
     label: 'Enable job scheduling',

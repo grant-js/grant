@@ -1,17 +1,23 @@
 import { SVGProps } from 'react';
 import { useTheme } from 'next-themes';
 
-interface LogoProps extends SVGProps<SVGSVGElement> {
+interface LogoProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
   size?: number;
   className?: string;
+  /**
+   * Fill colour. Unset, the logo is black or white by theme. `currentColor` takes the text colour
+   * around it, e.g. the header's when a deployment brands it (`BRANDING_HEADER_*`).
+   */
+  color?: string;
 }
 
-export function Logo({ size = 24, className, ...props }: LogoProps) {
+export function Logo({ size = 24, className, color, ...props }: LogoProps) {
   const { resolvedTheme } = useTheme();
   // Use resolvedTheme so "system" is resolved to "light" or "dark". When undefined (before hydration),
   // use currentColor so the logo inherits from CSS (theme class set by script before paint).
   const logoColor =
-    resolvedTheme === 'dark' ? '#ffffff' : resolvedTheme === 'light' ? '#000000' : 'currentColor';
+    color ??
+    (resolvedTheme === 'dark' ? '#ffffff' : resolvedTheme === 'light' ? '#000000' : 'currentColor');
   const svgClassName =
     logoColor === 'currentColor'
       ? [className, 'text-foreground'].filter(Boolean).join(' ')

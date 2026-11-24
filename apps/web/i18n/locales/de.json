@@ -34,7 +34,8 @@
   "common": {
     "app": {
       "title": "Grant",
-      "description": "Eine moderne Autorisierungsplattform für Einzelpersonen und Organisationen."
+      "description": "Eine moderne Autorisierungsplattform für Einzelpersonen und Organisationen.",
+      "poweredBy": "Bereitgestellt von Grant"
     },
     "auth": {
       "login": "Anmelden",

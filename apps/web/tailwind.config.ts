@@ -131,6 +131,11 @@ const config: Config = {
           DEFAULT: 'var(--card)',
           foreground: 'var(--card-foreground)',
         },
+        header: {
+          DEFAULT: 'var(--header)',
+          foreground: 'var(--header-foreground)',
+          'muted-foreground': 'var(--header-muted-foreground)',
+        },
         sidebar: {
           DEFAULT: 'var(--sidebar-background)',
           foreground: 'var(--sidebar-foreground)',

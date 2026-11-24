@@ -157,6 +157,7 @@ export default withMermaid({
             { text: 'Kubernetes', link: '/deployment/kubernetes' },
             { text: 'AWS (serverless)', link: '/deployment/aws-serverless' },
             { text: 'Environment Setup', link: '/deployment/environment' },
+            { text: 'Branding', link: '/deployment/branding' },
           ],
         },
         {

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
 import { createElement, type ReactNode } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { DeploymentBranding } from '@/lib/deployment-branding';
 import { RUNTIME_CONFIG_DEFAULTS, type RuntimeConfig } from '@/lib/runtime-config';
 
 import { Header } from './header';
@@ -21,7 +22,14 @@ vi.mock('next-intl', () => ({
 vi.mock('@/components/common', () => ({
   DemoModeDialogProvider: ({ children }: { children: ReactNode }) => children,
   DemoModeDialogTrigger: () => null,
-  Logo: () => null,
+  // Grant's own logo, marked so a test can tell the main slot from the small one by the version.
+  Logo: ({ color, ...props }: { color?: string; role?: string; 'aria-label'?: string }) =>
+    createElement('svg', {
+      'data-testid': 'grant-logo',
+      'data-color': color ?? 'theme',
+      role: props.role,
+      'aria-label': props['aria-label'],
+    }),
 }));
 
 vi.mock('@/components/features/notifications', () => ({ NotificationBell: () => null }));
@@ -107,5 +115,108 @@ describe('Header navigation links', () => {
     render(createElement(Header));
 
     expect(linksTo('http://localhost:5173/docs/')).toHaveLength(2);
+  });
+});
+
+const LIGHT_LOGO = 'https://cdn.example.com/brand/logo.svg';
+const DARK_LOGO = 'https://cdn.example.com/brand/logo-dark.svg';
+
+function renderWithBranding(branding: DeploymentBranding) {
+  runtimeConfig = { ...RUNTIME_CONFIG_DEFAULTS, branding };
+  return render(createElement(Header));
+}
+
+const header = () => document.querySelector('header') as HTMLElement;
+const grantLogos = () => screen.queryAllByTestId('grant-logo');
+
+describe('Header branding', () => {
+  afterEach(cleanup);
+
+  it('looks as before when nothing is branded, in both modes', () => {
+    renderWithBranding(RUNTIME_CONFIG_DEFAULTS.branding);
+
+    // The header reads only from header tokens, whose defaults are the page tokens in light and
+    // dark alike (globals.css), and keeps its translucent background.
+    expect(header().className).toContain('app-header');
+    expect(header().className).toContain('bg-header/95');
+    expect(header().className).toContain('supports-[backdrop-filter]:bg-header/60');
+    expect(header().className).toContain('text-header-foreground');
+    expect(header().hasAttribute('data-branded')).toBe(false);
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
+    // Only the main-slot logo, coloured by theme; no small mark by the version.
+    expect(grantLogos()).toHaveLength(1);
+    expect(grantLogos()[0].getAttribute('data-color')).toBe('theme');
+  });
+
+  it('puts the deployment logo in the main slot and Grant small by the version', () => {
+    renderWithBranding({
+      logo: { lightUrl: LIGHT_LOGO, darkUrl: null, alt: 'Example Co' },
+      theme: { light: {}, dark: {} },
+    });
+
+    const logo = screen.getByRole('img', { name: 'Example Co' });
+    expect(logo.getAttribute('src')).toBe(LIGHT_LOGO);
+    // One image serves both modes when there is no dark logo.
+    expect(logo.className).not.toMatch(/dark/);
+    expect(logo.closest('a')?.getAttribute('href')).toBe('/');
+
+    // Desktop and mobile copies of the version each carry the small mark, in the header's colour.
+    const marks = grantLogos();
+    expect(marks).toHaveLength(2);
+    for (const mark of marks) {
+      expect(mark.getAttribute('data-color')).toBe('currentColor');
+      expect(mark.getAttribute('aria-label')).toBe('app.poweredBy');
+      expect(mark.parentElement?.textContent).toMatch(/^v/);
+    }
+  });
+
+  it('renders a light and a dark logo, each shown only in its mode', () => {
+    renderWithBranding({
+      logo: { lightUrl: LIGHT_LOGO, darkUrl: DARK_LOGO, alt: 'Example Co' },
+      theme: { light: {}, dark: {} },
+    });
+
+    const light = document.querySelector('[data-brand-logo="light"]') as HTMLImageElement;
+    const dark = document.querySelector('[data-brand-logo="dark"]') as HTMLImageElement;
+    expect(light.getAttribute('src')).toBe(LIGHT_LOGO);
+    expect(light.className).toContain('[.dark_&]:hidden');
+    expect(dark.getAttribute('src')).toBe(DARK_LOGO);
+    expect(dark.className).toContain('hidden [.dark_&]:block');
+    expect(dark.getAttribute('alt')).toBe('Example Co');
+  });
+
+  it('uses the localised home label as alt text when the deployment sets none', () => {
+    renderWithBranding({
+      logo: { lightUrl: LIGHT_LOGO, darkUrl: null, alt: null },
+      theme: { light: {}, dark: {} },
+    });
+
+    expect(screen.getByRole('img', { name: 'navigation.home' })).toBeTruthy();
+  });
+
+  it("falls back to Grant's logo when the deployment logo fails to load", () => {
+    renderWithBranding({
+      logo: { lightUrl: LIGHT_LOGO, darkUrl: DARK_LOGO, alt: 'Example Co' },
+      theme: { light: {}, dark: {} },
+    });
+
+    fireEvent.error(document.querySelector('[data-brand-logo="dark"]') as HTMLImageElement);
+
+    expect(screen.queryAllByRole('img', { name: 'Example Co' })).toHaveLength(0);
+    expect(grantLogos().some((logo) => logo.getAttribute('data-color') === 'theme')).toBe(true);
+  });
+
+  it('makes the header opaque when a mode sets its background', () => {
+    renderWithBranding({
+      logo: null,
+      theme: { light: {}, dark: { header: '#0f172a', 'header-foreground': '#e2e8f0' } },
+    });
+
+    expect(header().className).toContain('bg-header');
+    expect(header().className).not.toContain('bg-header/95');
+    expect(header().className).not.toContain('backdrop-blur');
+    expect(header().hasAttribute('data-branded')).toBe(true);
+    // Colours alone keep Grant's logo in the main slot.
+    expect(grantLogos()).toHaveLength(1);
   });
 });

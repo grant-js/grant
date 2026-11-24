@@ -9,6 +9,7 @@ import { getEnv, resolveDatabaseUrl } from '@grantjs/env';
 import { SUPPORTED_LOCALES } from '@grantjs/i18n';
 import { UserAuthenticationMethodProvider } from '@grantjs/schema';
 
+import { resolveDeploymentBranding } from '@/lib/deployment-branding.lib';
 import { ConfigurationError } from '@/lib/errors';
 import { readPlatformVersion } from '@/lib/platform-version.lib';
 
@@ -1087,6 +1088,25 @@ const NOTIFICATION_CONFIG = {
 } as const;
 
 // ============================================================================
+// Branding Configuration
+// ============================================================================
+
+/**
+ * Deployment branding for the web app's header (`BRANDING_*`), validated once here and returned
+ * by `GET /api/config`. Invalid values are already dropped; `warnings` is logged at startup by
+ * `printConfigSummary()`. See `docs/deployment/branding.md` and ADR 0015.
+ */
+const BRANDING_CONFIG = resolveDeploymentBranding({
+  BRANDING_HEADER_BACKGROUND_LIGHT: env.BRANDING_HEADER_BACKGROUND_LIGHT,
+  BRANDING_HEADER_BACKGROUND_DARK: env.BRANDING_HEADER_BACKGROUND_DARK,
+  BRANDING_HEADER_FOREGROUND_LIGHT: env.BRANDING_HEADER_FOREGROUND_LIGHT,
+  BRANDING_HEADER_FOREGROUND_DARK: env.BRANDING_HEADER_FOREGROUND_DARK,
+  BRANDING_LOGO_URL_LIGHT: env.BRANDING_LOGO_URL_LIGHT,
+  BRANDING_LOGO_URL_DARK: env.BRANDING_LOGO_URL_DARK,
+  BRANDING_LOGO_ALT: env.BRANDING_LOGO_ALT,
+});
+
+// ============================================================================
 // Demo Mode Configuration
 // ============================================================================
 
@@ -1292,6 +1312,11 @@ export async function printConfigSummary(): Promise<void> {
       redis: `${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`,
     }),
   });
+
+  // An invalid branding value never stops the boot; it is dropped, and said so here once.
+  for (const warning of BRANDING_CONFIG.warnings) {
+    logger.warn({ msg: `Branding: ${warning}` });
+  }
 }
 
 // ============================================================================
@@ -1414,6 +1439,7 @@ export const config = {
   webhooks: WEBHOOK_CONFIG,
   notifications: NOTIFICATION_CONFIG,
   demoMode: DEMO_MODE_CONFIG,
+  branding: BRANDING_CONFIG.branding,
   system: SYSTEM_CONSTANTS,
   cdm: CDM_CONFIG,
   cors: CORS_CONFIG,

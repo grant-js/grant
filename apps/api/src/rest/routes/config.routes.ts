@@ -7,9 +7,9 @@ const router = Router();
 /**
  * GET /api/config — Public runtime config for frontends (no auth).
  * Lets CSR apps load deploy-time config at runtime without baking env into images.
- * The frontend still reaches its own API by relative path; the only URL returned is `docsUrl`,
+ * The frontend still reaches its own API by relative path; the URLs returned are `docsUrl`,
  * the outbound link to the docs site, which may live on another origin (null when `DOCS_URL`
- * is unset, so the frontend falls back to same-origin `/docs`).
+ * is unset, so the frontend falls back to same-origin `/docs`), and the branding logo URLs.
  */
 router.get('/', (_req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -27,6 +27,9 @@ router.get('/', (_req: Request, res: Response) => {
     // at /graphql (`APOLLO_PLAYGROUND`), so the web header hides a link to a surface that is off.
     apiReferenceEnabled: config.swagger.enabled,
     graphqlPlaygroundEnabled: config.apollo.playground,
+    // Deployment branding (`BRANDING_*`), already validated at startup: header token overrides
+    // per theme mode (`#rrggbb`) and the logo (`https:` URLs). See ADR 0015.
+    branding: config.branding,
   });
 });
 
