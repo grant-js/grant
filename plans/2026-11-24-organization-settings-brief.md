@@ -52,13 +52,19 @@ Each carries a stable `code` (e.g. `OWNERSHIP_TRANSFER_TARGET_UNVERIFIED`) and a
 
 ## Permission matrix
 
-| Section / action                 | Owner | Admin           | Dev       | Viewer    | API enforcement                                                                                                                                           |
-| -------------------------------- | ----- | --------------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Open Settings view               | ✓     | ✓               | read-only | read-only | Organization `query` (unchanged)                                                                                                                          |
-| General: name, picture (dialog)  | ✓     | ✓               | –         | –         | `update`, `upload-picture` (unchanged)                                                                                                                    |
-| Security: MFA for sensitive acts | ✓     | ✓               | –         | –         | `update` (unchanged)                                                                                                                                      |
-| Ownership: transfer              | ✓     | –               | –         | –         | new `Organization:transfer-ownership`, Owner group only, **plus** service checks caller holds Owner                                                       |
-| Danger zone: delete              | ✓     | **– (today ✓)** | –         | –         | `Organization:delete` removed from the Admin group, **plus** a migration revoking it on existing databases (the seed only adds links, never removes them) |
+| Section / action                 | Owner | Admin | Dev       | Viewer    | API enforcement                                                                                     |
+| -------------------------------- | ----- | ----- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
+| Open Settings view               | ✓     | ✓     | read-only | read-only | Organization `query` (unchanged)                                                                    |
+| General: name, picture (dialog)  | ✓     | –     | –         | –         | `update`, `upload-picture`, Owner group only (unchanged)                                            |
+| Security: MFA for sensitive acts | ✓     | –     | –         | –         | `update`, Owner group only (unchanged)                                                              |
+| Ownership: transfer              | ✓     | –     | –         | –         | new `Organization:transfer-ownership`, Owner group only, **plus** service checks caller holds Owner |
+| Danger zone: delete              | ✓     | –     | –         | –         | `delete`, Owner group only (unchanged)                                                              |
+
+Correction (2026-11-26): the first draft of this table gave Admin `update` and `delete`, taken
+from `docs/architecture/rbac.md`. The code never did: the Organization Admin group maps no
+Organization permission (`packages/@grantjs/constants/src/permissions/groups.ts`,
+`permissions.ts`, since the group was introduced). Owner-only delete therefore needs no
+constants change and no migration; (a) corrects `rbac.md` instead.
 
 Sensitive actions (transfer, delete, MFA toggle) keep the existing `requireEmailThenMfa*`
 guards: MFA is required when the organization enforces it or the caller has a factor enrolled.
@@ -109,12 +115,12 @@ role ids only.
   **name**).
 - Edit dialog keeps name and picture only. Row actions keep Edit, replace Delete with
   "Settings" (link).
-- No header or layout changes (DPT-12245 runs in parallel).
+- No header or layout changes (the header white-labeling work runs in parallel).
 
 ## PR split (both against `main`)
 
 - **(a) settings view** — route, sidebar item, Security + Danger zone sections, edit dialog
-  trimmed, delete confirmation by name, owner-only delete (constants + revoking migration),
+  trimmed, delete confirmation by name, the `rbac.md` correction,
   docs, i18n, changeset. Ships alone.
 - **(b) ownership transfer** — permission, schema, service/handler/resolver/REST/OpenAPI,
   event catalog + notification templates, Ownership section, ADR 0015, unit + e2e tests, docs,
@@ -122,8 +128,9 @@ role ids only.
 
 ## Decisions (accepted as proposed, 2026-11-26)
 
-1. `Organization:delete` is removed from Admin (behaviour change for existing admins).
-2. `organization.ownership_transferred` is a `membership` event, like role changes.
-3. A transfer emits only `organization.ownership_transferred`, not `organization.member_role_changed`
+1. Delete stays owner-only, as the code already has it; no migration (see the correction above).
+2. Security (the MFA policy) stays owner-only: Admins get no new permission (maintainer decision, 2026-11-26).
+3. `organization.ownership_transferred` is a `membership` event, like role changes.
+4. A transfer emits only `organization.ownership_transferred`, not `organization.member_role_changed`
    per side: one event, documented, no double notifications.
-4. Deleting a user who still owns organizations is not guarded today; out of scope, a follow-up.
+5. Deleting a user who still owns organizations is not guarded today; out of scope, a follow-up.
