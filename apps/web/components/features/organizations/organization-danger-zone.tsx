@@ -28,7 +28,7 @@ export function OrganizationDangerZone({ organization }: OrganizationDangerZoneP
   }
 
   return (
-    <Card className="max-w-2xl border-destructive" data-testid="organization-danger-zone">
+    <Card className="mx-auto max-w-2xl border-destructive" data-testid="organization-danger-zone">
       <CardHeader>
         <CardTitle className="text-destructive">{t('title')}</CardTitle>
         <CardDescription>{t('description')}</CardDescription>

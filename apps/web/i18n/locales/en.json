@@ -3015,6 +3015,15 @@
     },
     "settings": {
       "title": "Organization settings",
+      "general": {
+        "title": "General",
+        "description": "The organization's name and picture.",
+        "name": {
+          "label": "Name",
+          "placeholder": "Organization name"
+        },
+        "readOnlyHint": "You do not have permission to change the organization's name or picture."
+      },
       "security": {
         "title": "Security",
         "description": "Control how members of this organization authenticate for sensitive actions.",

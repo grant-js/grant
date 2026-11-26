@@ -9,6 +9,7 @@ import { useAccountScope } from '@/hooks/common/use-account-scope';
 import { useOrganizations } from '@/hooks/organizations';
 
 import { OrganizationDangerZone } from './organization-danger-zone';
+import { OrganizationGeneralSettings } from './organization-general-settings';
 import { OrganizationOwnershipSettings } from './organization-ownership-settings';
 import { OrganizationSecuritySettings } from './organization-security-settings';
 
@@ -32,13 +33,14 @@ export function OrganizationSettings() {
   if (!organization) {
     return loading ? (
       <div className="space-y-6" data-testid="organization-settings-loading">
-        <Skeleton className="h-40 max-w-2xl" />
+        <Skeleton className="mx-auto h-40 max-w-2xl" />
       </div>
     ) : null;
   }
 
   return (
     <div className="space-y-6" key={grantsVersion}>
+      <OrganizationGeneralSettings organization={organization} />
       <OrganizationSecuritySettings organization={organization} />
       <OrganizationOwnershipSettings
         organization={organization}

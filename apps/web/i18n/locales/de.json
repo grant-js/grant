@@ -2741,6 +2741,15 @@
     },
     "settings": {
       "title": "Organisationseinstellungen",
+      "general": {
+        "title": "Allgemein",
+        "description": "Name und Bild der Organisation.",
+        "name": {
+          "label": "Name",
+          "placeholder": "Name der Organisation"
+        },
+        "readOnlyHint": "Sie haben keine Berechtigung, den Namen oder das Bild der Organisation zu ändern."
+      },
       "security": {
         "title": "Sicherheit",
         "description": "Legen Sie fest, wie sich Mitglieder dieser Organisation für sensible Aktionen authentifizieren müssen.",
