@@ -2382,7 +2382,8 @@
         "update": "Organisation aktualisieren",
         "delete": "Organisation löschen",
         "query": "Organisation abfragen",
-        "uploadPicture": "Organisationsbild hochladen"
+        "uploadPicture": "Organisationsbild hochladen",
+        "transferOwnership": "Organisationseigentum übertragen"
       },
       "project": {
         "create": "Projekt erstellen",
@@ -2501,7 +2502,8 @@
         "update": "Berechtigung zum Aktualisieren einer Organisation",
         "delete": "Berechtigung zum Löschen einer Organisation",
         "query": "Berechtigung zum Abfragen von Organisationen",
-        "uploadPicture": "Berechtigung zum Hochladen eines Organisationslogos"
+        "uploadPicture": "Berechtigung zum Hochladen eines Organisationslogos",
+        "transferOwnership": "Berechtigung zum Übertragen des Eigentums an einer Organisation"
       },
       "project": {
         "create": "Berechtigung zum Erstellen eines Projekts",

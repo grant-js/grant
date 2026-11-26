@@ -24,6 +24,7 @@ import type {
   OrganizationInvitationPage,
   OrganizationMember,
   OrganizationMemberPage,
+  OrganizationOwnershipTransfer,
   OrganizationPage,
   OrganizationPermission,
   OrganizationProject,
@@ -45,6 +46,7 @@ import type {
   RemoveOrganizationTagInput,
   RemoveOrganizationUserInput,
   Role,
+  TransferOrganizationOwnershipInput,
   UpdateOrganizationInvitationInput,
   UpdateOrganizationMemberInput,
   UpdateOrganizationProjectTagInput,
@@ -327,6 +329,15 @@ export interface IOrganizationMemberService {
     input: RemoveOrganizationMemberInput,
     transaction?: unknown
   ): Promise<OrganizationMember>;
+
+  /**
+   * Moves the Organization Owner role from the calling user to another active member, in the
+   * caller's transaction. The only path that assigns or removes Owner.
+   */
+  transferOwnership(
+    input: TransferOrganizationOwnershipInput,
+    transaction?: unknown
+  ): Promise<OrganizationOwnershipTransfer>;
 }
 
 // ---------------------------------------------------------------------------

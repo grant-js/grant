@@ -1438,6 +1438,12 @@ export type Mutation = {
    * returned instead of creating a new one.
    */
   startProjectSync: ProjectSyncJob;
+  /**
+   * Transfers ownership of an organization. Only the current owner (a signed-in user, not an API key)
+   * can call it, and requires `Organization:TransferOwnership`. The new owner must be an active member
+   * with a verified email. Emits `organization.ownership_transferred`.
+   */
+  transferOrganizationOwnership: OrganizationOwnershipTransfer;
   updateGroup: Group;
   /** Update the authenticated user's project membership profile (display name / picture). */
   updateMyProjectMembership: MyProjectMembership;
@@ -1808,6 +1814,10 @@ export type MutationStartProjectSyncArgs = {
   scope: Scope;
 };
 
+export type MutationTransferOrganizationOwnershipArgs = {
+  input: TransferOrganizationOwnershipInput;
+};
+
 export type MutationUpdateGroupArgs = {
   id: Scalars['ID']['input'];
   input: UpdateGroupInput;
@@ -2120,6 +2130,15 @@ export type OrganizationMembershipExportData = {
   organizationId: Scalars['ID']['output'];
   organizationName: Scalars['String']['output'];
   role: Scalars['String']['output'];
+};
+
+/** Result of an ownership transfer: the organization and the members' state after the change. */
+export type OrganizationOwnershipTransfer = {
+  __typename?: 'OrganizationOwnershipTransfer';
+  newOwner: OrganizationMember;
+  organization: Organization;
+  /** The previous owner's membership after the transfer; null when they left the organization. */
+  previousOwner?: Maybe<OrganizationMember>;
 };
 
 export type OrganizationPage = PaginatedResults & {
@@ -4046,6 +4065,21 @@ export enum TokenType {
   Session = 'session',
   System = 'system',
 }
+
+/**
+ * Moves the owner role of an organization to another member. Exactly one of `previousOwnerRoleId` and
+ * `leaveOrganization` must be set.
+ */
+export type TransferOrganizationOwnershipInput = {
+  /** When true, the previous owner's membership is removed instead of re-assigned a role. */
+  leaveOrganization?: InputMaybe<Scalars['Boolean']['input']>;
+  /** User id of the current member who becomes the owner. */
+  newOwnerId: Scalars['ID']['input'];
+  /** Role the previous owner keeps: one of the organization's roles below Owner (Admin, Dev, Viewer). */
+  previousOwnerRoleId?: InputMaybe<Scalars['ID']['input']>;
+  /** Organization scope: `tenant: organization`, `id` the organization id. */
+  scope: Scope;
+};
 
 export type UnreadNotificationCount = {
   __typename?: 'UnreadNotificationCount';

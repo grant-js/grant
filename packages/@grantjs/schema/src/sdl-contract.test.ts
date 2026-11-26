@@ -58,10 +58,11 @@ describe('operation documents', () => {
   // GetApiKeyRolePermissionsDocument.
   // 145 after project-user-identity-link: LinkProjectUserIdentityDocument.
   // 149 after entity-list-ux: Get{User,Role,Group,Permission}RelationsPreviewDocument.
+  // 150 after organization ownership transfer: TransferOrganizationOwnershipDocument.
   // Updating this number is the point of the pin, not a nuisance: every change
   // to it should be a line in a commit message.
   it('finds every document under src/operations', () => {
-    expect(files).toHaveLength(149);
+    expect(files).toHaveLength(150);
   });
 
   it.each(files.map((f) => [relative(process.cwd(), f), f]))('%s validates', (_label, file) => {

@@ -1,9 +1,9 @@
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
-import { Organization, OrganizationSortInput } from '@grantjs/schema';
+import { Organization, OrganizationSortInput, Tenant } from '@grantjs/schema';
 import { Response, Router } from 'express';
 
 import { authorizeRestRoute, requireEmailThenMfaRest } from '@/lib/authorization';
-import { AuthenticationError } from '@/lib/errors';
+import { AuthenticationError, BadRequestError } from '@/lib/errors';
 import { validate } from '@/middleware/validation.middleware';
 import { requestContext } from '@/rest/request-context';
 import {
@@ -13,6 +13,7 @@ import {
   getOrganizationsQuerySchema,
   organizationParamsSchema,
   requestOrganizationPictureUploadUrlRequestSchema,
+  transferOrganizationOwnershipRequestSchema,
   updateOrganizationRequestSchema,
   uploadOrganizationPictureRequestSchema,
 } from '@/rest/schemas/organizations.schemas';
@@ -256,6 +257,48 @@ export function createOrganizationRoutes(fallback?: RequestContext) {
       });
 
       sendSuccessResponse(res, organization);
+    }
+  );
+
+  router.post(
+    '/:id/ownership-transfer',
+    validate({
+      params: organizationParamsSchema,
+      body: transferOrganizationOwnershipRequestSchema,
+    }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    requireEmailThenMfaRest({ allowPersonalContext: false }, { allowPersonalContext: false }),
+    // codeql[js/missing-rate-limiting]: Global rateLimitMiddleware in create-app covers REST; CodeQL cannot see app-level middleware from this route factory.
+    authorizeRestRoute({
+      resource: ResourceSlug.Organization,
+      action: ResourceAction.TransferOwnership,
+    }),
+    async (
+      req: TypedRequest<{
+        params: typeof organizationParamsSchema;
+        body: typeof transferOrganizationOwnershipRequestSchema;
+      }>,
+      res: Response
+    ) => {
+      const { id } = req.params;
+      const { scope, newOwnerId, previousOwnerRoleId, leaveOrganization } = req.body;
+      const context = requestContext(req, fallback);
+      const callerUserId = context.user?.userId;
+
+      if (!callerUserId) {
+        throw new AuthenticationError('Authentication required');
+      }
+      // The scope authorized above is the one the transfer runs in: it must be this organization.
+      if (scope.tenant !== Tenant.Organization || scope.id !== id) {
+        throw new BadRequestError('scope must be the organization in the path');
+      }
+
+      const result = await context.handlers.organizationMembers.transferOwnership(
+        { scope, newOwnerId, previousOwnerRoleId, leaveOrganization },
+        callerUserId
+      );
+
+      sendSuccessResponse(res, result);
     }
   );
 

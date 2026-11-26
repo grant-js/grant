@@ -229,6 +229,12 @@
         "named": "{{member}} was removed{{byActor}}{{inScope}}.",
         "generic": "A member was removed{{byActor}}{{inScope}}."
       },
+      "organizationOwnershipTransferred": {
+        "subject": "Organization ownership transferred",
+        "you": "You are now the owner{{byActor}}{{inScope}}.",
+        "named": "Ownership was transferred to {{member}}{{byActor}}{{inScope}}.",
+        "generic": "Organization ownership was transferred{{byActor}}{{inScope}}."
+      },
       "projectUserAdded": {
         "subject": "Project member added",
         "you": "You were added to the project{{byActor}}{{inScope}}.",

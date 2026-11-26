@@ -46,3 +46,10 @@ export const updateOrganizationMemberInputSchema = z.object({
 export const removeOrganizationMemberInputSchema = z.object({
   scope: scopeSchema,
 });
+
+export const transferOrganizationOwnershipInputSchema = z.object({
+  scope: scopeSchema,
+  newOwnerId: idSchema,
+  previousOwnerRoleId: idSchema.nullable().optional(),
+  leaveOrganization: z.boolean().nullable().optional(),
+});

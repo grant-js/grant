@@ -73,6 +73,32 @@ describe('composeNotificationEmail', () => {
     vi.clearAllMocks();
   });
 
+  it('composes the ownership transfer copy for the new owner and for the previous owner', () => {
+    const transferred = event({
+      type: 'organization.ownership_transferred',
+      category: 'membership',
+      aggregate: { kind: 'organization', id: 'org-1' },
+    });
+    const base = {
+      event: transferred,
+      ctx,
+      refEntity: 'organization',
+      refId: 'org-1',
+      fallbackTitle: 'x',
+      fallbackBody: null,
+    };
+
+    const newOwner = composeNotificationEmail({ ...base, recipientUserId: 'subject-1' });
+    expect(newOwner.subject).toBe('Organization ownership transferred');
+    expect(newOwner.summary).toBe('You are now the owner by Alice Admin in Acme Corp.');
+
+    const previousOwner = composeNotificationEmail({ ...base, recipientUserId: 'actor-1' });
+    expect(previousOwner.summary).toBe(
+      'Ownership was transferred to Bob Member by Alice Admin in Acme Corp.'
+    );
+    expect(previousOwner.ctaUrl).toContain('/dashboard/organizations/org-1');
+  });
+
   it('composes named-entity copy with details and a Grant CTA', () => {
     const composed = composeNotificationEmail({
       event: event(),

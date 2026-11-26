@@ -32,8 +32,10 @@ export class GrantException extends Error {
 export class NotFoundError extends GrantException {
   public readonly resource: string;
   public readonly resourceId?: string;
+  /** Stable machine-readable reason (e.g. `OWNERSHIP_TRANSFER_TARGET_NOT_MEMBER`), when set. */
+  public readonly reason?: string;
 
-  constructor(resource: string, id?: string, originalError?: Error) {
+  constructor(resource: string, id?: string, originalError?: Error, reason?: string) {
     super(
       id !== undefined ? `${resource} '${id}' not found` : `${resource} not found`,
       'NOT_FOUND',
@@ -41,6 +43,7 @@ export class NotFoundError extends GrantException {
     );
     this.resource = resource;
     this.resourceId = id;
+    this.reason = reason;
   }
 }
 
@@ -60,8 +63,12 @@ export class ValidationError extends GrantException {
  * Thrown when a request is semantically invalid (bad input, invalid state, etc.).
  */
 export class BadRequestError extends GrantException {
-  constructor(message: string, originalError?: Error) {
+  /** Stable machine-readable reason (e.g. `OWNERSHIP_TRANSFER_SELF`), when set. */
+  public readonly reason?: string;
+
+  constructor(message: string, originalError?: Error, reason?: string) {
     super(message, 'BAD_REQUEST', originalError);
+    this.reason = reason;
   }
 }
 
@@ -112,11 +119,20 @@ export class AuthorizationError extends GrantException {
 export class ConflictError extends GrantException {
   public readonly resource?: string;
   public readonly field?: string;
+  /** Stable machine-readable reason (e.g. `OWNERSHIP_TRANSFER_TARGET_UNVERIFIED`), when set. */
+  public readonly reason?: string;
 
-  constructor(message: string, resource?: string, field?: string, originalError?: Error) {
+  constructor(
+    message: string,
+    resource?: string,
+    field?: string,
+    originalError?: Error,
+    reason?: string
+  ) {
     super(message, 'CONFLICT', originalError);
     this.resource = resource;
     this.field = field;
+    this.reason = reason;
   }
 }
 

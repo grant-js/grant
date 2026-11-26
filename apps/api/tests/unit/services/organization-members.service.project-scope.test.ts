@@ -36,7 +36,10 @@ function build(linked: Array<[string, string]>) {
     null,
     {} as never,
     {} as never,
-    organizationProjectRepository as never
+    organizationProjectRepository as never,
+    {} as never,
+    {} as never,
+    {} as never
   );
   return { service, organizationMemberRepository, organizationProjectRepository };
 }
