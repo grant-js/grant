@@ -48,7 +48,7 @@ const SKIP_ERROR_REDIRECT_OPERATIONS = [
   'RefreshSession',
 ] as const;
 
-/** RBAC entity queries show inline errors on detail/list panels instead of /forbidden redirect. */
+/** RBAC entity queries, and mutations whose refusal a dialog shows, show inline errors instead of a /forbidden redirect. */
 const SKIP_FORBIDDEN_REDIRECT_OPERATIONS = [
   'AcceptInvitation',
   'GetRoles',
@@ -61,7 +61,11 @@ const SKIP_FORBIDDEN_REDIRECT_OPERATIONS = [
   'GetProjects',
   'GetUsers',
   'GetUsersList',
+  'TransferOrganizationOwnership',
 ] as const;
+
+/** Mutations whose 404 is a refusal the dialog shows (e.g. "not a member"), not a missing page. */
+const SKIP_NOT_FOUND_REDIRECT_OPERATIONS = ['TransferOrganizationOwnership'] as const;
 
 /** Prevents multiple concurrent clear-session flows from 401s. */
 let clearingSession = false;
@@ -176,15 +180,6 @@ function isForbiddenGraphQLError(error: GraphQLError): boolean {
     extensions?.statusCode === 403 ||
     extensions?.code === 'FORBIDDEN'
   );
-}
-
-/**
- * An ownership-transfer refusal (`OWNERSHIP_TRANSFER_*`) is a result for the dialog to show, not a
- * lost page: a 403 (not the owner) or a 404 (not a member) must not redirect away from it.
- */
-function isOwnershipTransferRefusal(error: GraphQLError): boolean {
-  const reason = (error.extensions as { reason?: unknown } | undefined)?.reason;
-  return typeof reason === 'string' && reason.startsWith('OWNERSHIP_TRANSFER_');
 }
 
 function isMfaRequiredGraphQLError(error: GraphQLError): boolean {
@@ -386,6 +381,13 @@ function shouldSkipErrorRedirect(operationName: string | undefined): boolean {
   );
 }
 
+function shouldSkipNotFoundRedirect(operationName: string | undefined): boolean {
+  if (!operationName) return false;
+  return SKIP_NOT_FOUND_REDIRECT_OPERATIONS.includes(
+    operationName as (typeof SKIP_NOT_FOUND_REDIRECT_OPERATIONS)[number]
+  );
+}
+
 function shouldSkipForbiddenRedirect(operationName: string | undefined): boolean {
   if (!operationName) return false;
   return SKIP_FORBIDDEN_REDIRECT_OPERATIONS.includes(
@@ -497,14 +499,13 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
           ];
       return createMfaStepUpObservable(operation, forward, mfaErrors);
     }
-    const redirectableErrors = graphQLErrors.filter((err) => !isOwnershipTransferRefusal(err));
-    const hasNotFoundError = redirectableErrors.some(isNotFoundGraphQLError);
-    if (hasNotFoundError) {
+    const hasNotFoundError = graphQLErrors.some(isNotFoundGraphQLError);
+    if (hasNotFoundError && !shouldSkipNotFoundRedirect(operation.operationName)) {
       redirectToNotFound();
       return;
     }
 
-    const hasForbiddenError = redirectableErrors.some(isForbiddenGraphQLError);
+    const hasForbiddenError = graphQLErrors.some(isForbiddenGraphQLError);
     if (hasForbiddenError && !shouldSkipForbiddenRedirect(operation.operationName)) {
       redirectToForbidden();
       return;
