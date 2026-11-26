@@ -230,6 +230,7 @@
       "organization": "Organization",
       "organizations": "Organizations",
       "organizationTags": "Organization Tags",
+      "organizationSettings": "Settings",
       "accountTags": "Account Tags",
       "projectTags": "Project Tags",
       "projects": "Projects",
@@ -2891,7 +2892,7 @@
     "actions": {
       "create": "Create Organization",
       "edit": "Edit",
-      "delete": "Delete",
+      "settings": "Settings",
       "view": "View Organization",
       "cancel": "Cancel",
       "updating": "Updating...",
@@ -2912,7 +2913,6 @@
       "name": "Name",
       "description": "Description",
       "roles": "Roles",
-      "requireMfaForSensitiveActions": "Require MFA for sensitive actions",
       "tags": "Tags",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
@@ -2937,12 +2937,9 @@
     "deleteDialog": {
       "title": "Delete Organization",
       "description": "Are you sure you want to delete {name}? This action cannot be undone.",
-      "warning": "Please confirm the organization ID to proceed with deletion.",
-      "orgIdLabel": "Organization ID",
-      "orgIdHint": "Copy the organization ID using the button above.",
-      "confirmOrgIdLabel": "Confirm Organization ID",
-      "confirmOrgIdPlaceholder": "Paste the organization ID here",
-      "confirmOrgIdHint": "Enter the organization ID above to confirm deletion. This prevents accidental deletions.",
+      "warning": "This permanently deletes the organization and cannot be undone.",
+      "confirmNameLabel": "Type \"{name}\" to confirm",
+      "confirmNameHint": "Enter the organization name exactly as shown. This prevents accidental deletions.",
       "cancel": "Cancel",
       "confirm": "Delete",
       "deleting": "Deleting..."
@@ -3012,6 +3009,27 @@
         "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
         "readFailed": "Failed to read the file. Please try again.",
         "uploadFailed": "Failed to upload the image. Please try again."
+      }
+    },
+    "settings": {
+      "title": "Organization settings",
+      "security": {
+        "title": "Security",
+        "description": "Control how members of this organization authenticate for sensitive actions.",
+        "requireMfa": {
+          "label": "Require MFA for sensitive actions",
+          "description": "Members must confirm with a second factor before changing security-relevant settings or deleting the organization."
+        },
+        "readOnlyHint": "You do not have permission to change security settings."
+      },
+      "dangerZone": {
+        "title": "Danger zone",
+        "description": "Irreversible actions for this organization.",
+        "delete": {
+          "title": "Delete this organization",
+          "description": "Deleting the organization removes its members, roles and project links. This cannot be undone.",
+          "action": "Delete organization"
+        }
       }
     }
   },

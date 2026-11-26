@@ -114,6 +114,10 @@ export default withMermaid({
               text: 'Members & Invitations',
               link: '/core-concepts/organization-invitations',
             },
+            {
+              text: 'Organization Settings',
+              link: '/core-concepts/organization-settings',
+            },
             { text: 'Tags & Relationships', link: '/core-concepts/tags-relationships' },
             {
               text: 'CDM Import & Export',
