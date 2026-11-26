@@ -12,7 +12,7 @@ import {
 import { Organization, Tenant } from '@grantjs/schema';
 import { AlertTriangle } from 'lucide-react';
 
-import { FeatureModuleCard } from '@/components/common/feature-module-card';
+import { SettingCard } from '@/components/features/settings';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -149,7 +149,7 @@ export function OrganizationOwnershipSettings({
 
   return (
     <div data-testid="organization-ownership-settings">
-      <FeatureModuleCard title={t('title')} description={t('description')} className="max-w-2xl">
+      <SettingCard title={t('title')} description={t('description')}>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="organization-new-owner">{t('newOwner.label')}</Label>
@@ -249,7 +249,7 @@ export function OrganizationOwnershipSettings({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </FeatureModuleCard>
+      </SettingCard>
     </div>
   );
 }
