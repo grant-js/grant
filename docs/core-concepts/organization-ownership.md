@@ -7,7 +7,7 @@ description: Every organization has exactly one owner, and the owner can hand th
 
 Every organization has **exactly one owner**: the member who holds the Organization Owner role. The creator is the first owner. Nothing else can assign or remove Owner (an Admin cannot promote anyone to it, and an owner cannot demote themselves with a role change), so ownership moves in one way only: an **ownership transfer** by the current owner.
 
-Transferring ownership and deleting the organization are owner-only. See [ADR 0015](https://github.com/grant-js/grant/blob/main/decisions/0015-transferable-organization-ownership.md) for why.
+Transferring ownership and deleting the organization are owner-only. See [ADR 0016](https://github.com/grant-js/grant/blob/main/decisions/0016-transferable-organization-ownership.md) for why.
 
 ## Ownership transfer
 

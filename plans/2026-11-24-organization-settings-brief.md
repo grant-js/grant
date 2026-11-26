@@ -17,7 +17,7 @@ Status: **accepted** 2026-11-26 (gate 1), decisions below taken as proposed. Dra
 ## ADRs
 
 `decisions/` has no ADR on organization roles or ownership (0001–0014 checked 2026-11-24).
-This work adds **ADR 0015 (Proposed): organization ownership is transferable; an organization
+This work adds **ADR 0016 (Proposed): organization ownership is transferable; an organization
 always has exactly one owner; deleting and transferring are owner-only.**
 
 ## Data model
@@ -123,7 +123,7 @@ role ids only.
   trimmed, delete confirmation by name, the `rbac.md` correction,
   docs, i18n, changeset. Ships alone.
 - **(b) ownership transfer** — permission, schema, service/handler/resolver/REST/OpenAPI,
-  event catalog + notification templates, Ownership section, ADR 0015, unit + e2e tests, docs,
+  event catalog + notification templates, Ownership section, ADR 0016, unit + e2e tests, docs,
   i18n, changeset. Based on (a).
 
 ## Decisions (accepted as proposed, 2026-11-26)

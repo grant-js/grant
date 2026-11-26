@@ -1,4 +1,4 @@
-# 0015 — Organization ownership is transferable: one owner, always; transfer and delete are owner-only
+# 0016 — Organization ownership is transferable: one owner, always; transfer and delete are owner-only
 
 - **Status**: Proposed
 - **Date**: 2026-11-26
