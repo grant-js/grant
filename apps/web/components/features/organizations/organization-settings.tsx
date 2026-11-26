@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { OrganizationSortableField, SortOrder } from '@grantjs/schema';
 
@@ -8,12 +9,15 @@ import { useAccountScope } from '@/hooks/common/use-account-scope';
 import { useOrganizations } from '@/hooks/organizations';
 
 import { OrganizationDangerZone } from './organization-danger-zone';
+import { OrganizationOwnershipSettings } from './organization-ownership-settings';
 import { OrganizationSecuritySettings } from './organization-security-settings';
 
 export function OrganizationSettings() {
   const params = useParams();
   const scope = useAccountScope();
   const organizationId = params?.organizationId as string | undefined;
+  // Bumped after an ownership transfer: the sections remount and ask again what the caller may do.
+  const [grantsVersion, setGrantsVersion] = useState(0);
 
   const { organizations, loading } = useOrganizations({
     scope: scope!,
@@ -34,8 +38,12 @@ export function OrganizationSettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={grantsVersion}>
       <OrganizationSecuritySettings organization={organization} />
+      <OrganizationOwnershipSettings
+        organization={organization}
+        onTransferred={() => setGrantsVersion((version) => version + 1)}
+      />
       <OrganizationDangerZone organization={organization} />
     </div>
   );

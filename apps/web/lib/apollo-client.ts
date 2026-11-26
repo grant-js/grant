@@ -178,6 +178,15 @@ function isForbiddenGraphQLError(error: GraphQLError): boolean {
   );
 }
 
+/**
+ * An ownership-transfer refusal (`OWNERSHIP_TRANSFER_*`) is a result for the dialog to show, not a
+ * lost page: a 403 (not the owner) or a 404 (not a member) must not redirect away from it.
+ */
+function isOwnershipTransferRefusal(error: GraphQLError): boolean {
+  const reason = (error.extensions as { reason?: unknown } | undefined)?.reason;
+  return typeof reason === 'string' && reason.startsWith('OWNERSHIP_TRANSFER_');
+}
+
 function isMfaRequiredGraphQLError(error: GraphQLError): boolean {
   const extensions = error.extensions as { code?: string; reason?: string } | undefined;
   return extensions?.code === 'MFA_REQUIRED' || extensions?.reason === 'MFA_REQUIRED';
@@ -488,13 +497,14 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
           ];
       return createMfaStepUpObservable(operation, forward, mfaErrors);
     }
-    const hasNotFoundError = graphQLErrors.some(isNotFoundGraphQLError);
+    const redirectableErrors = graphQLErrors.filter((err) => !isOwnershipTransferRefusal(err));
+    const hasNotFoundError = redirectableErrors.some(isNotFoundGraphQLError);
     if (hasNotFoundError) {
       redirectToNotFound();
       return;
     }
 
-    const hasForbiddenError = graphQLErrors.some(isForbiddenGraphQLError);
+    const hasForbiddenError = redirectableErrors.some(isForbiddenGraphQLError);
     if (hasForbiddenError && !shouldSkipForbiddenRedirect(operation.operationName)) {
       redirectToForbidden();
       return;
