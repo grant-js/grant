@@ -1,7 +1,7 @@
 /**
- * E2E: deleting an organization is owner-only.
+ * E2E: deleting an organization, and changing its MFA requirement, are owner-only.
  *
- * `Organization:delete` belongs to the Organization Owner group and to no other
+ * Regression test of an existing rule, not a behaviour change. `Organization:delete` belongs to the Organization Owner group and to no other
  * organization role. An Admin is refused through both transports, the
  * organization survives the refused attempts, and the Owner can delete it.
  *
@@ -16,6 +16,15 @@ import { graphqlRequest } from '../helpers/graphql';
 import { TestUser } from '../helpers/test-user';
 
 const ROLE_ADMIN = 'roles.names.organizationAdmin';
+
+const UPDATE_ORGANIZATION = /* GraphQL */ `
+  mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
+    updateOrganization(id: $id, input: $input) {
+      id
+      requireMfaForSensitiveActions
+    }
+  }
+`;
 
 interface DeleteOrganizationData {
   deleteOrganization?: { id: string; name: string } | null;
@@ -53,6 +62,26 @@ describe('Organization delete is owner-only', () => {
 
     admin = await TestUser.create({ email: adminEmail, withOrgAccount: true });
     await admin.acceptInvitation(org.id);
+  });
+
+  it('Admin cannot change requireMfaForSensitiveActions', async () => {
+    const res = await graphqlRequest({
+      query: UPDATE_ORGANIZATION,
+      variables: {
+        id: org.id,
+        input: {
+          scope: { tenant: 'organization', id: org.id },
+          requireMfaForSensitiveActions: true,
+        },
+      },
+      accessToken: admin.accessToken,
+    });
+
+    expect(res.body.errors?.length).toBeGreaterThan(0);
+    const rows = await query<{ value: boolean }>`
+      SELECT require_mfa_for_sensitive_actions AS value FROM organizations WHERE id = ${org.id}
+    `;
+    expect(rows[0]?.value).toBe(false);
   });
 
   it('Admin cannot delete the organization through GraphQL', async () => {
