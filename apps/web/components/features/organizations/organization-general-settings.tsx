@@ -75,6 +75,7 @@ export function OrganizationGeneralSettings({ organization }: OrganizationGenera
     <SettingCard
       title={t('title')}
       description={t('description')}
+      collapsible
       footer={
         readOnly ? undefined : (
           <div className="flex justify-end gap-3">

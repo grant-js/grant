@@ -46,7 +46,7 @@ export function OrganizationSecuritySettings({ organization }: OrganizationSecur
   };
 
   return (
-    <SettingCard title={t('title')} description={t('description')}>
+    <SettingCard title={t('title')} description={t('description')} collapsible>
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <Label htmlFor="organization-require-mfa">{t('requireMfa.label')}</Label>

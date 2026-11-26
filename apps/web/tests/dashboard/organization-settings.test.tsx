@@ -88,6 +88,15 @@ describe('organization settings: security', () => {
     });
   });
 
+  it('collapses its body from the header toggle, like other detail cards', () => {
+    render(<OrganizationSecuritySettings organization={organization} />);
+
+    expect(screen.getByRole('switch')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle section' }));
+
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  });
+
   it('is read-only with a hint when the caller may not update the organization', () => {
     grants.Update = false;
 
