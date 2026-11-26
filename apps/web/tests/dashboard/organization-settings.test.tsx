@@ -24,6 +24,8 @@ vi.mock('@/hooks/organizations', () => ({
 }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
 
+const { OrganizationGeneralSettings } =
+  await import('@/components/features/organizations/organization-general-settings');
 const { OrganizationSecuritySettings } =
   await import('@/components/features/organizations/organization-security-settings');
 const { OrganizationDangerZone } =
@@ -45,6 +47,31 @@ beforeEach(() => {
   push.mockReset();
   act(() => {
     useOrganizationsStore.getState().setOrganizationToDelete(null);
+  });
+});
+
+describe('organization settings: general', () => {
+  it('saves only the new name, scoped to the organization', async () => {
+    render(<OrganizationGeneralSettings organization={organization} />);
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Acme AG' } });
+    fireEvent.click(screen.getByRole('button', { name: 'common.actions.save' }));
+
+    await waitFor(() => expect(updateOrganization).toHaveBeenCalledOnce());
+    expect(updateOrganization).toHaveBeenCalledWith('org-1', {
+      scope: { tenant: 'organization', id: 'org-1' },
+      name: 'Acme AG',
+    });
+  });
+
+  it('is read-only with a hint when the caller may not update the organization', () => {
+    grants.Update = false;
+
+    render(<OrganizationGeneralSettings organization={organization} />);
+
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'common.actions.save' })).not.toBeInTheDocument();
+    expect(screen.getByText('organizations.settings.general.readOnlyHint')).toBeInTheDocument();
   });
 });
 

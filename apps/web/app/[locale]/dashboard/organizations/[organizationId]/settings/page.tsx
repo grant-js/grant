@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 
 import {
   OrganizationDeleteDialog,
+  OrganizationPictureUploadDialog,
   OrganizationSettings,
 } from '@/components/features/organizations';
 import { DashboardLayout } from '@/components/layout';
@@ -15,10 +16,11 @@ export default function OrganizationSettingsPage() {
   usePageTitle('organizations.settings');
 
   return (
-    <DashboardLayout title={t('title')} sidebar={<OrganizationSidebar />}>
+    <DashboardLayout title={t('title')} variant="simple" sidebar={<OrganizationSidebar />}>
       <>
         <OrganizationSettings />
         <OrganizationDeleteDialog />
+        <OrganizationPictureUploadDialog />
       </>
     </DashboardLayout>
   );

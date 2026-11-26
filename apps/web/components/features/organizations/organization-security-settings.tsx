@@ -6,7 +6,7 @@ import { useGrant, type UseGrantResult } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Organization, Tenant } from '@grantjs/schema';
 
-import { FeatureModuleCard } from '@/components/common/feature-module-card';
+import { SettingCard } from '@/components/features/settings';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useOrganizationMutations } from '@/hooks/organizations';
@@ -46,7 +46,7 @@ export function OrganizationSecuritySettings({ organization }: OrganizationSecur
   };
 
   return (
-    <FeatureModuleCard title={t('title')} description={t('description')} className="max-w-2xl">
+    <SettingCard title={t('title')} description={t('description')}>
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <Label htmlFor="organization-require-mfa">{t('requireMfa.label')}</Label>
@@ -62,6 +62,6 @@ export function OrganizationSecuritySettings({ organization }: OrganizationSecur
           onCheckedChange={handleChange}
         />
       </div>
-    </FeatureModuleCard>
+    </SettingCard>
   );
 }
