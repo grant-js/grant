@@ -149,7 +149,7 @@ export function OrganizationOwnershipSettings({
 
   return (
     <div data-testid="organization-ownership-settings">
-      <SettingCard title={t('title')} description={t('description')}>
+      <SettingCard title={t('title')} description={t('description')} collapsible>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="organization-new-owner">{t('newOwner.label')}</Label>
