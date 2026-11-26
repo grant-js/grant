@@ -44,7 +44,7 @@ Step 2 runs before step 3, so an interruption between them leaves two owners, ne
 
 ### 4. Delete is owner-only
 
-Deleting the organization is as irreversible as handing it over, so it follows the same rule: **only the owner**. Admins keep the day-to-day settings (name, picture, MFA policy) and lose the delete. This is a behaviour change for deployments where Admin holds `Organization:Delete`, and it ships as its own slice with a migration that revokes the permission on existing databases (the seed only adds links, never removes them). It is recorded here because it is one rule with the transfer.
+Deleting the organization is as irreversible as handing it over, so it follows the same rule: **only the owner**. This records a rule the code already follows rather than changing it: the Organization Admin group maps no Organization permission (`packages/@grantjs/constants/src/permissions/groups.ts:348`, `packages/@grantjs/constants/src/permissions/permissions.ts:611`, unchanged since the group was introduced), so only the Owner group holds `update`, `delete` and `upload-picture` on the organization, and now `transfer-ownership`. `docs/architecture/rbac.md` used to list `update` and `delete` for Admin; the settings-view slice corrected it. No migration is needed. Whether Admins should get the MFA policy is a separate, open question; nothing is granted here.
 
 ### 5. One event, both people told
 
@@ -52,8 +52,8 @@ A transfer publishes `organization.ownership_transferred` and one audit entry on
 
 ## Consequences
 
-- **Every organization keeps exactly one owner.** A deployment that needs several people with full control still has the Admin role; the ownership role itself stays single, so who is accountable is never ambiguous.
+- **Every organization keeps exactly one owner.** Admins manage members, projects, roles and permissions, but not the organization itself; the ownership role stays single, so who is accountable is never ambiguous.
 - **No migration for the transfer.** The permission is new, and the seed links it to the Owner group on existing databases. Serverless deployments must run the migrate/seed step with `DB_BOOTSTRAP_ON_BOOT` as before (ADR 0001). Until the seed runs, nobody holds `Organization:TransferOwnership` and the mutation answers `403`.
 - **An owner who leaves, leaves.** With `leaveOrganization`, their membership is soft-deleted in the same transaction; their cached authorization results are dropped after commit.
-- **Not decided here:** deleting a **user** who still owns organizations is not guarded today. A follow-up should refuse it, or force a transfer first. The code and the revoking migration for owner-only delete (§ 4) ship in the settings-view slice, not in the transfer slice.
+- **Not decided here:** deleting a **user** who still owns organizations is not guarded today. A follow-up should refuse it, or force a transfer first.
 - **Webhooks:** like the other `organization.*` events, the new type is subscribable through the catalog and reaches a project's subscription only when the request ran in that project's scope or the event names a linked entity (ADR 0012); an organization-scoped transfer links no project.
