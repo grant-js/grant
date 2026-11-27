@@ -58,6 +58,35 @@ Tags support standard CRUD via GraphQL mutations:
 
 Attaching and detaching tags from entities is handled through entity-specific mutations (e.g. adding a tag to a resource is part of the resource mutation flow, not the tag mutation flow).
 
+## Relationship counts
+
+Permissions and groups report how many groups and users they are assigned to in the requested scope:
+
+| Field                   | Counts                                                               |
+| ----------------------- | -------------------------------------------------------------------- |
+| `Permission.groupCount` | Groups of the scope that hold the permission                         |
+| `Permission.userCount`  | Users holding the permission directly, not through a group or a role |
+| `Group.userCount`       | Users assigned to the group directly, not through a role             |
+
+**Rules**
+
+- **Direct assignments only.** A user who gets a permission through a group or a role is not counted.
+- **In a project,** the counts read the project's own assignments (`project_user_groups`, `project_user_permissions`) whose global assignment is live, as authorization does.
+- **In an organization,** they read the organization's users.
+- **Lists:** the group and permission lists count a whole page in one grouped query per count.
+- **REST:** the counts are requested with `?fields=`: `userCount` on groups, and `groupCount` and `userCount` on permissions.
+
+**The related entities**
+
+The lists behind the counts are `Permission.groups`, `Permission.users` and `Group.users`, each taking `page` and `limit` and sorted by name.
+
+- **Authorization:** each is checked like the list it comes from. `users` needs `User:Query` and `groups` needs `Group:Query`. Without that permission the field is an authorization error, while the count still resolves.
+- **In the web app:** the counts are chips that list the first ten on hover, focus or tap. A viewer who may not list users sees the count and _Not available_.
+
+![The permission list's Groups and Users chips, with a permission's users open](./relationship-counts-permissions.jpg)
+
+![The group list's Users chip, with a group's members open](./relationship-counts-groups.jpg)
+
 ## Tag color palette
 
 Tag colors are defined in `@grantjs/constants` and must be **perceptually distinct**. We use the **CIEDE2000 (ΔE00)** metric in LAB space, comparing each color at **Tailwind shade 500**. Every pair of palette colors must have ΔE00 ≥ `MIN_PALETTE_DELTA_E` (see `packages/@grantjs/constants/src/colors.ts`). This avoids ambiguous choices (e.g. multiple near-identical grays). The palette check is enforced in CI via `pnpm --filter @grantjs/constants run check:palette`. When adding or changing tag colors, ensure the script passes.
