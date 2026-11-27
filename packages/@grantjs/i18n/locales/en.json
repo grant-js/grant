@@ -173,6 +173,16 @@
       "badRequest": "Bad request",
       "originRequired": "Origin is required",
       "unknownError": "An unknown error occurred"
+    },
+    "ownershipTransfer": {
+      "notOwner": "Only the current owner of this organization can transfer ownership",
+      "sessionRequired": "Ownership can only be transferred by a signed-in user, not by an API key or app token",
+      "self": "Choose another member as the new owner",
+      "invalidSelection": "Choose exactly one: a role for the previous owner, or leaving the organization",
+      "invalidRole": "The previous owner's role must be an organization role below Owner",
+      "targetNotMember": "The new owner must be a current member of this organization",
+      "targetDeactivated": "The new owner's account is deactivated",
+      "targetUnverified": "The new owner must have a verified email address"
     }
   },
   "common": {
@@ -441,6 +451,12 @@
           "you": "You were removed{{byActor}}{{inScope}}.",
           "named": "{{member}} was removed{{byActor}}{{inScope}}.",
           "generic": "A member was removed{{byActor}}{{inScope}}."
+        },
+        "organizationOwnershipTransferred": {
+          "subject": "Organization ownership transferred",
+          "you": "You are now the owner{{byActor}}{{inScope}}.",
+          "named": "Ownership was transferred to {{member}}{{byActor}}{{inScope}}.",
+          "generic": "Organization ownership was transferred{{byActor}}{{inScope}}."
         },
         "projectUserAdded": {
           "subject": "Project member added",

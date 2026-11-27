@@ -60,6 +60,27 @@ function toTranslationSegment(resource: string): string {
 }
 
 /**
+ * Translation keys for domain errors that carry a stable `reason`. A reason that is not listed
+ * falls back to the class's generic key; it is still returned to clients as `extensions.reason`.
+ */
+const REASON_TRANSLATION_KEYS: Record<string, string> = {
+  PUBLIC_SIGNUP_DISABLED: 'errors.auth.publicSignupDisabled',
+  LAST_HUMAN_USER: 'errors.auth.lastHumanUser',
+  OWNERSHIP_TRANSFER_NOT_OWNER: 'errors.ownershipTransfer.notOwner',
+  OWNERSHIP_TRANSFER_SESSION_REQUIRED: 'errors.ownershipTransfer.sessionRequired',
+  OWNERSHIP_TRANSFER_SELF: 'errors.ownershipTransfer.self',
+  OWNERSHIP_TRANSFER_INVALID_SELECTION: 'errors.ownershipTransfer.invalidSelection',
+  OWNERSHIP_TRANSFER_INVALID_ROLE: 'errors.ownershipTransfer.invalidRole',
+  OWNERSHIP_TRANSFER_TARGET_NOT_MEMBER: 'errors.ownershipTransfer.targetNotMember',
+  OWNERSHIP_TRANSFER_TARGET_DEACTIVATED: 'errors.ownershipTransfer.targetDeactivated',
+  OWNERSHIP_TRANSFER_TARGET_UNVERIFIED: 'errors.ownershipTransfer.targetUnverified',
+};
+
+function reasonTranslationKey(reason: string | undefined): string | undefined {
+  return reason ? REASON_TRANSLATION_KEYS[reason] : undefined;
+}
+
+/**
  * Map a domain GrantException to an HTTP-aware HttpException.
  *
  * Call this at the API boundary (REST middleware, GraphQL formatter) to
@@ -69,10 +90,13 @@ export function mapDomainToHttp(error: GrantException): HttpException {
   // Not found
   if (error instanceof NotFoundError) {
     const segment = toTranslationSegment(error.resource);
+    const extensions: Record<string, unknown> = {};
+    if (error.resourceId) extensions[`${segment}Id`] = error.resourceId;
+    if (error.reason) extensions.reason = error.reason;
     return new HttpNotFoundError(error.message, {
-      translationKey: `errors.notFound.${segment}`,
+      translationKey: reasonTranslationKey(error.reason) ?? `errors.notFound.${segment}`,
       translationParams: error.resourceId ? { [`${segment}Id`]: error.resourceId } : undefined,
-      extensions: error.resourceId ? { [`${segment}Id`]: error.resourceId } : undefined,
+      extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
     });
   }
 
@@ -92,7 +116,8 @@ export function mapDomainToHttp(error: GrantException): HttpException {
 
   if (error instanceof BadRequestError) {
     return new HttpBadRequestError(error.message, {
-      translationKey: 'errors.validation.badRequest',
+      translationKey: reasonTranslationKey(error.reason) ?? 'errors.validation.badRequest',
+      extensions: error.reason ? { reason: error.reason } : undefined,
     });
   }
 
@@ -127,12 +152,7 @@ export function mapDomainToHttp(error: GrantException): HttpException {
     const extensions: Record<string, unknown> = {};
     if (error.reason) extensions.reason = error.reason;
     if (error.metadata) Object.assign(extensions, error.metadata);
-    const authorizationKeys: Record<string, string> = {
-      PUBLIC_SIGNUP_DISABLED: 'errors.auth.publicSignupDisabled',
-      LAST_HUMAN_USER: 'errors.auth.lastHumanUser',
-    };
-    const translationKey =
-      (error.reason && authorizationKeys[error.reason]) || 'errors.auth.forbidden';
+    const translationKey = reasonTranslationKey(error.reason) ?? 'errors.auth.forbidden';
     return new HttpForbiddenError(error.message, {
       translationKey,
       extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
@@ -144,11 +164,14 @@ export function mapDomainToHttp(error: GrantException): HttpException {
     const extensions: Record<string, unknown> = {};
     if (error.resource) extensions.resource = error.resource;
     if (error.field) extensions.field = error.field;
+    if (error.reason) extensions.reason = error.reason;
 
     return new HttpConflictError(error.message, {
-      translationKey: error.resource
-        ? `errors.conflict.${toTranslationSegment(error.resource)}`
-        : 'errors.conflict.duplicateEntry',
+      translationKey:
+        reasonTranslationKey(error.reason) ??
+        (error.resource
+          ? `errors.conflict.${toTranslationSegment(error.resource)}`
+          : 'errors.conflict.duplicateEntry'),
       extensions: Object.keys(extensions).length > 0 ? extensions : undefined,
     });
   }

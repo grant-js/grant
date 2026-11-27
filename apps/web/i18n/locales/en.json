@@ -230,6 +230,7 @@
       "organization": "Organization",
       "organizations": "Organizations",
       "organizationTags": "Organization Tags",
+      "organizationSettings": "Settings",
       "accountTags": "Account Tags",
       "projectTags": "Project Tags",
       "projects": "Projects",
@@ -2652,7 +2653,8 @@
         "update": "Update Organization",
         "delete": "Delete Organization",
         "query": "Query Organization",
-        "uploadPicture": "Upload Picture Organization"
+        "uploadPicture": "Upload Picture Organization",
+        "transferOwnership": "Transfer Ownership Organization"
       },
       "project": {
         "create": "Create Project",
@@ -2774,7 +2776,8 @@
         "update": "Permission to update an organization",
         "delete": "Permission to delete an organization",
         "query": "Permission to query organizations",
-        "uploadPicture": "Permission to upload an organization logo"
+        "uploadPicture": "Permission to upload an organization logo",
+        "transferOwnership": "Permission to transfer ownership of an organization"
       },
       "project": {
         "create": "Permission to create a project",
@@ -2891,7 +2894,7 @@
     "actions": {
       "create": "Create Organization",
       "edit": "Edit",
-      "delete": "Delete",
+      "settings": "Settings",
       "view": "View Organization",
       "cancel": "Cancel",
       "updating": "Updating...",
@@ -2912,7 +2915,6 @@
       "name": "Name",
       "description": "Description",
       "roles": "Roles",
-      "requireMfaForSensitiveActions": "Require MFA for sensitive actions",
       "tags": "Tags",
       "tagsLoading": "Loading tags...",
       "noTagsAvailable": "No tags available",
@@ -2937,12 +2939,9 @@
     "deleteDialog": {
       "title": "Delete Organization",
       "description": "Are you sure you want to delete {name}? This action cannot be undone.",
-      "warning": "Please confirm the organization ID to proceed with deletion.",
-      "orgIdLabel": "Organization ID",
-      "orgIdHint": "Copy the organization ID using the button above.",
-      "confirmOrgIdLabel": "Confirm Organization ID",
-      "confirmOrgIdPlaceholder": "Paste the organization ID here",
-      "confirmOrgIdHint": "Enter the organization ID above to confirm deletion. This prevents accidental deletions.",
+      "warning": "This permanently deletes the organization and cannot be undone.",
+      "confirmNameLabel": "Type \"{name}\" to confirm",
+      "confirmNameHint": "Enter the organization name exactly as shown. This prevents accidental deletions.",
       "cancel": "Cancel",
       "confirm": "Delete",
       "deleting": "Deleting..."
@@ -3012,6 +3011,78 @@
         "fileTooLarge": "File is too large. Maximum size is {maxSize}MB.",
         "readFailed": "Failed to read the file. Please try again.",
         "uploadFailed": "Failed to upload the image. Please try again."
+      }
+    },
+    "settings": {
+      "title": "Organization settings",
+      "general": {
+        "title": "General",
+        "description": "The organization's name and picture.",
+        "name": {
+          "label": "Name",
+          "placeholder": "Organization name"
+        },
+        "readOnlyHint": "You do not have permission to change the organization's name or picture."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Control how members of this organization authenticate for sensitive actions.",
+        "requireMfa": {
+          "label": "Require MFA for sensitive actions",
+          "description": "Members must confirm with a second factor before changing security-relevant settings or deleting the organization."
+        },
+        "readOnlyHint": "You do not have permission to change security settings."
+      },
+      "ownership": {
+        "title": "Ownership",
+        "description": "Transfer this organization to another member. An organization always has exactly one owner.",
+        "newOwner": {
+          "label": "New owner",
+          "placeholder": "Choose a member",
+          "empty": "No other members to transfer to",
+          "hint": "The new owner must be a member with a verified email address."
+        },
+        "role": {
+          "label": "Your role after the transfer",
+          "placeholder": "Choose a role",
+          "leave": "Leave the organization"
+        },
+        "action": "Transfer ownership",
+        "dialog": {
+          "title": "Transfer ownership?",
+          "description": "{name} becomes the owner of this organization. Only the owner can transfer ownership and delete the organization.",
+          "warning": "You lose the owner role. Only the new owner can give it back.",
+          "warningLeave": "You lose the owner role and leave the organization. Only the new owner can invite you back.",
+          "confirmNameLabel": "Type {name} to confirm",
+          "confirm": "Transfer ownership",
+          "transferring": "Transferring..."
+        },
+        "notifications": {
+          "success": "Ownership transferred",
+          "successLeft": "Ownership transferred. You left the organization.",
+          "error": "Could not transfer ownership"
+        },
+        "errors": {
+          "notOwner": "Only the current owner can transfer ownership.",
+          "sessionRequired": "Ownership can only be transferred by a signed-in user.",
+          "self": "Choose another member as the new owner.",
+          "invalidSelection": "Choose a role for yourself, or leave the organization.",
+          "invalidRole": "Choose Admin, Dev or Viewer as your role.",
+          "targetNotMember": "The new owner must be a current member of this organization.",
+          "targetDeactivated": "The new owner's account is deactivated.",
+          "targetUnverified": "The new owner has not verified their email address yet.",
+          "mfaRequired": "Confirm with your second factor to transfer ownership.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "dangerZone": {
+        "title": "Danger zone",
+        "description": "Irreversible actions for this organization.",
+        "delete": {
+          "title": "Delete this organization",
+          "description": "Deleting the organization removes its members, roles and project links. This cannot be undone.",
+          "action": "Delete organization"
+        }
       }
     }
   },

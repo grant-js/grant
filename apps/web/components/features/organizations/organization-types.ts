@@ -7,7 +7,6 @@ export const createOrganizationSchema = z.object({
 
 export const editOrganizationSchema = z.object({
   name: z.string().min(1, 'errors.validation.organizationNameRequired'),
-  requireMfaForSensitiveActions: z.boolean().optional(),
   tagIds: z.array(z.string()).optional(),
 });
 

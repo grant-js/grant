@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { AccountType } from '@grantjs/schema';
 
 import {
-  OrganizationDeleteDialog,
   OrganizationEditDialog,
   OrganizationPagination,
   OrganizationPictureUploadDialog,
@@ -42,7 +41,6 @@ export default function DashboardPage() {
     >
       <>
         <OrganizationViewer />
-        <OrganizationDeleteDialog />
         <OrganizationEditDialog />
         <OrganizationPictureUploadDialog />
       </>

@@ -49,6 +49,26 @@ const STATIC_KEY_ERRORS: GrantException[] = [
   new PayloadTooLargeError('Request body is too large', 5_242_880, 11_534_336),
   new ConfigurationError('Missing env var'),
   new NotFoundError('User'),
+  new AuthorizationError('Not the owner', 'OWNERSHIP_TRANSFER_NOT_OWNER'),
+  new AuthorizationError('Session required', 'OWNERSHIP_TRANSFER_SESSION_REQUIRED'),
+  new BadRequestError('Self', undefined, 'OWNERSHIP_TRANSFER_SELF'),
+  new BadRequestError('Selection', undefined, 'OWNERSHIP_TRANSFER_INVALID_SELECTION'),
+  new BadRequestError('Role', undefined, 'OWNERSHIP_TRANSFER_INVALID_ROLE'),
+  new NotFoundError('Member', 'u1', undefined, 'OWNERSHIP_TRANSFER_TARGET_NOT_MEMBER'),
+  new ConflictError(
+    'Deactivated',
+    'Member',
+    'newOwnerId',
+    undefined,
+    'OWNERSHIP_TRANSFER_TARGET_DEACTIVATED'
+  ),
+  new ConflictError(
+    'Unverified',
+    'Member',
+    'newOwnerId',
+    undefined,
+    'OWNERSHIP_TRANSFER_TARGET_UNVERIFIED'
+  ),
 ];
 
 /** `a.b.c` against the nested catalogue — how i18next resolves with `keySeparator: '.'`. */

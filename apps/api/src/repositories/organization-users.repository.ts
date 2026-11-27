@@ -1,12 +1,18 @@
 import type { IOrganizationUserRepository } from '@grantjs/core';
-import { organizations, OrganizationUserModel, organizationUsers, roles } from '@grantjs/database';
+import {
+  organizations,
+  OrganizationUserModel,
+  organizationUsers,
+  roles,
+  users,
+} from '@grantjs/database';
 import {
   AddOrganizationUserInput,
   OrganizationUser,
   QueryOrganizationUsersInput,
   RemoveOrganizationUserInput,
 } from '@grantjs/schema';
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 
 import { NotFoundError } from '@/lib/errors';
 import { Transaction } from '@/lib/transaction-manager.lib';
@@ -121,6 +127,37 @@ export class OrganizationUserRepository
         )
       );
     return rows.map((r) => r.userId);
+  }
+
+  /**
+   * Locks the live `organization_users` rows of `userIds` in the organization (`FOR UPDATE`, in
+   * user-id order so two transfers never lock in opposite orders) and returns each membership with
+   * its role and whether the user is deactivated. Rows of the same organization queue behind the
+   * first caller until its transaction ends. A missing user id is a missing membership: no row.
+   */
+  public async lockMembersForUpdate(
+    params: { organizationId: string; userIds: string[] },
+    transaction?: Transaction
+  ): Promise<Array<{ userId: string; roleId: string; userDeletedAt: Date | null }>> {
+    if (params.userIds.length === 0) return [];
+    const db = transaction ?? this.db;
+    return db
+      .select({
+        userId: organizationUsers.userId,
+        roleId: organizationUsers.roleId,
+        userDeletedAt: users.deletedAt,
+      })
+      .from(organizationUsers)
+      .innerJoin(users, eq(organizationUsers.userId, users.id))
+      .where(
+        and(
+          eq(organizationUsers.organizationId, params.organizationId),
+          inArray(organizationUsers.userId, params.userIds),
+          isNull(organizationUsers.deletedAt)
+        )
+      )
+      .orderBy(asc(organizationUsers.userId))
+      .for('update', { of: organizationUsers });
   }
 
   public async getUserOrganizationMemberships(

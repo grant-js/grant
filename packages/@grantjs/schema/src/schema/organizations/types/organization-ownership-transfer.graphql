@@ -1,0 +1,9 @@
+"""
+Result of an ownership transfer: the organization and the members' state after the change.
+"""
+type OrganizationOwnershipTransfer {
+  organization: Organization!
+  newOwner: OrganizationMember!
+  "The previous owner's membership after the transfer; null when they left the organization."
+  previousOwner: OrganizationMember
+}

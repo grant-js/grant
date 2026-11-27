@@ -114,6 +114,16 @@ export interface IOrganizationUserRepository {
     transaction?: unknown
   ): Promise<OrganizationUser>;
 
+  /**
+   * Locks the live memberships of `userIds` in the organization (`FOR UPDATE`) and returns each
+   * with its role id and the user's `deletedAt` (null while active). Serializes ownership
+   * transfers; a user without a live membership is simply absent from the result.
+   */
+  lockMembersForUpdate(
+    params: { organizationId: string; userIds: string[] },
+    transaction?: unknown
+  ): Promise<Array<{ userId: string; roleId: string; userDeletedAt: Date | null }>>;
+
   getUserOrganizationMemberships(
     userId: string,
     transaction?: unknown

@@ -3,7 +3,7 @@
 import { ComponentProps } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Building2, FolderOpen, Tag, Users } from 'lucide-react';
+import { Building2, FolderOpen, Settings, Tag, Users } from 'lucide-react';
 
 import { WorkspaceSwitcher } from '@/components/common';
 import { OrganizationSwitcher } from '@/components/features/organizations';
@@ -44,6 +44,11 @@ export function OrganizationSidebar({ ...props }: ComponentProps<typeof Sidebar>
           title: t('organizationTags'),
           url: `/dashboard/organizations/${organizationId}/tags`,
           icon: Tag,
+        },
+        {
+          title: t('organizationSettings'),
+          url: `/dashboard/organizations/${organizationId}/settings`,
+          icon: Settings,
         },
       ],
       checkActive: true,
