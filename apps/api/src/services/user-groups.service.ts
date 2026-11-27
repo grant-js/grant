@@ -10,6 +10,7 @@ import {
   AddUserGroupInput,
   QueryUserGroupsInput,
   RemoveUserGroupInput,
+  Scope,
   UserGroup,
 } from '@grantjs/schema';
 
@@ -84,6 +85,21 @@ export class UserGroupService implements IUserGroupService {
     transaction?: Transaction
   ): Promise<number> {
     return this.userGroupRepository.countUserGroups(params, transaction);
+  }
+
+  public async countUsersByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.userGroupRepository.countUsersByGroupIds(groupIds, scope, transaction);
+  }
+
+  public async getUserIdsByGroupId(
+    params: { groupId: string; scope: Scope },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return this.userGroupRepository.getUserIdsByGroupId(params, transaction);
   }
 
   public async addUserGroup(

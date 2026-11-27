@@ -17,6 +17,7 @@ const COUNT_KEYS = [
   'permissionCount',
   'permissionsCount',
   'actionCount',
+  'userCount',
 ];
 
 function sources(dir: string): string[] {

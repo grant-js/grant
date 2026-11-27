@@ -35,6 +35,9 @@ export const projectUserGroups = pgTable(
       .on(table.projectId, table.userId, table.groupId)
       .where(sql`${table.deletedAt} IS NULL`),
     index('project_user_groups_deleted_at_idx').on(table.deletedAt),
+    index('project_user_groups_project_id_group_id_idx')
+      .on(table.projectId, table.groupId)
+      .where(sql`${table.deletedAt} IS NULL`),
     pgPolicy('tenant_isolation_policy', {
       as: 'restrictive',
       for: 'select',

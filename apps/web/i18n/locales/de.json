@@ -2058,7 +2058,8 @@
       "created": "Erstellt",
       "updated": "Aktualisiert",
       "actions": "Aktionen",
-      "loading": "Gruppen werden geladen..."
+      "loading": "Gruppen werden geladen...",
+      "users": "Benutzer"
     },
     "toolbar": {
       "tags": {
@@ -2249,7 +2250,8 @@
       "userAuthenticationMethodAdmin": "Administratorberechtigungen für Benutzerauthentifizierungsmethodenzugriff",
       "userAuthenticationMethodDev": "Entwicklerberechtigungen für Benutzerauthentifizierungsmethodenzugriff",
       "userAuthenticationMethodViewer": "Betrachterberechtigungen für Benutzerauthentifizierungsmethodenzugriff"
-    }
+    },
+    "userCount": "{count, plural, =0 {Keine Benutzer} one {# Benutzer} other {# Benutzer}}"
   },
   "permissions": {
     "title": "Berechtigungsverwaltung",
@@ -2349,7 +2351,9 @@
       "created": "Erstellt",
       "updated": "Aktualisiert",
       "actions": "Aktionen",
-      "loading": "Berechtigungen werden geladen..."
+      "loading": "Berechtigungen werden geladen...",
+      "groups": "Gruppen",
+      "users": "Benutzer"
     },
     "toolbar": {
       "tags": {
@@ -2599,7 +2603,9 @@
         "resetPassword": "Berechtigung zum Zurücksetzen eines Passworts",
         "me": "Berechtigung zum Abrufen eigener Benutzerinformationen"
       }
-    }
+    },
+    "groupCount": "{count, plural, =0 {Keine Gruppen} one {# Gruppe} other {# Gruppen}}",
+    "userCount": "{count, plural, =0 {Keine Benutzer} one {# Benutzer} other {# Benutzer}}"
   },
   "account": {
     "title": "Kontoverwaltung",

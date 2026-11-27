@@ -26,9 +26,11 @@ export const permissionWithRelationsSchema = permissionSchema.extend({
   primaryTag: z.unknown().nullable().optional(),
   tags: z.array(z.unknown()).optional(),
   tagCount: z.number().optional(),
+  groupCount: z.number().optional(),
+  userCount: z.number().optional(),
 });
 
-const permissionFieldsEnum = z.enum(['primaryTag', 'tagCount']);
+const permissionFieldsEnum = z.enum(['groupCount', 'primaryTag', 'tagCount', 'userCount']);
 const permissionRelationsEnum = z.enum(['tags']);
 
 export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true }).extend({
@@ -63,7 +65,7 @@ export const getPermissionsQuerySchema = listQuerySchema.omit({ relations: true 
     .optional()
     .openapi({
       description: 'Computed fields to include in the response',
-      example: ['primaryTag', 'tagCount'],
+      example: ['primaryTag', 'tagCount', 'groupCount', 'userCount'],
     }),
 });
 

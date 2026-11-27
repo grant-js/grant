@@ -28,6 +28,7 @@ const RELATION_SEGMENT: Partial<Record<RelationPreviewTarget['relation'], Entity
   roles: 'roles',
   groups: 'groups',
   permissions: 'permissions',
+  users: 'users',
 };
 
 interface PreviewItem {

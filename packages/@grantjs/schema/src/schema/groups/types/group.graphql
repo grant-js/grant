@@ -4,9 +4,18 @@ type Group implements Auditable {
   description: String
   metadata: JSON!
   permissions: [Permission!]
+  """
+  Users the group is assigned to directly in the request's scope, not through a role, sorted
+  by name. `page` and `limit` page them as in the users list (by default the lists' page
+  size). Requires `User:Query`, the users list's own permission; without it the field is an
+  authorization error.
+  """
+  users(page: Int, limit: Int): [User!]
   tags: [Tag!]
   primaryTag: Tag
   permissionCount: Int!
+  "Users the group is assigned to directly in the request's scope, not through a role."
+  userCount: Int!
   tagCount: Int!
   createdAt: Date!
   updatedAt: Date!

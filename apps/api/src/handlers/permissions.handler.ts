@@ -83,6 +83,10 @@ export class PermissionHandler extends CacheHandler {
 
   private createPermissionListHydrationContext(scope: Scope): PermissionListHydrationContext {
     return {
+      countGroups: (permissionIds) =>
+        this.groupPermissions.countGroupsByPermissionIds(permissionIds, scope),
+      countUsers: (permissionIds) =>
+        this.userPermissions.countUsersByPermissionIds(permissionIds, scope),
       loadScopedTags: async (permissionIds) => {
         const pivots = await this.permissionTags.getPermissionTagsByPermissionIds(permissionIds);
         return this.hydrateScopedTagsForOwners({
@@ -93,6 +97,46 @@ export class PermissionHandler extends CacheHandler {
         });
       },
     };
+  }
+
+  /** Groups of the scope holding the permission (Permission.groupCount outside a list). */
+  public async countPermissionGroups(params: {
+    permissionId: string;
+    scope: Scope;
+  }): Promise<number> {
+    const counts = await this.groupPermissions.countGroupsByPermissionIds(
+      [params.permissionId],
+      params.scope
+    );
+    return counts.get(params.permissionId) ?? 0;
+  }
+
+  /** Users holding the permission directly in the scope (Permission.userCount outside a list). */
+  public async countPermissionUsers(params: {
+    permissionId: string;
+    scope: Scope;
+  }): Promise<number> {
+    const counts = await this.userPermissions.countUsersByPermissionIds(
+      [params.permissionId],
+      params.scope
+    );
+    return counts.get(params.permissionId) ?? 0;
+  }
+
+  /** Ids of the groups holding the permission, any scope; Permission.groups narrows them. */
+  public async getPermissionGroupIds(params: { permissionId: string }): Promise<string[]> {
+    const pivots = await this.groupPermissions.getGroupPermissions({
+      permissionId: params.permissionId,
+    });
+    return [...new Set(pivots.map((pivot) => pivot.groupId))];
+  }
+
+  /** Ids of the users holding the permission directly in the scope, for Permission.users. */
+  public async getPermissionUserIds(params: {
+    permissionId: string;
+    scope: Scope;
+  }): Promise<string[]> {
+    return this.userPermissions.getUserIdsByPermissionId(params);
   }
 
   /** Permissions linked by `resource_id` (e.g. Resource.permissions field resolver). */

@@ -104,6 +104,36 @@ export function PermissionTable() {
       ),
     },
     {
+      key: 'groups',
+      header: t('table.groups'),
+      width: '120px',
+      render: (permission: Permission) => (
+        <RelationCountChip
+          entity="permission"
+          relation="groups"
+          entityId={permission.id}
+          count={permission.groupCount ?? 0}
+        >
+          {t('groupCount', { count: permission.groupCount ?? 0 })}
+        </RelationCountChip>
+      ),
+    },
+    {
+      key: 'users',
+      header: t('table.users'),
+      width: '120px',
+      render: (permission: Permission) => (
+        <RelationCountChip
+          entity="permission"
+          relation="users"
+          entityId={permission.id}
+          count={permission.userCount ?? 0}
+        >
+          {t('userCount', { count: permission.userCount ?? 0 })}
+        </RelationCountChip>
+      ),
+    },
+    {
       key: 'tags',
       header: t('table.tags'),
       width: '120px',
@@ -145,6 +175,8 @@ export function PermissionTable() {
       { key: 'resource', type: 'text' },
       { key: 'action', type: 'text' },
       { key: 'description', type: 'text' },
+      { key: 'groups', type: 'text' },
+      { key: 'users', type: 'text' },
       { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'navigation', type: 'icon' },

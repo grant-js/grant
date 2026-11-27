@@ -2324,7 +2324,8 @@
       "created": "Created",
       "updated": "Updated",
       "actions": "Actions",
-      "loading": "Loading groups..."
+      "loading": "Loading groups...",
+      "users": "Users"
     },
     "toolbar": {
       "tags": {
@@ -2515,7 +2516,8 @@
       "userAuthenticationMethodAdmin": "Admin permissions for user authentication method access",
       "userAuthenticationMethodDev": "Developer permissions for user authentication method access",
       "userAuthenticationMethodViewer": "Viewer permissions for user authentication method access"
-    }
+    },
+    "userCount": "{count, plural, =0 {No users} one {# user} other {# users}}"
   },
   "permissions": {
     "title": "Permission Management",
@@ -2620,7 +2622,9 @@
       "created": "Created",
       "updated": "Updated",
       "actions": "Actions",
-      "loading": "Loading permissions..."
+      "loading": "Loading permissions...",
+      "groups": "Groups",
+      "users": "Users"
     },
     "toolbar": {
       "tags": {
@@ -2873,7 +2877,9 @@
         "resetPassword": "Permission to reset a password",
         "me": "Permission to access own user information"
       }
-    }
+    },
+    "groupCount": "{count, plural, =0 {No groups} one {# group} other {# groups}}",
+    "userCount": "{count, plural, =0 {No users} one {# user} other {# users}}"
   },
   "account": {
     "title": "Account Management",

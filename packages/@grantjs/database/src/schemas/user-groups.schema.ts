@@ -23,6 +23,9 @@ export const userGroups = pgTable(
       .on(table.userId, table.groupId)
       .where(sql`${table.deletedAt} IS NULL`),
     index('user_groups_deleted_at_idx').on(table.deletedAt),
+    index('user_groups_group_id_idx')
+      .on(table.groupId)
+      .where(sql`${table.deletedAt} IS NULL`),
   ]
 );
 

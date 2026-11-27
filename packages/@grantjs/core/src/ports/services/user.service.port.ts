@@ -22,6 +22,7 @@ import type {
   RemoveUserRoleInput,
   RemoveUserTagInput,
   RevokeUserPermissionInput,
+  Scope,
   UpdateUserAuthenticationMethodInput,
   UpdateUserInput,
   UpdateUserTagInput,
@@ -120,6 +121,17 @@ export interface IUserGroupService {
 
   countUserGroups(params: { userId: string }, transaction?: unknown): Promise<number>;
 
+  countUsersByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+
+  getUserIdsByGroupId(
+    params: { groupId: string; scope: Scope },
+    transaction?: unknown
+  ): Promise<string[]>;
+
   addUserGroup(params: AddUserGroupInput, transaction?: unknown): Promise<UserGroup>;
 
   removeUserGroup(
@@ -146,6 +158,17 @@ export interface IUserPermissionService {
     userIds: string[],
     transaction?: unknown
   ): Promise<Map<string, number>>;
+
+  countUsersByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+
+  getUserIdsByPermissionId(
+    params: { permissionId: string; scope: Scope },
+    transaction?: unknown
+  ): Promise<string[]>;
 
   assignUserPermission(
     params: AssignUserPermissionInput,

@@ -1,14 +1,35 @@
 import type { IUserPermissionRepository } from '@grantjs/core';
-import { UserPermissionModel, userPermissions } from '@grantjs/database';
+import { projectUserPermissions, UserPermissionModel, userPermissions } from '@grantjs/database';
 import {
   AssignUserPermissionInput,
   QueryUserPermissionsInput,
   RevokeUserPermissionInput,
+  Scope,
   UserPermission,
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { PivotRepository } from '@/repositories/common';
+import {
+  countDirectUsersByOwnerIds,
+  getDirectUserIdsByOwnerId,
+  PivotRepository,
+} from '@/repositories/common';
+
+const DIRECT_PERMISSION_PIVOTS = {
+  global: {
+    table: userPermissions,
+    userId: userPermissions.userId,
+    ownerId: userPermissions.permissionId,
+    deletedAt: userPermissions.deletedAt,
+  },
+  project: {
+    table: projectUserPermissions,
+    projectId: projectUserPermissions.projectId,
+    userId: projectUserPermissions.userId,
+    ownerId: projectUserPermissions.permissionId,
+    deletedAt: projectUserPermissions.deletedAt,
+  },
+};
 
 export class UserPermissionRepository
   extends PivotRepository<UserPermissionModel, UserPermission>
@@ -54,6 +75,31 @@ export class UserPermissionRepository
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.countActiveByFieldValues('userId', userIds, transaction);
+  }
+
+  public async countUsersByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return countDirectUsersByOwnerIds(
+      transaction || this.db,
+      DIRECT_PERMISSION_PIVOTS,
+      permissionIds,
+      scope
+    );
+  }
+
+  public async getUserIdsByPermissionId(
+    params: { permissionId: string; scope: Scope },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return getDirectUserIdsByOwnerId(
+      transaction || this.db,
+      DIRECT_PERMISSION_PIVOTS,
+      params.permissionId,
+      params.scope
+    );
   }
 
   public async addUserPermission(
