@@ -16,6 +16,8 @@ import {
   organizationWithRelationsSchema,
   requestOrganizationPictureUploadUrlRequestSchema,
   requestOrganizationPictureUploadUrlResponseSchema,
+  transferOrganizationOwnershipRequestSchema,
+  transferOrganizationOwnershipResponseSchema,
   updateOrganizationRequestSchema,
   updateOrganizationResponseSchema,
   uploadOrganizationPictureRequestSchema,
@@ -47,6 +49,15 @@ export function registerOrganizationsOpenApi(registry: OpenAPIRegistry) {
   registry.register(
     'ConfirmOrganizationPictureUploadRequest',
     confirmOrganizationPictureUploadRequestSchema
+  );
+
+  registry.register(
+    'TransferOrganizationOwnershipRequest',
+    transferOrganizationOwnershipRequestSchema
+  );
+  registry.register(
+    'TransferOrganizationOwnershipResponse',
+    transferOrganizationOwnershipResponseSchema
   );
 
   /**
@@ -566,6 +577,99 @@ Confirm writes \`picture_path\`; the public \`pictureUrl\` is derived on read.
         content: {
           'application/json': {
             schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      500: {
+        description: 'Internal server error',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+    },
+  });
+  registry.registerPath({
+    method: 'post',
+    path: '/api/organizations/{id}/ownership-transfer',
+    operationId: 'postApiOrganizationsByIdOwnershipTransfer',
+    tags: ['Organizations'],
+    summary: 'Transfer organization ownership',
+    description: `
+Moves the Organization Owner role to another member, in one transaction.
+
+Requires \`Organization:TransferOwnership\` (held by the Owner role only) **and** that the caller is
+a signed-in user who holds Owner in this organization right now. API keys and app tokens are refused.
+Email verification and, when the organization enforces it or the caller has a factor, MFA are required.
+
+Set exactly one of \`previousOwnerRoleId\` (the previous owner keeps that role: Admin, Dev or Viewer)
+and \`leaveOrganization: true\` (the previous owner's membership is removed). The new owner must be a
+current member, not the caller, not deactivated, and have a verified email. An organization always
+has exactly one owner: the new owner is given Owner before the previous owner is changed.
+
+Errors carry a stable \`reason\` in \`extensions\`: \`OWNERSHIP_TRANSFER_NOT_OWNER\`,
+\`OWNERSHIP_TRANSFER_SESSION_REQUIRED\`, \`OWNERSHIP_TRANSFER_SELF\`,
+\`OWNERSHIP_TRANSFER_INVALID_SELECTION\`, \`OWNERSHIP_TRANSFER_INVALID_ROLE\`,
+\`OWNERSHIP_TRANSFER_TARGET_NOT_MEMBER\`, \`OWNERSHIP_TRANSFER_TARGET_DEACTIVATED\`,
+\`OWNERSHIP_TRANSFER_TARGET_UNVERIFIED\`. Emits \`organization.ownership_transferred\`.
+    `.trim(),
+    request: {
+      params: organizationParamsSchema,
+      body: {
+        content: {
+          'application/json': {
+            schema: transferOrganizationOwnershipRequestSchema,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Ownership transferred',
+        content: {
+          'application/json': {
+            schema: transferOrganizationOwnershipResponseSchema,
+          },
+        },
+      },
+      400: {
+        description: 'Validation error, invalid role selection, or the new owner is the caller',
+        content: {
+          'application/json': {
+            schema: validationErrorResponseSchema,
+          },
+        },
+      },
+      401: {
+        description: 'Authentication required',
+        content: {
+          'application/json': {
+            schema: authenticationErrorResponseSchema,
+          },
+        },
+      },
+      403: {
+        description: 'Caller is not the current owner, or is not a signed-in user',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
+          },
+        },
+      },
+      404: {
+        description: 'The new owner is not a member of the organization',
+        content: {
+          'application/json': {
+            schema: notFoundErrorResponseSchema,
+          },
+        },
+      },
+      409: {
+        description: 'The new owner is deactivated or has no verified email',
+        content: {
+          'application/json': {
+            schema: errorResponseSchema,
           },
         },
       },

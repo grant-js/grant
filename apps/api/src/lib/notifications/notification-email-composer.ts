@@ -108,6 +108,7 @@ const MEMBERSHIP_I18N_KEYS: Record<string, string> = {
   'organization.member_added': 'organizationMemberAdded',
   'organization.member_role_changed': 'organizationMemberRoleChanged',
   'organization.member_removed': 'organizationMemberRemoved',
+  'organization.ownership_transferred': 'organizationOwnershipTransferred',
   'project.user_added': 'projectUserAdded',
   'project.user_removed': 'projectUserRemoved',
   'project.user_profile_updated': 'projectUserProfileUpdated',

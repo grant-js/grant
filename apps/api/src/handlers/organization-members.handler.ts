@@ -4,7 +4,9 @@ import {
   MutationUpdateOrganizationMemberArgs,
   OrganizationMember,
   OrganizationMemberPage,
+  OrganizationOwnershipTransfer,
   QueryOrganizationMembersArgs,
+  TransferOrganizationOwnershipInput,
 } from '@grantjs/schema';
 
 import { IEntityCacheAdapter } from '@/lib/cache';
@@ -52,6 +54,24 @@ export class OrganizationMembersHandler extends CacheHandler {
     });
 
     await this.invalidateAuthorizationResultsForUser(userId);
+
+    return result;
+  }
+
+  /**
+   * Transfers organization ownership in one transaction, then drops the cached authorization
+   * results of both users: their roles changed, and a user who left loses the organization.
+   */
+  public async transferOwnership(
+    input: TransferOrganizationOwnershipInput,
+    previousOwnerId: string
+  ): Promise<OrganizationOwnershipTransfer> {
+    const result = await this.db.withTransaction(async (tx) => {
+      return await this.organizationMembers.transferOwnership(input, tx);
+    });
+
+    await this.invalidateAuthorizationResultsForUser(previousOwnerId);
+    await this.invalidateAuthorizationResultsForUser(input.newOwnerId);
 
     return result;
   }

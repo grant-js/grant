@@ -221,6 +221,22 @@ export async function getOrganizationRoleIdByName(
   return rows.length > 0 ? rows[0].id : null;
 }
 
+/**
+ * Mark a user's email authentication method as not verified (the registration default).
+ * Used in E2E to build a member the ownership transfer must refuse as a new owner: every
+ * `TestUser` verifies its email, and accepting an invitation does not undo that.
+ */
+export async function markEmailUnverifiedForE2e(email: string): Promise<void> {
+  const conn = getConnection();
+  await conn`
+    UPDATE user_authentication_methods
+    SET is_verified = false
+    WHERE provider = 'email'
+      AND provider_id = ${email}
+      AND deleted_at IS NULL
+  `;
+}
+
 // ---------------------------------------------------------------------------
 // Project users (for project OAuth E2E: user must be in project_users)
 // ---------------------------------------------------------------------------

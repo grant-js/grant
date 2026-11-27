@@ -141,6 +141,24 @@ describe('AudienceResolver', () => {
     expect(ids).toEqual(['admin-1']);
   });
 
+  it('tells both the previous owner (actor) and the new owner (subject) of an ownership transfer', async () => {
+    const ids = await resolver.resolve(
+      event({
+        type: 'organization.ownership_transferred',
+        scope: { tenant: Tenant.Organization, id: 'org-1' },
+        actorUserId: 'previous-owner',
+        subjectUserId: 'new-owner',
+      })
+    );
+
+    expect(ids.sort()).toEqual(['new-owner', 'previous-owner']);
+    expect(EVENT_CATALOG['organization.ownership_transferred']).toEqual({
+      category: 'membership',
+      deliveryClass: 'notification',
+      audienceRule: { primitives: ['actor', 'subject'], excludeActor: false },
+    });
+  });
+
   it('does not claim watchers in catalog audience rules', () => {
     for (const type of EVENT_TYPES) {
       expect(

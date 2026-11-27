@@ -228,6 +228,7 @@
       "organization": "Organisation",
       "organizations": "Organisationen",
       "organizationTags": "Organisations-Tags",
+      "organizationSettings": "Einstellungen",
       "accountTags": "Konto-Tags",
       "projectTags": "Projekt-Tags",
       "projects": "Projekte",
@@ -2381,7 +2382,8 @@
         "update": "Organisation aktualisieren",
         "delete": "Organisation löschen",
         "query": "Organisation abfragen",
-        "uploadPicture": "Organisationsbild hochladen"
+        "uploadPicture": "Organisationsbild hochladen",
+        "transferOwnership": "Organisationseigentum übertragen"
       },
       "project": {
         "create": "Projekt erstellen",
@@ -2500,7 +2502,8 @@
         "update": "Berechtigung zum Aktualisieren einer Organisation",
         "delete": "Berechtigung zum Löschen einer Organisation",
         "query": "Berechtigung zum Abfragen von Organisationen",
-        "uploadPicture": "Berechtigung zum Hochladen eines Organisationslogos"
+        "uploadPicture": "Berechtigung zum Hochladen eines Organisationslogos",
+        "transferOwnership": "Berechtigung zum Übertragen des Eigentums an einer Organisation"
       },
       "project": {
         "create": "Berechtigung zum Erstellen eines Projekts",
@@ -2617,7 +2620,7 @@
     "actions": {
       "create": "Organisation erstellen",
       "edit": "Bearbeiten",
-      "delete": "Löschen",
+      "settings": "Einstellungen",
       "view": "Organisation anzeigen",
       "cancel": "Abbrechen",
       "updating": "Wird aktualisiert...",
@@ -2638,7 +2641,6 @@
       "name": "Name",
       "description": "Beschreibung",
       "roles": "Rollen",
-      "requireMfaForSensitiveActions": "MFA für sensible Aktionen erforderlich",
       "tags": "Tags",
       "tagsLoading": "Tags werden geladen...",
       "noTagsAvailable": "Keine Tags verfügbar",
@@ -2663,12 +2665,9 @@
     "deleteDialog": {
       "title": "Organisation löschen",
       "description": "Sind Sie sicher, dass Sie {name} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-      "warning": "Bitte bestätigen Sie die Organisations-ID, um fortzufahren.",
-      "orgIdLabel": "Organisations-ID",
-      "orgIdHint": "Kopieren Sie die Organisations-ID mit der Schaltfläche oben.",
-      "confirmOrgIdLabel": "Organisations-ID bestätigen",
-      "confirmOrgIdPlaceholder": "Organisations-ID hier einfügen",
-      "confirmOrgIdHint": "Geben Sie die Organisations-ID ein, um die Löschung zu bestätigen. Dies verhindert versehentliche Löschungen.",
+      "warning": "Dadurch wird die Organisation dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
+      "confirmNameLabel": "Geben Sie „{name}“ zur Bestätigung ein",
+      "confirmNameHint": "Geben Sie den Organisationsnamen genau so ein, wie er angezeigt wird. Dies verhindert versehentliche Löschungen.",
       "cancel": "Abbrechen",
       "confirm": "Löschen",
       "deleting": "Wird gelöscht..."
@@ -2738,6 +2737,78 @@
         "fileTooLarge": "Datei ist zu groß. Maximale Größe ist {maxSize}MB.",
         "readFailed": "Datei konnte nicht gelesen werden. Bitte versuchen Sie es erneut.",
         "uploadFailed": "Bild konnte nicht hochgeladen werden. Bitte versuchen Sie es erneut."
+      }
+    },
+    "settings": {
+      "title": "Organisationseinstellungen",
+      "general": {
+        "title": "Allgemein",
+        "description": "Name und Bild der Organisation.",
+        "name": {
+          "label": "Name",
+          "placeholder": "Name der Organisation"
+        },
+        "readOnlyHint": "Sie haben keine Berechtigung, den Namen oder das Bild der Organisation zu ändern."
+      },
+      "security": {
+        "title": "Sicherheit",
+        "description": "Legen Sie fest, wie sich Mitglieder dieser Organisation für sensible Aktionen authentifizieren müssen.",
+        "requireMfa": {
+          "label": "MFA für sensible Aktionen erforderlich",
+          "description": "Mitglieder müssen sich mit einem zweiten Faktor bestätigen, bevor sie sicherheitsrelevante Einstellungen ändern oder die Organisation löschen."
+        },
+        "readOnlyHint": "Sie haben keine Berechtigung, die Sicherheitseinstellungen zu ändern."
+      },
+      "ownership": {
+        "title": "Eigentum",
+        "description": "Übertragen Sie diese Organisation an ein anderes Mitglied. Eine Organisation hat immer genau einen Eigentümer.",
+        "newOwner": {
+          "label": "Neuer Eigentümer",
+          "placeholder": "Mitglied auswählen",
+          "empty": "Keine weiteren Mitglieder zur Übertragung",
+          "hint": "Der neue Eigentümer muss Mitglied mit bestätigter E-Mail-Adresse sein."
+        },
+        "role": {
+          "label": "Ihre Rolle nach der Übertragung",
+          "placeholder": "Rolle auswählen",
+          "leave": "Organisation verlassen"
+        },
+        "action": "Eigentum übertragen",
+        "dialog": {
+          "title": "Eigentum übertragen?",
+          "description": "{name} wird Eigentümer dieser Organisation. Nur der Eigentümer kann das Eigentum übertragen und die Organisation löschen.",
+          "warning": "Sie verlieren die Eigentümerrolle. Nur der neue Eigentümer kann sie zurückgeben.",
+          "warningLeave": "Sie verlieren die Eigentümerrolle und verlassen die Organisation. Nur der neue Eigentümer kann Sie wieder einladen.",
+          "confirmNameLabel": "Geben Sie {name} zur Bestätigung ein",
+          "confirm": "Eigentum übertragen",
+          "transferring": "Wird übertragen..."
+        },
+        "notifications": {
+          "success": "Eigentum übertragen",
+          "successLeft": "Eigentum übertragen. Sie haben die Organisation verlassen.",
+          "error": "Eigentum konnte nicht übertragen werden"
+        },
+        "errors": {
+          "notOwner": "Nur der aktuelle Eigentümer kann das Eigentum übertragen.",
+          "sessionRequired": "Das Eigentum kann nur von angemeldeten Benutzern übertragen werden.",
+          "self": "Wählen Sie ein anderes Mitglied als neuen Eigentümer.",
+          "invalidSelection": "Wählen Sie eine Rolle für sich oder verlassen Sie die Organisation.",
+          "invalidRole": "Wählen Sie Admin, Dev oder Viewer als Ihre Rolle.",
+          "targetNotMember": "Der neue Eigentümer muss aktuelles Mitglied dieser Organisation sein.",
+          "targetDeactivated": "Das Konto des neuen Eigentümers ist deaktiviert.",
+          "targetUnverified": "Der neue Eigentümer hat seine E-Mail-Adresse noch nicht bestätigt.",
+          "mfaRequired": "Bestätigen Sie mit Ihrem zweiten Faktor, um das Eigentum zu übertragen.",
+          "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+        }
+      },
+      "dangerZone": {
+        "title": "Gefahrenbereich",
+        "description": "Nicht umkehrbare Aktionen für diese Organisation.",
+        "delete": {
+          "title": "Diese Organisation löschen",
+          "description": "Beim Löschen der Organisation werden ihre Mitglieder, Rollen und Projektzuordnungen entfernt. Dies kann nicht rückgängig gemacht werden.",
+          "action": "Organisation löschen"
+        }
       }
     }
   },

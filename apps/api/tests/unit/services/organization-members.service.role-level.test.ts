@@ -42,7 +42,10 @@ function build(options: { callerRole: string; memberRole: string; newRole: strin
     { userId: callerId } as never,
     { logUpdate: vi.fn() } as never,
     { publish: vi.fn() } as never,
-    { getOrganizationProjects: vi.fn() } as never
+    { getOrganizationProjects: vi.fn() } as never,
+    {} as never,
+    {} as never,
+    {} as never
   );
   return { service, organizationUserRepository };
 }

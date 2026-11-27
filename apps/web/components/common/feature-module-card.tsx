@@ -27,6 +27,8 @@ export interface FeatureModuleCardProps {
   /** Renders above children inside the card body (e.g. table toolbar). */
   toolbar?: ReactNode;
   className?: string;
+  /** Classes for the card itself; with `collapsible`, `className` styles the wrapper instead. */
+  cardClassName?: string;
   contentClassName?: string;
   collapsible?: boolean;
   defaultExpanded?: boolean;
@@ -102,6 +104,7 @@ export function FeatureModuleCard({
   headerActions,
   toolbar,
   className,
+  cardClassName,
   contentClassName,
   collapsible = false,
   defaultExpanded = true,
@@ -111,7 +114,7 @@ export function FeatureModuleCard({
 
   if (!collapsible) {
     return (
-      <Card className={cn('w-full', className)}>
+      <Card className={cn('w-full', className, cardClassName)}>
         <CardHeader className={cn('flex flex-col', headerToolbar ? 'gap-4' : 'gap-0')}>
           <CardTitleBlock title={title} titleAdornment={titleAdornment} description={description} />
           {headerToolbar && <div className="flex w-full min-w-0">{headerToolbar}</div>}
@@ -133,7 +136,7 @@ export function FeatureModuleCard({
       defaultOpen={defaultExpanded}
       className={cn('group/collapsible w-full', className)}
     >
-      <Card className="w-full flex flex-col gap-0 py-0">
+      <Card className={cn('w-full flex flex-col gap-0 py-0', cardClassName)}>
         <div
           className={cn(
             'flex w-full items-center gap-4 px-6 pt-6 pb-6',

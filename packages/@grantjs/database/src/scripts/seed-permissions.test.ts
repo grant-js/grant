@@ -300,6 +300,79 @@ describe('seedAll — Project:SetExportableApiKeySecrets placement', () => {
   });
 });
 
+describe('seedAll — Organization:Delete is owner-only', () => {
+  const ACTION = 'Delete';
+
+  it('is declared by the Organization Owner group and by no other group', () => {
+    const declaring = Object.entries(PERMISSION_MAPPINGS)
+      .filter(([, perms]) =>
+        perms.some((p) => p.resource === 'Organization' && p.action === ACTION)
+      )
+      .map(([group]) => group);
+
+    expect(declaring).toEqual(['OrganizationOwner']);
+    expect(GROUP_DEFINITIONS.OrganizationAdmin.permissions).not.toContain(ACTION);
+  });
+
+  it('links the seeded permission to the Organization Owner group only, never to Organization Admin', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const organizationResource = db
+      .rows(resources)
+      .find((r) => r.slug === 'Organization') as Record<string, unknown>;
+    const row = db
+      .rows(permissions)
+      .filter((r) => r.action === ACTION && r.resourceId === organizationResource.id);
+    expect(row).toHaveLength(1);
+
+    const linkedGroupNames = db
+      .rows(groupPermissions)
+      .filter((link) => link.permissionId === row[0].id)
+      .map((link) => db.rows(groups).find((g) => g.id === link.groupId)?.name);
+    expect(linkedGroupNames).toEqual([GROUP_DEFINITIONS.OrganizationOwner.name]);
+    expect(linkedGroupNames).not.toContain(GROUP_DEFINITIONS.OrganizationAdmin.name);
+  });
+});
+
+describe('seedAll — Organization:TransferOwnership placement', () => {
+  const ACTION = 'TransferOwnership';
+
+  it('is mapped to the Organization Owner group only, unconditioned', () => {
+    const declaring = Object.entries(PERMISSION_MAPPINGS)
+      .filter(([, perms]) =>
+        perms.some((p) => p.resource === 'Organization' && p.action === ACTION)
+      )
+      .map(([group]) => group);
+
+    expect(declaring).toEqual(['OrganizationOwner']);
+    const declared = PERMISSION_MAPPINGS.OrganizationOwner.find((p) => p.action === ACTION);
+    expect(declared?.condition).toBeNull();
+    for (const group of ['OrganizationAdmin', 'OrganizationDev', 'OrganizationViewer']) {
+      expect(GROUP_DEFINITIONS[group].permissions).not.toContain(ACTION);
+    }
+    expect(GROUP_DEFINITIONS.OrganizationOwner.permissions).toContain(ACTION);
+  });
+
+  it('seeds one permission row, linked to the Organization Owner group and no other', async () => {
+    await seedAll(db as unknown as SeedDb);
+
+    const organizationResource = db
+      .rows(resources)
+      .find((r) => r.slug === 'Organization') as Record<string, unknown>;
+    expect(getResourceDefinition('Organization' as never).actions).toContain(ACTION);
+    const rows = db
+      .rows(permissions)
+      .filter((r) => r.action === ACTION && r.resourceId === organizationResource.id);
+    expect(rows).toHaveLength(1);
+
+    const linkedGroupNames = db
+      .rows(groupPermissions)
+      .filter((link) => link.permissionId === rows[0].id)
+      .map((link) => db.rows(groups).find((g) => g.id === link.groupId)?.name);
+    expect(linkedGroupNames).toEqual([GROUP_DEFINITIONS.OrganizationOwner.name]);
+  });
+});
+
 describe('seedAll — permission de-duplication across groups', () => {
   it('collapses each resource:action to a single permission row shared by every group that declares it', async () => {
     await seedAll(db as unknown as SeedDb);

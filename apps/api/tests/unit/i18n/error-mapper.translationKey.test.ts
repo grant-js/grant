@@ -48,6 +48,58 @@ describe('mapDomainToHttp translationKey', () => {
     expect(http.translationKey).toBe('errors.validation.badRequest');
   });
 
+  describe('errors that carry a stable reason', () => {
+    it.each([
+      [
+        new AuthorizationError('no', 'OWNERSHIP_TRANSFER_NOT_OWNER'),
+        403,
+        'errors.ownershipTransfer.notOwner',
+      ],
+      [
+        new BadRequestError('no', undefined, 'OWNERSHIP_TRANSFER_SELF'),
+        400,
+        'errors.ownershipTransfer.self',
+      ],
+      [
+        new NotFoundError('Member', 'u1', undefined, 'OWNERSHIP_TRANSFER_TARGET_NOT_MEMBER'),
+        404,
+        'errors.ownershipTransfer.targetNotMember',
+      ],
+      [
+        new ConflictError(
+          'no',
+          'Member',
+          'newOwnerId',
+          undefined,
+          'OWNERSHIP_TRANSFER_TARGET_UNVERIFIED'
+        ),
+        409,
+        'errors.ownershipTransfer.targetUnverified',
+      ],
+    ])('maps %o to its own key and returns the reason to the client', (error, status, key) => {
+      const http = mapDomainToHttp(error);
+      expect(http.statusCode).toBe(status);
+      expect(http.translationKey).toBe(key);
+      expect(http.extensions?.reason).toBe((error as { reason?: string }).reason);
+    });
+
+    it('keeps the generic key, and no reason, for the same classes without one', () => {
+      expect(mapDomainToHttp(new BadRequestError('x')).extensions).toBeUndefined();
+      expect(mapDomainToHttp(new NotFoundError('Member', 'u1')).extensions).toEqual({
+        memberId: 'u1',
+      });
+      expect(mapDomainToHttp(new ConflictError('x')).translationKey).toBe(
+        'errors.conflict.duplicateEntry'
+      );
+    });
+
+    it('falls back to the generic key for a reason with no catalogue entry', () => {
+      const http = mapDomainToHttp(new BadRequestError('x', undefined, 'SOME_OTHER_REASON'));
+      expect(http.translationKey).toBe('errors.validation.badRequest');
+      expect(http.extensions).toEqual({ reason: 'SOME_OTHER_REASON' });
+    });
+  });
+
   it('maps InvalidOrUsedVerificationTokenError to errors.auth.invalidOrUsedVerificationToken', () => {
     const err = new InvalidOrUsedVerificationTokenError(
       'Invalid or already used verification token'

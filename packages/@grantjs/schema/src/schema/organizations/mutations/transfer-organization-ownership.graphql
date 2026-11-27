@@ -1,0 +1,10 @@
+extend type Mutation {
+  """
+  Transfers ownership of an organization. Only the current owner (a signed-in user, not an API key)
+  can call it, and requires `Organization:TransferOwnership`. The new owner must be an active member
+  with a verified email. Emits `organization.ownership_transferred`.
+  """
+  transferOrganizationOwnership(
+    input: TransferOrganizationOwnershipInput!
+  ): OrganizationOwnershipTransfer!
+}

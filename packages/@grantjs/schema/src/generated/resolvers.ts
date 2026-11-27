@@ -343,6 +343,7 @@ export type ResolversTypes = ResolversObject<{
   OrganizationMemberSortInput: Types.OrganizationMemberSortInput;
   OrganizationMemberSortableField: Types.OrganizationMemberSortableField;
   OrganizationMembershipExportData: ResolverTypeWrapper<Types.OrganizationMembershipExportData>;
+  OrganizationOwnershipTransfer: ResolverTypeWrapper<Types.OrganizationOwnershipTransfer>;
   OrganizationPage: ResolverTypeWrapper<Types.OrganizationPage>;
   OrganizationPermission: ResolverTypeWrapper<Types.OrganizationPermission>;
   OrganizationProject: ResolverTypeWrapper<Types.OrganizationProject>;
@@ -531,6 +532,7 @@ export type ResolversTypes = ResolversObject<{
   TagSortInput: Types.TagSortInput;
   Tenant: Types.Tenant;
   TokenType: Types.TokenType;
+  TransferOrganizationOwnershipInput: Types.TransferOrganizationOwnershipInput;
   UnreadNotificationCount: ResolverTypeWrapper<Types.UnreadNotificationCount>;
   UpdateAccountProjectTagInput: Types.UpdateAccountProjectTagInput;
   UpdateAccountTagInput: Types.UpdateAccountTagInput;
@@ -757,6 +759,7 @@ export type ResolversParentTypes = ResolversObject<{
   OrganizationMemberPage: Types.OrganizationMemberPage;
   OrganizationMemberSortInput: Types.OrganizationMemberSortInput;
   OrganizationMembershipExportData: Types.OrganizationMembershipExportData;
+  OrganizationOwnershipTransfer: Types.OrganizationOwnershipTransfer;
   OrganizationPage: Types.OrganizationPage;
   OrganizationPermission: Types.OrganizationPermission;
   OrganizationProject: Types.OrganizationProject;
@@ -922,6 +925,7 @@ export type ResolversParentTypes = ResolversObject<{
   TagCdmInput: Types.TagCdmInput;
   TagPage: Types.TagPage;
   TagSortInput: Types.TagSortInput;
+  TransferOrganizationOwnershipInput: Types.TransferOrganizationOwnershipInput;
   UnreadNotificationCount: Types.UnreadNotificationCount;
   UpdateAccountProjectTagInput: Types.UpdateAccountProjectTagInput;
   UpdateAccountTagInput: Types.UpdateAccountTagInput;
@@ -2093,6 +2097,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<Types.MutationStartProjectSyncArgs, 'id' | 'input' | 'scope'>
   >;
+  transferOrganizationOwnership?: Resolver<
+    ResolversTypes['OrganizationOwnershipTransfer'],
+    ParentType,
+    ContextType,
+    RequireFields<Types.MutationTransferOrganizationOwnershipArgs, 'input'>
+  >;
   updateGroup?: Resolver<
     ResolversTypes['Group'],
     ParentType,
@@ -2424,6 +2434,20 @@ export type OrganizationMembershipExportDataResolvers<
   organizationId?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   organizationName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   role?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type OrganizationOwnershipTransferResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['OrganizationOwnershipTransfer'] =
+    ResolversParentTypes['OrganizationOwnershipTransfer'],
+> = ResolversObject<{
+  newOwner?: Resolver<ResolversTypes['OrganizationMember'], ParentType, ContextType>;
+  organization?: Resolver<ResolversTypes['Organization'], ParentType, ContextType>;
+  previousOwner?: Resolver<
+    Types.Maybe<ResolversTypes['OrganizationMember']>,
+    ParentType,
+    ContextType
+  >;
 }>;
 
 export type OrganizationPageResolvers<
@@ -3967,6 +3991,7 @@ export type Resolvers<ContextType = any> = ResolversObject<{
   OrganizationMember?: OrganizationMemberResolvers<ContextType>;
   OrganizationMemberPage?: OrganizationMemberPageResolvers<ContextType>;
   OrganizationMembershipExportData?: OrganizationMembershipExportDataResolvers<ContextType>;
+  OrganizationOwnershipTransfer?: OrganizationOwnershipTransferResolvers<ContextType>;
   OrganizationPage?: OrganizationPageResolvers<ContextType>;
   OrganizationPermission?: OrganizationPermissionResolvers<ContextType>;
   OrganizationProject?: OrganizationProjectResolvers<ContextType>;

@@ -51,6 +51,7 @@ export const NOTIFICATION_EMAIL_FAMILY_BY_TYPE: Record<EventType, NotificationEm
   'organization.member_added': 'membership',
   'organization.member_role_changed': 'membership',
   'organization.member_removed': 'membership',
+  'organization.ownership_transferred': 'membership',
   'project.user_added': 'membership',
   'project.user_removed': 'membership',
   'project.user_profile_updated': 'membership',

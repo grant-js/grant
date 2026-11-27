@@ -7,7 +7,6 @@ import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Tenant } from '@grantjs/schema';
 import { AlertTriangle } from 'lucide-react';
 
-import { CopyToClipboard } from '@/components/common';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -23,17 +22,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEmailVerified } from '@/hooks/auth';
 import { useOrganizationMutations } from '@/hooks/organizations';
+import { useRouter } from '@/i18n/navigation';
 import { useOrganizationsStore } from '@/stores/organizations.store';
 
 export function OrganizationDeleteDialog() {
   const t = useTranslations('organizations');
   const tCommon = useTranslations('common');
+  const router = useRouter();
   const { deleteOrganization } = useOrganizationMutations();
 
   const organizationToDelete = useOrganizationsStore((state) => state.organizationToDelete);
   const setOrganizationToDelete = useOrganizationsStore((state) => state.setOrganizationToDelete);
 
-  const [confirmOrgId, setConfirmOrgId] = useState('');
+  const [confirmName, setConfirmName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   const scope = organizationToDelete
@@ -62,12 +63,12 @@ export function OrganizationDeleteDialog() {
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setOrganizationToDelete(null);
-      setConfirmOrgId('');
+      setConfirmName('');
     }
   };
 
   const handleDelete = async () => {
-    if (!organizationToDelete || confirmOrgId !== organizationToDelete.id) {
+    if (!organizationToDelete || confirmName !== organizationToDelete.name) {
       return;
     }
 
@@ -81,6 +82,9 @@ export function OrganizationDeleteDialog() {
         organizationToDelete.name
       );
       handleOpenChange(false);
+      router.push('/dashboard/organizations');
+    } catch {
+      // The mutation hook already toasted the failure; stay on this page.
     } finally {
       setIsDeleting(false);
     }
@@ -101,41 +105,29 @@ export function OrganizationDeleteDialog() {
             <AlertDescription>{t('deleteDialog.warning')}</AlertDescription>
           </Alert>
           {organizationToDelete && (
-            <>
-              <div className="space-y-2">
-                <Label>{t('deleteDialog.orgIdLabel')}</Label>
-                <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
-                  <code className="flex-1 truncate text-sm font-mono">
-                    {organizationToDelete.id}
-                  </code>
-                  <CopyToClipboard text={organizationToDelete.id} size="sm" variant="ghost" />
-                </div>
-                <p className="text-xs text-muted-foreground">{t('deleteDialog.orgIdHint')}</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="delete-org-id">{t('deleteDialog.confirmOrgIdLabel')}</Label>
-                <Input
-                  id="delete-org-id"
-                  value={confirmOrgId}
-                  onChange={(e) => setConfirmOrgId(e.target.value)}
-                  placeholder={t('deleteDialog.confirmOrgIdPlaceholder')}
-                  disabled={isDeleting}
-                  autoComplete="off"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t('deleteDialog.confirmOrgIdHint')}
-                </p>
-              </div>
-            </>
+            <div className="space-y-2">
+              <Label htmlFor="delete-org-name">
+                {t('deleteDialog.confirmNameLabel', { name: organizationToDelete.name })}
+              </Label>
+              <Input
+                id="delete-org-name"
+                value={confirmName}
+                onChange={(e) => setConfirmName(e.target.value)}
+                placeholder={organizationToDelete.name}
+                disabled={isDeleting}
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted-foreground">{t('deleteDialog.confirmNameHint')}</p>
+            </div>
           )}
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting} onClick={() => setConfirmOrgId('')}>
+          <AlertDialogCancel disabled={isDeleting} onClick={() => setConfirmName('')}>
             {tCommon('actions.cancel')}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
-            disabled={!confirmOrgId || confirmOrgId !== organizationToDelete?.id || isDeleting}
+            disabled={!confirmName || confirmName !== organizationToDelete?.name || isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isDeleting ? t('deleteDialog.deleting') : t('deleteDialog.confirm')}

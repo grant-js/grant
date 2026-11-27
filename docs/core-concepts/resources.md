@@ -29,24 +29,24 @@ Resources are always scoped to a **project**. Each project can have the platform
 
 Grant ships with 16 platform resources. These are seeded automatically and cover the core domain:
 
-| Resource                     | Actions                                                                    |
-| ---------------------------- | -------------------------------------------------------------------------- |
-| **User**                     | `Create` `Read` `Update` `Delete` `Query` `ExportData` `UploadPicture`     |
-| **Account**                  | `Read` `Delete` `Query`                                                    |
-| **Organization**             | `Create` `Read` `Update` `Delete` `Query`                                  |
-| **Project**                  | `Create` `Update` `Delete` `Query` `SetExportableApiKeySecrets`            |
-| **ProjectApp**               | `Create` `Update` `Delete` `Query`                                         |
-| **Resource**                 | `Create` `Update` `Delete` `Query`                                         |
-| **Role**                     | `Create` `Update` `Delete` `Query`                                         |
-| **Group**                    | `Create` `Update` `Delete` `Query`                                         |
-| **Permission**               | `Create` `Update` `Delete` `Query`                                         |
-| **Tag**                      | `Create` `Update` `Delete` `Query`                                         |
-| **ApiKey**                   | `Create` `Update` `Delete` `Query` `Revoke` `Exchange`                     |
-| **OrganizationMember**       | `Read` `Update` `Remove` `Query`                                           |
-| **OrganizationInvitation**   | `Create` `Read` `Query` `Revoke` `ResendEmail` `Renew`                     |
-| **ProjectUser**              | `Read` `Query` `SetEmail` `SetPassword` `LinkIdentity` `ExportCredentials` |
-| **UserSession**              | `Read` `Query`                                                             |
-| **UserAuthenticationMethod** | `Read` `Query`                                                             |
+| Resource                     | Actions                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| **User**                     | `Create` `Read` `Update` `Delete` `Query` `ExportData` `UploadPicture`        |
+| **Account**                  | `Read` `Delete` `Query`                                                       |
+| **Organization**             | `Create` `Read` `Update` `Delete` `Query` `UploadPicture` `TransferOwnership` |
+| **Project**                  | `Create` `Update` `Delete` `Query` `SetExportableApiKeySecrets`               |
+| **ProjectApp**               | `Create` `Update` `Delete` `Query`                                            |
+| **Resource**                 | `Create` `Update` `Delete` `Query`                                            |
+| **Role**                     | `Create` `Update` `Delete` `Query`                                            |
+| **Group**                    | `Create` `Update` `Delete` `Query`                                            |
+| **Permission**               | `Create` `Update` `Delete` `Query`                                            |
+| **Tag**                      | `Create` `Update` `Delete` `Query`                                            |
+| **ApiKey**                   | `Create` `Update` `Delete` `Query` `Revoke` `Exchange`                        |
+| **OrganizationMember**       | `Read` `Update` `Remove` `Query`                                              |
+| **OrganizationInvitation**   | `Create` `Read` `Query` `Revoke` `ResendEmail` `Renew`                        |
+| **ProjectUser**              | `Read` `Query` `SetEmail` `SetPassword` `LinkIdentity` `ExportCredentials`    |
+| **UserSession**              | `Read` `Query`                                                                |
+| **UserAuthenticationMethod** | `Read` `Query`                                                                |
 
 The canonical source is [`packages/@grantjs/constants/src/permissions/resources.ts`](https://github.com/grant-js/grant/blob/main/packages/%40grantjs/constants/src/permissions/resources.ts).
 
