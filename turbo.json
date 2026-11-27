@@ -50,6 +50,7 @@
       "outputs": [".next/**", "dist/**", "build/**", ".vitepress/dist/**"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
