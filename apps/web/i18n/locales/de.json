@@ -2349,7 +2349,13 @@
       "created": "Erstellt",
       "updated": "Aktualisiert",
       "actions": "Aktionen",
-      "loading": "Berechtigungen werden geladen..."
+      "loading": "Berechtigungen werden geladen...",
+      "condition": "Bedingung"
+    },
+    "conditionChip": {
+      "title": "Bedingung",
+      "has": "Mit Bedingung",
+      "none": "Keine Bedingung"
     },
     "toolbar": {
       "tags": {

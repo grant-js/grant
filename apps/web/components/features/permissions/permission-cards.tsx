@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Permission } from '@grantjs/schema';
-import { CopyCheck, Package, Play, Tags } from 'lucide-react';
+import { Braces, CopyCheck, Package, Play, Tags } from 'lucide-react';
 
 import {
   CardBody,
@@ -25,6 +25,7 @@ import { usePermissionsStore } from '@/stores/permissions.store';
 import { PermissionActions } from './permission-actions';
 import { PermissionAudit } from './permission-audit';
 import { PermissionCardSkeleton } from './permission-card-skeleton';
+import { PermissionConditionChip } from './permission-condition-chip';
 import { PermissionNavigationButton } from './permission-navigation-button';
 
 export function PermissionCards() {
@@ -36,6 +37,7 @@ export function PermissionCards() {
       { key: 'resource', label: t('form.resource') },
       { key: 'action', label: t('form.action') },
       { key: 'tags', label: t('table.tags') },
+      { key: 'condition', label: t('table.condition') },
     ],
     [t]
   );
@@ -128,6 +130,14 @@ export function PermissionCards() {
                   {tCommon('tagCount', { count: getEntityTagCount(permission) })}
                 </RelationCountChip>
               ),
+            },
+            {
+              key: 'condition',
+              label: {
+                icon: <Braces className="h-3 w-3" />,
+                text: t('table.condition'),
+              },
+              value: <PermissionConditionChip condition={permission.condition} />,
             },
           ])}
         />
