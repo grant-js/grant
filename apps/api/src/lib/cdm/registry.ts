@@ -135,7 +135,8 @@ export function createDefaultCdmRegistry(deps: CdmEntityRegistryDeps): CdmEntity
       builder,
       deps.projectUsers,
       deps.userRoles,
-      deps.userTags
+      deps.userTags,
+      deps.groupTags
     ),
     new ProjectUserApiKeyCdmEntity(
       deps.importRepo,

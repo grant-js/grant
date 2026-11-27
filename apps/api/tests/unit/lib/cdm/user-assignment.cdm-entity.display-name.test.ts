@@ -42,7 +42,8 @@ function build(
     {} as never,
     projectUsers as never,
     { addUserRole: vi.fn(), addUserRolesForCdmImport: vi.fn().mockResolvedValue([]) } as never,
-    { addUserTag: vi.fn() } as never
+    { addUserTag: vi.fn() } as never,
+    { addGroupTag: vi.fn() } as never
   );
   const ctx = {
     projectId,
