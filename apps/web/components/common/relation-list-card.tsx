@@ -23,7 +23,7 @@ import { type RelationPageTarget, useRelationPage } from '@/hooks/common/use-rel
 import { translateNameKey } from '@/lib/translate-or-raw';
 
 /** Rows per page of a relationship card. */
-export const RELATION_LIST_PAGE_SIZE = 10;
+const RELATION_LIST_PAGE_SIZE = 10;
 
 const LINKED_ENTITY: Record<RelationPageTarget['relation'], DetailLinkedEntity> = {
   groups: 'group',
