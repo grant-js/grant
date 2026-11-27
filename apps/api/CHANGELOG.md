@@ -1,5 +1,25 @@
 # grant-api
 
+## 1.31.1
+
+### Patch Changes
+
+- 84b7dc4: A CDM import now tags a group that only users reference (`users[].groups`, listed by no role). The group's `tags` and `primaryTag` are linked as they are for a group a role lists. Before this fix, such groups were created without tags. A group tag missing from the document's `tags` section now fails the import, as it does on the role path. Re-running a `replace` import recreates the groups with their tags.
+- @grantjs/schema@1.31.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.31.0
 
 ### Minor Changes

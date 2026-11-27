@@ -3,6 +3,18 @@
 All notable platform releases (apps, Docker images, and publishable npm packages) are documented here.
 Package-specific histories also live under `packages/@grantjs/*/CHANGELOG.md`.
 
+## 1.31.1
+
+### Platform
+
+**Docker images:** tagged `:1.31.1` and `:latest` after this release.
+
+**npm packages:** `@grantjs/schema`, `@grantjs/client`, `@grantjs/server`, `@grantjs/cli` at **1.31.1** (fixed group with apps).
+
+### Patch Changes
+
+- 84b7dc4: A CDM import now tags a group that only users reference (`users[].groups`, listed by no role). The group's `tags` and `primaryTag` are linked as they are for a group a role lists. Before this fix, such groups were created without tags. A group tag missing from the document's `tags` section now fails the import, as it does on the role path. Re-running a `replace` import recreates the groups with their tags.
+
 ## 1.31.0
 
 ### Platform
