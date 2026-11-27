@@ -4,6 +4,8 @@ query GetGroupRelationsPreview(
   $withPermissions: Boolean!
   $withTags: Boolean!
   $withUsers: Boolean! = false
+  $page: Int = 1
+  $limit: Int = 10
 ) {
   groups(scope: $scope, ids: [$id], limit: 1) {
     groups {
@@ -17,10 +19,11 @@ query GetGroupRelationsPreview(
         name
         color
       }
-      users(limit: 10) @include(if: $withUsers) {
+      users(page: $page, limit: $limit) @include(if: $withUsers) {
         id
         name
       }
+      userCount @include(if: $withUsers)
     }
   }
 }

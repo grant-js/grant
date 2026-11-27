@@ -4,6 +4,8 @@ query GetPermissionRelationsPreview(
   $withTags: Boolean! = true
   $withGroups: Boolean! = false
   $withUsers: Boolean! = false
+  $page: Int = 1
+  $limit: Int = 10
 ) {
   permissions(scope: $scope, ids: [$id], limit: 1) {
     permissions {
@@ -13,14 +15,16 @@ query GetPermissionRelationsPreview(
         name
         color
       }
-      groups(limit: 10) @include(if: $withGroups) {
+      groups(page: $page, limit: $limit) @include(if: $withGroups) {
         id
         name
       }
-      users(limit: 10) @include(if: $withUsers) {
+      groupCount @include(if: $withGroups)
+      users(page: $page, limit: $limit) @include(if: $withUsers) {
         id
         name
       }
+      userCount @include(if: $withUsers)
     }
   }
 }
