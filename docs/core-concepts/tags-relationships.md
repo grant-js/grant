@@ -93,6 +93,8 @@ The permission page lists the permission's **Groups** and **Users**, and the gro
 
 ![The Groups card on a permission's page](./relationship-cards-permission-groups.jpg)
 
+![The Users card on a permission's page](./relationship-cards-permission-users.jpg)
+
 ![The Members card on a group's page, first of two pages](./relationship-cards-group-members.jpg)
 
 ## Tag color palette
