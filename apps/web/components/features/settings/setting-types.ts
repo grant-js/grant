@@ -105,4 +105,6 @@ export interface SettingCardProps {
   children: ReactNode;
   footer?: ReactNode;
   headerActions?: ReactNode;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
 }

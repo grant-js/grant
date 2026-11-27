@@ -136,12 +136,12 @@ These groups contain permissions specific to certain roles:
 
 #### Organization Groups
 
-| Group Name            | Resource     | Permissions                   | Assigned To        | Description                                          |
-| --------------------- | ------------ | ----------------------------- | ------------------ | ---------------------------------------------------- |
-| `Organization Owner`  | Organization | `update` `delete`             | Organization Owner | Full organization management                         |
-| `Organization Admin`  | Organization | `update` `delete`             | Organization Admin | Full organization management                         |
-| `Organization Dev`    | Organization | _(no additional permissions)_ | —                  | Dev has same organization access as common groups    |
-| `Organization Viewer` | Organization | _(no additional permissions)_ | —                  | Viewer has same organization access as common groups |
+| Group Name            | Resource     | Permissions                                 | Assigned To        | Description                                                 |
+| --------------------- | ------------ | ------------------------------------------- | ------------------ | ----------------------------------------------------------- |
+| `Organization Owner`  | Organization | `create` `update` `delete` `upload-picture` | Organization Owner | Full organization management, including delete (owner-only) |
+| `Organization Admin`  | Organization | _(no additional permissions)_               | Organization Admin | Admin cannot update or delete the organization              |
+| `Organization Dev`    | Organization | _(no additional permissions)_               | —                  | Dev has same organization access as common groups           |
+| `Organization Viewer` | Organization | _(no additional permissions)_               | —                  | Viewer has same organization access as common groups        |
 
 #### Project Resource Groups
 
