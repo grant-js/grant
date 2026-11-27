@@ -126,6 +126,12 @@ const RENDERERS: Partial<Record<EventType, Renderer>> = {
       named: (name) => `${name} was removed`,
       generic: 'A member was removed',
     }),
+  'organization.ownership_transferred': (e, ctx, options) =>
+    membershipMutation(e, ctx, options, 'Organization ownership transferred', {
+      you: 'You are now the owner',
+      named: (name) => `Ownership was transferred to ${name}`,
+      generic: 'Organization ownership was transferred',
+    }),
   'project.user_added': (e, ctx, options) =>
     membershipMutation(e, ctx, options, 'Project member added', {
       you: 'You were added to the project',

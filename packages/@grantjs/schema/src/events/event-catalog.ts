@@ -130,6 +130,7 @@ export const EVENT_TYPES = [
   'organization.member_added',
   'organization.member_role_changed',
   'organization.member_removed',
+  'organization.ownership_transferred',
   'project.user_added',
   'project.user_removed',
   'project.user_profile_updated',
@@ -203,6 +204,12 @@ export const EVENT_CATALOG: Readonly<Record<EventType, EventCatalogEntry>> = {
   'organization.member_added': MEMBERSHIP_SUBJECT_OWNERS,
   'organization.member_role_changed': MEMBERSHIP_SUBJECT_OWNERS,
   'organization.member_removed': MEMBERSHIP_SUBJECT_OWNERS,
+  // Both the previous owner (the actor) and the new owner (the subject) are told.
+  'organization.ownership_transferred': {
+    category: 'membership',
+    deliveryClass: 'notification',
+    audienceRule: { primitives: ['actor', 'subject'], excludeActor: false },
+  },
   'project.user_added': MEMBERSHIP_SUBJECT_OWNERS,
   'project.user_removed': MEMBERSHIP_SUBJECT_OWNERS,
   'project.user_profile_updated': MEMBERSHIP_SUBJECT_OWNERS,

@@ -181,5 +181,15 @@
     "unknownError": "Ein unbekannter Fehler ist aufgetreten",
     "tooManyRequests": "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
     "payloadTooLarge": "Der Anfragetext ist zu groß"
+  },
+  "ownershipTransfer": {
+    "notOwner": "Nur der aktuelle Eigentümer dieser Organisation kann das Eigentum übertragen",
+    "sessionRequired": "Das Eigentum kann nur von angemeldeten Benutzern übertragen werden, nicht per API-Schlüssel oder App-Token",
+    "self": "Wählen Sie ein anderes Mitglied als neuen Eigentümer",
+    "invalidSelection": "Wählen Sie genau eines: eine Rolle für den bisherigen Eigentümer oder das Verlassen der Organisation",
+    "invalidRole": "Die Rolle des bisherigen Eigentümers muss eine Organisationsrolle unterhalb von Eigentümer sein",
+    "targetNotMember": "Der neue Eigentümer muss aktuelles Mitglied dieser Organisation sein",
+    "targetDeactivated": "Das Konto des neuen Eigentümers ist deaktiviert",
+    "targetUnverified": "Der neue Eigentümer muss eine bestätigte E-Mail-Adresse haben"
   }
 }

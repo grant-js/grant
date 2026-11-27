@@ -915,6 +915,14 @@ export const vendoredOperations: CliOperation[] = [
     pathParams: [],
   },
   {
+    operationId: 'postApiOrganizationsByIdOwnershipTransfer',
+    method: 'post',
+    path: '/api/organizations/{id}/ownership-transfer',
+    tags: ['Organizations'],
+    summary: 'Transfer organization ownership',
+    pathParams: ['id'],
+  },
+  {
     operationId: 'postApiOrganizationsByIdPicture',
     method: 'post',
     path: '/api/organizations/{id}/picture',

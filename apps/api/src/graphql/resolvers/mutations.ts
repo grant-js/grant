@@ -296,6 +296,16 @@ export const Mutation = {
       organizationMutations.deleteOrganization!
     )
   ),
+  // Owner-only twice over: the permission is held by the Owner group alone, and the service
+  // checks the caller holds Owner in the organization (and is a session user, not a key).
+  transferOrganizationOwnership: requireEmailThenMfaGraphQL(
+    BLOCK_UNVERIFIED_EMAIL,
+    BLOCK_UNVERIFIED_MFA,
+    authorizeGraphQLResolver(
+      { resource: ResourceSlug.Organization, action: ResourceAction.TransferOwnership },
+      organizationMemberMutations.transferOrganizationOwnership!
+    )
+  ),
 
   // Organization Invitations (scoped - block for unverified users)
   inviteMember: requireEmailThenMfaGraphQL(

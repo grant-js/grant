@@ -20,6 +20,7 @@ export const ResourceAction = {
   LinkIdentity: 'LinkIdentity',
   ExportCredentials: 'ExportCredentials',
   SetExportableApiKeySecrets: 'SetExportableApiKeySecrets',
+  TransferOwnership: 'TransferOwnership',
 };
 
 export type ResourceAction = (typeof ResourceAction)[keyof typeof ResourceAction];
@@ -78,6 +79,7 @@ const RESOURCES: Record<ResourceSlug, ResourceTemplate> = {
       ResourceAction.Delete,
       ResourceAction.Query,
       ResourceAction.UploadPicture,
+      ResourceAction.TransferOwnership,
     ],
   },
   [ResourceSlug.Project]: {

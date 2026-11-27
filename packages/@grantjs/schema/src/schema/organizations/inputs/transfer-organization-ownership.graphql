@@ -1,0 +1,14 @@
+"""
+Moves the owner role of an organization to another member. Exactly one of `previousOwnerRoleId` and
+`leaveOrganization` must be set.
+"""
+input TransferOrganizationOwnershipInput {
+  "Organization scope: `tenant: organization`, `id` the organization id."
+  scope: Scope!
+  "User id of the current member who becomes the owner."
+  newOwnerId: ID!
+  "Role the previous owner keeps: one of the organization's roles below Owner (Admin, Dev, Viewer)."
+  previousOwnerRoleId: ID
+  "When true, the previous owner's membership is removed instead of re-assigned a role."
+  leaveOrganization: Boolean
+}
