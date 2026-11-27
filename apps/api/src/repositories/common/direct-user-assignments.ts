@@ -8,7 +8,7 @@ import type { Transaction } from '@/lib/transaction-manager.lib';
 import { accessibleIdSource } from './scoped-id-source';
 
 /** A user's assignment to a group or permission (`user_groups`, `user_permissions`). */
-export interface UserAssignmentPivot {
+interface UserAssignmentPivot {
   table: any;
   userId: any;
   ownerId: any;
@@ -16,7 +16,7 @@ export interface UserAssignmentPivot {
 }
 
 /** The same assignment made in a project (`project_user_groups`, `project_user_permissions`). */
-export interface ProjectUserAssignmentPivot extends UserAssignmentPivot {
+interface ProjectUserAssignmentPivot extends UserAssignmentPivot {
   projectId: any;
 }
 
