@@ -30,7 +30,8 @@ function build() {
     {} as never,
     projectUsers as never,
     userRoles as never,
-    { addUserTag: vi.fn() } as never
+    { addUserTag: vi.fn() } as never,
+    { addGroupTag: vi.fn() } as never
   );
   const ctx = {
     projectId,

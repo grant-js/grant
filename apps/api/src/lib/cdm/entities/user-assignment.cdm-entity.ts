@@ -4,10 +4,12 @@ import type {
   CdmPermissionRefSpec,
   CdmTeardownContext,
   ICdmEntityHandler,
+  IGroupTagService,
   IProjectUserService,
   IUserRoleService,
   IUserTagService,
 } from '@grantjs/core';
+import type { GroupCdmInput } from '@grantjs/schema';
 
 import { extractProjectUserMetadataForCdmExport } from '@/constants/cdm-import.constants';
 import { ConflictError, ValidationError } from '@/lib/errors';
@@ -32,7 +34,8 @@ const USER_ASSIGNMENT_INPUT_KEY = 'userAssignments' as const;
  * Handler for `userAssignments`. Owns:
  *
  * - direct user permissions (`user_permissions` / `project_user_permissions`),
- * - direct user groups (`user_groups` / `project_user_groups`),
+ * - direct user groups (`user_groups` / `project_user_groups`), and the `group_tags` of a
+ *   document group it creates because no role template linked it,
  * - user → project membership (`project_users` upsert + `cdmSource` metadata merge),
  * - role assignments (`user_roles` rows pointing at template-handler roles).
  */
@@ -49,7 +52,8 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
     private readonly builder: CdmEntityBuilder,
     private readonly projectUsers: IProjectUserService,
     private readonly userRoles: IUserRoleService,
-    private readonly userTags: IUserTagService
+    private readonly userTags: IUserTagService,
+    private readonly groupTags: IGroupTagService
   ) {}
 
   public validateInput(input: readonly CdmUserAssignmentInternal[]): void {
@@ -210,6 +214,7 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
           );
           groupId = created.groupId;
           ctx.produced.groupIdsByKey.set(dg.groupKey, groupId);
+          await this.linkDocumentGroupTags(ctx, dg.groupKey, groupId, doc, tx);
           ctx.result.groupsCreated += 1;
           ctx.result.groupPermissionsLinked += created.groupPermissions;
           ctx.result.projectGroupsLinked += created.projectGroups;
@@ -323,6 +328,31 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
 
     if (roleAssignments.length > 0) {
       await this.userRoles.addUserRolesForCdmImport({ assignments: roleAssignments }, tx);
+    }
+  }
+
+  /**
+   * Links a document group's `tags` (each must be in the document's `tags` section), marking
+   * `primaryTag` as primary, the same way the role-template handler tags a group it links.
+   */
+  private async linkDocumentGroupTags(
+    ctx: CdmApplyContext,
+    groupKey: string,
+    groupId: string,
+    doc: GroupCdmInput,
+    tx: Transaction
+  ): Promise<void> {
+    const tagKeys = new Set((doc.tags ?? []).map((k) => k.trim()).filter((k) => k !== ''));
+    const primaryTagKey = doc.primaryTag?.trim() ?? '';
+    for (const tagKey of tagKeys) {
+      const tagId = ctx.produced.tagIds.get(tagKey);
+      if (!tagId) {
+        throw new ValidationError(
+          `groups[${groupKey}]: unknown tagKey '${tagKey}'; must appear in the tags section`
+        );
+      }
+      await this.groupTags.addGroupTag({ groupId, tagId, isPrimary: tagKey === primaryTagKey }, tx);
+      ctx.result.groupTagsLinked += 1;
     }
   }
 
