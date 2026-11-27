@@ -28,7 +28,7 @@ type FieldResolver = (
 ) => Promise<unknown>;
 
 function setup(authorized: boolean) {
-  const isAuthorized = vi.fn(async () => ({
+  const isAuthorized = vi.fn(async (_input: unknown) => ({
     authorized,
     reason: authorized ? null : 'no permission',
   }));
