@@ -144,7 +144,7 @@ export class CdmEntityBuilder {
       naming?.groupDisplayDescription != null &&
       String(naming.groupDisplayDescription).trim() !== ''
         ? String(naming.groupDisplayDescription).trim()
-        : (description ?? `Imported group for ${externalKey}`);
+        : description;
     const groupMetadata = buildCdmEntityMetadata(
       projectId,
       'group',
@@ -366,14 +366,14 @@ export class CdmEntityBuilder {
     const groupSearchDocument = buildSearchDocument({
       kind: 'group',
       name: groupName,
-      description: description ?? `Imported group ${groupKey}`,
+      description,
       searchable: groupSearchable,
       metadata: groupMetadata,
     });
     const group = await this.groups.createGroup(
       {
         name: groupName,
-        description: description ?? `Imported group ${groupKey}`,
+        description,
         metadata: groupMetadata,
         searchDocument: groupSearchDocument,
       },
