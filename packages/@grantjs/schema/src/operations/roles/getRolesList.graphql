@@ -30,6 +30,7 @@ query GetRolesList(
         isPrimary
       }
       groupCount
+      userCount
       tagCount
     }
     totalCount

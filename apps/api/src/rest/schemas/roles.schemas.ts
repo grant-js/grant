@@ -26,9 +26,16 @@ export const roleWithRelationsSchema = roleSchema.extend({
   primaryTag: z.unknown().nullable().optional(),
   tags: z.array(z.unknown()).optional(),
   tagCount: z.number().optional(),
+  userCount: z.number().optional(),
 });
 
-const roleFieldsEnum = z.enum(['groupCount', 'permissionCount', 'primaryTag', 'tagCount']);
+const roleFieldsEnum = z.enum([
+  'groupCount',
+  'permissionCount',
+  'primaryTag',
+  'tagCount',
+  'userCount',
+]);
 const roleRelationsEnum = z.enum(['groups', 'tags']);
 
 export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).extend({
@@ -58,7 +65,7 @@ export const getRolesQuerySchema = listQuerySchema.omit({ relations: true }).ext
     .optional()
     .openapi({
       description: 'Computed fields to include in the response',
-      example: ['primaryTag', 'groupCount', 'tagCount'],
+      example: ['primaryTag', 'groupCount', 'tagCount', 'userCount'],
     }),
 });
 

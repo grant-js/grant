@@ -95,6 +95,17 @@ export interface IUserRoleService {
 
   countUserRolesByUserIds(userIds: string[], transaction?: unknown): Promise<Map<string, number>>;
 
+  countUsersByRoleIds(
+    roleIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+
+  getUserIdsByRoleId(
+    params: { roleId: string; scope: Scope },
+    transaction?: unknown
+  ): Promise<string[]>;
+
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
 
   /**
@@ -119,7 +130,11 @@ export interface IUserRoleService {
 export interface IUserGroupService {
   getUserGroups(params: QueryUserGroupsInput, transaction?: unknown): Promise<UserGroup[]>;
 
+  getUserGroupsByUserIds(userIds: string[], transaction?: unknown): Promise<UserGroup[]>;
+
   countUserGroups(params: { userId: string }, transaction?: unknown): Promise<number>;
+
+  countUserGroupsByUserIds(userIds: string[], transaction?: unknown): Promise<Map<string, number>>;
 
   countUsersByGroupIds(
     groupIds: string[],

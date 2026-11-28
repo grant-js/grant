@@ -9,6 +9,20 @@ type User implements Auditable {
   tags: [Tag!]
   primaryTag: Tag
   roleCount: Int!
+  """
+  The user's direct groups in the request's scope, not those a role brings, sorted by name.
+  `page` and `limit` page them as in the groups list (by default the lists' page size). Requires
+  `Group:Query`, the groups list's own permission; without it the field is an authorization error.
+  """
+  groups(page: Int, limit: Int): [Group!]
+  """
+  The user's direct permissions in the request's scope, not those a group or role brings, sorted
+  by name. `page` and `limit` page them as in the permissions list. Requires `Permission:Query`,
+  the permissions list's own permission; without it the field is an authorization error.
+  """
+  permissions(page: Int, limit: Int): [Permission!]
+  "The user's direct groups in the request's scope, not those a role brings."
+  groupCount: Int!
   permissionCount: Int!
   projectUserApiKeyCount: Int!
   tagCount: Int!

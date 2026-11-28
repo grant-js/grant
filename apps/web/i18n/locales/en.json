@@ -921,6 +921,8 @@
     },
     "limit": "Items per page",
     "roleCount": "{count, plural, =0 {No roles} one {# role} other {# roles}}",
+    "groupCount": "{count, plural, =0 {No groups} one {# group} other {# groups}}",
+    "permissionCount": "{count, plural, =0 {No permissions} one {# permission} other {# permissions}}",
     "apiKeyCount": "{count, plural, =0 {No API keys} one {# API key} other {# API keys}}",
     "hideSynthetic": "Hide CDM synthetic users",
     "search": {
@@ -1056,6 +1058,8 @@
       "name": "Name",
       "email": "Email",
       "roles": "Roles",
+      "groups": "Groups",
+      "permissions": "Permissions",
       "apiKeys": "API keys",
       "tags": "Tags",
       "authMethods": "Auth methods",
@@ -1780,6 +1784,7 @@
     },
     "limit": "Items per page",
     "groupCount": "{count, plural, =0 {No groups} one {# group} other {# groups}}",
+    "userCount": "{count, plural, =0 {No users} one {# user} other {# users}}",
     "hideSynthetic": "Hide CDM synthetic roles",
     "search": {
       "placeholder": "Search roles..."
@@ -1861,6 +1866,7 @@
       "name": "Name",
       "description": "Description",
       "groups": "Groups",
+      "users": "Users",
       "tags": "Tags",
       "audit": "Audit",
       "id": "ID",
@@ -2355,7 +2361,8 @@
       "updated": "Updated",
       "actions": "Actions",
       "loading": "Loading groups...",
-      "users": "Users"
+      "users": "Users",
+      "roles": "Roles"
     },
     "toolbar": {
       "tags": {
@@ -2547,6 +2554,7 @@
       "userAuthenticationMethodDev": "Developer permissions for user authentication method access",
       "userAuthenticationMethodViewer": "Viewer permissions for user authentication method access"
     },
+    "roleCount": "{count, plural, =0 {No roles} one {# role} other {# roles}}",
     "userCount": "{count, plural, =0 {No users} one {# user} other {# users}}"
   },
   "permissions": {

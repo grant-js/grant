@@ -13,9 +13,9 @@ import { useScopeFromParams } from './use-scope-from-params';
 
 /** The relationships a list's count chips preview, per entity. */
 export type RelationPreviewTarget =
-  | { entity: 'user'; relation: 'roles' | 'tags' }
-  | { entity: 'role'; relation: 'groups' | 'tags' }
-  | { entity: 'group'; relation: 'permissions' | 'users' | 'tags' }
+  | { entity: 'user'; relation: 'roles' | 'groups' | 'permissions' | 'tags' }
+  | { entity: 'role'; relation: 'groups' | 'users' | 'tags' }
+  | { entity: 'group'; relation: 'permissions' | 'users' | 'roles' | 'tags' }
   | { entity: 'permission'; relation: 'groups' | 'users' | 'tags' };
 
 interface RelationPreviewItem {
@@ -43,13 +43,23 @@ const DOCUMENTS = {
 function flagsFor(target: RelationPreviewTarget): Record<string, boolean> {
   switch (target.entity) {
     case 'user':
-      return { withRoles: target.relation === 'roles', withTags: target.relation === 'tags' };
+      return {
+        withRoles: target.relation === 'roles',
+        withGroups: target.relation === 'groups',
+        withPermissions: target.relation === 'permissions',
+        withTags: target.relation === 'tags',
+      };
     case 'role':
-      return { withGroups: target.relation === 'groups', withTags: target.relation === 'tags' };
+      return {
+        withGroups: target.relation === 'groups',
+        withUsers: target.relation === 'users',
+        withTags: target.relation === 'tags',
+      };
     case 'group':
       return {
         withPermissions: target.relation === 'permissions',
         withUsers: target.relation === 'users',
+        withRoles: target.relation === 'roles',
         withTags: target.relation === 'tags',
       };
     case 'permission':

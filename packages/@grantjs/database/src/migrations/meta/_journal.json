@@ -687,6 +687,13 @@
       "when": 1795812358498,
       "tag": "0097_relation_count_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1795880544455,
+      "tag": "0098_relation_count_indexes_roles",
+      "breakpoints": true
     }
   ]
 }

@@ -272,6 +272,12 @@ export class UserHandler extends CacheHandler {
 
   private createUserListHydrationContext(scope: Scope): UserListHydrationContext {
     return {
+      countGroups: async (userIds) => {
+        const projectId = tryProjectIdFromScope(scope);
+        return projectId
+          ? this.countUserGroupsByScope(userIds, scope)
+          : this.userGroups.countUserGroupsByUserIds(userIds);
+      },
       countPermissions: async (userIds) => {
         const projectId = tryProjectIdFromScope(scope);
         return projectId
@@ -319,6 +325,26 @@ export class UserHandler extends CacheHandler {
     for (const userRole of userRoles) {
       if (scopedRoleIdSet.has(userRole.roleId)) {
         counts.set(userRole.userId, (counts.get(userRole.userId) ?? 0) + 1);
+      }
+    }
+
+    return counts;
+  }
+
+  private async countUserGroupsByScope(
+    userIds: string[],
+    scope: Scope
+  ): Promise<Map<string, number>> {
+    const [scopedGroupIds, userGroups] = await Promise.all([
+      this.getScopedGroupIds(scope),
+      this.userGroups.getUserGroupsByUserIds(userIds),
+    ]);
+    const scopedGroupIdSet = new Set(scopedGroupIds);
+    const counts = new Map<string, number>(userIds.map((userId) => [userId, 0]));
+
+    for (const userGroup of userGroups) {
+      if (scopedGroupIdSet.has(userGroup.groupId)) {
+        counts.set(userGroup.userId, (counts.get(userGroup.userId) ?? 0) + 1);
       }
     }
 
@@ -1240,8 +1266,27 @@ export class UserHandler extends CacheHandler {
     return this.userPermissions.getUserPermissions({ userId: params.userId });
   }
 
+  public async countUserGroups(params: { userId: string }): Promise<number> {
+    return this.userGroups.countUserGroups(params);
+  }
+
   public async getUserGroups(params: { userId: string }): Promise<UserGroup[]> {
     return this.userGroups.getUserGroups({ userId: params.userId });
+  }
+
+  /** Ids of the user's direct groups, for User.groups; the groups list narrows them to the scope. */
+  public async getUserGroupIds(params: { userId: string }): Promise<string[]> {
+    const pivots = await this.userGroups.getUserGroups({ userId: params.userId });
+    return [...new Set(pivots.map((pivot) => pivot.groupId))];
+  }
+
+  /**
+   * Ids of the user's direct permissions, for User.permissions; the permissions list narrows them
+   * to the scope.
+   */
+  public async getUserPermissionIds(params: { userId: string }): Promise<string[]> {
+    const pivots = await this.userPermissions.getUserPermissions({ userId: params.userId });
+    return [...new Set(pivots.map((pivot) => pivot.permissionId))];
   }
 
   private async syncDirectUserGroupAdd(

@@ -52,8 +52,9 @@ You can include computed fields by specifying the \`fields\` query parameter:
 - \`tagCount\`: Count role's tags in the requested scope
 - \`groupCount\`: Count role's groups in the requested scope
 - \`permissionCount\`: Count role's permissions in the requested scope
+- \`userCount\`: Count users the role is assigned to directly in the requested scope
 
-Example: \`?fields=primaryTag,groupCount,tagCount\`
+Example: \`?fields=primaryTag,groupCount,tagCount,userCount\`
 
 ### Scope
 Roles are scoped to a tenant context. You must provide:

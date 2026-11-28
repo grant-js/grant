@@ -11,6 +11,7 @@ import {
   QueryRoleGroupsInput,
   RemoveRoleGroupInput,
   RoleGroup,
+  Scope,
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
@@ -95,6 +96,14 @@ export class RoleGroupService implements IRoleGroupService {
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.roleGroupRepository.countRoleGroupsByRoleIds(roleIds, transaction);
+  }
+
+  public async countRolesByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.roleGroupRepository.countRolesByGroupIds(groupIds, scope, transaction);
   }
 
   public async addRoleGroup(

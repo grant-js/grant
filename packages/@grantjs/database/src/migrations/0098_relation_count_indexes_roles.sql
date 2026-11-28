@@ -1,0 +1,2 @@
+CREATE INDEX "role_groups_group_id_idx" ON "role_groups" USING btree ("group_id") WHERE "role_groups"."deleted_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "user_roles_role_id_idx" ON "user_roles" USING btree ("role_id") WHERE "user_roles"."deleted_at" IS NULL;

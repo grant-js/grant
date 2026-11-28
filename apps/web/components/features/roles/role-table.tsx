@@ -99,6 +99,21 @@ export function RoleTable() {
       ),
     },
     {
+      key: 'users',
+      header: t('table.users'),
+      width: '120px',
+      render: (role: Role) => (
+        <RelationCountChip
+          entity="role"
+          relation="users"
+          entityId={role.id}
+          count={role.userCount ?? 0}
+        >
+          {t('userCount', { count: role.userCount ?? 0 })}
+        </RelationCountChip>
+      ),
+    },
+    {
       key: 'tags',
       header: t('table.tags'),
       width: '120px',
@@ -137,6 +152,7 @@ export function RoleTable() {
       { key: 'name', type: 'text' },
       { key: 'description', type: 'text' },
       { key: 'groups', type: 'text' },
+      { key: 'users', type: 'text' },
       { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'navigation', type: 'icon' },

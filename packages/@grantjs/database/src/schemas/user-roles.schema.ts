@@ -22,6 +22,9 @@ export const userRoles = pgTable(
     uniqueIndex('user_roles_user_id_role_id_unique')
       .on(table.userId, table.roleId)
       .where(sql`${table.deletedAt} IS NULL`),
+    index('user_roles_role_id_idx')
+      .on(table.roleId)
+      .where(sql`${table.deletedAt} IS NULL`),
   ]
 );
 

@@ -114,6 +114,21 @@ export function GroupTable() {
       ),
     },
     {
+      key: 'roles',
+      header: t('table.roles'),
+      width: '120px',
+      render: (group: Group) => (
+        <RelationCountChip
+          entity="group"
+          relation="roles"
+          entityId={group.id}
+          count={group.roleCount ?? 0}
+        >
+          {t('roleCount', { count: group.roleCount ?? 0 })}
+        </RelationCountChip>
+      ),
+    },
+    {
       key: 'tags',
       header: t('table.tags'),
       width: '120px',
@@ -153,6 +168,7 @@ export function GroupTable() {
       { key: 'description', type: 'text' },
       { key: 'permissions', type: 'text' },
       { key: 'users', type: 'text' },
+      { key: 'roles', type: 'text' },
       { key: 'tags', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'navigation', type: 'icon' },

@@ -112,6 +112,16 @@ export interface IUserRoleRepository {
   getUserRolesByUserIds(userIds: string[], transaction?: unknown): Promise<UserRole[]>;
   countUserRoles(params: { userId: string }, transaction?: unknown): Promise<number>;
   countUserRolesByUserIds(userIds: string[], transaction?: unknown): Promise<Map<string, number>>;
+  /** Users each role is directly assigned to in the scope (`user_roles`), one grouped query. */
+  countUsersByRoleIds(
+    roleIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+  getUserIdsByRoleId(
+    params: { roleId: string; scope: Scope },
+    transaction?: unknown
+  ): Promise<string[]>;
   addUserRole(params: AddUserRoleInput, transaction?: unknown): Promise<UserRole>;
   addUserRoles(params: readonly AddUserRoleInput[], transaction?: unknown): Promise<UserRole[]>;
   softDeleteUserRole(params: RemoveUserRoleInput, transaction?: unknown): Promise<UserRole>;
@@ -120,7 +130,9 @@ export interface IUserRoleRepository {
 
 export interface IUserGroupRepository {
   getUserGroups(params: QueryUserGroupsInput, transaction?: unknown): Promise<UserGroup[]>;
+  getUserGroupsByUserIds(userIds: string[], transaction?: unknown): Promise<UserGroup[]>;
   countUserGroups(params: { userId: string }, transaction?: unknown): Promise<number>;
+  countUserGroupsByUserIds(userIds: string[], transaction?: unknown): Promise<Map<string, number>>;
   /** Direct members of each group in the scope; memberships through roles are not counted. */
   countUsersByGroupIds(
     groupIds: string[],

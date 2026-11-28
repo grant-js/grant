@@ -38,6 +38,21 @@ export const rolePermissionCountResolver: RoleResolvers<GraphqlContext>['permiss
   return context.handlers.roles.countRolePermissions({ roleId: parent.id });
 };
 
+export const roleUserCountResolver: RoleResolvers<GraphqlContext>['userCount'] = async (
+  parent,
+  _args,
+  context
+) => {
+  if (typeof parent.userCount === 'number') {
+    return parent.userCount;
+  }
+  const scope = context.user?.scope;
+  if (!scope) {
+    return 0;
+  }
+  return context.handlers.roles.countRoleUsers({ roleId: parent.id, scope });
+};
+
 export const roleTagCountResolver: RoleResolvers<GraphqlContext>['tagCount'] = async (
   parent,
   _args,

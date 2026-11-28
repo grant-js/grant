@@ -61,10 +61,11 @@ You can include computed fields by specifying the \`fields\` query parameter:
 - \`primaryTag\`: Load the user's primary tag in the requested scope
 - \`tagCount\`: Count user's tags in the requested scope
 - \`roleCount\`: Count user's roles in the requested scope
+- \`groupCount\`: Count user's direct groups in the requested scope (not those a role brings)
 - \`permissionCount\`: Count user's direct permissions in the requested scope
 - \`projectUserApiKeyCount\`: Count user's project API keys in the requested scope
 
-Example: \`?fields=primaryTag,roleCount,tagCount\`
+Example: \`?fields=primaryTag,roleCount,tagCount,groupCount\`
 
 ### Scope
 Users are scoped to a tenant context. You must provide:

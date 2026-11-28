@@ -973,6 +973,14 @@ export type Group = Auditable & {
   permissionCount: Scalars['Int']['output'];
   permissions?: Maybe<Array<Permission>>;
   primaryTag?: Maybe<Tag>;
+  /** Roles of the request's scope that include the group. */
+  roleCount: Scalars['Int']['output'];
+  /**
+   * Roles of the request's scope that include the group, sorted by name. `page` and `limit` page
+   * them as in the roles list (by default the lists' page size). Requires `Role:Query`, the roles
+   * list's own permission; without it the field is an authorization error.
+   */
+  roles?: Maybe<Array<Role>>;
   tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
@@ -985,6 +993,11 @@ export type Group = Auditable & {
    * authorization error.
    */
   users?: Maybe<Array<User>>;
+};
+
+export type GroupRolesArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type GroupUsersArgs = {
@@ -3675,6 +3688,19 @@ export type Role = Auditable & {
   tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+  /** Users the role is assigned to directly in the request's scope. */
+  userCount: Scalars['Int']['output'];
+  /**
+   * Users the role is assigned to directly in the request's scope, sorted by name. `page` and
+   * `limit` page them as in the users list (by default the lists' page size). Requires
+   * `User:Query`, the users list's own permission; without it the field is an authorization error.
+   */
+  users?: Maybe<Array<User>>;
+};
+
+export type RoleUsersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RoleCdmInput = {
@@ -4477,6 +4503,14 @@ export type User = Auditable & {
   authenticationMethods?: Maybe<Array<UserAuthenticationMethod>>;
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
+  /** The user's direct groups in the request's scope, not those a role brings. */
+  groupCount: Scalars['Int']['output'];
+  /**
+   * The user's direct groups in the request's scope, not those a role brings, sorted by name.
+   * `page` and `limit` page them as in the groups list (by default the lists' page size). Requires
+   * `Group:Query`, the groups list's own permission; without it the field is an authorization error.
+   */
+  groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
@@ -4488,6 +4522,12 @@ export type User = Auditable & {
    */
   passwordCredential?: Maybe<ProjectUserPasswordCredential>;
   permissionCount: Scalars['Int']['output'];
+  /**
+   * The user's direct permissions in the request's scope, not those a group or role brings, sorted
+   * by name. `page` and `limit` page them as in the permissions list. Requires `Permission:Query`,
+   * the permissions list's own permission; without it the field is an authorization error.
+   */
+  permissions?: Maybe<Array<Permission>>;
   pictureUrl?: Maybe<Scalars['String']['output']>;
   primaryTag?: Maybe<Tag>;
   projectUserApiKeyCount: Scalars['Int']['output'];
@@ -4498,6 +4538,16 @@ export type User = Auditable & {
   updatedAt: Scalars['Date']['output'];
   userGroups?: Maybe<Array<UserGroup>>;
   userPermissions?: Maybe<Array<UserPermission>>;
+};
+
+export type UserGroupsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UserPermissionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type UserApiKeyCdmInput = {

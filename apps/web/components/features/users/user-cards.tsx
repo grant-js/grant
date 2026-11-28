@@ -4,7 +4,15 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { User } from '@grantjs/schema';
-import { KeyRound, LogIn, Shield, Tags, UserPlus } from 'lucide-react';
+import {
+  Group as GroupIcon,
+  KeyRound,
+  LogIn,
+  Shield,
+  ShieldCheck,
+  Tags,
+  UserPlus,
+} from 'lucide-react';
 
 import {
   CardBody,
@@ -45,6 +53,8 @@ export function UserCards() {
   const cardFields = useMemo(
     () => [
       { key: 'roles', label: t('form.roles') },
+      { key: 'groups', label: t('table.groups') },
+      { key: 'permissions', label: t('table.permissions') },
       { key: 'apiKeys', label: t('form.apiKeys') },
       { key: 'authMethods', label: t('form.authMethods') },
       { key: 'tags', label: t('table.tags') },
@@ -118,6 +128,40 @@ export function UserCards() {
                   count={user.roleCount ?? 0}
                 >
                   {t('roleCount', { count: user.roleCount ?? 0 })}
+                </RelationCountChip>
+              ),
+            },
+            {
+              key: 'groups',
+              label: {
+                icon: <GroupIcon className="h-3 w-3" />,
+                text: t('table.groups'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="user"
+                  relation="groups"
+                  entityId={user.id}
+                  count={user.groupCount ?? 0}
+                >
+                  {t('groupCount', { count: user.groupCount ?? 0 })}
+                </RelationCountChip>
+              ),
+            },
+            {
+              key: 'permissions',
+              label: {
+                icon: <ShieldCheck className="h-3 w-3" />,
+                text: t('table.permissions'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="user"
+                  relation="permissions"
+                  entityId={user.id}
+                  count={user.permissionCount ?? 0}
+                >
+                  {t('permissionCount', { count: user.permissionCount ?? 0 })}
                 </RelationCountChip>
               ),
             },

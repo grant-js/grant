@@ -115,6 +115,36 @@ export function UserTable() {
       ),
     },
     {
+      key: 'groups',
+      header: t('table.groups'),
+      width: '120px',
+      render: (user: User) => (
+        <RelationCountChip
+          entity="user"
+          relation="groups"
+          entityId={user.id}
+          count={user.groupCount ?? 0}
+        >
+          {t('groupCount', { count: user.groupCount ?? 0 })}
+        </RelationCountChip>
+      ),
+    },
+    {
+      key: 'permissions',
+      header: t('table.permissions'),
+      width: '120px',
+      render: (user: User) => (
+        <RelationCountChip
+          entity="user"
+          relation="permissions"
+          entityId={user.id}
+          count={user.permissionCount ?? 0}
+        >
+          {t('permissionCount', { count: user.permissionCount ?? 0 })}
+        </RelationCountChip>
+      ),
+    },
+    {
       key: 'apiKeys',
       header: t('table.apiKeys'),
       width: '120px',
@@ -171,6 +201,8 @@ export function UserTable() {
       { key: 'name', type: 'text' },
       { key: 'email', type: 'text' },
       { key: 'roles', type: 'text' },
+      { key: 'groups', type: 'text' },
+      { key: 'permissions', type: 'text' },
       { key: 'apiKeys', type: 'text' },
       { key: 'authMethods', type: 'list' },
       { key: 'tags', type: 'text' },

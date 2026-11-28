@@ -49,11 +49,25 @@ export class UserGroupRepository
     return this.query(params, transaction);
   }
 
+  public async getUserGroupsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserGroup[]> {
+    return this.queryByFieldValues('userId', userIds, transaction);
+  }
+
   public async countUserGroups(
     params: { userId: string },
     transaction?: Transaction
   ): Promise<number> {
     return this.countActive({ userId: params.userId }, transaction);
+  }
+
+  public async countUserGroupsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.countActiveByFieldValues('userId', userIds, transaction);
   }
 
   public async countUsersByGroupIds(

@@ -89,6 +89,7 @@ export class RoleHandler extends CacheHandler {
     return {
       countGroups: (roleIds) => this.roleGroups.countRoleGroupsByRoleIds(roleIds),
       countPermissions: (roleIds) => this.rolePermissions.countRolePermissionsByRoleIds(roleIds),
+      countUsers: (roleIds) => this.userRoles.countUsersByRoleIds(roleIds, scope),
       loadScopedTags: async (roleIds) => {
         const pivots = await this.roleTags.getRoleTagsByRoleIds(roleIds);
         return this.hydrateScopedTagsForOwners({
@@ -330,6 +331,17 @@ export class RoleHandler extends CacheHandler {
 
   public async countRoleGroups(params: { roleId: string }): Promise<number> {
     return this.roleGroups.countRoleGroups(params);
+  }
+
+  /** Direct holders of the role in the scope (Role.userCount outside a list). */
+  public async countRoleUsers(params: { roleId: string; scope: Scope }): Promise<number> {
+    const counts = await this.userRoles.countUsersByRoleIds([params.roleId], params.scope);
+    return counts.get(params.roleId) ?? 0;
+  }
+
+  /** Ids of the users the role is directly assigned to in the scope, for Role.users. */
+  public async getRoleUserIds(params: { roleId: string; scope: Scope }): Promise<string[]> {
+    return this.userRoles.getUserIdsByRoleId(params);
   }
 
   public async getRolePermissions(params: { roleId: string }): Promise<RolePermission[]> {

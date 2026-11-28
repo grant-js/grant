@@ -23,6 +23,9 @@ export const roleGroups = pgTable(
       .on(table.roleId, table.groupId)
       .where(sql`${table.deletedAt} IS NULL`),
     index('role_groups_deleted_at_idx').on(table.deletedAt),
+    index('role_groups_group_id_idx')
+      .on(table.groupId)
+      .where(sql`${table.deletedAt} IS NULL`),
   ]
 );
 

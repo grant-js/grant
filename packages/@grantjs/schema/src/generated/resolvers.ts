@@ -1430,6 +1430,13 @@ export type GroupResolvers<
   permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   permissions?: Resolver<Types.Maybe<Array<ResolversTypes['Permission']>>, ParentType, ContextType>;
   primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
+  roleCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  roles?: Resolver<
+    Types.Maybe<Array<ResolversTypes['Role']>>,
+    ParentType,
+    ContextType,
+    Partial<Types.GroupRolesArgs>
+  >;
   tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
@@ -3382,6 +3389,13 @@ export type RoleResolvers<
   tagCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   tags?: Resolver<Types.Maybe<Array<ResolversTypes['Tag']>>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
+  userCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  users?: Resolver<
+    Types.Maybe<Array<ResolversTypes['User']>>,
+    ParentType,
+    ContextType,
+    Partial<Types.RoleUsersArgs>
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3651,6 +3665,13 @@ export type UserResolvers<
   >;
   createdAt?: Resolver<ResolversTypes['Date'], ParentType, ContextType>;
   deletedAt?: Resolver<Types.Maybe<ResolversTypes['Date']>, ParentType, ContextType>;
+  groupCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  groups?: Resolver<
+    Types.Maybe<Array<ResolversTypes['Group']>>,
+    ParentType,
+    ContextType,
+    Partial<Types.UserGroupsArgs>
+  >;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes['JSON'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -3660,6 +3681,12 @@ export type UserResolvers<
     ContextType
   >;
   permissionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  permissions?: Resolver<
+    Types.Maybe<Array<ResolversTypes['Permission']>>,
+    ParentType,
+    ContextType,
+    Partial<Types.UserPermissionsArgs>
+  >;
   pictureUrl?: Resolver<Types.Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   primaryTag?: Resolver<Types.Maybe<ResolversTypes['Tag']>, ParentType, ContextType>;
   projectUserApiKeyCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;

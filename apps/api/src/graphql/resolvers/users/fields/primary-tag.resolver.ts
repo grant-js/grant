@@ -27,6 +27,17 @@ export const userRoleCountResolver: UserResolvers<GraphqlContext>['roleCount'] =
   return context.handlers.users.countUserRoles({ userId: parent.id });
 };
 
+export const userGroupCountResolver: UserResolvers<GraphqlContext>['groupCount'] = async (
+  parent,
+  _args,
+  context
+) => {
+  if (typeof parent.groupCount === 'number') {
+    return parent.groupCount;
+  }
+  return context.handlers.users.countUserGroups({ userId: parent.id });
+};
+
 export const userPermissionCountResolver: UserResolvers<GraphqlContext>['permissionCount'] = async (
   parent,
   _args,

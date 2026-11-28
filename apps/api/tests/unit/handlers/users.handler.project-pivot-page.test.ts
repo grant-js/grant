@@ -13,6 +13,7 @@ function user(id: string): User {
     id,
     name: id,
     metadata: {},
+    groupCount: 0,
     permissionCount: 0,
     projectUserApiKeyCount: 0,
     roleCount: 0,

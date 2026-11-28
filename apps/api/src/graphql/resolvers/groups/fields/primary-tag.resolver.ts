@@ -39,6 +39,21 @@ export const groupUserCountResolver: GroupResolvers<GraphqlContext>['userCount']
   return context.handlers.groups.countGroupUsers({ groupId: parent.id, scope });
 };
 
+export const groupRoleCountResolver: GroupResolvers<GraphqlContext>['roleCount'] = async (
+  parent,
+  _args,
+  context
+) => {
+  if (typeof parent.roleCount === 'number') {
+    return parent.roleCount;
+  }
+  const scope = context.user?.scope;
+  if (!scope) {
+    return 0;
+  }
+  return context.handlers.groups.countGroupRoles({ groupId: parent.id, scope });
+};
+
 export const groupTagCountResolver: GroupResolvers<GraphqlContext>['tagCount'] = async (
   parent,
   _args,

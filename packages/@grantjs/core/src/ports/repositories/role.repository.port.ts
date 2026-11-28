@@ -20,6 +20,7 @@ import type {
   RolePage,
   RolePermission,
   RoleTag,
+  Scope,
   UpdateRoleInput,
   UpdateRoleTagInput,
 } from '@grantjs/schema';
@@ -54,6 +55,12 @@ export interface IRoleGroupRepository {
   getRoleGroups(params: QueryRoleGroupsInput, transaction?: unknown): Promise<RoleGroup[]>;
   countRoleGroups(params: { roleId: string }, transaction?: unknown): Promise<number>;
   countRoleGroupsByRoleIds(roleIds: string[], transaction?: unknown): Promise<Map<string, number>>;
+  /** Roles of the scope that include each group, one grouped query. */
+  countRolesByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
   addRoleGroup(params: AddRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
   softDeleteRoleGroup(params: RemoveRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
   hardDeleteRoleGroup(params: RemoveRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
