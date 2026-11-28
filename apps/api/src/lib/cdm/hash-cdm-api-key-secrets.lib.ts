@@ -41,18 +41,19 @@ function collectCdmDocumentApiKeys(input: CdmDocumentInput): CdmDocumentApiKeyFo
   let documentIndex = 0;
   for (const user of input.users ?? []) {
     for (const key of user.apiKeys ?? []) {
+      const index = documentIndex;
+      documentIndex += 1;
       const secret = key.clientSecret?.trim() ?? '';
       if (!secret) {
         continue;
       }
       const externalKey = key.key?.trim() ? key.key.trim() : null;
       keys.push({
-        classifyKey: externalKey ?? `__anon:${documentIndex}`,
+        classifyKey: externalKey ?? `__anon:${index}`,
         externalKey,
         secret,
-        documentIndex,
+        documentIndex: index,
       });
-      documentIndex += 1;
     }
   }
   return keys;
