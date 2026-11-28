@@ -184,6 +184,7 @@ export async function createApp(): Promise<CreatedApp> {
               port: config.redis.port,
               password: config.redis.password,
               db: config.redis.database,
+              prefix: config.redis.keyPrefix,
             }
           : undefined,
       dynamodb: config.cache.strategy === 'dynamodb' ? config.cache.dynamodb : undefined,

@@ -10,10 +10,16 @@ import { ConflictError, NotFoundError } from '@grantjs/core';
 import type { Scope } from '@grantjs/schema';
 import { Job, JobSchedulerJson, Queue, Worker } from 'bullmq';
 
-interface BullMQConfig {
+interface BullMQConnection {
   host: string;
   port: number;
   password?: string;
+  db?: number;
+}
+
+interface BullMQConfig extends BullMQConnection {
+  /** Namespace for every queue key (BullMQ default `bull`). Deployments sharing a Redis need distinct values. */
+  prefix?: string;
 }
 
 interface BullMQJobOptions {
@@ -39,16 +45,20 @@ export class BullMQJobAdapter implements IJobAdapter {
   private queue: Queue;
   private workers: Map<string, Worker> = new Map();
   private handlers: Map<string, JobHandler> = new Map();
-  private connection: BullMQConfig;
+  private connection: BullMQConnection;
+  private prefix: string | undefined;
 
   constructor(
     config: BullMQConfig,
     jobOptions: BullMQJobOptions,
     private readonly logger: ILogger
   ) {
-    this.connection = config;
+    const { prefix, ...connection } = config;
+    this.connection = connection;
+    this.prefix = prefix;
     this.queue = new Queue('grant-jobs', {
-      connection: config,
+      connection,
+      prefix,
       defaultJobOptions: {
         attempts: jobOptions.attempts,
         backoff: {
@@ -111,6 +121,7 @@ export class BullMQJobAdapter implements IJobAdapter {
         },
         {
           connection: this.connection,
+          prefix: this.prefix,
           concurrency: 1,
         }
       );

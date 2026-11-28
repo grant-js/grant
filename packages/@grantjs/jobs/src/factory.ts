@@ -13,6 +13,8 @@ interface JobFactoryConfig {
     host: string;
     port: number;
     password?: string;
+    db?: number;
+    prefix?: string;
   };
   aws?: AwsJobConfig;
   bullmqJobOptions?: {

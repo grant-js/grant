@@ -15,6 +15,7 @@ interface CacheConfig {
     password?: string;
     /** Redis logical database index (0–15 typical). Must match across all API replicas. */
     db?: number;
+    /** Namespace for every key, ahead of the per-entity segment (default `grant:`). */
     prefix?: string;
   };
   /** `namespace` is supplied per entity type by the factory, not by the caller. */
@@ -80,7 +81,7 @@ export class CacheFactory {
         return new RedisCacheAdapter(
           {
             ...config.redis,
-            prefix: namespace ? `grant:${namespace}:` : 'grant:cache:',
+            prefix: `${config.redis.prefix || 'grant:'}${namespace ?? 'cache'}:`,
           },
           loggerFactory?.createLogger(`RedisCacheAdapter:${namespace ?? 'default'}`) ?? noopLogger
         );
