@@ -4,11 +4,26 @@ import {
   AddUserRoleInput,
   QueryUserRolesInput,
   RemoveUserRoleInput,
+  Scope,
   UserRole,
 } from '@grantjs/schema';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { PivotRepository } from '@/repositories/common';
+import {
+  countDirectUsersByOwnerIds,
+  getDirectUserIdsByOwnerId,
+  PivotRepository,
+} from '@/repositories/common';
+
+/** `user_roles` is the only role assignment table: a project reads it through its users. */
+const ROLE_ASSIGNMENT_PIVOTS = {
+  global: {
+    table: userRoles,
+    userId: userRoles.userId,
+    ownerId: userRoles.roleId,
+    deletedAt: userRoles.deletedAt,
+  },
+};
 
 export class UserRoleRepository
   extends PivotRepository<UserRoleModel, UserRole>
@@ -47,6 +62,31 @@ export class UserRoleRepository
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.countActiveByFieldValues('userId', userIds, transaction);
+  }
+
+  public async countUsersByRoleIds(
+    roleIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return countDirectUsersByOwnerIds(
+      transaction || this.db,
+      ROLE_ASSIGNMENT_PIVOTS,
+      roleIds,
+      scope
+    );
+  }
+
+  public async getUserIdsByRoleId(
+    params: { roleId: string; scope: Scope },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return getDirectUserIdsByOwnerId(
+      transaction || this.db,
+      ROLE_ASSIGNMENT_PIVOTS,
+      params.roleId,
+      params.scope
+    );
   }
 
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {

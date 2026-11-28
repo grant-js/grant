@@ -272,6 +272,12 @@ export class UserHandler extends CacheHandler {
 
   private createUserListHydrationContext(scope: Scope): UserListHydrationContext {
     return {
+      countGroups: async (userIds) => {
+        const projectId = tryProjectIdFromScope(scope);
+        return projectId
+          ? this.countUserGroupsByScope(userIds, scope)
+          : this.userGroups.countUserGroupsByUserIds(userIds);
+      },
       countPermissions: async (userIds) => {
         const projectId = tryProjectIdFromScope(scope);
         return projectId
@@ -319,6 +325,26 @@ export class UserHandler extends CacheHandler {
     for (const userRole of userRoles) {
       if (scopedRoleIdSet.has(userRole.roleId)) {
         counts.set(userRole.userId, (counts.get(userRole.userId) ?? 0) + 1);
+      }
+    }
+
+    return counts;
+  }
+
+  private async countUserGroupsByScope(
+    userIds: string[],
+    scope: Scope
+  ): Promise<Map<string, number>> {
+    const [scopedGroupIds, userGroups] = await Promise.all([
+      this.getScopedGroupIds(scope),
+      this.userGroups.getUserGroupsByUserIds(userIds),
+    ]);
+    const scopedGroupIdSet = new Set(scopedGroupIds);
+    const counts = new Map<string, number>(userIds.map((userId) => [userId, 0]));
+
+    for (const userGroup of userGroups) {
+      if (scopedGroupIdSet.has(userGroup.groupId)) {
+        counts.set(userGroup.userId, (counts.get(userGroup.userId) ?? 0) + 1);
       }
     }
 
@@ -1238,6 +1264,10 @@ export class UserHandler extends CacheHandler {
 
   public async getUserPermissions(params: { userId: string }): Promise<UserPermission[]> {
     return this.userPermissions.getUserPermissions({ userId: params.userId });
+  }
+
+  public async countUserGroups(params: { userId: string }): Promise<number> {
+    return this.userGroups.countUserGroups(params);
   }
 
   public async getUserGroups(params: { userId: string }): Promise<UserGroup[]> {

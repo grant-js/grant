@@ -3,6 +3,7 @@ import { userGroupsResolver as userGroups } from './groups.resolver';
 import { userPasswordCredentialResolver as passwordCredential } from './password-credential.resolver';
 import { userPermissionsResolver as userPermissions } from './permissions.resolver';
 import {
+  userGroupCountResolver as groupCount,
   userPermissionCountResolver as permissionCount,
   userPrimaryTagResolver as primaryTag,
   userProjectUserApiKeyCountResolver as projectUserApiKeyCount,
@@ -19,6 +20,7 @@ export const userResolver = {
   userPermissions,
   primaryTag,
   roleCount,
+  groupCount,
   permissionCount,
   projectUserApiKeyCount,
   tagCount,

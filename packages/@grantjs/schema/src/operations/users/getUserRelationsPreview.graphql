@@ -1,4 +1,11 @@
-query GetUserRelationsPreview($scope: Scope!, $id: ID!, $withRoles: Boolean!, $withTags: Boolean!) {
+query GetUserRelationsPreview(
+  $scope: Scope!
+  $id: ID!
+  $withRoles: Boolean!
+  $withTags: Boolean!
+  $withGroups: Boolean! = false
+  $withPermissions: Boolean! = false
+) {
   users(scope: $scope, ids: [$id], limit: 1) {
     users {
       id
@@ -11,6 +18,22 @@ query GetUserRelationsPreview($scope: Scope!, $id: ID!, $withRoles: Boolean!, $w
         name
         color
       }
+      userGroups @include(if: $withGroups) {
+        groupId
+        group(scope: $scope) {
+          id
+          name
+        }
+      }
+      groupCount @include(if: $withGroups)
+      userPermissions @include(if: $withPermissions) {
+        permissionId
+        permission(scope: $scope) {
+          id
+          name
+        }
+      }
+      permissionCount @include(if: $withPermissions)
     }
   }
 }

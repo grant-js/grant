@@ -4,6 +4,7 @@ query GetGroupRelationsPreview(
   $withPermissions: Boolean!
   $withTags: Boolean!
   $withUsers: Boolean! = false
+  $withRoles: Boolean! = false
   $page: Int = 1
   $limit: Int = 10
 ) {
@@ -28,6 +29,11 @@ query GetGroupRelationsPreview(
         }
       }
       userCount @include(if: $withUsers)
+      roles(page: $page, limit: $limit) @include(if: $withRoles) {
+        id
+        name
+      }
+      roleCount @include(if: $withRoles)
     }
   }
 }

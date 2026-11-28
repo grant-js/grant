@@ -919,6 +919,8 @@
     },
     "limit": "Einträge pro Seite",
     "roleCount": "{count, plural, =0 {Keine Rollen} one {# Rolle} other {# Rollen}}",
+    "groupCount": "{count, plural, =0 {Keine Gruppen} one {# Gruppe} other {# Gruppen}}",
+    "permissionCount": "{count, plural, =0 {Keine Berechtigungen} one {# Berechtigung} other {# Berechtigungen}}",
     "apiKeyCount": "{count, plural, =0 {Keine API-Schlüssel} one {# API-Schlüssel} other {# API-Schlüssel}}",
     "search": {
       "placeholder": "Benutzer suchen..."
@@ -1041,6 +1043,8 @@
       "name": "Name",
       "email": "E-Mail",
       "roles": "Rollen",
+      "groups": "Gruppen",
+      "permissions": "Berechtigungen",
       "apiKeys": "API-Schlüssel",
       "tags": "Tags",
       "authMethods": "Anmeldemethoden",
@@ -1473,6 +1477,7 @@
       "default": "Standard"
     },
     "limit": "Einträge pro Seite",
+    "userCount": "{count, plural, =0 {Keine Benutzer} one {# Benutzer} other {# Benutzer}}",
     "search": {
       "placeholder": "Rollen suchen..."
     },
@@ -1541,6 +1546,7 @@
       "name": "Name",
       "description": "Beschreibung",
       "groups": "Gruppen",
+      "users": "Benutzer",
       "tags": "Tags",
       "audit": "Audit",
       "id": "ID",
@@ -2060,7 +2066,8 @@
       "updated": "Aktualisiert",
       "actions": "Aktionen",
       "loading": "Gruppen werden geladen...",
-      "users": "Benutzer"
+      "users": "Benutzer",
+      "roles": "Rollen"
     },
     "toolbar": {
       "tags": {
@@ -2252,6 +2259,7 @@
       "userAuthenticationMethodDev": "Entwicklerberechtigungen für Benutzerauthentifizierungsmethodenzugriff",
       "userAuthenticationMethodViewer": "Betrachterberechtigungen für Benutzerauthentifizierungsmethodenzugriff"
     },
+    "roleCount": "{count, plural, =0 {Keine Rollen} one {# Rolle} other {# Rollen}}",
     "userCount": "{count, plural, =0 {Keine Benutzer} one {# Benutzer} other {# Benutzer}}"
   },
   "permissions": {

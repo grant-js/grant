@@ -13,7 +13,14 @@ const projectScopeId = '123e4567-e89b-12d3-a456-426614174000';
 describe('REST aggregated field query schemas', () => {
   it('accepts computed user fields separately from relations', async () => {
     const query = await getUsersQuerySchema.parseAsync({
-      fields: ['primaryTag', 'roleCount', 'permissionCount', 'projectUserApiKeyCount', 'tagCount'],
+      fields: [
+        'primaryTag',
+        'roleCount',
+        'groupCount',
+        'permissionCount',
+        'projectUserApiKeyCount',
+        'tagCount',
+      ],
       relations: ['roles', 'tags'],
       scopeId: projectScopeId,
       tenant: Tenant.AccountProject,
@@ -22,6 +29,7 @@ describe('REST aggregated field query schemas', () => {
     expect(query.fields).toEqual([
       'primaryTag',
       'roleCount',
+      'groupCount',
       'permissionCount',
       'projectUserApiKeyCount',
       'tagCount',
@@ -32,22 +40,22 @@ describe('REST aggregated field query schemas', () => {
   it('accepts computed role, group, and permission fields', async () => {
     await expect(
       getRolesQuerySchema.parseAsync({
-        fields: ['primaryTag', 'groupCount', 'permissionCount', 'tagCount'],
+        fields: ['primaryTag', 'groupCount', 'permissionCount', 'tagCount', 'userCount'],
         scopeId: projectScopeId,
         tenant: Tenant.AccountProject,
       })
     ).resolves.toMatchObject({
-      fields: ['primaryTag', 'groupCount', 'permissionCount', 'tagCount'],
+      fields: ['primaryTag', 'groupCount', 'permissionCount', 'tagCount', 'userCount'],
     });
 
     await expect(
       getGroupsQuerySchema.parseAsync({
-        fields: ['primaryTag', 'permissionCount', 'tagCount', 'userCount'],
+        fields: ['primaryTag', 'permissionCount', 'tagCount', 'userCount', 'roleCount'],
         scopeId: projectScopeId,
         tenant: Tenant.AccountProject,
       })
     ).resolves.toMatchObject({
-      fields: ['primaryTag', 'permissionCount', 'tagCount', 'userCount'],
+      fields: ['primaryTag', 'permissionCount', 'tagCount', 'userCount', 'roleCount'],
     });
 
     await expect(

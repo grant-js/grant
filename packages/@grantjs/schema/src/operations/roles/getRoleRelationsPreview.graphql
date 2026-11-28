@@ -3,6 +3,9 @@ query GetRoleRelationsPreview(
   $id: ID!
   $withGroups: Boolean!
   $withTags: Boolean!
+  $withUsers: Boolean! = false
+  $page: Int = 1
+  $limit: Int = 10
 ) {
   roles(scope: $scope, ids: [$id], limit: 1) {
     roles {
@@ -16,6 +19,15 @@ query GetRoleRelationsPreview(
         name
         color
       }
+      users(page: $page, limit: $limit) @include(if: $withUsers) {
+        id
+        name
+        authenticationMethods {
+          provider
+          providerId
+        }
+      }
+      userCount @include(if: $withUsers)
     }
   }
 }

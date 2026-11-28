@@ -34,6 +34,7 @@ export function GroupCards() {
     () => [
       { key: 'permissions', label: t('form.permissions') },
       { key: 'users', label: t('table.users') },
+      { key: 'roles', label: t('table.roles') },
       { key: 'tags', label: t('table.tags') },
     ],
     [t]
@@ -120,6 +121,23 @@ export function GroupCards() {
                   count={group.userCount ?? 0}
                 >
                   {t('userCount', { count: group.userCount ?? 0 })}
+                </RelationCountChip>
+              ),
+            },
+            {
+              key: 'roles',
+              label: {
+                icon: <Shield className="h-3 w-3" />,
+                text: t('table.roles'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="group"
+                  relation="roles"
+                  entityId={group.id}
+                  count={group.roleCount ?? 0}
+                >
+                  {t('roleCount', { count: group.roleCount ?? 0 })}
                 </RelationCountChip>
               ),
             },

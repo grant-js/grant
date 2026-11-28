@@ -7,7 +7,7 @@ import type { Transaction } from '@/lib/transaction-manager.lib';
 
 import { accessibleIdSource } from './scoped-id-source';
 
-/** A user's assignment to a group or permission (`user_groups`, `user_permissions`). */
+/** A user's assignment to a group, permission or role (`user_groups`, `user_permissions`, `user_roles`). */
 interface UserAssignmentPivot {
   table: any;
   userId: any;
@@ -22,16 +22,18 @@ interface ProjectUserAssignmentPivot extends UserAssignmentPivot {
 
 interface DirectAssignmentPivots {
   global: UserAssignmentPivot;
-  project: ProjectUserAssignmentPivot;
+  /** Absent when the assignment has no project-scoped table (roles: `user_roles` only). */
+  project?: ProjectUserAssignmentPivot;
 }
 
 type Db = DbSchema | Transaction;
 
 /**
- * Where the users a group or permission is directly assigned to come from in a scope.
+ * Where the users a group, permission or role is directly assigned to come from in a scope.
  *
  * - **Project:** the project's own assignment rows joined to the live global row: the pair
  *   the authorization engine reads for a project (`GrantRepository.getDirect*IdsForUser`).
+ *   Without a project pivot (roles), the global rows of the project's users.
  * - **Organization:** the global rows of the organization's users, the users its list shows.
  * - **Account:** none; an account scope has no users of its own.
  *
@@ -48,7 +50,7 @@ function directAssignmentSource(
   const { global, project } = pivots;
   const projectId = tryProjectIdFromScope(scope);
 
-  if (projectId) {
+  if (projectId && project) {
     return {
       kind: 'project',
       ownerId: project.ownerId,
@@ -84,7 +86,7 @@ function fromSource(
   select: any
 ): any {
   const { global, project } = pivots;
-  if (kind === 'scope') {
+  if (kind === 'scope' || !project) {
     return db.select(select).from(global.table);
   }
   return db
@@ -100,7 +102,7 @@ function fromSource(
     );
 }
 
-/** Users directly assigned each owner (group or permission) in the scope, one grouped query. */
+/** Users directly assigned each owner (group, permission or role) in the scope, one grouped query. */
 export async function countDirectUsersByOwnerIds(
   db: Db,
   pivots: DirectAssignmentPivots,
@@ -130,7 +132,7 @@ export async function countDirectUsersByOwnerIds(
   return new Map(rows.map((row) => [String(row.ownerId), Number(row.count)]));
 }
 
-/** Ids of the users directly assigned one owner (group or permission) in the scope. */
+/** Ids of the users directly assigned one owner (group, permission or role) in the scope. */
 export async function getDirectUserIdsByOwnerId(
   db: Db,
   pivots: DirectAssignmentPivots,

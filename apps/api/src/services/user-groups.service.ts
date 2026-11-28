@@ -80,11 +80,27 @@ export class UserGroupService implements IUserGroupService {
     return validateOutput(createDynamicSingleSchema(userGroupSchema).array(), result, context);
   }
 
+  public async getUserGroupsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<UserGroup[]> {
+    const context = 'UserGroupService.getUserGroupsByUserIds';
+    const result = await this.userGroupRepository.getUserGroupsByUserIds(userIds, transaction);
+    return validateOutput(createDynamicSingleSchema(userGroupSchema).array(), result, context);
+  }
+
   public async countUserGroups(
     params: { userId: string },
     transaction?: Transaction
   ): Promise<number> {
     return this.userGroupRepository.countUserGroups(params, transaction);
+  }
+
+  public async countUserGroupsByUserIds(
+    userIds: string[],
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.userGroupRepository.countUserGroupsByUserIds(userIds, transaction);
   }
 
   public async countUsersByGroupIds(

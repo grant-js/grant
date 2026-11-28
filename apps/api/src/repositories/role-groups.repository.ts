@@ -5,10 +5,12 @@ import {
   QueryRoleGroupsInput,
   RemoveRoleGroupInput,
   RoleGroup,
+  Scope,
 } from '@grantjs/schema';
+import { and, count, inArray, isNull, sql } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { PivotRepository } from '@/repositories/common';
+import { accessibleIdSource, PivotRepository } from '@/repositories/common';
 
 export class RoleGroupRepository
   extends PivotRepository<RoleGroupModel, RoleGroup>
@@ -40,6 +42,36 @@ export class RoleGroupRepository
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.countActiveByFieldValues('roleId', roleIds, transaction);
+  }
+
+  /** Roles of the scope that include each group, one grouped query. */
+  public async countRolesByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    if (groupIds.length === 0) {
+      return new Map();
+    }
+    const scopedRoles = accessibleIdSource('roles', scope);
+    if (scopedRoles.kind !== 'sql') {
+      return new Map();
+    }
+
+    const db = transaction || this.db;
+    const rows = await db
+      .select({ groupId: roleGroups.groupId, count: count() })
+      .from(roleGroups)
+      .where(
+        and(
+          inArray(roleGroups.groupId, groupIds),
+          isNull(roleGroups.deletedAt),
+          sql`${roleGroups.roleId} IN ${scopedRoles.sql}`
+        )
+      )
+      .groupBy(roleGroups.groupId);
+
+    return new Map(rows.map((row) => [String(row.groupId), Number(row.count)]));
   }
 
   public async addRoleGroup(

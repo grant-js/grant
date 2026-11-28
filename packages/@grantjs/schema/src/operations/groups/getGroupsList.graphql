@@ -36,6 +36,7 @@ query GetGroupsList(
         isPrimary
       }
       permissionCount
+      roleCount
       userCount
       tagCount
     }

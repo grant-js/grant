@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Role } from '@grantjs/schema';
-import { Shield, Tags } from 'lucide-react';
+import { Shield, Tags, Users } from 'lucide-react';
 
 import {
   CardBody,
@@ -33,6 +33,7 @@ export function RoleCards() {
   const cardFields = useMemo(
     () => [
       { key: 'groups', label: t('form.groups') },
+      { key: 'users', label: t('table.users') },
       { key: 'tags', label: t('table.tags') },
     ],
     [t]
@@ -102,6 +103,23 @@ export function RoleCards() {
                   count={role.groupCount ?? 0}
                 >
                   {t('groupCount', { count: role.groupCount ?? 0 })}
+                </RelationCountChip>
+              ),
+            },
+            {
+              key: 'users',
+              label: {
+                icon: <Users className="h-3 w-3" />,
+                text: t('table.users'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="role"
+                  relation="users"
+                  entityId={role.id}
+                  count={role.userCount ?? 0}
+                >
+                  {t('userCount', { count: role.userCount ?? 0 })}
                 </RelationCountChip>
               ),
             },

@@ -5,6 +5,12 @@ type Group implements Auditable {
   metadata: JSON!
   permissions: [Permission!]
   """
+  Roles of the request's scope that include the group, sorted by name. `page` and `limit` page
+  them as in the roles list (by default the lists' page size). Requires `Role:Query`, the roles
+  list's own permission; without it the field is an authorization error.
+  """
+  roles(page: Int, limit: Int): [Role!]
+  """
   Users the group is assigned to directly in the request's scope, not through a role, sorted
   by name. `page` and `limit` page them as in the users list (by default the lists' page
   size). Requires `User:Query`, the users list's own permission; without it the field is an
@@ -14,6 +20,8 @@ type Group implements Auditable {
   tags: [Tag!]
   primaryTag: Tag
   permissionCount: Int!
+  "Roles of the request's scope that include the group."
+  roleCount: Int!
   "Users the group is assigned to directly in the request's scope, not through a role."
   userCount: Int!
   tagCount: Int!

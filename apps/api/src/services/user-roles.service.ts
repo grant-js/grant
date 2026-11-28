@@ -10,6 +10,7 @@ import {
   AddUserRoleInput,
   QueryUserRolesInput,
   RemoveUserRoleInput,
+  Scope,
   UserRole,
 } from '@grantjs/schema';
 
@@ -110,6 +111,21 @@ export class UserRoleService implements IUserRoleService {
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.userRoleRepository.countUserRolesByUserIds(userIds, transaction);
+  }
+
+  public async countUsersByRoleIds(
+    roleIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.userRoleRepository.countUsersByRoleIds(roleIds, scope, transaction);
+  }
+
+  public async getUserIdsByRoleId(
+    params: { roleId: string; scope: Scope },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return this.userRoleRepository.getUserIdsByRoleId(params, transaction);
   }
 
   public async addUserRole(params: AddUserRoleInput, transaction?: Transaction): Promise<UserRole> {

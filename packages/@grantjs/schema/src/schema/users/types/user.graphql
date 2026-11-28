@@ -9,6 +9,8 @@ type User implements Auditable {
   tags: [Tag!]
   primaryTag: Tag
   roleCount: Int!
+  "The user's direct groups in the request's scope, not those a role brings."
+  groupCount: Int!
   permissionCount: Int!
   projectUserApiKeyCount: Int!
   tagCount: Int!

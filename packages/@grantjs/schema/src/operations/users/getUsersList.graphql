@@ -30,6 +30,8 @@ query GetUsersList(
         isPrimary
       }
       roleCount
+      groupCount
+      permissionCount
       projectUserApiKeyCount
       tagCount
       authenticationMethods {

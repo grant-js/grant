@@ -24,6 +24,7 @@ export const userWithRelationsSchema = userSchema.extend({
   tags: z.array(z.unknown()).optional(),
   accounts: z.array(z.unknown()).optional(),
   authenticationMethods: z.array(z.unknown()).optional(),
+  groupCount: z.number().optional(),
   permissionCount: z.number().optional(),
   primaryTag: z.unknown().nullable().optional(),
   projectUserApiKeyCount: z.number().optional(),
@@ -32,6 +33,7 @@ export const userWithRelationsSchema = userSchema.extend({
 });
 
 const userFieldsEnum = z.enum([
+  'groupCount',
   'permissionCount',
   'primaryTag',
   'projectUserApiKeyCount',
@@ -67,7 +69,7 @@ export const getUsersQuerySchema = listQuerySchema.omit({ relations: true }).ext
     .optional()
     .openapi({
       description: 'Computed fields to include in the response',
-      example: ['primaryTag', 'roleCount', 'tagCount'],
+      example: ['primaryTag', 'roleCount', 'tagCount', 'groupCount'],
     }),
 });
 

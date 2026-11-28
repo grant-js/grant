@@ -19,6 +19,7 @@ import type {
   RolePage,
   RolePermission,
   RoleTag,
+  Scope,
   UpdateRoleInput,
   UpdateRoleTagInput,
 } from '@grantjs/schema';
@@ -60,6 +61,12 @@ export interface IRoleGroupService {
   countRoleGroups(params: { roleId: string }, transaction?: unknown): Promise<number>;
 
   countRoleGroupsByRoleIds(roleIds: string[], transaction?: unknown): Promise<Map<string, number>>;
+
+  countRolesByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
 
   addRoleGroup(params: AddRoleGroupInput, transaction?: unknown): Promise<RoleGroup>;
 

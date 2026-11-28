@@ -18,6 +18,7 @@ function role(overrides: Partial<Role> = {}): Role {
     groupCount: 0,
     permissionCount: 0,
     tagCount: 0,
+    userCount: 0,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     deletedAt: null,
