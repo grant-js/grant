@@ -30,6 +30,7 @@ const RELATION_LIST_PAGE_SIZE = 10;
 const LINKED_ENTITY: Record<RelationPageTarget['relation'], DetailLinkedEntity> = {
   groups: 'group',
   users: 'user',
+  roles: 'role',
 };
 
 interface RelatedItem {
@@ -48,7 +49,7 @@ export type RelationListCardProps = RelationPageTarget & {
 
 /**
  * A detail page's read-only list of one relationship (a permission's groups or users, a group's
- * members), a page at a time, each row linking to its own page. It edits nothing: assignments
+ * members or roles, a role's users), a page at a time, each row linking to its own page. It edits nothing: assignments
  * are changed where they already are, on the user's or group's page. A viewer who may not list
  * the related entities sees "Not available", as in the list's count chip.
  */

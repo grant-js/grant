@@ -114,6 +114,60 @@ describe('RelationListCard', () => {
     expect(screen.queryByTestId('user-label-email')).toBeNull();
   });
 
+  it('lists the roles that include a group, each linked to the role page', () => {
+    Object.assign(page, { items: [{ id: 'r-1', name: 'Finance lead' }], totalCount: 1 });
+    render(
+      <RelationListCard
+        entity="group"
+        relation="roles"
+        entityId="g-1"
+        messages="group.roles"
+        icon={null}
+      />
+    );
+    expect(useRelationPage).toHaveBeenLastCalledWith(
+      { entity: 'group', relation: 'roles' },
+      'g-1',
+      {
+        page: 1,
+        limit: 10,
+      }
+    );
+    expect(
+      screen
+        .getByLabelText('common.openEntity.role Finance lead')
+        .closest('a')
+        ?.getAttribute('href')
+    ).toBe(`${BASE}/roles/r-1`);
+    expect(screen.queryByTestId('user-label-email')).toBeNull();
+  });
+
+  it('lists a role’s users with their email, each linked to the user page', () => {
+    Object.assign(page, {
+      items: [
+        {
+          id: 'u-1',
+          name: 'Sam Lee',
+          authenticationMethods: [{ provider: 'email', providerId: 'sam.lee@example.test' }],
+        },
+      ],
+      totalCount: 1,
+    });
+    render(
+      <RelationListCard
+        entity="role"
+        relation="users"
+        entityId="r-1"
+        messages="role.users"
+        icon={null}
+      />
+    );
+    expect(screen.getByTestId('user-label-email').textContent).toBe('sam.lee@example.test');
+    expect(
+      screen.getByLabelText('common.openEntity.user Sam Lee').closest('a')?.getAttribute('href')
+    ).toBe(`${BASE}/users/u-1`);
+  });
+
   it('asks for the first page of ten and pages through the rest', () => {
     Object.assign(page, { items: users(10), totalCount: 23 });
     renderCard();

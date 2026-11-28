@@ -367,4 +367,112 @@ describe('useRelationPage', () => {
     expect(result.current.totalCount).toBe(11);
     expect(result.current.error).toBe(false);
   });
+
+  it('fetches a page of a role’s users with their count, for the role page', async () => {
+    const roleUsers = {
+      request: {
+        query: GetRoleRelationsPreviewDocument,
+        variables: {
+          scope,
+          id: 'r-1',
+          page: 1,
+          limit: 10,
+          withGroups: false,
+          withUsers: true,
+          withTags: false,
+        },
+      },
+      result: {
+        data: {
+          roles: {
+            __typename: 'RolePage',
+            roles: [
+              {
+                __typename: 'Role',
+                id: 'r-1',
+                users: [
+                  {
+                    __typename: 'User',
+                    id: 'u-1',
+                    name: 'Sam Lee',
+                    authenticationMethods: [
+                      {
+                        __typename: 'UserAuthenticationMethod',
+                        provider: 'email',
+                        providerId: 'sam.lee@example.test',
+                      },
+                    ],
+                  },
+                ],
+                userCount: 1,
+              },
+            ],
+          },
+        },
+      },
+    };
+    const { result } = renderHook(
+      () => useRelationPage({ entity: 'role', relation: 'users' }, 'r-1', { page: 1, limit: 10 }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <MockedProvider mocks={[roleUsers]}>{children}</MockedProvider>
+        ),
+      }
+    );
+
+    await waitFor(() =>
+      expect(result.current.items).toEqual([
+        expect.objectContaining({ id: 'u-1', name: 'Sam Lee' }),
+      ])
+    );
+    expect(result.current.totalCount).toBe(1);
+  });
+
+  it('fetches a page of the roles that include a group, with their count, for the group page', async () => {
+    const groupRoles = {
+      request: {
+        query: GetGroupRelationsPreviewDocument,
+        variables: {
+          scope,
+          id: 'g-1',
+          page: 2,
+          limit: 10,
+          withPermissions: false,
+          withUsers: false,
+          withRoles: true,
+          withTags: false,
+        },
+      },
+      result: {
+        data: {
+          groups: {
+            __typename: 'GroupPage',
+            groups: [
+              {
+                __typename: 'Group',
+                id: 'g-1',
+                roles: [{ __typename: 'Role', id: 'r-11', name: 'Finance lead' }],
+                roleCount: 11,
+              },
+            ],
+          },
+        },
+      },
+    };
+    const { result } = renderHook(
+      () => useRelationPage({ entity: 'group', relation: 'roles' }, 'g-1', { page: 2, limit: 10 }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <MockedProvider mocks={[groupRoles]}>{children}</MockedProvider>
+        ),
+      }
+    );
+
+    await waitFor(() =>
+      expect(result.current.items).toEqual([
+        expect.objectContaining({ id: 'r-11', name: 'Finance lead' }),
+      ])
+    );
+    expect(result.current.totalCount).toBe(11);
+  });
 });

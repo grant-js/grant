@@ -1451,6 +1451,15 @@
     "loading": {
       "title": "Rolle wird geladen...",
       "error": "Fehler beim Laden der Rolle"
+    },
+    "users": {
+      "title": "Benutzer",
+      "description": "Benutzer, denen die Rolle direkt zugewiesen ist. Rollen werden auf der Seite des Benutzers zugewiesen.",
+      "empty": "Keine Benutzer",
+      "emptyDescription": "Kein Benutzer in diesem Bereich hat diese Rolle.",
+      "table": {
+        "name": "Name"
+      }
     }
   },
   "roles": {
@@ -4685,6 +4694,15 @@
       "description": "Benutzer, die dieser Gruppe direkt zugewiesen sind, nicht über eine Rolle. Mitglieder werden auf der Seite des Benutzers hinzugefügt.",
       "empty": "Keine Mitglieder",
       "emptyDescription": "Kein Benutzer ist dieser Gruppe direkt zugewiesen.",
+      "table": {
+        "name": "Name"
+      }
+    },
+    "roles": {
+      "title": "Rollen",
+      "description": "Rollen in diesem Bereich, die diese Gruppe enthalten. Gruppen werden auf der Seite der Rolle zu einer Rolle hinzugefügt.",
+      "empty": "Keine Rollen",
+      "emptyDescription": "Keine Rolle in diesem Bereich enthält diese Gruppe.",
       "table": {
         "name": "Name"
       }

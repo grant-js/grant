@@ -100,13 +100,17 @@ The lists behind the counts are `Permission.groups`, `Permission.users`, `Group.
 
 ### On detail pages
 
-The permission page lists the permission's **Groups** and **Users**, and the group page lists its **Members**. Each card shows ten per page, and each row links to its own page. The cards are read-only: groups get permissions on the group's page, and users get groups and permissions on the user's page.
+The permission page lists the permission's **Groups** and **Users**, the group page lists its **Members** and the **Roles** that include it, and the role page lists its **Users**. Each card shows ten per page, and each row links to its own page. The cards are read-only: groups get permissions on the group's page, groups join a role on the role's page, and users get roles, groups and permissions on the user's page.
 
 ![The Groups card on a permission's page](./relationship-cards-permission-groups.jpg)
 
 ![The Users card on a permission's page](./relationship-cards-permission-users.jpg)
 
 ![The Members card on a group's page, first of two pages](./relationship-cards-group-members.jpg)
+
+![The Users card on a role's page](./relationship-cards-role-users.jpg)
+
+![The Roles card on a group's page](./relationship-cards-group-roles.jpg)
 
 ### Users in relationship lists
 

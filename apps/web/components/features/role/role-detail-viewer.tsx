@@ -3,7 +3,9 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Users } from 'lucide-react';
 
+import { RelationListCard } from '@/components/common';
 import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { useRoles } from '@/hooks/roles';
@@ -61,6 +63,13 @@ export function RoleDetailViewer() {
       <RoleMetadataCard role={role} onAfterRoleMutation={refetch} />
       <RoleGroups role={role} />
       <RolePermissions role={role} />
+      <RelationListCard
+        entity="role"
+        relation="users"
+        entityId={role.id}
+        messages="role.users"
+        icon={<Users />}
+      />
       <RoleTags role={role} />
     </FeatureDetailLayout>
   );
