@@ -1,5 +1,37 @@
 # grant-web
 
+## 1.32.0
+
+### Minor Changes
+
+- 6e4a0a1: A CDM export can be imported again when its users have API keys. An export writes `clientSecret: null` on every key, which the import used to reject for the whole document. A key without a secret now creates nothing: the importing project's key that matches by `key` or `clientId` is left as it is (counted in `projectUserApiKeysUnchanged`, and not deleted on replace), and a key with no match is skipped. `SyncProjectResult.projectUserApiKeysSkippedNoSecret` counts the skipped keys, and the import job's result card shows it. Everything else in the document imports. Keys that carry a secret behave as before.
+- 2c0bda0: The permission list shows whether each permission has a condition, in a new Condition column (table) and field (cards). The chip reads "Has condition" or "No condition". A permission with a condition opens like the relationship count chips, on hover after a short delay, focus or tap, and shows the condition as read-only JSON to scroll and copy. Without a condition the chip opens nothing. The list already loads `condition`, so nothing more is fetched. The chip-and-popover behaviour the count chips used is now one shared `ChipPopover`, which both build on.
+- f37775d: Permission and group detail pages list who and what they are assigned to, read-only.
+
+  - **Permission page:** a _Groups_ card and a _Users_ card.
+  - **Group page:** a _Members_ card.
+
+  Each card pages ten at a time, and each row links to its own page. Nothing is edited there: assignments stay where they are made today, on the user's and group's pages. A viewer who may not list the related users or groups sees "Not available". The cards read the same documents as the list's count chips. `GetGroupRelationsPreview` and `GetPermissionRelationsPreview` now take `$page` and `$limit`, with defaults of 1 and 10, and select the count alongside the related items.
+
+- 366553f: Permissions and groups show who and what they are assigned to, as count chips that preview on hover.
+
+  - **Schema:** `Permission.groupCount`, `Permission.userCount` and `Group.userCount`, plus the lists behind them: `Permission.groups`, `Permission.users` and `Group.users`, each with `page` and `limit`. User counts are direct assignments only. A user who gets a permission through a group or role is not counted, and neither is a group member through a role. In a project the counts read the project's own assignments (`project_user_groups`, `project_user_permissions`, joined to the live global row, as authorization does). In an organization they read the organization's users.
+  - **Authorization:** `Group.users` and `Permission.users` check `User:Query`, the users list's own permission, and `Permission.groups` checks `Group:Query`. Without it the field is an authorization error; the counts still resolve.
+  - **API:** the group and permission lists count a page at once, one grouped query per count. REST takes the counts in `?fields=` (`userCount` on groups; `groupCount` and `userCount` on permissions).
+  - **Database:** partial indexes (`WHERE deleted_at IS NULL`) on `group_permissions (permission_id)`, `user_groups (group_id)`, `user_permissions (permission_id)`, `project_user_groups (project_id, group_id)` and `project_user_permissions (project_id, permission_id)`.
+  - **Web:** the permission list has Groups and Users chips, and the group list has a Users chip. They open like the other relationship chips. A viewer who may not list users sees the count and "Not available".
+  - **Operations:** `GetGroupRelationsPreview` takes `$withUsers`, and `GetPermissionRelationsPreview` takes `$withGroups`, `$withUsers` and `$withTags`. Each has a default, so existing callers are unchanged.
+
+### Patch Changes
+
+- Updated dependencies [6e4a0a1]
+- Updated dependencies [f37775d]
+- Updated dependencies [366553f]
+  - @grantjs/schema@1.32.0
+  - @grantjs/client@1.32.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.31.1
 
 ### Patch Changes
