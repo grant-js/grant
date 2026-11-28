@@ -18,6 +18,9 @@
  *   4. User API keys export without secrets and the document still imports:
  *      a key the target project already holds is kept, any other is skipped
  *      and counted.
+ *   5. Roles and groups an earlier import created keep that import's key, and
+ *      `roles[]`, `groups[]`, `roles[].groups` and `users[].roles` / `groups`
+ *      all use the same key, so their assignments resolve on re-import.
  */
 import type { CdmExportContext, ICdmEntityHandler } from '@grantjs/core';
 import { CdmModeStrategy, type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
@@ -230,6 +233,201 @@ async function exportProjectA(
   };
 }
 
+/**
+ * Imports `doc` into project B through the real handlers, in registry order, with mocked
+ * write-side dependencies. Each create* mock returns a fresh "B" id distinct from project A's.
+ */
+async function importIntoProjectB(doc: CdmDocumentInput) {
+  const B = {
+    resourceId: 'bbbb1111-0000-4000-8000-000000000001',
+    permissionId: 'bbbb1111-0000-4000-8000-000000000002',
+    tagId: 'bbbb1111-0000-4000-8000-000000000003',
+    roleId: 'bbbb1111-0000-4000-8000-000000000004',
+    groupId: 'bbbb1111-0000-4000-8000-000000000005',
+    directGroupId: 'bbbb1111-0000-4000-8000-000000000006',
+  };
+
+  const tagsService = { createTag: vi.fn().mockResolvedValue({ id: B.tagId }) };
+  const projectTags = { addProjectTag: vi.fn().mockResolvedValue(undefined) };
+  const tagHandler = new TagCdmEntity(
+    {} as never,
+    {} as never,
+    tagsService as never,
+    projectTags as never
+  );
+
+  const resourcesService = { createResource: vi.fn().mockResolvedValue({ id: B.resourceId }) };
+  const projectResources = { addProjectResource: vi.fn().mockResolvedValue(undefined) };
+  const resourceHandler = new ResourceCdmEntity(
+    {} as never,
+    {} as never,
+    resourcesService as never,
+    projectResources as never
+  );
+
+  const permissionsService = {
+    createPermission: vi.fn().mockResolvedValue({ id: B.permissionId }),
+  };
+  const projectPermissions = { addProjectPermission: vi.fn().mockResolvedValue(undefined) };
+  const permissionHandler = new PermissionCdmEntity(
+    {} as never,
+    {} as never,
+    permissionsService as never,
+    projectPermissions as never,
+    { getResourceById: vi.fn().mockResolvedValue({ slug: 'documents' }) } as never
+  );
+
+  const builder = {
+    createDocumentGroup: vi.fn().mockResolvedValue({
+      groupId: B.directGroupId,
+      groupPermissions: 1,
+      projectGroups: 1,
+      projectPermissions: 0,
+      projectResources: 0,
+    }),
+    linkDirectGroupsToUser: vi.fn().mockResolvedValue({
+      projectGroups: 0,
+      projectPermissions: 0,
+      projectResources: 0,
+    }),
+    createRoleWithGroup: vi.fn().mockResolvedValue({
+      roleId: B.roleId,
+      groupId: B.groupId,
+      counts: {
+        roleGroups: 1,
+        groupPermissions: 1,
+        projectRoles: 1,
+        projectGroups: 1,
+        projectPermissions: 1,
+        projectResources: 0,
+      },
+    }),
+  };
+  const roleTags = { addRoleTag: vi.fn().mockResolvedValue(undefined) };
+  const groupTags = { addGroupTag: vi.fn().mockResolvedValue(undefined) };
+  const roleTemplateHandler = new RoleTemplateCdmEntity(
+    {} as never,
+    {} as never,
+    builder as never,
+    roleTags as never,
+    groupTags as never
+  );
+
+  const projectUsers = {
+    addProjectUser: vi.fn().mockResolvedValue(undefined),
+    mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
+    syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
+  };
+  const userRoles = {
+    addUserRole: vi.fn().mockResolvedValue(undefined),
+    addUserRolesForCdmImport: vi.fn().mockResolvedValue([]),
+  };
+  const userTags = { addUserTag: vi.fn().mockResolvedValue(undefined) };
+  const userAssignmentHandler = new UserAssignmentCdmEntity(
+    {} as never,
+    builder as never,
+    projectUsers as never,
+    userRoles as never,
+    userTags as never,
+    { addGroupTag: vi.fn() } as never
+  );
+
+  const result = {
+    projectId: projectBId,
+    importId: doc.id ?? null,
+    rolesCreated: 0,
+    groupsCreated: 0,
+    roleGroupsLinked: 0,
+    groupPermissionsLinked: 0,
+    projectRolesLinked: 0,
+    projectGroupsLinked: 0,
+    projectPermissionsLinked: 0,
+    projectResourcesLinked: 0,
+    projectUsersEnsured: 0,
+    usersCreated: 0,
+    userRolesAssigned: 0,
+    projectUserApiKeysCreated: 0,
+    projectUserApiKeysUnchanged: 0,
+    projectUserApiKeysRotated: 0,
+    projectUserApiKeysDeleted: 0,
+    projectUserApiKeysSkippedNoSecret: 0,
+    tagsCreated: 0,
+    projectTagsLinked: 0,
+    roleTagsLinked: 0,
+    groupTagsLinked: 0,
+    userTagsLinked: 0,
+    resourcesCreated: 0,
+    permissionsCreated: 0,
+    warnings: [] as string[],
+  };
+  const produced = {
+    roleIdsByKey: new Map<string, string>(),
+    tagIds: new Map<string, string>(),
+    resourceIds: new Map<string, string>(),
+    permissionIds: new Map<string, string>(),
+    userIds: new Map<string, string>(),
+    userNamesByKey: new Map<string, string>(),
+    groupIdsByKey: new Map<string, string>(),
+  };
+
+  /**
+   * Stand-in for `lookupResolvedRef`: the orchestrator's resolution
+   * order is (1) permissionKey → produced.permissionIds, (2) pre-resolved
+   * map. The test document only contains permissionKey refs, so the
+   * fallback is never exercised.
+   */
+  const lookupResolvedRef = vi.fn((ref: { permissionKey?: string | null }) => {
+    const id = ref.permissionKey ? produced.permissionIds.get(ref.permissionKey) : undefined;
+    if (!id) throw new Error(`Unexpected ref shape in this test: ${JSON.stringify(ref)}`);
+    return { id, resourceId: null };
+  });
+
+  const expanded = expandCdmSyncInput(doc);
+
+  const applyCtx = {
+    projectId: projectBId,
+    scope: scopeB,
+    tx: { __tx: true },
+    lookupResolvedRef,
+    result,
+    produced,
+    documentGroupsByKey: new Map((expanded.groups ?? []).map((g) => [g.key, g])),
+    assignmentUserIds: new Set<string>(),
+    skippedUserKeys: new Set<string>(),
+  };
+
+  const ordered: ICdmEntityHandler[] = [
+    resourceHandler,
+    permissionHandler,
+    tagHandler,
+    roleTemplateHandler,
+    userAssignmentHandler,
+  ];
+
+  /**
+   * Run apply in registry order. Each handler reads the slice for its
+   * inputKey from the expanded CDM payload (internal handler slice names).
+   */
+  for (const handler of ordered) {
+    const key = handler.inputKey as keyof typeof expanded;
+    const slice = expanded[key];
+    if (!Array.isArray(slice)) continue;
+    await handler.apply(applyCtx as never, slice as never);
+  }
+
+  return {
+    B,
+    result,
+    produced,
+    applyCtx,
+    builder,
+    roleTags,
+    groupTags,
+    userRoles,
+    userTags,
+  };
+}
+
 function collectAllStringValues(value: unknown, into: string[]): void {
   if (typeof value === 'string') {
     into.push(value);
@@ -340,175 +538,8 @@ describe('CDM round-trip integration', () => {
     const handlers = buildHandlers(exportRepo);
     const doc = await exportProjectA(handlers);
 
-    /**
-     * Simulate project B: real handlers re-instantiated with mocked
-     * write-side dependencies. Each create* mock returns a fresh "B" id
-     * distinct from project A's, proving the importer never reuses Grant
-     * ids from the exported document.
-     */
-    const B = {
-      resourceId: 'bbbb1111-0000-4000-8000-000000000001',
-      permissionId: 'bbbb1111-0000-4000-8000-000000000002',
-      tagId: 'bbbb1111-0000-4000-8000-000000000003',
-      roleId: 'bbbb1111-0000-4000-8000-000000000004',
-      groupId: 'bbbb1111-0000-4000-8000-000000000005',
-    };
-
-    const tagsService = { createTag: vi.fn().mockResolvedValue({ id: B.tagId }) };
-    const projectTags = { addProjectTag: vi.fn().mockResolvedValue(undefined) };
-    const tagHandler = new TagCdmEntity(
-      {} as never,
-      {} as never,
-      tagsService as never,
-      projectTags as never
-    );
-
-    const resourcesService = { createResource: vi.fn().mockResolvedValue({ id: B.resourceId }) };
-    const projectResources = { addProjectResource: vi.fn().mockResolvedValue(undefined) };
-    const resourceHandler = new ResourceCdmEntity(
-      {} as never,
-      {} as never,
-      resourcesService as never,
-      projectResources as never
-    );
-
-    const permissionsService = {
-      createPermission: vi.fn().mockResolvedValue({ id: B.permissionId }),
-    };
-    const projectPermissions = { addProjectPermission: vi.fn().mockResolvedValue(undefined) };
-    const permissionHandler = new PermissionCdmEntity(
-      {} as never,
-      {} as never,
-      permissionsService as never,
-      projectPermissions as never,
-      { getResourceById: vi.fn().mockResolvedValue({ slug: 'documents' }) } as never
-    );
-
-    const builder = {
-      createRoleWithGroup: vi.fn().mockResolvedValue({
-        roleId: B.roleId,
-        groupId: B.groupId,
-        counts: {
-          roleGroups: 1,
-          groupPermissions: 1,
-          projectRoles: 1,
-          projectGroups: 1,
-          projectPermissions: 1,
-          projectResources: 0,
-        },
-      }),
-    };
-    const roleTags = { addRoleTag: vi.fn().mockResolvedValue(undefined) };
-    const groupTags = { addGroupTag: vi.fn().mockResolvedValue(undefined) };
-    const roleTemplateHandler = new RoleTemplateCdmEntity(
-      {} as never,
-      {} as never,
-      builder as never,
-      roleTags as never,
-      groupTags as never
-    );
-
-    const projectUsers = {
-      addProjectUser: vi.fn().mockResolvedValue(undefined),
-      mergeProjectUserCdmMetadata: vi.fn().mockResolvedValue(undefined),
-      syncProjectUserSearchDocument: vi.fn().mockResolvedValue(undefined),
-    };
-    const userRoles = {
-      addUserRole: vi.fn().mockResolvedValue(undefined),
-      addUserRolesForCdmImport: vi.fn().mockResolvedValue([]),
-    };
-    const userTags = { addUserTag: vi.fn().mockResolvedValue(undefined) };
-    const userAssignmentHandler = new UserAssignmentCdmEntity(
-      {} as never,
-      builder as never,
-      projectUsers as never,
-      userRoles as never,
-      userTags as never,
-      { addGroupTag: vi.fn() } as never
-    );
-
-    const result = {
-      projectId: projectBId,
-      importId: doc.id ?? null,
-      rolesCreated: 0,
-      groupsCreated: 0,
-      roleGroupsLinked: 0,
-      groupPermissionsLinked: 0,
-      projectRolesLinked: 0,
-      projectGroupsLinked: 0,
-      projectPermissionsLinked: 0,
-      projectResourcesLinked: 0,
-      projectUsersEnsured: 0,
-      usersCreated: 0,
-      userRolesAssigned: 0,
-      projectUserApiKeysCreated: 0,
-      projectUserApiKeysUnchanged: 0,
-      projectUserApiKeysRotated: 0,
-      projectUserApiKeysDeleted: 0,
-      projectUserApiKeysSkippedNoSecret: 0,
-      tagsCreated: 0,
-      projectTagsLinked: 0,
-      roleTagsLinked: 0,
-      groupTagsLinked: 0,
-      userTagsLinked: 0,
-      resourcesCreated: 0,
-      permissionsCreated: 0,
-      warnings: [] as string[],
-    };
-    const produced = {
-      roleIdsByKey: new Map<string, string>(),
-      tagIds: new Map<string, string>(),
-      resourceIds: new Map<string, string>(),
-      permissionIds: new Map<string, string>(),
-      userIds: new Map<string, string>(),
-      userNamesByKey: new Map<string, string>(),
-      groupIdsByKey: new Map<string, string>(),
-    };
-
-    /**
-     * Stand-in for `lookupResolvedRef`: the orchestrator's resolution
-     * order is (1) permissionKey → produced.permissionIds, (2) pre-resolved
-     * map. The test document only contains permissionKey refs, so the
-     * fallback is never exercised.
-     */
-    const lookupResolvedRef = vi.fn((ref: { permissionKey?: string | null }) => {
-      const id = ref.permissionKey ? produced.permissionIds.get(ref.permissionKey) : undefined;
-      if (!id) throw new Error(`Unexpected ref shape in this test: ${JSON.stringify(ref)}`);
-      return { id, resourceId: null };
-    });
-
-    const applyCtx = {
-      projectId: projectBId,
-      scope: scopeB,
-      tx: { __tx: true },
-      lookupResolvedRef,
-      result,
-      produced,
-      documentGroupsByKey: new Map(),
-      assignmentUserIds: new Set<string>(),
-      skippedUserKeys: new Set<string>(),
-    };
-
-    const ordered: ICdmEntityHandler[] = [
-      resourceHandler,
-      permissionHandler,
-      tagHandler,
-      roleTemplateHandler,
-      userAssignmentHandler,
-    ];
-
-    const expanded = expandCdmSyncInput(doc);
-
-    /**
-     * Run apply in registry order. Each handler reads the slice for its
-     * inputKey from the expanded CDM payload (internal handler slice names).
-     */
-    for (const handler of ordered) {
-      const key = handler.inputKey as keyof typeof expanded;
-      const slice = expanded[key];
-      if (!Array.isArray(slice)) continue;
-      await handler.apply(applyCtx as never, slice as never);
-    }
+    const { B, result, produced, applyCtx, roleTags, groupTags, userTags } =
+      await importIntoProjectB(doc);
 
     expect(produced.resourceIds.get(doc.resources?.[0].key ?? '')).toBe(B.resourceId);
     expect(produced.permissionIds.get(doc.permissions?.[0].key ?? '')).toBe(B.permissionId);
@@ -552,6 +583,81 @@ describe('CDM round-trip integration', () => {
     expect(allValues).not.toContain(A.resourceId);
     expect(allValues).not.toContain(A.permissionId);
     expect(allValues).not.toContain(A.tagId);
+  });
+
+  it('roles and groups an import created keep one key everywhere, so user assignments survive a re-import', async () => {
+    const directGroupId = 'a0000000-0000-4000-8000-0000000000ff';
+    const importedBy = (kind: string, externalKey: string) => ({
+      [CDM_IMPORT_METADATA_KEY]: { projectId: projectAId, kind, externalKey },
+    });
+    const groupRows = [
+      {
+        groupId: A.groupId,
+        name: 'DocumentFullAccess',
+        description: null,
+        metadata: importedBy('group', 'support-group'),
+      },
+      {
+        groupId: directGroupId,
+        name: 'Billing',
+        description: null,
+        metadata: importedBy('group', 'billing-group'),
+      },
+    ];
+    const base = buildExportRepoForProjectA();
+    const exportRepo = {
+      ...base,
+      getProjectRolesWithPermissions: vi.fn().mockResolvedValue([
+        {
+          roleId: A.roleId,
+          name: 'CDM: Support',
+          description: null,
+          permissions: [
+            {
+              permissionId: A.permissionId,
+              resourceSlug: 'documents',
+              action: 'read',
+              condition: null,
+            },
+          ],
+          metadata: importedBy('role', 'support-role'),
+        },
+      ]),
+      getGroupsByIds: vi.fn(async (ids: readonly string[]) =>
+        groupRows.filter((g) => ids.includes(g.groupId))
+      ),
+      getProjectUserDirectGroups: vi.fn().mockResolvedValue([
+        { userId, groupId: A.groupId },
+        { userId, groupId: directGroupId },
+      ]),
+    };
+    const exported = await exportProjectA(buildHandlers(exportRepo));
+
+    expect(exported.roles.map((r) => r.key)).toEqual(['support-role']);
+    expect(exported.roles[0]?.groups).toEqual(['support-group']);
+    expect(exported.groups?.map((g) => g.key).sort()).toEqual(['billing-group', 'support-group']);
+    expect(exported.users[0]?.roles).toEqual(['support-role']);
+    expect([...(exported.users[0]?.groups ?? [])].sort()).toEqual([
+      'billing-group',
+      'support-group',
+    ]);
+
+    const parsed = parseCdmDocument(JSON.parse(JSON.stringify(exported)));
+    validateSyncInput(parsed, { redactUserKeys: true });
+    const { B, builder, userRoles } = await importIntoProjectB(
+      parsed as unknown as CdmDocumentInput
+    );
+
+    expect(userRoles.addUserRolesForCdmImport).toHaveBeenCalledWith(
+      { assignments: [{ userId, roleId: B.roleId }] },
+      expect.anything()
+    );
+    expect(builder.createDocumentGroup).toHaveBeenCalledTimes(1);
+    expect(builder.createDocumentGroup.mock.calls[0]?.[1]).toBe('billing-group');
+    const linkedGroupIds = builder.linkDirectGroupsToUser.mock.calls.flatMap(
+      (call) => call[3] as string[]
+    );
+    expect([...linkedGroupIds].sort()).toEqual([B.groupId, B.directGroupId].sort());
   });
 
   it('user API keys export without secrets, and the export imports again: kept where the key exists, skipped elsewhere', async () => {
