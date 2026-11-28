@@ -21,6 +21,7 @@ import {
   type CdmExistingApiKeyFingerprint,
   classifyCdmApiKeyReplace,
   fingerprintCdmApiKeySecret,
+  readCdmApiKeyExternalKey,
   withCdmApiKeySecretFingerprint,
 } from '@/lib/cdm/cdm-api-key-fingerprint.lib';
 import {
@@ -54,12 +55,21 @@ type PreparedApiKey = {
   documentIndex: number;
 };
 
+type PreparedRows = {
+  withSecret: PreparedApiKey[];
+  withoutSecret: PreparedApiKey[];
+};
+
 /**
  * CDM handler for {@link project_user_api_keys}: export identity (no secret);
- * import requires BYOK `clientSecret`. Runs after {@link UserAssignmentCdmEntity}.
+ * import takes a BYOK `clientSecret`. Runs after {@link UserAssignmentCdmEntity}.
  *
  * Replace matches by importer `externalKey` + HMAC fingerprint. Merge still creates.
  * Keys without `externalKey` do not keep/rotate.
+ *
+ * A key without a secret (an export never carries one) creates nothing: the project's key
+ * that matches by `externalKey` or `clientId` is left as it is, otherwise the key is skipped
+ * and counted in `projectUserApiKeysSkippedNoSecret`.
  */
 export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
   CdmProjectUserApiKeyInternal,
@@ -87,9 +97,7 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
       }
       const secret = row.clientSecret?.trim() ?? '';
       if (!secret) {
-        throw new ValidationError(
-          'projectUserApiKeys: clientSecret is required for each key on import (BYOK)'
-        );
+        continue;
       }
       const parsed = clientSecretSchema.safeParse(secret);
       if (!parsed.success) {
@@ -115,10 +123,11 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
     input: readonly CdmProjectUserApiKeyInternal[]
   ): Promise<void> {
     const tx = ctx.tx as Transaction;
-    const prepared = this.prepareRows(ctx, input);
+    const { withSecret: prepared, withoutSecret } = this.prepareRows(ctx, input);
+    const keptApiKeyIds = await this.keepOrSkipKeysWithoutSecret(ctx, withoutSecret, tx);
 
     if (ctx.modeStrategy === CdmModeStrategy.Replace) {
-      await this.applyReplace(ctx, prepared, tx);
+      await this.applyReplace(ctx, prepared, keptApiKeyIds, tx);
       return;
     }
 
@@ -208,8 +217,9 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
   private prepareRows(
     ctx: CdmApplyContext,
     input: readonly CdmProjectUserApiKeyInternal[]
-  ): PreparedApiKey[] {
-    const prepared: PreparedApiKey[] = [];
+  ): PreparedRows {
+    const withSecret: PreparedApiKey[] = [];
+    const withoutSecret: PreparedApiKey[] = [];
     for (const [documentIndex, row] of input.entries()) {
       // The provision step skipped this user (a deletion tombstone covers the key): no
       // identity exists to own a key, so the key is dropped, silently and uncounted.
@@ -221,29 +231,71 @@ export class ProjectUserApiKeyCdmEntity implements ICdmEntityHandler<
         );
       }
       const secret = row.clientSecret?.trim() ?? '';
-      if (!secret && !row.clientSecretHash?.trim()) {
-        throw new ValidationError(
-          `projectUserApiKeys: clientSecret is required for each key (user ${effectiveUserId})`
-        );
-      }
       const externalKey = row.externalKey?.trim() ? row.externalKey.trim() : null;
-      prepared.push({
+      const item: PreparedApiKey = {
         userId: effectiveUserId,
         row,
         secret,
         classifyKey: externalKey ?? `__anon:${documentIndex}`,
         documentIndex,
-      });
+      };
+      if (secret || row.clientSecretHash?.trim()) {
+        withSecret.push(item);
+      } else {
+        withoutSecret.push(item);
+      }
     }
-    return prepared;
+    return { withSecret, withoutSecret };
+  }
+
+  /**
+   * Keys without a secret: keep the project key matching by `externalKey`, else by `clientId`
+   * (counted unchanged), skip the rest. Returns the kept ids so replace does not delete them.
+   */
+  private async keepOrSkipKeysWithoutSecret(
+    ctx: CdmApplyContext,
+    items: readonly PreparedApiKey[],
+    tx: Transaction
+  ): Promise<ReadonlySet<string>> {
+    const kept = new Set<string>();
+    if (items.length === 0) {
+      return kept;
+    }
+    const existing = await this.exportRepo.getProjectUserApiKeysForCdmExport(ctx.projectId, tx);
+    const byExternalKey = new Map<string, string>();
+    const byClientId = new Map<string, string>();
+    for (const row of existing) {
+      const externalKey = readCdmApiKeyExternalKey(row.pivotMetadata);
+      if (externalKey) {
+        byExternalKey.set(externalKey, row.apiKeyId);
+      }
+      byClientId.set(row.clientId, row.apiKeyId);
+    }
+    for (const item of items) {
+      const externalKey = item.row.externalKey?.trim();
+      const clientId = item.row.clientId?.trim();
+      const match =
+        (externalKey ? byExternalKey.get(externalKey) : undefined) ??
+        (clientId ? byClientId.get(clientId) : undefined);
+      if (match) {
+        kept.add(match);
+        ctx.result.projectUserApiKeysUnchanged += 1;
+      } else {
+        ctx.result.projectUserApiKeysSkippedNoSecret += 1;
+      }
+    }
+    return kept;
   }
 
   private async applyReplace(
     ctx: CdmApplyContext,
     prepared: readonly PreparedApiKey[],
+    keptApiKeyIds: ReadonlySet<string>,
     tx: Transaction
   ): Promise<void> {
-    const existing = await this.importRepo.listCdmProjectUserApiKeysForReplace(ctx.projectId, tx);
+    const existing = (
+      await this.importRepo.listCdmProjectUserApiKeysForReplace(ctx.projectId, tx)
+    ).filter((row) => !keptApiKeyIds.has(row.apiKeyId));
     const documentKeys: CdmDocumentApiKeyForClassify[] = prepared.map((item) => ({
       classifyKey: item.classifyKey,
       externalKey: item.row.externalKey?.trim() ? item.row.externalKey.trim() : null,

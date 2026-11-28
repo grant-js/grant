@@ -490,6 +490,10 @@ const syncProjectResultSchema = z.object({
     description:
       'CDM-managed project-user API keys present before replace and missing from the document.',
   }),
+  projectUserApiKeysSkippedNoSecret: z.number().openapi({
+    description:
+      'Document API keys without a clientSecret (an export never carries one) that matched no key of the importing project by key or clientId, so none was created. A matched key is left as it is and counted in projectUserApiKeysUnchanged.',
+  }),
   passwordsImported: z.number().openapi({
     description:
       "Users whose `password` hash was stored as the importing project's credential for the first time.",

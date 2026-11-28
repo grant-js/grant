@@ -96,6 +96,7 @@ function normalizeSyncJobResult(raw: unknown): SyncProjectResult | null {
     projectUserApiKeysUnchanged: Number(r.projectUserApiKeysUnchanged ?? 0),
     projectUserApiKeysRotated: Number(r.projectUserApiKeysRotated ?? 0),
     projectUserApiKeysDeleted: Number(r.projectUserApiKeysDeleted ?? 0),
+    projectUserApiKeysSkippedNoSecret: Number(r.projectUserApiKeysSkippedNoSecret ?? 0),
     passwordsImported: Number(r.passwordsImported ?? 0),
     passwordsUpdated: Number(r.passwordsUpdated ?? 0),
     passwordsUnchanged: Number(r.passwordsUnchanged ?? 0),

@@ -54,6 +54,7 @@ function compactResultSummary(result: SyncProjectResult): Record<string, unknown
     projectUserApiKeysUnchanged: result.projectUserApiKeysUnchanged,
     projectUserApiKeysRotated: result.projectUserApiKeysRotated,
     projectUserApiKeysDeleted: result.projectUserApiKeysDeleted,
+    projectUserApiKeysSkippedNoSecret: result.projectUserApiKeysSkippedNoSecret,
     passwordsImported: result.passwordsImported,
     passwordsUpdated: result.passwordsUpdated,
     passwordsUnchanged: result.passwordsUnchanged,

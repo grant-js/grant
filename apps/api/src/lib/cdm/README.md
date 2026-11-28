@@ -115,6 +115,14 @@ stays sequential. Key teardown is a no-op; apply owns the set-diff inside the
 same import transaction. The HMAC key is resolver-backed
 (`CDM_API_KEY_FINGERPRINT_HMAC_SECRET`); empty stays rotate-all.
 
+A key without `clientSecret` (an export writes `null`) is never hashed or
+created: the project's key that matches by `externalKey`, else `clientId`, is
+kept (`projectUserApiKeysUnchanged`, and excluded from the replace set-diff so it
+is not deleted); a key with no match is counted in
+`projectUserApiKeysSkippedNoSecret`. Hash prep and apply number document keys
+the same way (every key, with or without a secret), so anonymous classify keys
+line up.
+
 ## User identity paths
 
 `UserProvisionCdmEntity.apply` resolves each `users[]` entry through one of three paths:
