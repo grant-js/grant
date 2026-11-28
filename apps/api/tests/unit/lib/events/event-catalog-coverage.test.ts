@@ -136,6 +136,7 @@ describe('event catalog coverage', () => {
       'organization.member_added',
       'organization.member_role_changed',
       'organization.member_removed',
+      'organization.ownership_transferred',
       'project.user_added',
       'project.user_removed',
       'project.user_profile_updated',

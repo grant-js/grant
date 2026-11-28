@@ -180,6 +180,7 @@ function buildHandlers(exportRepo: ReturnType<typeof buildExportRepoForProjectA>
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
     {} as never
   );
   return { resource, permission, tag, roleTemplate, userAssignment };
@@ -412,7 +413,8 @@ describe('CDM round-trip integration', () => {
       builder as never,
       projectUsers as never,
       userRoles as never,
-      userTags as never
+      userTags as never,
+      { addGroupTag: vi.fn() } as never
     );
 
     const result = {

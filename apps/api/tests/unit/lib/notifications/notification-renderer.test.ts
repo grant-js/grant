@@ -200,6 +200,30 @@ describe('renderNotification', () => {
     expect(rendered.body).toBe('You were removed by Alice Admin in Acme Corp.');
   });
 
+  describe('organization.ownership_transferred', () => {
+    const transferred = {
+      ...baseEvent,
+      type: 'organization.ownership_transferred',
+      category: 'membership',
+      aggregate: { kind: 'organization', id: 'org_1' },
+    } as DomainEvent;
+
+    it('tells the new owner (the subject) that they are the owner now', () => {
+      const rendered = renderNotification(transferred, ctx, { recipientUserId: 'user_subject' });
+      expect(rendered.title).toBe('Organization ownership transferred');
+      expect(rendered.body).toBe('You are now the owner by Alice Admin in Acme Corp.');
+      expect(rendered.refEntity).toBe('organization');
+      expect(rendered.refId).toBe('org_1');
+    });
+
+    it('tells the previous owner (the actor) who the owner is now', () => {
+      const rendered = renderNotification(transferred, ctx, { recipientUserId: 'user_actor' });
+      expect(rendered.body).toBe(
+        'Ownership was transferred to Bob Member by Alice Admin in Acme Corp.'
+      );
+    });
+  });
+
   it('renders project.user_added', () => {
     const rendered = renderNotification(
       {

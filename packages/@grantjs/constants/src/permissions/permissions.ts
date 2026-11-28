@@ -601,6 +601,11 @@ const PERMISSION_MAPPING_TEMPLATES: Partial<Record<GroupKey, PermissionMappingTe
       resource: ResourceSlug.Organization,
       condition: null,
     },
+    {
+      action: ResourceAction.TransferOwnership,
+      resource: ResourceSlug.Organization,
+      condition: null,
+    },
   ],
 
   [GroupKey.OrganizationAdmin]: [],

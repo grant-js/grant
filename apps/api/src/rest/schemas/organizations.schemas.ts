@@ -8,6 +8,7 @@ import {
   scopeSchema,
   tenantSchema,
 } from '@/rest/schemas/common.schemas';
+import { organizationMemberSchema } from '@/rest/schemas/organization-members.schemas';
 
 export const organizationSchema = z.object({
   id: z.string(),
@@ -195,3 +196,37 @@ export const confirmOrganizationPictureUploadRequestSchema = z.object({
     example: 'logo.jpg',
   }),
 });
+
+export const transferOrganizationOwnershipRequestSchema = z
+  .object({
+    scope: scopeSchema.openapi({
+      description:
+        'Organization scope (`tenant: organization`); its id must be the organization in the path',
+    }),
+    newOwnerId: z.string().min(1, 'errors.validation.idRequired').openapi({
+      description: 'User id of the current member who becomes the owner',
+      example: '123e4567-e89b-12d3-a456-426614174001',
+    }),
+    previousOwnerRoleId: z.string().min(1, 'errors.validation.idRequired').optional().openapi({
+      description:
+        "Role the previous owner keeps: one of the organization's roles below Owner. Set exactly one of this and `leaveOrganization`",
+      example: '123e4567-e89b-12d3-a456-426614174002',
+    }),
+    leaveOrganization: z.boolean().optional().openapi({
+      description:
+        "When true, the previous owner's membership is removed. Set exactly one of this and `previousOwnerRoleId`",
+      example: false,
+    }),
+  })
+  .openapi({ description: 'Ownership transfer request' });
+
+export const transferOrganizationOwnershipResponseSchema = createSuccessResponseSchema(
+  z.object({
+    organization: organizationSchema.partial({ deletedAt: true }),
+    newOwner: organizationMemberSchema,
+    previousOwner: organizationMemberSchema.nullable().openapi({
+      description: 'The previous owner after the transfer; null when they left the organization',
+    }),
+  }),
+  'Ownership transferred'
+);

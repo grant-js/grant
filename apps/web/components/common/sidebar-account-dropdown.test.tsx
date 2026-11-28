@@ -81,6 +81,7 @@ describe('SidebarAccountDropdown', () => {
       '/dashboard/settings/projects',
       '/dashboard/settings/security',
       '/dashboard/settings/preferences',
+      '/dashboard/settings/notifications',
       '/dashboard/settings/privacy',
     ]);
     expect(screen.getByText('common.auth.logout')).toBeInTheDocument();

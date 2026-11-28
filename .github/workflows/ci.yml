@@ -98,9 +98,14 @@ jobs:
 
       # Org-owned repos need GITLEAKS_LICENSE (free key via gitleaks.io). See:
       # https://github.com/gitleaks/gitleaks-action#-announcement
+      # The action downloads to `os.tmpdir()/gitleaks.tmp` and never deletes it. On a
+      # self-hosted macOS runner that is the persistent per-user $TMPDIR, so the next job
+      # fails with "Destination file path …/gitleaks.tmp already exists". runner.temp is
+      # emptied at the start of every job.
       - name: Gitleaks (secret scanning)
         uses: gitleaks/gitleaks-action@v3
         env:
+          TMPDIR: ${{ runner.temp }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITLEAKS_CONFIG: .gitleaks.toml

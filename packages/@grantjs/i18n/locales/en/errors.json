@@ -181,5 +181,15 @@
     "unknownError": "An unknown error occurred",
     "tooManyRequests": "Too many requests. Please try again later.",
     "payloadTooLarge": "Request body is too large"
+  },
+  "ownershipTransfer": {
+    "notOwner": "Only the current owner of this organization can transfer ownership",
+    "sessionRequired": "Ownership can only be transferred by a signed-in user, not by an API key or app token",
+    "self": "Choose another member as the new owner",
+    "invalidSelection": "Choose exactly one: a role for the previous owner, or leaving the organization",
+    "invalidRole": "The previous owner's role must be an organization role below Owner",
+    "targetNotMember": "The new owner must be a current member of this organization",
+    "targetDeactivated": "The new owner's account is deactivated",
+    "targetUnverified": "The new owner must have a verified email address"
   }
 }

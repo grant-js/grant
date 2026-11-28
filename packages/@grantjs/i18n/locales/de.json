@@ -173,6 +173,16 @@
       "badRequest": "Ungültige Anfrage",
       "originRequired": "Herkunft ist erforderlich",
       "unknownError": "Ein unbekannter Fehler ist aufgetreten"
+    },
+    "ownershipTransfer": {
+      "notOwner": "Nur der aktuelle Eigentümer dieser Organisation kann das Eigentum übertragen",
+      "sessionRequired": "Das Eigentum kann nur von angemeldeten Benutzern übertragen werden, nicht per API-Schlüssel oder App-Token",
+      "self": "Wählen Sie ein anderes Mitglied als neuen Eigentümer",
+      "invalidSelection": "Wählen Sie genau eines: eine Rolle für den bisherigen Eigentümer oder das Verlassen der Organisation",
+      "invalidRole": "Die Rolle des bisherigen Eigentümers muss eine Organisationsrolle unterhalb von Eigentümer sein",
+      "targetNotMember": "Der neue Eigentümer muss aktuelles Mitglied dieser Organisation sein",
+      "targetDeactivated": "Das Konto des neuen Eigentümers ist deaktiviert",
+      "targetUnverified": "Der neue Eigentümer muss eine bestätigte E-Mail-Adresse haben"
     }
   },
   "common": {
@@ -441,6 +451,12 @@
           "you": "Sie wurden entfernt{{byActor}}{{inScope}}.",
           "named": "{{member}} wurde entfernt{{byActor}}{{inScope}}.",
           "generic": "Ein Mitglied wurde entfernt{{byActor}}{{inScope}}."
+        },
+        "organizationOwnershipTransferred": {
+          "subject": "Organisationseigentum übertragen",
+          "you": "Sie sind jetzt Eigentümer{{byActor}}{{inScope}}.",
+          "named": "Das Eigentum wurde an {{member}} übertragen{{byActor}}{{inScope}}.",
+          "generic": "Das Eigentum an der Organisation wurde übertragen{{byActor}}{{inScope}}."
         },
         "projectUserAdded": {
           "subject": "Projektmitglied hinzugefügt",

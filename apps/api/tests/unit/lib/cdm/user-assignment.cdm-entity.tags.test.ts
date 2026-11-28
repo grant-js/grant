@@ -111,7 +111,8 @@ function buildHandler(deps?: {
       builder as never,
       projectUsers as never,
       userRoles as never,
-      userTags as never
+      userTags as never,
+      { addGroupTag: vi.fn() } as never
     ),
     exportRepo,
     projectUsers,

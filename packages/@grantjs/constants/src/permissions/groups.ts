@@ -341,6 +341,7 @@ const GROUPS: Record<GroupKey, GroupTemplate> = {
       ResourceAction.Update,
       ResourceAction.Delete,
       ResourceAction.UploadPicture,
+      ResourceAction.TransferOwnership,
     ],
     assignedRoles: [RoleKey.OrganizationOwner],
   },

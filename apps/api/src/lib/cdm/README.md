@@ -86,6 +86,10 @@ The orchestrator deduplicates refs from all entities, then resolves in one pass 
 | `roles.permissions` | `roleTemplates[].permissionRefs`         | `role_permissions` or group path               |
 | `roles.groups`      | paired role + group template             | `role_groups`, `group_permissions`             |
 
+A document group no role lists is created on its first `users.groups` reference, with its
+`tags` linked as `group_tags` (`primaryTag` marked primary), as on the role path. Each of those
+tags must appear in the `tags` section.
+
 A role template may have an empty `permissionRefs` list (a pure label role): the role is created with
 no permission links and exported back with an empty `permissions` list.
 The same holds on the group path (`roles[].groups` set, those groups carrying no permissions):

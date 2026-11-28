@@ -1,0 +1,44 @@
+mutation TransferOrganizationOwnership($input: TransferOrganizationOwnershipInput!) {
+  transferOrganizationOwnership(input: $input) {
+    organization {
+      id
+      name
+      slug
+      pictureUrl
+      createdAt
+      updatedAt
+    }
+    newOwner {
+      id
+      name
+      email
+      type
+      role {
+        id
+        name
+        description
+      }
+      user {
+        id
+        name
+      }
+      createdAt
+    }
+    previousOwner {
+      id
+      name
+      email
+      type
+      role {
+        id
+        name
+        description
+      }
+      user {
+        id
+        name
+      }
+      createdAt
+    }
+  }
+}

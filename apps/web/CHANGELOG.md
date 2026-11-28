@@ -1,5 +1,33 @@
 # grant-web
 
+## 1.31.1
+
+### Patch Changes
+
+- @grantjs/client@1.31.1
+  - @grantjs/schema@1.31.1
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
+## 1.31.0
+
+### Minor Changes
+
+- d50fd6c: Organization ownership can be transferred. The current owner hands the Organization Owner role to another member with `transferOrganizationOwnership` (GraphQL) or `POST /api/organizations/{id}/ownership-transfer` (REST), and either keeps a role below Owner or leaves the organization. An organization always has exactly one owner: the new owner gets Owner first, concurrent transfers serialize, and the caller must be a signed-in user who holds Owner (not an API key). The new owner must be a current, active member with a verified email. Refusals carry a stable `reason` (`OWNERSHIP_TRANSFER_*`) and a translation key. The transfer is gated by the new permission `Organization:TransferOwnership`, held by the Owner group only, which reaches existing databases through `db:seed` (no migration), and by the email and MFA guards of `deleteOrganization`. It publishes one `organization.ownership_transferred` event (webhook-subscribable; notifies both the previous and the new owner, in-app and by email, en/de) and one audit entry, with user ids and role ids only. `BadRequestError`, `NotFoundError` and `ConflictError` gain an optional `reason`, returned in the error `extensions`. The CLI lists the new operation. The organization Settings page gets an **Ownership** section (owner only): pick the new owner, choose the role you keep or leave, confirm by typing the organization name; refusals show the API's reason in English or German.
+- a2955da: Organizations have a dedicated **Settings** page (`/dashboard/organizations/{organizationId}/settings`) with a **General** section (name and logo, the same mutation and picture upload as the Edit dialog), a **Security** section (the "Require MFA for sensitive actions" switch, moved out of the Edit dialog, same mutation and MFA step-up) and a **Danger zone** section with **Delete organization**. Deleting now asks you to type the organization **name** instead of its id, and is available only to callers who hold `Organization:delete`.
+
+  The Edit dialog keeps only name and logo and no longer sends `requireMfaForSensitiveActions`, so saving it cannot change the MFA requirement. The organization row menu replaces **Delete** with **Settings**.
+
+### Patch Changes
+
+- 08a070f: The account menu (bottom left) links the Notifications settings page, like the settings sidebar does.
+- d36f770: `pnpm dev` works again on a fresh clone. The web app and the Config app now run `next dev --webpack`, like their builds, because the schema's ESM `.js` specifiers resolve only through the webpack alias (Next 16 defaults to Turbopack). The root `dev` task now builds workspace dependencies first, so packages consumed from `dist` (`@grantjs/client`, `@grantjs/server`) exist before the apps start.
+- Updated dependencies [d50fd6c]
+  - @grantjs/schema@1.31.0
+  - @grantjs/client@1.31.0
+  - @grantjs/core@1.0.0
+  - @grantjs/constants@1.0.0
+
 ## 1.30.5
 
 ### Patch Changes
