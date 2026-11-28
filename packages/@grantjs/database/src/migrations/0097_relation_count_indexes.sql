@@ -1,0 +1,5 @@
+CREATE INDEX "group_permissions_permission_id_idx" ON "group_permissions" USING btree ("permission_id") WHERE "group_permissions"."deleted_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "project_user_groups_project_id_group_id_idx" ON "project_user_groups" USING btree ("project_id","group_id") WHERE "project_user_groups"."deleted_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "project_user_permissions_project_id_permission_id_idx" ON "project_user_permissions" USING btree ("project_id","permission_id") WHERE "project_user_permissions"."deleted_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "user_groups_group_id_idx" ON "user_groups" USING btree ("group_id") WHERE "user_groups"."deleted_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "user_permissions_permission_id_idx" ON "user_permissions" USING btree ("permission_id") WHERE "user_permissions"."deleted_at" IS NULL;

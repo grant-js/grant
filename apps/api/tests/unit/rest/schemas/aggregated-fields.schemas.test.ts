@@ -42,22 +42,22 @@ describe('REST aggregated field query schemas', () => {
 
     await expect(
       getGroupsQuerySchema.parseAsync({
-        fields: ['primaryTag', 'permissionCount', 'tagCount'],
+        fields: ['primaryTag', 'permissionCount', 'tagCount', 'userCount'],
         scopeId: projectScopeId,
         tenant: Tenant.AccountProject,
       })
     ).resolves.toMatchObject({
-      fields: ['primaryTag', 'permissionCount', 'tagCount'],
+      fields: ['primaryTag', 'permissionCount', 'tagCount', 'userCount'],
     });
 
     await expect(
       getPermissionsQuerySchema.parseAsync({
-        fields: ['primaryTag', 'tagCount'],
+        fields: ['primaryTag', 'tagCount', 'groupCount', 'userCount'],
         scopeId: projectScopeId,
         tenant: Tenant.AccountProject,
       })
     ).resolves.toMatchObject({
-      fields: ['primaryTag', 'tagCount'],
+      fields: ['primaryTag', 'tagCount', 'groupCount', 'userCount'],
     });
   });
 

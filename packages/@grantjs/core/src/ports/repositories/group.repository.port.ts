@@ -16,6 +16,7 @@ import type {
   QueryGroupTagsInput,
   RemoveGroupPermissionInput,
   RemoveGroupTagInput,
+  Scope,
   UpdateGroupInput,
   UpdateGroupTagInput,
 } from '@grantjs/schema';
@@ -56,6 +57,12 @@ export interface IGroupPermissionRepository {
   countGroupPermissions(params: { groupId: string }, transaction?: unknown): Promise<number>;
   countGroupPermissionsByGroupIds(
     groupIds: string[],
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+  /** Groups of the scope holding each permission. */
+  countGroupsByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
     transaction?: unknown
   ): Promise<Map<string, number>>;
   addGroupPermission(

@@ -93,6 +93,18 @@ describe('RelationCountChip', () => {
     expect(screen.getByText('Role 2').closest('a')?.getAttribute('href')).toBe(`${BASE}/roles/r-2`);
   });
 
+  it('links each user of a group or permission to the user page', () => {
+    preview.called = true;
+    preview.items = [{ id: 'u-7', name: 'Ada' }];
+    render(
+      <RelationCountChip entity="group" relation="users" entityId="g-1" count={1}>
+        1 user
+      </RelationCountChip>
+    );
+    fireEvent.focus(screen.getByRole('button', { name: '1 user' }));
+    expect(screen.getByText('Ada').closest('a')?.getAttribute('href')).toBe(`${BASE}/users/u-7`);
+  });
+
   it('shows tags as chips, without links', () => {
     preview.called = true;
     preview.items = [{ id: 't-1', name: 'Finance', color: 'blue' }];

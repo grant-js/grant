@@ -24,6 +24,21 @@ export const groupPermissionCountResolver: GroupResolvers<GraphqlContext>['permi
     return context.handlers.groups.countGroupPermissions({ groupId: parent.id });
   };
 
+export const groupUserCountResolver: GroupResolvers<GraphqlContext>['userCount'] = async (
+  parent,
+  _args,
+  context
+) => {
+  if (typeof parent.userCount === 'number') {
+    return parent.userCount;
+  }
+  const scope = context.user?.scope;
+  if (!scope) {
+    return 0;
+  }
+  return context.handlers.groups.countGroupUsers({ groupId: parent.id, scope });
+};
+
 export const groupTagCountResolver: GroupResolvers<GraphqlContext>['tagCount'] = async (
   parent,
   _args,

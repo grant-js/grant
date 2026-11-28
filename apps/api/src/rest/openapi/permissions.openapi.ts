@@ -52,8 +52,10 @@ Example: \`?relations=tags\`
 You can include computed fields by specifying the \`fields\` query parameter:
 - \`primaryTag\`: Load the permission's primary tag in the requested scope
 - \`tagCount\`: Count permission's tags in the requested scope
+- \`groupCount\`: Count groups of the requested scope that hold the permission
+- \`userCount\`: Count users holding the permission directly in the requested scope (not through a group or role)
 
-Example: \`?fields=primaryTag,tagCount\`
+Example: \`?fields=primaryTag,tagCount,groupCount,userCount\`
 
 ### Scope
 Permissions are scoped to a tenant context. You must provide:

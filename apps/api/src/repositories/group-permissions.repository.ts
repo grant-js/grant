@@ -5,10 +5,12 @@ import {
   GroupPermission,
   QueryGroupPermissionsInput,
   RemoveGroupPermissionInput,
+  Scope,
 } from '@grantjs/schema';
+import { and, count, inArray, isNull, sql } from 'drizzle-orm';
 
 import { Transaction } from '@/lib/transaction-manager.lib';
-import { PivotRepository } from '@/repositories/common';
+import { accessibleIdSource, PivotRepository } from '@/repositories/common';
 
 export class GroupPermissionRepository
   extends PivotRepository<GroupPermissionModel, GroupPermission>
@@ -47,6 +49,36 @@ export class GroupPermissionRepository
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.countActiveByFieldValues('groupId', groupIds, transaction);
+  }
+
+  /** Groups of the scope that hold each permission, one grouped query. */
+  public async countGroupsByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    if (permissionIds.length === 0) {
+      return new Map();
+    }
+    const scopedGroups = accessibleIdSource('groups', scope);
+    if (scopedGroups.kind !== 'sql') {
+      return new Map();
+    }
+
+    const db = transaction || this.db;
+    const rows = await db
+      .select({ permissionId: groupPermissions.permissionId, count: count() })
+      .from(groupPermissions)
+      .where(
+        and(
+          inArray(groupPermissions.permissionId, permissionIds),
+          isNull(groupPermissions.deletedAt),
+          sql`${groupPermissions.groupId} IN ${scopedGroups.sql}`
+        )
+      )
+      .groupBy(groupPermissions.permissionId);
+
+    return new Map(rows.map((row) => [String(row.permissionId), Number(row.count)]));
   }
 
   public async addGroupPermission(

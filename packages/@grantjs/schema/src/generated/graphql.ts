@@ -338,6 +338,7 @@ export type GetGroupRelationsPreviewQueryVariables = Exact<{
   id: string | number;
   withPermissions: boolean;
   withTags: boolean;
+  withUsers?: boolean;
 }>;
 
 export type GetGroupRelationsPreviewQuery = {
@@ -346,6 +347,7 @@ export type GetGroupRelationsPreviewQuery = {
       id: string;
       permissions?: Array<{ id: string; name: string }> | null;
       tags?: Array<{ id: string; name: string; color: string }> | null;
+      users?: Array<{ id: string; name: string }> | null;
     }>;
   };
 };
@@ -399,6 +401,7 @@ export type GetGroupsListQuery = {
       createdAt: Date;
       updatedAt: Date;
       permissionCount: number;
+      userCount: number;
       tagCount: number;
       primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
       tags: Array<{ id: string; name: string; color: string; isPrimary: boolean | null }> | null;
@@ -1196,13 +1199,18 @@ export type DeletePermissionMutation = {
 export type GetPermissionRelationsPreviewQueryVariables = Exact<{
   scope: Types.Scope;
   id: string | number;
+  withTags?: boolean;
+  withGroups?: boolean;
+  withUsers?: boolean;
 }>;
 
 export type GetPermissionRelationsPreviewQuery = {
   permissions: {
     permissions: Array<{
       id: string;
-      tags: Array<{ id: string; name: string; color: string }> | null;
+      tags?: Array<{ id: string; name: string; color: string }> | null;
+      groups?: Array<{ id: string; name: string }> | null;
+      users?: Array<{ id: string; name: string }> | null;
     }>;
   };
 };
@@ -1260,6 +1268,8 @@ export type GetPermissionsListQuery = {
       condition: Record<string, unknown> | null;
       createdAt: Date;
       updatedAt: Date;
+      groupCount: number;
+      userCount: number;
       tagCount: number;
       primaryTag: { id: string; name: string; color: string; isPrimary: boolean | null } | null;
       resource: { id: string; name: string; slug: string } | null;
@@ -3939,6 +3949,15 @@ export const GetGroupRelationsPreviewDocument = {
             type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
           },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withUsers' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+          defaultValue: { kind: 'BooleanValue', value: false },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -4028,6 +4047,40 @@ export const GetGroupRelationsPreviewDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'users' },
+                        arguments: [
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'limit' },
+                            value: { kind: 'IntValue', value: '10' },
+                          },
+                        ],
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withUsers' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                           ],
                         },
                       },
@@ -4337,6 +4390,7 @@ export const GetGroupsListDocument = {
                         },
                       },
                       { kind: 'Field', name: { kind: 'Name', value: 'permissionCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'userCount' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
                     ],
                   },
@@ -7313,6 +7367,33 @@ export const GetPermissionRelationsPreviewDocument = {
             type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
           },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withTags' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+          defaultValue: { kind: 'BooleanValue', value: true },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withGroups' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+          defaultValue: { kind: 'BooleanValue', value: false },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'withUsers' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+          },
+          defaultValue: { kind: 'BooleanValue', value: false },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -7353,12 +7434,96 @@ export const GetPermissionRelationsPreviewDocument = {
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'tags' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withTags' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
                         selectionSet: {
                           kind: 'SelectionSet',
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'color' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'groups' },
+                        arguments: [
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'limit' },
+                            value: { kind: 'IntValue', value: '10' },
+                          },
+                        ],
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withGroups' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                          ],
+                        },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'users' },
+                        arguments: [
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'limit' },
+                            value: { kind: 'IntValue', value: '10' },
+                          },
+                        ],
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withUsers' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                           ],
                         },
                       },
@@ -7678,6 +7843,8 @@ export const GetPermissionsListDocument = {
                           ],
                         },
                       },
+                      { kind: 'Field', name: { kind: 'Name', value: 'groupCount' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'userCount' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'tagCount' } },
                     ],
                   },

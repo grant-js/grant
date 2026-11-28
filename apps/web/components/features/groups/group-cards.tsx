@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Group } from '@grantjs/schema';
-import { Group as GroupIcon, Shield, Tags } from 'lucide-react';
+import { Group as GroupIcon, Shield, Tags, Users } from 'lucide-react';
 
 import {
   CardBody,
@@ -33,6 +33,7 @@ export function GroupCards() {
   const cardFields = useMemo(
     () => [
       { key: 'permissions', label: t('form.permissions') },
+      { key: 'users', label: t('table.users') },
       { key: 'tags', label: t('table.tags') },
     ],
     [t]
@@ -102,6 +103,23 @@ export function GroupCards() {
                   count={group.permissionCount ?? 0}
                 >
                   {t('permissionCount', { count: group.permissionCount ?? 0 })}
+                </RelationCountChip>
+              ),
+            },
+            {
+              key: 'users',
+              label: {
+                icon: <Users className="h-3 w-3" />,
+                text: t('table.users'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="group"
+                  relation="users"
+                  entityId={group.id}
+                  count={group.userCount ?? 0}
+                >
+                  {t('userCount', { count: group.userCount ?? 0 })}
                 </RelationCountChip>
               ),
             },

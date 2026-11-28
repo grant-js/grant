@@ -7,8 +7,25 @@ type Permission implements Auditable {
   resource: Resource
   condition: JSON
   metadata: JSON!
+  """
+  Groups of the request's scope that hold the permission, sorted by name. `page` and `limit`
+  page them as in the groups list (by default the lists' page size). Requires `Group:Query`,
+  the groups list's own permission; without it the field is an authorization error.
+  """
+  groups(page: Int, limit: Int): [Group!]
+  """
+  Users holding the permission directly in the request's scope, not through a group or role,
+  sorted by name. `page` and `limit` page them as in the users list (by default the lists'
+  page size). Requires `User:Query`, the users list's own permission; without it the field is
+  an authorization error.
+  """
+  users(page: Int, limit: Int): [User!]
   tags: [Tag!]
   primaryTag: Tag
+  "Groups of the request's scope that hold the permission."
+  groupCount: Int!
+  "Users holding the permission directly in the request's scope, not through a group or role."
+  userCount: Int!
   tagCount: Int!
   createdAt: Date!
   updatedAt: Date!

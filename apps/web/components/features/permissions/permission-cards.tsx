@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { TagColor } from '@grantjs/constants';
 import { Permission } from '@grantjs/schema';
-import { Braces, CopyCheck, Package, Play, Tags } from 'lucide-react';
+import { Braces, CopyCheck, Group as GroupIcon, Package, Play, Tags, Users } from 'lucide-react';
 
 import {
   CardBody,
@@ -36,6 +36,8 @@ export function PermissionCards() {
     () => [
       { key: 'resource', label: t('form.resource') },
       { key: 'action', label: t('form.action') },
+      { key: 'groups', label: t('table.groups') },
+      { key: 'users', label: t('table.users') },
       { key: 'tags', label: t('table.tags') },
       { key: 'condition', label: t('table.condition') },
     ],
@@ -113,6 +115,40 @@ export function PermissionCards() {
                 text: t('form.action'),
               },
               value: <Badge variant="secondary">{permission.action}</Badge>,
+            },
+            {
+              key: 'groups',
+              label: {
+                icon: <GroupIcon className="h-3 w-3" />,
+                text: t('table.groups'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="permission"
+                  relation="groups"
+                  entityId={permission.id}
+                  count={permission.groupCount ?? 0}
+                >
+                  {t('groupCount', { count: permission.groupCount ?? 0 })}
+                </RelationCountChip>
+              ),
+            },
+            {
+              key: 'users',
+              label: {
+                icon: <Users className="h-3 w-3" />,
+                text: t('table.users'),
+              },
+              value: (
+                <RelationCountChip
+                  entity="permission"
+                  relation="users"
+                  entityId={permission.id}
+                  count={permission.userCount ?? 0}
+                >
+                  {t('userCount', { count: permission.userCount ?? 0 })}
+                </RelationCountChip>
+              ),
             },
             {
               key: 'tags',

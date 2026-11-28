@@ -81,6 +81,7 @@ export class GroupHandler extends CacheHandler {
     return {
       countPermissions: (groupIds) =>
         this.groupPermissions.countGroupPermissionsByGroupIds(groupIds),
+      countUsers: (groupIds) => this.userGroups.countUsersByGroupIds(groupIds, scope),
       loadScopedTags: async (groupIds) => {
         const pivots = await this.groupTags.getGroupTagsByGroupIds(groupIds);
         return this.hydrateScopedTagsForOwners({
@@ -305,5 +306,16 @@ export class GroupHandler extends CacheHandler {
 
   public async countGroupPermissions(params: { groupId: string }): Promise<number> {
     return this.groupPermissions.countGroupPermissions(params);
+  }
+
+  /** Direct members of the group in the scope (Group.userCount outside a list). */
+  public async countGroupUsers(params: { groupId: string; scope: Scope }): Promise<number> {
+    const counts = await this.userGroups.countUsersByGroupIds([params.groupId], params.scope);
+    return counts.get(params.groupId) ?? 0;
+  }
+
+  /** Ids of the group's direct members in the scope, for Group.users. */
+  public async getGroupUserIds(params: { groupId: string; scope: Scope }): Promise<string[]> {
+    return this.userGroups.getUserIdsByGroupId(params);
   }
 }
