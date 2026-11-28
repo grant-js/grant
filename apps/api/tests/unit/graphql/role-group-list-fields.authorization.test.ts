@@ -1,6 +1,6 @@
 /**
- * `Role.users` and `Group.roles` list entities the caller could otherwise only see through the
- * users or roles list. Each goes through that list's own guard: the same
+ * `Role.users`, `Group.roles`, `User.groups` and `User.permissions` list entities the caller
+ * could otherwise only see through the users, roles, groups or permissions list. Each goes through that list's own guard: the same
  * `authorizeGraphQLResolver` with the same options, so a caller without `User:Query` or
  * `Role:Query` gets an authorization error on the field (the web chip says "Not available")
  * while the relationship counts, which name no one, still resolve.
@@ -43,9 +43,15 @@ function setup(authorized: boolean) {
     groups: {
       getGroupRoleIds: vi.fn(async () => ['r-1']),
       countGroupRoles: vi.fn(async () => 1),
+      getGroups: vi.fn(async () => ({ groups: [{ id: 'g-1', name: 'Editors' }] })),
+    },
+    permissions: {
+      getPermissions: vi.fn(async () => ({ permissions: [{ id: 'p-1', name: 'Read' }] })),
     },
     users: {
       countUserGroups: vi.fn(async () => 3),
+      getUserGroupIds: vi.fn(async () => ['g-1']),
+      getUserPermissionIds: vi.fn(async () => ['p-1']),
       getUsers: vi.fn(async () => ({
         users: [
           { id: 'u-1', name: 'Ada' },
@@ -76,6 +82,8 @@ describe('role and group relationship list fields', () => {
   it.each([
     ['Role.users', roleResolver.users],
     ['Group.roles', groupResolver.roles],
+    ['User.groups', userResolver.groups],
+    ['User.permissions', userResolver.permissions],
   ])('%s is behind the authorization guard', (_name, resolver) => {
     expect(isAuthorizedGraphQLResolver(resolver)).toBe(true);
   });
@@ -158,6 +166,52 @@ describe('role and group relationship list fields', () => {
     expect(handlers.roles.getRoles).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['groups', 'User.groups', ResourceSlug.Group],
+    ['permissions', 'User.permissions', ResourceSlug.Permission],
+  ] as const)('checks the %s list’s own permission for %s', async (list, _field, resource) => {
+    const { context, isAuthorized } = setup(true);
+    await call(Query[list], {}, context, { scope });
+    const listCheck = isAuthorized.mock.calls.at(-1)?.[0];
+
+    isAuthorized.mockClear();
+    await call(userResolver[list], { id: 'u-1' }, context);
+    expect(isAuthorized).toHaveBeenCalledTimes(1);
+    expect(isAuthorized.mock.calls[0]?.[0]).toEqual(listCheck);
+    expect(listCheck).toMatchObject({ permission: { resource, action: ResourceAction.Query } });
+  });
+
+  it('lists a user’s groups and permissions through their lists, in the caller’s scope, by name', async () => {
+    const { context, handlers } = setup(true);
+    await expect(call(userResolver.groups, { id: 'u-1' }, context, { limit: 10 })).resolves.toEqual(
+      [{ id: 'g-1', name: 'Editors' }]
+    );
+    expect(handlers.groups.getGroups).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope,
+        ids: ['g-1'],
+        limit: 10,
+        sort: { field: 'name', order: 'ASC' },
+      })
+    );
+    await expect(call(userResolver.permissions, { id: 'u-1' }, context)).resolves.toEqual([
+      { id: 'p-1', name: 'Read' },
+    ]);
+    expect(handlers.permissions.getPermissions).toHaveBeenCalledWith(
+      expect.objectContaining({ scope, ids: ['p-1'] })
+    );
+  });
+
+  it('does not call the groups or permissions list with no ids', async () => {
+    const { context, handlers } = setup(true);
+    handlers.users.getUserGroupIds.mockResolvedValueOnce([]);
+    handlers.users.getUserPermissionIds.mockResolvedValueOnce([]);
+    await expect(call(userResolver.groups, { id: 'u-1' }, context)).resolves.toEqual([]);
+    await expect(call(userResolver.permissions, { id: 'u-1' }, context)).resolves.toEqual([]);
+    expect(handlers.groups.getGroups).not.toHaveBeenCalled();
+    expect(handlers.permissions.getPermissions).not.toHaveBeenCalled();
+  });
+
   describe('a viewer without the list’s permission', () => {
     it('gets an authorization error for Role.users and lists nothing', async () => {
       const { context, handlers } = setup(false);
@@ -175,6 +229,19 @@ describe('role and group relationship list fields', () => {
       );
       expect(handlers.groups.getGroupRoleIds).not.toHaveBeenCalled();
       expect(handlers.roles.getRoles).not.toHaveBeenCalled();
+    });
+
+    it('gets an authorization error for User.groups and User.permissions and lists nothing', async () => {
+      const { context, handlers } = setup(false);
+      expect(await refusal(call(userResolver.groups, { id: 'u-1' }, context))).toBeInstanceOf(
+        AuthorizationError
+      );
+      expect(await refusal(call(userResolver.permissions, { id: 'u-1' }, context))).toBeInstanceOf(
+        AuthorizationError
+      );
+      expect(handlers.users.getUserGroupIds).not.toHaveBeenCalled();
+      expect(handlers.groups.getGroups).not.toHaveBeenCalled();
+      expect(handlers.permissions.getPermissions).not.toHaveBeenCalled();
     });
 
     it('still sees the counts', async () => {

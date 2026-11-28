@@ -1,7 +1,13 @@
 import { userApiKeyCredentialsResolver as apiKeyCredentials } from './api-key-credentials.resolver';
-import { userGroupsResolver as userGroups } from './groups.resolver';
+import {
+  userGroupsListResolver as groups,
+  userGroupsResolver as userGroups,
+} from './groups.resolver';
 import { userPasswordCredentialResolver as passwordCredential } from './password-credential.resolver';
-import { userPermissionsResolver as userPermissions } from './permissions.resolver';
+import {
+  userPermissionsListResolver as permissions,
+  userPermissionsResolver as userPermissions,
+} from './permissions.resolver';
 import {
   userGroupCountResolver as groupCount,
   userPermissionCountResolver as permissionCount,
@@ -18,6 +24,8 @@ export const userResolver = {
   roles,
   userGroups,
   userPermissions,
+  groups,
+  permissions,
   primaryTag,
   roleCount,
   groupCount,

@@ -258,22 +258,13 @@ describe('useRelationPreview for the roles, groups and permissions chips of the 
     },
   });
 
-  it('lists a user’s groups from the pivot rows, dropping a row whose group is not in the scope', async () => {
+  it('lists a user’s direct groups, as the groups list narrows them to the scope', async () => {
     const mock = userPreview(
       { withGroups: true, withPermissions: false },
       {
-        userGroups: [
-          {
-            __typename: 'UserGroup',
-            groupId: 'g-1',
-            group: { __typename: 'Group', id: 'g-1', name: 'Editors' },
-          },
-          { __typename: 'UserGroup', groupId: 'g-elsewhere', group: null },
-          {
-            __typename: 'UserGroup',
-            groupId: 'g-2',
-            group: { __typename: 'Group', id: 'g-2', name: 'Viewers' },
-          },
+        groups: [
+          { __typename: 'Group', id: 'g-1', name: 'Editors' },
+          { __typename: 'Group', id: 'g-2', name: 'Viewers' },
         ],
         groupCount: 2,
       }
@@ -285,24 +276,17 @@ describe('useRelationPreview for the roles, groups and permissions chips of the 
     act(() => result.current.load());
     await waitFor(() =>
       expect(result.current.items).toEqual([
-        { id: 'g-1', name: 'Editors' },
-        { id: 'g-2', name: 'Viewers' },
+        expect.objectContaining({ id: 'g-1', name: 'Editors' }),
+        expect.objectContaining({ id: 'g-2', name: 'Viewers' }),
       ])
     );
   });
 
-  it('lists a user’s direct permissions from the pivot rows, dropping one that is not in the scope', async () => {
+  it('lists a user’s direct permissions', async () => {
     const mock = userPreview(
       { withGroups: false, withPermissions: true },
       {
-        userPermissions: [
-          { __typename: 'UserPermission', permissionId: 'p-elsewhere', permission: null },
-          {
-            __typename: 'UserPermission',
-            permissionId: 'p-1',
-            permission: { __typename: 'Permission', id: 'p-1', name: 'Read' },
-          },
-        ],
+        permissions: [{ __typename: 'Permission', id: 'p-1', name: 'Read' }],
         permissionCount: 1,
       }
     );
@@ -311,24 +295,22 @@ describe('useRelationPreview for the roles, groups and permissions chips of the 
       { wrapper: withMocks([mock]) }
     );
     act(() => result.current.load());
-    await waitFor(() => expect(result.current.items).toEqual([{ id: 'p-1', name: 'Read' }]));
+    await waitFor(() =>
+      expect(result.current.items).toEqual([expect.objectContaining({ id: 'p-1', name: 'Read' })])
+    );
   });
 
-  it('lists nothing, not an error, for a user whose pivot rows are all outside the scope', async () => {
-    const mock = userPreview(
-      { withGroups: true, withPermissions: false },
-      {
-        userGroups: [{ __typename: 'UserGroup', groupId: 'g-elsewhere', group: null }],
-        groupCount: 0,
-      }
-    );
+  it('reports an error, shown as "Not available", when the viewer may not list groups', async () => {
+    const mock = {
+      request: userPreview({ withGroups: true, withPermissions: false }, {}).request,
+      result: { errors: [new GraphQLError('Forbidden')] },
+    };
     const { result } = renderHook(
       () => useRelationPreview({ entity: 'user', relation: 'groups' }, 'u-1'),
       { wrapper: withMocks([mock]) }
     );
     act(() => result.current.load());
-    await waitFor(() => expect(result.current.items).toEqual([]));
-    expect(result.current.error).toBe(false);
+    await waitFor(() => expect(result.current.error).toBe(true));
   });
 });
 

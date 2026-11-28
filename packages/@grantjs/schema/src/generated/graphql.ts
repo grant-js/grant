@@ -2335,6 +2335,8 @@ export type GetUserRelationsPreviewQueryVariables = Exact<{
   withTags: boolean;
   withGroups?: boolean;
   withPermissions?: boolean;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
 }>;
 
 export type GetUserRelationsPreviewQuery = {
@@ -2345,11 +2347,8 @@ export type GetUserRelationsPreviewQuery = {
       permissionCount?: number;
       roles?: Array<{ id: string; name: string }> | null;
       tags?: Array<{ id: string; name: string; color: string }> | null;
-      userGroups?: Array<{ groupId: string; group: { id: string; name: string } | null }> | null;
-      userPermissions?: Array<{
-        permissionId: string;
-        permission: { id: string; name: string } | null;
-      }> | null;
+      groups?: Array<{ id: string; name: string }> | null;
+      permissions?: Array<{ id: string; name: string }> | null;
     }>;
   };
 };
@@ -12520,6 +12519,18 @@ export const GetUserRelationsPreviewDocument = {
           },
           defaultValue: { kind: 'BooleanValue', value: false },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          defaultValue: { kind: 'IntValue', value: '1' },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          defaultValue: { kind: 'IntValue', value: '10' },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -12614,7 +12625,19 @@ export const GetUserRelationsPreviewDocument = {
                       },
                       {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'userGroups' },
+                        name: { kind: 'Name', value: 'groups' },
+                        arguments: [
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'page' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+                          },
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'limit' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                          },
+                        ],
                         directives: [
                           {
                             kind: 'Directive',
@@ -12634,28 +12657,8 @@ export const GetUserRelationsPreviewDocument = {
                         selectionSet: {
                           kind: 'SelectionSet',
                           selections: [
-                            { kind: 'Field', name: { kind: 'Name', value: 'groupId' } },
-                            {
-                              kind: 'Field',
-                              name: { kind: 'Name', value: 'group' },
-                              arguments: [
-                                {
-                                  kind: 'Argument',
-                                  name: { kind: 'Name', value: 'scope' },
-                                  value: {
-                                    kind: 'Variable',
-                                    name: { kind: 'Name', value: 'scope' },
-                                  },
-                                },
-                              ],
-                              selectionSet: {
-                                kind: 'SelectionSet',
-                                selections: [
-                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                ],
-                              },
-                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                           ],
                         },
                       },
@@ -12681,7 +12684,19 @@ export const GetUserRelationsPreviewDocument = {
                       },
                       {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'userPermissions' },
+                        name: { kind: 'Name', value: 'permissions' },
+                        arguments: [
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'page' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+                          },
+                          {
+                            kind: 'Argument',
+                            name: { kind: 'Name', value: 'limit' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                          },
+                        ],
                         directives: [
                           {
                             kind: 'Directive',
@@ -12701,28 +12716,8 @@ export const GetUserRelationsPreviewDocument = {
                         selectionSet: {
                           kind: 'SelectionSet',
                           selections: [
-                            { kind: 'Field', name: { kind: 'Name', value: 'permissionId' } },
-                            {
-                              kind: 'Field',
-                              name: { kind: 'Name', value: 'permission' },
-                              arguments: [
-                                {
-                                  kind: 'Argument',
-                                  name: { kind: 'Name', value: 'scope' },
-                                  value: {
-                                    kind: 'Variable',
-                                    name: { kind: 'Name', value: 'scope' },
-                                  },
-                                },
-                              ],
-                              selectionSet: {
-                                kind: 'SelectionSet',
-                                selections: [
-                                  { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                                  { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                ],
-                              },
-                            },
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                           ],
                         },
                       },

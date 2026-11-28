@@ -1274,6 +1274,21 @@ export class UserHandler extends CacheHandler {
     return this.userGroups.getUserGroups({ userId: params.userId });
   }
 
+  /** Ids of the user's direct groups, for User.groups; the groups list narrows them to the scope. */
+  public async getUserGroupIds(params: { userId: string }): Promise<string[]> {
+    const pivots = await this.userGroups.getUserGroups({ userId: params.userId });
+    return [...new Set(pivots.map((pivot) => pivot.groupId))];
+  }
+
+  /**
+   * Ids of the user's direct permissions, for User.permissions; the permissions list narrows them
+   * to the scope.
+   */
+  public async getUserPermissionIds(params: { userId: string }): Promise<string[]> {
+    const pivots = await this.userPermissions.getUserPermissions({ userId: params.userId });
+    return [...new Set(pivots.map((pivot) => pivot.permissionId))];
+  }
+
   private async syncDirectUserGroupAdd(
     params: { userId: string; groupId: string; scope: Scope },
     tx: Transaction
