@@ -164,11 +164,13 @@ Slugs are normalized (lowercase, hyphenated). Export emits `slug:action` for cat
 
 Every CDM-portable entity has an opaque **`externalKey`**:
 
-| Source           | Rule                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Importer**     | You supply the key; must be unique within its section                                                      |
-| **Exporter**     | Grant generates stable keys like `cdm-tag-3f2a9b1c…` via `buildExternalKey(kind, …)`                       |
-| **Traceability** | Original Grant ids live in `metadata.cdmSource` (`grantRoleId`, `grantTagId`, …)—never as cross-references |
+| Source           | Rule                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Importer**     | You supply the key; must be unique within its section                                                                                                                       |
+| **Exporter**     | Grant generates stable keys like `cdm-tag-3f2a9b1c…` via `buildExternalKey(kind, …)`. A role, group, user or user API key an earlier import created keeps that import's key |
+| **Traceability** | Original Grant ids live in `metadata.cdmSource` (`grantRoleId`, `grantTagId`, …)—never as cross-references                                                                  |
+
+An export uses one key per role and per group everywhere it names it: `roles[].key`, `groups[].key`, `roles[].groups` and `users[].roles` / `users[].groups`, so every assignment resolves when the document is imported again.
 
 **Users:** reference an existing account with `userAssignments[].userId`, or define `users[]` and link via `userAssignments[].userKey` → `users[].externalKey`.
 

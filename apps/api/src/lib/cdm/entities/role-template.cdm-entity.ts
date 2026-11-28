@@ -19,6 +19,7 @@ import type {
 } from '@/repositories/project-import.repository';
 
 import type { CdmEntityBuilder } from '../cdm-entity-builder';
+import { cdmExportGroupKey, cdmExportRoleKey, stripCdmRolePrefix } from '../cdm-export-key.lib';
 import type { CdmRoleTemplateInternal } from '../cdm-internal.types';
 import { isSyntheticCdmRoleMetadata } from '../cdm-synthetic.lib';
 import { buildExternalKey } from '../identity.lib';
@@ -225,7 +226,9 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
    * Project current roles + their effective permissions back to the CDM
    * `RoleTemplateCdmInput` shape.
    *
-   * Identity preservation: `externalKey = buildExternalKey('role', roleId, name)`.
+   * Identity preservation: `externalKey = cdmExportRoleKey(...)` and the linked group's
+   * `cdmExportGroupKey(...)`, the keys the user-assignment export references: an imported
+   * role or group keeps the importer's key, any other gets an opaque generated key.
    * Round-tripped exports never leak Grant UUIDs as identity. The Grant ids are
    * preserved under `metadata.cdmSource.grantRoleId` / `grantGroupId` for
    * traceability.
@@ -336,7 +339,7 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
         groupId && groupMeta
           ? {
               grantGroupId: groupId,
-              groupKey: buildExternalKey('group', groupId, groupMeta.name),
+              groupKey: cdmExportGroupKey(groupId, groupMeta.name, groupMeta.metadata ?? {}),
               groupName: groupMeta.name,
               groupDescription: groupMeta.description,
               permissionKeys: sortedPermissionKeysByGroupId.get(groupId) ?? [],
@@ -346,7 +349,7 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
             }
           : undefined;
       return {
-        externalKey: buildExternalKey('role', r.roleId, stripCdmRolePrefix(r.name)),
+        externalKey: cdmExportRoleKey(r.roleId, r.name, r.metadata),
         name: stripCdmRolePrefix(r.name),
         description: r.description,
         permissionRefs: r.permissions.map((p) => {
@@ -379,14 +382,6 @@ export class RoleTemplateCdmEntity implements ICdmEntityHandler<
   private lookupRef(ctx: CdmApplyContext, ref: CdmPermissionRefSpec): ResolvedCdmPermission {
     return ctx.lookupResolvedRef(ref) as ResolvedCdmPermission;
   }
-}
-
-/**
- * Strip the `CDM:` prefix that the importer adds to created role names so
- * round-tripped exports look like the original input.
- */
-function stripCdmRolePrefix(name: string): string {
-  return name.startsWith('CDM: ') ? name.slice('CDM: '.length) : name;
 }
 
 /**
