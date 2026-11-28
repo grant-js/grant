@@ -13,6 +13,7 @@ import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { PermissionConditionCard } from './permission-condition-card';
 import { PermissionGeneralCard } from './permission-general-card';
+import { PermissionMetadataCard } from './permission-metadata-card';
 import { PermissionTags } from './permission-tags';
 
 export function PermissionDetailViewer() {
@@ -57,6 +58,7 @@ export function PermissionDetailViewer() {
     <FeatureDetailLayout>
       <PermissionGeneralCard permission={permission} onAfterPermissionMutation={refetch} />
       <PermissionConditionCard permission={permission} onAfterPermissionMutation={refetch} />
+      <PermissionMetadataCard permission={permission} onAfterPermissionMutation={refetch} />
       <PermissionTags permission={permission} />
       <RelationListCard
         entity="permission"

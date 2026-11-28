@@ -28,6 +28,7 @@ query GetPermissions(
         slug
       }
       condition
+      metadata
       tags {
         id
         name

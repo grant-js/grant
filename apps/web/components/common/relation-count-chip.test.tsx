@@ -6,7 +6,14 @@ import { LoadedCountChip, RelationCountChip } from './relation-count-chip';
 
 const preview = {
   load: vi.fn(),
-  items: undefined as Array<{ id: string; name: string; color?: string }> | undefined,
+  items: undefined as
+    | Array<{
+        id: string;
+        name: string;
+        color?: string;
+        authenticationMethods?: Array<{ provider: string; providerId: string }>;
+      }>
+    | undefined,
   loading: false,
   error: false,
   called: false,
@@ -103,6 +110,52 @@ describe('RelationCountChip', () => {
     );
     fireEvent.focus(screen.getByRole('button', { name: '1 user' }));
     expect(screen.getByText('Ada').closest('a')?.getAttribute('href')).toBe(`${BASE}/users/u-7`);
+  });
+
+  it('lists each user with their email, telling apart two users of the same name', () => {
+    preview.called = true;
+    preview.items = [
+      {
+        id: 'u-1',
+        name: 'Sam Lee',
+        authenticationMethods: [{ provider: 'email', providerId: 'sam.lee@example.test' }],
+      },
+      {
+        id: 'u-2',
+        name: 'Sam Lee',
+        authenticationMethods: [{ provider: 'email', providerId: 'sam.lee2@example.test' }],
+      },
+      {
+        id: 'u-3',
+        name: 'No Email',
+        authenticationMethods: [{ provider: 'github', providerId: '42' }],
+      },
+    ];
+    render(
+      <RelationCountChip entity="permission" relation="users" entityId="p-1" count={3}>
+        3 users
+      </RelationCountChip>
+    );
+    fireEvent.focus(screen.getByRole('button', { name: '3 users' }));
+
+    const emails = screen.getAllByTestId('user-label-email').map((el) => el.textContent);
+    expect(emails).toEqual(['sam.lee@example.test', 'sam.lee2@example.test']);
+    expect(screen.getAllByText('Sam Lee')[1].closest('a')?.getAttribute('href')).toBe(
+      `${BASE}/users/u-2`
+    );
+    expect(screen.getByText('No Email')).toBeDefined();
+  });
+
+  it('shows no email next to roles, groups or permissions', () => {
+    preview.called = true;
+    preview.items = [{ id: 'r-1', name: 'Editor' }];
+    render(
+      <RelationCountChip entity="user" relation="roles" entityId="u-1" count={1}>
+        1 role
+      </RelationCountChip>
+    );
+    fireEvent.focus(screen.getByRole('button', { name: '1 role' }));
+    expect(screen.queryByTestId('user-label-email')).toBeNull();
   });
 
   it('shows tags as chips, without links', () => {

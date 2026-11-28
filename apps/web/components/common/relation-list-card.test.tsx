@@ -5,7 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RelationListCard } from './relation-list-card';
 
 const page = {
-  items: undefined as Array<{ id: string; name: string }> | undefined,
+  items: undefined as
+    | Array<{
+        id: string;
+        name: string;
+        authenticationMethods?: Array<{ provider: string; providerId: string }>;
+      }>
+    | undefined,
   totalCount: 0,
   loading: false,
   error: false,
@@ -64,6 +70,48 @@ describe('RelationListCard', () => {
     ).toBe(`${BASE}/users/u-2`);
     expect(screen.queryByRole('checkbox')).toBeNull();
     expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('pads the avatar column as a table without checkboxes does', () => {
+    Object.assign(page, { items: users(1), totalCount: 1 });
+    renderCard();
+
+    const avatarCell = screen.getByText('User 1').closest('tr')?.querySelector('td');
+    expect(avatarCell?.className).toContain('pl-2');
+  });
+
+  it('shows each user’s email next to the name', () => {
+    Object.assign(page, {
+      items: [
+        {
+          id: 'u-1',
+          name: 'Sam Lee',
+          authenticationMethods: [{ provider: 'email', providerId: 'sam.lee@example.test' }],
+        },
+        { id: 'u-2', name: 'Sam Lee' },
+      ],
+      totalCount: 2,
+    });
+    renderCard();
+    expect(screen.getAllByText('Sam Lee')).toHaveLength(2);
+    expect(screen.getAllByTestId('user-label-email').map((el) => el.textContent)).toEqual([
+      'sam.lee@example.test',
+    ]);
+  });
+
+  it('shows no email next to groups', () => {
+    Object.assign(page, { items: [{ id: 'g-1', name: 'Finance' }], totalCount: 1 });
+    render(
+      <RelationListCard
+        entity="permission"
+        relation="groups"
+        entityId="p-1"
+        messages="permission.groups"
+        icon={null}
+      />
+    );
+    expect(screen.getByText('Finance')).toBeDefined();
+    expect(screen.queryByTestId('user-label-email')).toBeNull();
   });
 
   it('asks for the first page of ten and pages through the rest', () => {

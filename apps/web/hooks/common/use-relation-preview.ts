@@ -23,6 +23,8 @@ interface RelationPreviewItem {
   name: string;
   /** Tags only. */
   color?: string | null;
+  /** Users only: where their email comes from (see `getUserEmail`). */
+  authenticationMethods?: ReadonlyArray<{ provider: string; providerId: string }> | null;
 }
 
 type Row = Partial<
