@@ -602,7 +602,7 @@ const META: EnvVarMeta[] = [
     key: 'REDIS_DB',
     category: 'cache',
     label: 'Redis DB number',
-    description: 'Redis database number (default: 0).',
+    description: 'Redis database number for the cache and the BullMQ job queue (default: 0).',
     envFiles: ['.env'],
     dependsOn: { key: 'CACHE_STRATEGY', values: ['redis'] },
     digitsOnly: true,
@@ -612,7 +612,8 @@ const META: EnvVarMeta[] = [
     key: 'REDIS_KEY_PREFIX',
     category: 'cache',
     label: 'Redis key prefix',
-    description: 'Redis key prefix for namespacing (default: grant:).',
+    description:
+      'Namespace for every Redis key: cache entries and the BullMQ job queue (default: grant:). Deployments sharing one Redis server need distinct values.',
     envFiles: ['.env'],
     dependsOn: { key: 'CACHE_STRATEGY', values: ['redis'] },
     section: 'Redis',

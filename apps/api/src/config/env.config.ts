@@ -880,6 +880,8 @@ const JOB_CONFIG = {
           host: REDIS_CONFIG.host,
           port: REDIS_CONFIG.port,
           password: REDIS_CONFIG.password,
+          db: REDIS_CONFIG.database,
+          prefix: `${REDIS_CONFIG.keyPrefix}bull`,
         }
       : undefined,
 
