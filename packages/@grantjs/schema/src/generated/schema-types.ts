@@ -4001,6 +4001,12 @@ export type SyncProjectResult = {
    */
   projectUserApiKeysRotated: Scalars['Int']['output'];
   /**
+   * Document API keys without a `clientSecret` (an export never carries one) that matched no key
+   * of the importing project by `key` or `clientId`, so none was created. A matched key is left as
+   * it is and counted in `projectUserApiKeysUnchanged`.
+   */
+  projectUserApiKeysSkippedNoSecret: Scalars['Int']['output'];
+  /**
    * CDM-managed project-user API keys whose `externalKey` and secret fingerprint already
    * matched on replace. Creates only increment `projectUserApiKeysCreated`.
    */
@@ -4496,6 +4502,11 @@ export type User = Auditable & {
 
 export type UserApiKeyCdmInput = {
   clientId?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * Plaintext secret to store for the key (at least 32 characters). An export writes `null`.
+   * Without a secret the import keeps the importing project's key that matches by `key` or
+   * `clientId`, and creates none otherwise (`projectUserApiKeysSkippedNoSecret`).
+   */
   clientSecret?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   expiresAt?: InputMaybe<Scalars['Date']['input']>;

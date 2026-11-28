@@ -29,6 +29,7 @@ import { usePermissionsStore } from '@/stores/permissions.store';
 
 import { PermissionActions } from './permission-actions';
 import { PermissionAudit } from './permission-audit';
+import { PermissionConditionChip } from './permission-condition-chip';
 import { PermissionNavigationButton } from './permission-navigation-button';
 
 const TABLE_ID = 'permissions.list';
@@ -149,6 +150,14 @@ export function PermissionTable() {
       ),
     },
     {
+      key: 'condition',
+      header: t('table.condition'),
+      width: '140px',
+      render: (permission: Permission) => (
+        <PermissionConditionChip condition={permission.condition} />
+      ),
+    },
+    {
       key: 'audit',
       header: t('table.audit'),
       width: '200px',
@@ -178,6 +187,7 @@ export function PermissionTable() {
       { key: 'groups', type: 'text' },
       { key: 'users', type: 'text' },
       { key: 'tags', type: 'text' },
+      { key: 'condition', type: 'text' },
       { key: 'audit', type: 'audit' },
       { key: 'navigation', type: 'icon' },
     ]),

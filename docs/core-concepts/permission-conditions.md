@@ -228,6 +228,12 @@ User must be in sales and (in us-east or us-west):
 }
 ```
 
+## In the web app
+
+The permission list shows a **Condition** column, or a field in the card view, reading _Has condition_ or _No condition_. Hover over _Has condition_ (or focus or tap it) to see the condition as read-only JSON that scrolls and copies. Conditions are edited on the permission's own page.
+
+![The permission list's Condition column, with a condition open](./permission-condition-chip.jpg)
+
 ## Validation
 
 Invalid conditions are rejected when creating or updating permissions. Common errors:

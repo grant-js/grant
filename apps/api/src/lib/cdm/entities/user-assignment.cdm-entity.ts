@@ -23,7 +23,11 @@ import type { ProjectExportRepository } from '@/repositories/project-export.repo
 import type { ResolvedCdmPermission } from '@/repositories/project-import.repository';
 
 import type { CdmEntityBuilder } from '../cdm-entity-builder';
-import { resolveCdmExportExternalKey } from '../cdm-export-key.lib';
+import {
+  cdmExportGroupKey,
+  cdmExportRoleKey,
+  resolveCdmExportExternalKey,
+} from '../cdm-export-key.lib';
 import type { CdmPermissionRefInternal, CdmUserAssignmentInternal } from '../cdm-internal.types';
 import { isSyntheticCdmRoleMetadata } from '../cdm-synthetic.lib';
 import { buildExternalKey } from '../identity.lib';
@@ -420,8 +424,7 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
     const roleKeyById = new Map<string, string>();
     for (const r of roleRows) {
       if (syntheticRoleIds.has(r.roleId)) continue;
-      const name = r.name.startsWith('CDM: ') ? r.name.slice('CDM: '.length) : r.name;
-      roleKeyById.set(r.roleId, resolveCdmExportExternalKey('role', r.roleId, name, r.metadata));
+      roleKeyById.set(r.roleId, cdmExportRoleKey(r.roleId, r.name, r.metadata));
     }
 
     const permissionKeyById = new Map<string, string>();
@@ -458,10 +461,7 @@ export class UserAssignmentCdmEntity implements ICdmEntityHandler<
         : Promise.resolve([]),
     ]);
     const groupKeyById = new Map(
-      groupRows.map((g) => [
-        g.groupId,
-        resolveCdmExportExternalKey('group', g.groupId, g.name, g.metadata),
-      ])
+      groupRows.map((g) => [g.groupId, cdmExportGroupKey(g.groupId, g.name, g.metadata)])
     );
     const permissionKeysByGroupId = new Map<string, Set<string>>();
     for (const row of groupPermRows) {

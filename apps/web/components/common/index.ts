@@ -9,6 +9,7 @@ export * from './card-header';
 export * from './card-skeleton';
 export * from './chip';
 export * from './chip-array';
+export * from './chip-popover';
 export * from './common-types';
 export * from './copy-to-clipboard';
 export * from './create-dialog';

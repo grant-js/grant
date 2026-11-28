@@ -164,11 +164,13 @@ Slugs are normalized (lowercase, hyphenated). Export emits `slug:action` for cat
 
 Every CDM-portable entity has an opaque **`externalKey`**:
 
-| Source           | Rule                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Importer**     | You supply the key; must be unique within its section                                                      |
-| **Exporter**     | Grant generates stable keys like `cdm-tag-3f2a9b1c…` via `buildExternalKey(kind, …)`                       |
-| **Traceability** | Original Grant ids live in `metadata.cdmSource` (`grantRoleId`, `grantTagId`, …)—never as cross-references |
+| Source           | Rule                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Importer**     | You supply the key; must be unique within its section                                                                                                                       |
+| **Exporter**     | Grant generates stable keys like `cdm-tag-3f2a9b1c…` via `buildExternalKey(kind, …)`. A role, group, user or user API key an earlier import created keeps that import's key |
+| **Traceability** | Original Grant ids live in `metadata.cdmSource` (`grantRoleId`, `grantTagId`, …)—never as cross-references                                                                  |
+
+An export uses one key per role and per group everywhere it names it: `roles[].key`, `groups[].key`, `roles[].groups` and `users[].roles` / `users[].groups`, so every assignment resolves when the document is imported again.
 
 **Users:** reference an existing account with `userAssignments[].userId`, or define `users[]` and link via `userAssignments[].userKey` → `users[].externalKey`.
 
@@ -369,8 +371,20 @@ On **replace**, CDM-managed project-user API keys are matched by importer `exter
 | Document key with no existing row          | **Create**                                                               |
 | Existing CDM key missing from the document | **Delete**                                                               |
 | Key without `externalKey`                  | Tear down and recreate (no keep/rotate)                                  |
+| Document key without `clientSecret`        | See [keys without a secret](#api-keys-without-secret)                    |
 
-The HMAC key is `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`, resolved like other credentials (not a Lambda environment literal). Rotating or leaving it empty makes every fingerprint miss, so the next replace re-hashes. Importers cannot supply a fingerprint or a pre-computed hash. Export, snapshots, job payloads, warnings, audit values, and logs omit the fingerprint. Merge still creates new key rows. Replace fails closed if the same `externalKey` already exists on more than one CDM key (for example after repeated merges) instead of rebinding a secret to the first row. `SyncProjectResult` reports `projectUserApiKeysCreated` / `Unchanged` / `Rotated` / `Deleted`.
+The HMAC key is `CDM_API_KEY_FINGERPRINT_HMAC_SECRET`, resolved like other credentials (not a Lambda environment literal). Rotating or leaving it empty makes every fingerprint miss, so the next replace re-hashes. Importers cannot supply a fingerprint or a pre-computed hash. Export, snapshots, job payloads, warnings, audit values, and logs omit the fingerprint. Merge still creates new key rows. Replace fails closed if the same `externalKey` already exists on more than one CDM key (for example after repeated merges) instead of rebinding a secret to the first row. `SyncProjectResult` reports `projectUserApiKeysCreated` / `Unchanged` / `Rotated` / `Deleted` / `SkippedNoSecret`.
+
+#### Keys without a secret {#api-keys-without-secret}
+
+An export never carries secrets: each `users[].apiKeys[]` entry has `clientSecret: null`. Such a document imports as it is, on merge and on replace. A key without a secret creates nothing:
+
+| The importing project                                  | Outcome                                                                                       |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Holds a key with the same `key` (or, else, `clientId`) | **Left as it is**, counted in `projectUserApiKeysUnchanged`; replace does not delete it       |
+| Holds no such key                                      | **Skipped**, counted in `projectUserApiKeysSkippedNoSecret`; the rest of the document imports |
+
+Re-importing an export into the project it came from therefore keeps every key. Importing it into another project skips the keys; supply a `clientSecret` for each key that should be created there.
 
 ## Sync jobs
 

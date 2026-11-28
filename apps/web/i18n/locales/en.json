@@ -2652,7 +2652,13 @@
       "actions": "Actions",
       "loading": "Loading permissions...",
       "groups": "Groups",
-      "users": "Users"
+      "users": "Users",
+      "condition": "Condition"
+    },
+    "conditionChip": {
+      "title": "Condition",
+      "has": "Has condition",
+      "none": "No condition"
     },
     "toolbar": {
       "tags": {
@@ -4690,7 +4696,7 @@
         "users": "Users",
         "usersHint": "Members and role assignments for this project.",
         "userApiKeys": "User API keys",
-        "userApiKeysHint": "CDM-managed key identities in this export. Secrets are never included.",
+        "userApiKeysHint": "CDM-managed key identities in this export. Secrets are never included: importing the file keeps a project's matching keys and skips the others.",
         "roles": "Roles",
         "rolesHint": "Definitions and permission keys for this project (including catalog references).",
         "groups": "Groups",
@@ -4896,7 +4902,8 @@
         "projectUsersEnsured": "Project users ensured",
         "usersCreated": "Grant users created (CDM provision)",
         "userRolesAssigned": "User roles assigned",
-        "projectUserApiKeysCreated": "User API keys created"
+        "projectUserApiKeysCreated": "User API keys created",
+        "projectUserApiKeysSkippedNoSecret": "User API keys skipped (no secret)"
       },
       "payload": {
         "loading": "Loading payload…",
