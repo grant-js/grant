@@ -98,6 +98,7 @@ function CountChipPopover({
     <ChipPopover
       label={children}
       hasContent={count > 0}
+      contentClassName={users ? 'w-80' : undefined}
       onOpen={() => {
         if (!called) load?.();
       }}
