@@ -1,5 +1,28 @@
 # grant-api
 
+## 1.32.1
+
+### Patch Changes
+
+- aaedbb7: `REDIS_KEY_PREFIX` now namespaces every Redis key the API writes; it was read but never applied. Cache keys become `<prefix><entity>:…` (unchanged at the default `grant:`), and the BullMQ queue moves from `bull:grant-jobs` to `<prefix>bull:grant-jobs`. The queue also honours `REDIS_DB` now, as the cache already did. Two deployments sharing one Redis server previously shared one job queue and one cache namespace: a `project-sync` import taken by the other deployment's worker failed its tenant check against the wrong database and stayed `PENDING`. Give each deployment its own `REDIS_KEY_PREFIX` to keep them apart.
+
+  Upgrading moves the queue to a new key, so jobs still queued under `bull:grant-jobs` at deploy time are not picked up; recurring jobs are re-registered under the new prefix at startup.
+
+- @grantjs/schema@1.32.1
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.32.0
 
 ### Minor Changes
