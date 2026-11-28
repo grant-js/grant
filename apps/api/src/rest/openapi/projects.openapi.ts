@@ -358,9 +358,14 @@ and are never removed by Grant.
 
 ### Project user API keys (\`projectUserApiKeys\`)
 
-Optional array of per-member API keys. **Import:** each object must include a plaintext
-\`clientSecret\` (BYOK, minimum length 32); the worker never logs it. **Export and
-rollback snapshots** never include secrets — re-supply secrets when re-importing.
+Optional array of per-member API keys. **Import:** a key with a plaintext \`clientSecret\`
+(BYOK, minimum length 32) is created, kept or rotated; the worker never logs the secret.
+**Export and rollback snapshots** never include secrets: they write \`clientSecret: null\`, and
+such a document imports as it is. A key without a secret creates nothing: the importing
+project's key that matches by \`key\` (importer \`externalKey\`) or \`clientId\` is left as it
+is and counted in \`projectUserApiKeysUnchanged\` (on replace it is not deleted); a key with no
+match is skipped and counted in \`projectUserApiKeysSkippedNoSecret\`. Supply \`clientSecret\` to
+create a key in a project that does not hold it yet.
 
 ### Tags (\`tags\`)
 

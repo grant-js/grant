@@ -135,6 +135,11 @@ input RoleCdmInput {
 input UserApiKeyCdmInput {
   key: String
   clientId: String
+  """
+  Plaintext secret to store for the key (at least 32 characters). An export writes `null`.
+  Without a secret the import keeps the importing project's key that matches by `key` or
+  `clientId`, and creates none otherwise (`projectUserApiKeysSkippedNoSecret`).
+  """
   clientSecret: String
   name: String
   description: String

@@ -108,7 +108,15 @@ const roleCdmSchema = z.object({
 const userApiKeyCdmSchema = z.object({
   key: z.string().min(1).optional().nullable(),
   clientId: z.string().optional().nullable(),
-  clientSecret: z.string().min(32, 'errors.validation.clientSecretMin32').optional(),
+  clientSecret: z
+    .string()
+    .min(32, 'errors.validation.clientSecretMin32')
+    .optional()
+    .nullable()
+    .openapi({
+      description:
+        'Plaintext secret to store for the key (BYOK, at least 32 characters). An export writes `null`: it never carries secrets. Without a secret the import keeps the importing project key that matches by `key` or `clientId` and creates none otherwise (`projectUserApiKeysSkippedNoSecret`).',
+    }),
   name: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   expiresAt: z.string().optional().nullable(),

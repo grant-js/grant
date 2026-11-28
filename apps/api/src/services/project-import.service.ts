@@ -350,6 +350,7 @@ export class ProjectImportService implements IProjectImportService {
       projectUserApiKeysUnchanged: 0,
       projectUserApiKeysRotated: 0,
       projectUserApiKeysDeleted: 0,
+      projectUserApiKeysSkippedNoSecret: 0,
       passwordsImported: 0,
       passwordsUpdated: 0,
       passwordsUnchanged: 0,
