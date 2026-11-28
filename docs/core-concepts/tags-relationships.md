@@ -60,32 +60,43 @@ Attaching and detaching tags from entities is handled through entity-specific mu
 
 ## Relationship counts
 
-Permissions and groups report how many groups and users they are assigned to in the requested scope:
+Users, roles, groups and permissions report how many of each related entity they have in the requested scope:
 
 | Field                   | Counts                                                               |
 | ----------------------- | -------------------------------------------------------------------- |
 | `Permission.groupCount` | Groups of the scope that hold the permission                         |
 | `Permission.userCount`  | Users holding the permission directly, not through a group or a role |
 | `Group.userCount`       | Users assigned to the group directly, not through a role             |
+| `Group.roleCount`       | Roles of the scope that include the group                            |
+| `Role.userCount`        | Users the role is assigned to directly                               |
+| `User.groupCount`       | The user's direct groups in the scope, not those a role brings       |
+| `User.permissionCount`  | The user's direct permissions in the scope                           |
 
 **Rules**
 
 - **Direct assignments only.** A user who gets a permission through a group or a role is not counted.
 - **In a project,** the counts read the project's own assignments (`project_user_groups`, `project_user_permissions`) whose global assignment is live, as authorization does.
+  Roles have no project assignment table: a role's users in a project are its `user_roles` rows of the project's users.
 - **In an organization,** they read the organization's users.
-- **Lists:** the group and permission lists count a whole page in one grouped query per count.
-- **REST:** the counts are requested with `?fields=`: `userCount` on groups, and `groupCount` and `userCount` on permissions.
+- **Lists:** the user, role, group and permission lists count a whole page in one grouped query per count.
+- **REST:** the counts are requested with `?fields=`: `userCount` and `roleCount` on groups, `groupCount` and `userCount` on permissions, `userCount` on roles, and `groupCount` on users.
 
 **The related entities**
 
-The lists behind the counts are `Permission.groups`, `Permission.users` and `Group.users`, each taking `page` and `limit` and sorted by name.
+The lists behind the counts are `Permission.groups`, `Permission.users`, `Group.users`, `Group.roles`, `Role.users`, `User.groups` and `User.permissions`, each taking `page` and `limit` and sorted by name.
 
-- **Authorization:** each is checked like the list it comes from. `users` needs `User:Query` and `groups` needs `Group:Query`. Without that permission the field is an authorization error, while the count still resolves.
+- **Authorization:** each is checked like the list it comes from: `users` needs `User:Query`, `groups` needs `Group:Query`, `roles` needs `Role:Query` and `permissions` needs `Permission:Query`. Without that permission the field is an authorization error, while the count still resolves.
 - **In the web app:** the counts are chips that list the first ten on hover, focus or tap. A viewer who may not list users sees the count and _Not available_.
 
 ![The permission list's Groups and Users chips, with a permission's users open](./relationship-counts-permissions.jpg)
 
 ![The group list's Users chip, with a group's members open](./relationship-counts-groups.jpg)
+
+![The role list's Users chip, with a role's users open](./relationship-counts-roles.jpg)
+
+![The user list's Groups and Permissions chips, with a user's groups open](./relationship-counts-users.jpg)
+
+![The group list's Roles chip, with the roles that include a group open](./relationship-counts-group-roles.jpg)
 
 ### On detail pages
 
