@@ -33,7 +33,11 @@ import {
   TagCdmEntity,
   UserAssignmentCdmEntity,
 } from '@/lib/cdm';
-import { type CdmDocumentInput, parseCdmDocument } from '@/lib/cdm/cdm-document.schemas';
+import {
+  type CdmDocumentInput,
+  parseCdmDocument,
+  validateSyncInput,
+} from '@/lib/cdm/cdm-document.schemas';
 import { ProjectUserApiKeyCdmEntity } from '@/lib/cdm/entities/project-user-api-key.cdm-entity';
 
 const projectAId = 'aaaa0000-0000-4000-8000-000000000001';
@@ -606,9 +610,10 @@ describe('CDM round-trip integration', () => {
       expect(key.clientSecret).toBeNull();
     }
 
-    // The JSON a person downloads and uploads again, through the one import schema.
-    const doc = parseCdmDocument(JSON.parse(JSON.stringify(exported)));
-    const slice = expandCdmSyncInput(doc).projectUserApiKeys;
+    // The JSON a person downloads and uploads again, read as the import job reads an upload.
+    const parsed = parseCdmDocument(JSON.parse(JSON.stringify(exported)));
+    validateSyncInput(parsed, { redactUserKeys: true });
+    const slice = expandCdmSyncInput(parsed as unknown as CdmDocumentInput).projectUserApiKeys;
     apiKeyEntity.validateInput(slice);
 
     async function importInto(projectId: string, scope: Scope): Promise<SyncProjectResult> {
