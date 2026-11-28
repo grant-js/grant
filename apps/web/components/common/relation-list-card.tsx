@@ -11,9 +11,9 @@ import {
   type DetailLinkedEntity,
 } from '@/components/common/detail-entity-link-column';
 import {
-  DETAIL_ICON_COLUMN,
-  DETAIL_ICON_SKELETON,
-  DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
+  DETAIL_ICON_ONLY_COLUMN,
+  DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS,
+  DETAIL_ICON_ONLY_SKELETON,
   DETAIL_TEXT_COLUMN,
   DetailTableIconCell,
 } from '@/components/common/detail-table-layout';
@@ -76,7 +76,7 @@ export function RelationListCard({
     {
       key: 'icon',
       header: '',
-      ...DETAIL_ICON_COLUMN,
+      ...DETAIL_ICON_ONLY_COLUMN,
       render: (item) => (
         <DetailTableIconCell>
           <Avatar initial={item.name.charAt(0)} size="sm" />
@@ -87,7 +87,7 @@ export function RelationListCard({
       key: 'name',
       header: t('table.name'),
       ...DETAIL_TEXT_COLUMN,
-      className: DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
+      className: DETAIL_ICON_ONLY_PRIMARY_CONTENT_COLUMN_CLASS,
       render: (item) =>
         relation === 'users' ? (
           <UserLabel user={item} className="text-sm font-medium" />
@@ -126,7 +126,7 @@ export function RelationListCard({
           emptyState={{ icon, title: t('empty'), description: t('emptyDescription') }}
           skeletonConfig={{
             columns: [
-              DETAIL_ICON_SKELETON,
+              DETAIL_ICON_ONLY_SKELETON,
               { key: 'name', type: 'text', ...DETAIL_TEXT_COLUMN },
               DETAIL_ENTITY_LINK_SKELETON,
             ],

@@ -72,6 +72,14 @@ describe('RelationListCard', () => {
     expect(screen.queryByRole('textbox')).toBeNull();
   });
 
+  it('pads the avatar column as a table without checkboxes does', () => {
+    Object.assign(page, { items: users(1), totalCount: 1 });
+    renderCard();
+
+    const avatarCell = screen.getByText('User 1').closest('tr')?.querySelector('td');
+    expect(avatarCell?.className).toContain('pl-2');
+  });
+
   it('shows each user’s email next to the name', () => {
     Object.assign(page, {
       items: [
