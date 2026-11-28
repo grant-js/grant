@@ -23,6 +23,9 @@ export const groupPermissions = pgTable(
       .on(table.groupId, table.permissionId)
       .where(sql`${table.deletedAt} IS NULL`),
     index('group_permissions_deleted_at_idx').on(table.deletedAt),
+    index('group_permissions_permission_id_idx')
+      .on(table.permissionId)
+      .where(sql`${table.deletedAt} IS NULL`),
   ]
 );
 

@@ -10,6 +10,7 @@ type ScopedTagHydration = {
 
 export type GroupListHydrationContext = {
   countPermissions: (groupIds: string[]) => Promise<Map<string, number>>;
+  countUsers: (groupIds: string[]) => Promise<Map<string, number>>;
   loadScopedTags: (groupIds: string[]) => Promise<ScopedTagHydration>;
 };
 
@@ -42,6 +43,17 @@ export const groupListHydrators: Array<ListHydrator<Group, GroupListHydrationCon
       return items.map((group) => ({
         ...group,
         permissionCount: counts.get(group.id) ?? 0,
+      }));
+    },
+  },
+  {
+    fields: ['userCount'],
+    hydrate: async ({ context, items }) => {
+      const counts = await context.countUsers(items.map((group) => group.id));
+
+      return items.map((group) => ({
+        ...group,
+        userCount: counts.get(group.id) ?? 0,
       }));
     },
   },

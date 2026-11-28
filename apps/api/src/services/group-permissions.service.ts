@@ -11,6 +11,7 @@ import {
   GroupPermission,
   QueryGroupPermissionsInput,
   RemoveGroupPermissionInput,
+  Scope,
 } from '@grantjs/schema';
 
 import { ConflictError, NotFoundError } from '@/lib/errors';
@@ -107,6 +108,18 @@ export class GroupPermissionService implements IGroupPermissionService {
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.groupPermissionRepository.countGroupPermissionsByGroupIds(groupIds, transaction);
+  }
+
+  public async countGroupsByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.groupPermissionRepository.countGroupsByPermissionIds(
+      permissionIds,
+      scope,
+      transaction
+    );
   }
 
   public async addGroupPermission(

@@ -15,8 +15,8 @@ import { useScopeFromParams } from './use-scope-from-params';
 export type RelationPreviewTarget =
   | { entity: 'user'; relation: 'roles' | 'tags' }
   | { entity: 'role'; relation: 'groups' | 'tags' }
-  | { entity: 'group'; relation: 'permissions' | 'tags' }
-  | { entity: 'permission'; relation: 'tags' };
+  | { entity: 'group'; relation: 'permissions' | 'users' | 'tags' }
+  | { entity: 'permission'; relation: 'groups' | 'users' | 'tags' };
 
 interface RelationPreviewItem {
   id: string;
@@ -26,7 +26,7 @@ interface RelationPreviewItem {
 }
 
 type Row = Partial<
-  Record<'roles' | 'groups' | 'permissions' | 'tags', RelationPreviewItem[] | null>
+  Record<'roles' | 'groups' | 'permissions' | 'users' | 'tags', RelationPreviewItem[] | null>
 >;
 
 const DOCUMENTS = {
@@ -46,10 +46,15 @@ function flagsFor(target: RelationPreviewTarget): Record<string, boolean> {
     case 'group':
       return {
         withPermissions: target.relation === 'permissions',
+        withUsers: target.relation === 'users',
         withTags: target.relation === 'tags',
       };
     case 'permission':
-      return {};
+      return {
+        withGroups: target.relation === 'groups',
+        withUsers: target.relation === 'users',
+        withTags: target.relation === 'tags',
+      };
   }
 }
 

@@ -15,6 +15,33 @@ export const permissionPrimaryTagResolver: PermissionResolvers<GraphqlContext>['
     return resolvePrimaryTagFromPivots(context, pivots);
   };
 
+export const permissionGroupCountResolver: PermissionResolvers<GraphqlContext>['groupCount'] =
+  async (parent, _args, context) => {
+    if (typeof parent.groupCount === 'number') {
+      return parent.groupCount;
+    }
+    const scope = context.user?.scope;
+    if (!scope) {
+      return 0;
+    }
+    return context.handlers.permissions.countPermissionGroups({ permissionId: parent.id, scope });
+  };
+
+export const permissionUserCountResolver: PermissionResolvers<GraphqlContext>['userCount'] = async (
+  parent,
+  _args,
+  context
+) => {
+  if (typeof parent.userCount === 'number') {
+    return parent.userCount;
+  }
+  const scope = context.user?.scope;
+  if (!scope) {
+    return 0;
+  }
+  return context.handlers.permissions.countPermissionUsers({ permissionId: parent.id, scope });
+};
+
 export const permissionTagCountResolver: PermissionResolvers<GraphqlContext>['tagCount'] = async (
   parent,
   _args,

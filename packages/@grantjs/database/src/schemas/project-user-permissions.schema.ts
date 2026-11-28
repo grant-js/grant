@@ -35,6 +35,9 @@ export const projectUserPermissions = pgTable(
       .on(table.projectId, table.userId, table.permissionId)
       .where(sql`${table.deletedAt} IS NULL`),
     index('project_user_permissions_deleted_at_idx').on(table.deletedAt),
+    index('project_user_permissions_project_id_permission_id_idx')
+      .on(table.projectId, table.permissionId)
+      .where(sql`${table.deletedAt} IS NULL`),
     pgPolicy('tenant_isolation_policy', {
       as: 'restrictive',
       for: 'select',

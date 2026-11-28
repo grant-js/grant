@@ -10,6 +10,7 @@ import {
   AssignUserPermissionInput,
   QueryUserPermissionsInput,
   RevokeUserPermissionInput,
+  Scope,
   UserPermission,
 } from '@grantjs/schema';
 
@@ -114,6 +115,25 @@ export class UserPermissionService implements IUserPermissionService {
     transaction?: Transaction
   ): Promise<Map<string, number>> {
     return this.userPermissionRepository.countUserPermissionsByUserIds(userIds, transaction);
+  }
+
+  public async countUsersByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
+    transaction?: Transaction
+  ): Promise<Map<string, number>> {
+    return this.userPermissionRepository.countUsersByPermissionIds(
+      permissionIds,
+      scope,
+      transaction
+    );
+  }
+
+  public async getUserIdsByPermissionId(
+    params: { permissionId: string; scope: Scope },
+    transaction?: Transaction
+  ): Promise<string[]> {
+    return this.userPermissionRepository.getUserIdsByPermissionId(params, transaction);
   }
 
   public async assignUserPermission(

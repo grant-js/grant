@@ -24,6 +24,7 @@ import type {
   RemoveUserRoleInput,
   RemoveUserTagInput,
   RevokeUserPermissionInput,
+  Scope,
   UpdateUserAuthenticationMethodInput,
   UpdateUserInput,
   UpdateUserSessionInput,
@@ -120,6 +121,16 @@ export interface IUserRoleRepository {
 export interface IUserGroupRepository {
   getUserGroups(params: QueryUserGroupsInput, transaction?: unknown): Promise<UserGroup[]>;
   countUserGroups(params: { userId: string }, transaction?: unknown): Promise<number>;
+  /** Direct members of each group in the scope; memberships through roles are not counted. */
+  countUsersByGroupIds(
+    groupIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+  getUserIdsByGroupId(
+    params: { groupId: string; scope: Scope },
+    transaction?: unknown
+  ): Promise<string[]>;
   addUserGroup(params: AddUserGroupInput, transaction?: unknown): Promise<UserGroup>;
   softDeleteUserGroup(params: RemoveUserGroupInput, transaction?: unknown): Promise<UserGroup>;
   hardDeleteUserGroup(params: RemoveUserGroupInput, transaction?: unknown): Promise<UserGroup>;
@@ -136,6 +147,16 @@ export interface IUserPermissionRepository {
     userIds: string[],
     transaction?: unknown
   ): Promise<Map<string, number>>;
+  /** Users holding each permission directly in the scope, not through a group or role. */
+  countUsersByPermissionIds(
+    permissionIds: string[],
+    scope: Scope,
+    transaction?: unknown
+  ): Promise<Map<string, number>>;
+  getUserIdsByPermissionId(
+    params: { permissionId: string; scope: Scope },
+    transaction?: unknown
+  ): Promise<string[]>;
   addUserPermission(
     params: AssignUserPermissionInput,
     transaction?: unknown

@@ -976,6 +976,20 @@ export type Group = Auditable & {
   tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+  /** Users the group is assigned to directly in the request's scope, not through a role. */
+  userCount: Scalars['Int']['output'];
+  /**
+   * Users the group is assigned to directly in the request's scope, not through a role, sorted
+   * by name. `page` and `limit` page them as in the users list (by default the lists' page
+   * size). Requires `User:Query`, the users list's own permission; without it the field is an
+   * authorization error.
+   */
+  users?: Maybe<Array<User>>;
+};
+
+export type GroupUsersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type GroupCdmInput = {
@@ -2269,6 +2283,14 @@ export type Permission = Auditable & {
   createdAt: Scalars['Date']['output'];
   deletedAt?: Maybe<Scalars['Date']['output']>;
   description?: Maybe<Scalars['String']['output']>;
+  /** Groups of the request's scope that hold the permission. */
+  groupCount: Scalars['Int']['output'];
+  /**
+   * Groups of the request's scope that hold the permission, sorted by name. `page` and `limit`
+   * page them as in the groups list (by default the lists' page size). Requires `Group:Query`,
+   * the groups list's own permission; without it the field is an authorization error.
+   */
+  groups?: Maybe<Array<Group>>;
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
   name: Scalars['String']['output'];
@@ -2278,6 +2300,25 @@ export type Permission = Auditable & {
   tagCount: Scalars['Int']['output'];
   tags?: Maybe<Array<Tag>>;
   updatedAt: Scalars['Date']['output'];
+  /** Users holding the permission directly in the request's scope, not through a group or role. */
+  userCount: Scalars['Int']['output'];
+  /**
+   * Users holding the permission directly in the request's scope, not through a group or role,
+   * sorted by name. `page` and `limit` page them as in the users list (by default the lists'
+   * page size). Requires `User:Query`, the users list's own permission; without it the field is
+   * an authorization error.
+   */
+  users?: Maybe<Array<User>>;
+};
+
+export type PermissionGroupsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type PermissionUsersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Custom permission for this project; `resource` is an opaque key in the same document. */

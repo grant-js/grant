@@ -680,6 +680,13 @@
       "when": 1793459096997,
       "tag": "0096_api_key_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1795812358498,
+      "tag": "0097_relation_count_indexes",
+      "breakpoints": true
     }
   ]
 }

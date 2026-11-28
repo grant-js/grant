@@ -9,6 +9,8 @@ type ScopedTagHydration = {
 };
 
 export type PermissionListHydrationContext = {
+  countGroups: (permissionIds: string[]) => Promise<Map<string, number>>;
+  countUsers: (permissionIds: string[]) => Promise<Map<string, number>>;
   loadScopedTags: (permissionIds: string[]) => Promise<ScopedTagHydration>;
 };
 
@@ -32,6 +34,28 @@ export const permissionListHydrators: Array<
           : {}),
         ...(wantsTagCount ? { tagCount: hydration.tagCountByOwnerId.get(permission.id) ?? 0 } : {}),
         __scopedTagsHydrated: true,
+      }));
+    },
+  },
+  {
+    fields: ['groupCount'],
+    hydrate: async ({ context, items }) => {
+      const counts = await context.countGroups(items.map((permission) => permission.id));
+
+      return items.map((permission) => ({
+        ...permission,
+        groupCount: counts.get(permission.id) ?? 0,
+      }));
+    },
+  },
+  {
+    fields: ['userCount'],
+    hydrate: async ({ context, items }) => {
+      const counts = await context.countUsers(items.map((permission) => permission.id));
+
+      return items.map((permission) => ({
+        ...permission,
+        userCount: counts.get(permission.id) ?? 0,
       }));
     },
   },
