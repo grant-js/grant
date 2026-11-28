@@ -39,6 +39,26 @@ describe('ChipPopover', () => {
     expect(screen.queryByText('Body')).toBeNull();
   });
 
+  it('stays closed once the pointer leaves, without handing focus back to the chip', () => {
+    const onOpen = vi.fn();
+    render(
+      <ChipPopover label="Something" hasContent onOpen={onOpen}>
+        <p>Body</p>
+      </ChipPopover>
+    );
+    const chip = screen.getByRole('button', { name: 'Something' });
+
+    fireEvent.mouseEnter(chip);
+    act(() => vi.advanceTimersByTime(300));
+    fireEvent.mouseLeave(chip);
+    act(() => vi.advanceTimersByTime(150));
+    act(() => vi.runAllTimers());
+
+    expect(document.activeElement).not.toBe(chip);
+    expect(screen.queryByText('Body')).toBeNull();
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
   it('does not open when the pointer passes over the chip quickly', () => {
     render(
       <ChipPopover label="Something" hasContent>

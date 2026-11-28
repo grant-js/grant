@@ -95,6 +95,9 @@ export function ChipPopover({
         onMouseEnter={clearTimers}
         onMouseLeave={hideSoon}
         onOpenAutoFocus={(event) => event.preventDefault()}
+        // Focus never moves into the popover, so there is none to give back. Handing it to the
+        // trigger on close would fire its onFocus and open the popover again.
+        onCloseAutoFocus={(event) => event.preventDefault()}
       >
         {children}
       </PopoverContent>
