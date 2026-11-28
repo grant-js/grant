@@ -97,6 +97,20 @@ The permission page lists the permission's **Groups** and **Users**, and the gro
 
 ![The Members card on a group's page, first of two pages](./relationship-cards-group-members.jpg)
 
+### Users in relationship lists
+
+Names are not unique, so wherever a relationship lists users (a Users chip's preview, a Users or Members card) each user shows as their name with their email muted beside it. The email is the address of the user's Email sign-in method; a user without one shows the name alone. Emails come with the same field as the names, so a viewer who may not list users sees neither.
+
+![A permission's users, two of them named alike, told apart by their email](./user-label-chip.jpg)
+
+![The Users card on a permission's page, with each user's email](./user-label-card.jpg)
+
+### Metadata on detail pages
+
+User, role, group and permission pages each have a **Metadata** card. It starts collapsed. Its JSON editor grows with the metadata up to a fixed cap and then scrolls inside itself, so a long document does not push the rest of the page down. Viewers who may update the entity can edit and save it there; others see it read-only.
+
+![A group's Metadata card, open, with the editor scrolling inside its cap](./metadata-card-editor.jpg)
+
 ## Tag color palette
 
 Tag colors are defined in `@grantjs/constants` and must be **perceptually distinct**. We use the **CIEDE2000 (ΔE00)** metric in LAB space, comparing each color at **Tailwind shade 500**. Every pair of palette colors must have ΔE00 ≥ `MIN_PALETTE_DELTA_E` (see `packages/@grantjs/constants/src/colors.ts`). This avoids ambiguous choices (e.g. multiple near-identical grays). The palette check is enforced in CI via `pnpm --filter @grantjs/constants run check:palette`. When adding or changing tag colors, ensure the script passes.
