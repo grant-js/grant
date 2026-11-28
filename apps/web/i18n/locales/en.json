@@ -1565,7 +1565,9 @@
       "condition": "Condition",
       "conditionDescription": "Optional JSON condition for when this permission applies.",
       "conditionInfo": "Optional JSON condition for when this permission applies.",
-      "noDescription": "No description"
+      "noDescription": "No description",
+      "metadata": "Metadata",
+      "metadataDescription": "Optional JSON kept with the permission."
     },
     "tags": {
       "title": "Tags",
@@ -2597,7 +2599,8 @@
       "noTagsAvailable": "No tags available",
       "validation": {
         "nameRequired": "Permission name is required"
-      }
+      },
+      "metadataInfo": "Optional metadata for the permission, kept with it as JSON. Conditions do not read it; they read user, role, group and resource fields."
     },
     "createDialog": {
       "title": "Create New Permission",

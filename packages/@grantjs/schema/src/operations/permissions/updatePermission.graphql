@@ -11,6 +11,7 @@ mutation UpdatePermission($id: ID!, $input: UpdatePermissionInput!) {
       slug
     }
     condition
+    metadata
     createdAt
     updatedAt
     tags {

@@ -5,6 +5,7 @@ import {
   ProjectSyncJobOperation,
 } from '@grantjs/schema';
 
+import { JSON_EDITOR_MAX_HEIGHT } from '@/components/common/json-editor';
 import { getInitials } from '@/lib/utils';
 
 export type ProjectSyncJobOperationLabelKey = 'operation.import' | 'operation.export';
@@ -81,7 +82,7 @@ export function getPayloadModeDetails(
 }
 
 /** Fixed height for CDM JSON editors — CodeMirror scrolls inside the editor viewport. */
-export const PROJECT_SYNC_JOB_CDM_EDITOR_HEIGHT = 'min(32rem, 70vh)';
+export const PROJECT_SYNC_JOB_CDM_EDITOR_HEIGHT = JSON_EDITOR_MAX_HEIGHT;
 
 /** Scrollable cap for non-editor card bodies (e.g. warning lists). */
 export const PROJECT_SYNC_JOB_SCROLLABLE_CARD_BODY_CLASS =

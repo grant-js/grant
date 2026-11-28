@@ -22,6 +22,10 @@ query GetGroupRelationsPreview(
       users(page: $page, limit: $limit) @include(if: $withUsers) {
         id
         name
+        authenticationMethods {
+          provider
+          providerId
+        }
       }
       userCount @include(if: $withUsers)
     }

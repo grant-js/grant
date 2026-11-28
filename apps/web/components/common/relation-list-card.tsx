@@ -22,6 +22,8 @@ import { Pagination } from '@/components/common/pagination';
 import { type RelationPageTarget, useRelationPage } from '@/hooks/common/use-relation-preview';
 import { translateNameKey } from '@/lib/translate-or-raw';
 
+import { UserLabel } from './user-label';
+
 /** Rows per page of a relationship card. */
 const RELATION_LIST_PAGE_SIZE = 10;
 
@@ -33,6 +35,8 @@ const LINKED_ENTITY: Record<RelationPageTarget['relation'], DetailLinkedEntity> 
 interface RelatedItem {
   id: string;
   name: string;
+  /** Users only: their email shows next to the name. */
+  authenticationMethods?: ReadonlyArray<{ provider: string; providerId: string }> | null;
 }
 
 export type RelationListCardProps = RelationPageTarget & {
@@ -84,9 +88,12 @@ export function RelationListCard({
       header: t('table.name'),
       ...DETAIL_TEXT_COLUMN,
       className: DETAIL_PRIMARY_CONTENT_COLUMN_CLASS,
-      render: (item) => (
-        <span className="text-sm font-medium">{translateNameKey(tRoot, item.name)}</span>
-      ),
+      render: (item) =>
+        relation === 'users' ? (
+          <UserLabel user={item} className="text-sm font-medium" />
+        ) : (
+          <span className="text-sm font-medium">{translateNameKey(tRoot, item.name)}</span>
+        ),
     },
     detailEntityLinkColumn<RelatedItem>(
       linkedEntity,

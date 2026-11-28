@@ -350,7 +350,14 @@ export type GetGroupRelationsPreviewQuery = {
       userCount?: number;
       permissions?: Array<{ id: string; name: string }> | null;
       tags?: Array<{ id: string; name: string; color: string }> | null;
-      users?: Array<{ id: string; name: string }> | null;
+      users?: Array<{
+        id: string;
+        name: string;
+        authenticationMethods: Array<{
+          provider: Types.UserAuthenticationMethodProvider;
+          providerId: string;
+        }> | null;
+      }> | null;
     }>;
   };
 };
@@ -1217,7 +1224,14 @@ export type GetPermissionRelationsPreviewQuery = {
       userCount?: number;
       tags?: Array<{ id: string; name: string; color: string }> | null;
       groups?: Array<{ id: string; name: string }> | null;
-      users?: Array<{ id: string; name: string }> | null;
+      users?: Array<{
+        id: string;
+        name: string;
+        authenticationMethods: Array<{
+          provider: Types.UserAuthenticationMethodProvider;
+          providerId: string;
+        }> | null;
+      }> | null;
     }>;
   };
 };
@@ -1243,6 +1257,7 @@ export type GetPermissionsQuery = {
       description: string | null;
       resourceId: string | null;
       condition: Record<string, unknown> | null;
+      metadata: Record<string, unknown>;
       createdAt: Date;
       updatedAt: Date;
       resource: { id: string; name: string; slug: string } | null;
@@ -1297,6 +1312,7 @@ export type UpdatePermissionMutation = {
     description: string | null;
     resourceId: string | null;
     condition: Record<string, unknown> | null;
+    metadata: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
     resource: { id: string; name: string; slug: string } | null;
@@ -4105,6 +4121,17 @@ export const GetGroupRelationsPreviewDocument = {
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'authenticationMethods' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                                ],
+                              },
+                            },
                           ],
                         },
                       },
@@ -7610,6 +7637,17 @@ export const GetPermissionRelationsPreviewDocument = {
                           selections: [
                             { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'authenticationMethods' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  { kind: 'Field', name: { kind: 'Name', value: 'provider' } },
+                                  { kind: 'Field', name: { kind: 'Name', value: 'providerId' } },
+                                ],
+                              },
+                            },
                           ],
                         },
                       },
@@ -7776,6 +7814,7 @@ export const GetPermissionsDocument = {
                         },
                       },
                       { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
                       {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'tags' },
@@ -8029,6 +8068,7 @@ export const UpdatePermissionDocument = {
                   },
                 },
                 { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'metadata' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                 {

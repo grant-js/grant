@@ -6,7 +6,12 @@ import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Permission } from '@grantjs/schema';
 
-import { FeatureModuleCard, FieldInfoPopover, JsonEditor } from '@/components/common';
+import {
+  FeatureModuleCard,
+  FieldInfoPopover,
+  JSON_EDITOR_MAX_HEIGHT,
+  JsonEditor,
+} from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissionMutations } from '@/hooks/permissions';
@@ -111,6 +116,7 @@ export function PermissionConditionCard({
         onChange={(value) => setConditionDraft(value ?? {})}
         disabled={!canUpdate}
         className="min-h-[160px]"
+        maxHeight={JSON_EDITOR_MAX_HEIGHT}
       />
     </FeatureModuleCard>
   );

@@ -2301,7 +2301,8 @@
       "noTagsAvailable": "Keine Tags verfügbar",
       "validation": {
         "nameRequired": "Berechtigungsname ist erforderlich"
-      }
+      },
+      "metadataInfo": "Optionale Metadaten der Berechtigung, als JSON mit ihr gespeichert. Bedingungen lesen sie nicht; sie lesen Felder von Benutzern, Rollen, Gruppen und Ressourcen."
     },
     "createDialog": {
       "title": "Neue Berechtigung erstellen",
@@ -4664,6 +4665,10 @@
       "table": {
         "name": "Name"
       }
+    },
+    "info": {
+      "metadata": "Metadaten",
+      "metadataDescription": "Optionale JSON-Daten, die mit der Berechtigung gespeichert werden."
     }
   },
   "group": {

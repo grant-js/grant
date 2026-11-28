@@ -1,10 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { type CSSProperties, useCallback, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { createJSONEditor, JSONEditorPropsOptional, Mode } from 'vanilla-jsoneditor';
 
 import { cn } from '@/lib/utils';
+
+/** The tallest a JSON editor grows before it scrolls inside itself. */
+export const JSON_EDITOR_MAX_HEIGHT = 'min(32rem, 70vh)';
 
 interface JsonEditorProps {
   value?: string | object;
@@ -13,7 +16,10 @@ interface JsonEditorProps {
   disabled?: boolean;
   className?: string;
   error?: string;
+  /** A fixed height; the editor scrolls inside it. */
   height?: string | number;
+  /** A cap: the editor grows with its content up to this height, then scrolls inside it. */
+  maxHeight?: string;
 }
 
 export function JsonEditor({
@@ -24,6 +30,7 @@ export function JsonEditor({
   className = '',
   error,
   height,
+  maxHeight,
 }: JsonEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<ReturnType<typeof createJSONEditor> | null>(null);
@@ -225,9 +232,19 @@ export function JsonEditor({
           error ? 'border-destructive' : 'border-input',
           disabled && 'opacity-50 cursor-not-allowed',
           usesFixedHeight &&
-            '[&_.jse-main]:flex [&_.jse-main]:h-full [&_.jse-main]:min-h-0 [&_.jse-main]:flex-col [&_.jse-text]:min-h-0 [&_.jse-text]:flex-1 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto'
+            '[&_.jse-main]:flex [&_.jse-main]:h-full [&_.jse-main]:min-h-0 [&_.jse-main]:flex-col [&_.jse-text]:min-h-0 [&_.jse-text]:flex-1 [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto',
+          !usesFixedHeight &&
+            maxHeight != null &&
+            '[&_.cm-editor]:max-h-[var(--json-editor-max-height)] [&_.cm-scroller]:overflow-auto'
         )}
-        style={usesFixedHeight ? { height: heightValue } : undefined}
+        style={
+          usesFixedHeight
+            ? { height: heightValue }
+            : maxHeight != null
+              ? ({ '--json-editor-max-height': maxHeight } as CSSProperties)
+              : undefined
+        }
+        data-max-height={!usesFixedHeight && maxHeight != null ? maxHeight : undefined}
       >
         <div ref={containerRef} className={usesFixedHeight ? 'h-full min-h-0' : undefined} />
       </div>

@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGrant } from '@grantjs/client/react';
 import { ResourceAction, ResourceSlug } from '@grantjs/constants';
 import { Tenant, User } from '@grantjs/schema';
 import { Info } from 'lucide-react';
 
-import { FeatureModuleCard, JsonEditor } from '@/components/common';
-import { Button } from '@/components/ui/button';
+import { MetadataEditorCard } from '@/components/common';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useProjectUserScope, useScopeFromParams } from '@/hooks/common';
 import { useUserMutations } from '@/hooks/users';
@@ -34,12 +33,10 @@ interface UserMetadataCardProps {
 export function UserMetadataCard({ user, onAfterUserMutation }: UserMetadataCardProps) {
   const t = useTranslations('user.info');
   const tUsers = useTranslations('users.form');
-  const tCommon = useTranslations('common');
   const scope = useScopeFromParams();
   const projectScope = useProjectUserScope();
   const mutationScope = projectScope ?? scope;
   const { updateUser } = useUserMutations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const accessToken = useAuthStore((s) => s.accessToken);
   const sessionUserId = useMemo(
@@ -54,53 +51,12 @@ export function UserMetadataCard({ user, onAfterUserMutation }: UserMetadataCard
   });
   const canEditProjectMetadata = canUpdate && !(isSelf && isSelfManagedMember);
 
-  const metadataValue =
-    user.metadata != null && typeof user.metadata === 'object' && !Array.isArray(user.metadata)
-      ? user.metadata
-      : user.metadata != null && typeof user.metadata === 'string'
-        ? (() => {
-            try {
-              return JSON.parse(user.metadata as string) as object;
-            } catch {
-              return {};
-            }
-          })()
-        : {};
-
-  const [metadataDraft, setMetadataDraft] = useState<object>(metadataValue);
-
-  useEffect(() => {
-    setMetadataDraft(metadataValue);
-  }, [user.id, user.metadata]);
-
-  const isMetadataDraftValid =
-    metadataDraft &&
-    typeof metadataDraft === 'object' &&
-    !Array.isArray(metadataDraft) &&
-    !('__invalidJson' in metadataDraft);
-  const isMetadataUnchanged = JSON.stringify(metadataValue) === JSON.stringify(metadataDraft);
-
-  const handleReset = () => setMetadataDraft(metadataValue);
-
-  const handleSave = async () => {
-    if (!mutationScope || !isMetadataDraftValid) return;
-    setIsSubmitting(true);
-    try {
-      await updateUser(user.id, {
-        scope: mutationScope,
-        metadata: metadataDraft as Record<string, unknown>,
-      });
-      await onAfterUserMutation?.();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
-    <FeatureModuleCard
+    <MetadataEditorCard
+      entityId={user.id}
+      metadata={user.metadata}
       title={t('metadata')}
       description={t('metadataDescription')}
-      collapsible
       titleAdornment={
         <Popover>
           <PopoverTrigger asChild>
@@ -130,34 +86,12 @@ export function UserMetadataCard({ user, onAfterUserMutation }: UserMetadataCard
           </PopoverContent>
         </Popover>
       }
-      footer={
-        canEditProjectMetadata ? (
-          <div className="flex justify-end gap-3 w-full">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleReset}
-              disabled={isMetadataUnchanged || isSubmitting}
-            >
-              {tCommon('actions.cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={isSubmitting || !isMetadataDraftValid || isMetadataUnchanged}
-            >
-              {isSubmitting ? tCommon('actions.saving') : tCommon('actions.save')}
-            </Button>
-          </div>
-        ) : undefined
-      }
-    >
-      <JsonEditor
-        value={metadataDraft}
-        onChange={(value) => setMetadataDraft(value ?? {})}
-        disabled={!canEditProjectMetadata}
-        className="min-h-[160px]"
-      />
-    </FeatureModuleCard>
+      canEdit={canEditProjectMetadata}
+      onSave={async (metadata) => {
+        if (!mutationScope) return;
+        await updateUser(user.id, { scope: mutationScope, metadata });
+        await onAfterUserMutation?.();
+      }}
+    />
   );
 }

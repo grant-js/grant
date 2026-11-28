@@ -11,6 +11,7 @@ import { type EntitySegment, getEntityDetailUrl } from '@/lib/entity-detail-url'
 import { translateNameKey } from '@/lib/translate-or-raw';
 
 import { ChipPopover } from './chip-popover';
+import { UserLabel } from './user-label';
 
 /** How many related items a fetched preview lists before "View all". */
 const RELATION_PREVIEW_LIMIT = 10;
@@ -33,6 +34,8 @@ const RELATION_SEGMENT: Partial<Record<RelationPreviewTarget['relation'], Entity
 interface PreviewItem {
   id: string;
   name: string;
+  /** Users only: their email shows next to the name. */
+  authenticationMethods?: ReadonlyArray<{ provider: string; providerId: string }> | null;
 }
 
 interface PreviewState {
@@ -67,6 +70,8 @@ interface CountChipPopoverProps {
   state: PreviewState;
   /** The link of each listed item; none renders it as a chip. */
   itemHref: (item: PreviewItem) => string | null;
+  /** Whether the items are users, listed with their email. */
+  users?: boolean;
   /** How many items to list; the rest are behind "View all". Unbounded when omitted. */
   limit?: number;
   viewAllHref?: string | null;
@@ -78,6 +83,7 @@ function CountChipPopover({
   children,
   state,
   itemHref,
+  users = false,
   limit,
   viewAllHref,
 }: CountChipPopoverProps) {
@@ -110,6 +116,7 @@ function CountChipPopover({
         <ul className="max-h-72 space-y-0.5 overflow-y-auto" data-testid="relation-items">
           {shown.map((item) => {
             const href = itemHref(item);
+            const label = users ? <UserLabel user={item} /> : translateNameKey(tRoot, item.name);
             return (
               <li key={item.id} className="truncate text-sm">
                 {href ? (
@@ -117,7 +124,7 @@ function CountChipPopover({
                     href={href}
                     className="block truncate rounded px-1 py-0.5 hover:bg-accent hover:underline"
                   >
-                    {translateNameKey(tRoot, item.name)}
+                    {label}
                   </Link>
                 ) : (
                   <Badge variant="outline" className="max-w-full truncate">
@@ -177,6 +184,7 @@ export function RelationCountChip({
       count={count}
       state={preview}
       itemHref={(item) => (relationSegment ? detailUrl(relationSegment, item.id) : null)}
+      users={relation === 'users'}
       limit={RELATION_PREVIEW_LIMIT}
       viewAllHref={viewAllHref}
     >
