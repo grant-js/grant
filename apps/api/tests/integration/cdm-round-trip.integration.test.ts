@@ -15,9 +15,12 @@
  *   3. The exported document re-imports cleanly into a fresh project B:
  *      every cross-reference resolves via `produced.*` maps, no permission-
  *      ref errors, and the resulting fresh ids are different from project A's.
+ *   4. User API keys export without secrets and the document still imports:
+ *      a key the target project already holds is kept, any other is skipped
+ *      and counted.
  */
 import type { CdmExportContext, ICdmEntityHandler } from '@grantjs/core';
-import { CdmModeStrategy, type Scope, Tenant } from '@grantjs/schema';
+import { CdmModeStrategy, type Scope, type SyncProjectResult, Tenant } from '@grantjs/schema';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CDM_IMPORT_METADATA_KEY } from '@/constants/cdm-import.constants';
@@ -30,7 +33,12 @@ import {
   TagCdmEntity,
   UserAssignmentCdmEntity,
 } from '@/lib/cdm';
-import type { CdmDocumentInput } from '@/lib/cdm/cdm-document.schemas';
+import {
+  type CdmDocumentInput,
+  parseCdmDocument,
+  validateSyncInput,
+} from '@/lib/cdm/cdm-document.schemas';
+import { ProjectUserApiKeyCdmEntity } from '@/lib/cdm/entities/project-user-api-key.cdm-entity';
 
 const projectAId = 'aaaa0000-0000-4000-8000-000000000001';
 const projectBId = 'bbbb0000-0000-4000-8000-000000000002';
@@ -187,7 +195,8 @@ function buildHandlers(exportRepo: ReturnType<typeof buildExportRepoForProjectA>
 }
 
 async function exportProjectA(
-  handlers: ReturnType<typeof buildHandlers>
+  handlers: ReturnType<typeof buildHandlers>,
+  apiKeyEntity?: ProjectUserApiKeyCdmEntity
 ): Promise<CdmDocumentInput> {
   const ctx: CdmExportContext = { projectId: projectAId, scope: scopeA };
   const [resources, permissions, tags, roleTemplates, userAssignments] = await Promise.all([
@@ -197,11 +206,12 @@ async function exportProjectA(
     handlers.roleTemplate.export(ctx),
     handlers.userAssignment.export(ctx),
   ]);
+  const projectUserApiKeys = apiKeyEntity ? await apiKeyEntity.export(ctx) : [];
 
   const assembled = assembleExportedSyncProjectInput({
     roleTemplates,
     userAssignments,
-    projectUserApiKeys: [],
+    projectUserApiKeys,
     provisionedUsers: [],
     resourcesSlice: resources ?? [],
     permissionsSlice: permissions ?? [],
@@ -435,6 +445,7 @@ describe('CDM round-trip integration', () => {
       projectUserApiKeysUnchanged: 0,
       projectUserApiKeysRotated: 0,
       projectUserApiKeysDeleted: 0,
+      projectUserApiKeysSkippedNoSecret: 0,
       tagsCreated: 0,
       projectTagsLinked: 0,
       roleTagsLinked: 0,
@@ -541,6 +552,120 @@ describe('CDM round-trip integration', () => {
     expect(allValues).not.toContain(A.resourceId);
     expect(allValues).not.toContain(A.permissionId);
     expect(allValues).not.toContain(A.tagId);
+  });
+
+  it('user API keys export without secrets, and the export imports again: kept where the key exists, skipped elsewhere', async () => {
+    const importedKeyId = 'a0000000-0000-4000-8000-0000000000f1';
+    const nativeKeyId = 'a0000000-0000-4000-8000-0000000000f2';
+    const projectAKeys = [
+      {
+        apiKeyId: importedKeyId,
+        userId,
+        clientId: 'client-imported',
+        name: 'Imported key',
+        description: null,
+        expiresAt: null,
+        pivotMetadata: {
+          [CDM_IMPORT_METADATA_KEY]: {
+            projectId: projectAId,
+            kind: 'projectUserApiKey',
+            externalKey: 'orig-api-key',
+          },
+        },
+      },
+      {
+        apiKeyId: nativeKeyId,
+        userId,
+        clientId: 'client-native',
+        name: 'Key made in Grant',
+        description: null,
+        expiresAt: null,
+        pivotMetadata: {},
+      },
+    ];
+    const exportRepo = {
+      ...buildExportRepoForProjectA(),
+      getProjectUserApiKeysForCdmExport: vi.fn(async (projectId: string) =>
+        projectId === projectAId ? projectAKeys : []
+      ),
+      getProjectUserApiKeyExportIdentities: vi
+        .fn()
+        .mockResolvedValue(new Map([[nativeKeyId, { clientId: 'client-native', userId }]])),
+    };
+    const handlers = buildHandlers(exportRepo);
+    const createApiKeysForCdmImport = vi.fn();
+    const deleteApiKeysForCdmImport = vi.fn();
+    const apiKeyEntity = new ProjectUserApiKeyCdmEntity(
+      { listCdmProjectUserApiKeysForReplace: vi.fn().mockResolvedValue([]) } as never,
+      exportRepo as never,
+      { createApiKeysForCdmImport, deleteApiKeysForCdmImport } as never,
+      { addProjectUserApiKeysForCdmImport: vi.fn() } as never
+    );
+
+    const exported = await exportProjectA(handlers, apiKeyEntity);
+
+    const exportedKeys = exported.users[0]?.apiKeys ?? [];
+    expect(exportedKeys).toHaveLength(2);
+    for (const key of exportedKeys) {
+      expect(key.clientSecret).toBeNull();
+    }
+
+    // The JSON a person downloads and uploads again, read as the import job reads an upload.
+    const parsed = parseCdmDocument(JSON.parse(JSON.stringify(exported)));
+    validateSyncInput(parsed, { redactUserKeys: true });
+    const slice = expandCdmSyncInput(parsed as unknown as CdmDocumentInput).projectUserApiKeys;
+    apiKeyEntity.validateInput(slice);
+
+    async function importInto(projectId: string, scope: Scope): Promise<SyncProjectResult> {
+      const result = {
+        projectUserApiKeysCreated: 0,
+        projectUserApiKeysUnchanged: 0,
+        projectUserApiKeysRotated: 0,
+        projectUserApiKeysDeleted: 0,
+        projectUserApiKeysSkippedNoSecret: 0,
+      } as SyncProjectResult;
+      await apiKeyEntity.apply(
+        {
+          projectId,
+          scope,
+          tx: { __tx: true },
+          lookupResolvedRef: vi.fn(),
+          result,
+          produced: {
+            roleIdsByKey: new Map(),
+            tagIds: new Map(),
+            resourceIds: new Map(),
+            permissionIds: new Map(),
+            userIds: new Map(),
+            userNamesByKey: new Map(),
+            groupIdsByKey: new Map(),
+          },
+          documentGroupsByKey: new Map(),
+          assignmentUserIds: new Set([userId]),
+          skippedUserKeys: new Set<string>(),
+          modeStrategy: CdmModeStrategy.Merge,
+        },
+        slice
+      );
+      return result;
+    }
+
+    const intoB = await importInto(projectBId, scopeB);
+    expect(intoB).toMatchObject({
+      projectUserApiKeysCreated: 0,
+      projectUserApiKeysUnchanged: 0,
+      projectUserApiKeysSkippedNoSecret: 2,
+    });
+
+    const backIntoA = await importInto(projectAId, scopeA);
+    expect(backIntoA).toMatchObject({
+      projectUserApiKeysCreated: 0,
+      projectUserApiKeysUnchanged: 2,
+      projectUserApiKeysSkippedNoSecret: 0,
+    });
+
+    expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(deleteApiKeysForCdmImport).not.toHaveBeenCalled();
   });
 
   it('export encodes catalog permission grants as slug:action when no CDM permission keys exist', async () => {

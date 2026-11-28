@@ -45,6 +45,33 @@ describe('hash-cdm-api-key-secrets', () => {
     expect(peekPreparedCdmApiKeyHashes()).toBeUndefined();
   });
 
+  it('hashes nothing for a key without a secret and keeps document positions for the rest', async () => {
+    const input: CdmDocumentInput = {
+      ...documentWithKeys(),
+      users: [
+        {
+          key: { value: 'u1', findBy: CdmFindBy.Key },
+          name: 'Ada',
+          apiKeys: [{ clientId: 'cid-1', clientSecret: null }, { clientSecret: secretB }],
+        },
+      ],
+    };
+    const events: Array<{ secretCount: number }> = [];
+    await withHashedCdmApiKeySecrets(
+      input,
+      async () => {
+        expect(peekPreparedCdmApiKeyHashByClassifyKey('__anon:0')).toBeUndefined();
+        expect(verifySecret(secretB, peekPreparedCdmApiKeyHashByClassifyKey('__anon:1')!)).toBe(
+          true
+        );
+      },
+      (prep) => {
+        events.push(prep);
+      }
+    );
+    expect(events[0]?.secretCount).toBe(1);
+  });
+
   it('reports hash-prep count and seconds without exposing secrets', async () => {
     const input = documentWithKeys();
     const events: Array<{ secretCount: number; hashPrepSeconds: number }> = [];

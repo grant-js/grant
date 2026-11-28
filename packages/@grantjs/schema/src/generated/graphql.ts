@@ -1639,6 +1639,7 @@ export type ProjectSyncJobQuery = {
       projectUserApiKeysUnchanged: number;
       projectUserApiKeysRotated: number;
       projectUserApiKeysDeleted: number;
+      projectUserApiKeysSkippedNoSecret: number;
       passwordsImported: number;
       passwordsUpdated: number;
       passwordsUnchanged: number;
@@ -9080,6 +9081,10 @@ export const ProjectSyncJobDocument = {
                       },
                       { kind: 'Field', name: { kind: 'Name', value: 'projectUserApiKeysRotated' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'projectUserApiKeysDeleted' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'projectUserApiKeysSkippedNoSecret' },
+                      },
                       { kind: 'Field', name: { kind: 'Name', value: 'passwordsImported' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'passwordsUpdated' } },
                       { kind: 'Field', name: { kind: 'Name', value: 'passwordsUnchanged' } },

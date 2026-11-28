@@ -46,6 +46,7 @@ export function ProjectSyncJobResultCard({ job }: ProjectSyncJobResultCardProps)
             ['usersCreated', result.usersCreated ?? 0],
             ['userRolesAssigned', result.userRolesAssigned],
             ['projectUserApiKeysCreated', result.projectUserApiKeysCreated],
+            ['projectUserApiKeysSkippedNoSecret', result.projectUserApiKeysSkippedNoSecret],
           ].map(([key, value]) => (
             <div key={key as string} className="rounded-md border p-3">
               <p className="text-xs text-muted-foreground">
