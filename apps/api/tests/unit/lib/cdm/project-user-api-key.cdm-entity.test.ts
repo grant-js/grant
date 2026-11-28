@@ -54,6 +54,7 @@ function baseResult(): SyncProjectResult {
     projectUserApiKeysUnchanged: 0,
     projectUserApiKeysRotated: 0,
     projectUserApiKeysDeleted: 0,
+    projectUserApiKeysSkippedNoSecret: 0,
     passwordsImported: 0,
     passwordsUpdated: 0,
     passwordsUnchanged: 0,
@@ -145,16 +146,15 @@ describe('ProjectUserApiKeyCdmEntity', () => {
     ).toThrow(/Duplicate projectUserApiKeys externalKey/);
   });
 
-  it('validateInput rejects missing clientSecret', () => {
+  it('validateInput accepts a key without clientSecret', () => {
     const { handler } = buildHandler();
     expect(() =>
       handler.validateInput([
-        {
-          userId,
-          clientSecret: '',
-        },
+        { userId, externalKey: 'k1', clientSecret: null },
+        { userId, externalKey: 'k2', clientSecret: '' },
+        { userId, externalKey: 'k3' },
       ])
-    ).toThrow(/clientSecret is required/);
+    ).not.toThrow();
   });
 
   it('validateInput rejects short clientSecret', () => {
@@ -835,6 +835,140 @@ describe('ProjectUserApiKeyCdmEntity: plaintext fingerprint on the import paths'
     ]);
 
     expect(setMissing).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectUserApiKeyCdmEntity keys without clientSecret', () => {
+  const otherApiKeyId = '40000000-0000-4000-8000-000000000002';
+
+  function exportRepoWith(rows: unknown[]) {
+    return {
+      getProjectUserApiKeysForCdmExport: vi.fn().mockResolvedValue(rows),
+      getProjectUserApiKeyExportIdentities: vi.fn().mockResolvedValue(new Map()),
+      getProjectCdmProvisionedUsers: vi.fn().mockResolvedValue([]),
+    };
+  }
+
+  function projectKey(id: string, clientId: string, externalKey?: string) {
+    return {
+      apiKeyId: id,
+      userId,
+      clientId,
+      name: null,
+      description: null,
+      expiresAt: null,
+      pivotMetadata: externalKey
+        ? { [CDM_IMPORT_METADATA_KEY]: { projectId, kind: 'projectUserApiKey', externalKey } }
+        : {},
+    };
+  }
+
+  function replaceRow(id: string, clientId: string, externalKey: string) {
+    return {
+      apiKeyId: id,
+      userId,
+      clientId,
+      externalKey,
+      secretFingerprint: fingerprintCdmApiKeySecret(BYOK_SECRET, HMAC),
+      clientSecretFingerprint: sha256(BYOK_SECRET),
+      metadata: {
+        [CDM_IMPORT_METADATA_KEY]: { projectId, kind: 'projectUserApiKey', externalKey },
+      },
+    };
+  }
+
+  it('merge skips an unmatched key and counts it, creating nothing', async () => {
+    const hashSpy = vi.spyOn(tokenLib, 'hashSecretAsync');
+    const createApiKeysForCdmImport = vi.fn();
+    const { handler } = buildHandler({
+      exportRepo: exportRepoWith([]),
+      apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport: vi.fn() },
+    });
+    const result = baseResult();
+
+    await handler.apply(applyCtx(result, CdmModeStrategy.Merge), [
+      { userId, externalKey: 'ext-1', clientId: 'cid-1', clientSecret: null },
+    ]);
+
+    expect(result.projectUserApiKeysSkippedNoSecret).toBe(1);
+    expect(result.projectUserApiKeysCreated).toBe(0);
+    expect(result.projectUserApiKeysUnchanged).toBe(0);
+    expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(hashSpy).not.toHaveBeenCalled();
+    hashSpy.mockRestore();
+  });
+
+  it('merge keeps the project key that matches by key or by clientId', async () => {
+    const createApiKeysForCdmImport = vi.fn();
+    const { handler } = buildHandler({
+      exportRepo: exportRepoWith([
+        projectKey(apiKeyId, 'cid-1', 'ext-1'),
+        projectKey(otherApiKeyId, 'cid-2'),
+      ]),
+      apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport: vi.fn() },
+    });
+    const result = baseResult();
+
+    await handler.apply(applyCtx(result, CdmModeStrategy.Merge), [
+      { userId, externalKey: 'ext-1', clientId: 'cid-other', clientSecret: null },
+      { userId, externalKey: 'ext-2', clientId: 'cid-2', clientSecret: null },
+    ]);
+
+    expect(result.projectUserApiKeysUnchanged).toBe(2);
+    expect(result.projectUserApiKeysSkippedNoSecret).toBe(0);
+    expect(createApiKeysForCdmImport).not.toHaveBeenCalled();
+  });
+
+  it('replace keeps a matched key instead of deleting it, and still imports keys with a secret', async () => {
+    const deleteApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
+    const createApiKeysForCdmImport = vi.fn().mockResolvedValue([{ id: otherApiKeyId }]);
+    const addProjectUserApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
+    const { handler } = buildHandler({
+      importRepo: {
+        listCdmProjectUserApiKeysForReplace: vi
+          .fn()
+          .mockResolvedValue([replaceRow(apiKeyId, 'cid-1', 'ext-1')]),
+      },
+      exportRepo: exportRepoWith([projectKey(apiKeyId, 'cid-1', 'ext-1')]),
+      apiKeys: { createApiKeysForCdmImport, deleteApiKeysForCdmImport },
+      projectUserApiKeys: { addProjectUserApiKeysForCdmImport },
+    });
+    const result = baseResult();
+
+    await handler.apply(applyCtx(result, CdmModeStrategy.Replace), [
+      { userId, externalKey: 'ext-1', clientId: 'cid-1', clientSecret: null },
+      { userId, externalKey: 'ext-new', clientSecret: BYOK_SECRET },
+      { userId, externalKey: 'ext-gone', clientId: 'cid-gone', clientSecret: null },
+    ]);
+
+    expect(result.projectUserApiKeysUnchanged).toBe(1);
+    expect(result.projectUserApiKeysCreated).toBe(1);
+    expect(result.projectUserApiKeysSkippedNoSecret).toBe(1);
+    expect(result.projectUserApiKeysDeleted).toBe(0);
+    expect(deleteApiKeysForCdmImport).not.toHaveBeenCalled();
+    expect(createApiKeysForCdmImport).toHaveBeenCalledTimes(1);
+  });
+
+  it('replace still deletes a CDM key the document no longer names', async () => {
+    const deleteApiKeysForCdmImport = vi.fn().mockResolvedValue(undefined);
+    const { handler } = buildHandler({
+      importRepo: {
+        listCdmProjectUserApiKeysForReplace: vi
+          .fn()
+          .mockResolvedValue([replaceRow(apiKeyId, 'cid-1', 'ext-1')]),
+      },
+      exportRepo: exportRepoWith([projectKey(apiKeyId, 'cid-1', 'ext-1')]),
+      apiKeys: { createApiKeysForCdmImport: vi.fn(), deleteApiKeysForCdmImport },
+    });
+    const result = baseResult();
+
+    await handler.apply(applyCtx(result, CdmModeStrategy.Replace), [
+      { userId, externalKey: 'ext-other', clientId: 'cid-other', clientSecret: null },
+    ]);
+
+    expect(result.projectUserApiKeysSkippedNoSecret).toBe(1);
+    expect(result.projectUserApiKeysDeleted).toBe(1);
+    expect(deleteApiKeysForCdmImport).toHaveBeenCalledWith({ ids: [apiKeyId] }, { __tx: true });
   });
 });
 

@@ -1,20 +1,19 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { type RelationPreviewTarget, useRelationPreview } from '@/hooks/common';
 import { Link } from '@/i18n/navigation';
 import { type EntitySegment, getEntityDetailUrl } from '@/lib/entity-detail-url';
 import { translateNameKey } from '@/lib/translate-or-raw';
 
+import { ChipPopover } from './chip-popover';
+
 /** How many related items a fetched preview lists before "View all". */
 const RELATION_PREVIEW_LIMIT = 10;
-const OPEN_DELAY_MS = 300;
-const CLOSE_DELAY_MS = 150;
 
 const ENTITY_SEGMENT: Record<RelationPreviewTarget['entity'], EntitySegment> = {
   user: 'users',
@@ -73,10 +72,7 @@ interface CountChipPopoverProps {
   viewAllHref?: string | null;
 }
 
-/**
- * The chip and its popover: opens on hover (after a short delay), focus or tap, loads on the
- * first open, and says "Not available" when loading fails. A zero count opens nothing.
- */
+/** The list a count chip's popover shows: loading, "Not available", the items or "None". */
 function CountChipPopover({
   count,
   children,
@@ -90,113 +86,58 @@ function CountChipPopover({
   const tRoot = useTranslations();
   const { load, items, loading, error, called } = state;
 
-  const [open, setOpen] = useState(false);
-  const openTimer = useRef<number | null>(null);
-  const closeTimer = useRef<number | null>(null);
-
-  const clearTimers = () => {
-    if (openTimer.current !== null) window.clearTimeout(openTimer.current);
-    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-    openTimer.current = null;
-    closeTimer.current = null;
-  };
-  useEffect(() => clearTimers, []);
-
-  const show = () => {
-    clearTimers();
-    if (!called) load?.();
-    setOpen(true);
-  };
-  const showSoon = () => {
-    clearTimers();
-    openTimer.current = window.setTimeout(show, OPEN_DELAY_MS);
-  };
-  const hideSoon = () => {
-    clearTimers();
-    closeTimer.current = window.setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
-  };
-
-  if (count <= 0) {
-    return <Badge variant="secondary">{children}</Badge>;
-  }
-
   const shown = limit === undefined ? (items ?? []) : (items ?? []).slice(0, limit);
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        if (next) show();
-        else {
-          clearTimers();
-          setOpen(false);
-        }
+    <ChipPopover
+      label={children}
+      hasContent={count > 0}
+      onOpen={() => {
+        if (!called) load?.();
       }}
     >
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onMouseEnter={showSoon}
-          onMouseLeave={hideSoon}
-          onFocus={show}
-          aria-haspopup="dialog"
+      {loading || (!called && !error) ? (
+        <p className="px-1 py-1 text-sm text-muted-foreground" data-testid="relation-loading">
+          {tCommon('loading')}
+        </p>
+      ) : error ? (
+        <p className="px-1 py-1 text-sm text-muted-foreground" data-testid="relation-error">
+          {t('notAvailable')}
+        </p>
+      ) : shown.length === 0 ? (
+        <p className="px-1 py-1 text-sm text-muted-foreground">{t('none')}</p>
+      ) : (
+        <ul className="max-h-72 space-y-0.5 overflow-y-auto" data-testid="relation-items">
+          {shown.map((item) => {
+            const href = itemHref(item);
+            return (
+              <li key={item.id} className="truncate text-sm">
+                {href ? (
+                  <Link
+                    href={href}
+                    className="block truncate rounded px-1 py-0.5 hover:bg-accent hover:underline"
+                  >
+                    {translateNameKey(tRoot, item.name)}
+                  </Link>
+                ) : (
+                  <Badge variant="outline" className="max-w-full truncate">
+                    {translateNameKey(tRoot, item.name)}
+                  </Badge>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {viewAllHref && !loading && !error && (
+        <Link
+          href={viewAllHref}
+          className="mt-1 block border-t px-1 pt-1.5 text-sm font-medium text-primary hover:underline"
         >
-          <Badge variant="secondary" className="cursor-pointer">
-            {children}
-          </Badge>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-64 p-2"
-        onMouseEnter={clearTimers}
-        onMouseLeave={hideSoon}
-        onOpenAutoFocus={(event) => event.preventDefault()}
-      >
-        {loading || (!called && !error) ? (
-          <p className="px-1 py-1 text-sm text-muted-foreground" data-testid="relation-loading">
-            {tCommon('loading')}
-          </p>
-        ) : error ? (
-          <p className="px-1 py-1 text-sm text-muted-foreground" data-testid="relation-error">
-            {t('notAvailable')}
-          </p>
-        ) : shown.length === 0 ? (
-          <p className="px-1 py-1 text-sm text-muted-foreground">{t('none')}</p>
-        ) : (
-          <ul className="max-h-72 space-y-0.5 overflow-y-auto" data-testid="relation-items">
-            {shown.map((item) => {
-              const href = itemHref(item);
-              return (
-                <li key={item.id} className="truncate text-sm">
-                  {href ? (
-                    <Link
-                      href={href}
-                      className="block truncate rounded px-1 py-0.5 hover:bg-accent hover:underline"
-                    >
-                      {translateNameKey(tRoot, item.name)}
-                    </Link>
-                  ) : (
-                    <Badge variant="outline" className="max-w-full truncate">
-                      {translateNameKey(tRoot, item.name)}
-                    </Badge>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {viewAllHref && !loading && !error && (
-          <Link
-            href={viewAllHref}
-            className="mt-1 block border-t px-1 pt-1.5 text-sm font-medium text-primary hover:underline"
-          >
-            {t('viewAll', { count: Math.max(count, items?.length ?? 0) })}
-          </Link>
-        )}
-      </PopoverContent>
-    </Popover>
+          {t('viewAll', { count: Math.max(count, items?.length ?? 0) })}
+        </Link>
+      )}
+    </ChipPopover>
   );
 }
 

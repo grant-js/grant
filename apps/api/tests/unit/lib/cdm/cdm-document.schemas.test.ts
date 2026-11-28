@@ -74,6 +74,40 @@ describe('the shared CDM document schema', () => {
     expect((error as ValidationError).violations).toHaveLength(20);
   });
 
+  it('accepts an API key with `clientSecret: null`, as an export writes it', () => {
+    const users = [
+      {
+        key: { value: 'a@example.test', findBy: CdmFindBy.Email },
+        name: 'A',
+        apiKeys: [
+          { key: 'k-1', clientId: 'cid-1', clientSecret: null },
+          { key: 'k-2', clientId: 'cid-2' },
+        ],
+      },
+    ];
+
+    const parsed = parseCdmDocument(document({ users }));
+    const viaRest = startProjectSyncRequestSchema.parse({ scope, ...document({ users }) });
+
+    expect(parsed.users[0]?.apiKeys?.[0]?.clientSecret).toBeNull();
+    expect(parsed.users[0]?.apiKeys?.[1]?.clientSecret).toBeUndefined();
+    expect(viaRest.users?.[0]?.apiKeys?.[0]?.clientSecret).toBeNull();
+  });
+
+  it('still refuses a short API key `clientSecret`', () => {
+    const users = [
+      {
+        key: { value: 'a@example.test', findBy: CdmFindBy.Email },
+        name: 'A',
+        apiKeys: [{ key: 'k-1', clientSecret: 'short' }],
+      },
+    ];
+
+    expect(() => parseCdmDocument(document({ users }))).toThrow(
+      /users\.0\.apiKeys\.0\.clientSecret/
+    );
+  });
+
   it('refuses something that is not a document at all', () => {
     expect(() => parseCdmDocument(null)).toThrow(ValidationError);
     expect(() => parseCdmDocument([])).toThrow(ValidationError);

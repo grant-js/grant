@@ -2353,7 +2353,13 @@
       "actions": "Aktionen",
       "loading": "Berechtigungen werden geladen...",
       "groups": "Gruppen",
-      "users": "Benutzer"
+      "users": "Benutzer",
+      "condition": "Bedingung"
+    },
+    "conditionChip": {
+      "title": "Bedingung",
+      "has": "Mit Bedingung",
+      "none": "Keine Bedingung"
     },
     "toolbar": {
       "tags": {
@@ -4387,7 +4393,7 @@
         "users": "Benutzer",
         "usersHint": "Mitglieder und Rollenzuweisungen für dieses Projekt.",
         "userApiKeys": "Benutzer-API-Schlüssel",
-        "userApiKeysHint": "CDM-verwaltete Schlüssel-Identitäten in diesem Export. Geheimnisse sind nie enthalten.",
+        "userApiKeysHint": "CDM-verwaltete Schlüssel-Identitäten in diesem Export. Geheimnisse sind nie enthalten: Ein Import der Datei behält passende Schlüssel des Projekts und überspringt die übrigen.",
         "roles": "Rollen",
         "rolesHint": "Definitionen und Berechtigungsschlüssel (inkl. Katalogreferenzen).",
         "groups": "Gruppen",
@@ -4593,7 +4599,8 @@
         "projectUsersEnsured": "Projektnutzer sichergestellt",
         "usersCreated": "Grant-Benutzer angelegt (CDM-Provision)",
         "userRolesAssigned": "Nutzerrollen zugewiesen",
-        "projectUserApiKeysCreated": "Benutzer-API-Schlüssel erstellt"
+        "projectUserApiKeysCreated": "Benutzer-API-Schlüssel erstellt",
+        "projectUserApiKeysSkippedNoSecret": "Benutzer-API-Schlüssel übersprungen (kein Geheimnis)"
       },
       "payload": {
         "loading": "Lade Payload…",
