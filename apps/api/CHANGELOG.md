@@ -1,5 +1,41 @@
 # grant-api
 
+## 1.32.0
+
+### Minor Changes
+
+- 6e4a0a1: A CDM export can be imported again when its users have API keys. An export writes `clientSecret: null` on every key, which the import used to reject for the whole document. A key without a secret now creates nothing: the importing project's key that matches by `key` or `clientId` is left as it is (counted in `projectUserApiKeysUnchanged`, and not deleted on replace), and a key with no match is skipped. `SyncProjectResult.projectUserApiKeysSkippedNoSecret` counts the skipped keys, and the import job's result card shows it. Everything else in the document imports. Keys that carry a secret behave as before.
+- 366553f: Permissions and groups show who and what they are assigned to, as count chips that preview on hover.
+
+  - **Schema:** `Permission.groupCount`, `Permission.userCount` and `Group.userCount`, plus the lists behind them: `Permission.groups`, `Permission.users` and `Group.users`, each with `page` and `limit`. User counts are direct assignments only. A user who gets a permission through a group or role is not counted, and neither is a group member through a role. In a project the counts read the project's own assignments (`project_user_groups`, `project_user_permissions`, joined to the live global row, as authorization does). In an organization they read the organization's users.
+  - **Authorization:** `Group.users` and `Permission.users` check `User:Query`, the users list's own permission, and `Permission.groups` checks `Group:Query`. Without it the field is an authorization error; the counts still resolve.
+  - **API:** the group and permission lists count a page at once, one grouped query per count. REST takes the counts in `?fields=` (`userCount` on groups; `groupCount` and `userCount` on permissions).
+  - **Database:** partial indexes (`WHERE deleted_at IS NULL`) on `group_permissions (permission_id)`, `user_groups (group_id)`, `user_permissions (permission_id)`, `project_user_groups (project_id, group_id)` and `project_user_permissions (project_id, permission_id)`.
+  - **Web:** the permission list has Groups and Users chips, and the group list has a Users chip. They open like the other relationship chips. A viewer who may not list users sees the count and "Not available".
+  - **Operations:** `GetGroupRelationsPreview` takes `$withUsers`, and `GetPermissionRelationsPreview` takes `$withGroups`, `$withUsers` and `$withTags`. Each has a default, so existing callers are unchanged.
+
+### Patch Changes
+
+- 075fba4: A CDM export of a project whose roles or groups an earlier import created can be imported again. The export named such a role by a generated key in `roles[]` but by the importer's key in `users[].roles`, so the re-import failed with `Unknown roleTemplateKey`. A group that a role links and a user is also directly assigned had the same split between `groups[]` and `users[].groups`. Roles and groups now have one export key wherever they are named: the importer's key when an import created them, otherwise the generated `cdm-role-…` / `cdm-group-…` key as before.
+- b99c252: A CDM import no longer invents a description for an imported group. A group without a `description` (and, for a role template's group, without a role description or display description) now stores none, instead of `Imported group <key>` or `Imported group for <key>`, and its search document no longer carries that text. The group's import marker in `metadata.cdmImport` still records where it came from. Re-running a `replace` import recreates the groups without the generated text.
+- Updated dependencies [6e4a0a1]
+- Updated dependencies [f37775d]
+- Updated dependencies [366553f]
+  - @grantjs/schema@1.32.0
+  - @grantjs/core@1.0.0
+  - @grantjs/jobs@1.0.0
+  - @grantjs/analytics@1.0.0
+  - @grantjs/cache@1.0.0
+  - @grantjs/constants@1.0.0
+  - @grantjs/database@1.0.0
+  - @grantjs/email@1.0.0
+  - @grantjs/errors@1.0.0
+  - @grantjs/logger@1.0.0
+  - @grantjs/secrets@1.0.0
+  - @grantjs/storage@1.0.0
+  - @grantjs/telemetry@1.0.0
+  - @grantjs/webhooks@1.0.0
+
 ## 1.31.1
 
 ### Patch Changes
