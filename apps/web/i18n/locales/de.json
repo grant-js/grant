@@ -179,7 +179,8 @@
       "role": "Rolle {name} öffnen",
       "group": "Gruppe {name} öffnen",
       "permission": "Berechtigung {name} öffnen",
-      "resource": "Ressource {name} öffnen"
+      "resource": "Ressource {name} öffnen",
+      "user": "Benutzer {name} öffnen"
     },
     "relationPreview": {
       "notAvailable": "Nicht verfügbar",
@@ -4643,6 +4644,37 @@
       "CDM_IMPORT_UPLOAD_MISSING": "Die hochgeladene Datei ist nicht mehr im Speicher, möglicherweise abgelaufen. Lade sie erneut hoch und starte einen neuen Import.",
       "CDM_IMPORT_DOCUMENT_TOO_LARGE": "Die hochgeladene Datei ist größer als die maximal zulässige Größe dieser Installation.",
       "CDM_IMPORT_STORAGE_FAILURE": "Die hochgeladene Datei konnte nicht aus dem Speicher gelesen werden. Versuche es später erneut."
+    }
+  },
+  "permission": {
+    "groups": {
+      "title": "Gruppen",
+      "description": "Gruppen dieses Bereichs, die diese Berechtigung haben. Berechtigungen werden einer Gruppe auf deren Seite zugewiesen.",
+      "empty": "Keine Gruppen",
+      "emptyDescription": "Keine Gruppe dieses Bereichs hat diese Berechtigung.",
+      "table": {
+        "name": "Name"
+      }
+    },
+    "users": {
+      "title": "Benutzer",
+      "description": "Benutzer, die diese Berechtigung direkt haben, nicht über eine Gruppe oder Rolle. Berechtigungen werden einem Benutzer auf dessen Seite zugewiesen.",
+      "empty": "Keine Benutzer",
+      "emptyDescription": "Kein Benutzer hat diese Berechtigung direkt.",
+      "table": {
+        "name": "Name"
+      }
+    }
+  },
+  "group": {
+    "members": {
+      "title": "Mitglieder",
+      "description": "Benutzer, die dieser Gruppe direkt zugewiesen sind, nicht über eine Rolle. Mitglieder werden auf der Seite des Benutzers hinzugefügt.",
+      "empty": "Keine Mitglieder",
+      "emptyDescription": "Kein Benutzer ist dieser Gruppe direkt zugewiesen.",
+      "table": {
+        "name": "Name"
+      }
     }
   }
 }

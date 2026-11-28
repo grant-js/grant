@@ -11,9 +11,10 @@ import {
 import type { EntitySegment } from '@/lib/entity-detail-url';
 
 /** Related entities a detail table can link to; each has its own detail page. */
-export type DetailLinkedEntity = 'role' | 'group' | 'permission' | 'resource';
+export type DetailLinkedEntity = 'user' | 'role' | 'group' | 'permission' | 'resource';
 
 const DETAIL_LINKED_ENTITY_SEGMENT: Record<DetailLinkedEntity, EntitySegment> = {
+  user: 'users',
   role: 'roles',
   group: 'groups',
   permission: 'permissions',

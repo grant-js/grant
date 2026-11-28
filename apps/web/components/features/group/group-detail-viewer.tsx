@@ -3,7 +3,9 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Users } from 'lucide-react';
 
+import { RelationListCard } from '@/components/common';
 import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { useGroups } from '@/hooks/groups';
@@ -58,6 +60,13 @@ export function GroupDetailViewer() {
       <GroupGeneralCard group={group} onAfterGroupMutation={refetch} />
       <GroupMetadataCard group={group} onAfterGroupMutation={refetch} />
       <GroupPermissions group={group} />
+      <RelationListCard
+        entity="group"
+        relation="users"
+        entityId={group.id}
+        messages="group.members"
+        icon={<Users />}
+      />
       <GroupTags group={group} />
     </FeatureDetailLayout>
   );

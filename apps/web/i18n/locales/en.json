@@ -181,7 +181,8 @@
       "role": "Open role {name}",
       "group": "Open group {name}",
       "permission": "Open permission {name}",
-      "resource": "Open resource {name}"
+      "resource": "Open resource {name}",
+      "user": "Open user {name}"
     },
     "relationPreview": {
       "notAvailable": "Not available",
@@ -1532,6 +1533,15 @@
     "loading": {
       "title": "Loading group...",
       "error": "Error loading group"
+    },
+    "members": {
+      "title": "Members",
+      "description": "Users assigned to this group directly, not through a role. Members are added on the user’s page.",
+      "empty": "No members",
+      "emptyDescription": "No user is assigned to this group directly.",
+      "table": {
+        "name": "Name"
+      }
     }
   },
   "permission": {
@@ -1579,6 +1589,24 @@
     "loading": {
       "title": "Loading permission...",
       "error": "Error loading permission"
+    },
+    "groups": {
+      "title": "Groups",
+      "description": "Groups of this scope that hold this permission. Permissions are assigned to a group on the group’s page.",
+      "empty": "No groups",
+      "emptyDescription": "No group of this scope holds this permission.",
+      "table": {
+        "name": "Name"
+      }
+    },
+    "users": {
+      "title": "Users",
+      "description": "Users who hold this permission directly, not through a group or role. Permissions are assigned to a user on the user’s page.",
+      "empty": "No users",
+      "emptyDescription": "No user holds this permission directly.",
+      "table": {
+        "name": "Name"
+      }
     }
   },
   "resource": {

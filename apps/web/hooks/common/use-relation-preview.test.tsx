@@ -12,7 +12,7 @@ import { GraphQLError } from 'graphql';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useRelationPreview } from './use-relation-preview';
+import { useRelationPage, useRelationPreview } from './use-relation-preview';
 
 const scope = { tenant: Tenant.OrganizationProject, id: 'org-1:project-1' };
 vi.mock('./use-scope-from-params', () => ({ useScopeFromParams: () => scope }));
@@ -133,5 +133,60 @@ describe('useRelationPreview for the users and groups chips', () => {
     act(() => result.current.load());
     await waitFor(() => expect(result.current.error).toBe(true));
     expect(result.current.items).toBeUndefined();
+  });
+});
+
+describe('useRelationPage', () => {
+  const secondPage = {
+    request: {
+      query: GetPermissionRelationsPreviewDocument,
+      variables: {
+        scope,
+        id: 'p-1',
+        page: 2,
+        limit: 10,
+        withGroups: true,
+        withUsers: false,
+        withTags: false,
+      },
+    },
+    result: {
+      data: {
+        permissions: {
+          __typename: 'PermissionPage',
+          permissions: [
+            {
+              __typename: 'Permission',
+              id: 'p-1',
+              groups: [{ __typename: 'Group', id: 'g-11', name: 'Auditors' }],
+              groupCount: 11,
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  it('fetches the requested page of the relationship with its count, from the preview document', async () => {
+    const { result } = renderHook(
+      () =>
+        useRelationPage({ entity: 'permission', relation: 'groups' }, 'p-1', {
+          page: 2,
+          limit: 10,
+        }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <MockedProvider mocks={[secondPage]}>{children}</MockedProvider>
+        ),
+      }
+    );
+
+    await waitFor(() =>
+      expect(result.current.items).toEqual([
+        expect.objectContaining({ id: 'g-11', name: 'Auditors' }),
+      ])
+    );
+    expect(result.current.totalCount).toBe(11);
+    expect(result.current.error).toBe(false);
   });
 });

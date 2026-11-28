@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useLazyQuery } from '@apollo/client/react';
+import { useLazyQuery, useQuery } from '@apollo/client/react';
 import {
   GetGroupRelationsPreviewDocument,
   GetPermissionRelationsPreviewDocument,
@@ -27,7 +27,8 @@ interface RelationPreviewItem {
 
 type Row = Partial<
   Record<'roles' | 'groups' | 'permissions' | 'users' | 'tags', RelationPreviewItem[] | null>
->;
+> &
+  Partial<Record<'groupCount' | 'userCount', number | null>>;
 
 const DOCUMENTS = {
   user: { document: GetUserRelationsPreviewDocument, list: 'users' },
@@ -84,4 +85,40 @@ export function useRelationPreview(target: RelationPreviewTarget, entityId: stri
   const items: RelationPreviewItem[] | undefined = row ? (row[target.relation] ?? []) : undefined;
 
   return { load, items, loading, error: Boolean(error) || (called && !loading && !scope), called };
+}
+
+/** The relationships a detail page lists in a read-only card, a page at a time. */
+export type RelationPageTarget =
+  { entity: 'group'; relation: 'users' } | { entity: 'permission'; relation: 'groups' | 'users' };
+
+const COUNT_FIELD = { groups: 'groupCount', users: 'userCount' } as const;
+
+/**
+ * One page of an entity's relationship for its detail page, from the same documents as the
+ * count chips' previews; `totalCount` is the relationship's count. Like the preview it stays out
+ * of the normalized cache, so it is fetched again when the page is opened.
+ */
+export function useRelationPage(
+  target: RelationPageTarget,
+  entityId: string,
+  { page, limit }: { page: number; limit: number }
+) {
+  const scope = useScopeFromParams();
+  const { document, list } = DOCUMENTS[target.entity];
+  const { data, loading, error } = useQuery<Record<string, Record<string, Row[]>>>(
+    document as never,
+    {
+      variables: { scope, id: entityId, page, limit, ...flagsFor(target) },
+      skip: !scope,
+      fetchPolicy: 'no-cache',
+    }
+  );
+
+  const row = data?.[list]?.[list]?.[0];
+  return {
+    items: row ? (row[target.relation] ?? []) : undefined,
+    totalCount: row?.[COUNT_FIELD[target.relation]] ?? 0,
+    loading,
+    error: Boolean(error) || !scope,
+  };
 }

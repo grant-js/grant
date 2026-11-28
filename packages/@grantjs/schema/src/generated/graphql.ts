@@ -339,12 +339,15 @@ export type GetGroupRelationsPreviewQueryVariables = Exact<{
   withPermissions: boolean;
   withTags: boolean;
   withUsers?: boolean;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
 }>;
 
 export type GetGroupRelationsPreviewQuery = {
   groups: {
     groups: Array<{
       id: string;
+      userCount?: number;
       permissions?: Array<{ id: string; name: string }> | null;
       tags?: Array<{ id: string; name: string; color: string }> | null;
       users?: Array<{ id: string; name: string }> | null;
@@ -1202,12 +1205,16 @@ export type GetPermissionRelationsPreviewQueryVariables = Exact<{
   withTags?: boolean;
   withGroups?: boolean;
   withUsers?: boolean;
+  page?: number | null | undefined;
+  limit?: number | null | undefined;
 }>;
 
 export type GetPermissionRelationsPreviewQuery = {
   permissions: {
     permissions: Array<{
       id: string;
+      groupCount?: number;
+      userCount?: number;
       tags?: Array<{ id: string; name: string; color: string }> | null;
       groups?: Array<{ id: string; name: string }> | null;
       users?: Array<{ id: string; name: string }> | null;
@@ -3958,6 +3965,18 @@ export const GetGroupRelationsPreviewDocument = {
           },
           defaultValue: { kind: 'BooleanValue', value: false },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          defaultValue: { kind: 'IntValue', value: '1' },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          defaultValue: { kind: 'IntValue', value: '10' },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -4056,8 +4075,13 @@ export const GetGroupRelationsPreviewDocument = {
                         arguments: [
                           {
                             kind: 'Argument',
+                            name: { kind: 'Name', value: 'page' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+                          },
+                          {
+                            kind: 'Argument',
                             name: { kind: 'Name', value: 'limit' },
-                            value: { kind: 'IntValue', value: '10' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
                           },
                         ],
                         directives: [
@@ -4083,6 +4107,26 @@ export const GetGroupRelationsPreviewDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                           ],
                         },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userCount' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withUsers' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
                       },
                     ],
                   },
@@ -7394,6 +7438,18 @@ export const GetPermissionRelationsPreviewDocument = {
           },
           defaultValue: { kind: 'BooleanValue', value: false },
         },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          defaultValue: { kind: 'IntValue', value: '1' },
+        },
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+          type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          defaultValue: { kind: 'IntValue', value: '10' },
+        },
       ],
       selectionSet: {
         kind: 'SelectionSet',
@@ -7465,8 +7521,13 @@ export const GetPermissionRelationsPreviewDocument = {
                         arguments: [
                           {
                             kind: 'Argument',
+                            name: { kind: 'Name', value: 'page' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+                          },
+                          {
+                            kind: 'Argument',
                             name: { kind: 'Name', value: 'limit' },
-                            value: { kind: 'IntValue', value: '10' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
                           },
                         ],
                         directives: [
@@ -7495,12 +7556,37 @@ export const GetPermissionRelationsPreviewDocument = {
                       },
                       {
                         kind: 'Field',
+                        name: { kind: 'Name', value: 'groupCount' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withGroups' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      {
+                        kind: 'Field',
                         name: { kind: 'Name', value: 'users' },
                         arguments: [
                           {
                             kind: 'Argument',
+                            name: { kind: 'Name', value: 'page' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'page' } },
+                          },
+                          {
+                            kind: 'Argument',
                             name: { kind: 'Name', value: 'limit' },
-                            value: { kind: 'IntValue', value: '10' },
+                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
                           },
                         ],
                         directives: [
@@ -7526,6 +7612,26 @@ export const GetPermissionRelationsPreviewDocument = {
                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                           ],
                         },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userCount' },
+                        directives: [
+                          {
+                            kind: 'Directive',
+                            name: { kind: 'Name', value: 'include' },
+                            arguments: [
+                              {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'if' },
+                                value: {
+                                  kind: 'Variable',
+                                  name: { kind: 'Name', value: 'withUsers' },
+                                },
+                              },
+                            ],
+                          },
+                        ],
                       },
                     ],
                   },

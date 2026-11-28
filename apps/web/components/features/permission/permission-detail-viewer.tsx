@@ -3,7 +3,9 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Group as GroupIcon, Users } from 'lucide-react';
 
+import { RelationListCard } from '@/components/common';
 import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
 import { useScopeFromParams } from '@/hooks/common';
 import { usePermissions } from '@/hooks/permissions';
@@ -56,6 +58,20 @@ export function PermissionDetailViewer() {
       <PermissionGeneralCard permission={permission} onAfterPermissionMutation={refetch} />
       <PermissionConditionCard permission={permission} onAfterPermissionMutation={refetch} />
       <PermissionTags permission={permission} />
+      <RelationListCard
+        entity="permission"
+        relation="groups"
+        entityId={permission.id}
+        messages="permission.groups"
+        icon={<GroupIcon />}
+      />
+      <RelationListCard
+        entity="permission"
+        relation="users"
+        entityId={permission.id}
+        messages="permission.users"
+        icon={<Users />}
+      />
     </FeatureDetailLayout>
   );
 }
