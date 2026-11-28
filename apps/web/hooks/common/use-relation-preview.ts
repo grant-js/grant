@@ -30,7 +30,7 @@ interface RelationPreviewItem {
 type Row = Partial<
   Record<'roles' | 'groups' | 'permissions' | 'users' | 'tags', RelationPreviewItem[] | null>
 > &
-  Partial<Record<'groupCount' | 'userCount', number | null>>;
+  Partial<Record<'groupCount' | 'userCount' | 'roleCount', number | null>>;
 
 const DOCUMENTS = {
   user: { document: GetUserRelationsPreviewDocument, list: 'users' },
@@ -101,9 +101,11 @@ export function useRelationPreview(target: RelationPreviewTarget, entityId: stri
 
 /** The relationships a detail page lists in a read-only card, a page at a time. */
 export type RelationPageTarget =
-  { entity: 'group'; relation: 'users' } | { entity: 'permission'; relation: 'groups' | 'users' };
+  | { entity: 'role'; relation: 'users' }
+  | { entity: 'group'; relation: 'users' | 'roles' }
+  | { entity: 'permission'; relation: 'groups' | 'users' };
 
-const COUNT_FIELD = { groups: 'groupCount', users: 'userCount' } as const;
+const COUNT_FIELD = { groups: 'groupCount', users: 'userCount', roles: 'roleCount' } as const;
 
 /**
  * One page of an entity's relationship for its detail page, from the same documents as the

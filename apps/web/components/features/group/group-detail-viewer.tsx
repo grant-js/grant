@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Users } from 'lucide-react';
+import { Shield, Users } from 'lucide-react';
 
 import { RelationListCard } from '@/components/common';
 import { FeatureDetailLayout, FeatureDetailSkeleton } from '@/components/layout';
@@ -66,6 +66,13 @@ export function GroupDetailViewer() {
         entityId={group.id}
         messages="group.members"
         icon={<Users />}
+      />
+      <RelationListCard
+        entity="group"
+        relation="roles"
+        entityId={group.id}
+        messages="group.roles"
+        icon={<Shield />}
       />
       <GroupTags group={group} />
     </FeatureDetailLayout>

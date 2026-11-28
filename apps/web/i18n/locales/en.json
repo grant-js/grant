@@ -1474,6 +1474,15 @@
     "loading": {
       "title": "Loading role...",
       "error": "Error loading role"
+    },
+    "users": {
+      "title": "Users",
+      "description": "Users the role is assigned to directly. Roles are assigned to a user on the user’s page.",
+      "empty": "No users",
+      "emptyDescription": "No user of this scope has this role.",
+      "table": {
+        "name": "Name"
+      }
     }
   },
   "group": {
@@ -1543,6 +1552,15 @@
       "description": "Users assigned to this group directly, not through a role. Members are added on the user’s page.",
       "empty": "No members",
       "emptyDescription": "No user is assigned to this group directly.",
+      "table": {
+        "name": "Name"
+      }
+    },
+    "roles": {
+      "title": "Roles",
+      "description": "Roles of this scope that include this group. Groups are added to a role on the role’s page.",
+      "empty": "No roles",
+      "emptyDescription": "No role of this scope includes this group.",
       "table": {
         "name": "Name"
       }
