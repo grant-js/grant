@@ -2620,7 +2620,13 @@
       "created": "Created",
       "updated": "Updated",
       "actions": "Actions",
-      "loading": "Loading permissions..."
+      "loading": "Loading permissions...",
+      "condition": "Condition"
+    },
+    "conditionChip": {
+      "title": "Condition",
+      "has": "Has condition",
+      "none": "No condition"
     },
     "toolbar": {
       "tags": {

@@ -2,6 +2,7 @@ export * from './permission-actions';
 export * from './permission-audit';
 export * from './permission-card-skeleton';
 export * from './permission-cards';
+export * from './permission-condition-chip';
 export * from './permission-create-viewer';
 export * from './permission-delete-dialog';
 export * from './permission-edit-dialog';
